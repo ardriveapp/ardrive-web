@@ -70,6 +70,47 @@ class _UploadController implements UploadController {
   bool get isCanceled => _isCanceled;
   DateTime? _start;
 
+  /// Whether [cancel] stopped this upload, as opposed to Turbo refusing it.
+  /// A canceled upload is never reported done.
+  bool _canceledByUser = false;
+
+  /// Which attempt is current. A retry starts a new one, and whatever is left
+  /// of an older attempt can neither send nor report: see [_scoped].
+  int _attempt = 0;
+
+  /// Uploads still running, of any attempt, and who is waiting for none.
+  int _running = 0;
+  Completer<void>? _idle;
+
+  /// Whether a retry is starting, so a second one is ignored.
+  bool _retrying = false;
+
+  /// How long a retry waits for the attempt before it to stop.
+  static const _stopTimeout = Duration(seconds: 60);
+
+  Future<void> _track(Future<void> Function() upload) async {
+    _running++;
+    try {
+      await upload();
+    } finally {
+      _running--;
+      if (_running == 0) {
+        _idle?.complete();
+        _idle = null;
+      }
+    }
+  }
+
+  Future<void> _whenIdle() =>
+      _running == 0 ? Future.value() : (_idle ??= Completer<void>()).future;
+
+  /// This controller as attempt [attempt] sees it: once a newer attempt has
+  /// begun, its progress goes nowhere.
+  UploadController _scoped(int attempt) =>
+      _AttemptScopedController(this, () => attempt == _attempt);
+
+  bool _isStale(int attempt) => attempt != _attempt;
+
   WorkerPool? workerPool;
 
   @override
@@ -116,6 +157,10 @@ class _UploadController implements UploadController {
         }
       },
       onDone: () {
+        if (_canceledByUser) {
+          subscription.cancel();
+          return;
+        }
         if (_failedTasks.isNotEmpty) {
           _onError(_failedTasks.values.toList());
           return;
@@ -172,6 +217,8 @@ class _UploadController implements UploadController {
       throw Exception('No tasks to send');
     }
 
+    final attempt = _attempt;
+
     // creates a worker pool and initializes it with the tasks
     workerPool = WorkerPool(
       numWorkers: _numOfWorkers,
@@ -184,20 +231,25 @@ class _UploadController implements UploadController {
         /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
         logger.d('Error on UploadWorker. Task: ${e.toString()}');
 
+        if (_isStale(attempt)) return;
         _handleError(task: tasks[e.id]!, exception: e);
       },
-      upload: (task) async {
+      upload: (task) => _track(() async {
         final uploadResult = await _uploadDispatcher.send(
           task: task,
           wallet: wallet,
-          controller: this,
-          verifyCancel: () => _isCanceled,
+          controller: _scoped(attempt),
+          verifyCancel: () => _isCanceled || _isStale(attempt),
         );
+
+        // An older attempt's outcome belongs to nobody: the retry owns
+        // these tasks now.
+        if (_isStale(attempt)) return;
 
         if (!uploadResult.success) {
           _handleError(task: task, exception: uploadResult.error);
         }
-      },
+      }),
     );
   }
 
@@ -223,30 +275,35 @@ class _UploadController implements UploadController {
     Wallet wallet, {
     Function(bool)? onTaskCompleted,
   }) {
+    final attempt = _attempt;
     final worker = UploadWorker(
       onError: (task, e) {
         /// Handles any uncaught error on the worker. It is not supposed to happen as
         /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
         logger.d('Error on UploadWorker. Task: ${task.toString()}');
 
+        if (_isStale(attempt)) return;
         _handleError(task: task, exception: e);
       },
-      upload: (task) async {
+      upload: (task) => _track(() async {
         final uploadResult = await _uploadDispatcher.send(
           task: task,
           wallet: wallet,
-          controller: this,
-          verifyCancel: () => _isCanceled,
+          controller: _scoped(attempt),
+          verifyCancel: () => _isCanceled || _isStale(attempt),
         );
+
+        if (_isStale(attempt)) return;
 
         if (!uploadResult.success) {
           _handleError(task: task, exception: uploadResult.error);
         }
-      },
+      }),
       maxTasks: 1,
       task: task,
       onTaskCompleted: (task) {
         logger.d('Task completed with status: ${task.status}');
+        if (_isStale(attempt)) return;
         final updatedTask = tasks[task.id]!;
         onTaskCompleted?.call(updatedTask.status == UploadStatus.complete);
       },
@@ -274,6 +331,33 @@ class _UploadController implements UploadController {
   /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
   @override
   Future<void> retryFailedTasks(Wallet wallet) async {
+    // A second press while the first is starting would send everything twice.
+    if (_retrying) return;
+    _retrying = true;
+    try {
+      await _retry(wallet);
+    } finally {
+      _retrying = false;
+    }
+  }
+
+  Future<void> _retry(Wallet wallet) async {
+    // The attempt before must stop first. After Turbo refuses payment, a task
+    // may still be bundling or signing; it is still canceled here, so it stops
+    // instead of sending, and no more of that attempt's queue is handed out.
+    // Retrying while it ran would send the same file twice and pay twice.
+    workerPool?.cancel();
+    await _whenIdle().timeout(_stopTimeout, onTimeout: () {
+      logger.w('The previous upload attempt did not stop in time');
+    });
+
+    // From here the old attempt, if it is somehow still running, can neither
+    // send nor report.
+    _attempt++;
+
+    // A task the old attempt finished after all is not sent again.
+    _failedTasks.removeWhere((id, _) => _completedTasks.containsKey(id));
+
     // Stop listening to the last attempt before closing its stream. A stream
     // that was still open, as it is after Turbo refuses payment, would
     // otherwise report done once the retried tasks are in place, and the
@@ -375,6 +459,7 @@ class _UploadController implements UploadController {
 
     workerPool?.cancel();
     _isCanceled = true;
+    _canceledByUser = true;
 
     final cancelableTask = tasks.values
         .where((e) =>
@@ -423,6 +508,8 @@ class _UploadController implements UploadController {
     if (exception is UploadStrategyException &&
         exception.error is UnderFundException) {
       _isCanceled = true;
+      // Nothing more of this attempt is handed out.
+      workerPool?.cancel();
 
       final cancelableTask = tasks.values
           .where((e) =>
@@ -801,4 +888,73 @@ class UploadResult {
     required this.success,
     this.error,
   });
+}
+
+/// The controller as one upload attempt sees it. Progress from an attempt
+/// that a retry has replaced is dropped, so it cannot overwrite the retry's
+/// tasks, which share its ids.
+class _AttemptScopedController implements UploadController {
+  _AttemptScopedController(this._controller, this._isCurrent);
+
+  final UploadController _controller;
+  final bool Function() _isCurrent;
+
+  @override
+  Map<String, UploadTask> get tasks => _controller.tasks;
+
+  @override
+  void updateProgress({UploadTask? task}) {
+    if (_isCurrent()) _controller.updateProgress(task: task);
+  }
+
+  @override
+  Future<void> close() => _controller.close();
+
+  @override
+  Future<void> cancel() => _controller.cancel();
+
+  @override
+  void onCancel(Function(List<UploadTask> tasks) callback) =>
+      _controller.onCancel(callback);
+
+  @override
+  void onDone(Function(List<UploadTask> tasks) callback) =>
+      _controller.onDone(callback);
+
+  @override
+  void onError(Function(List<UploadTask> tasks) callback) =>
+      _controller.onError(callback);
+
+  @override
+  void onProgressChange(Function(UploadProgress progress) callback) =>
+      _controller.onProgressChange(callback);
+
+  @override
+  void onCompleteTask(Function(UploadTask tasks) callback) =>
+      _controller.onCompleteTask(callback);
+
+  @override
+  void sendTasks(Wallet wallet) => _controller.sendTasks(wallet);
+
+  @override
+  List<UploadTask> get notCompletedTasks => _controller.notCompletedTasks;
+
+  @override
+  void sendTask(
+    UploadTask task,
+    Wallet wallet, {
+    Function(bool)? onTaskCompleted,
+  }) =>
+      _controller.sendTask(task, wallet, onTaskCompleted: onTaskCompleted);
+
+  @override
+  void addTask(UploadTask task) => _controller.addTask(task);
+
+  @override
+  void onFailedTask(Function(UploadTask task) callback) =>
+      _controller.onFailedTask(callback);
+
+  @override
+  Future<void> retryFailedTasks(Wallet wallet) =>
+      _controller.retryFailedTasks(wallet);
 }
