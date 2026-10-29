@@ -2199,6 +2199,15 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
+  "multiDownloadNotSaved": "{fileName} was not saved",
+  "@multiDownloadNotSaved": {
+    "description": "After a multi-file download, when the browser's save was cancelled or failed",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
   "multiDownloadSaved": "Saved {fileName}",
   "@multiDownloadSaved": {
     "description": "After a multi-file download, once the zip is handed to the browser to save",

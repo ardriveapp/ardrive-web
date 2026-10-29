@@ -89,10 +89,11 @@ final _rawMenu = RegExp(
   r'|(?<![.\w])showMenu\s*[<(]',
 );
 
-/// A string cut to its ends by hand: `x.substring(0, 6)}...` or
-/// `truncateString(`, the shape of a shortened ID or address.
+/// A string cut to its ends by hand: `x.substring(0, 6)}...`, with a number
+/// or a variable for the length, or `truncateString(`, the shape of a
+/// shortened ID or address.
 final _rawShortening =
-    RegExp(r'substring\(0, ?\d+\)\}\.\.\.|\btruncateString\(');
+    RegExp(r'substring\(0, ?\w+\)\}\.\.\.|\btruncateString\(');
 
 /// Where colours are defined: the tokens and the palettes they're built on.
 const _styleDir = 'packages/ardrive_ui/lib/src/styles/';

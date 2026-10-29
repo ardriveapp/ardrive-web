@@ -78,6 +78,24 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   /// can say so before the reader closes it.
   bool _saved = false;
 
+  /// Whether the save failed or was cancelled at the browser's save picker.
+  /// The zip is kept in [_zip], so saving again doesn't download it again.
+  bool _saveFailed = false;
+  IOFile? _zip;
+
+  Future<void> _save(IOFile file) async {
+    try {
+      await (widget.saveFile ?? ArDriveIO().saveFile)(file);
+      if (!mounted) return;
+      setState(() {
+        _saved = true;
+        _saveFailed = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _saveFailed = true);
+    }
+  }
+
   /// Above this the confirmation adds that it will take a while.
   static const _largeDownload = 100 * 1024 * 1024;
 
@@ -165,8 +183,8 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
 
           // It stays open on a done state rather than closing by itself,
           // which left no word that the zip was saved.
-          await (widget.saveFile ?? ArDriveIO().saveFile)(file);
-          if (mounted) setState(() => _saved = true);
+          _zip = file;
+          await _save(file);
         }
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(
@@ -249,14 +267,16 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_saved)
+                  if (_saved || _saveFailed)
                     Text(
-                      strings.multiDownloadSaved(state.fileName),
+                      _saved
+                          ? strings.multiDownloadSaved(state.fileName)
+                          : strings.multiDownloadNotSaved(state.fileName),
                       style: typography.paragraphNormal(
                         color: colorTokens.textMid,
                       ),
                     ),
-                  if (_saved && state.skippedFiles.isNotEmpty)
+                  if ((_saved || _saveFailed) && state.skippedFiles.isNotEmpty)
                     const SizedBox(height: ArDriveSpacing.sm),
                   if (state.skippedFiles.isNotEmpty)
                     _buildFileList(state.skippedFiles, typography, colorTokens),
@@ -269,6 +289,11 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                   },
                   title: strings.doneEmphasized,
                 ),
+                if (_saveFailed && _zip != null)
+                  ModalAction(
+                    action: () => _save(_zip!),
+                    title: strings.tryAgainEmphasized,
+                  ),
               ],
             );
           } else if (state is MultipleDownloadFailure) {

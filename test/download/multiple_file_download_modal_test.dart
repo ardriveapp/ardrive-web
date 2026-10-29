@@ -160,6 +160,30 @@ void main() {
       expect(find.byType(MultipleFilesDownload), findsNothing);
     });
 
+    testWidgets('a cancelled save says so and saves the same zip again',
+        (tester) async {
+      final saves = <String>[];
+      var cancel = true;
+      await pumpFinished(tester, save: (file) async {
+        saves.add(file.name);
+        // The browser's save picker, cancelled the first time.
+        if (cancel) throw Exception('cancelled');
+      });
+      await tester.pumpAndSettle();
+
+      expect(find.text('Drive.zip was not saved'), findsOneWidget);
+      expect(find.text('Saved Drive.zip'), findsNothing);
+
+      cancel = false;
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(saves, ['Drive.zip', 'Drive.zip'],
+          reason: 'the same zip, not a second download');
+      expect(find.text('Saved Drive.zip'), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+    });
+
     testWidgets('with skipped files, says so and lists them', (tester) async {
       await pumpFinished(
         tester,

@@ -59,7 +59,7 @@ class WebIO implements ArDriveIO {
       throw EntityPathException();
     }
 
-    file_selector.XFile.fromData(
+    await file_selector.XFile.fromData(
       await file.readAsBytes(),
       lastModified: file.lastModifiedDate,
       mimeType: file.contentType,
