@@ -17,8 +17,9 @@
 // only with its accessibility tree on, and with the tree on later clicks on
 // menus land on what's behind them (#2347). So the labels are read in a
 // second tab, which is closed again, and the clicks go to the same places in
-// launch.js's tab, where the tree stays off. Each step is checked by the page
-// the app reports next, and a step that didn't land is tried again.
+// launch.js's tab, where the tree stays off. The keyfile panel is checked by
+// its recovery phrase field, which takes focus when it opens, and a step that
+// didn't land is tried again.
 //
 // The password field has focus when its dialog opens, and Enter submits it.
 // The test wallet has used ArDrive before, so after the keyfile the app asks
@@ -69,9 +70,14 @@ async function buttonPlaces(main) {
   try {
     await tab.setViewportSize(main.viewportSize() || { width: 1440, height: 900 });
     await tab.goto(main.url());
-    const end = Date.now() + 60000;
-    while (Date.now() < end && !(await tab.$('flt-semantics-placeholder'))) await tab.waitForTimeout(250);
-    await tab.evaluate(() => document.querySelector('flt-semantics-placeholder')?.click());
+    // The placeholder that turns the tree on is inside a shadow root, which
+    // Playwright's $ looks into. Click it until labels appear.
+    const end = Date.now() + 90000;
+    while (Date.now() < end && (await labels(tab)).length === 0) {
+      const placeholder = await tab.$('flt-semantics-placeholder');
+      if (placeholder) await placeholder.evaluate((e) => e.click()).catch(() => {});
+      await tab.waitForTimeout(1000);
+    }
     const places = {};
     places.logIn = await find(tab, LOG_IN, 60000);
     // Builds before the fix for it can put the welcome panel back over
@@ -92,13 +98,17 @@ async function buttonPlaces(main) {
   }
 }
 
-// Whether the focused field is a password field, looking inside shadow roots.
-// Only its type is read, never its value.
-const passwordFocused = (page) => page.evaluate(() => {
+// The focused field's tag and type, looking inside shadow roots. Never its
+// value.
+const focusedField = (page) => page.evaluate(() => {
   let el = document.activeElement;
   while (el && el.shadowRoot && el.shadowRoot.activeElement) el = el.shadowRoot.activeElement;
-  return !!el && el.tagName === 'INPUT' && el.type === 'password';
+  return el ? `${el.tagName} ${el.type || ''}`.trim() : '';
 });
+// The password field has focus when its dialog opens.
+const passwordFocused = async (page) => (await focusedField(page)) === 'INPUT password';
+// So has the recovery phrase field, a textarea, when the keyfile panel opens.
+const phraseFocused = async (page) => (await focusedField(page)).startsWith('TEXTAREA');
 
 async function waitFor(check, ms, page) {
   const end = Date.now() + ms;
@@ -124,24 +134,16 @@ async function waitFor(check, ms, page) {
     await page.screenshot({ path: `${E2E_DIR}/shots/login-${n}.png` });
     console.log('SHOT', `${E2E_DIR}/shots/login-${n}.png`);
   };
-  // The pages the app reports, as its analytics log them.
-  const pages = [];
-  page.on('console', (m) => {
-    const seen = m.text().match(/pageview: \S+\/(\w+)/);
-    if (seen) pages.push(seen[1]);
-  });
-  const reached = (name, ms) => waitFor(() => pages.includes(name), ms, page);
 
   if (mode === 'fresh') {
     const places = await buttonPlaces(page);
     await shot('1-landing');
     let atKeyfile = false;
     for (let attempt = 1; attempt <= 3 && !atKeyfile; attempt++) {
-      pages.length = 0;
       await page.mouse.click(places.logIn.x, places.logIn.y);
       await wait(1500);
       await page.mouse.click(places.phraseOrKeyfile.x, places.phraseOrKeyfile.y);
-      atKeyfile = await reached('importWalletPage', 10000);
+      atKeyfile = await waitFor(() => phraseFocused(page), 10000, page);
       if (!atKeyfile) console.log(`the keyfile panel didn't open (try ${attempt})`);
     }
     if (!atKeyfile) {

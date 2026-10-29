@@ -318,8 +318,11 @@ async function guardTurbo(route) {
     if (forLogin) fs.rmSync(loginMarker);
     const real = (p) => { try { return fs.realpathSync(p); } catch (e) { return path.resolve(p); } };
     const keyfile = keyfilePath();
-    const secret = (p) => (keyfile && real(p) === real(keyfile) && !forLogin) ||
-      real(p).startsWith(real(path.dirname(CREDENTIALS)) + path.sep);
+    // The keyfile goes only to login's chooser, even when it is kept in the
+    // credentials folder. Nothing else from that folder goes anywhere.
+    const secret = (p) => (keyfile && real(p) === real(keyfile)
+      ? !forLogin
+      : real(p).startsWith(real(path.dirname(CREDENTIALS)) + path.sep));
     if (files.some(secret)) {
       log({ ev: 'BLOCKED', what: 'filechooser', why: 'a queued file is the wallet keyfile or a credentials file' });
       files = [];

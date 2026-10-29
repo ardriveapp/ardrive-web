@@ -172,7 +172,9 @@ decide the next step.
   Flutter's semantics tree is on, and it starts off, so by default
   `labels()` returns nothing and the screenshot is the source of truth. To
   check what a screen reader hears, turn it on with
-  `await page.evaluate(() => document.querySelector('flt-semantics-placeholder')?.click())`,
+  `await (await page.$('flt-semantics-placeholder'))?.evaluate((e) => e.click())`
+  (the placeholder is inside a shadow root, which `page.$` looks into and
+  `document.querySelector` doesn't; click again if it was too early),
   and do that last: see *Accessibility on* below.
 - **Choosing files.** `queueFiles([paths])` sets what the next file chooser
   receives. Use it before the click that opens the chooser. Files of any
