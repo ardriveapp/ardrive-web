@@ -1637,7 +1637,7 @@ class _PagerButtonState extends State<_PagerButton> {
           child: Container(
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(ArDriveRadius.control),
               border: Border.all(
                 width: 2,
                 color: _focused ? colorTokens.strokeHigh : Colors.transparent,
@@ -1866,7 +1866,8 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
               EdgeInsets.symmetric(vertical: 4),
             ),
             shape: MaterialStatePropertyAll(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ArDriveRadius.control)),
             ),
           ),
           menuChildren: [

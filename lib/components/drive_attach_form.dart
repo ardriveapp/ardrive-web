@@ -278,7 +278,7 @@ class _DriveInfoRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
         color: colorTokens.containerL1,
       ),
       child: Row(

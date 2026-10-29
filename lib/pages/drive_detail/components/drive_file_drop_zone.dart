@@ -118,7 +118,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
             color: colorTokens.containerL0,
           ),
           color: colorTokens.containerL3,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(ArDriveRadius.control),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,

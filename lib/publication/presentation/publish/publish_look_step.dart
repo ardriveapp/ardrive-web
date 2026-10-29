@@ -418,7 +418,7 @@ class _ImageField extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: colors.containerL2,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(ArDriveRadius.control),
                 border: Border.all(color: colors.strokeLow),
               ),
               child: picked != null
@@ -677,7 +677,7 @@ class _HeaderPreview extends StatelessWidget {
               children: [
                 if (state.icon != null) ...[
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(ArDriveRadius.control),
                     child: SizedBox(
                       width: 28,
                       height: 28,

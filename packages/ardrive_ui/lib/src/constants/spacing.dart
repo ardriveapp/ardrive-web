@@ -23,10 +23,12 @@ abstract final class ArDriveSpacing {
   static const double xxl = 48;
 }
 
-/// The corner radii. Small controls take [sm], surfaces such as cards and
-/// notices [md], and dialogs and sheets [lg].
+/// The corner radii. Small controls such as checkboxes and chips take [sm],
+/// buttons and text fields [control], surfaces such as cards, notices and
+/// menus [md], and dialogs and sheets [lg].
 abstract final class ArDriveRadius {
   static const double sm = 4;
+  static const double control = 6;
   static const double md = 8;
   static const double lg = 12;
 }

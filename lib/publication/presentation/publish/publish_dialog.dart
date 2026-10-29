@@ -541,7 +541,7 @@ class _Card extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.containerL1,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

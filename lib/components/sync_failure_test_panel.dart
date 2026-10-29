@@ -244,7 +244,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                           color: isSelected
                               ? themeData.colorTokens.buttonSecondaryHover
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius:
+                              BorderRadius.circular(ArDriveRadius.control),
                         ),
                         child: Row(
                           children: [
