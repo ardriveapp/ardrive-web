@@ -1783,49 +1783,6 @@ class _RowsPerPagePicker extends StatefulWidget {
 }
 
 class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
-  final _controller = MenuController();
-  final _focusNodes = <int, FocusNode>{};
-
-  /// Whether the menu was opened from the keyboard, and so takes focus. Not
-  /// when opened with the pointer, where a focused item would show as a
-  /// highlight nothing is hovering.
-  bool _focusOnOpen = false;
-
-  /// Escape, while the menu is open. The menu hears it itself only when
-  /// focus is inside it, which a menu opened with the pointer does not take.
-  bool _onKey(KeyEvent event) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape &&
-        _controller.isOpen) {
-      _controller.close();
-      return true;
-    }
-    return false;
-  }
-
-  void _toggle({required bool fromKeyboard}) {
-    if (_controller.isOpen) {
-      _controller.close();
-      return;
-    }
-    _focusOnOpen = fromKeyboard;
-    _controller.open();
-  }
-
-  FocusNode _nodeFor(int option) => _focusNodes.putIfAbsent(
-        option,
-        () => FocusNode(debugLabel: 'rows per page $option'),
-      );
-
-  @override
-  void dispose() {
-    HardwareKeyboard.instance.removeHandler(_onKey);
-    for (final node in _focusNodes.values) {
-      node.dispose();
-    }
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = ArDriveTheme.of(context).themeData;
@@ -1847,71 +1804,26 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
           ),
         ),
         const SizedBox(width: 6),
-        MenuAnchor(
-          controller: _controller,
+        ArDriveChoiceMenu<int>(
           // The menu lines up with the button's face, inside the room its
           // focus ring keeps.
           alignmentOffset: const Offset(4, 0),
-          onClose: () => HardwareKeyboard.instance.removeHandler(_onKey),
-          onOpen: () {
-            HardwareKeyboard.instance.addHandler(_onKey);
-            if (!_focusOnOpen) {
-              return;
-            }
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _focusNodes[widget.rowsPerPage]?.requestFocus();
-            });
-          },
-          style: MenuStyle(
-            backgroundColor: MaterialStatePropertyAll(
-              theme.dropdownTheme.backgroundColor,
-            ),
-            surfaceTintColor: const MaterialStatePropertyAll(
-              Colors.transparent,
-            ),
-            padding: const MaterialStatePropertyAll(
-              EdgeInsets.symmetric(vertical: 4),
-            ),
-            shape: MaterialStatePropertyAll(
-              RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ArDriveRadius.control)),
-            ),
-          ),
-          menuChildren: [
+          debugLabel: 'rows per page',
+          value: widget.rowsPerPage,
+          onSelected: widget.onSelected,
+          choices: [
             for (final option in widget.options)
-              MenuItemButton(
+              ArDriveChoice(
                 key: ValueKey('rows-per-page-$option'),
-                focusNode: _nodeFor(option),
-                onPressed: () => widget.onSelected(option),
-                style: ButtonStyle(
-                  minimumSize: const MaterialStatePropertyAll(Size(112, 40)),
-                  overlayColor: MaterialStatePropertyAll(
-                    theme.dropdownTheme.hoverColor,
-                  ),
-                ),
-                leadingIcon: SizedBox(
-                  width: 16,
-                  child: option == widget.rowsPerPage
-                      ? ArDriveIcons.checkmark(
-                          size: 16,
-                          color: theme.colorTokens.textHigh,
-                        )
-                      : null,
-                ),
-                child: Text(
-                  '$option',
-                  style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    fontWeight: ArFontWeight.bold,
-                    color: theme.colorTokens.textHigh,
-                  ),
-                ),
+                value: option,
+                label: '$option',
               ),
           ],
-          builder: (context, controller, child) => _PagerButton(
+          builder: (context, isOpen, toggle) => _PagerButton(
             key: const ValueKey('rows-per-page'),
             label: '${widget.label}: ${widget.rowsPerPage}',
-            onPressed: () => _toggle(fromKeyboard: false),
-            onKeyboardPressed: () => _toggle(fromKeyboard: true),
+            onPressed: () => toggle(),
+            onKeyboardPressed: () => toggle(fromKeyboard: true),
             builder: (context, hovered) => Container(
               height: 32,
               padding: const EdgeInsets.only(left: 10, right: 6),

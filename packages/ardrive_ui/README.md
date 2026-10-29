@@ -115,6 +115,8 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known. `color` marks progress that has stalled or finished without moving the bar |
 | A value to copy | `ArDriveCopyField` | Read-only field with a Copy link; `isSecret` masks it behind a reveal toggle |
 | A text field | `ArDriveTextFieldNew` | |
+| A form field that picks one of a list | `ArDriveSelectField` with `ArDriveChoice`s; in a reactive form, the app's `ReactiveArDriveSelectField` | A text field's look and height, label above. Opens the choices under it, at least as wide, the current one ticked |
+| A button that picks one value from a menu | `ArDriveChoiceMenu` with `ArDriveChoice`s, its button an `ArDriveChoiceButton` | For a button that isn't a field: the rows-per-page picker, the crypto token, the storage unit, the note editor's headings |
 | A menu of actions on a button or row | `ArDriveDropdown` with `ArDriveDropdownItem`s, each an `ArDriveDropdownItemTile` | Opens below its button, or above it in the lower half of the screen |
 | A menu with menus inside it | `ArDriveSubmenu` with `ArDriveSubmenuItem`s | An item with `children` opens its menu beside it. The New menu |
 | A menu of your own widgets, opened from code | `ArDriveMenuAnchor` with an `ArDriveMenuController` | `MenuAnchor`'s shape: `open()`, `close()`, `menuChildren`. The video players' speed menus |
@@ -131,11 +133,15 @@ components above, not Material's `MenuAnchor`, `PopupMenuButton` or
 the page in the browser's accessibility tree, so with it on a click lands on
 the row behind the menu.
 
-Some Material ones remain, to be moved over: the form dropdowns
-(`ReactiveDropdownField` and `DropdownButtonFormField`, in the license forms,
-Create drive and the publish dialog), which need a select field of our own
-first, and the `PopupMenuButton`s in top-up, the crypto token picker and the
-note editor, and the data table's rows-per-page `MenuAnchor`.
+A menu that picks a value uses `ArDriveChoiceItem` rows, which
+`ArDriveChoiceMenu` and `ArDriveSelectField` build for you: 40 high, a 16 px
+slot before the label that holds a tick on the current value, the label in
+`textHigh`, the menu's hover colour on hover or keyboard focus. Opened from
+the keyboard the menu focuses the current value; Up and Down move, Enter
+picks, Escape or Tab closes, and focus goes back to the button.
+
+`test/design_system_guard_test.dart` fails on a Material or reactive_forms
+menu or dropdown anywhere in the app.
 
 The menus open in the navigator's overlay, so their content is built there,
 not under the button:

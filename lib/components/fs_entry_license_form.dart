@@ -1,3 +1,4 @@
+import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
@@ -144,39 +145,21 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                   divider,
                   ReactiveForm(
                     formGroup: context.watch<FsEntryLicenseBloc>().categoryForm,
-                    child: ReactiveDropdownField(
-                      alignment: AlignmentDirectional.centerStart,
-                      isExpanded: true,
+                    child: ReactiveArDriveSelectField<LicenseCategory>(
                       formControlName: 'licenseCategory',
-                      dropdownColor: colorTokens.containerL2,
-                      style: typography.paragraphLarge(
-                        color: colorTokens.textHigh,
-                      ),
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        label: Text(
-                          'License',
-                          // TODO: Localize
-                          // appLocalizationsOf(context).licenseType,
-                          style: typography.paragraphLarge(
-                            color: colorTokens.textLow,
-                          ),
-                        ),
-                        focusedBorder: InputBorder.none,
-                      ),
+                      // TODO: Localize
+                      // appLocalizationsOf(context).licenseType,
+                      label: 'License',
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
-                      items: LicenseCategory.values.map(
-                        (value) {
-                          return DropdownMenuItem(
+                      choices: [
+                        for (final value in LicenseCategory.values)
+                          ArDriveChoice(
                             value: value,
-                            child: Text(
-                              '${licenseCategoryNames[value]}',
-                            ),
-                          );
-                        },
-                      ).toList(),
+                            label: '${licenseCategoryNames[value]}',
+                          ),
+                      ],
                     ),
                   ),
                   divider,

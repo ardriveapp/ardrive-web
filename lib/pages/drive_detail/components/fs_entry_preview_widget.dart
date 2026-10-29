@@ -665,33 +665,26 @@ List<Widget> _speedMenuItems(
   required double current,
   required ValueChanged<double> onSelected,
 }) {
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  final typography = ArDriveTypographyNew.of(context);
-
   return [
-    for (final speed in _speedOptions)
-      // A set width: sized to its label, the menu wrapped "Normal" beside
-      // its tick.
-      SizedBox(
-        width: 168,
-        child: ListTile(
-          tileColor: colorTokens.containerRaised,
-          selectedTileColor: colorTokens.containerRaised,
-          hoverColor: colorTokens.buttonSecondaryHover,
-          selected: speed == current,
-          onTap: () => onSelected(speed),
-          title: Text(
-            _speedLabel(context, speed),
-            style: typography.paragraphNormal(
-              color: colorTokens.textHigh,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-          trailing: speed == current
-              ? ArDriveIcons.checkmark(size: 16, color: colorTokens.iconMid)
-              : null,
+    // A set width: sized to its label, the menu was narrower than its
+    // button row.
+    ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 168),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final speed in _speedOptions)
+              ArDriveChoiceItem(
+                label: _speedLabel(context, speed),
+                selected: speed == current,
+                onPressed: () => onSelected(speed),
+              ),
+          ],
         ),
       ),
+    ),
   ];
 }
 

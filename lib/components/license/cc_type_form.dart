@@ -1,3 +1,4 @@
+import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/forms/cc.dart';
@@ -21,13 +22,6 @@ class _CcTypeFormState extends State<CcTypeForm> {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final inputBorder = OutlineInputBorder(
-      borderSide: BorderSide(
-        color: ArDriveTheme.of(context).themeData.colorTokens.strokeMid,
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(4),
-    );
 
     return ReactiveForm(
       formGroup: widget.formGroup,
@@ -44,37 +38,19 @@ class _CcTypeFormState extends State<CcTypeForm> {
                 Flexible(
                   child: LabeledInput(
                     labelText: 'Type',
-                    child: ReactiveDropdownField<LicenseMeta>(
+                    child: ReactiveArDriveSelectField<LicenseMeta>(
                       formControlName: 'ccTypeField',
-                      hint: Text(
-                        appLocalizationsOf(context).chooseALicenseType,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textMid,
-                        ),
-                      ),
-                      decoration: InputDecoration(
-                        enabledBorder: inputBorder,
-                        focusedBorder: inputBorder,
-                      ),
+                      hintText: appLocalizationsOf(context).chooseALicenseType,
                       onChanged: (e) {
                         setState(() {});
                       },
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
-                      items: ccLicensesEnabled
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(
-                                e.name,
-                                style: typography.paragraphNormal(
-                                  color: colorTokens.textHigh,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
+                      choices: [
+                        for (final e in ccLicensesEnabled)
+                          ArDriveChoice(value: e, label: e.name),
+                      ],
                     ),
                   ),
                 ),

@@ -56,20 +56,31 @@ class PaymentMethodSelector extends StatelessWidget {
                   appLocalizationsOf(context).paymentMethodCrypto,
               icon: Icons.account_balance_wallet,
               trailingIcon: Icons.keyboard_arrow_down,
-              wrap: (context, segment) => PopupMenuButton<CryptoToken>(
-                initialValue: selectedToken,
-                tooltip: appLocalizationsOf(context).paymentMethodCrypto,
+              wrap: (context, segment) => ArDriveChoiceMenu<CryptoToken>(
+                value: selectedToken,
                 // Choosing a token switches to crypto (onTokenSelected
                 // carries both); closing the menu without one leaves the
                 // method as it was.
                 onSelected: onTokenSelected,
-                offset: const Offset(0, 40),
-                constraints: const BoxConstraints(minWidth: 300),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ArDriveRadius.md),
+                matchButtonWidth: true,
+                alignmentOffset: const Offset(0, 4),
+                debugLabel: 'token',
+                choices: [
+                  for (final token
+                      in TokenGroup.allGroups.expand((group) => group.tokens))
+                    ArDriveChoice(
+                      value: token,
+                      label: token.displayName,
+                      icon: _TokenIcon(token: token),
+                    ),
+                ],
+                builder: (context, isOpen, toggle) => ArDriveChoiceButton(
+                  toggle: toggle,
+                  semanticLabel:
+                      appLocalizationsOf(context).paymentMethodCrypto,
+                  semanticValue: selectedToken?.displayName,
+                  builder: (context, hovered, focused) => segment,
                 ),
-                itemBuilder: _buildTokenMenuItems,
-                child: segment,
               ),
             ),
           ],
@@ -77,43 +88,13 @@ class PaymentMethodSelector extends StatelessWidget {
       ],
     );
   }
-
-  List<PopupMenuItem<CryptoToken>> _buildTokenMenuItems(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    final availableTokens =
-        TokenGroup.allGroups.expand((group) => group.tokens).toList();
-
-    return availableTokens.map((token) {
-      return PopupMenuItem<CryptoToken>(
-        value: token,
-        child: Row(
-          children: [
-            _TokenIcon(token: token),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                token.displayName,
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colors.textHigh,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-    }).toList();
-  }
 }
 
 /// Token icon widget
 class _TokenIcon extends StatelessWidget {
   final CryptoToken token;
 
-  static const double _size = 32;
+  static const double _size = 24;
 
   const _TokenIcon({
     required this.token,

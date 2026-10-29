@@ -351,44 +351,60 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final localizations = appLocalizationsOf(context);
 
-    PopupMenuItem<EditorAction> item(EditorAction action, String label) =>
-        PopupMenuItem(
-          value: action,
-          child: Text(
-            label,
-            style: typography.paragraphNormal(color: colorTokens.textHigh),
-          ),
-        );
-
-    return PopupMenuButton<EditorAction>(
-      tooltip: localizations.markdownEditorHeading,
-      color: colorTokens.containerL2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(ArDriveRadius.md),
-        side: BorderSide(color: colorTokens.strokeLow),
-      ),
-      onSelected: (action) => _applyMarkdown(action),
-      itemBuilder: (context) => [
-        item(EditorAction.heading1, localizations.markdownEditorHeading1),
-        item(EditorAction.heading2, localizations.markdownEditorHeading2),
-        item(EditorAction.heading3, localizations.markdownEditorHeading3),
+    return ArDriveChoiceMenu<EditorAction>(
+      // Actions, not a value: no row is ticked.
+      value: null,
+      onSelected: _applyMarkdown,
+      debugLabel: 'heading',
+      choices: [
+        ArDriveChoice(
+          value: EditorAction.heading1,
+          label: localizations.markdownEditorHeading1,
+        ),
+        ArDriveChoice(
+          value: EditorAction.heading2,
+          label: localizations.markdownEditorHeading2,
+        ),
+        ArDriveChoice(
+          value: EditorAction.heading3,
+          label: localizations.markdownEditorHeading3,
+        ),
       ],
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-        child: Padding(
-          padding: const EdgeInsets.only(left: ArDriveSpacing.xs, right: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'H',
-                style: typography.paragraphNormal(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
+      // As the toolbar's other controls are: a tooltip kept out of the
+      // semantics, and their hover tint.
+      builder: (context, isOpen, toggle) => Tooltip(
+        message: localizations.markdownEditorHeading,
+        excludeFromSemantics: true,
+        child: ArDriveChoiceButton(
+          toggle: toggle,
+          semanticLabel: localizations.markdownEditorHeading,
+          builder: (context, hovered, focused) => Container(
+            decoration: BoxDecoration(
+              color:
+                  hovered || focused ? colorTokens.buttonSecondaryHover : null,
+              borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              child: Padding(
+                padding:
+                    const EdgeInsets.only(left: ArDriveSpacing.xs, right: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'H',
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textHigh,
+                        fontWeight: ArFontWeight.bold,
+                      ),
+                    ),
+                    Icon(Icons.arrow_drop_down,
+                        size: 18, color: colorTokens.iconMid),
+                  ],
                 ),
               ),
-              Icon(Icons.arrow_drop_down, size: 18, color: colorTokens.iconMid),
-            ],
+            ),
           ),
         ),
       ),
