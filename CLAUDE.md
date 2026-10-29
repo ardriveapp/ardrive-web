@@ -158,6 +158,11 @@ The `New` suffix is historical: the older components it replaced are deleted.
 spinner or progress bar, outside `ardrive_ui`'s style files, except where its lists give a reason.
 `packages/ardrive_ui/README.md` says which piece to use where, including the three button sizes.
 Don't draw a one-off version of something the design system has; if it falls short, fix it there.
+New menus are `ArDriveDropdown`, `ArDriveSubmenu` or `ArDriveMenuAnchor`, not Material's or
+flutter_portal's (clicks miss them with the accessibility tree on; the README lists the
+Material ones still to move). They build in the
+navigator's overlay, so their content can't read a page's own providers; see the README's
+Menus section.
 
 ### Database (Drift ORM)
 

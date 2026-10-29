@@ -430,7 +430,7 @@ class _SplitButtonState extends State<_SplitButton> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         border: Border.all(color: outline),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

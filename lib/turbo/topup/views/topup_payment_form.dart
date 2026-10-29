@@ -605,7 +605,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   /// neighbours.
   InputBorder _border(Color color) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(ArDriveRadius.control),
       borderSide: BorderSide(color: color, width: 1),
     );
   }

@@ -1728,7 +1728,7 @@ class DetailsPanelToolbarFrame extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
         border: Border.all(
           color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
           width: 1,

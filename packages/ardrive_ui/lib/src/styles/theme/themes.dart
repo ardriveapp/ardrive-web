@@ -127,6 +127,7 @@ class ArDriveThemeData {
         ArDriveTableTheme(
           backgroundColor: const Color(0xff121212),
           cellColor: const Color(0xff191919),
+          hoverItemColor: const Color(0xff222222),
           selectedItemColor: const Color(0xff2C2C2C),
         );
     this.dropdownTheme = dropdownTheme ??
@@ -238,7 +239,10 @@ ArDriveThemeData lightTheme() {
       tableTheme: ArDriveTableTheme(
         backgroundColor: const Color(0xffFBF9FA),
         cellColor: const Color(0xffF1EFF0),
-        selectedItemColor: const Color(0xffF1EFF0),
+        hoverItemColor: const Color(0xffE8E5E7),
+        // One step darker than a row, as dark's is one step lighter, so a
+        // clicked row shows it is selected.
+        selectedItemColor: colorTokens.containerL3,
       ),
       dropdownTheme: ArDriveDropdownTheme(
         backgroundColor: const Color(0xffFBF9FA),
@@ -306,11 +310,16 @@ class ArDriveTableTheme {
   ArDriveTableTheme({
     required this.backgroundColor,
     required this.cellColor,
+    required this.hoverItemColor,
     required this.selectedItemColor,
   });
 
   final Color backgroundColor;
   final Color cellColor;
+
+  /// A row under the pointer: between a row and a selected row, so hover
+  /// never reads as a selection.
+  final Color hoverItemColor;
   final Color selectedItemColor;
 }
 

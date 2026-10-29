@@ -225,7 +225,7 @@ Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               color: colorTokens.containerL1,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(ArDriveRadius.control),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +384,7 @@ Widget _summary(BuildContext context, DriveStateCreationReady state) {
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       color: colorTokens.containerL1,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(ArDriveRadius.control),
     ),
     child: Column(
       mainAxisSize: MainAxisSize.min,

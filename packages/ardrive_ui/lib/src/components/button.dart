@@ -33,7 +33,7 @@ class ArDriveButtonNew extends StatefulWidget {
     this.fontStyle,
     this.size = ArDriveButtonSize.regular,
     this.maxWidth,
-    this.borderRadius = 6,
+    this.borderRadius = ArDriveRadius.control,
     this.icon,
     this.rightIcon,
     this.hoverIcon,

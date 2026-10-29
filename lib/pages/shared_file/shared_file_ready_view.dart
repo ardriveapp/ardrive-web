@@ -1152,13 +1152,13 @@ class _SharedFileVersionRow extends StatelessWidget {
       inMutuallyExclusiveGroup: true,
       child: InkWell(
         onTap: isDisabled || isSelected ? null : onSelected,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
         child: Container(
           constraints: const BoxConstraints(minHeight: _rowHeight),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected ? colors.containerL1 : null,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(ArDriveRadius.control),
           ),
           child: Row(
             children: [
@@ -1410,7 +1410,7 @@ class _SharedFileTab extends StatelessWidget {
       button: true,
       child: InkWell(
         onTap: isSelected ? null : onSelected,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
         child: Container(
           // The same floor the rows use, so a tab is never a smaller target
           // than the list it opens.
@@ -1418,7 +1418,7 @@ class _SharedFileTab extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? colors.containerL1 : null,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(ArDriveRadius.control),
           ),
           child: Text(
             label,
@@ -1480,7 +1480,7 @@ class _SharedFileDrawerState extends State<SharedFileDrawer> {
           expanded: _isExpanded,
           child: InkWell(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(ArDriveRadius.control),
             child: Container(
               constraints: const BoxConstraints(minHeight: _rowHeight),
               alignment: Alignment.centerLeft,

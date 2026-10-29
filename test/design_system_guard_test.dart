@@ -68,8 +68,6 @@ const _spinnerExceptions = {
 const _colourExceptions = {
   'lib/turbo/topup/views/unified/wallet_connection_view.dart':
       'wallet and token brand colours',
-  'lib/turbo/topup/views/crypto_topup/components/wallet_selector_modal.dart':
-      'wallet brand colours',
   'lib/turbo/topup/views/unified/inline_crypto_payment.dart':
       'wallet and token brand colours',
   'lib/turbo/topup/views/unified/crypto_confirmation_view.dart':

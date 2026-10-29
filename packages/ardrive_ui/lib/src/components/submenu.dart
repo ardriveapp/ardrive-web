@@ -203,7 +203,7 @@ class _ArDriveMenuAnchorState extends State<ArDriveMenuAnchor> {
   }
 }
 
-/// The menu itself: Material's menu panel, which MenuAnchor drew.
+/// The menu itself, drawn as every other menu in the app is.
 class _MenuPanel extends StatelessWidget {
   const _MenuPanel({required this.children});
 
@@ -220,21 +220,26 @@ class _MenuPanel extends StatelessWidget {
       vertical: math.max(0, 8 + density.dy),
     );
 
+    final dropdown = ArDriveTheme.of(context).themeData.dropdownTheme;
+
+    // The app's one menu: the card ArDriveDropdown draws, with its corners,
+    // shadow and surface. A Material inside it carries the items' ink.
     return IntrinsicWidth(
-      child: Material(
-        elevation: 3,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-        ),
-        color: theme.colorScheme.surface,
-        shadowColor: theme.colorScheme.shadow,
-        child: Padding(
-          padding: padding,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: children,
+      child: ArDriveCard(
+        borderRadius: ArDriveRadius.md,
+        boxShadow: BoxShadowCard.shadow80,
+        backgroundColor: dropdown.backgroundColor,
+        contentPadding: EdgeInsets.zero,
+        content: Material(
+          type: MaterialType.transparency,
+          child: Padding(
+            padding: padding,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: children,
+              ),
             ),
           ),
         ),

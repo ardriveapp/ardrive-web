@@ -2,7 +2,7 @@ import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/components/network_indicator.dart';
-import 'package:ardrive/turbo/topup/views/crypto_topup/components/wallet_selector_modal.dart';
+import 'package:ardrive/turbo/topup/models/detected_wallet.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

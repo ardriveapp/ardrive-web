@@ -832,7 +832,7 @@ class _SyncSummaryPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: colorTokens.containerL1,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(ArDriveRadius.control),
           border: Border.all(
             color: announcement.isError
                 ? colorTokens.strokeRed

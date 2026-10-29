@@ -87,7 +87,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: colorTokens.containerL1,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
       ),
       child: Row(
         children: [

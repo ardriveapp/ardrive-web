@@ -305,7 +305,7 @@ class _UnitDropdown extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colors.strokeMid),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
         color: colors.inputDefault,
       ),
       child: PopupMenuButton<FileSizeUnit>(

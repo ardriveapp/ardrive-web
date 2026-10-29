@@ -115,8 +115,41 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known. `color` marks progress that has stalled or finished without moving the bar |
 | A value to copy | `ArDriveCopyField` | Read-only field with a Copy link; `isSecret` masks it behind a reveal toggle |
 | A text field | `ArDriveTextFieldNew` | |
+| A menu of actions on a button or row | `ArDriveDropdown` with `ArDriveDropdownItem`s, each an `ArDriveDropdownItemTile` | Opens below its button, or above it in the lower half of the screen |
+| A menu with menus inside it | `ArDriveSubmenu` with `ArDriveSubmenuItem`s | An item with `children` opens its menu beside it. The New menu |
+| A menu of your own widgets, opened from code | `ArDriveMenuAnchor` with an `ArDriveMenuController` | `MenuAnchor`'s shape: `open()`, `close()`, `menuChildren`. The video players' speed menus |
+| Anything else that floats over the page from a button | `ArDriveOverlay` | `anchor` places it; `closeOnBarrierTap` and `closeOnEscape` |
 | Pick one of a few | `ArDriveSegmentedControl` with `ArDriveSegment`s | 40 high; the chosen segment is filled. `expand` shares the width equally (a row of amounts); otherwise it hugs its labels (a two-way switch). `wrap` puts a segment in a menu that opens from it |
 | Content on a surface that is dark in both themes, such as a video | `ArDriveOnDark` | Its child takes the dark theme's tokens, so text, spinners and buttons need no literal colours |
+
+### Menus
+
+Every menu looks the same: the dropdown card, with `ArDriveRadius.md` corners,
+the standard shadow and the dropdown surface. Build new menus from the
+components above, not Material's `MenuAnchor`, `PopupMenuButton` or
+`DropdownButton`, or flutter_portal's `PortalTarget`: their items sit under
+the page in the browser's accessibility tree, so with it on a click lands on
+the row behind the menu.
+
+Some Material ones remain, to be moved over: the form dropdowns
+(`ReactiveDropdownField` and `DropdownButtonFormField`, in the license forms,
+Create drive and the publish dialog), which need a select field of our own
+first, and the `PopupMenuButton`s in top-up, the crypto token picker and the
+note editor, and the data table's rows-per-page `MenuAnchor`.
+
+The menus open in the navigator's overlay, so their content is built there,
+not under the button:
+
+- It can read what is provided above the navigator, which is everything the
+  app provides in `main.dart` and around the navigator in the router, but not
+  a page's own providers. Read those in the page and pass values or callbacks
+  in.
+- It takes the button's text style and themes with it, over a transparent
+  `Material`.
+- It shows and hides on the frame after it is asked to. A widget test that
+  checks on the exact frame pumps once more.
+- While a dialog covers its page it goes offstage, and it comes back as it was
+  when the dialog closes.
 
 ### Button sizes
 
