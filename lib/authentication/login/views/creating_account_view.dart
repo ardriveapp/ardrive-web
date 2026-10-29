@@ -1,5 +1,5 @@
 import 'package:ardrive/authentication/components/login_card.dart';
-import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -21,11 +21,12 @@ class CreatingAccountView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ArDriveImage(
-              image: AssetImage(Resources.images.brand.logo1),
-              height: 50,
+            // The plate stack: ArDrive's own "working" mark.
+            Semantics(
+              label: s.creatingAccountTitle,
+              child: const Center(child: SyncLoadingIndicator(size: 96)),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text(
               s.creatingAccountTitle,
               textAlign: TextAlign.center,
@@ -40,8 +41,6 @@ class CreatingAccountView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: type.paragraphNormal(color: colors.textMid),
             ),
-            const SizedBox(height: 24),
-            ArDriveLinearProgress(semanticsLabel: s.creatingAccountTitle),
             const SizedBox(height: 24),
             Text(
               s.creatingAccountKeepOpen,

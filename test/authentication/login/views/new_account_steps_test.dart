@@ -1,7 +1,9 @@
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/creating_account_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/recovery_phrase_view.dart';
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -73,6 +75,15 @@ void main() {
     await tester.enterText(fields.at(1), password);
     await tester.pump();
   }
+
+  testWidgets('creating an account shows the ArDrive plate stack',
+      (tester) async {
+    await pump(tester, const CreatingAccountView());
+
+    expect(find.text('Creating your account'), findsOneWidget);
+    expect(find.byType(SyncLoadingIndicator), findsOneWidget);
+    expect(find.byType(ArDriveLinearProgress), findsNothing);
+  });
 
   group('choose a password, new account', () {
     Widget dialog({bool isNewUser = true}) => SecureYourWalletWidget(
