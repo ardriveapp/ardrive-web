@@ -68,7 +68,7 @@ class _Frame extends StatelessWidget {
         case PublicationFailed(failure: PublicationFailure.snapshotRejected)) {
       return Title(
         title: 'ArDrive',
-        color: const Color(0xFF000000),
+        color: colors.containerL0,
         child: _column(context, null, typography, colors),
       );
     }

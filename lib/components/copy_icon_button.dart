@@ -22,7 +22,7 @@ class CopyIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArDriveIconButton(
       icon: ArDriveIcons.copy(
-        color: Colors.black54,
+        color: ArDriveTheme.of(context).themeData.colorTokens.iconMid,
         size: size,
       ),
       tooltip: tooltip ?? appLocalizationsOf(context).copyTooltip,
