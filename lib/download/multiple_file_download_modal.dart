@@ -214,7 +214,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               width: 408,
               title: appLocalizationsOf(context)
                   .multiDownloadDownloadingFilesProgress(
-                      state.currentFileIndex + 1, state.files.length),
+                      state.currentFileNumber, state.fileCount),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

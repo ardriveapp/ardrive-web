@@ -38,6 +38,7 @@ void main() {
     FocusNode? focusable,
     List<_Row> shown = rows,
     _Row? selectedRow,
+    bool namesInTooltips = false,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -62,7 +63,16 @@ void main() {
                     rows: shown,
                     selectedRow: selectedRow,
                     rowsPerPageText: 'Rows per page',
-                    buildRow: (row) => TableRowWidget([Text(row.name)]),
+                    // The explorer's rows show a long name whole in a
+                    // tooltip (drive_explorer_item_tile.dart).
+                    buildRow: (row) => TableRowWidget([
+                      namesInTooltips
+                          ? ArDriveTooltip(
+                              message: row.name,
+                              child: Text(row.name),
+                            )
+                          : Text(row.name),
+                    ]),
                     onRowTap: (row) => selected.add(row.name),
                     onRowOpen: opens ? (row) => opened.add(row.name) : null,
                     clickOpens: clickOpens,
@@ -289,8 +299,13 @@ void main() {
   /// on a page a click opens what it lands on.
   group('when a click opens', () {
     Future<void> pumpPage(WidgetTester tester,
-        {List<_Row> shown = rows}) async {
-      await pumpTable(tester, clickOpens: true, shown: shown);
+        {List<_Row> shown = rows, bool namesInTooltips = false}) async {
+      await pumpTable(
+        tester,
+        clickOpens: true,
+        shown: shown,
+        namesInTooltips: namesInTooltips,
+      );
       // A table just built ignores a click for a double-click's length.
       await waitOutDoubleClick(tester);
     }
@@ -360,6 +375,40 @@ void main() {
       await click(tester, pointer, 'Receipts');
 
       expect(opened, ['Holidays', 'Receipts']);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    // A row's name tooltip is drawn over the top of the row below it. A mouse
+    // coming down the list, from the search box above it, went over it and
+    // the click on the row below landed on the tooltip: the first click did
+    // nothing and the second opened the row (issue #2367).
+    testWidgets('a click opens the row under the tooltip of the row above',
+        (tester) async {
+      await pumpPage(tester, namesInTooltips: true);
+      final pointer = await mouse(tester);
+
+      await pointer.moveTo(tester.getCenter(find.text('Holidays')));
+      await tester.pumpAndSettle();
+      final tooltip = tester.getRect(find
+          .ancestor(
+            of: find.text('Holidays').last,
+            matching: find.byType(DecoratedBox),
+          )
+          .first);
+      // Where the tooltip covers the next row's name.
+      final overlap = tooltip.intersect(tester.getRect(find.text('Receipts')));
+      expect(overlap.isEmpty, isFalse,
+          reason: 'the tooltip lies over the next row');
+      final under = overlap.center;
+
+      await pointer.moveTo(under);
+      await tester.pump();
+      await pointer.down(under);
+      await pointer.up();
+      await tester.pump();
+
+      expect(opened, ['Receipts']);
 
       await waitOutDoubleClick(tester);
     });

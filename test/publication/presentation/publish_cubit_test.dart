@@ -388,6 +388,64 @@ void main() {
     expect(c.state.blocked, PublishBlock.pendingUploads);
   });
 
+  // The dialog said "some uploads" and named nothing (issue #2366): it counts
+  // what waits, each item once, the same items that block it.
+  test('unconfirmed changes block, counted once per item', () async {
+    Future<void> pendingTx(String id) => db
+        .into(db.networkTransactions)
+        .insertOnConflictUpdate(NetworkTransactionsCompanion.insert(
+            id: id, status: const Value(TransactionStatus.pending)));
+
+    // Two new uploads: metadata and data both pending, one item each.
+    for (final id in ['p1', 'p2']) {
+      await insertPublicationFile(db,
+          driveId: _drive,
+          id: id,
+          name: '$id.txt',
+          parentFolderId: _root,
+          status: TransactionStatus.pending);
+    }
+    // A folder renamed, moved back and hidden: three pending changes, one
+    // item.
+    for (final (i, tx) in ['renameTx', 'moveTx', 'hideTx'].indexed) {
+      await pendingTx(tx);
+      await db.into(db.folderRevisions).insert(FolderRevisionsCompanion.insert(
+            folderId: _folder,
+            driveId: _drive,
+            name: 'Projects',
+            parentFolderId: const Value(_root),
+            metadataTxId: tx,
+            dateCreated: Value(DateTime.utc(2026, 10, 27, 18, i)),
+            action: RevisionAction.rename,
+          ));
+    }
+    // An upload into a hidden folder still blocks: a new snapshot would
+    // refuse its metadata.
+    await insertPublicationFile(db,
+        driveId: _drive,
+        id: 'h',
+        name: 'h.txt',
+        parentFolderId: _hiddenFolder,
+        status: TransactionStatus.pending);
+    // Data still on its way after its metadata was confirmed.
+    await insertPublicationFile(db,
+        driveId: _drive, id: 'd', name: 'd.txt', parentFolderId: _root);
+    await pendingTx('dData');
+
+    final c = cubit();
+    await c.load();
+    expect(c.state.blocked, PublishBlock.pendingUploads);
+    expect(c.state.pendingChanges, 5,
+        reason: 'p1, p2, the folder, h and d; not a or b');
+  });
+
+  test('nothing pending, nothing counted', () async {
+    final c = cubit();
+    await c.load();
+    expect(c.state.blocked, isNull);
+    expect(c.state.pendingChanges, 0);
+  });
+
   test('the dialog opens on what is included, titled with the name', () async {
     final c = cubit();
     await c.load();

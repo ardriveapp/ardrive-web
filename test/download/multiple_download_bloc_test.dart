@@ -5,7 +5,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
-import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -306,6 +306,92 @@ void main() async {
           build: () => multipleDownloadBloc,
           act: (bloc) => bloc.add(const ConfirmDownload()),
           expect: () => const <MultipleDownloadState>[],
+        );
+      });
+
+      group('Test counting a drive with folders', () {
+        final date = DateTime(2026);
+        FolderEntry folder(String id, String name) => FolderEntry(
+              id: id,
+              dateCreated: date,
+              driveId: 'driveId',
+              isGhost: false,
+              parentFolderId: id == 'rootFolderId' ? null : 'rootFolderId',
+              name: name,
+              lastUpdated: date,
+              isHidden: false,
+              path: '',
+            );
+        FileEntry file(String id) => FileEntry(
+              id: id,
+              dataTxId: 'tx-$id',
+              dateCreated: date,
+              size: 10,
+              name: id,
+              parentFolderId: 'rootFolderId',
+              lastUpdated: date,
+              lastModifiedDate: date,
+              driveId: 'driveId',
+              isHidden: false,
+              path: '',
+            );
+        Map<String, FileEntry> files(List<String> ids) =>
+            {for (final id in ids) id: file(id)};
+
+        // Three files in two subfolders plus two in the root: four folder
+        // entries go into the zip alongside the five files.
+        final tree = FolderNode(
+          folder: folder('rootFolderId', 'Drive'),
+          subfolders: [
+            FolderNode(
+              folder: folder('a', 'a'),
+              subfolders: [
+                FolderNode(
+                  folder: folder('a1', 'a1'),
+                  subfolders: [],
+                  files: files(['3.txt']),
+                ),
+              ],
+              files: files(['1.txt', '2.txt']),
+            ),
+            FolderNode(folder: folder('b', 'b'), subfolders: [], files: {}),
+          ],
+          files: files(['4.txt', '5.txt']),
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'counts the same files while downloading as it asked about',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+            when(() => mockDriveDao.getFolderTree('driveId', 'rootFolderId'))
+                .thenAnswer((_) async => tree);
+          },
+          act: (bloc) async {
+            bloc.add(StartDownload(
+              [createMockDriveDataItem()],
+              zipName: 'Drive',
+              confirmFirst: true,
+            ));
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(const ConfirmDownload());
+          },
+          expect: () => [
+            isA<MultipleDownloadReady>()
+                .having((s) => s.fileCount, 'fileCount', 5),
+            for (var i = 0; i < 9; i++)
+              isA<MultipleDownloadInProgress>()
+                  .having((s) => s.files.length, 'files.length', 9)
+                  .having((s) => s.fileCount, 'fileCount', 5)
+                  .having(
+                    (s) => s.currentFileNumber,
+                    'currentFileNumber',
+                    // Root, a, a1 (folders), then 3.txt, 1.txt, 2.txt, b
+                    // (a folder), then 4.txt and 5.txt.
+                    const [1, 1, 1, 1, 2, 3, 4, 4, 5][i],
+                  ),
+            isA<MultipleDownloadFinishedWithSuccess>(),
+          ],
         );
       });
 

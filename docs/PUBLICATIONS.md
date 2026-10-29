@@ -407,9 +407,12 @@ the same drive or folder):
   snapshot dialog's own sync check and sentence). This one also offers
   **Sync drive**, which waits for a running sync, syncs the drive if it still
   can't be confirmed complete ("Syncing this drive..."), and checks again;
-- any upload in the drive is unconfirmed: "Some uploads in this drive aren't
-  confirmed yet. Publish once they are; it usually takes a few minutes." (a
-  new snapshot would refuse them);
+- any change in the drive (an upload, a rename, a hide) is unconfirmed: "3
+  recent changes to this drive aren't confirmed on Arweave yet. You can
+  publish once they are, usually within an hour." The count is of items, each
+  once. A change stays unconfirmed until 15 confirmations
+  (`kRequiredTxConfirmationCount`), about half an hour after it is mined, and
+  a new snapshot would refuse it;
 - the folder is hidden, or inside a hidden folder;
 - nothing visible is in it: "There's nothing to publish here yet: no files
   visitors could see.";

@@ -87,6 +87,8 @@ const _colourExceptions = {
       'the sign-in illustration\'s texture',
   'lib/authentication/components/dot_pattern_painter.dart':
       'the sign-in illustration\'s texture',
+  'lib/authentication/login/views/tiles/tiles_view.dart':
+      'the sign-in bento\'s illustration: its peach, deep red and photo scrim',
 };
 
 /// Each Dart source under lib/ and ardrive_ui's lib/, with comments taken
