@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
@@ -243,8 +244,7 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
       storage.startsWith('~') ? storage : '~$storage';
 
   String _truncateTxId(String txId) {
-    if (txId.length < 20) return txId;
-    return '${txId.substring(0, 8)}...${txId.substring(txId.length - 8)}';
+    return shortenId(txId);
   }
 }
 
@@ -433,7 +433,5 @@ class _ChargeNotice extends StatelessWidget {
     );
   }
 
-  static String _short(String txId) => txId.length < 20
-      ? txId
-      : '${txId.substring(0, 8)}...${txId.substring(txId.length - 8)}';
+  static String _short(String txId) => shortenId(txId);
 }

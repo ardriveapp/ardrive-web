@@ -46,6 +46,16 @@ void main() {
     );
   });
 
+  test('IDs and addresses are shortened by shortenId alone', () {
+    expect(
+      _violations(sources, _rawShortening, _shorteningExceptions),
+      isEmpty,
+      reason: 'Use shortenId (lib/utils/truncate_string.dart), so one ID or '
+          'address reads the same everywhere, or add the file to '
+          '_shorteningExceptions with a reason.',
+    );
+  });
+
   test('every exception still needs to be one', () {
     final stale = <String>[
       for (final path in _spinnerExceptions.keys)
@@ -54,6 +64,8 @@ void main() {
         if (!_matches(sources[path], _rawColour)) path,
       for (final path in _menuExceptions.keys)
         if (!_matches(sources[path], _rawMenu)) path,
+      for (final path in _shorteningExceptions.keys)
+        if (!_matches(sources[path], _rawShortening)) path,
     ];
     expect(stale, isEmpty, reason: 'Remove these from the exception lists.');
   });
@@ -76,6 +88,11 @@ final _rawMenu = RegExp(
   // Material's showMenu() call, not the showMenu string for a menu button.
   r'|(?<![.\w])showMenu\s*[<(]',
 );
+
+/// A string cut to its ends by hand: `x.substring(0, 6)}...` or
+/// `truncateString(`, the shape of a shortened ID or address.
+final _rawShortening =
+    RegExp(r'substring\(0, ?\d+\)\}\.\.\.|\btruncateString\(');
 
 /// Where colours are defined: the tokens and the palettes they're built on.
 const _styleDir = 'packages/ardrive_ui/lib/src/styles/';
@@ -110,6 +127,16 @@ const _colourExceptions = {
 };
 
 const _menuExceptions = <String, String>{};
+
+const _shorteningExceptions = {
+  'lib/utils/truncate_string.dart': 'shortenId and the helper under it',
+  'lib/web_pages/domain/web_page.dart': 'a URL path, not an ID',
+  'lib/sync/domain/repositories/sync_repository.dart':
+      'an error message cut short for the log',
+  'lib/services/solana/implementations/solana_provider_web.dart': 'a log line',
+  'lib/components/truncated_address_new.dart':
+      'dead, nothing builds it; goes with the audit\'s dead code',
+};
 
 /// Each Dart source under lib/ and ardrive_ui's lib/, with comments taken
 /// out, keyed by its path from the app root. Generated code is left out.

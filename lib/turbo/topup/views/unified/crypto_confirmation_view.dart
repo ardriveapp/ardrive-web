@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/quote_timer.dart';
@@ -361,7 +362,7 @@ class _PayingWithSection extends StatelessWidget {
 
   String _truncateAddress(String address) {
     if (address.length <= 12) return address;
-    return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
+    return shortenId(address);
   }
 }
 

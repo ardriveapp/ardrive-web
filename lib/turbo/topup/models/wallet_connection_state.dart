@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:equatable/equatable.dart';
 
@@ -102,11 +103,8 @@ class EthereumWalletState extends Equatable {
     this.hasAOSignature = false,
   });
 
-  /// Truncated address for display (0x1234...5678)
-  String get truncatedAddress {
-    if (address.length < 10) return address;
-    return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
-  }
+  /// The address in the app's one short form (0x1234...5678).
+  String get truncatedAddress => shortenId(address);
 
   /// Display name with provider
   String get displayWithProvider =>
@@ -159,11 +157,8 @@ class SolanaWalletState extends Equatable {
     this.balance,
   });
 
-  /// Truncated address for display
-  String get truncatedAddress {
-    if (address.length < 10) return address;
-    return '${address.substring(0, 4)}...${address.substring(address.length - 4)}';
-  }
+  /// The address in the app's one short form.
+  String get truncatedAddress => shortenId(address);
 
   /// Display name with provider
   String get displayWithProvider =>

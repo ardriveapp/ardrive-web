@@ -409,11 +409,8 @@ String arnsPointsToLabel(
     ArNSPointsToKind.file => strings.arnsPointsToItem(name),
     ArNSPointsToKind.olderVersion => strings.arnsPointsToOlderVersion(name),
     ArNSPointsToKind.publication => strings.arnsPointsToPublication,
-    ArNSPointsToKind.elsewhere => strings.arnsPointsToItem(
-        record.transactionId.length > 16
-            ? truncateString(record.transactionId, offsetStart: 6, offsetEnd: 6)
-            : record.transactionId,
-      ),
+    ArNSPointsToKind.elsewhere =>
+      strings.arnsPointsToItem(shortenId(record.transactionId)),
   };
 }
 
@@ -448,7 +445,7 @@ class ArNSPointsTo extends StatelessWidget {
           child: ArDriveTooltip(
             message: id,
             child: Text(
-              truncateString(id, offsetStart: 6, offsetEnd: 6),
+              shortenId(id),
               overflow: TextOverflow.ellipsis,
               style: typography.paragraphSmall(color: colors.textMid),
             ),

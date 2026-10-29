@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -269,9 +270,7 @@ class _DriveInfoRow extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final owner = entity.ownerAddress;
-    final truncatedOwner = owner.length > 12
-        ? '${owner.substring(0, 6)}...${owner.substring(owner.length - 4)}'
-        : owner;
+    final truncatedOwner = shortenId(owner);
     final dateStr = formatDate(entity.createdAt);
     final privacy = entity.privacy == 'private' ? 'Private' : 'Public';
 
