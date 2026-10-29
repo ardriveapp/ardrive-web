@@ -363,7 +363,6 @@ Future<void> _loadFonts() async {
     'Wavehaus-66Book.otf',
     'Wavehaus-95SemiBold.otf',
     'Wavehaus-128Bold.otf',
-    'Wavehaus-158ExtraBold.otf',
   ]) {
     wavehaus.addFont(_read('$dir/$f'));
   }

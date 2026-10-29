@@ -50,7 +50,8 @@ abstract class ArdriveTypographyNew {
   TextStyle paragraphSmall({Color? color, ArFontWeight? fontWeight});
   TextStyle caption({Color? color, ArFontWeight? fontWeight});
 
-  /// Roboto Mono, for code, text-file previews and the note editor only.
+  /// Roboto Mono: code, text-file previews and the note editor, and every
+  /// ID, wallet address and key (README, "Monospace").
   /// Starts loading the face the first time it is asked for; see
   /// [ArDriveMonospace]. [fontSize] defaults to a step under paragraphNormal,
   /// where monospace reads the same size.

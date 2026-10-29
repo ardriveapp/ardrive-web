@@ -43,10 +43,13 @@ flutter:
     - family: ArDriveIcons
       fonts:
         - asset: assets/fonts/ArDriveIcons.ttf
+    # The weights the files declare (CanvasKit reads them from the files and
+    # ignores these): Light is 400, so the theme sets Book wherever Material
+    # would default to 400 (`themes.dart`). Thin and ExtraBold are not
+    # bundled: the app never uses them, and Flutter web downloads every
+    # listed face before the first frame.
     - family: Wavehaus
       fonts:
-        - asset: assets/fonts/Wavehaus-28Thin.otf
-          weight: 300
         - asset: assets/fonts/Wavehaus-42Light.otf
           weight: 400
         - asset: assets/fonts/Wavehaus-66Book.otf
@@ -55,5 +58,3 @@ flutter:
           weight: 600
         - asset: assets/fonts/Wavehaus-128Bold.otf
           weight: 700
-        - asset: assets/fonts/Wavehaus-158ExtraBold.otf
-          weight: 800

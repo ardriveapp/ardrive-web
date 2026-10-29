@@ -418,10 +418,18 @@ class _ChargeNotice extends StatelessWidget {
 
     // A transaction reached the network and failed there.
     if (txId != null && txId.isNotEmpty) {
+      final message = 'The payment was not completed. Your wallet may have '
+          'paid a network fee for transaction ${_short(txId)}.';
       return ArDriveNotice(
         type: ArDriveNoticeType.warning,
-        message: 'The payment was not completed. Your wallet may have paid a '
-            'network fee for transaction ${_short(txId)}.',
+        content: Text.rich(TextSpan(
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh),
+          children: ArDriveIdText.spansIn(message, _short(txId),
+              idStyle: ArDriveTypographyNew.of(context).code(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textHigh)),
+        )),
       );
     }
 

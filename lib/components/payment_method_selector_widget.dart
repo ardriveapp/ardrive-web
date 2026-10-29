@@ -352,12 +352,18 @@ class _SourceWalletCreditsNoticeState extends State<SourceWalletCreditsNotice> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          '${convertWinstonToLiteralString(widget.credits.balance)} credits are on your $chain '
-          'wallet ${shortenId(widget.credits.sourceAddress)}.',
-          style: typography.paragraphNormal(
-            color: colorTokens.textHigh,
-            fontWeight: ArFontWeight.semiBold,
+        Text.rich(
+          TextSpan(
+            style: typography.paragraphNormal(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+            children: ArDriveIdText.spansIn(
+              '${convertWinstonToLiteralString(widget.credits.balance)} credits are on your $chain '
+              'wallet ${shortenId(widget.credits.sourceAddress)}.',
+              shortenId(widget.credits.sourceAddress),
+              idStyle: typography.code(color: colorTokens.textHigh),
+            ),
           ),
         ),
         const SizedBox(height: 2),
@@ -376,7 +382,8 @@ class _SourceWalletCreditsNoticeState extends State<SourceWalletCreditsNotice> {
           Row(
             children: [
               Flexible(
-                child: Text(widget.credits.arweaveAddress, style: muted),
+                child: Text(widget.credits.arweaveAddress,
+                    style: typography.code(color: colorTokens.textMid)),
               ),
               CopyButton(text: widget.credits.arweaveAddress, size: 16),
             ],

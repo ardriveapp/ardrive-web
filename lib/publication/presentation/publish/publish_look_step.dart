@@ -676,21 +676,19 @@ class _HeaderPreview extends StatelessWidget {
                             fontWeight: ArFontWeight.bold),
                       ),
                       const SizedBox(height: 2),
-                      // A name in the body face; with no name, the address
+                      // A name in the body face and the address beside it
                       // in monospace, as on the published page.
                       Text.rich(
                         TextSpan(
                           style: bylineStyle,
-                          children: hasName
-                              ? [TextSpan(text: byline)]
-                              : ArDriveIdText.spansIn(
-                                  byline,
-                                  owner,
-                                  idStyle: typography.code(
-                                    color: colors.textMid,
-                                    fontSize: 11,
-                                  ),
-                                ),
+                          children: ArDriveIdText.spansIn(
+                            byline,
+                            address,
+                            idStyle: typography.code(
+                              color: colors.textMid,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
                       ),
                       if (state.description.trim().isNotEmpty) ...[

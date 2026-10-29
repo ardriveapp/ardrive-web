@@ -86,7 +86,7 @@ void main() {
         .where((file) => file.path.contains('Wavehaus'))
         .toList();
 
-    expect(faces, hasLength(6), reason: 'the six Wavehaus weights');
+    expect(faces, hasLength(4), reason: 'the four Wavehaus weights bundled');
 
     drawableInEveryWeight =
         faces.map(coveredCharacters).reduce((a, b) => a.intersection(b));

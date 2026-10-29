@@ -186,6 +186,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
                 ArDriveTextFieldNew(
                   isEnabled: state is! PinFileNetworkCheckRunning,
                   label: appLocalizationsOf(context).enterTxIdOrFileId,
+                  textStyle: ArDriveTypographyNew.of(context).code(),
                   isFieldRequired: true,
                   errorMessage: idValidationError,
                   showErrorMessage: idValidationError != null,

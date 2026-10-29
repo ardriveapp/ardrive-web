@@ -894,8 +894,15 @@ class _Failed extends StatelessWidget {
             style: typography.paragraphNormal(color: colors.textHigh)),
         if (state.paidTxId != null) ...[
           const SizedBox(height: 12),
-          Text(strings.publishPaidNote(state.paidTxId!),
-              style: typography.paragraphSmall(color: colors.textMid)),
+          Text.rich(TextSpan(
+            style: typography.paragraphSmall(color: colors.textMid),
+            children: ArDriveIdText.spansIn(
+              // Whole: the owner may need it to look the payment up.
+              strings.publishPaidNote(state.paidTxId!),
+              state.paidTxId!,
+              idStyle: typography.code(color: colors.textMid, fontSize: 11),
+            ),
+          )),
         ],
       ],
     );
