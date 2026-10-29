@@ -4305,6 +4305,10 @@
   "@firstDriveFreeNote": {
     "description": "Note under a new user's empty first drive"
   },
+  "newPasswordBreached": "This password has shown up in a data breach. Choose another.",
+  "@newPasswordBreached": {
+    "description": "Under a new account's password when Have I Been Pwned lists it"
+  },
   "newPasswordRetry": "We couldn't finish setting up your account. Check your connection, then try again.",
   "@newPasswordRetry": {
     "description": "On the new account password step after the last try failed, usually a network problem. The account key is kept"

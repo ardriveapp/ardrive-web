@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
@@ -96,6 +97,7 @@ late final LocalKeyValueStore localKeyValueStore;
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    registerWordlistLicense();
 
     // Before anything can read a route. Hash routing (the default) leaves the
     // engine's own strategy in place, so this is a no-op today - see
