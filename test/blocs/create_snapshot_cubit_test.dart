@@ -370,6 +370,43 @@ void main() {
       );
 
       blocTest(
+        'after a top-up, credits still do not pay for it at 0 without a price',
+        setUp: () {
+          when(() => paymentService.getPriceForBytes(
+                  byteSize: any(named: 'byteSize')))
+              .thenThrow(Exception('Turbo price blocked'));
+          when(() => appConfig.allowedDataItemSizeForTurbo)
+              .thenAnswer((invocation) => 0);
+        },
+        build: () => CreateSnapshotCubit(
+          arweave: arweave,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          tabVisibility: tabVisibility,
+          pst: pst,
+          auth: auth,
+          configService: configService,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
+        ),
+        act: (cubit) async {
+          await cubit.confirmDriveAndHeighRange(
+            driveId,
+            range: Range(start: 0, end: 1),
+          );
+          cubit.setUploadMethod(UploadMethod.turbo);
+          await cubit.refreshTurboBalance();
+        },
+        wait: const Duration(seconds: 3),
+        verify: (cubit) {
+          final state = cubit.state as ConfirmingSnapshotCreation;
+          expect(state.sufficientBalanceToPayWithTurbo, isFalse);
+          expect(state.isButtonToUploadEnabled, isFalse);
+        },
+      );
+
+      blocTest(
         'emits failure when network error',
         build: () => CreateSnapshotCubit(
           arweave: arweave,
