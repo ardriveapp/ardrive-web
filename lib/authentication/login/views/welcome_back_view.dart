@@ -1,3 +1,6 @@
+import 'package:ardrive/utils/truncate_string.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/components/login_card.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -36,6 +39,24 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
 
   /// The last try was the wrong password, and nothing has been typed since.
   bool _wrong = false;
+
+  /// The account on this device, once read from it.
+  String? _address;
+  bool _addressAsked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_addressAsked) return;
+    _addressAsked = true;
+    // Taken now: the panel can be gone by the time the address arrives.
+    final profileName = context.read<ProfileNameBloc>();
+    context.read<ArDriveAuth>().getWalletAddress().then((address) {
+      if (address == null || address.isEmpty) return;
+      profileName.add(LoadProfileNameBeforeLogin(address));
+      if (mounted) setState(() => _address = address);
+    }).catchError((Object _) {});
+  }
 
   @override
   void initState() {
@@ -97,6 +118,10 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
                   ),
                 ),
                 const SizedBox(height: ArDriveSpacing.xs),
+                if (_address != null) ...[
+                  _Account(address: _address!),
+                  const SizedBox(height: ArDriveSpacing.xs),
+                ],
                 Text(
                   s.welcomeBackBody,
                   textAlign: TextAlign.center,
@@ -190,6 +215,47 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// The account the password unlocks: its ArNS name once loaded, and its
+/// short address.
+class _Account extends StatelessWidget {
+  const _Account({required this.address});
+
+  final String address;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    return BlocBuilder<ProfileNameBloc, ProfileNameState>(
+      builder: (context, state) {
+        final name =
+            state is ProfileNameLoaded && state.walletAddress == address
+                ? state.primaryNameDetails.primaryName
+                : null;
+        return Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: ArDriveSpacing.xs,
+          children: [
+            if (name != null)
+              Text(
+                name,
+                style: type.paragraphNormal(
+                  color: colors.textMid,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+            ArDriveIdText(
+              shortenId(address),
+              style: type.code(color: colors.textLow),
+            ),
+          ],
+        );
+      },
     );
   }
 }

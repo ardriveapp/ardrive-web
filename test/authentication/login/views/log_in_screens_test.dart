@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/authentication/login/views/enter_recovery_phrase_view.dart';
@@ -15,6 +16,7 @@ import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +48,7 @@ void main() {
   late _MockProfileNameBloc profileNameBloc;
   late MockBiometricAuthentication biometrics;
   late _MockUserPreferencesRepository userPreferences;
+  late MockArDriveAuth auth;
 
   setUpAll(() async {
     registerFallbackValue(const CleanProfileName());
@@ -58,6 +61,8 @@ void main() {
     profileNameBloc = _MockProfileNameBloc();
     biometrics = MockBiometricAuthentication();
     userPreferences = _MockUserPreferencesRepository();
+    auth = MockArDriveAuth();
+    when(() => auth.getWalletAddress()).thenAnswer((_) async => null);
     when(() => userPreferences.watch())
         .thenAnswer((_) => const Stream<UserPreferences>.empty());
     when(() => userPreferences.currentPreferences).thenReturn(null);
@@ -83,6 +88,7 @@ void main() {
           BlocProvider<LoginBloc>.value(value: loginBloc),
           BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
           RepositoryProvider<BiometricAuthentication>.value(value: biometrics),
+          RepositoryProvider<ArDriveAuth>.value(value: auth),
           RepositoryProvider<UserPreferencesRepository>.value(
               value: userPreferences),
           ChangeNotifierProvider<ActivityTracker>(
@@ -278,7 +284,8 @@ void main() {
       await enter(tester, '');
       expect(find.text('Enter your 12 words.'), findsOneWidget);
       await enter(tester, 'abandon abandon abandon');
-      expect(find.text('Enter every word of your recovery phrase.'), findsOneWidget);
+      expect(find.text('Enter every word of your recovery phrase.'),
+          findsOneWidget);
       await enter(tester, List.filled(12, 'abandon').join(' '));
       expect(find.text("That isn't a recovery phrase. Check each word."),
           findsOneWidget);
@@ -461,6 +468,32 @@ void main() {
       expect(disabled(), isFalse);
       await tester.tap(find.byKey(const Key('welcomeBackLogIn')));
       expect(added().single, const UnlockUserWithPassword(password: 'secret'));
+    });
+
+    const address = 'iKryOeZQMONi2965nKz528htMMN_sB0123456789oRjA';
+
+    testWidgets('says which account it unlocks', (tester) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+      expect(find.text('iKryOe...oRjA'), findsOneWidget);
+      verify(() =>
+              profileNameBloc.add(const LoadProfileNameBeforeLogin(address)))
+          .called(1);
+    });
+
+    testWidgets('and its ArNS name, once loaded', (tester) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      whenListen(
+        profileNameBloc,
+        const Stream<ProfileNameState>.empty(),
+        initialState: const ProfileNameLoaded(
+            PrimaryNameDetails(primaryName: 'arie'), address),
+      );
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+      expect(find.text('arie'), findsOneWidget);
+      expect(find.text('iKryOe...oRjA'), findsOneWidget);
     });
 
     testWidgets('says the password is being checked, then that it was wrong',
