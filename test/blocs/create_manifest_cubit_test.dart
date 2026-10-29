@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -131,5 +132,54 @@ void main() {
 
   test('opens at the root for a folder that is not in the drive', () async {
     expect(await openedFolder(initialFolderId: 'elsewhere'), rootId);
+  });
+
+  group('the wallet check before uploading', () {
+    late MockProfileCubit profile;
+
+    Future<CreateManifestCubit> loaded() async {
+      profile = MockProfileCubit();
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: MockArDriveAuth(),
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      // Only what uploading does counts.
+      clearInteractions(manifestRepository);
+      return cubit;
+    }
+
+    test('on another wallet, says so and uploads nothing', () async {
+      final cubit = await loaded();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) async => true);
+
+      await cubit.uploadManifest();
+
+      expect(cubit.state, isA<CreateManifestWalletMismatch>());
+      verifyZeroInteractions(manifestRepository);
+      await cubit.close();
+    });
+
+    test('Wander unavailable, then Cancel: uploads nothing, the screen stays',
+        () async {
+      final cubit = await loaded();
+      final before = cubit.state;
+      when(() => profile.logoutIfWalletMismatch()).thenThrow(
+        const ArConnectUnavailableException(
+          ArConnectUnavailableReason.noAnswer,
+        ),
+      );
+
+      await cubit.uploadManifest();
+
+      expect(cubit.state, before);
+      verifyZeroInteractions(manifestRepository);
+      await cubit.close();
+    });
   });
 }

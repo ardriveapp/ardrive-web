@@ -18,6 +18,7 @@ import 'package:ardrive/publication/domain/publication_images.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/utils/leave_page_guard/leave_page_guard.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -721,7 +722,14 @@ class PublishCubit extends Cubit<PublishState> {
     final job = _job;
     final profile = _deps.profileCubit.state;
     if (job == null || profile is! ProfileLoggedIn || !state.canPublish) return;
-    if (await _deps.profileCubit.logoutIfWalletMismatch()) return;
+    try {
+      if (await _deps.profileCubit.logoutIfWalletMismatch()) return;
+    } on ArConnectUnavailableException catch (e) {
+      // Wander couldn't be reached and the person chose Cancel. Nothing was
+      // published: the review stays, to try again or close.
+      logger.w('[publication] could not check the wallet: $e');
+      return;
+    }
     // The job keeps the method it was priced with unless the owner switched.
     final run = job.method == state.method
         ? job

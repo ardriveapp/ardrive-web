@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -154,6 +155,36 @@ void main() {
       await Future<void>.delayed(Duration.zero);
     }
   }
+
+  group('the wallet check before the sheet', () {
+    test('on another wallet, says so and prepares nothing', () async {
+      when(() => profileCubit.checkIfWalletMismatch())
+          .thenAnswer((_) async => true);
+      final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+      addTearDown(bloc.close);
+      await prepare(bloc);
+
+      expect(bloc.state, isA<UploadPaymentMethodWalletMismatch>());
+      verifyNever(
+          () => preparationManager.prepareUpload(params: any(named: 'params')));
+    });
+
+    test('Wander unavailable, then Cancel: an error, not the spinner',
+        () async {
+      when(() => profileCubit.checkIfWalletMismatch()).thenThrow(
+        const ArConnectUnavailableException(
+          ArConnectUnavailableReason.noAnswer,
+        ),
+      );
+      final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+      addTearDown(bloc.close);
+      await prepare(bloc);
+
+      expect(bloc.state, isA<UploadPaymentMethodError>());
+      verifyNever(
+          () => preparationManager.prepareUpload(params: any(named: 'params')));
+    });
+  });
 
   test('the wallet counts as chosen only when the person picks it', () async {
     final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
