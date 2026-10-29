@@ -40,6 +40,7 @@ import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
 import 'package:ardrive/core/upload/view/manifest_options/manifest_options.dart';
@@ -276,6 +277,7 @@ class _UploadFormState extends State<UploadForm> {
     VoidCallback? share;
     if (drive != null && folder != null) {
       switch (uploadSavedShare(
+        fileCount: count,
         fileIds: state.fileIds,
         inDriveRoot: folder.id == drive.rootFolderId,
         drivePublic: drive.isPublic,
@@ -3281,30 +3283,37 @@ class _UploadPaymentRequiredWidget extends StatefulWidget {
 
 class _UploadPaymentRequiredWidgetState
     extends State<_UploadPaymentRequiredWidget> {
-  BigInt? _balance;
-  var _unreachable = false;
+  /// Null while it is read.
+  UploadReviewSummary? _summary;
 
   @override
   void initState() {
     super.initState();
-    _readBalance();
+    _read();
   }
 
-  Future<void> _readBalance() async {
-    setState(() {
-      _balance = null;
-      _unreachable = false;
-    });
-    try {
-      final balance = await context
-          .read<PaymentService>()
-          .getBalance(wallet: context.read<ArDriveAuth>().currentUser.wallet);
-      if (mounted) setState(() => _balance = balance);
-    } on TurboUserNotFound {
-      if (mounted) setState(() => _balance = BigInt.zero);
-    } catch (_) {
-      if (mounted) setState(() => _unreachable = true);
-    }
+  /// Reads the balance again, and Turbo's price too if it couldn't be read at
+  /// review: reading only the balance, Try again could never clear "no price".
+  Future<void> _read() async {
+    setState(() => _summary = null);
+    final payments = context.read<PaymentService>();
+    final wallet = context.read<ArDriveAuth>().currentUser.wallet;
+    final summary = await readRefusedUploadSummary(
+      widget.reviewed.paymentInfo,
+      readBalance: () => payments.getBalance(wallet: wallet),
+      readPrice: (bytes) async {
+        final winc = await payments.getPriceForBytes(byteSize: bytes);
+        final perDollar = await payments.getPriceForFiat(
+            wallet: null, amount: 100, currency: 'usd');
+        return UploadCostEstimate(
+          pstFee: BigInt.zero,
+          totalCost: winc,
+          totalSize: bytes,
+          usdUploadCost: winc / perDollar.winstonCredits,
+        );
+      },
+    );
+    if (mounted) setState(() => _summary = summary);
   }
 
   @override
@@ -3312,7 +3321,6 @@ class _UploadPaymentRequiredWidgetState
     final l10n = appLocalizationsOf(context);
     final reviewed = widget.reviewed;
     final folderName = reviewed.params.targetFolder.name;
-    final balance = _balance;
 
     return UploadReviewDialog(
       title: l10n.uploadNFiles(reviewed.numberOfFiles),
@@ -3320,13 +3328,7 @@ class _UploadPaymentRequiredWidgetState
           ? l10n.uploadReviewToPublic(folderName)
           : l10n.uploadReviewToPrivate(folderName),
       files: uploadReviewFiles(reviewed.paymentInfo),
-      summary: balance == null && !_unreachable
-          ? null
-          : UploadReviewSummary.afterRefusal(
-              reviewed.paymentInfo,
-              creditsBalance: balance,
-              balanceUnreadable: _unreachable,
-            ),
+      summary: _summary,
       primaryLabel: l10n.upload,
       onUpload: (_) => context.read<UploadCubit>().retryUploads(),
       extras: [
@@ -3340,7 +3342,7 @@ class _UploadPaymentRequiredWidgetState
           ),
       ],
       onCancel: () => Navigator.of(context).pop(false),
-      funding: UploadFormCreditsFunding(context, onRefresh: _readBalance),
+      funding: UploadFormCreditsFunding(context, onRefresh: _read),
     );
   }
 }
@@ -3415,12 +3417,57 @@ enum UploadSavedShare { file, folder, drive, none }
 /// public drive: the folder, or the drive from its root. In a private drive
 /// both of those shares carry the drive's key, which opens everything in it,
 /// far more than the files just saved, so several files offer no Share there.
+///
+/// [fileCount] is how many files the upload covered, the number the note
+/// says. [fileIds] can be fewer: after a retry, only the files it sent again.
+/// So one file shares the file only when the upload was one file.
 UploadSavedShare uploadSavedShare({
+  required int fileCount,
   required List<String> fileIds,
   required bool inDriveRoot,
   required bool drivePublic,
 }) {
-  if (fileIds.length == 1) return UploadSavedShare.file;
+  if (fileCount == 1) {
+    return fileIds.length == 1 ? UploadSavedShare.file : UploadSavedShare.none;
+  }
   if (!drivePublic) return UploadSavedShare.none;
   return inDriveRoot ? UploadSavedShare.drive : UploadSavedShare.folder;
+}
+
+/// The review after Turbo refused an upload, read again: the balance, and
+/// Turbo's price for its [UploadPaymentMethodInfo.totalSize] bytes when the
+/// price at review was the zero placeholder for one that couldn't be read.
+Future<UploadReviewSummary> readRefusedUploadSummary(
+  UploadPaymentMethodInfo reviewed, {
+  required Future<BigInt> Function() readBalance,
+  required Future<UploadCostEstimate> Function(int byteCount) readPrice,
+}) async {
+  BigInt? balance;
+  var balanceUnreadable = false;
+  try {
+    balance = await readBalance();
+  } on TurboUserNotFound {
+    balance = BigInt.zero;
+  } catch (e) {
+    logger.d('Could not read the balance after Turbo refused payment: $e');
+    balanceUnreadable = true;
+  }
+
+  var info = reviewed;
+  final price = reviewed.costEstimateTurbo?.totalCost ?? BigInt.zero;
+  if (price <= BigInt.zero && reviewed.totalSize > 0) {
+    try {
+      info = reviewed.copyWith(
+          costEstimateTurbo: await readPrice(reviewed.totalSize));
+    } catch (e) {
+      // Still no price: the summary says so, with Try again.
+      logger.d('Could not read the price after Turbo refused payment: $e');
+    }
+  }
+
+  return UploadReviewSummary.afterRefusal(
+    info,
+    creditsBalance: balance,
+    balanceUnreadable: balanceUnreadable,
+  );
 }

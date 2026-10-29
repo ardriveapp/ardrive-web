@@ -1,7 +1,9 @@
 import 'package:ardrive/components/upload_form.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// What Share offers in the note after an upload.
+/// What Share offers in the note after an upload. It follows the files the
+/// upload covered, the same number the note counts, not only those the last
+/// try sent.
 void main() {
   group('one file shares the file', () {
     for (final drivePublic in [true, false]) {
@@ -9,6 +11,7 @@ void main() {
         test('public: $drivePublic, in the root: $inDriveRoot', () {
           expect(
             uploadSavedShare(
+              fileCount: 1,
               fileIds: ['a'],
               inDriveRoot: inDriveRoot,
               drivePublic: drivePublic,
@@ -20,10 +23,36 @@ void main() {
     }
   });
 
+  test('one file whose id is not known offers no Share', () {
+    expect(
+      uploadSavedShare(
+          fileCount: 1, fileIds: [], inDriveRoot: false, drivePublic: true),
+      UploadSavedShare.none,
+    );
+  });
+
+  test(
+      'three files of which a retry sent one: shared as three, never as that '
+      'one file', () {
+    expect(
+      uploadSavedShare(
+          fileCount: 3, fileIds: ['b'], inDriveRoot: false, drivePublic: true),
+      UploadSavedShare.folder,
+    );
+    expect(
+      uploadSavedShare(
+          fileCount: 3, fileIds: ['b'], inDriveRoot: true, drivePublic: false),
+      UploadSavedShare.none,
+    );
+  });
+
   test('several files in a public folder share that folder', () {
     expect(
       uploadSavedShare(
-          fileIds: ['a', 'b'], inDriveRoot: false, drivePublic: true),
+          fileCount: 2,
+          fileIds: ['a', 'b'],
+          inDriveRoot: false,
+          drivePublic: true),
       UploadSavedShare.folder,
     );
   });
@@ -31,7 +60,10 @@ void main() {
   test("several files in a public drive's root share the drive", () {
     expect(
       uploadSavedShare(
-          fileIds: ['a', 'b'], inDriveRoot: true, drivePublic: true),
+          fileCount: 2,
+          fileIds: ['a', 'b'],
+          inDriveRoot: true,
+          drivePublic: true),
       UploadSavedShare.drive,
     );
   });
@@ -42,7 +74,10 @@ void main() {
     for (final inDriveRoot in [true, false]) {
       expect(
         uploadSavedShare(
-            fileIds: ['a', 'b'], inDriveRoot: inDriveRoot, drivePublic: false),
+            fileCount: 2,
+            fileIds: ['a', 'b'],
+            inDriveRoot: inDriveRoot,
+            drivePublic: false),
         UploadSavedShare.none,
       );
     }
