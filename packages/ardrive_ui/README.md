@@ -13,10 +13,9 @@ needs the same change there, in the
 [public site](https://github.com/ardriveapp/public-site) repo at
 `public/brand-kit/design-system.md`.
 
-The package has two generations. Build with the new one, whose names end in
-`New` or have no old counterpart. The old one (`ArDriveButton`,
-`ArDriveTypography`, `ArDriveStandardModal`, `ArDriveTextField` and
-`themeData.colors`) is being removed screen by screen.
+Some names end in `New` (`ArDriveButtonNew`, `ArDriveStandardModalNew`,
+`ArDriveTypographyNew`, `ArDriveTextFieldNew`): they replaced older
+components that have since been deleted, and kept the suffix.
 
 ## Tokens
 
@@ -48,7 +47,11 @@ running text, labels or anything under `heading3`, where it is too thin to
 read.
 
 Every colour comes from a token, in both themes. A literal colour, or a
-Material one such as `Colors.green`, looks right in one theme only.
+Material one such as `Colors.green`, looks right in one theme only. The app's
+`test/design_system_guard_test.dart` fails on a literal or Material colour,
+or a Material spinner or progress bar, outside this package's style files; a
+file with a real reason, such as a wallet's brand colour, is listed there
+with that reason.
 
 Status colours come from the [brand palette](https://ardrive.io/brand-kit/):
 info from brand Info `#3142C4`, success from brand Success `#18A957`, and

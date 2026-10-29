@@ -286,10 +286,11 @@ class AppState extends State<App> {
       localizationsDelegates: _localizationsDelegates,
       supportedLocales: _locales,
 
-      // TODO: Remove this once we have a proper solution for
+      // A list tile with no colours of its own takes the theme's text and
+      // icon colours, in both themes.
       builder: (context, child) => ListTileTheme(
-        textColor: kOnSurfaceBodyTextColor,
-        iconColor: kOnSurfaceBodyTextColor,
+        textColor: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+        iconColor: ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
         child: Portal(
           child: child!,
         ),

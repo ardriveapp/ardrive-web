@@ -3,65 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Modal widget and its contents render', (tester) async {
-    const modal = ArDriveModal(
-      content: Text('Some widget'),
-      constraints: BoxConstraints(
-        maxHeight: 100,
-        maxWidth: 100,
-      ),
-    );
-
-    await tester.pumpWidget(
-      ArDriveApp(
-        builder: (context) => const MaterialApp(home: modal),
-      ),
-    );
-
-    expect(find.byWidget(modal), findsOneWidget);
-    expect(find.text('Some widget'), findsOneWidget);
-  });
-
-  testWidgets('ArDriveStandardModal widget and its contents render',
-      (tester) async {
-    bool varToChange = false;
-
-    final modal = ArDriveStandardModal(
-      description: 'Content',
-      title: 'Title',
-      actions: [
-        ModalAction(
-          action: () {
-            // just to validate if the callback is calleds
-            varToChange = true;
-          },
-          title: 'Title',
-        ),
-      ],
-    );
-
-    await tester.pumpWidget(
-      ArDriveApp(
-        builder: (context) => MaterialApp(home: modal),
-      ),
-    );
-
-    // taps the action inside the modal
-    await tester.tap(find.byType(ArDriveButton));
-
-    expect(find.byWidget(modal), findsOneWidget);
-    expect(find.text('Content'), findsOneWidget);
-    expect(find.text('Title'), findsNWidgets(2));
-    // verify if the variable was changed
-    expect(varToChange, true);
-  });
-
   testWidgets(
-      'ArDriveStandardModal should render only content when content and description is provided',
+      'ArDriveStandardModalNew shows only the content when it has content and a description',
       (tester) async {
     const testWidget = _TestWidget();
 
-    final modal = ArDriveStandardModal(
+    final modal = ArDriveStandardModalNew(
       description: 'Content',
       content: testWidget,
       title: 'Title',
@@ -83,11 +30,11 @@ void main() {
   });
 
   testWidgets(
-      'ArDriveStandardModal should render description wehn provided and content is null',
+      'ArDriveStandardModalNew shows the description when there is no content',
       (tester) async {
     const testWidget = _TestWidget();
 
-    final modal = ArDriveStandardModal(
+    final modal = ArDriveStandardModalNew(
       description: 'Description',
       content: null,
       title: 'Title',

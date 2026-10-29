@@ -106,7 +106,6 @@ class ArDriveThemeData {
     ArDriveTableTheme? tableTheme,
     ThemeData? materialThemeData,
     String? name,
-    ArDriveColors? colors,
     ArDriveShadows? shadows,
     ArDriveDropdownTheme? dropdownTheme,
     ArDriveTextFieldTheme? textFieldTheme,
@@ -114,15 +113,14 @@ class ArDriveThemeData {
     // NEW THEME DATA
     required this.colorTokens,
   }) {
-    this.colors = colors ?? ArDriveColors();
-    this.shadows = shadows ?? ArDriveShadows(this.colors);
+    this.shadows = shadows ?? ArDriveShadows(colorTokens);
 
     this.toggleTheme = toggleTheme ??
         ArDriveToggleTheme(
-          backgroundOffDisabled: this.colors.themeFgDisabled,
+          backgroundOffDisabled: colorTokens.buttonDisabled,
           backgroundOffColor: colorTokens.containerL0,
           backgroundOnColor: const Color(0xff139310),
-          indicatorColorDisabled: this.colors.themeFgOnDisabled,
+          indicatorColorDisabled: colorTokens.textLow,
           indicatorColorOff: colorTokens.iconMid,
         );
     this.tableTheme = tableTheme ??
@@ -133,31 +131,38 @@ class ArDriveThemeData {
         );
     this.dropdownTheme = dropdownTheme ??
         ArDriveDropdownTheme(
-          backgroundColor: this.colors.themeBgSurface,
+          backgroundColor: colorTokens.containerRaised,
           hoverColor: const Color(0xff2C2C2C),
         );
     this.textFieldTheme = textFieldTheme ??
         ArDriveTextFieldTheme(
-          errorColor: this.colors.themeErrorDefault,
-          successColor: this.colors.themeSuccessDefault,
-          successBorderColor: this.colors.themeSuccessEmphasis,
-          errorBorderColor: this.colors.themeErrorOnEmphasis,
-          inputDisabledBorderColor: this.colors.themeInputBorderDisabled,
-          defaultBorderColor: this.colors.themeBorderDefault,
-          labelColor: this.colors.themeFgDefault,
-          inputBackgroundColor: this.colors.themeInputBackground,
-          inputTextColor: this.colors.themeInputText,
-          inputTextStyle: ArDriveTypography.body.inputLargeRegular(
-            color: this.colors.themeInputText,
+          errorColor: colorTokens.statusErrorFg,
+          successColor: colorTokens.statusSuccessFg,
+          successBorderColor: colorTokens.statusSuccessStroke,
+          errorBorderColor: colorTokens.statusErrorStroke,
+          inputDisabledBorderColor: colorTokens.strokeLow,
+          defaultBorderColor: colorTokens.strokeMid,
+          labelColor: colorTokens.textHigh,
+          inputBackgroundColor: colorTokens.inputDefault,
+          inputTextColor: colorTokens.textHigh,
+          // The input size the old text styles had: 19.2px Wavehaus, 500.
+          inputTextStyle: TextStyle(
+            color: colorTokens.textHigh,
+            fontFamily: 'Wavehaus',
+            package: 'ardrive_ui',
+            fontSize: 19.2,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
           ),
-          inputPlaceholderColor: this.colors.themeInputPlaceholder,
-          disabledTextColor: this.colors.themeFgDisabled,
-          requiredLabelColor: this.colors.themeFgDefault,
+          inputPlaceholderColor: colorTokens.textLow,
+          disabledTextColor: colorTokens.textLow,
+          requiredLabelColor: colorTokens.textHigh,
         );
 
     this.backgroundColor = backgroundColor ?? const Color(0xff010905);
-    this.primaryColor = primaryColor ?? this.colors.themeAccentBrand;
-    this.materialThemeData = materialThemeData ?? darkMaterialTheme();
+    this.primaryColor = primaryColor ?? colorTokens.buttonPrimaryDefault;
+    this.materialThemeData =
+        materialThemeData ?? darkMaterialTheme(colorTokens);
     this.name = name ?? _darkTheme;
   }
 
@@ -169,7 +174,6 @@ class ArDriveThemeData {
   late ArDriveTextFieldTheme textFieldTheme;
   late ThemeData materialThemeData;
   late String name;
-  late ArDriveColors colors;
   late ArDriveShadows shadows;
 
   ArDriveColorTokens colorTokens;
@@ -182,7 +186,6 @@ class ArDriveThemeData {
     ArDriveTableTheme? tableTheme,
     ThemeData? materialThemeData,
     String? name,
-    ArDriveColors? colors,
     ArDriveShadows? shadows,
     ArDriveDropdownTheme? dropdownTheme,
     ArDriveTextFieldTheme? textFieldTheme,
@@ -195,7 +198,6 @@ class ArDriveThemeData {
       tableTheme: tableTheme ?? this.tableTheme,
       materialThemeData: materialThemeData ?? this.materialThemeData,
       name: name ?? this.name,
-      colors: colors ?? this.colors,
       shadows: shadows ?? this.shadows,
       dropdownTheme: dropdownTheme ?? this.dropdownTheme,
       textFieldTheme: textFieldTheme ?? this.textFieldTheme,
@@ -204,35 +206,33 @@ class ArDriveThemeData {
   }
 }
 
-ThemeData lightMaterialTheme() {
+ThemeData lightMaterialTheme(ArDriveColorTokens colorTokens) {
   final ThemeData theme = ThemeData.light();
-  ArDriveColors colors = ArDriveColors.light();
 
   return ThemeData(
     fontFamily: _fontFamily,
-    primaryColor: colors.themeAccentBrand,
-    primaryColorLight: colors.themeAccentBrand,
+    primaryColor: colorTokens.buttonPrimaryDefault,
+    primaryColorLight: colorTokens.buttonPrimaryDefault,
     colorScheme: theme.colorScheme.copyWith(
-      background: colors.themeBgSurface,
-      primary: colors.themeAccentBrand,
-      secondary: colors.themeAccentBrand,
-      surface: colors.themeBgSurface,
-      onSurface: colors.themeBgSurface,
+      background: colorTokens.containerRaised,
+      primary: colorTokens.buttonPrimaryDefault,
+      secondary: colorTokens.buttonPrimaryDefault,
+      surface: colorTokens.containerRaised,
+      onSurface: colorTokens.containerRaised,
     ),
     useMaterial3: false,
     textTheme: theme.textTheme.apply(
       fontFamily: _fontFamily,
-      bodyColor: colors.themeFgDefault,
+      bodyColor: colorTokens.textHigh,
     ),
   );
 }
 
 ArDriveThemeData lightTheme() {
-  ArDriveColors colors = ArDriveColors.light();
+  final colorTokens = ArDriveColorTokens.lightMode();
 
   return ArDriveThemeData(
-      backgroundColor: colors.themeBgSurface,
-      colors: colors,
+      backgroundColor: colorTokens.containerRaised,
       // Warm light greys, like the surface tokens: the 2021 styleguide's
       // Gallery (#F1EFF0), and a page-level grey at the same tint.
       tableTheme: ArDriveTableTheme(
@@ -244,9 +244,9 @@ ArDriveThemeData lightTheme() {
         backgroundColor: const Color(0xffFBF9FA),
         hoverColor: const Color(0xffF1EFF0),
       ),
-      materialThemeData: lightMaterialTheme(),
+      materialThemeData: lightMaterialTheme(colorTokens),
       name: _lightTheme,
-      colorTokens: ArDriveColorTokens.lightMode());
+      colorTokens: colorTokens);
 }
 
 // ignore: must_be_immutable
@@ -324,25 +324,24 @@ class ArDriveDropdownTheme {
   final Color hoverColor;
 }
 
-ThemeData darkMaterialTheme() {
+ThemeData darkMaterialTheme(ArDriveColorTokens colorTokens) {
   final ThemeData theme = ThemeData.dark();
-  ArDriveColors colors = ArDriveColors.dark();
 
   return ThemeData(
     fontFamily: _fontFamily,
-    primaryColor: colors.themeAccentBrand,
-    primaryColorLight: colors.themeAccentBrand,
+    primaryColor: colorTokens.buttonPrimaryDefault,
+    primaryColorLight: colorTokens.buttonPrimaryDefault,
     colorScheme: theme.colorScheme.copyWith(
-      background: colors.themeBgSurface,
-      primary: colors.themeAccentBrand,
-      secondary: colors.themeAccentBrand,
-      surface: colors.themeBgSurface,
-      onSurface: colors.themeBgSurface,
+      background: colorTokens.containerRaised,
+      primary: colorTokens.buttonPrimaryDefault,
+      secondary: colorTokens.buttonPrimaryDefault,
+      surface: colorTokens.containerRaised,
+      onSurface: colorTokens.containerRaised,
     ),
     useMaterial3: false,
     textTheme: theme.textTheme.apply(
       fontFamily: _fontFamily,
-      bodyColor: colors.themeFgDefault,
+      bodyColor: colorTokens.textHigh,
     ),
   );
 }
