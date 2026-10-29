@@ -152,6 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                 mnemonic: loginState.mnemonic,
                 isNewUser: loginState.isNewUser,
                 showWalletCreated: loginState.showWalletCreated,
+                retrying: loginState.retrying,
                 derivedEthWallet: loginState.derivedEthWallet,
                 sourceWalletAddress: loginState.sourceWalletAddress);
             return;
@@ -190,17 +191,19 @@ class _LoginPageState extends State<LoginPage> {
               return;
             }
 
+            // A new account goes straight back to its password step, for
+            // the same wallet, which says what happened. An error dialog
+            // here would be closed at once by the password dialog closing.
             final loginBloc = context.read<LoginBloc>();
+            if (loginBloc.hasSignUpToRetry) {
+              loginBloc.add(const RetrySignUpPassword());
+              return;
+            }
             showErrorDialog(
               context: context,
               title: appLocalizationsOf(context).loginFailed,
               message: appLocalizationsOf(context).pleaseTryAgain,
-            ).then((_) {
-              // A new account goes back to its password step, same wallet.
-              if (loginBloc.hasSignUpToRetry) {
-                loginBloc.add(const RetrySignUpPassword());
-              }
-            });
+            );
           } else if (loginState is LoginUnknownFailure) {
             showErrorDialog(
               context: context,

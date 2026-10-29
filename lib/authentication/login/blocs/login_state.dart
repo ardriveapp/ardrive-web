@@ -84,10 +84,14 @@ class CreateNewPassword extends LoginState {
       this.sourceWalletAddress,
       this.mnemonic,
       required this.isNewUser,
-      required this.showWalletCreated});
+      required this.showWalletCreated,
+      this.retrying = false});
 
   final String? mnemonic;
   final Wallet wallet;
+
+  /// Asked again because the last try could not finish.
+  final bool retrying;
   final EthereumProviderWallet? derivedEthWallet;
 
   /// The source wallet address (Solana/Ethereum) for display purposes.
@@ -98,7 +102,8 @@ class CreateNewPassword extends LoginState {
   final bool showWalletCreated;
 
   @override
-  List<Object?> get props => [mnemonic, wallet, isNewUser, showWalletCreated];
+  List<Object?> get props =>
+      [mnemonic, wallet, isNewUser, showWalletCreated, retrying];
 }
 
 class LoginFailure extends LoginState {

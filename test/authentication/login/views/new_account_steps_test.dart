@@ -86,13 +86,25 @@ void main() {
   });
 
   group('choose a password, new account', () {
-    Widget dialog({bool isNewUser = true}) => SecureYourWalletWidget(
+    Widget dialog({bool isNewUser = true, bool retrying = false}) =>
+        SecureYourWalletWidget(
           loginBloc: loginBloc,
           wallet: getTestWallet(),
           mnemonic: _mnemonic,
           isNewUser: isNewUser,
           showWalletCreated: true,
+          retrying: retrying,
         );
+
+    testWidgets('says why it is asking again after a failed try',
+        (tester) async {
+      await pump(tester, dialog());
+      expect(find.byKey(const Key('newPasswordRetry')), findsNothing);
+
+      await pump(tester, dialog(retrying: true));
+      expect(
+          find.textContaining("We couldn't finish setting up"), findsOneWidget);
+    });
 
     testWidgets('says what the password is for, without a wallet card',
         (tester) async {

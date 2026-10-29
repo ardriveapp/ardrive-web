@@ -27,7 +27,8 @@ class SecureYourWalletWidget extends StatefulWidget {
       this.sourceWalletAddress,
       this.mnemonic,
       required this.isNewUser,
-      required this.showWalletCreated});
+      required this.showWalletCreated,
+      this.retrying = false});
 
   final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;
@@ -36,6 +37,9 @@ class SecureYourWalletWidget extends StatefulWidget {
   final LoginBloc loginBloc;
   final bool isNewUser;
   final bool showWalletCreated;
+
+  /// The last try to finish with this password could not; says so.
+  final bool retrying;
 
   @override
   State<SecureYourWalletWidget> createState() => _SecureYourWalletWidgetState();
@@ -176,6 +180,14 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
+              if (widget.retrying) ...[
+                const SizedBox(height: 16),
+                ArDriveNotice(
+                  key: const Key('newPasswordRetry'),
+                  type: ArDriveNoticeType.error,
+                  message: appLocalizationsOf(context).newPasswordRetry,
+                ),
+              ],
               if (!_isFreshAccount) ...[
                 const SizedBox(height: 24),
                 BlocBuilder<ProfileNameBloc, ProfileNameState>(
@@ -402,7 +414,8 @@ void showSecureYourPasswordDialog(
     String? sourceWalletAddress,
     String? mnemonic,
     required bool isNewUser,
-    required bool showWalletCreated}) {
+    required bool showWalletCreated,
+    bool retrying = false}) {
   showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
@@ -429,7 +442,8 @@ void showSecureYourPasswordDialog(
               sourceWalletAddress: sourceWalletAddress,
               mnemonic: mnemonic,
               isNewUser: isNewUser,
-              showWalletCreated: showWalletCreated);
+              showWalletCreated: showWalletCreated,
+              retrying: retrying);
         },
       ));
 }
