@@ -6,6 +6,15 @@ import 'package:flutter/material.dart';
 class ArDriveSubmenuItem {
   final Widget widget;
   final List<ArDriveSubmenuItem>? children;
+
+  /// What the item does, after which the menu closes.
+  ///
+  /// Without it the item is not an action: a line to read, a rule, or a
+  /// control that answers taps itself (a checkbox, a switch). It is drawn as
+  /// it is, with no pointer and no tap of the menu's own, so a click on it
+  /// neither pretends to do something nor closes the menu. A link or a
+  /// control inside it can close the menu with
+  /// [ArDriveSubmenu.maybeCloseOf].
   final Function? onClick;
   final bool isDisabled;
 
@@ -41,8 +50,24 @@ class ArDriveSubmenu extends StatefulWidget {
   final Function? onOpen;
   final Function? onClose;
 
+  /// Closes the menu that [context] is in, where it is in one: for a link or
+  /// a control inside an item without [ArDriveSubmenuItem.onClick], which
+  /// the menu does not close for. Null outside a menu.
+  static VoidCallback? maybeCloseOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_MenuItemScope>()?.close;
+
   @override
   State<ArDriveSubmenu> createState() => _ArDriveSubmenuState();
+}
+
+/// Tells an item's content how to close the menu it is in.
+class _MenuItemScope extends InheritedWidget {
+  const _MenuItemScope({required this.close, required super.child});
+
+  final VoidCallback close;
+
+  @override
+  bool updateShouldNotify(_MenuItemScope oldWidget) => false;
 }
 
 class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
@@ -248,7 +273,8 @@ class _MenuPanel extends StatelessWidget {
   }
 }
 
-/// An item that does something, then closes the whole menu.
+/// An item that does something, then closes the whole menu; or, without
+/// [ArDriveSubmenuItem.onClick], one that is only drawn.
 class _MenuItem extends StatelessWidget {
   const _MenuItem({required this.item, required this.closeAll});
 
@@ -257,20 +283,15 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = GestureDetector(
-      onTap: () {
-        if (item.isDisabled) return;
-        item.onClick?.call();
-        closeAll();
-      },
-      child: ArDriveClickArea(
-        showCursor: !item.isDisabled,
-        child: item.widget,
-      ),
-    );
+    final content = _MenuItemScope(close: closeAll, child: item.widget);
 
-    // A row with nothing to do, such as a divider, is not a button.
-    if (item.onClick == null) return target;
+    // Not an action: a line to read, a rule, or a control with taps of its
+    // own. No pointer, no tap that closes the menu, and not a button to a
+    // screen reader. The pointer is set rather than left to whatever is
+    // under the menu, and a link or control inside still sets its own.
+    if (item.onClick == null) {
+      return MouseRegion(cursor: SystemMouseCursors.basic, child: content);
+    }
 
     // A button of its own, named by its text: without the flag the web gave
     // the item no role and no name.
@@ -278,7 +299,17 @@ class _MenuItem extends StatelessWidget {
       container: true,
       button: true,
       enabled: !item.isDisabled,
-      child: target,
+      child: GestureDetector(
+        onTap: () {
+          if (item.isDisabled) return;
+          item.onClick?.call();
+          closeAll();
+        },
+        child: ArDriveClickArea(
+          showCursor: !item.isDisabled,
+          child: content,
+        ),
+      ),
     );
   }
 }
