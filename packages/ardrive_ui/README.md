@@ -46,6 +46,16 @@ between the two carries the hierarchy. Light is for figures only: never for
 running text, labels or anything under `heading3`, where it is too thin to
 read.
 
+The files declare their own weights, which CanvasKit reads in place of the
+pubspec's: 42 Light is 400, 66 Book 500, 95 SemiBold 600 and 128 Bold 700.
+Material's default weight is 400, so the Material theme lifts every default
+style to Book: a plain `Text`, a tooltip or a field's label is Book, never
+Light. (Material 2 snackbars take their default style from a theme of their
+own, not this one, so a snackbar's text sets its own style.)
+The 28 Thin and 158 ExtraBold cuts are not bundled; the app uses neither.
+On the web, where CSS sets the numbers, ardrive.io declares Light as 300
+and Book as 400 for the same reason.
+
 Every colour comes from a token, in both themes. A literal colour, or a
 Material one such as `Colors.green`, looks right in one theme only. The app's
 `test/design_system_guard_test.dart` fails on a literal or Material colour,

@@ -89,6 +89,7 @@ class ArNSChoiceRow extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.subtitle,
+    this.subtitleId,
     this.tag,
     this.enabled = true,
     this.indent = false,
@@ -99,6 +100,10 @@ class ArNSChoiceRow extends StatelessWidget {
   final bool selected;
   final String title;
   final String? subtitle;
+
+  /// An ID [subtitle] may contain ("Points to abc123...xyz9"), drawn in
+  /// monospace where it does.
+  final String? subtitleId;
 
   /// A quiet label at the end, such as "Controller".
   final String? tag;
@@ -161,12 +166,19 @@ class ArNSChoiceRow extends StatelessWidget {
                           ),
                         ),
                         if (subtitle != null)
-                          Text(
-                            subtitle!,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.paragraphSmall(
-                              color: colors.textLow,
+                          Text.rich(
+                            TextSpan(
+                              style: typography.paragraphSmall(
+                                color: colors.textLow,
+                              ),
+                              children: ArDriveIdText.spansIn(
+                                subtitle!,
+                                subtitleId ?? '',
+                                idStyle: typography.code(
+                                    color: colors.textLow, fontSize: 11),
+                              ),
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                       ],
                     ),
@@ -444,10 +456,9 @@ class ArNSPointsTo extends StatelessWidget {
         Flexible(
           child: ArDriveTooltip(
             message: id,
-            child: Text(
+            child: ArDriveIdText(
               shortenId(id),
-              overflow: TextOverflow.ellipsis,
-              style: typography.paragraphSmall(color: colors.textMid),
+              style: typography.code(color: colors.textMid, fontSize: 11),
             ),
           ),
         ),

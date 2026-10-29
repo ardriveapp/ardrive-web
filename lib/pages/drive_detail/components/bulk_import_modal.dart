@@ -341,6 +341,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                         controller: _manifestTxIdController,
                         validator: _validateManifestTxId,
                         label: 'Manifest Transaction ID',
+                        textStyle: ArDriveTypographyNew.of(context).code(),
                       ),
                     ],
                   ),
