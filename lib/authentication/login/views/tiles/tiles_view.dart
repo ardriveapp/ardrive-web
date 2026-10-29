@@ -11,9 +11,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 
-/// The brand red and the warm highlight it fades from, as in the art.
-const _brandRed = Color(0xFFD31721);
+/// The warm highlight the brand red fades from in the art. An illustration
+/// colour with no token, like the photo fade and the sparkle dots below.
 const _brandPeach = Color(0xFFF4BE8C);
+
+/// The brand red, from its token.
+Color _brandRed(BuildContext context) =>
+    ArDriveTheme.of(context).themeData.colorTokens.buttonPrimaryDefault;
 
 /// The bento beside the sign-in panel: what ArDrive is, in five tiles.
 ///
@@ -473,7 +477,9 @@ class _PeopleTileState extends State<_PeopleTile> with _Stepper {
                     TextSpan(
                       text: hovered?.name ?? s.bentoEveryone,
                       style: TextStyle(
-                        color: hovered == null ? colors.textHigh : _brandRed,
+                        color: hovered == null
+                            ? colors.textHigh
+                            : _brandRed(context),
                       ),
                     ),
                   ]),
@@ -585,7 +591,7 @@ class _PersonPicture extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       // White on the photo's dark fade, in both themes.
                       style: type.paragraphSmall(
-                        color: const Color(0xFFFFFFFF),
+                        color: colors.textOnPrimary,
                         fontWeight: ArFontWeight.semiBold,
                       ),
                     ),
@@ -718,12 +724,11 @@ class _OnlineTileState extends State<_OnlineTile> {
                             children: [
                               ShaderMask(
                                 blendMode: BlendMode.srcIn,
-                                shaderCallback: (bounds) =>
-                                    const LinearGradient(
+                                shaderCallback: (bounds) => LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [_brandPeach, _brandRed],
-                                  stops: [0, 0.45],
+                                  colors: [_brandPeach, _brandRed(context)],
+                                  stops: const [0, 0.45],
                                 ).createShader(bounds),
                                 child: Text(
                                   _names[_example].substring(0, _chars),
@@ -738,7 +743,7 @@ class _OnlineTileState extends State<_OnlineTile> {
                                   height: 24,
                                   margin:
                                       const EdgeInsets.symmetric(horizontal: 1),
-                                  color: _brandRed,
+                                  color: _brandRed(context),
                                 ),
                               ),
                               Text(
@@ -778,11 +783,15 @@ class _Sparkles extends StatelessWidget {
   const _Sparkles();
 
   @override
-  Widget build(BuildContext context) =>
-      ExcludeSemantics(child: CustomPaint(painter: _SparklePainter()));
+  Widget build(BuildContext context) => ExcludeSemantics(
+      child: CustomPaint(painter: _SparklePainter(_brandRed(context))));
 }
 
 class _SparklePainter extends CustomPainter {
+  _SparklePainter(this.red);
+
+  final Color red;
+
   @override
   void paint(Canvas canvas, Size size) {
     void sparkle(double x, double y, double r, double opacity) {
@@ -800,7 +809,7 @@ class _SparklePainter extends CustomPainter {
           end: Alignment.bottomCenter,
           colors: [
             _brandPeach.withOpacity(opacity),
-            _brandRed.withOpacity(opacity),
+            red.withOpacity(opacity),
           ],
         ).createShader(Rect.fromCircle(center: c, radius: r));
       canvas.drawPath(path, paint);
@@ -820,7 +829,8 @@ class _SparklePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SparklePainter oldDelegate) =>
+      oldDelegate.red != red;
 }
 
 /// The large tile: "Permanent web publishing and data storage", over a field
@@ -907,7 +917,7 @@ class _HeroTileState extends State<_HeroTile>
                     TextSpan(children: [
                       TextSpan(
                         text: '${s.bentoHeroAccent}\n',
-                        style: const TextStyle(color: _brandRed),
+                        style: TextStyle(color: _brandRed(context)),
                       ),
                       TextSpan(text: s.bentoHeroRest),
                     ]),
