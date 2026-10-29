@@ -848,8 +848,7 @@ class _ProfileCardState extends State<ProfileCard> {
 
                 // An address, so monospace, at its final width from the
                 // first frame: the face loads on demand.
-                final address = truncateString(state.user.displayAddress,
-                    offsetStart: 6, offsetEnd: 4);
+                final address = shortenId(state.user.displayAddress);
                 return SizedBox(
                   width: ArDriveMonospace.widthOf(address, 15,
                       textScaler: MediaQuery.textScalerOf(context)),
@@ -1431,9 +1430,8 @@ class ProfileCardHeader extends StatelessWidget {
 
         final primaryName = _getPrimaryName(state, walletAddress);
         final maxWidth = _calculateMaxWidth(primaryName, state);
-        final truncatedWalletAddress = getTruncatedWalletAddress(
-            primaryName, walletAddress,
-            isExpanded: isExpanded);
+        // The address's one short form, as every other place shows it.
+        final truncatedWalletAddress = shortenId(walletAddress);
         final tooltipMessage = primaryName.length > 20 ? primaryName : null;
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
@@ -1461,7 +1459,7 @@ class ProfileCardHeader extends StatelessWidget {
       return state.primaryNameDetails.primaryName;
     }
 
-    return truncateString(walletAddress, offsetStart: 6, offsetEnd: 4);
+    return shortenId(walletAddress);
   }
 
   double _calculateMaxWidth(String primaryName, ProfileNameState state) {
@@ -1685,35 +1683,6 @@ class ProfileCardHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-String getTruncatedWalletAddress(
-  String primaryName,
-  String walletAddress, {
-  bool isExpanded = false,
-}) {
-  if (primaryName.length > 20 || isExpanded) {
-    // replace the hyphen with a unicode minus to avoid truncation in the middle of the text
-    return truncateString(walletAddress.replaceAll('-', '−'),
-        offsetStart: 12, offsetEnd: 12);
-  }
-
-  var offsetStart = primaryName.length ~/ 2;
-  var offsetEnd = primaryName.length ~/ 2;
-
-  if (offsetStart < 6) {
-    offsetStart = 3;
-  }
-
-  if (offsetEnd < 6) {
-    offsetEnd = 3;
-  }
-
-  return truncateString(
-    walletAddress,
-    offsetStart: offsetStart,
-    offsetEnd: offsetEnd,
-  );
 }
 
 class _ArweaveWalletDisclosure extends StatefulWidget {

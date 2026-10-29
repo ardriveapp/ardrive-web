@@ -48,12 +48,12 @@ void main() {
       (tester) async {
     await pumpHeader(tester);
 
-    expect(find.text('iKryOe...ncoRjA'), findsOneWidget);
+    expect(find.text('iKryOe...oRjA'), findsOneWidget);
 
     // A second shortening is the button cutting the text short with its own
     // ellipsis, which drops the end of the address the first one kept.
     final paragraph =
-        tester.renderObject<RenderParagraph>(find.text('iKryOe...ncoRjA'));
+        tester.renderObject<RenderParagraph>(find.text('iKryOe...oRjA'));
     expect(paragraph.didExceedMaxLines, isFalse);
     expect(tester.takeException(), isNull);
   });

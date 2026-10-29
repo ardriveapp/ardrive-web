@@ -410,7 +410,7 @@ class _Byline extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final style = typography.paragraphNormal(color: colors.textMid);
-    final address = truncateString(config.owner, offsetStart: 6, offsetEnd: 4);
+    final address = shortenId(config.owner);
     final name = config.ownerName;
     final by = strings.publicationBy(name == null ? address : '$name $address');
     final publishedAt = config.publishedAt;
