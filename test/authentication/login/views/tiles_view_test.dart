@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -170,6 +171,64 @@ void main() {
     expect(tester.getTopRight(find.text('\$0')).dx, right);
     expect(tester.getTopRight(find.text('\$23.69')).dx, right);
     await done(tester);
+  });
+
+  // The two-column tile, beside the panel in an 834 and a 1024 wide window.
+  for (final size in const [
+    Size(405, 816),
+    Size(405, 884),
+    Size(500, 816),
+    Size(500, 884),
+  ]) {
+    testWidgets(
+        'the narrow tile keeps the price label on one line at '
+        '${size.width.toInt()} x ${size.height.toInt()}', (tester) async {
+      await pumpBento(tester, size: size);
+      final label = find.text('1 GB, saved for good');
+      final style = DefaultTextStyle.of(tester.element(label))
+          .style
+          .merge(tester.widget<Text>(label).style);
+      expect(tester.getSize(label).height,
+          lessThan(style.fontSize! * style.height! * 1.5),
+          reason: 'one line');
+      // The price is on the line below, flush right with the other values.
+      expect(tester.getTopLeft(find.text('\$23.69')).dy,
+          greaterThan(tester.getBottomLeft(label).dy - 1));
+      expect(tester.getTopRight(find.text('\$23.69')).dx,
+          tester.getTopRight(find.text('Free')).dx);
+      expect(tester.takeException(), isNull);
+      await done(tester);
+    });
+  }
+
+  testWidgets('a screen reader hears the tile once, as one link',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpBento(tester, size: const Size(696, 868));
+    final labels = <String>[];
+    void collect(SemanticsNode node) {
+      labels.add(node.label);
+      node.visitChildren((child) {
+        collect(child);
+        return true;
+      });
+    }
+
+    var root = tester.getSemantics(find.text('What it costs'));
+    while (root.parent != null) {
+      root = root.parent!;
+    }
+    collect(root);
+    int count(String text) =>
+        labels.map((l) => text.allMatches(l).length).fold(0, (a, b) => a + b);
+    expect(count('What it costs'), 1);
+    expect(count('See prices'), 1);
+    final link = tester.getSemantics(find.text('What it costs'));
+    expect(link.hasFlag(SemanticsFlag.isLink), isTrue);
+    expect(link.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    expect(link.label, contains('See prices'));
+    await done(tester);
+    semantics.dispose();
   });
 
   testWidgets('Free is in the success colour', (tester) async {
