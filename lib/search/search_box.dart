@@ -18,7 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 
 /// How many results the dropdown lists. The rest are one row away, under
 /// "See all results".
@@ -367,14 +366,20 @@ class _SearchBoxState extends State<SearchBox> {
             max(fieldWidth, MediaQuery.sizeOf(context).width - 32),
           );
 
-          return PortalTarget(
+          // In the navigator's overlay, so with the accessibility tree on a
+          // click on a result lands on it rather than on the page behind.
+          // The box opens and closes it itself, on focus, a click away and
+          // Escape, so the overlay has no barrier or Escape of its own.
+          return ArDriveOverlay(
             visible: _isOpen,
+            closeOnBarrierTap: false,
+            closeOnEscape: false,
             anchor: const Aligned(
               follower: Alignment.topLeft,
               target: Alignment.bottomLeft,
               offset: Offset(0, 8),
             ),
-            portalFollower: TextFieldTapRegion(
+            content: TextFieldTapRegion(
               child: SizedBox(
                 width: width,
                 child: BlocBuilder<SearchBloc, SearchState>(

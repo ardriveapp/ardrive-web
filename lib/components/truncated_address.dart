@@ -17,7 +17,7 @@ class TruncatedAddress extends StatelessWidget {
     required this.walletAddress,
     this.fontSize,
     this.offsetStart = 6,
-    this.offsetEnd = 5,
+    this.offsetEnd = 4,
     this.explorerUrl,
   });
 

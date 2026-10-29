@@ -486,7 +486,8 @@ class _Blocked extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final text = switch (state.blocked) {
-      PublishBlock.pendingUploads => strings.publishBlockedPending,
+      PublishBlock.pendingUploads =>
+        strings.publishBlockedPending(state.pendingChanges),
       PublishBlock.hiddenFolder => strings.publishBlockedHiddenFolder,
       PublishBlock.empty => strings.publishBlockedEmpty,
       _ => state.blockedReason,

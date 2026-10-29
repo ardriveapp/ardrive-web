@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:archive/archive_io.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';

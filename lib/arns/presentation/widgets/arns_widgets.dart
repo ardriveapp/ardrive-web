@@ -388,10 +388,9 @@ class ArNSSwitchAccountText extends StatelessWidget {
   }
 }
 
-/// `7xKp...q2Fd`.
-String shortArNSAddress(String address) => address.length <= 10
-    ? address
-    : truncateString(address, offsetStart: 4, offsetEnd: 4);
+/// The app's one short form of an address, `7xKpQa...q2Fd` ([shortenId]),
+/// so the linked wallet reads like the address above it.
+String shortArNSAddress(String address) => shortenId(address);
 
 /// What a record points to, as text: the item's name, "Nothing published
 /// here", or "Points elsewhere".

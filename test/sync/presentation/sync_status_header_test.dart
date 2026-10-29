@@ -84,28 +84,30 @@ void main() {
     return Portal(
       child: ArDriveTheme(
         themeData: theme ?? lightTheme(),
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+        // Above the navigator, where the app provides them: a menu opens in
+        // the navigator's overlay and reads them from there.
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<SyncCubit>.value(value: syncCubit),
+            BlocProvider<DrivesCubit>.value(value: drivesCubit),
           ],
-          supportedLocales: const [Locale('en', '')],
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(textScale),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: child!,
             ),
-            child: child!,
-          ),
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<SyncCubit>.value(value: syncCubit),
-                BlocProvider<DrivesCubit>.value(value: drivesCubit),
-              ],
+            home: const Scaffold(
               // Against the trailing edge, the way both app bars place it.
-              child: const Align(
+              body: Align(
                 alignment: Alignment.topRight,
                 child: SyncButton(),
               ),
@@ -127,6 +129,8 @@ void main() {
     }
     stateController.add(SyncInProgress(trigger: SyncTrigger.background));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     if (reporting != null) {
       // Pushed through the stream rather than only stubbed on the cubit. The
@@ -137,12 +141,16 @@ void main() {
       when(() => syncCubit.syncProgress).thenReturn(reporting);
       progressController.add(reporting);
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
     }
   }
 
   /// Opens the menu the indicator hangs off, and waits for it to expand.
   Future<void> openMenu(WidgetTester tester) async {
     await tester.tap(find.byType(SyncButton));
+    // The menu enters the navigator's overlay on the frame after the tap.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
 
@@ -242,6 +250,8 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('Creating ghost folders...'), findsOneWidget);
 
@@ -302,6 +312,8 @@ void main() {
           ),
         );
         await tester.pump(const Duration(milliseconds: 10));
+        // The overlay shows what changed on the frame after.
+        await tester.pump();
 
         expect(find.text('Reading $done files...'), findsOneWidget);
       }
@@ -424,6 +436,8 @@ void main() {
           .thenReturn(DateTime.now().subtract(const Duration(seconds: 97)));
       await tester.pump(const Duration(milliseconds: 1100));
 
+      // The overlay lets go of it on the frame after.
+      await tester.pump();
       expect(find.text('42s elapsed'), findsNothing);
       expect(find.text('97s elapsed'), findsOneWidget);
 
@@ -575,6 +589,8 @@ void main() {
 
       stateController.add(SyncLoadingDrives());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       await openMenu(tester);
 
       expect(find.text('Loading your drives...'), findsOneWidget);
@@ -612,6 +628,8 @@ void main() {
         completedAt: DateTime.now().subtract(const Duration(minutes: 5)),
       ));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       await openMenu(tester);
 
       expect(
@@ -636,6 +654,8 @@ void main() {
         failedAt: DateTime.now().subtract(const Duration(minutes: 5)),
       ));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       await openMenu(tester);
 
       expect(
@@ -656,6 +676,8 @@ void main() {
 
       stateController.add(SyncWalletMismatch());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       // Past the few seconds the announcement gets, so this is the header and
       // not the pill.
       await tester.pump(const Duration(seconds: 30));
@@ -682,6 +704,8 @@ void main() {
         cancelledAt: DateTime.now(),
       ));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       await openMenu(tester);
 
       expect(
@@ -717,6 +741,8 @@ void main() {
         trigger: SyncTrigger.background,
       ));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('12 items changed'), findsOneWidget);
 
@@ -734,6 +760,8 @@ void main() {
       // the result until something else rebuilt the top bar.
       await tester.pump(const Duration(seconds: 30));
 
+      // The overlay lets go of it on the frame after.
+      await tester.pump();
       expect(find.byType(ArDriveDropdown), findsNothing);
       expect(find.text('Your drives'), findsNothing);
 
