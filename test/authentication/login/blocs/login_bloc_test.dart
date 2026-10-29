@@ -1136,7 +1136,7 @@ void main() {
     );
 
     blocTest<LoginBloc, LoginState>(
-      'goes back to the landing panel when the password step fails',
+      'asks again for the same wallet when the password step fails',
       build: () => LoginBloc(
         arDriveAuth: mockArDriveAuth,
         arConnectService: mockArConnectService,
@@ -1168,14 +1168,21 @@ void main() {
           isNewUser: true,
           showWalletCreated: true,
         ));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.hasSignUpToRetry, isTrue);
+        // The page does this once the error has been read.
+        bloc.add(const RetrySignUpPassword());
       },
       skip: 2,
       expect: () => [
         isA<LoginLoading>(),
         isA<LoginCloseBlockingDialog>(),
         isA<LoginFailure>(),
-        isA<LoginLanding>(),
+        isA<CreateNewPassword>()
+            .having((s) => s.wallet, 'wallet', wallet)
+            .having((s) => s.mnemonic?.split(' '), 'mnemonic', hasLength(12)),
       ],
+      verify: (bloc) => expect(bloc.hasSignUpToRetry, isFalse),
     );
   });
 }

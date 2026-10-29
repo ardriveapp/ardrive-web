@@ -10,7 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
-void showErrorDialog(
+/// Completes when the dialog is closed.
+Future<void> showErrorDialog(
     {required BuildContext context,
     String? title,
     required String message,
@@ -18,7 +19,7 @@ void showErrorDialog(
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final typography = ArDriveTypographyNew.of(context);
 
-  showArDriveDialog(
+  return showArDriveDialog(
     context,
     barrierDismissible: false,
     useRootNavigator: false,
