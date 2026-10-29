@@ -68,15 +68,20 @@ Flavor appFlavorOf(BuildContext context) {
 
 /// Help's line about the app: "Version 2.90.0 · What's new".
 ///
-/// The one place the version is shown in the signed-in app and on sign in:
-/// it is what a reader asking for support is asked for, and Help is where
-/// they are then.
+/// Where the version is shown: in Help when signed in, and as the last line
+/// of the sign-in panel's settings menu when not, since a signed-out reader
+/// has no Help. It is what a reader asking for support is asked for.
 class AppVersionHelpLine extends StatelessWidget {
   const AppVersionHelpLine({
     super.key,
     this.flavor,
     this.packageInfo,
+    this.quiet = false,
   });
+
+  /// Smaller and lower, as the last line of a menu rather than a line of
+  /// Help's own.
+  final bool quiet;
 
   /// Which release page What's new opens; the app's own when not given.
   final Flavor? flavor;
@@ -95,7 +100,9 @@ class AppVersionHelpLine extends StatelessWidget {
       builder: (context, snapshot) {
         final info = snapshot.data;
         if (info == null) return const SizedBox.shrink();
-        final style = typography.paragraphNormal(color: colorTokens.textMid);
+        final style = quiet
+            ? typography.paragraphSmall(color: colorTokens.textLow)
+            : typography.paragraphNormal(color: colorTokens.textMid);
         return Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
@@ -104,6 +111,10 @@ class AppVersionHelpLine extends StatelessWidget {
             ArDriveLink(
               text: strings.whatsNew,
               external: true,
+              style: quiet
+                  ? typography.paragraphSmall(fontWeight: ArFontWeight.semiBold)
+                  : null,
+              color: quiet ? colorTokens.textLow : null,
               onTap: () => openUrl(
                 url: whatsNewUrl(info.version, flavor ?? appFlavorOf(context)),
               ),

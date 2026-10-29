@@ -1,8 +1,10 @@
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -70,8 +72,7 @@ void main() {
       );
     });
 
-    test('staging and development builds, never tagged, open the releases',
-        () {
+    test('staging and development builds, never tagged, open the releases', () {
       for (final flavor in [Flavor.staging, Flavor.development]) {
         expect(
           whatsNewUrl('2.90.0', flavor),
@@ -147,6 +148,69 @@ void main() {
       await tester.tap(link);
       await tester.pump();
 
+      expect(launcher.launched, [url]);
+    });
+  }
+
+  /// A signed-out reader has no Help, so the sign-in panel's settings menu
+  /// ends with the same line.
+  for (final (flavor, url) in [
+    (
+      Flavor.production,
+      'https://github.com/ardriveapp/ardrive-web/releases/tag/v2.90.0'
+    ),
+    (Flavor.development, 'https://github.com/ardriveapp/ardrive-web/releases'),
+  ]) {
+    testWidgets(
+        "the sign-in settings menu ends with the version, for ${flavor.name}",
+        (tester) async {
+      final config = _MockConfigService();
+      when(() => config.flavor).thenReturn(flavor);
+      final preferences = _MockPreferences();
+      when(() => preferences.watch())
+          .thenAnswer((_) => const Stream<UserPreferences>.empty());
+      when(() => preferences.currentPreferences).thenReturn(null);
+
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<ConfigService>.value(value: config),
+            RepositoryProvider<UserPreferencesRepository>.value(
+              value: preferences,
+            ),
+          ],
+          child: ArDriveApp(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: const [Locale('en', '')],
+              home: const Scaffold(
+                body: Align(
+                  alignment: Alignment.topLeft,
+                  child: SettingsSubmenu(child: Text('cog')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('cog'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppVersionHelpLine), findsOneWidget);
+      expect(find.textContaining('Version 2.90.0'), findsOneWidget);
+      // The last line of the menu.
+      final version = tester.getTopLeft(find.byType(AppVersionHelpLine)).dy;
+      for (final item in ['Set gateway', 'Set Turbo services']) {
+        expect(tester.getTopLeft(find.text(item)).dy, lessThan(version));
+      }
+
+      final link = find.byWidgetPredicate(
+        (w) => w is ArDriveLink && w.text == "What's new",
+      );
+      await tester.tap(link);
+      await tester.pump();
       expect(launcher.launched, [url]);
     });
   }
