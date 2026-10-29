@@ -4,6 +4,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -325,6 +326,83 @@ void main() {
           SnapshotUploadSuccess(),
         ],
       );
+
+      group('the wallet check before confirming', () {
+        CreateSnapshotCubit build({bool throwOnSign = false}) =>
+            CreateSnapshotCubit(
+              arweave: arweave,
+              profileCubit: profileCubit,
+              driveDao: driveDao,
+              tabVisibility: tabVisibility,
+              pst: pst,
+              auth: auth,
+              configService: configService,
+              paymentService: paymentService,
+              turboBalanceRetriever: turboBalanceRetriever,
+              turboService: turboService,
+              throwOnSignTxForTesting: throwOnSign,
+            );
+
+        Future<void> confirm(CreateSnapshotCubit cubit) async {
+          await cubit.confirmDriveAndHeighRange(
+            'driveId',
+            range: Range(start: 0, end: 1),
+          );
+          // Only what confirming does counts.
+          clearInteractions(arweave);
+          await cubit.confirmSnapshotCreation();
+        }
+
+        void nothingWasPrepared() {
+          verifyNever(() => arweave.prepareEntityTx(any(), any(), any(),
+              skipSignature: any(named: 'skipSignature')));
+          verifyNever(() => arweave.prepareEntityDataItem(any(), any(),
+              skipSignature: any(named: 'skipSignature')));
+        }
+
+        blocTest<CreateSnapshotCubit, CreateSnapshotState>(
+          'on another wallet, fails and prepares nothing',
+          setUp: () => when(() => profileCubit.logoutIfWalletMismatch())
+              .thenAnswer((_) async => true),
+          build: build,
+          act: confirm,
+          expect: () => [
+            isA<ComputingSnapshotData>(),
+            isA<ConfirmingSnapshotCreation>(),
+            isA<SnapshotUploadFailure>(),
+          ],
+          verify: (_) => nothingWasPrepared(),
+        );
+
+        blocTest<CreateSnapshotCubit, CreateSnapshotState>(
+          'Wander unavailable, then Cancel: prepares nothing, the '
+          'confirmation stays',
+          setUp: () => when(() => profileCubit.logoutIfWalletMismatch())
+              .thenThrow(const ArConnectUnavailableException(
+                  ArConnectUnavailableReason.noAnswer)),
+          build: build,
+          act: confirm,
+          expect: () => [
+            isA<ComputingSnapshotData>(),
+            isA<ConfirmingSnapshotCreation>(),
+          ],
+          verify: (_) => nothingWasPrepared(),
+        );
+
+        // A signature that ends in Cancel used to throw past the cubit and
+        // leave the loading dialog, which can't be dismissed.
+        blocTest<CreateSnapshotCubit, CreateSnapshotState>(
+          'a signature that fails ends in a failure, not the spinner',
+          build: () => build(throwOnSign: true),
+          act: confirm,
+          expect: () => [
+            isA<ComputingSnapshotData>(),
+            isA<ConfirmingSnapshotCreation>(),
+            isA<PreparingAndSigningTransaction>(),
+            isA<SnapshotUploadFailure>(),
+          ],
+        );
+      });
 
       blocTest(
         'emits failure when network error',
