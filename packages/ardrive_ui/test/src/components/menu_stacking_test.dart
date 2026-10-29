@@ -137,4 +137,74 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('New drive'), findsNothing);
   });
+
+  testWidgets(
+      'a dialog opened from an open card takes its own clicks, and the card '
+      'comes back when it closes', (tester) async {
+    late BuildContext pageContext;
+    var visible = true;
+
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => MaterialApp(
+        home: Scaffold(
+          body: Builder(builder: (context) {
+            pageContext = context;
+            return StatefulBuilder(
+              builder: (context, setState) => ArDriveOverlay(
+                visible: visible,
+                onVisibleChange: (value) => setState(() => visible = value),
+                anchor: const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.bottomLeft,
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // The card's Wallet section, opened before the dialog.
+                    const ExpansionTile(
+                      title: Text('Wallet'),
+                      children: [Text('ArNS wallet')],
+                    ),
+                    TextButton(
+                      // The keyfile download in the profile card: a dialog
+                      // over the page while the card stays open.
+                      onPressed: () => showDialog<void>(
+                        context: pageContext,
+                        builder: (context) => Center(
+                          child: TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                      ),
+                      child: const Text('Download wallet backup'),
+                    ),
+                  ],
+                ),
+                child: const SizedBox(width: 40, height: 40),
+              ),
+            );
+          }),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wallet'));
+    await tester.pumpAndSettle();
+    expect(find.text('ArNS wallet'), findsOneWidget);
+
+    await tester.tap(find.text('Download wallet backup'));
+    await tester.pumpAndSettle();
+    // The card steps aside, so nothing of it lies over the dialog.
+    expect(find.text('Download wallet backup').hitTestable(), findsNothing);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancel'), findsNothing, reason: 'the dialog closed');
+    expect(visible, isTrue, reason: 'the click was not the card\'s barrier');
+    expect(find.text('Download wallet backup'), findsOneWidget);
+    expect(find.text('ArNS wallet'), findsOneWidget,
+        reason: 'the card comes back as it was');
+  });
 }

@@ -376,11 +376,24 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   OverlayEntry? _entry;
   late bool _visible;
 
+  /// Whether another route, such as a dialog, is open over this one's page.
+  /// The entry belongs to no route, so the navigator would leave it above
+  /// the dialog, and its barrier would take the dialog's clicks: it goes
+  /// offstage, keeping its state, until the page is on top again.
+  bool _covered = false;
+
   @override
   void initState() {
     super.initState();
     _visible = widget.visible ?? false;
-    if (_visible) _afterFrame(_show);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    _covered = route != null && !route.isCurrent;
+    _sync();
   }
 
   @override
@@ -389,9 +402,13 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
     if (widget.visible != oldWidget.visible) {
       _visible = widget.visible ?? false;
     }
-    // The entry is built in another part of the tree, which can't be marked
-    // dirty while this one builds: it catches up after the frame. A closed
-    // menu with no entry has nothing to catch up.
+    _sync();
+  }
+
+  /// Shows or hides the entry to match. It is built in another part of the
+  /// tree, which can't be marked dirty while this one builds, so it catches
+  /// up after the frame. A closed menu with no entry has nothing to catch up.
+  void _sync() {
     if (_visible || _entry != null) {
       _afterFrame(_visible ? _show : _hide);
     }
@@ -439,6 +456,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   /// The way out for a keyboard, and for a screen reader, which has no
   /// barrier to press.
   bool _onKey(KeyEvent event) {
+    if (_covered) return false;
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
       _close();
@@ -462,6 +480,15 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   }
 
   Widget _buildEntry(BuildContext overlayContext) {
+    // Offstage while another route covers the page: not drawn, not clicked,
+    // not read by a screen reader, and back as it was when the page returns.
+    return Offstage(
+      offstage: _covered,
+      child: _buildLayers(),
+    );
+  }
+
+  Widget _buildLayers() {
     return Stack(
       children: [
         if (widget.closeOnBarrierTap)
