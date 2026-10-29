@@ -237,7 +237,8 @@ void main() {
       expect(events[1], isA<AddWalletFromArConnect>());
       expect(events[2], isA<LoginWithMetamask>());
       expect(events[3], isA<ShowLanding>());
-      expect(events[4], isA<CreateNewWallet>());
+      // Sign up's choice, which offers a wallet if there is one.
+      expect(events[4], isA<StartSignUp>());
     });
   });
 
@@ -302,6 +303,78 @@ void main() {
           (loginPanelFor(const LoginCreatingAccount(noWalletFound: true),
                   loginBloc) as CreatingAccountView)
               .noWalletFound,
+          isTrue);
+    });
+  });
+
+  group('the get-started link', () {
+    Future<void> pumpPage(WidgetTester tester, LoginState state) async {
+      final preferences = _MockUserPreferencesRepository();
+      when(() => preferences.watch())
+          .thenAnswer((_) => const Stream<UserPreferences>.empty());
+      when(() => preferences.currentPreferences).thenReturn(null);
+      when(() => loginBloc.isArConnectAvailable).thenReturn(true);
+      when(() => loginBloc.isMetamaskAvailable).thenReturn(false);
+      when(() => loginBloc.isSolanaAvailable).thenReturn(false);
+      when(() => loginBloc.existingUserFlow).thenReturn(false);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<LoginBloc>.value(value: loginBloc),
+            BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+            RepositoryProvider<UserPreferencesRepository>.value(
+                value: preferences),
+            BlocProvider<ThemeSwitcherBloc>(
+              create: (_) =>
+                  ThemeSwitcherBloc(userPreferencesRepository: preferences),
+            ),
+          ],
+          child: ArDriveApp(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: LoginPageScaffold(
+                isGettingStartedLoading: !gettingStartedReady(state),
+                loginState: state,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows the choice, not a spinner, when a wallet is found',
+        (tester) async {
+      const choice =
+          LoginInitial(isArConnectAvailable: true, existingUserFlow: false);
+      whenListen(loginBloc, const Stream<LoginState>.empty(),
+          initialState: choice);
+      await pumpPage(tester, choice);
+      expect(find.text('Create your account'), findsOneWidget);
+      expect(find.text('Wander'), findsOneWidget);
+    });
+
+    testWidgets('goes to Creating, with the line, when none is',
+        (tester) async {
+      const creating = LoginCreatingAccount(noWalletFound: true);
+      whenListen(loginBloc, const Stream<LoginState>.empty(),
+          initialState: creating);
+      await pumpPage(tester, creating);
+      expect(
+          find.text("No wallet found in this browser, so we're making one "
+              'for you.'),
+          findsOneWidget);
+    });
+
+    test('waits only while the account check runs', () {
+      expect(gettingStartedReady(LoginLoading()), isFalse);
+      expect(
+          gettingStartedReady(const LoginInitial(
+              isArConnectAvailable: true, existingUserFlow: false)),
           isTrue);
     });
   });

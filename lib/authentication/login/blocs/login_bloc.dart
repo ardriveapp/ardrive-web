@@ -589,8 +589,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     if (event.gettingStarted) {
-      _handleCreateNewWalletEvent(
-          CreateNewWallet(noWalletFound: !anyWalletDetected), emit);
+      // The same choice as Sign up. Awaited: it emits for up to a minute.
+      await _handleStartSignUpEvent(emit);
     } else {
       emit(const LoginLanding());
     }

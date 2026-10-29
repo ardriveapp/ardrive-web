@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
       create: (context) => _loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, loginState) {
-          if (loginState is! LoginLoading && loginState is! LoginInitial) {
+          if (gettingStartedReady(loginState)) {
             setState(() {
               didGettingStartedLoadedAlready = true;
             });
@@ -591,6 +591,12 @@ void handleLoginState(BuildContext context, LoginState loginState) {
     );
   }
 }
+
+/// Whether the get-started link's spinner can give way to the panel: once
+/// the check for an account on this device is done. Sign up's choice is a
+/// [LoginInitial], so that state no longer means "still loading".
+@visibleForTesting
+bool gettingStartedReady(LoginState state) => state is! LoginLoading;
 
 /// Whether the sign-in panel redraws for [current]. Dialogs, loaders and
 /// transient states leave the panel as it is.

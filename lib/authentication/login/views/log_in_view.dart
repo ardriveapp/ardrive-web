@@ -231,7 +231,9 @@ class _LogInViewState extends State<LogInView> {
                         ),
                         onTap: () {
                           PlausibleEventTracker.trackClickSignUp();
-                          loginBloc.add(const CreateNewWallet());
+                          // Sign up's choice: a wallet in the browser is
+                          // offered as a new account first.
+                          loginBloc.add(const StartSignUp());
                         },
                       ),
                     ),

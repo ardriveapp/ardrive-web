@@ -1405,6 +1405,42 @@ void main() {
       );
     });
 
+    group('the get-started link makes the same choice as Sign up', () {
+      setUp(() {
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((_) async => false);
+        when(() => mockEthereumProviderService.isExtensionPresent())
+            .thenReturn(false);
+        when(() => mockSolanaProviderService.isExtensionPresent())
+            .thenReturn(false);
+      });
+
+      blocTest<LoginBloc, LoginState>(
+        'a wallet in the browser: the choice',
+        build: logInBloc,
+        setUp: () => when(() => mockArConnectService.isExtensionPresent())
+            .thenReturn(true),
+        act: (bloc) =>
+            bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
+        expect: () => [
+          LoginLoading(),
+          predicate<LoginInitial>((s) => !s.existingUserFlow),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'no wallet: straight to making one, saying why',
+        build: logInBloc,
+        act: (bloc) =>
+            bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
+        expect: () => [
+          LoginLoading(),
+          const LoginCreatingAccount(noWalletFound: true),
+          const TypeMatcher<CreateNewPassword>(),
+        ],
+      );
+    });
+
     blocTest<LoginBloc, LoginState>(
       'Recovery phrase or keyfile opens the phrase panel, and Back the first',
       build: logInBloc,
