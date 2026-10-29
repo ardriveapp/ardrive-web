@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
 import 'package:ardrive/arns/data/arns_names_repository.dart';
@@ -1102,7 +1103,7 @@ void main() {
       const published = ArNSPublicationItem(
         publicationId: 'publication-1',
         driveId: 'drive-1',
-        folderId: null,
+        scope: PublicationDriveScope(),
         isLatestVersion: true,
       );
       final cubit = flow(following: [blog])..load();

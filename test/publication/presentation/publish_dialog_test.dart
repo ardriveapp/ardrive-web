@@ -55,6 +55,8 @@ void main() {
     cubit = _MockPublishCubit();
     when(() => cubit.scopeName).thenReturn('Archive');
     when(() => cubit.folder).thenReturn(null);
+    when(() => cubit.isFile).thenReturn(false);
+    when(() => cubit.isPrivateFile).thenReturn(false);
     when(() => cubit.canSyncDrive).thenReturn(false);
   });
 

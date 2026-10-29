@@ -78,6 +78,15 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     }
     _config = config;
 
+    // A file page reads its one file from the network, as its share page
+    // does; there is no snapshot to fetch and no drive to open. A private
+    // one's key belongs to the file and is read by the share page from the
+    // link, so the page does not wait for a drive key here.
+    if (config.scope is PublicationFileScope) {
+      await _openFilePage(config);
+      return;
+    }
+
     if (config.isPrivate && _driveKey == null) {
       emit(PublicationNeedsKey(config));
       return;
@@ -89,7 +98,23 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   Future<void> retry() async {
     final config = _config;
     if (config == null) return load();
+    if (config.scope is PublicationFileScope) return _openFilePage(config);
     await _openSnapshot(config);
+  }
+
+  /// Opens a file page once its byline is checked: the file's metadata must
+  /// have been signed by the owner the page names, the same rule a drive or
+  /// folder page applies to its snapshot. Only a confirmed mismatch refuses.
+  Future<void> _openFilePage(PublicationConfig config) async {
+    final ownerMatches = await _signedBy(config, config.file!.metadataTxId);
+    if (ownerMatches == false) {
+      logger.w('Publication refused: its file was signed by someone else '
+          'than the owner it names');
+      emit(_refused);
+      return;
+    }
+    PublicationContents.open = null;
+    emit(PublicationReady(config, ownerVerified: ownerMatches == true));
   }
 
   /// Anything that goes wrong on the way that is not one of the named
@@ -114,10 +139,15 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
 
   /// Whether the snapshot's real signer is [config]'s owner: true, false, or
   /// null when the gateway cannot say.
-  Future<bool?> _ownerMatches(PublicationConfig config) async {
+  Future<bool?> _ownerMatches(PublicationConfig config) =>
+      _signedBy(config, config.snapshot!.txId);
+
+  /// Whether [txId]'s real signer is [config]'s owner: true, false, or null
+  /// when the gateway cannot say.
+  Future<bool?> _signedBy(PublicationConfig config, String txId) async {
     final String? signer;
     try {
-      signer = await _ownerOf(config.snapshot.txId);
+      signer = await _ownerOf(txId);
     } catch (e) {
       logger.w('Publication owner not checked: $e');
       return null;
@@ -127,6 +157,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   }
 
   Future<void> _openSnapshotOrThrow(PublicationConfig config) async {
+    final snapshot = config.snapshot!;
     final ownerMatches = await _ownerMatches(config);
     if (ownerMatches == false) {
       logger.w('Publication refused: its snapshot was signed by someone else '
@@ -153,7 +184,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     final Uint8List body;
     try {
       body = await _source.readSnapshot(
-        config.snapshot.path,
+        snapshot.path,
         onProgress: (received, total) => emit(
           PublicationLoadingSnapshot(config, received: received, total: total),
         ),
@@ -179,9 +210,9 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
 
     final result = await _importer.import(
       candidate: DriveStateArtifactCandidate(
-        txId: config.snapshot.txId,
+        txId: snapshot.txId,
         ownerAddress: config.owner,
-        tags: config.snapshot.tags,
+        tags: snapshot.tags,
       ),
       body: body,
       protection: resolved,

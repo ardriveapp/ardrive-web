@@ -24,6 +24,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/publication/data/publication_owner_lookup.dart';
 import 'package:ardrive/publication/data/publication_source.dart';
+import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
@@ -323,12 +324,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// `#/` in the address bar over a deep link, and left it in the history,
   /// so Back went to the root rather than where the visitor came from.
   AppRoutePath get _publicationConfiguration {
+    // A private file page's key, from its link, is reported back as it came
+    // so the first report does not drop it and a reload still opens the page.
+    final keepKey = AppRoutePath(
+      sharedFileKey: sharedFileKey,
+      sharedRawFileKey: sharedRawFileKey,
+      sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+    );
     if (publication == null) {
+      if (sharedRawFileKey != null && _publicationFolderRequest == null) {
+        return keepKey;
+      }
       return AppRoutePath.publication(
         folderId: _publicationFolderRequest,
         fileId: _publicationFileRequest,
       );
     }
+    if (publication?.scope is PublicationFileScope) return keepKey;
     final folderId = driveFolderId;
     if (folderId == null || folderId == publication?.scopeRootFolderId) {
       return AppRoutePath.publication();
@@ -406,6 +418,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Future<void> openPublication(
       PublicationConfig config, DriveDao driveDao) async {
     publication = config;
+    // A file page is its file's share page: the router's shared file branch
+    // shows it, pinned to the version that was published, with the key the
+    // link carried.
+    if (config.scope case PublicationFileScope(:final fileId)) {
+      sharedFileId = fileId;
+      sharedFileLinkPayload = filePagePayload(config);
+      notifyListeners();
+      return;
+    }
     _isInPublicationScope = (folderId) => isInPublicationScope(
           driveDao: driveDao,
           config: config,
@@ -1284,8 +1305,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     if (PublicationMode.isOn) {
       _publicationFolderRequest = configuration.publicationFolderId;
       _publicationFileRequest = configuration.publicationFileId;
+      // A file page's key comes only from its link; a route without one
+      // (a reload reports it back) leaves the one the link gave.
+      if (configuration.sharedRawFileKey != null) {
+        sharedFileKey = configuration.sharedFileKey;
+        sharedRawFileKey = configuration.sharedRawFileKey;
+        sharedFileKeyIsDamaged = configuration.sharedFileKeyIsDamaged;
+      }
       // Before the publication is in, [openPublication] follows it.
-      if (publication != null) await _followPublicationLink();
+      if (publication != null && publication?.scope is! PublicationFileScope) {
+        await _followPublicationLink();
+      }
       return;
     }
 

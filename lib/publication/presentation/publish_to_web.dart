@@ -1,5 +1,6 @@
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
@@ -20,14 +21,44 @@ bool offersPublishToWeb(BuildContext context, Drive? drive) =>
     context.read<ConfigService>().config.enableDriveStatePublishing &&
     context.read<PublicationsCubit>().canPublish(drive);
 
-/// "Published to web" once [folderId] (or the drive, when null) is
-/// published, else "Publish to web".
-String publishToWebLabel(BuildContext context, Drive drive, String? folderId) {
+/// Whether "Publish to web" is offered for a file: as for a drive, to the
+/// file's owner in a public or a private drive, for a file whose data is
+/// theirs (a pinned file's belongs to someone else).
+bool offersPublishFileToWeb(
+  BuildContext context,
+  Drive? drive, {
+  required String? pinnedDataOwnerAddress,
+}) =>
+    drive != null &&
+    kIsWeb &&
+    !PublicationMode.isOn &&
+    pinnedDataOwnerAddress == null &&
+    context.read<ConfigService>().config.enableDriveStatePublishing &&
+    context.read<PublicationsCubit>().canPublishFile(drive);
+
+/// What a drive's, a folder's or a file's publication is, as the cubit's
+/// state holds it.
+Publication? _publicationIn(
+  PublicationsState state,
+  String driveId, {
+  String? folderId,
+  String? fileId,
+}) =>
+    fileId != null
+        ? state.filePageOf(driveId, fileId)
+        : state.publicationOf(driveId, folderId);
+
+/// "Published to web" once [folderId] (or the drive, when null) or [fileId]
+/// is published, else "Publish to web".
+String publishToWebLabel(
+  BuildContext context,
+  Drive drive,
+  String? folderId, {
+  String? fileId,
+}) {
   final strings = appLocalizationsOf(context);
-  return context
-              .read<PublicationsCubit>()
-              .state
-              .publicationOf(drive.id, folderId) !=
+  return _publicationIn(context.read<PublicationsCubit>().state, drive.id,
+              folderId: folderId, fileId: fileId) !=
           null
       ? strings.publishedToWeb
       : strings.publishToWeb;
@@ -37,12 +68,22 @@ String publishToWebLabel(BuildContext context, Drive drive, String? folderId) {
 ArDriveIcon publishToWebIcon({double? size, Color? color}) =>
     ArDriveIcons.publishToWeb(size: size ?? 24, color: color);
 
-/// Opens publishing for [drive], or for its folder [folderId].
+/// Opens publishing for [drive], for its folder [folderId] or for its file
+/// [fileId].
 Future<void> openPublishToWeb(
   BuildContext context, {
   required Drive drive,
   String? folderId,
+  String? fileId,
 }) async {
+  if (fileId != null) {
+    final file = await context
+        .read<DriveDao>()
+        .fileById(fileId: fileId)
+        .getSingleOrNull();
+    if (file == null || !context.mounted) return;
+    return promptToPublish(context, drive: drive, file: file);
+  }
   FolderEntry? folder;
   if (folderId != null && folderId != drive.rootFolderId) {
     folder = await context
@@ -112,6 +153,7 @@ class PublishToWebMenuItem extends StatelessWidget {
     super.key,
     required this.drive,
     this.folderId,
+    this.fileId,
     required this.iconSize,
     this.height,
   });
@@ -120,6 +162,9 @@ class PublishToWebMenuItem extends StatelessWidget {
 
   /// Null for the drive itself.
   final String? folderId;
+
+  /// Set for a file.
+  final String? fileId;
   final double iconSize;
   final double? height;
 
@@ -127,10 +172,12 @@ class PublishToWebMenuItem extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocBuilder<PublicationsCubit, PublicationsState>(
         buildWhen: (a, b) =>
-            (a.publicationOf(drive.id, folderId) != null) !=
-            (b.publicationOf(drive.id, folderId) != null),
+            (_publicationIn(a, drive.id, folderId: folderId, fileId: fileId) !=
+                null) !=
+            (_publicationIn(b, drive.id, folderId: folderId, fileId: fileId) !=
+                null),
         builder: (context, _) => ArDriveDropdownItemTile(
-          name: publishToWebLabel(context, drive, folderId),
+          name: publishToWebLabel(context, drive, folderId, fileId: fileId),
           icon: publishToWebIcon(size: iconSize),
           height: height,
         ),

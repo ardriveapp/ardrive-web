@@ -5,6 +5,11 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dar
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/arns/domain/arns_nameable_item.dart';
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
+import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
+import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
@@ -26,6 +31,7 @@ import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_look_step.dart';
 import 'package:ardrive/publication/presentation/publish/published_view.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/arweave/graphql/graphql.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
@@ -36,20 +42,23 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart' show TabVisibilitySingleton;
+import 'package:ardrive_utils/ardrive_utils.dart'
+    show EntityTag, TabVisibilitySingleton;
+import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:pst/pst.dart';
 
-/// "Publish to web" on a drive ([folder] null) or a folder: the published
-/// view when it is published already, else the publish dialog
-/// (docs/PUBLICATIONS.md, "Entry points").
+/// "Publish to web" on a drive ([folder] and [file] null), a folder or a
+/// file: the published view when it is published already, else the publish
+/// dialog (docs/PUBLICATIONS.md, "Entry points").
 Future<void> promptToPublish(
   BuildContext context, {
   required Drive drive,
   FolderEntry? folder,
+  FileEntry? file,
 }) async {
   final publications = context.read<PublicationsCubit>();
   final known = await publications.publicationsOf(drive);
@@ -70,16 +79,18 @@ Future<void> promptToPublish(
       ),
     );
   }
-  final publication = known.of(folder?.id);
+  final publication =
+      file != null ? known.ofFile(file.id) : known.of(folder?.id);
   if (publication != null) {
     return showPublishedView(
       context,
       drive: drive,
       folder: folder,
+      file: file,
       publication: publication,
     );
   }
-  return showPublishDialog(context, drive: drive, folder: folder);
+  return showPublishDialog(context, drive: drive, folder: folder, file: file);
 }
 
 /// The publish dialog. [previous] makes it an update of that publication,
@@ -88,6 +99,7 @@ Future<void> showPublishDialog(
   BuildContext context, {
   required Drive drive,
   FolderEntry? folder,
+  FileEntry? file,
   Publication? previous,
 }) {
   final strings = appLocalizationsOf(context);
@@ -165,6 +177,21 @@ Future<void> showPublishDialog(
       }
       return syncCubit.startSyncForDrive(driveId: driveId, deepSync: deep);
     },
+    cipherOf: (dataTxId) async {
+      try {
+        final tx = await arweave
+            .getTransactionDetails(dataTxId)
+            .timeout(const Duration(seconds: 30));
+        final cipher = tx?.getTag(EntityTag.cipher);
+        final iv = tx?.getTag(EntityTag.cipherIv);
+        return cipher == null || iv == null
+            ? null
+            : (cipher: cipher, cipherIv: iv);
+      } catch (e) {
+        logger.w('[publication] the file cipher could not be read: $e');
+        return null;
+      }
+    },
   );
   // The app's messenger outlives the dialog, which may be closed while the
   // publish runs.
@@ -178,6 +205,7 @@ Future<void> showPublishDialog(
       create: (_) => PublishCubit(
         drive: drive,
         folder: folder,
+        file: file,
         previous: previous,
         dependencies: dependencies,
         // The name step; a republish carries the names on the version it
@@ -286,6 +314,31 @@ class PublishDialog extends StatelessWidget {
                   ModalAction.dismiss(title: strings.close, action: close),
               ],
             );
+          case PublishStage.how:
+            return _modal(
+              context,
+              title: title,
+              step: strings.publishStepOf(1, 3),
+              content: _How(state: state),
+              actions: [
+                ModalAction(title: strings.cancel, action: close),
+                ModalAction(
+                  title: strings.next,
+                  isEnable: state.howIsReady,
+                  action: cubit.next,
+                ),
+              ],
+            );
+          case PublishStage.itself:
+            return _modal(
+              context,
+              title: title,
+              content: _Itself(link: cubit.fileLink, file: cubit.file!),
+              actions: [
+                ModalAction(title: strings.back, action: cubit.back),
+                ModalAction(title: strings.doneEmphasized, action: close),
+              ],
+            );
           case PublishStage.included:
             return _modal(
               context,
@@ -389,9 +442,13 @@ class PublishDialog extends StatelessWidget {
                 children: [
                   PublishedLink(
                     link: state.link!,
-                    note: state.method == UploadMethod.ar
-                        ? strings.publishDoneArNote
-                        : strings.publishDoneNote,
+                    isSecret: cubit.isPrivateFile,
+                    note: [
+                      if (cubit.isPrivateFile) strings.publishFileKeyInLink,
+                      state.method == UploadMethod.ar
+                          ? strings.publishDoneArNote
+                          : strings.publishDoneNote,
+                    ].join(' '),
                   ),
                   if (state.names != null && !state.names!.isEmpty) ...[
                     const SizedBox(height: 16),
@@ -485,10 +542,13 @@ class _Blocked extends StatelessWidget {
     final strings = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final isFile = context.read<PublishCubit>().isFile;
     final text = switch (state.blocked) {
-      PublishBlock.pendingUploads =>
-        strings.publishBlockedPending(state.pendingChanges),
+      PublishBlock.pendingUploads => isFile
+          ? strings.publishBlockedPendingFile
+          : strings.publishBlockedPending(state.pendingChanges),
       PublishBlock.hiddenFolder => strings.publishBlockedHiddenFolder,
+      PublishBlock.hiddenFile => strings.publishBlockedHiddenFile,
       PublishBlock.empty => strings.publishBlockedEmpty,
       _ => state.blockedReason,
     };
@@ -642,8 +702,11 @@ class _Review extends StatelessWidget {
             style: typography.heading5(fontWeight: ArFontWeight.bold)),
         const SizedBox(height: 16),
         _Card(children: [
-          SummaryRow(strings.publishReviewWhat,
-              '$scopeName • ${strings.publishFileCount(state.summary!.fileCount)}'),
+          SummaryRow(
+              strings.publishReviewWhat,
+              cubit.isFile
+                  ? scopeName
+                  : '$scopeName • ${strings.publishFileCount(state.summary!.fileCount)}'),
           SummaryRow(strings.publishTitleLabel, state.title.trim()),
           SummaryRow(
             strings.publishReviewLink,
@@ -652,6 +715,11 @@ class _Review extends StatelessWidget {
                 : strings.publishReviewNewLink,
           ),
         ]),
+        if (cubit.isPrivateFile) ...[
+          const SizedBox(height: 12),
+          Text(strings.publishReviewPrivateFile,
+              style: typography.paragraphSmall(color: colors.textMid)),
+        ],
         const SizedBox(height: 16),
         TurboFreeStatusMessage(
           status: cost.freeStatus,
@@ -828,10 +896,18 @@ class _Failed extends StatelessWidget {
 /// A publication's link, in the read-only field and Copy link that sharing
 /// uses, with an optional note under it.
 class PublishedLink extends StatelessWidget {
-  const PublishedLink({super.key, required this.link, this.note});
+  const PublishedLink({
+    super.key,
+    required this.link,
+    this.note,
+    this.isSecret = false,
+  });
 
   final String link;
   final String? note;
+
+  /// A private file page's link, which carries the file's key.
+  final bool isSecret;
 
   @override
   Widget build(BuildContext context) {
@@ -845,12 +921,222 @@ class PublishedLink extends StatelessWidget {
           label: strings.shareFileLinkLabel,
           text: link,
           copyLabel: strings.copyLink,
-          // Never shown: a publication's link carries no key.
-          revealLabel: strings.copyLink,
+          revealLabel: strings.shareFileRevealKey,
+          isSecret: isSecret,
         ),
         if (note != null) ...[
           const SizedBox(height: 8),
           Text(note!, style: typography.paragraphSmall(color: colors.textLow)),
+        ],
+      ],
+    );
+  }
+}
+
+/// A file's first step: its page, or the file itself.
+class _How extends StatelessWidget {
+  const _How({required this.state});
+
+  final PublishState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final cubit = context.read<PublishCubit>();
+    final private = cubit.isPrivateFile;
+    final pageNote = switch (state.filePages) {
+      FilePageAvailability.needsRelease => strings.publishHowNeedsRelease,
+      FilePageAvailability.unknown => strings.publishHowUnknown,
+      _ => private
+          ? strings.publishHowPagePrivateNote
+          : strings.publishHowPageNote,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(strings.publishHowLabel,
+            style: typography.heading5(fontWeight: ArFontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(cubit.scopeName,
+            style: typography.paragraphNormal(color: colors.textMid)),
+        const SizedBox(height: 16),
+        // One bordered group, a row per choice, as the payment choice is.
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(ArDriveRadius.lg),
+            border: Border.all(color: colors.strokeMid),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _HowOption(
+                title: strings.publishHowPage,
+                note: pageNote,
+                isSelected: state.how == FilePublishHow.page,
+                isChecking: state.how == FilePublishHow.page &&
+                    state.filePages == FilePageAvailability.checking,
+                onTap: () {
+                  cubit.setHow(FilePublishHow.page);
+                  cubit.retryFilePages();
+                },
+              ),
+              Divider(height: 1, color: colors.strokeMid),
+              _HowOption(
+                title: strings.publishHowItself,
+                note: private
+                    ? strings.publishHowItselfPrivate
+                    : strings.publishHowItselfNote,
+                isSelected: state.how == FilePublishHow.itself,
+                onTap:
+                    private ? null : () => cubit.setHow(FilePublishHow.itself),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HowOption extends StatelessWidget {
+  const _HowOption({
+    required this.title,
+    required this.note,
+    required this.isSelected,
+    required this.onTap,
+    this.isChecking = false,
+  });
+
+  final String title;
+  final String note;
+  final bool isSelected;
+
+  /// Null when this choice is off.
+  final VoidCallback? onTap;
+
+  /// Whether this choice is still being checked.
+  final bool isChecking;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    final enabled = onTap != null;
+    final dot = isSelected ? colors.textHigh : colors.strokeHigh;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      inMutuallyExclusiveGroup: true,
+      selected: isSelected,
+      child: Material(
+        color: isSelected ? colors.buttonSecondaryDefault : Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Opacity(
+            opacity: enabled ? 1 : 0.5,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: dot, width: 2),
+                    ),
+                    child: isSelected
+                        ? Center(
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                  shape: BoxShape.circle, color: dot),
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: typography.paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                                color: colors.textHigh)),
+                        Text(note,
+                            style: typography.paragraphSmall(
+                                color: colors.textMid)),
+                      ],
+                    ),
+                  ),
+                  if (isChecking) ...[
+                    const SizedBox(width: 12),
+                    const SizedBox.square(
+                        dimension: 16, child: ArDriveSpinner()),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The file itself: its permanent link, and a name for it.
+class _Itself extends StatelessWidget {
+  const _Itself({required this.link, required this.file});
+
+  final String link;
+  final FileEntry file;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final names = arnsNamesOn(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PublishedLink(link: link, note: strings.publishItselfNote),
+        if (names) ...[
+          const SizedBox(height: 20),
+          Text(strings.publishItselfNameNote,
+              style: typography.paragraphSmall(color: colors.textMid)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: BlocBuilder<ArNSNamesCubit, ArNSNamesState>(
+              builder: (context, namesState) {
+                final named = namesState.recordsFor(file.dataTxId).isNotEmpty;
+                final label =
+                    named ? strings.arnsChangeName : strings.arnsAddName;
+                return publishButton(
+                  context,
+                  label,
+                  onPressed: () => showArNSNameDialog(
+                    context,
+                    mode: ArNSNameDialogMode.nameItem,
+                    item: ArNSNameableItem(
+                      fileId: file.id,
+                      driveId: file.driveId,
+                      name: file.name,
+                      dataTxId: file.dataTxId,
+                      isManifest: file.dataContentType == ContentType.manifest,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ],
     );

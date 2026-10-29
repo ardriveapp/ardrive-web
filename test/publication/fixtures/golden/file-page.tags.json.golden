@@ -1,0 +1,32 @@
+{
+  "entity": [
+    {
+      "name": "ArFS",
+      "value": "0.15"
+    },
+    {
+      "name": "Entity-Type",
+      "value": "publication"
+    },
+    {
+      "name": "Drive-Id",
+      "value": "c863be1f-a725-4554-9a9e-18268ed8a035"
+    },
+    {
+      "name": "Publication-Id",
+      "value": "5f0c8b5e-7f53-4c31-9a3e-2f1d4c8b6a90"
+    },
+    {
+      "name": "Publication-Scope",
+      "value": "file"
+    },
+    {
+      "name": "File-Id",
+      "value": "f1e2d3c4-5b6a-4789-8abc-def012345678"
+    },
+    {
+      "name": "Publication-Version",
+      "value": "2"
+    }
+  ]
+}

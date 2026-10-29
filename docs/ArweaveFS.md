@@ -181,15 +181,16 @@ The published specification is the Drive State section of the ArFS entity types 
 
 ## Publication
 
-A Publication is a drive, or one folder of it, published by the drive's owner as a permanent web page. The entity is an Arweave path manifest: opening `https://<gateway>/<publication tx id>/` shows the drive or folder, read-only, in the ArDrive web app, which the manifest names by its release's files. Users of the ArDrive app see it as "Publish to web".
+A Publication is a drive, one folder of it, or one file, published by the drive's owner as a permanent web page. The entity is an Arweave path manifest: opening `https://<gateway>/<publication tx id>/` shows the drive or folder, read-only, in the ArDrive web app, which the manifest names by its release's files. Users of the ArDrive app see it as "Publish to web".
 
 ```Publication Transaction
 ArFS: 0.15
 Drive-Id: <drive uuid>
 Entity-Type: publication
 Publication-Id: <uuid, kept by every version of this publication>
-Publication-Scope: <drive | folder uuid>
-Publication-Version: <the publication.json version, eg 1>
+Publication-Scope: <drive | folder uuid | file>
+File-Id: <file uuid, on a file page only>
+Publication-Version: <the publication.json version: 1 for a drive or folder, 2 for a file>
 Content-Type: application/x.arweave-manifest+json
 Unix-Time: <seconds since unix epoch>
 Keyword: <a word the owner chose>   (optional, repeated, up to 5)
@@ -207,9 +208,11 @@ The manifest's paths are the web app release's own files, each by transaction ID
 | `icon-32.png`, `icon-180.png`, `icon-512.png`, `cover.jpg`, `social.jpg` | The publication's images, when it has them |
 | `files.html`, `sitemap.xml` | Every file of the publication as a gateway link, for clients that run no script |
 
-Every file the manifest adds is a plain, public data item carrying `Publication-Id` and no `Entity-Type`: none is an ArFS entity, and none appears in the drive. A publication is never encrypted, so a client can read it without a drive key, and for a private drive it must name no drive, folder or file: its title is typed by the owner, and the drive's contents stay inside the encrypted Drive State.
+Every file the manifest adds is a plain, public data item carrying `Publication-Id` and no `Entity-Type`: none is an ArFS entity, and none appears in the drive. A publication is never encrypted, so a client can read it without a drive key, and for a private drive it must name no drive, folder or file: its title is typed by the owner, and the drive's contents stay inside the encrypted Drive State. (A private file page names its file's ID and transactions, never the file: see File pages below.)
 
 **Versions.** A manifest cannot change, so every update is a new Publication transaction with the same `Publication-Id`, at a link of its own, and with the same `Publication-Scope`. The latest version is the one in the highest block, with `Unix-Time` breaking a tie within a block. Earlier versions stay readable at their own links for ever.
+
+**File pages.** A file page (`Publication-Scope: file`) shows one file: its manifest has no `snapshot`, `files.html` or `sitemap.xml`, and its `publication.json` (version 2) has a `file` block naming the version shown (`dataTxId`, `metadataTxId`). A public file's block adds its `name`, `size` and `contentType`. A private file's adds only its data's `Cipher` and `Cipher-IV`, which are on the data transaction's tags already: its name, size and type stay in its encrypted metadata, which the file key opens. So a private file page names its file's ID and transactions, as a share link does, and never the file. Its key travels only in the page link's fragment (`#/?k=<file key>`). A viewer checks that `metadataTxId` was signed by the owner, as it checks a snapshot.
 
 **Trust.** A client counts a Publication only when its owner is the drive's owner, as it does for Drive States, and only when the `snapshot` it names was published by that owner too. Anyone else's Publication of the same `Drive-Id` is ignored.
 
@@ -219,7 +222,7 @@ A viewer opening a page cannot take `publication.json`'s `owner` on trust, since
 
 Clients that sync a drive's history skip `publication` entities (and `drive-state` and `snapshot` ones) without fetching their data: they share the drive's `Drive-Id`, and their readers find them by GraphQL.
 
-**Discovery.** A client finds a drive's publications by querying the owner's transactions with `Entity-Type: publication` and the `Drive-Id`, and groups them by `Publication-Id`. `Publication-Scope` says which a version shows, the whole drive or one folder.
+**Discovery.** A client finds a drive's publications by querying the owner's transactions with `Entity-Type: publication` and the `Drive-Id`, and groups them by `Publication-Id`. `Publication-Scope` says which a version shows: the whole drive, one folder, or (with `File-Id`) one file. A client built before file pages reads `file` as a folder ID it doesn't have, and leaves the page out.
 
 The design and its reasoning are in `docs/PUBLICATIONS.md`.
 

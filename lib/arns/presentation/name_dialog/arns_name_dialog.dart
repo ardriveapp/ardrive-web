@@ -1,3 +1,4 @@
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
@@ -149,14 +150,17 @@ Future<List<ArNSNameableItem>> searchNameablePublications(
   for (final publications in byDrive.values) {
     for (final publication in publications) {
       final latest = publication.latest;
-      final folderId = latest.folderId;
-      final String? scopeName = folderId == null
-          ? (await driveDao
-                  .driveById(driveId: latest.driveId)
-                  .getSingleOrNull())
-              ?.name
-          : (await driveDao.folderById(folderId: folderId).getSingleOrNull())
-              ?.name;
+      // Named as the owner knows it here, from this device's own records.
+      final String? scopeName = switch (latest.scope) {
+        PublicationDriveScope() =>
+          (await driveDao.driveById(driveId: latest.driveId).getSingleOrNull())
+              ?.name,
+        PublicationFolderScope(:final folderId) =>
+          (await driveDao.folderById(folderId: folderId).getSingleOrNull())
+              ?.name,
+        PublicationFileScope(:final fileId) =>
+          (await driveDao.fileById(fileId: fileId).getSingleOrNull())?.name,
+      };
       if (scopeName == null) continue;
       if (needle.isNotEmpty && !scopeName.toLowerCase().contains(needle)) {
         continue;

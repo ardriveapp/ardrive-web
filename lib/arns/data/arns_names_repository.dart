@@ -80,7 +80,7 @@ class OwnerPublicationLookup implements ArNSPublicationLookup {
           found[version.txId] = ArNSPublicationItem(
             publicationId: version.publicationId,
             driveId: version.driveId,
-            folderId: version.folderId,
+            scope: version.scope,
             isLatestVersion: version.txId == publication.latest.txId,
           );
         }

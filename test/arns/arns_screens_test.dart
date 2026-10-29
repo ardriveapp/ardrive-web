@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
 import 'package:ardrive/arns/data/arns_name_verifier.dart';
@@ -92,7 +93,9 @@ Publication _publication(
         txId: '$id-tx-0000000000000000000000000000000000',
         publicationId: id,
         driveId: driveId,
-        folderId: folderId,
+        scope: folderId == null
+            ? const PublicationDriveScope()
+            : PublicationFolderScope(folderId),
         publishedAt: at,
       ),
     ]);
@@ -170,7 +173,7 @@ List<ArNSManagedName> _webPageNames() => [
             target: ArNSPublicationItem(
               publicationId: 'pub-notes',
               driveId: 'd-studio',
-              folderId: 'f-notes',
+              scope: PublicationFolderScope('f-notes'),
               isLatestVersion: true,
             ),
           ),

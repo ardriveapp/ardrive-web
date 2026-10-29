@@ -1,3 +1,4 @@
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
@@ -58,7 +59,7 @@ void main() {
       'pub-latest': const ArNSPublicationItem(
         publicationId: 'publication-1',
         driveId: 'drive-1',
-        folderId: null,
+        scope: PublicationDriveScope(),
         isLatestVersion: true,
       ),
     });
@@ -422,7 +423,7 @@ void main() {
         'pub-latest': const ArNSPublicationItem(
           publicationId: 'publication-1',
           driveId: 'drive-1',
-          folderId: null,
+          scope: PublicationDriveScope(),
           isLatestVersion: true,
         ),
       });
@@ -477,7 +478,7 @@ void main() {
     const published = ArNSPublicationItem(
       publicationId: 'publication-1',
       driveId: 'drive-1',
-      folderId: null,
+      scope: PublicationDriveScope(),
       isLatestVersion: true,
     );
 

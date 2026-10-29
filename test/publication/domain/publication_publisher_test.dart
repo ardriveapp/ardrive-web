@@ -117,6 +117,10 @@ const _snapshotTags = {
   'Unix-Time': '1792800000',
 };
 
+const _fileId = 'f1e2d3c4-0000-4000-8000-000000000001';
+const _fileData = 'FILEdata00000000000000000000000000000000000';
+const _fileMeta = 'FILEmeta00000000000000000000000000000000000';
+
 Map<String, String> _tags(DataItem item) => {
       for (final t in item.tags)
         decodeBase64ToString(t.name): decodeBase64ToString(t.value),
@@ -156,7 +160,7 @@ void main() {
         publicationId: '5f0c8b5e-7f53-4c31-9a3e-2f1d4c8b6a90',
         driveId: _drive,
         rootFolderId: _root,
-        folderId: null,
+        scope: const PublicationDriveScope(),
         owner: _owner,
         ownerName: 'Phil',
         title: 'Phil’s <Archive>',
@@ -287,8 +291,8 @@ void main() {
 
     final config =
         PublicationConfig.parse(_text(posted[paths['publication.json']]!));
-    expect(config.snapshot.txId, _snapshotId);
-    expect(config.snapshot.tags['Unix-Time'], '1792800000');
+    expect(config.snapshot!.txId, _snapshotId);
+    expect(config.snapshot!.tags['Unix-Time'], '1792800000');
     expect(config.ownerName, 'Phil');
     expect(config.fileCount, 1);
     expect(config.license?.shortName, 'CC-BY');
@@ -312,6 +316,103 @@ void main() {
           '5f0c8b5e-7f53-4c31-9a3e-2f1d4c8b6a90');
       expect(_tags(item).containsKey('Entity-Type'), isFalse);
     }
+  });
+
+  PublicationJob fileJob(
+          {Map<String, Object>? file, String privacy = 'public'}) =>
+      PublicationJob(
+        publicationId: '7a1c8b5e-7f53-4c31-9a3e-2f1d4c8b6a91',
+        driveId: _drive,
+        rootFolderId: _root,
+        scope: const PublicationFileScope(_fileId),
+        privacy: privacy,
+        file: file ??
+            {
+              'dataTxId': _fileData,
+              'metadataTxId': _fileMeta,
+              'name': 'Lake.jpg',
+              'size': 2048,
+              'contentType': 'image/jpeg',
+            },
+        owner: _owner,
+        ownerName: null,
+        license: null,
+        title: 'A lake',
+        description: 'Taken at dawn.',
+        keywords: const [],
+        icon: null,
+        cover: null,
+        social: NewPublicationImage({
+          'social.jpg': Uint8List.fromList([4])
+        }),
+        snapshot: const NoSnapshot(),
+        release: release,
+        files: const [],
+        fileCount: 0,
+        labels: const PublicationLabels(
+          filesPage: 'All files',
+          openPage: 'Open the page',
+          moreFiles: 'And {count} more files.',
+        ),
+        method: UploadMethod.turbo,
+      );
+
+  test('a file page: no snapshot, no file list, tagged with its file',
+      () async {
+    final steps = <PublicationStep>[];
+    final version =
+        await publisher.publish(fileJob(), wallet, onStep: steps.add);
+
+    expect(snapshots.calls, 0);
+    expect(steps, isNot(contains(PublicationStep.snapshot)));
+    expect(version.scope, const PublicationFileScope(_fileId));
+    final manifest = uploader.turbo.last;
+    final paths = (json.decode(_text(manifest))['paths'] as Map)
+        .map((k, v) => MapEntry(k as String, (v as Map)['id'] as String));
+    expect(paths.keys, isNot(contains('snapshot')));
+    expect(paths.keys, isNot(contains('files.html')));
+    expect(paths.keys, isNot(contains('sitemap.xml')));
+    final posted = {for (final item in uploader.turbo) item.id: item};
+    final index = _text(posted[paths['index.html']]!);
+    expect(index, isNot(contains('files.html')));
+
+    final config =
+        PublicationConfig.parse(_text(posted[paths['publication.json']]!));
+    expect(config.scope, const PublicationFileScope(_fileId));
+    expect(config.file!.dataTxId, _fileData);
+
+    final tags = _tags(manifest);
+    expect(tags['Publication-Scope'], 'file');
+    expect(tags['File-Id'], _fileId);
+    expect(tags['Publication-Version'], '2');
+  });
+
+  test('a private file page uploads nothing that names its file', () async {
+    await publisher.publish(
+      fileJob(
+        privacy: 'private',
+        file: {
+          'dataTxId': _fileData,
+          'metadataTxId': _fileMeta,
+          'cipher': 'AES256-GCM',
+          'cipherIv': 'aXZpdml2aXZpdml2',
+        },
+      ),
+      wallet,
+    );
+    for (final item in uploader.turbo) {
+      expect(utf8.decode(item.data, allowMalformed: true),
+          isNot(contains('Lake.jpg')));
+      expect(_tags(item).values, isNot(contains('Lake.jpg')));
+    }
+    final manifest = uploader.turbo.last;
+    final paths = (json.decode(_text(manifest))['paths'] as Map)
+        .map((k, v) => MapEntry(k as String, (v as Map)['id'] as String));
+    final posted = {for (final item in uploader.turbo) item.id: item};
+    final config =
+        PublicationConfig.parse(_text(posted[paths['publication.json']]!));
+    expect(config.isPrivate, isTrue);
+    expect(config.file!.cipher, 'AES256-GCM');
   });
 
   test('a retry posts only what did not go, and pays for nothing twice',

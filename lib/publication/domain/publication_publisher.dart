@@ -10,6 +10,7 @@ import 'package:ardrive/publication/domain/publication_files.dart';
 import 'package:ardrive/turbo/services/upload_service.dart'
     show isTurboPaymentError;
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:arweave/arweave.dart';
 import 'package:http/http.dart' as http;
@@ -53,6 +54,12 @@ class NewSnapshot extends PublicationSnapshotPlan {
   final PreparedDriveStateArtifact artifact;
 }
 
+/// A file page: it shows one file, read from its own transactions, and has no
+/// drive state to publish.
+class NoSnapshot extends PublicationSnapshotPlan {
+  const NoSnapshot();
+}
+
 /// Everything one publish writes, and how far it got: a failed publish is
 /// tried again with the same job, which reuses what was already signed and
 /// posted rather than paying for it twice.
@@ -61,7 +68,9 @@ class PublicationJob {
     required this.publicationId,
     required this.driveId,
     required this.rootFolderId,
-    required this.folderId,
+    required this.scope,
+    this.privacy = DrivePrivacyTag.public,
+    this.file,
     required this.owner,
     required this.ownerName,
     required this.title,
@@ -84,8 +93,14 @@ class PublicationJob {
   final String driveId;
   final String rootFolderId;
 
-  /// Null for the whole drive.
-  final String? folderId;
+  /// The whole drive, one folder or one file.
+  final PublicationScope scope;
+
+  /// `public`, or `private` for a private file's page.
+  final String privacy;
+
+  /// A file page's `file` block (`buildFilePageBlock`); null otherwise.
+  final Map<String, Object>? file;
   final String owner;
   final String? ownerName;
   final String title;
@@ -138,7 +153,9 @@ class PublicationJob {
       publicationId: publicationId,
       driveId: driveId,
       rootFolderId: rootFolderId,
-      folderId: folderId,
+      scope: scope,
+      privacy: privacy,
+      file: file,
       owner: owner,
       ownerName: ownerName,
       title: title,
@@ -276,13 +293,14 @@ class PublicationPublisher {
   /// the total.
   List<int> itemSizesOf(PublicationJob job) {
     const placeholderId = 'PLACEHOLDER_TRANSACTION_ID_0000000000000000';
+    final hasSnapshot = job.snapshot is! NoSnapshot;
     final items = _items(
       job,
-      snapshotTxId: placeholderId,
+      snapshotTxId: hasSnapshot ? placeholderId : null,
       snapshotTags: job._snapshotTags ??
           switch (job.snapshot) {
             ReusedSnapshot(:final tags) => tags,
-            NewSnapshot() => const {},
+            NewSnapshot() || NoSnapshot() => const {},
           },
       idOf: (_) => placeholderId,
       publishedAt: publicationTimestamp(_now()),
@@ -323,6 +341,8 @@ class PublicationPublisher {
     // 1. The snapshot, when it is new.
     if (job._snapshotTxId == null) {
       switch (job.snapshot) {
+        case NoSnapshot():
+          break;
         case ReusedSnapshot(:final txId, :final tags):
           job._snapshotTxId = txId;
           job._snapshotTags = tags;
@@ -410,7 +430,7 @@ class PublicationPublisher {
       txId: job.manifestTxId!,
       publicationId: job.publicationId,
       driveId: job.driveId,
-      folderId: job.folderId,
+      scope: job.scope,
       publishedAt: DateTime.parse(job._publishedAt!),
     );
     _repository.remember(version, owner: job.owner);
@@ -419,7 +439,8 @@ class PublicationPublisher {
     // wait for it to fetch everything. A failure here changes nothing.
     if (job.method == UploadMethod.turbo) {
       onStep?.call(PublicationStep.warmUp);
-      await _warmUp(version.txId);
+      await _warmUp(version.txId,
+          hasSnapshot: job.scope is! PublicationFileScope);
     }
     return version;
   }
@@ -443,7 +464,7 @@ class PublicationPublisher {
     job._publishedAt ??= publicationTimestamp(_now());
     final signed = <_Signed>[];
     final ids = <String, String>{
-      'snapshot': job._snapshotTxId!,
+      if (job._snapshotTxId case final snapshot?) 'snapshot': snapshot,
       for (final image in [job.icon, job.cover, job.social])
         if (image is ExistingPublicationImage) ...image.files,
     };
@@ -455,8 +476,8 @@ class PublicationPublisher {
     }
     for (final item in _pageItems(
       job,
-      snapshotTxId: job._snapshotTxId!,
-      snapshotTags: job._snapshotTags!,
+      snapshotTxId: job._snapshotTxId,
+      snapshotTags: job._snapshotTags,
       socialId: ids['social.jpg']!,
       publishedAt: job._publishedAt!,
     )) {
@@ -471,14 +492,14 @@ class PublicationPublisher {
 
   List<PublicationItem> _items(
     PublicationJob job, {
-    required String snapshotTxId,
-    required Map<String, String> snapshotTags,
+    required String? snapshotTxId,
+    required Map<String, String>? snapshotTags,
     required String Function(String name) idOf,
     required String publishedAt,
   }) {
     final images = _imageItems(job);
     final ids = <String, String>{
-      'snapshot': snapshotTxId,
+      if (snapshotTxId != null) 'snapshot': snapshotTxId,
       for (final image in [job.icon, job.cover, job.social])
         if (image is ExistingPublicationImage) ...image.files,
       for (final item in images) item.name: idOf(item.name),
@@ -513,26 +534,30 @@ class PublicationPublisher {
 
   List<PublicationItem> _pageItems(
     PublicationJob job, {
-    required String snapshotTxId,
-    required Map<String, String> snapshotTags,
+    required String? snapshotTxId,
+    required Map<String, String>? snapshotTags,
     required String socialId,
     required String publishedAt,
   }) {
     final part = publicationPartTags(job.publicationId);
     final gateway = _gatewayUrl();
     final hasIcon = job.icon != null;
+    final isFilePage = job.scope is PublicationFileScope;
     final publicationJson = buildPublicationJson(
       driveId: job.driveId,
       rootFolderId: job.rootFolderId,
-      folderId: job.folderId,
-      privacy: DrivePrivacyTag.public,
+      folderId: job.scope.folderIdOrNull,
+      fileId: job.scope.fileIdOrNull,
+      file: job.file,
+      privacy: job.privacy,
       owner: job.owner,
       ownerName: job.ownerName,
       snapshotTxId: snapshotTxId,
       snapshotTags: snapshotTags,
       title: job.title,
       description: job.description,
-      fileCount: job.fileCount,
+      // A file page lists no files.
+      fileCount: isFilePage ? null : job.fileCount,
       generatedCard: job.generatedCard,
       keywords: job.keywords,
       license: job.license,
@@ -554,7 +579,7 @@ class PublicationPublisher {
       description: job.description,
       icons: hasIcon ? (small: 'icon-32.png', touch: 'icon-180.png') : null,
       socialImageUrl: '$gateway/$socialId',
-      filesPageLabel: job.labels.filesPage,
+      filesPageLabel: isFilePage ? null : job.labels.filesPage,
     );
     final files = job.files;
     PublicationItem text(String name, String content, String type) =>
@@ -567,22 +592,25 @@ class PublicationPublisher {
     return [
       text('publication.json', publicationJson, 'application/json'),
       text('index.html', indexHtml, 'text/html'),
-      text(
-        'files.html',
-        buildPublicationFilesHtml(
-          title: job.title,
-          files: files,
-          gateway: gateway,
-          openLabel: job.labels.openPage,
-          moreLabel: job.labels.moreFiles,
+      // A file page is its one file; there is nothing to list or map.
+      if (!isFilePage) ...[
+        text(
+          'files.html',
+          buildPublicationFilesHtml(
+            title: job.title,
+            files: files,
+            gateway: gateway,
+            openLabel: job.labels.openPage,
+            moreLabel: job.labels.moreFiles,
+          ),
+          'text/html',
         ),
-        'text/html',
-      ),
-      text(
-        'sitemap.xml',
-        buildPublicationSitemap(files: files, gateway: gateway),
-        'application/xml',
-      ),
+        text(
+          'sitemap.xml',
+          buildPublicationSitemap(files: files, gateway: gateway),
+          'application/xml',
+        ),
+      ],
     ];
   }
 
@@ -597,18 +625,19 @@ class PublicationPublisher {
           ...publicationEntityTags(
             driveId: job.driveId,
             publicationId: job.publicationId,
-            folderId: job.folderId,
+            folderId: job.scope.folderIdOrNull,
+            fileId: job.scope.fileIdOrNull,
           ),
           for (final keyword in job.keywords) (name: 'Keyword', value: keyword),
         ],
       );
 
-  Future<void> _warmUp(String manifestTxId) async {
+  Future<void> _warmUp(String manifestTxId, {bool hasSnapshot = true}) async {
     final base = _gatewayUrl();
     // The snapshot too: it is the largest file a first visitor waits for.
     // Side by side, so a slow gateway costs the owner one wait, not three.
     await Future.wait([
-      for (final path in ['', 'publication.json', 'snapshot'])
+      for (final path in ['', 'publication.json', if (hasSnapshot) 'snapshot'])
         _client
             .get(Uri.parse('$base/$manifestTxId/$path'))
             .timeout(const Duration(seconds: 20))

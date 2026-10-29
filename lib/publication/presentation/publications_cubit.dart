@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
@@ -17,9 +18,17 @@ class DrivePublications extends Equatable {
   final List<Publication> publications;
 
   /// The publication of the whole drive ([folderId] null) or of a folder.
-  Publication? of(String? folderId) {
+  /// Never a file page: a file has no folder either, and is not its drive.
+  Publication? of(String? folderId) => ofScope(folderId == null
+      ? const PublicationDriveScope()
+      : PublicationFolderScope(folderId));
+
+  /// The page of one file.
+  Publication? ofFile(String fileId) => ofScope(PublicationFileScope(fileId));
+
+  Publication? ofScope(PublicationScope scope) {
     for (final p in publications) {
-      if (p.folderId == folderId) return p;
+      if (p.scope == scope) return p;
     }
     return null;
   }
@@ -43,6 +52,9 @@ class PublicationsState extends Equatable {
 
   Publication? publicationOf(String driveId, String? folderId) =>
       byDrive[driveId]?.of(folderId);
+
+  Publication? filePageOf(String driveId, String fileId) =>
+      byDrive[driveId]?.ofFile(fileId);
 
   @override
   List<Object?> get props => [byDrive, status];
@@ -94,8 +106,13 @@ class PublicationsCubit extends Cubit<PublicationsState> {
   }
 
   /// Whether [drive] can be published by whoever is signed in.
-  bool canPublish(Drive drive) =>
-      drive.isPublic && _owner != null && drive.ownerAddress == _owner;
+  bool canPublish(Drive drive) => drive.isPublic && _owns(drive);
+
+  /// Whether a file in [drive] can have a page: the owner's, in a public or
+  /// a private drive. A private file's page opens with the key in its link.
+  bool canPublishFile(Drive drive) => _owns(drive);
+
+  bool _owns(Drive drive) => _owner != null && drive.ownerAddress == _owner;
 
   /// Asks again after a failure.
   Future<void> retry() {
@@ -120,7 +137,9 @@ class PublicationsCubit extends Cubit<PublicationsState> {
   /// GraphQL could not say, twice. Never "none" on a failure: that would
   /// start a second publication of something already published.
   Future<DrivePublications?> publicationsOf(Drive drive) async {
-    if (!canPublish(drive)) return const DrivePublications();
+    // A private drive can have file pages, so it is looked up like any other
+    // the owner holds; "none" for a drive that is not theirs.
+    if (!_owns(drive)) return const DrivePublications();
     await watchOwner();
     if (_failed) {
       _load = null;

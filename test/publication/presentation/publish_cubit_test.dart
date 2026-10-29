@@ -94,7 +94,7 @@ void main() {
       publicationId: 'p',
       driveId: _drive,
       rootFolderId: _root,
-      folderId: null,
+      scope: const PublicationDriveScope(),
       owner: 'o',
       ownerName: null,
       title: 't',
@@ -177,6 +177,10 @@ void main() {
 
   PublishCubit cubit({
     FolderEntry? folderEntry,
+    FileEntry? fileEntry,
+    Drive? onDrive,
+    Future<({String cipher, String cipherIv})?> Function(String dataTxId)?
+        cipherOf,
     Publication? previous,
     ArNSFlowNameCubit? names,
     void Function(String? link)? onSettledAfterClose,
@@ -187,8 +191,9 @@ void main() {
     })? syncDrive,
   }) =>
       PublishCubit(
-        drive: drive,
+        drive: onDrive ?? drive,
         folder: folderEntry,
+        file: fileEntry,
         previous: previous,
         names: names,
         onSettledAfterClose: onSettledAfterClose,
@@ -213,6 +218,7 @@ void main() {
           },
           fileCountLabel: (n) => '$n files',
           syncDrive: syncDrive,
+          cipherOf: cipherOf ?? (_) async => null,
         ),
       );
 
@@ -233,7 +239,7 @@ void main() {
         txId: 'LATEST',
         publicationId: 'pub-1',
         driveId: _drive,
-        folderId: null,
+        scope: const PublicationDriveScope(),
         publishedAt: DateTime.utc(2026, 10, 20),
       );
 
@@ -481,7 +487,7 @@ void main() {
               txId: 'MANIFEST',
               publicationId: 'p',
               driveId: _drive,
-              folderId: 'folder-1',
+              scope: const PublicationFolderScope('folder-1'),
               publishedAt: DateTime.utc(2026),
             ));
     final names = _Names();
@@ -516,7 +522,7 @@ void main() {
           publication: const ArNSPublicationItem(
             publicationId: 'p',
             driveId: _drive,
-            folderId: 'folder-1',
+            scope: PublicationFolderScope('folder-1'),
             isLatestVersion: true,
           ),
         )).called(1);
@@ -578,7 +584,7 @@ void main() {
               txId: 'MANIFEST',
               publicationId: 'p',
               driveId: _drive,
-              folderId: null,
+              scope: const PublicationDriveScope(),
               publishedAt: DateTime.utc(2026),
             ));
     final c = cubit();
@@ -616,7 +622,7 @@ void main() {
         txId: 'MANIFEST',
         publicationId: 'p',
         driveId: _drive,
-        folderId: null,
+        scope: const PublicationDriveScope(),
         publishedAt: DateTime.utc(2026),
       );
     });
@@ -646,7 +652,7 @@ void main() {
           txId: 'MANIFEST',
           publicationId: 'p',
           driveId: _drive,
-          folderId: null,
+          scope: const PublicationDriveScope(),
           publishedAt: DateTime.utc(2026),
         );
       });
@@ -717,7 +723,7 @@ void main() {
         txId: 'LATEST',
         publicationId: 'pub-1',
         driveId: _drive,
-        folderId: null,
+        scope: const PublicationDriveScope(),
         publishedAt: DateTime.utc(2026, 10, 20),
       ),
     ]);
@@ -923,7 +929,7 @@ void main() {
         txId: 'MANIFEST',
         publicationId: 'p',
         driveId: _drive,
-        folderId: null,
+        scope: const PublicationDriveScope(),
         publishedAt: DateTime.utc(2026),
       ));
       await pumpEventQueue();
@@ -1023,6 +1029,222 @@ void main() {
           onStep: any(named: 'onStep'))).captured.single as PublicationJob;
       expect(job.title, 'ArDrive Photos Drive');
       expect(job.ownerName, 'ArDrive Support');
+    });
+  });
+
+  group('a file', () {
+    const fileRelease = PublicationRelease(
+      manifestId: _release,
+      manifest: {},
+      indexHtml: '',
+      version: '2.92.0',
+      publicationVersion: 2,
+    );
+
+    Future<FileEntry> fileNamed(
+      String id,
+      String name, {
+      String driveId = _drive,
+      String parent = _root,
+      bool hidden = false,
+      String status = TransactionStatus.confirmed,
+    }) async {
+      await insertPublicationFile(db,
+          driveId: driveId,
+          id: id,
+          name: name,
+          parentFolderId: parent,
+          hidden: hidden,
+          status: status);
+      return db.driveDao.fileById(fileId: id).getSingle();
+    }
+
+    Future<Drive> privateDrive() async {
+      const id = 'dddddddd-0000-4000-8000-000000000009';
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: id,
+            rootFolderId: 'private-root',
+            ownerAddress: fakeUserJson.walletAddress,
+            name: 'Private',
+            privacy: DrivePrivacyTag.private,
+          ));
+      return db.driveDao.driveById(driveId: id).getSingle();
+    }
+
+    setUp(() {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => fileRelease);
+    });
+
+    test('opens on How, its page by default, titled with its name', () async {
+      final c = cubit(fileEntry: await fileNamed('lake', 'Lake.jpg'));
+      await c.load();
+      await pumpEventQueue();
+
+      expect(c.state.stage, PublishStage.how);
+      expect(c.state.how, FilePublishHow.page);
+      expect(c.state.filePages, FilePageAvailability.available);
+      expect(c.state.title, 'Lake.jpg');
+      c.next();
+      expect(c.state.stage, PublishStage.look);
+      c.back();
+      expect(c.state.stage, PublishStage.how);
+      await c.close();
+    });
+
+    test('a web page is published as itself by default', () async {
+      final c = cubit(fileEntry: await fileNamed('site', 'index.html'));
+      await c.load();
+
+      expect(c.state.how, FilePublishHow.itself);
+      c.next();
+      expect(c.state.stage, PublishStage.itself);
+      expect(c.fileLink, 'https://turbo-gateway.com/siteData');
+      await c.close();
+    });
+
+    test('a release that cannot open file pages offers only the file itself',
+        () async {
+      when(() => repository.readRelease(any())).thenAnswer((_) async =>
+          const PublicationRelease(
+              manifestId: _release,
+              manifest: {},
+              indexHtml: '',
+              version: null));
+      final c = cubit(fileEntry: await fileNamed('lake', 'Lake.jpg'));
+      await c.load();
+      await pumpEventQueue();
+
+      expect(c.state.filePages, FilePageAvailability.needsRelease);
+      expect(c.state.howIsReady, isFalse);
+      c.next();
+      expect(c.state.stage, PublishStage.how);
+      c.setHow(FilePublishHow.itself);
+      expect(c.state.howIsReady, isTrue);
+      await c.close();
+    });
+
+    test('the file itself never waits on the release', () async {
+      final release = Completer<PublicationRelease>();
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) => release.future);
+      final c = cubit(fileEntry: await fileNamed('site', 'index.html'));
+      await c.load();
+
+      expect(c.state.stage, PublishStage.how);
+      expect(c.state.filePages, FilePageAvailability.checking);
+      c.next();
+      expect(c.state.stage, PublishStage.itself);
+      release.complete(fileRelease);
+      await c.close();
+    });
+
+    test('a hidden file, or one in a hidden folder, is not published',
+        () async {
+      final hidden =
+          cubit(fileEntry: await fileNamed('h', 'h.txt', hidden: true));
+      await hidden.load();
+      expect(hidden.state.blocked, PublishBlock.hiddenFile);
+      await hidden.close();
+
+      final inHidden = cubit(
+          fileEntry: await fileNamed('i', 'i.txt', parent: _hiddenFolder));
+      await inHidden.load();
+      expect(inHidden.state.blocked, PublishBlock.hiddenFile);
+      await inHidden.close();
+    });
+
+    test('waits for its upload to be confirmed', () async {
+      final c = cubit(
+          fileEntry:
+              await fileNamed('p', 'p.txt', status: TransactionStatus.pending));
+      await c.load();
+      expect(c.state.blocked, PublishBlock.pendingUploads);
+      await c.close();
+    });
+
+    test('a page is priced with no snapshot and names its file', () async {
+      final c = cubit(fileEntry: await fileNamed('lake', 'Lake.jpg'));
+      await c.load();
+      await pumpEventQueue();
+      c.next();
+      await c.review();
+
+      expect(c.state.stage, PublishStage.review);
+      expect(c.state.reusesSnapshot, isFalse);
+      final job = verify(() => publisher.sizeOf(captureAny())).captured.last
+          as PublicationJob;
+      expect(job.snapshot, isA<NoSnapshot>());
+      expect(job.scope, const PublicationFileScope('lake'));
+      expect(job.privacy, DrivePrivacyTag.public);
+      expect(job.file, {
+        'dataTxId': 'lakeData',
+        'metadataTxId': 'lakeMeta',
+        'name': 'Lake.jpg',
+        'size': 1,
+      });
+      expect(job.files, isEmpty);
+      verifyNever(() => creation.prepare(
+            driveId: any(named: 'driveId'),
+            driveKey: any(named: 'driveKey'),
+            wallet: any(named: 'wallet'),
+            isCancelled: any(named: 'isCancelled'),
+          ));
+      await c.close();
+    });
+
+    group('in a private drive', () {
+      test('only its page, untitled, and nothing names the file', () async {
+        final private = await privateDrive();
+        final c = cubit(
+          onDrive: private,
+          fileEntry: await fileNamed('plans', 'Plans.pdf',
+              driveId: private.id, parent: 'private-root'),
+          cipherOf: (id) async =>
+              (cipher: 'AES256-GCM', cipherIv: 'aXZpdml2aXZpdml2'),
+        );
+        await c.load();
+        await pumpEventQueue();
+
+        expect(c.isPrivateFile, isTrue);
+        expect(c.state.how, FilePublishHow.page);
+        expect(c.state.title, isEmpty);
+        c.setHow(FilePublishHow.itself);
+        expect(c.state.how, FilePublishHow.page);
+
+        c.setTitle('Plans');
+        c.next();
+        await c.review();
+        final job = verify(() => publisher.sizeOf(captureAny())).captured.last
+            as PublicationJob;
+        expect(job.privacy, DrivePrivacyTag.private);
+        expect(job.file, {
+          'dataTxId': 'plansData',
+          'metadataTxId': 'plansMeta',
+          'cipher': 'AES256-GCM',
+          'cipherIv': 'aXZpdml2aXZpdml2',
+        });
+        await c.close();
+      });
+
+      test('is not priced when its cipher cannot be read', () async {
+        final private = await privateDrive();
+        final c = cubit(
+          onDrive: private,
+          fileEntry: await fileNamed('plans', 'Plans.pdf',
+              driveId: private.id, parent: 'private-root'),
+        );
+        await c.load();
+        await pumpEventQueue();
+        c.setTitle('Plans');
+        c.next();
+        await c.review();
+
+        expect(c.state.stage, PublishStage.failed);
+        expect(c.state.failure, contains('encryption details'));
+        verifyNever(() => publisher.sizeOf(any()));
+        await c.close();
+      });
     });
   });
 }

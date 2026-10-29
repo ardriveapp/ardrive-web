@@ -420,11 +420,13 @@ class _ImageField extends StatelessWidget {
                         strings.publishUpload,
                         onPressed: () => _upload(cubit),
                       ),
-                      publishButton(
-                        context,
-                        strings.publishFromDrive,
-                        onPressed: () => _fromDrive(context, cubit),
-                      ),
+                      // A private drive's images can't go on a public page.
+                      if (!cubit.isPrivateFile)
+                        publishButton(
+                          context,
+                          strings.publishFromDrive,
+                          onPressed: () => _fromDrive(context, cubit),
+                        ),
                     ],
                   ),
                   // A link under the buttons rather than a third button,

@@ -7,6 +7,12 @@ enum PublishStage {
   /// Something stops publishing; [PublishState.blocked] says what.
   blocked,
 
+  /// A file's first step: a file page, or the file itself.
+  how,
+
+  /// The file itself: its link, and a name for it.
+  itself,
+
   included,
   look,
 
@@ -28,6 +34,7 @@ enum PublishBlock {
   sync,
   pendingUploads,
   hiddenFolder,
+  hiddenFile,
   empty,
 
   /// The release could not be read, or a new snapshot was refused: the
@@ -73,6 +80,18 @@ class PublicationLicence extends Equatable {
   List<Object?> get props => [meta, params];
 }
 
+/// How a file is published (docs/PUBLICATIONS.md, "File pages").
+enum FilePublishHow {
+  /// Its share page, published as a page of its own.
+  page,
+
+  /// Its own data, at a link and under a name.
+  itself,
+}
+
+/// Whether the release a new page runs opens file pages.
+enum FilePageAvailability { checking, available, needsRelease, unknown }
+
 class PublishState extends Equatable {
   const PublishState({
     required this.stage,
@@ -102,9 +121,20 @@ class PublishState extends Equatable {
     this.names,
     this.naming = const [],
     this.namingStarted = false,
+    this.how = FilePublishHow.page,
+    this.filePages = FilePageAvailability.checking,
   });
 
   final PublishStage stage;
+
+  /// A file's choice on [PublishStage.how].
+  final FilePublishHow how;
+  final FilePageAvailability filePages;
+
+  /// Whether Next on [PublishStage.how] can go on.
+  bool get howIsReady =>
+      how == FilePublishHow.itself ||
+      filePages == FilePageAvailability.available;
 
   /// The names after publishing, when the name step had work.
   final ArNSFlowOutcome? names;
@@ -194,6 +224,8 @@ class PublishState extends Equatable {
     ArNSFlowOutcome? names,
     List<String>? naming,
     bool? namingStarted,
+    FilePublishHow? how,
+    FilePageAvailability? filePages,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -223,6 +255,8 @@ class PublishState extends Equatable {
         names: names ?? this.names,
         naming: naming ?? this.naming,
         namingStarted: namingStarted ?? this.namingStarted,
+        how: how ?? this.how,
+        filePages: filePages ?? this.filePages,
       );
 
   @override
@@ -254,6 +288,8 @@ class PublishState extends Equatable {
         names,
         naming,
         namingStarted,
+        how,
+        filePages,
       ];
 }
 

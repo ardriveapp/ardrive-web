@@ -192,6 +192,18 @@ class AppRoutePath {
   factory AppRoutePath.unknown() => const AppRoutePath();
 
   /// A place in a publication: its root, or a folder and a file in it.
-  factory AppRoutePath.publication({String? folderId, String? fileId}) =>
-      AppRoutePath(publicationFolderId: folderId, publicationFileId: fileId);
+  /// A place in a publication. [fileKey] is a private file page's key, from
+  /// its link (`#/?k=<key>`): it travels with the route so a reload keeps it.
+  factory AppRoutePath.publication({
+    String? folderId,
+    String? fileId,
+    SharedFileLinkKey fileKey = SharedFileLinkKey.absent,
+  }) =>
+      AppRoutePath(
+        publicationFolderId: folderId,
+        publicationFileId: fileId,
+        sharedFileKey: fileKey.secretKey,
+        sharedRawFileKey: fileKey.raw,
+        sharedFileKeyIsDamaged: fileKey.isDamaged,
+      );
 }

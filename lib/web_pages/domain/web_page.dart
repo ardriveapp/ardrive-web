@@ -1,3 +1,4 @@
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/models/models.dart';
@@ -7,6 +8,10 @@ import 'package:equatable/equatable.dart';
 enum WebPageKind {
   /// A published drive or folder (docs/PUBLICATIONS.md).
   publication,
+
+  /// One file's page: its share page, published (docs/PUBLICATIONS.md, "File
+  /// pages"). A private file's page opens with the key in its link.
+  filePage,
 
   /// A manifest file, which users know as a deployment.
   deployment,
@@ -26,6 +31,7 @@ class WebPage extends Equatable {
     required this.dataTxId,
     required this.updatedAt,
     this.publication,
+    this.isPrivate = false,
   });
 
   final WebPageKind kind;
@@ -52,10 +58,14 @@ class WebPage extends Equatable {
 
   final DateTime updatedAt;
 
-  /// Set for a publication, for Update page.
+  /// Set for a publication or a file page, for Update page.
   final Publication? publication;
 
+  /// A private file's page: its link needs the file's key to open.
+  final bool isPrivate;
+
   bool get isDeployment => kind == WebPageKind.deployment;
+  bool get isFilePage => kind == WebPageKind.filePage;
 
   @override
   List<Object?> get props => [
@@ -69,11 +79,13 @@ class WebPage extends Equatable {
         dataTxId,
         updatedAt,
         publication,
+        isPrivate,
       ];
 }
 
 /// The Web pages list: [publications] and [deployments] in the owner's
-/// public [drives], most recently updated first.
+/// public [drives], and file pages in any of their [drives], most recently
+/// updated first. [files] are the files file pages show.
 ///
 /// A publication whose drive or folder is not on this device yet is left
 /// out: there is no name to show for it and nowhere to open. It appears once
@@ -83,14 +95,37 @@ List<WebPage> composeWebPages({
   required Iterable<FileEntry> deployments,
   required Map<String, Drive> drives,
   required Map<String, FolderEntry> folders,
+  Map<String, FileEntry> files = const {},
 }) {
   final pages = <WebPage>[];
 
   for (final publication in publications) {
     final latest = publication.latest;
     final drive = drives[latest.driveId];
-    if (drive == null || !drive.isPublic) continue;
-    final folderId = latest.folderId;
+    if (drive == null) continue;
+    if (latest.scope case PublicationFileScope(:final fileId)) {
+      final file = files[fileId];
+      // Not on this device yet, or hidden: left out, as a hidden deployment
+      // is.
+      if (file == null || file.isHidden) continue;
+      final inRoot = file.parentFolderId == drive.rootFolderId;
+      pages.add(WebPage(
+        kind: WebPageKind.filePage,
+        id: publication.id,
+        title: file.name,
+        driveId: drive.id,
+        driveName: drive.name,
+        folderName: inRoot ? null : folders[file.parentFolderId]?.name,
+        openFolderId: file.parentFolderId,
+        dataTxId: latest.txId,
+        updatedAt: latest.publishedAt,
+        publication: publication,
+        isPrivate: drive.isPrivate,
+      ));
+      continue;
+    }
+    if (!drive.isPublic) continue;
+    final folderId = latest.scope.folderIdOrNull;
     final isDrive = folderId == null || folderId == drive.rootFolderId;
     final folder = isDrive ? null : folders[folderId];
     if (!isDrive && folder == null) continue;

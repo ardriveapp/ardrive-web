@@ -413,7 +413,22 @@ List<ArDriveDropdownItem> fileMenuItems(
             fileId: file.id,
           ),
         ),
-      if (isOwner && drive != null)
+      // A name for the file lives in Publish to web, beside its page. Where
+      // nothing publishes, names stay reachable here.
+      if (isOwner &&
+          offersPublishFileToWeb(context, drive,
+              pinnedDataOwnerAddress: file.pinnedDataOwnerAddress))
+        ArDriveDropdownItem(
+          onClick: () =>
+              openPublishToWeb(context, drive: drive, fileId: file.id),
+          content: PublishToWebMenuItem(
+            drive: drive!,
+            fileId: file.id,
+            iconSize: defaultIconSize,
+            height: height,
+          ),
+        )
+      else if (isOwner && drive != null)
         ...arnsItemMenuItems(
           context,
           item: file,

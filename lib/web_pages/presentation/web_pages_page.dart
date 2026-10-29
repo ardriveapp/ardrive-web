@@ -1,3 +1,5 @@
+import 'package:ardrive/publication/domain/file_page.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
@@ -63,7 +65,8 @@ void openWebPageFolder(BuildContext context, WebPage page) {
   final router = context.read<AppRouterDelegate>();
   final drives = context.read<DrivesCubit>();
   final drivesState = drives.state;
-  final itemId = page.isDeployment ? page.id : null;
+  final itemId =
+      page.isDeployment ? page.id : page.publication?.scope.fileIdOrNull;
   final inExplorer = !router.showingDrivesList &&
       !router.showingNames &&
       !router.showingWebPages;
@@ -336,14 +339,21 @@ const _updatedFlex = 3;
 /// used to.
 Widget webPageIcon(BuildContext context, WebPage page, {double size = 20}) {
   final color = ArDriveTheme.of(context).themeData.colorTokens.textMid;
-  return page.isDeployment
-      ? Icon(
-          Icons.web_outlined,
-          size: size,
-          color: color,
-          semanticLabel: appLocalizationsOf(context).arnsDeployment,
-        )
-      : ArDriveIcons.publishToWeb(size: size, color: color);
+  if (page.isDeployment) {
+    return Icon(
+      Icons.web_outlined,
+      size: size,
+      color: color,
+      semanticLabel: appLocalizationsOf(context).arnsDeployment,
+    );
+  }
+  if (page.isFilePage) {
+    return Semantics(
+      label: appLocalizationsOf(context).publishHowPage,
+      child: ArDriveIcons.file(size: size, color: color),
+    );
+  }
+  return ArDriveIcons.publishToWeb(size: size, color: color);
 }
 
 /// "<folder> folder, <drive> drive", or "<drive> drive".
@@ -384,7 +394,7 @@ class WebPageRow extends StatelessWidget {
 
     return ListTableRow(
       semanticLabel: page.title,
-      onOpen: () => openUrl(url: link.url),
+      onOpen: () => _WebPageActions(context, page, link).open(),
       showsColumns: showsColumns,
       chosen: chosen,
       onChoose: onChoose,
@@ -421,10 +431,27 @@ class _WebPageActions {
   final WebPage page;
   final WebPageLink link;
 
-  void open() => openUrl(url: link.url);
+  /// The link to open or copy: a private file page's carries the file's
+  /// key, for its owner.
+  Future<String> _url() async {
+    final fileId = page.publication?.scope.fileIdOrNull;
+    if (!page.isPrivate || fileId == null) return link.url;
+    return withFileKey(
+      link.url,
+      await fileKeyForLink(
+        context.read<DriveDao>(),
+        context.read<ProfileCubit>().state,
+        driveId: page.driveId,
+        fileId: fileId,
+      ),
+    );
+  }
+
+  Future<void> open() async => openUrl(url: await _url());
 
   Future<void> copyLink() async {
-    await Clipboard.setData(ClipboardData(text: link.url));
+    final url = await _url();
+    await Clipboard.setData(ClipboardData(text: url));
     if (!context.mounted) return;
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -452,7 +479,8 @@ class _WebPageActions {
     await openPublishToWeb(
       context,
       drive: drive,
-      folderId: page.publication?.folderId,
+      folderId: page.publication?.scope.folderIdOrNull,
+      fileId: page.publication?.scope.fileIdOrNull,
     );
   }
 
@@ -593,7 +621,16 @@ class WebPageDetailsPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              CopyButton(text: link.url, size: 18),
+              // A private file page's link carries its key, worked out when
+              // it is copied.
+              if (page.isPrivate)
+                ArDriveIconButton(
+                  tooltip: strings.copyLink,
+                  icon: ArDriveIcons.copy(size: 18),
+                  onPressed: actions.copyLink,
+                )
+              else
+                CopyButton(text: link.url, size: 18),
             ],
           ),
         ),

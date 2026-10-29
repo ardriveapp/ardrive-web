@@ -68,9 +68,9 @@ void main() {
       expect(config.privacy, 'public');
       expect(config.isPrivate, isFalse);
       expect(config.owner, _owner);
-      expect(config.snapshot.path, 'snapshot');
-      expect(config.snapshot.txId, _artifactTx);
-      expect(config.snapshot.tags['Block-End'], '1879136');
+      expect(config.snapshot!.path, 'snapshot');
+      expect(config.snapshot!.txId, _artifactTx);
+      expect(config.snapshot!.tags['Block-End'], '1879136');
       expect(config.title, "Phil's Archive");
       expect(config.description, 'Photos, notes and the odd recording.');
       expect(
@@ -101,7 +101,7 @@ void main() {
       final config = PublicationConfig.fromJson(_privateJson());
 
       expect(config.isPrivate, isTrue);
-      expect(config.snapshot.tags['Cipher'], 'AES256-GCM');
+      expect(config.snapshot!.tags['Cipher'], 'AES256-GCM');
     });
 
     test('optional fields may be left out', () {
@@ -161,7 +161,7 @@ void main() {
 
     test('a newer version is reported as needing a newer viewer', () {
       expect(
-        () => PublicationConfig.fromJson(const {'version': 2}),
+        () => PublicationConfig.fromJson(const {'version': 3}),
         _throwsConfig(PublicationConfigError.unsupportedVersion),
       );
     });

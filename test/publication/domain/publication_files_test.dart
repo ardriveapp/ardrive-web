@@ -132,6 +132,49 @@ void main() {
     );
   });
 
+  group('a private file page', () {
+    final page = input['filePage'] as Map<String, dynamic>;
+    String pageJson() {
+      final viewer = page['viewer'] as Map;
+      return buildPublicationJson(
+        driveId: page['driveId'],
+        rootFolderId: page['rootFolderId'],
+        fileId: page['fileId'],
+        file: (page['file'] as Map).cast<String, Object>(),
+        privacy: page['privacy'],
+        owner: page['owner'],
+        title: page['title'],
+        description: page['description'],
+        images: (page['images'] as Map).cast<String, String>(),
+        generatedCard: page['generatedCard'] as bool,
+        publishedAt: page['publishedAt'],
+        viewer: (release: viewer['release'], manifest: viewer['manifest']),
+      );
+    }
+
+    test('publication.json matches the tool, and the viewer reads it', () {
+      expect(pageJson(), golden('file-page.publication.json'));
+      final config = PublicationConfig.parse(pageJson());
+      expect(config.scope, PublicationFileScope(page['fileId'] as String));
+    });
+
+    test('its ArFS tags match the tool', () {
+      expect(
+        '${const JsonEncoder.withIndent('  ').convert({
+              'entity': [
+                for (final t in publicationEntityTags(
+                  driveId: page['driveId'],
+                  publicationId: input['publicationId'] as String,
+                  fileId: page['fileId'],
+                ))
+                  {'name': t.name, 'value': t.value}
+              ],
+            })}\n',
+        golden('file-page.tags.json'),
+      );
+    });
+  });
+
   test('the manifest matches the tool', () {
     expect(
       buildPublicationManifest(

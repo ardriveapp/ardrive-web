@@ -296,6 +296,59 @@ class PublicationHeader extends StatelessWidget {
   }
 }
 
+/// The head of a file page (docs/PUBLICATIONS.md, "File pages"), above its
+/// file, in place of the share page's wordmark: the cover, the title, who it
+/// is by and its description. The file's own card says what the file is.
+class PublicationFileHead extends StatelessWidget {
+  const PublicationFileHead({super.key, required this.config});
+
+  final PublicationConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final cover = config.images.cover;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (cover != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: AspectRatio(
+              aspectRatio: 4,
+              child: Image.network(
+                Uri.base.resolve(cover).toString(),
+                fit: BoxFit.cover,
+                frameBuilder: (context, image, frame, sync) =>
+                    frame != null || sync
+                        ? image
+                        : const PublicationImagePlaceholder(),
+                errorBuilder: (_, __, ___) =>
+                    const PublicationImagePlaceholder(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Text(
+          config.title,
+          style: typography.heading4(
+              color: colors.textHigh, fontWeight: ArFontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        _Byline(config: config, stats: null),
+        if (config.description.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(config.description,
+              style: typography.paragraphNormal(color: colors.textMid)),
+        ],
+      ],
+    );
+  }
+}
+
 class _Actions extends StatelessWidget {
   const _Actions({
     required this.compact,
@@ -452,6 +505,11 @@ class _Byline extends StatelessWidget {
               ),
             ),
           ),
+          // A file page has no counts, only its date.
+          if (stats == null && publishedAt != null)
+            TextSpan(
+                text:
+                    '\u00a0• ${strings.publishedOn(formatDate(publishedAt))}'),
           if (stats != null)
             TextSpan(
               text:

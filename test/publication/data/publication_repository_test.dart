@@ -1,3 +1,4 @@
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:artemis/schema/graphql_query.dart';
@@ -11,7 +12,9 @@ PublishedVersion _v(String tx, String id,
       txId: tx,
       publicationId: id,
       driveId: 'd',
-      folderId: folder,
+      scope: folder == null
+          ? const PublicationDriveScope()
+          : PublicationFolderScope(folder),
       publishedAt: DateTime.fromMillisecondsSinceEpoch(time * 1000),
       minedAtHeight: height,
     );
@@ -27,7 +30,7 @@ void main() {
     expect(publications.map((p) => p.id), ['A', 'B']);
     expect(publications.first.versions.map((v) => v.txId), ['a3', 'a2', 'a1']);
     expect(publications.first.earlier.map((v) => v.txId), ['a2', 'a1']);
-    expect(publications.last.folderId, 'f');
+    expect(publications.last.scope, const PublicationFolderScope('f'));
   });
 
   test('a tie in a block goes to the later Unix-Time', () {

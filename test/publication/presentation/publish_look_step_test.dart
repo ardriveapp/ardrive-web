@@ -36,6 +36,7 @@ void main() {
     ui.Canvas(recorder);
     final mark = await recorder.endRecording().toImage(4, 4);
     when(() => cubit.mark()).thenAnswer((_) async => mark);
+    when(() => cubit.isPrivateFile).thenReturn(false);
   });
 
   Future<void> pump(WidgetTester tester, Size size) async {
