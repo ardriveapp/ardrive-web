@@ -70,12 +70,20 @@
   // fixes the CVE upstream and needs a Flutter newer than the pinned 3.19.6
   // before pdfx can target it.
   //
-  // RENDERING: the same file carries a second patch. pdf.js paints any shading
-  // it cannot parse "hotpink" (DummyShadingPattern.getPattern), and 2.12.313
-  // cannot parse function-based shadings (ShadingType 1), which is how Chrome
-  // prints a CSS repeating gradient - so a ruled-paper page background came out
-  // solid pink (#2369). The patch returns "transparent" instead: the shading is
-  // skipped and the page shows through. Search pdf.min.js for
-  // `getPattern(){return"transparent"}`; re-apply it when this build is
-  // replaced, unless the new one supports ShadingType 1 (pdf.js >= 5.7.284).
+  // RENDERING: the same file carries a second patch. When pdf.js cannot parse
+  // a shading, of any type, it substitutes a DummyShading and paints it
+  // "hotpink" (DummyShadingPattern.getPattern). 2.12.313 cannot parse
+  // function-based shadings (ShadingType 1), which is how Chrome prints a CSS
+  // repeating gradient, so a ruled-paper page background came out solid pink
+  // (#2369).
+  //
+  // The patch makes getPattern return "transparent". An unparsable shading is
+  // then not drawn, and whatever is beneath it (usually the white page) shows
+  // through. To find it, search pdf.min.js for
+  // `getPattern(){return"transparent"}`.
+  //
+  // Re-apply it on every re-vendor for as long as upstream's
+  // DummyShadingPattern returns "hotpink". It still does in 5.7.284, which
+  // added ShadingType 1, because any other shading that fails to parse takes
+  // the same path.
 })();
