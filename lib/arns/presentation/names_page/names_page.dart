@@ -573,6 +573,8 @@ class ArNSNameDetailsPanel extends StatelessWidget {
             children: [
               Flexible(
                 child: ArDriveLink(
+                  // On the right, like every value in the panel, when it wraps.
+                  textAlign: TextAlign.right,
                   text: host,
                   external: true,
                   onTap: () => openUrl(url: arnsUrlFor(name.name)),

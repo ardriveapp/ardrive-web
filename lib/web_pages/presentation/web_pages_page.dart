@@ -585,6 +585,8 @@ class WebPageDetailsPanel extends StatelessWidget {
             children: [
               Flexible(
                 child: ArDriveLink(
+                  // On the right, like every value in the panel, when it wraps.
+                  textAlign: TextAlign.right,
                   text: link.label,
                   external: true,
                   onTap: actions.open,
@@ -598,6 +600,8 @@ class WebPageDetailsPanel extends StatelessWidget {
         DetailsPanelItem(
           itemTitle: strings.webPagesFrom,
           leading: ArDriveLink(
+            // On the right, like every value in the panel, when it wraps.
+            textAlign: TextAlign.right,
             text: webPageSource(context, page),
             onTap: actions.openFolder,
           ),

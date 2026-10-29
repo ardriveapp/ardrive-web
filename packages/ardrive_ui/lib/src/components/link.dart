@@ -16,6 +16,7 @@ class ArDriveLink extends StatefulWidget {
     this.color,
     this.external = false,
     this.isAction = false,
+    this.textAlign,
   });
 
   final String text;
@@ -35,6 +36,10 @@ class ArDriveLink extends StatefulWidget {
   /// Whether the link does something, such as copying, rather than going
   /// somewhere. A screen reader then announces it as a button.
   final bool isAction;
+
+  /// How the words sit when they wrap, such as on the right of a value in a
+  /// details panel. The start, as for [Text], when not given.
+  final TextAlign? textAlign;
 
   /// A link inside running text, laid on the text's baseline. It is a widget
   /// span so the link keeps its hover, focus and semantics.
@@ -102,6 +107,7 @@ class _ArDriveLinkState extends State<ArDriveLink> {
         ],
       ),
       style: style,
+      textAlign: widget.textAlign,
     );
 
     // A link in monospace, such as a transaction ID, is given its final width

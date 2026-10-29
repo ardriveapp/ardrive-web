@@ -356,4 +356,22 @@ void main() {
     expect(panel.right, 1400);
     expect(panel.width, 375, reason: "the explorer's width at 1400");
   });
+
+  /// One label and value grid: a value that wraps stays on the right, as
+  /// the dates do, rather than starting at the left of its half.
+  testWidgets("the panel's links wrap on the right, like its other values",
+      (tester) async {
+    pagesAre([older]);
+    await pump(tester);
+    await choose(tester, 'Recipes');
+
+    final links = tester.widgetList<ArDriveLink>(find.descendant(
+      of: find.byType(WebPageDetailsPanel),
+      matching: find.byType(ArDriveLink),
+    ));
+    expect(links, hasLength(2), reason: 'the link and where it comes from');
+    for (final link in links) {
+      expect(link.textAlign, TextAlign.right, reason: link.text);
+    }
+  });
 }
