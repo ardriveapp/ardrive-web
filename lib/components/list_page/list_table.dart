@@ -1,6 +1,7 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 // The table every list page draws - Your drives, Web pages, Names and one
 // name's records - so the four read as one app: the same header, the same
@@ -168,7 +169,9 @@ class ListTableHeader<T> extends StatelessWidget {
               visible: selection.selecting,
               width: listCheckboxColumn,
               child: ArDriveCheckBox(
-                key: ValueKey('select-all-${selection.allTicked}'),
+                key: const ValueKey('select-all'),
+                // A Tab stop only while there is a selection to act on.
+                inTabOrder: selection.selecting,
                 checked: selection.allTicked,
                 onChange: (_) => selection.onToggleAll(),
               ),
@@ -420,14 +423,6 @@ class ListTableRow extends StatelessWidget {
         // targets rather than one on top of the other.
         child: Row(
           children: [
-            if (selection != null)
-              Padding(
-                padding: const EdgeInsets.only(left: listRowHorizontalPadding),
-                child: _RowCheckbox(
-                  selection: selection,
-                  semanticLabel: semanticLabel,
-                ),
-              ),
             Expanded(
               child: ArDriveClickArea(
                 child: Semantics(
@@ -437,18 +432,28 @@ class ListTableRow extends StatelessWidget {
                     onOpen: onOpen,
                     onChoose: onChoose,
                     onLongPress: selection?.onLongPress,
+                    onSpace: selection?.onTickChanged,
                     child: _yieldLongPress(
                       selection?.onLongPress != null,
                       Padding(
-                        // The checkbox column already supplies the gutter on
-                        // its side.
-                        padding: EdgeInsets.only(
-                          left: hasCheckbox ? 0 : listRowHorizontalPadding,
-                          right: listRowHorizontalPadding,
-                          top: listRowVerticalPadding,
-                          bottom: listRowVerticalPadding,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: listRowHorizontalPadding,
+                          vertical: listRowVerticalPadding,
                         ),
-                        child: child,
+                        // The box inside the row's tap target: shown, it
+                        // takes its own tap and ticks; hidden, a tap passes
+                        // through to the row, so its spot is not dead.
+                        child: hasCheckbox
+                            ? Row(
+                                children: [
+                                  _RowCheckbox(
+                                    selection: selection,
+                                    semanticLabel: semanticLabel,
+                                  ),
+                                  Expanded(child: child),
+                                ],
+                              )
+                            : child,
                       ),
                     ),
                   ),
@@ -503,6 +508,10 @@ class _RowCheckbox extends StatelessWidget {
       child: ArDriveCheckBox(
         key: selection.checkboxKey,
         semanticLabel: semanticLabel,
+        // The row is the Tab stop and Space on it ticks this, as in a file
+        // manager: a box per row would double the stops on the page. Still
+        // tappable, and still a checkbox to a screen reader.
+        inTabOrder: false,
         checked: selection.ticked,
         onChange: (_) => selection.onTickChanged(),
       ),
@@ -543,12 +552,17 @@ class ListSelectOrOpen extends StatefulWidget {
     required this.child,
     this.onChoose,
     this.onLongPress,
+    this.onSpace,
   });
 
   final VoidCallback? onOpen;
 
   /// A long press: see [ListRowSelection.onLongPress].
   final VoidCallback? onLongPress;
+
+  /// Space on the focused row: ticks its box, where the list has one. Enter
+  /// still opens.
+  final VoidCallback? onSpace;
 
   /// Called on the click itself as well as when focus arrives: a row that
   /// already has focus - the one whose details were just closed - reports no
@@ -589,6 +603,20 @@ class _ListSelectOrOpenState extends State<ListSelectOrOpen> {
 
   @override
   Widget build(BuildContext context) {
+    final onSpace = widget.onSpace;
+
+    // Above the row's own focus, where a key from it is heard first: without
+    // this, Space would activate the row and open it.
+    return CallbackShortcuts(
+      bindings: {
+        if (onSpace != null)
+          const SingleActivator(LogicalKeyboardKey.space): onSpace,
+      },
+      child: _inkWell(),
+    );
+  }
+
+  Widget _inkWell() {
     return InkWell(
       focusNode: _focusNode,
       // The row paints its own highlight across its full width, checkbox and

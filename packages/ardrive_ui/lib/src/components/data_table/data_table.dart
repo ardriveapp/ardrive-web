@@ -336,6 +336,25 @@ class _ArDriveDataTableState<T extends IndexedItem>
     final onRowOpen = widget.onRowOpen;
     final selected = _selectedItem;
 
+    // Space ticks the chosen row's box, as a file manager's does: the table is
+    // the Tab stop, not a box per row. Only when the table itself has focus,
+    // so Space on select-all still ticks select-all.
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.space &&
+        node.hasPrimaryFocus &&
+        selected != null &&
+        _currentPage.contains(selected) &&
+        !widget.lockMultiSelect) {
+      _onChangeItemCheck(
+        row: selected,
+        index: selected.index,
+        value: !getMultiSelectBox()
+            .selectedItems
+            .any((r) => r.index == selected.index),
+      );
+      return KeyEventResult.handled;
+    }
+
     if (onRowOpen == null ||
         selected == null ||
         _isMultiSelecting ||
@@ -971,15 +990,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
         multiselectPage.selectedItems.length == _currentPage.length;
 
     // Reserved whether or not it shows, so the headings never move.
+    // None while multi-select is locked (a sync reading the drive, say): a
+    // box that ticks and selects nothing is worse than no box.
     return ArDriveMultiSelectBox(
-      visible: _isMultiSelecting,
+      visible: _isMultiSelecting && !widget.lockMultiSelect,
       width: checkboxSize + 14,
+      // Not keyed by its state: the box follows `checked`, and a key that
+      // changed with every tick threw away its focus.
       child: ArDriveCheckBox(
-        key: ValueKey(
-          isMasterCheckBoxChecked.toString() +
-              multiselectPage.page.toString() +
-              multiselectPage.selectedItems.length.toString(),
-        ),
+        // A Tab stop only while there is a selection to act on.
+        inTabOrder: _isMultiSelecting && !widget.lockMultiSelect,
         checked: isMasterCheckBoxChecked,
         isIndeterminate: multiselectPage.selectedItems.isNotEmpty &&
             multiselectPage.selectedItems.length != _currentPage.length,
@@ -1012,16 +1032,17 @@ class _ArDriveDataTableState<T extends IndexedItem>
     // moves under the pointer.
     return Builder(
       builder: (context) => ArDriveMultiSelectBox(
-        visible: ArDriveMultiSelect.showsRowCheckbox(
-          selecting: _isMultiSelecting,
-          hovered: _RowHover.of(context),
-          focused: _focusNode.hasFocus && _selectedItem == row,
-        ),
+        visible: !widget.lockMultiSelect &&
+            ArDriveMultiSelect.showsRowCheckbox(
+              selecting: _isMultiSelecting,
+              hovered: _RowHover.of(context),
+              focused: _focusNode.hasFocus && _selectedItem == row,
+            ),
         width: checkboxSize + 14,
         child: ArDriveCheckBox(
-          key: ValueKey(
-            index.toString() + isSelected.toString(),
-          ),
+          // The table is the Tab stop and Space ticks the chosen row's box,
+          // as in a file manager; a box per row would be a stop per row.
+          inTabOrder: false,
           checked: isSelected,
           onChange: (value) {
             _onChangeItemCheck(

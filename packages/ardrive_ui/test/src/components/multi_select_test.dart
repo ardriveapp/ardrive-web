@@ -190,7 +190,10 @@ void main() {
   });
 
   group("the explorer's table", () {
-    Future<void> pumpTable(WidgetTester tester) async {
+    late List<List<int>> selections;
+
+    Future<void> pumpTable(WidgetTester tester, {bool locked = false}) async {
+      selections = [];
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -208,6 +211,11 @@ void main() {
               rowsPerPageText: 'Rows per page',
               onChangeMultiSelecting: (_) {},
               onRowOpen: (_) {},
+              lockMultiSelect: locked,
+              onSelectedRows: (boxes) => selections.add([
+                for (final box in boxes)
+                  for (final row in box.selectedItems) row.index,
+              ]),
               sortRows: (list, column, order) => list,
             ),
           ),
@@ -253,6 +261,69 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(shown(tester), [false, true, false]);
+    });
+
+    Future<void> chooseRow(
+      WidgetTester tester,
+      String name, [
+      TestGesture? existing,
+    ]) async {
+      final pointer = existing ?? await mouse(tester);
+      await pointer.down(tester.getCenter(find.text(name).first));
+      await pointer.up();
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      await pointer.moveTo(const Offset(1, 1));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        "Space ticks the chosen row's box, twice unticks, and the "
+        'table keeps focus', (tester) async {
+      await pumpTable(tester);
+      await chooseRow(tester, 'two');
+      final focused = FocusManager.instance.primaryFocus;
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(selections.last, [1]);
+      expect(shown(tester), [true, true, true]);
+      expect(FocusManager.instance.primaryFocus, same(focused));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(selections.last, isEmpty);
+      expect(FocusManager.instance.primaryFocus, same(focused));
+    });
+
+    testWidgets('no box shows while multi-select is locked', (tester) async {
+      // A sync reading the drive locks it: a box that ticks and selects
+      // nothing is worse than none.
+      await pumpTable(tester, locked: true);
+      final pointer = await mouse(tester);
+      await pointer.moveTo(tester.getCenter(find.text('two').first));
+      await tester.pumpAndSettle();
+      expect(shown(tester), [false, false, false]);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(shown(tester), [false, false, false]);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+      await chooseRow(tester, 'two', pointer);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(selections, isEmpty, reason: 'Space selects nothing either');
+    });
+
+    testWidgets('the row boxes are not Tab stops', (tester) async {
+      await pumpTable(tester);
+      final labels = <String?>[];
+      for (var i = 0; i < 4; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        labels.add(FocusManager.instance.primaryFocus?.debugLabel);
+      }
+      expect(labels, isNot(contains('ArDriveCheckBox')));
     });
 
     testWidgets('holding the multi-select key shows every box', (tester) async {

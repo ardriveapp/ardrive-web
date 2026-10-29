@@ -1031,11 +1031,12 @@ class _SelectionShortcuts extends StatelessWidget {
 /// Whether the reader is choosing several drives, which shows every row's
 /// checkbox and select-all: the explorer's rule, [ArDriveMultiSelect].
 ///
-/// Once a drive is ticked, while the multi-select key is held (Ctrl on
-/// Windows, Cmd elsewhere), or after a long press on a touch screen. Outside
-/// it, a row's box shows while the pointer is on the row or it has focus.
-/// Ticking still means only one thing here: the drives Sync selected acts
-/// on. A click on a row only chooses it; only a click on the box ticks.
+/// Once a drive is ticked, while the multi-select key is held (Cmd on macOS
+/// and iOS, Ctrl everywhere else), or after a long press on a touch screen.
+/// Outside it, a row's box shows while the pointer is on the row or it has
+/// focus. Ticking still means only one thing here: the drives Sync selected
+/// acts on. A click on a row only chooses it; only a click on the box, or
+/// Space on the focused row, ticks.
 class _ChoosingSeveral extends StatefulWidget {
   const _ChoosingSeveral({
     required this.anyTicked,

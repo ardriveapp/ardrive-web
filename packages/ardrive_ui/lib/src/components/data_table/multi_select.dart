@@ -11,8 +11,10 @@ import 'package:flutter/widgets.dart';
 /// - Once any box is ticked, every row's box shows, and select-all in the
 ///   header, until the selection is cleared.
 /// - On a touch screen, a long press starts selecting.
-/// - Holding the multi-select key (Ctrl on Windows, Cmd elsewhere) shows them
-///   all too, as a shortcut.
+/// - Holding the multi-select key (Cmd on macOS and iOS, Ctrl everywhere
+///   else) shows them all too, as a shortcut.
+/// - The row is the Tab stop, and Space on it ticks its box; select-all is a
+///   stop only while selecting.
 ///
 /// The column the boxes sit in is always reserved and a box fades in place,
 /// so a row's content never moves when its box appears. Ticking is the box's

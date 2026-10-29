@@ -39,12 +39,14 @@ void main() {
 
   var toggled = <String>[];
   var chosen = <String>[];
+  var opened = <String>[];
   var cleared = 0;
   var retried = 0;
 
   setUp(() {
     toggled = <String>[];
     chosen = <String>[];
+    opened = <String>[];
     cleared = 0;
     retried = 0;
   });
@@ -71,7 +73,7 @@ void main() {
           home: Scaffold(
             body: DrivesListBody(
               state: state,
-              onOpenDrive: (_) {},
+              onOpenDrive: (drive) => opened.add(drive.id),
               onTryAgain: () {},
               onToggleSelected: toggled.add,
               onToggleSelectAll: () {},
@@ -135,8 +137,7 @@ void main() {
 
       await pointer.moveTo(tester.getCenter(find.text('b')));
       await tester.pumpAndSettle();
-      final box =
-          tester.getCenter(find.byKey(const ValueKey('select-b-false')));
+      final box = tester.getCenter(find.byKey(const ValueKey('select-b')));
       await pointer.moveTo(box);
       await pointer.down(box);
       await pointer.up();
@@ -169,7 +170,7 @@ void main() {
         ),
       );
       expect(shown(tester), [true, true, true]);
-      expect(find.byKey(const ValueKey('select-all-false')), findsOneWidget);
+      expect(find.byKey(const ValueKey('select-all')), findsOneWidget);
 
       await pump(tester, twoDrives);
 
@@ -183,7 +184,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(shown(tester), [true, true, true]);
 
-      await tester.tap(find.byKey(const ValueKey('select-b-false')));
+      await tester.tap(find.byKey(const ValueKey('select-b')));
       await tester.pump();
       expect(toggled, ['b']);
 
@@ -262,8 +263,7 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pump(tester, twoDrives);
 
-      final node =
-          tester.getSemantics(find.byKey(const ValueKey('select-a-false')));
+      final node = tester.getSemantics(find.byKey(const ValueKey('select-a')));
       expect(
         node,
         matchesSemantics(
@@ -279,26 +279,102 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets("Tab to a row's box shows it, and Space ticks it",
-        (tester) async {
-      await pump(tester, twoDrives);
-      final pointer = await mouse(tester);
+    /// The list with a selection that really changes, as the page's cubit
+    /// changes it.
+    Future<void> pumpLive(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      var selected = <String>{};
 
-      // Focus on the row, then Tab to the next stop: the next row's box.
-      await pointer.down(tester.getCenter(find.text('a')));
-      await pointer.up();
-      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
-      await pointer.moveTo(const Offset(1, 1));
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            home: Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) => DrivesListBody(
+                  state: DrivesListLoaded(
+                    drives: [drive('a'), drive('b')],
+                    scope: DriveScope.all,
+                    selected: selected,
+                  ),
+                  onOpenDrive: (drive) => opened.add(drive.id),
+                  onTryAgain: () {},
+                  onToggleSelected: (id) => setState(() {
+                    toggled.add(id);
+                    selected = selected.contains(id)
+                        ? ({...selected}..remove(id))
+                        : {...selected, id};
+                  }),
+                  onToggleSelectAll: () {},
+                  onClearSelection: () => setState(() => selected = {}),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'the row is the Tab stop: Space ticks its box, again unticks, and '
+        'focus stays on the row', (tester) async {
+      await pumpLive(tester);
+
+      // Nothing ticked, so select-all is not a stop: the first is row a.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      final row = FocusManager.instance.primaryFocus;
+      expect(row?.debugLabel, 'ListTableRow');
+      expect(shown(tester), [false, true, false],
+          reason: 'focus in the row shows its box');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(toggled, ['a']);
+      expect(shown(tester), [true, true, true]);
+      expect(FocusManager.instance.primaryFocus, same(row),
+          reason: 'a tick keeps focus where it was');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(toggled, ['a', 'a']);
+      expect(FocusManager.instance.primaryFocus, same(row));
+      expect(opened, isEmpty, reason: 'Space ticks; it never opens');
+    });
+
+    testWidgets('the next Tab is the next row, not its box', (tester) async {
+      await pumpLive(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
 
-      final visible = shown(tester);
-      expect(visible[2], isTrue, reason: "b's box has focus, so it shows");
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'ListTableRow');
+      expect(shown(tester), [false, false, true]);
+    });
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.space);
-      await tester.pump();
+    testWidgets('a tap where a hidden box sits is a tap on the row',
+        (tester) async {
+      await pump(tester, twoDrives);
 
-      expect(toggled, ['b']);
+      // Touch opens, per the row model; the box's spot is not dead.
+      await tester.tapAt(
+        tester.getCenter(find.byKey(const ValueKey('select-a'))),
+        kind: PointerDeviceKind.touch,
+      );
+      await tester.pumpAndSettle();
+
+      expect(opened, ['a']);
+      expect(toggled, isEmpty);
     });
 
     testWidgets('names and headings do not move when the boxes show',

@@ -119,7 +119,6 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                         // The checkbox only reads `checked` when it is first
                         // built, so the key forces a fresh one whenever the
                         // cubit's answer changes.
-                        key: ValueKey(state.keyIsInLink),
                         checked: state.keyIsInLink,
                         title: state.isFolder
                             ? appLocalizationsOf(context)

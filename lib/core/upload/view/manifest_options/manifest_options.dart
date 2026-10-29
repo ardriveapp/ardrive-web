@@ -100,7 +100,6 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   ArDriveCheckBox(
-                    key: ValueKey(widget.isSelected),
                     checked: widget.isSelected,
                     onChange: (value) {
                       if (value) {

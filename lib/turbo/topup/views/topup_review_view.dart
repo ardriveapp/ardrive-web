@@ -592,8 +592,6 @@ class _EmailSection extends StatelessWidget {
           const SizedBox(height: 12),
           ArDriveCheckBox(
             isDisabled: !emailIsValid || emailController.text.isEmpty,
-            key: ValueKey(
-                '${emailIsValid && emailChecked}${emailController.text}'),
             title:
                 appLocalizationsOf(context).keepMeUpToDateOnNewsAndPromotions,
             titleStyle: typography.paragraphSmall(

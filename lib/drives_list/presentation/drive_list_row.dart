@@ -303,7 +303,7 @@ class DriveListRow extends StatelessWidget {
               onTickChanged: () => onSelectedChanged?.call(drive.id),
               selecting: selecting,
               onLongPress: onLongPress,
-              checkboxKey: ValueKey('select-${drive.id}-$selected'),
+              checkboxKey: ValueKey('select-${drive.id}'),
             ),
       chosen: chosen,
       onChoose: onChoose,
