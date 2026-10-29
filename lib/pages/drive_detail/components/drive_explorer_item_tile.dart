@@ -506,15 +506,17 @@ class _DriveExplorerItemTileTrailingState
     void moreInfo() => context.read<DriveDetailCubit>().selectDataItem(item);
 
     if (item is FolderDataTableItem) {
-      final driveDetail =
-          context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess;
       return folderMenuItems(
         context,
         folder: item,
         drive: widget.drive,
-        zipName: item.id == driveDetail.currentDrive.rootFolderId
-            ? driveDetail.currentDrive.name
-            : item.name,
+        zipName: () {
+          final driveDetail =
+              context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess;
+          return item.id == driveDetail.currentDrive.rootFolderId
+              ? driveDetail.currentDrive.name
+              : item.name;
+        },
         onMoreInfo: moreInfo,
         height: height,
       );
@@ -729,6 +731,18 @@ class EntityActionsMenu extends StatelessWidget {
     );
   }
 
+  /// Whether the explorer has [driveId] open with its contents: what the
+  /// drive's menu means by synced, read only where an explorer is provided.
+  static bool _explorerShows(BuildContext context, String driveId) {
+    try {
+      final state = context.read<DriveDetailCubit>().state;
+      return state is DriveDetailLoadSuccess &&
+          state.currentDrive.id == driveId;
+    } on ProviderNotFoundException {
+      return false;
+    }
+  }
+
   List<ArDriveDropdownItem> _getItems(
       ArDriveDataTableItem item,
       BuildContext context,
@@ -744,20 +758,18 @@ class EntityActionsMenu extends StatelessWidget {
         context,
         folder: item,
         drive: drive,
-        zipName: item.name,
+        zipName: () => item.name,
         onMoreInfo: onMoreInfo,
       );
     }
     if (item is DriveDataItem) {
       if (drive == null) return const [];
-      final explorer = context.read<DriveDetailCubit>().state;
       return driveMenuItems(
         context,
         drive: drive,
         isOwner: item.isOwner,
-        isSynced: (explorer is DriveDetailLoadSuccess &&
-                explorer.currentDrive.id == drive.id) ||
-            (drive.lastBlockHeight ?? 0) > 0,
+        isSynced: (drive.lastBlockHeight ?? 0) > 0 ||
+            _explorerShows(context, drive.id),
         isSyncing: isSyncing,
         onMoreInfo: onMoreInfo,
       );

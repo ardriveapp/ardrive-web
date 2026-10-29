@@ -241,13 +241,14 @@ List<ArDriveDropdownItem> driveMenuItems(
 /// license and hide; More info.
 ///
 /// [drive] is null where the surface doesn't know it; share and publish need
-/// it and are left out then. [onMoreInfo] is null where the menu sits in the
+/// it and are left out then. [zipName] is asked only when Download is
+/// pressed. [onMoreInfo] is null where the menu sits in the
 /// folder's own details.
 List<ArDriveDropdownItem> folderMenuItems(
   BuildContext context, {
   required FolderDataTableItem folder,
   required Drive? drive,
-  required String zipName,
+  required String Function() zipName,
   VoidCallback? onMoreInfo,
   double? height,
 }) {
@@ -308,7 +309,7 @@ List<ArDriveDropdownItem> folderMenuItems(
         onClick: () => promptToDownloadMultipleFiles(
           context,
           selectedItems: [folder],
-          zipName: zipName,
+          zipName: zipName(),
         ),
       ),
     ],
