@@ -5,6 +5,7 @@ import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -97,7 +98,9 @@ void main() {
     group('at $label', () {
       testWidgets('has three columns, with headings and checkboxes',
           (tester) async {
-        await pumpList(tester, width: width);
+        // The checkboxes show once the reader is choosing several drives:
+        // here, once one is ticked.
+        await pumpList(tester, width: width, selected: {'a'});
 
         expect(find.byType(DriveListHeader), findsOneWidget);
         expect(find.text('Name'), findsOneWidget);
@@ -115,9 +118,17 @@ void main() {
           (tester) async {
         await pumpList(tester, width: width);
 
+        // Holding the multi-select key shows them, as in the explorer: Cmd
+        // here (the test platform is not Windows).
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+        await tester.pumpAndSettle();
+
         await tester.tap(find.byType(ArDriveCheckBox).at(1));
         await tester.pump();
         expect(ticked, ['a']);
+
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+        await tester.pumpAndSettle();
 
         // The list as it is once two are ticked. Syncing them is the page's
         // sync button, which reads "Sync 2 selected" by then - see
@@ -145,7 +156,7 @@ void main() {
     for (var window = 628.0; window <= 1920; window += 36) {
       for (final width in {window, besideSidebar(window)}) {
         if (width < 628) continue;
-        await pumpList(tester, width: width);
+        await pumpList(tester, width: width, selected: {'a'});
 
         expect(
           find.byType(ArDriveCheckBox),
@@ -157,7 +168,7 @@ void main() {
   });
 
   testWidgets('below 628px the cards are unchanged', (tester) async {
-    await pumpList(tester, width: 600);
+    await pumpList(tester, width: 600, selected: {'a'});
 
     expect(find.byType(DriveListHeader), findsNothing);
     expect(find.byType(ArDriveCheckBox), findsNothing);
@@ -165,7 +176,7 @@ void main() {
   });
 
   testWidgets('at 1920 the five columns are unchanged', (tester) async {
-    await pumpList(tester, width: besideSidebar(1920));
+    await pumpList(tester, width: besideSidebar(1920), selected: {'a'});
 
     expect(find.text('Files'), findsOneWidget);
     expect(find.text('Date created'), findsOneWidget);

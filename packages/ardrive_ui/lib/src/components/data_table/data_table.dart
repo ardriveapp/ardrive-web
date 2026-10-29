@@ -237,15 +237,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
   final _focusNode = FocusNode(debugLabel: 'ArDriveDataTable');
   int? _shiftSelectionStartIndex;
 
-  bool get _isMultiSelecting {
-    final isMultiSelecting = _isMultiSelectingWithLongPress ||
-        _multiSelectBoxes.isNotEmpty &&
-            _multiSelectBoxes
-                .any((element) => element.selectedItems.isNotEmpty) ||
-        _isCtrlPressed;
-
-    return isMultiSelecting;
-  }
+  bool get _isMultiSelecting => ArDriveMultiSelect.showsCheckboxes(
+        longPressed: _isMultiSelectingWithLongPress,
+        anyTicked: _multiSelectBoxes
+            .any((element) => element.selectedItems.isNotEmpty),
+        keyHeld: _isCtrlPressed,
+      );
 
   @override
   void initState() {
@@ -669,18 +666,13 @@ class _ArDriveDataTableState<T extends IndexedItem>
   }
 
   bool _handleKeyDownEvent(KeyEvent event) {
-    if (mounted && !widget.lockMultiSelect) {
-      if (AppPlatform.isWindows()) {
-        setState(() {
-          _isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
-          widget.onChangeMultiSelecting!(_isMultiSelecting);
-        });
-      } else if (widget.onChangeMultiSelecting != null) {
-        setState(() {
-          _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
-          widget.onChangeMultiSelecting!(_isMultiSelecting);
-        });
-      }
+    if (mounted &&
+        !widget.lockMultiSelect &&
+        (AppPlatform.isWindows() || widget.onChangeMultiSelecting != null)) {
+      setState(() {
+        _isCtrlPressed = ArDriveMultiSelect.keyPressed;
+        widget.onChangeMultiSelecting!(_isMultiSelecting);
+      });
     }
     return false;
   }

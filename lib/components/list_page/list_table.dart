@@ -20,6 +20,45 @@ const double listRowHorizontalPadding = 16;
 /// outside it, which offsets the two by exactly that padding.
 const double listCheckboxColumn = 40;
 
+/// How long the selection column takes to open and close: the explorer's
+/// table's timing.
+const Duration listCheckboxReveal = Duration(milliseconds: 300);
+
+/// The selection column, open or closed.
+///
+/// Closed, it takes no width and draws no checkbox: nothing to see, focus or
+/// tap. It opens and closes over [listCheckboxReveal], as the explorer's does.
+class _CheckboxColumn extends StatelessWidget {
+  const _CheckboxColumn({required this.visible, required this.checkbox});
+
+  final bool visible;
+  final Widget checkbox;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: visible ? 1 : 0),
+      duration: listCheckboxReveal,
+      curve: Curves.easeInOut,
+      builder: (context, open, _) {
+        if (open == 0) return const SizedBox.shrink();
+        // The box keeps its full width and is uncovered as the column opens,
+        // so it slides rather than squeezing.
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: open,
+            child: SizedBox(
+              width: listCheckboxColumn,
+              child: Align(alignment: Alignment.centerLeft, child: checkbox),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// How big a row's actions menu tap target is.
 ///
 /// The touch minimum, and no larger: a row that draws columns is 48px tall -
@@ -89,9 +128,14 @@ class ListTableHeader<T> extends StatelessWidget {
     this.onSort,
     this.allSelected,
     this.onToggleSelectAll,
+    this.showsCheckbox = true,
   });
 
   final List<ListColumn<T>> columns;
+
+  /// Whether the select-all box is drawn, where the list offers selection.
+  /// It goes with the rows' boxes - see [ArDriveMultiSelect].
+  final bool showsCheckbox;
 
   /// Which column is ordering the list, if this header is sortable.
   final T? sort;
@@ -119,15 +163,12 @@ class ListTableHeader<T> extends StatelessWidget {
       child: Row(
         children: [
           if (allSelected != null)
-            SizedBox(
-              width: listCheckboxColumn,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ArDriveCheckBox(
-                  key: ValueKey('select-all-$allSelected'),
-                  checked: allSelected!,
-                  onChange: (_) => onToggleSelectAll?.call(),
-                ),
+            _CheckboxColumn(
+              visible: showsCheckbox,
+              checkbox: ArDriveCheckBox(
+                key: ValueKey('select-all-$allSelected'),
+                checked: allSelected!,
+                onChange: (_) => onToggleSelectAll?.call(),
               ),
             ),
           Expanded(
@@ -316,6 +357,8 @@ class ListTableRow extends StatelessWidget {
     this.selected,
     this.onSelectedChanged,
     this.checkboxKey,
+    this.showsCheckbox = true,
+    this.onLongPress,
     this.chosen,
     this.onChoose,
   });
@@ -342,6 +385,15 @@ class ListTableRow extends StatelessWidget {
 
   final VoidCallback? onSelectedChanged;
   final Key? checkboxKey;
+
+  /// Whether the checkbox is drawn, where the list offers selection. A list
+  /// that hides its checkboxes until the reader is choosing several rows -
+  /// see [ArDriveMultiSelect] - keeps the column closed until then.
+  final bool showsCheckbox;
+
+  /// A long press on the row, on a touch screen: where a list hides its
+  /// checkboxes, the way to show them without a keyboard.
+  final VoidCallback? onLongPress;
 
   /// Whether this row's details are open beside the list, or null where no
   /// details can be open. Then the row is drawn chosen while it has focus,
@@ -383,17 +435,14 @@ class ListTableRow extends StatelessWidget {
             if (hasCheckbox)
               Padding(
                 padding: const EdgeInsets.only(left: listRowHorizontalPadding),
-                child: SizedBox(
-                  width: listCheckboxColumn,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    // Its own target, so ticking is never mistaken for
-                    // opening.
-                    child: ArDriveCheckBox(
-                      key: checkboxKey,
-                      checked: selected!,
-                      onChange: (_) => onSelectedChanged?.call(),
-                    ),
+                child: _CheckboxColumn(
+                  visible: showsCheckbox,
+                  // Its own target, so ticking is never mistaken for
+                  // opening.
+                  checkbox: ArDriveCheckBox(
+                    key: checkboxKey,
+                    checked: selected!,
+                    onChange: (_) => onSelectedChanged?.call(),
                   ),
                 ),
               ),
@@ -405,6 +454,7 @@ class ListTableRow extends StatelessWidget {
                   child: ListSelectOrOpen(
                     onOpen: onOpen,
                     onChoose: onChoose,
+                    onLongPress: hasCheckbox ? onLongPress : null,
                     child: Padding(
                       // The checkbox column already supplies the gutter on
                       // its side.
@@ -451,9 +501,13 @@ class ListSelectOrOpen extends StatefulWidget {
     required this.onOpen,
     required this.child,
     this.onChoose,
+    this.onLongPress,
   });
 
   final VoidCallback? onOpen;
+
+  /// A long press: see [ListTableRow.onLongPress].
+  final VoidCallback? onLongPress;
 
   /// Called on the click itself as well as when focus arrives: a row that
   /// already has focus - the one whose details were just closed - reports no
@@ -502,6 +556,7 @@ class _ListSelectOrOpenState extends State<ListSelectOrOpen> {
       onTapDown: (details) => _kind = details.kind,
       onTapCancel: () => _kind = null,
       onTap: _onTap,
+      onLongPress: widget.onLongPress,
       child: widget.child,
     );
   }

@@ -157,8 +157,12 @@ class DriveListHeader extends StatelessWidget {
     this.onSort,
     this.allSelected,
     this.onToggleSelectAll,
+    this.showsCheckbox = true,
     this.showsAllColumns = true,
   });
+
+  /// Whether the select-all box is drawn - see [ListTableHeader.showsCheckbox].
+  final bool showsCheckbox;
 
   /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
@@ -191,6 +195,7 @@ class DriveListHeader extends StatelessWidget {
       onSort: onSort,
       allSelected: allSelected,
       onToggleSelectAll: onToggleSelectAll,
+      showsCheckbox: showsCheckbox,
       columns: [
         ListColumn(strings.name, _nameFlex, sortKey: DriveListSort.name),
         ListColumn(strings.lastSynced, _syncFlex,
@@ -218,9 +223,17 @@ class DriveListRow extends StatelessWidget {
     this.menu,
     this.selected,
     this.onSelectedChanged,
+    this.showsCheckbox = true,
+    this.onLongPress,
     this.chosen,
     this.onChoose,
   });
+
+  /// Whether the checkbox is drawn - see [ListTableRow.showsCheckbox].
+  final bool showsCheckbox;
+
+  /// See [ListTableRow.onLongPress].
+  final VoidCallback? onLongPress;
 
   /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
@@ -279,6 +292,8 @@ class DriveListRow extends StatelessWidget {
       selected: selected,
       checkboxKey: ValueKey('select-${drive.id}-$selected'),
       onSelectedChanged: () => onSelectedChanged?.call(drive.id),
+      showsCheckbox: showsCheckbox,
+      onLongPress: onLongPress,
       chosen: chosen,
       onChoose: onChoose,
       child: showsColumns ? _columns(context) : _stacked(context),

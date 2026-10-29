@@ -725,7 +725,7 @@ class _NameGroup extends StatelessWidget {
             emphasized: true,
             subtitle: _pointsTo(context, apex),
             tag: name.role == ArNSRole.controller
-                ? strings.arnsManagedForOwner
+                ? strings.arnsController
                 : null,
             onTap: () => cubit.choose(name.name, arnsApex),
           ),

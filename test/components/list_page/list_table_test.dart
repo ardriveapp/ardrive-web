@@ -23,7 +23,12 @@ void main() {
     ListColumn<String>('Updated', 3, sortKey: 'updated'),
   ];
 
-  Future<void> pump(WidgetTester tester, {bool showsColumns = true}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    bool showsColumns = true,
+    bool? selected,
+    bool showsCheckbox = true,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(1000, 600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -38,6 +43,8 @@ void main() {
                   sort: 'updated',
                   sortAscending: false,
                   onSort: sorted.add,
+                  allSelected: selected,
+                  showsCheckbox: showsCheckbox,
                 ),
                 for (final row in ['one', 'two'])
                   ListTableRow(
@@ -46,6 +53,8 @@ void main() {
                     onOpen: () => opened.add(row),
                     onChoose: () => chosen.add(row),
                     chosen: false,
+                    selected: selected,
+                    showsCheckbox: showsCheckbox,
                     menu: const SizedBox(width: 48, height: 48),
                     child: ListColumnsRow(
                       flexes: const [6, 5, 3],
@@ -147,5 +156,43 @@ void main() {
       tester.getSize(find.byType(ListTableRow).first).height,
       greaterThanOrEqualTo(listMenuTapTarget),
     );
+  });
+
+  group('a list that hides its checkboxes until the reader chooses several',
+      () {
+    testWidgets('draws none, and the headings stay over their columns',
+        (tester) async {
+      await pump(tester, selected: false, showsCheckbox: false);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ArDriveCheckBox), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Link')).dx,
+        tester.getTopLeft(find.text('one.ar.io')).dx,
+      );
+    });
+
+    testWidgets('and lines up with a list that offers no selection at all',
+        (tester) async {
+      await pump(tester);
+      final plain = tester.getTopLeft(find.text('one')).dx;
+
+      await pump(tester, selected: false, showsCheckbox: false);
+      await tester.pumpAndSettle();
+
+      expect(tester.getTopLeft(find.text('one')).dx, plain);
+    });
+
+    testWidgets('shown, one per row and select-all, still in line',
+        (tester) async {
+      await pump(tester, selected: false);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ArDriveCheckBox), findsNWidgets(3));
+      expect(
+        tester.getTopLeft(find.text('Link')).dx,
+        tester.getTopLeft(find.text('one.ar.io')).dx,
+      );
+    });
   });
 }

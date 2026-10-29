@@ -594,17 +594,9 @@
   "@uploadAsManifest": {
     "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
-  "syncThisDriveDescription": "Obtener los archivos y carpetas más recientes de esta unidad.",
-  "@syncThisDriveDescription": {
-    "description": "Description for the sync drive action card"
-  },
   "syncAllDrives": "Sincronizar Todas las Unidades",
   "@syncAllDrives": {
     "description": "Button and title text for syncing all drives"
-  },
-  "syncAllDrivesDescription": "Sincroniza todas tus unidades a la vez para asegurarte de que todo el contenido esté actualizado.",
-  "@syncAllDrivesDescription": {
-    "description": "Description for the sync all drives action card"
   },
   "driveID": "ID de la unidad",
   "@driveID": {
