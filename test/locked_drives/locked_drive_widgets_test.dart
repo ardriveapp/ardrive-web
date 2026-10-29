@@ -85,6 +85,66 @@ void main() {
         expect(opened, 1);
       });
 
+      testWidgets(
+          'a locked row is exactly as tall as the rows beside it ($where)',
+          (tester) async {
+        _size(tester, width);
+        final columns = driveListShowsColumns(width);
+
+        DriveListItem normal({required bool walked}) => DriveListItem(
+              id: walked ? 'synced' : 'never',
+              name: 'E2E Locked Login',
+              isPrivate: true,
+              isSharedWithMe: false,
+              isHidden: false,
+              dateCreated: DateTime(2026, 10, 29),
+              hasBeenWalked: walked,
+              fileCount: walked ? 3 : null,
+              totalSize: walked ? 350 : null,
+              lastSyncedAt: walked ? DateTime.now() : null,
+              isSyncing: false,
+              lastSyncFailed: false,
+            );
+
+        await tester.pumpWidget(_app(
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: Column(
+                children: [
+                  for (final item in [
+                    normal(walked: false),
+                    normal(walked: true),
+                    DriveListItem.locked(
+                        id: _driveId, dateCreated: DateTime(2026)),
+                  ])
+                    DriveListRow(
+                      drive: item,
+                      onOpen: () {},
+                      showsColumns: columns,
+                      selected: false,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          dark: dark,
+        ));
+
+        expect(tester.takeException(), isNull);
+        final heights = [
+          for (var i = 0; i < 3; i++)
+            tester.getSize(find.byType(DriveListRow).at(i)).height,
+        ];
+        expect(heights[2], heights[0], reason: 'locked vs never synced');
+        // On a phone a synced card's figures can wrap onto a second line in
+        // the test font, so its height is its own; a table row's is fixed.
+        if (columns) {
+          expect(heights[2], heights[1], reason: 'locked vs synced');
+        }
+      });
+
       testWidgets('a locked drive\'s page offers Unlock ($where)',
           (tester) async {
         _size(tester, width);

@@ -363,7 +363,7 @@ class DriveListRow extends StatelessWidget {
             // the same fact in words.
             if (drive.fileCount != null) _files(context),
             if (drive.totalSize != null) _size(context),
-            if (!drive.isLocked) _created(context),
+            if (drive.isLocked) _unlockAction(context) else _created(context),
           ],
         ),
       ],
@@ -420,33 +420,29 @@ class DriveListRow extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    // Status, then the one thing to do about it.
+    // Status, then the one thing to do about it. Unlock is a text action
+    // rather than a button: the smallest button is 36 high and made a locked
+    // row taller than every other row. A row's height is its text's.
     if (drive.isLocked) {
+      final status = Text(
+        formatDriveSyncState(context, drive),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: typography.paragraphSmall(color: colorTokens.textLow),
+      );
+
+      // Stacked, the action takes the line the created date has on every
+      // other card, so the card is as tall as theirs.
+      if (!showsColumns) {
+        return status;
+      }
+
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
-              formatDriveSyncState(context, drive),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.paragraphSmall(color: colorTokens.textLow),
-            ),
-          ),
-          const SizedBox(width: ArDriveSpacing.xs),
-          ArDriveButtonNew(
-            key: ValueKey('unlock-${drive.id}'),
-            text: appLocalizationsOf(context).unlock,
-            typography: typography,
-            variant: ButtonVariant.secondary,
-            size: ArDriveButtonSize.compact,
-            maxWidth: ArDriveButtonNew.fittedWidth(
-              context,
-              appLocalizationsOf(context).unlock,
-              minWidth: 0,
-            ),
-            onPressed: onOpen,
-          ),
+          Flexible(child: status),
+          const SizedBox(width: ArDriveSpacing.sm),
+          _unlockAction(context),
         ],
       );
     }
@@ -485,6 +481,16 @@ class DriveListRow extends StatelessWidget {
       ),
     );
   }
+
+  /// A locked drive's Unlock, the same act as opening its row.
+  Widget _unlockAction(BuildContext context) => ArDriveLink(
+        key: ValueKey('unlock-${drive.id}'),
+        text: appLocalizationsOf(context).unlock,
+        isAction: true,
+        style: ArDriveTypographyNew.of(context)
+            .paragraphSmall(fontWeight: ArFontWeight.semiBold),
+        onTap: onOpen,
+      );
 
   // [underHeading] is true in the table, where the column heading already says
   // what the figure is: "Files" over "15 files" said it twice. The stacked
