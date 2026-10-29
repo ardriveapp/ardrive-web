@@ -297,41 +297,18 @@ class _LicenceState extends State<_Licence> {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final cubit = context.read<PublishCubit>();
     final licence = context.select((PublishCubit c) => c.state.licence);
-    final border = OutlineInputBorder(
-      borderSide: BorderSide(color: colors.strokeMid),
-      borderRadius: BorderRadius.circular(4),
-    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Label(strings.publishLicenseLabel),
-        DropdownButtonFormField<LicenseMeta?>(
+        ArDriveSelectField<LicenseMeta?>(
           value: licence?.meta,
-          isExpanded: true,
-          dropdownColor: colors.containerL1,
-          decoration: InputDecoration(
-            enabledBorder: border,
-            focusedBorder: border,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
-          items: [
-            DropdownMenuItem<LicenseMeta?>(
-              value: null,
-              child: Text(strings.publishLicenseNone,
-                  style: typography.paragraphNormal(color: colors.textHigh)),
-            ),
+          choices: [
+            ArDriveChoice(value: null, label: strings.publishLicenseNone),
             for (final meta in _choices)
-              DropdownMenuItem<LicenseMeta?>(
-                value: meta,
-                child: Text(meta.nameWithShortName,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.paragraphNormal(color: colors.textHigh)),
-              ),
+              ArDriveChoice(value: meta, label: meta.nameWithShortName),
           ],
           onChanged: (meta) {
             if (meta == null) {

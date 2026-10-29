@@ -302,49 +302,47 @@ class _UnitDropdown extends StatelessWidget {
 
     // Drawn like the standard text field beside it: its fill, edge and
     // radius, and the same height.
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: colors.strokeMid),
-        borderRadius: BorderRadius.circular(ArDriveRadius.control),
-        color: colors.inputDefault,
-      ),
-      child: PopupMenuButton<FileSizeUnit>(
-        initialValue: selectedUnit,
-        onSelected: onChanged,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        itemBuilder: (context) => FileSizeUnit.values.map((unit) {
-          return PopupMenuItem<FileSizeUnit>(
-            value: unit,
-            child: Text(
-              unit.abbreviation,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.semiBold,
-                color: colors.textHigh,
-              ),
+    return ArDriveChoiceMenu<FileSizeUnit>(
+      value: selectedUnit,
+      onSelected: onChanged,
+      matchButtonWidth: true,
+      alignmentOffset: const Offset(0, 4),
+      debugLabel: 'unit',
+      choices: [
+        for (final unit in FileSizeUnit.values)
+          ArDriveChoice(value: unit, label: unit.abbreviation),
+      ],
+      builder: (context, isOpen, toggle) => ArDriveChoiceButton(
+        toggle: toggle,
+        semanticValue: selectedUnit.abbreviation,
+        builder: (context, hovered, focused) => Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isOpen || focused ? colors.strokeHigh : colors.strokeMid,
             ),
-          );
-        }).toList(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                selectedUnit.abbreviation,
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colors.textHigh,
+            borderRadius: BorderRadius.circular(ArDriveRadius.control),
+            color: colors.inputDefault,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  selectedUnit.abbreviation,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.textHigh,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.keyboard_arrow_down,
-                size: 18,
-                color: colors.textMid,
-              ),
-            ],
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: colors.textMid,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -153,106 +153,76 @@ class _TokenSelector extends StatelessWidget {
             border: Border.all(color: colors.strokeMid),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: PopupMenuButton<CryptoToken>(
-            initialValue: selectedToken,
+          child: ArDriveChoiceMenu<CryptoToken>(
+            value: selectedToken,
             onSelected: onTokenSelected,
-            offset: const Offset(0, 48),
-            constraints: const BoxConstraints(minWidth: 280),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            itemBuilder: (context) => [
-              // Base L2 tokens (fast, low fees)
-              _buildTokenMenuItem(context, CryptoToken.ethBase),
-              _buildTokenMenuItem(context, CryptoToken.usdcBase),
-              // Solana
-              _buildTokenMenuItem(context, CryptoToken.sol),
-              // Ethereum L1 tokens (slower, higher fees)
-              _buildTokenMenuItem(context, CryptoToken.ethL1),
-              _buildTokenMenuItem(context, CryptoToken.usdcEth),
+            matchButtonWidth: true,
+            alignmentOffset: const Offset(0, 4),
+            debugLabel: 'token',
+            choices: [
+              // Base L2 tokens (fast, low fees), Solana, then Ethereum L1
+              // tokens (slower, higher fees).
+              for (final token in const [
+                CryptoToken.ethBase,
+                CryptoToken.usdcBase,
+                CryptoToken.sol,
+                CryptoToken.ethL1,
+                CryptoToken.usdcEth,
+              ])
+                ArDriveChoice(
+                  value: token,
+                  label: token.displayName,
+                  icon: _TokenIcon(token: token, size: 24),
+                ),
             ],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  // Only show token icon if a token is selected
-                  if (selectedToken != null) ...[
-                    _TokenIcon(token: selectedToken!),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedToken?.displayName ?? 'Select token',
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: selectedToken != null
-                                ? colors.textHigh
-                                : colors.textMid,
-                          ),
-                        ),
-                        if (selectedToken != null)
+            builder: (context, isOpen, toggle) => ArDriveChoiceButton(
+              toggle: toggle,
+              semanticLabel: 'Pay with',
+              semanticValue: selectedToken?.displayName,
+              builder: (context, hovered, focused) => Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    // Only show token icon if a token is selected
+                    if (selectedToken != null) ...[
+                      _TokenIcon(token: selectedToken!),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            selectedToken!.networkDisplayName,
-                            style: typography.paragraphSmall(
-                              color: colors.textMid,
+                            selectedToken?.displayName ?? 'Select token',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: selectedToken != null
+                                  ? colors.textHigh
+                                  : colors.textMid,
                             ),
                           ),
-                      ],
+                          if (selectedToken != null)
+                            Text(
+                              selectedToken!.networkDisplayName,
+                              style: typography.paragraphSmall(
+                                color: colors.textMid,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(
-                    Icons.keyboard_arrow_down,
-                    color: colors.textMid,
-                  ),
-                ],
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      color: colors.textMid,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ],
-    );
-  }
-
-  PopupMenuItem<CryptoToken> _buildTokenMenuItem(
-    BuildContext context,
-    CryptoToken token,
-  ) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    // ARIO tokens have no fees
-    final isNoFees = token == CryptoToken.arioAO ||
-        token == CryptoToken.arioAOViaEth ||
-        token == CryptoToken.arioBase;
-
-    return PopupMenuItem<CryptoToken>(
-      value: token,
-      child: Row(
-        children: [
-          _TokenIcon(token: token, size: 32),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Row(
-              children: [
-                Text(
-                  token.displayName,
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colors.textHigh,
-                  ),
-                ),
-                if (isNoFees) ...[
-                  const SizedBox(width: 8),
-                  const ArDriveTag(text: 'No Turbo fee'),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

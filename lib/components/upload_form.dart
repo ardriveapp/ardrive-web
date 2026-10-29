@@ -1,3 +1,4 @@
+import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -1967,45 +1968,25 @@ class _UploadReadyWidget extends StatelessWidget {
                       ),
                     ],
                   ),
-                  // Apart from the heading: the open menu lines its selected
-                  // item up with the field and reaches above it, and at the
-                  // usual spacing it covered "License".
                   Padding(
-                    padding: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
                     child: ReactiveForm(
                       formGroup:
                           context.watch<UploadCubit>().licenseCategoryForm,
-                      child: ReactiveDropdownField<LicenseCategory?>(
-                        alignment: AlignmentDirectional.centerStart,
-                        isExpanded: true,
+                      child: ReactiveArDriveSelectField<LicenseCategory?>(
                         formControlName: 'licenseCategory',
-                        decoration: InputDecoration(
-                          isDense: true,
-                          labelStyle: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                        ),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
                         validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
-                        items: [null, ...LicenseCategory.values].map(
-                          (value) {
-                            return DropdownMenuItem(
+                        choices: [
+                          for (final value in [null, ...LicenseCategory.values])
+                            ArDriveChoice(
                               value: value,
-                              child: Text(
-                                licenseCategoryNames[value] ??
-                                    appLocalizationsOf(context).noLicense,
-                                style: typography.paragraphSmall(
-                                  fontWeight: ArFontWeight.semiBold,
-                                  color: colorTokens.textMid,
-                                ),
-                              ),
-                            );
-                          },
-                        ).toList(),
+                              label: licenseCategoryNames[value] ??
+                                  appLocalizationsOf(context).noLicense,
+                            ),
+                        ],
                       ),
                     ),
                   ),

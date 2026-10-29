@@ -6,11 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// The old components are gone, so using one no longer compiles. What still
 /// compiles is drawing around the system: a Material spinner instead of
-/// ArDriveSpinner, a Material colour or a literal colour instead of a token.
-/// This scans the app's and ardrive_ui's sources for those.
+/// ArDriveSpinner, a Material colour or a literal colour instead of a token,
+/// a Material menu or dropdown instead of the app's menus. This scans the
+/// app's and ardrive_ui's sources for those.
 ///
-/// A file that has a reason to break a rule goes in [_spinnerExceptions] or
-/// [_colourExceptions] with that reason. An exception that no longer matches
+/// A file that has a reason to break a rule goes in [_spinnerExceptions],
+/// [_colourExceptions] or [_menuExceptions] with that reason. An exception that no longer matches
 /// anything fails too, so the lists stay honest.
 void main() {
   final sources = _sources();
@@ -35,12 +36,24 @@ void main() {
     );
   });
 
+  test('menus and dropdowns are the app\'s own', () {
+    expect(
+      _violations(sources, _rawMenu, _menuExceptions),
+      isEmpty,
+      reason: 'Use ArDriveSelectField, ArDriveChoiceMenu, ArDriveDropdown, '
+          'ArDriveSubmenu or ArDriveMenuAnchor, or add the file to '
+          '_menuExceptions with a reason.',
+    );
+  });
+
   test('every exception still needs to be one', () {
     final stale = <String>[
       for (final path in _spinnerExceptions.keys)
         if (!_matches(sources[path], _rawProgress)) path,
       for (final path in _colourExceptions.keys)
         if (!_matches(sources[path], _rawColour)) path,
+      for (final path in _menuExceptions.keys)
+        if (!_matches(sources[path], _rawMenu)) path,
     ];
     expect(stale, isEmpty, reason: 'Remove these from the exception lists.');
   });
@@ -52,6 +65,17 @@ final _rawProgress =
 
 /// A Material colour other than transparent, or a literal colour.
 final _rawColour = RegExp(r'\bColors\.(?!transparent\b)\w+|\bColor\(0x');
+
+/// A Material or reactive_forms menu or dropdown. Their items sit under the
+/// page in the browser's accessibility tree, and they look like no other
+/// menu in the app.
+final _rawMenu = RegExp(
+  r'\b(MenuAnchor|MenuController|MenuItemButton|SubmenuButton|PopupMenuButton|'
+  r'DropdownButton|DropdownButtonFormField|DropdownMenu|'
+  r'ReactiveDropdownField)\b'
+  // Material's showMenu() call, not the showMenu string for a menu button.
+  r'|(?<![.\w])showMenu\s*[<(]',
+);
 
 /// Where colours are defined: the tokens and the palettes they're built on.
 const _styleDir = 'packages/ardrive_ui/lib/src/styles/';
@@ -86,6 +110,8 @@ const _colourExceptions = {
   'lib/authentication/components/dot_pattern_painter.dart':
       'the sign-in illustration\'s texture',
 };
+
+const _menuExceptions = <String, String>{};
 
 /// Each Dart source under lib/ and ardrive_ui's lib/, with comments taken
 /// out, keyed by its path from the app root. Generated code is left out.

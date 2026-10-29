@@ -1,3 +1,4 @@
+import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
@@ -75,23 +76,15 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                   padding: const EdgeInsets.only(left: 24),
                   child: LabeledInput(
                     labelText: appLocalizationsOf(context).currency,
-                    child: ReactiveDropdownField(
+                    child: ReactiveArDriveSelectField(
                       formControlName: 'licenseFeeCurrency',
-                      decoration: InputDecoration(
-                        enabledBorder: inputBorder,
-                        focusedBorder: inputBorder,
-                      ),
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
-                      items: udlCurrencyValues.entries
-                          .map(
-                            (entry) => DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            ),
-                          )
-                          .toList(),
+                      choices: [
+                        for (final entry in udlCurrencyValues.entries)
+                          ArDriveChoice(value: entry.key, label: entry.value),
+                      ],
                     ),
                   ),
                 ),
@@ -102,23 +95,15 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                   // TODO: Localize
                   // appLocalizationsOf(context).udlCommercialUse,
                   'Commercial use',
-              child: ReactiveDropdownField(
+              child: ReactiveArDriveSelectField(
                 formControlName: 'commercialUse',
-                decoration: InputDecoration(
-                  enabledBorder: inputBorder,
-                  focusedBorder: inputBorder,
-                ),
                 showErrors: (control) => control.dirty && control.invalid,
                 validationMessages:
                     kValidationMessages(appLocalizationsOf(context)),
-                items: udlCommercialUseValues.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
+                choices: [
+                  for (final entry in udlCommercialUseValues.entries)
+                    ArDriveChoice(value: entry.key, label: entry.value),
+                ],
               ),
             ),
             LabeledInput(
@@ -126,23 +111,15 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                   // TODO: Localize
                   // appLocalizationsOf(context).udlDerivations,
                   'Derivations',
-              child: ReactiveDropdownField(
+              child: ReactiveArDriveSelectField(
                 formControlName: 'derivations',
-                decoration: InputDecoration(
-                  enabledBorder: inputBorder,
-                  focusedBorder: inputBorder,
-                ),
                 showErrors: (control) => control.dirty && control.invalid,
                 validationMessages:
                     kValidationMessages(appLocalizationsOf(context)),
-                items: udlDerivationValues.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
+                choices: [
+                  for (final entry in udlDerivationValues.entries)
+                    ArDriveChoice(value: entry.key, label: entry.value),
+                ],
               ),
             ),
           ]
