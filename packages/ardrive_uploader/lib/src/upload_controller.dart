@@ -31,19 +31,29 @@ abstract class UploadController {
   });
   void addTask(UploadTask task);
   void onFailedTask(Function(UploadTask task) callback);
+
+  /// Sends the failed tasks again, once the attempt before has stopped.
+  ///
+  /// Throws [PreviousAttemptStillRunning], and sends nothing, if it has not
+  /// stopped within the controller's stop timeout: a task of it may still be
+  /// posting, and sending again over it could pay twice.
   Future<void> retryFailedTasks(Wallet wallet);
 
+  /// [stopTimeout] is how long a retry waits for the attempt before it to
+  /// stop. See [retryFailedTasks].
   factory UploadController(
     StreamController<UploadProgress> progressStream,
     UploadDispatcher uploadDispatcher, {
     int numOfWorkers = 5,
     int maxTasksPerWorker = 5,
+    Duration stopTimeout = const Duration(seconds: 60),
   }) {
     return _UploadController(
       progressStream: progressStream,
       uploadSender: uploadDispatcher,
       numOfWorkers: numOfWorkers,
       maxTasksPerWorker: maxTasksPerWorker,
+      stopTimeout: stopTimeout,
     );
   }
 }
@@ -59,7 +69,9 @@ class _UploadController implements UploadController {
     required UploadDispatcher uploadSender,
     int numOfWorkers = 2,
     int maxTasksPerWorker = 5,
+    Duration stopTimeout = const Duration(seconds: 60),
   })  : _uploadDispatcher = uploadSender,
+        _stopTimeout = stopTimeout,
         _numOfWorkers = numOfWorkers,
         _maxTasksPerWorker = maxTasksPerWorker,
         _progressStream = progressStream {
@@ -86,7 +98,7 @@ class _UploadController implements UploadController {
   bool _retrying = false;
 
   /// How long a retry waits for the attempt before it to stop.
-  static const _stopTimeout = Duration(seconds: 60);
+  final Duration _stopTimeout;
 
   Future<void> _track(Future<void> Function() upload) async {
     _running++;
@@ -347,9 +359,15 @@ class _UploadController implements UploadController {
     // instead of sending, and no more of that attempt's queue is handed out.
     // Retrying while it ran would send the same file twice and pay twice.
     workerPool?.cancel();
-    await _whenIdle().timeout(_stopTimeout, onTimeout: () {
+    try {
+      await _whenIdle().timeout(_stopTimeout);
+    } on TimeoutException {
+      // Something of it is still running, maybe a request already on its way
+      // with nothing left to cancel it. Sending again now could pay twice, so
+      // nothing is sent; the caller can try again once it has stopped.
       logger.w('The previous upload attempt did not stop in time');
-    });
+      throw PreviousAttemptStillRunning();
+    }
 
     // From here the old attempt, if it is somehow still running, can neither
     // send nor report.
@@ -957,4 +975,11 @@ class _AttemptScopedController implements UploadController {
   @override
   Future<void> retryFailedTasks(Wallet wallet) =>
       _controller.retryFailedTasks(wallet);
+}
+
+/// A retry was asked for while the attempt before it was still running.
+/// Nothing was sent; asking again once it has stopped will work.
+class PreviousAttemptStillRunning implements Exception {
+  @override
+  String toString() => 'The previous upload attempt is still running';
 }

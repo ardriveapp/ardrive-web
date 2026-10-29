@@ -203,4 +203,143 @@ void main() {
 
     expect(events, ['cancel']);
   });
+
+  group('a retry over an attempt that has not stopped', () {
+    late MockUploadDispatcher dispatcher;
+    late UploadController controller;
+    late List<String> posted;
+    late Completer<void> gate;
+    late int attempt;
+    late bool Function() staleVerifyCancel;
+    late UploadController staleController;
+    late Completer<void> retrySending;
+    late List<List<UploadTask>> done;
+
+    /// A refuses with a 402. B is either still preparing ([bPreparing]) or
+    /// already posting with nothing left to cancel it, behind [gate].
+    void setUpAttempts({required bool bPosting}) {
+      dispatcher = MockUploadDispatcher();
+      controller = UploadController(
+        StreamController<UploadProgress>(),
+        dispatcher,
+        numOfWorkers: 2,
+        maxTasksPerWorker: 1,
+        stopTimeout: const Duration(milliseconds: 200),
+      );
+      done = [];
+      controller.onError((_) {});
+      controller.onDone(done.add);
+      controller.onProgressChange((_) {});
+      controller.addTask(makeTask('A'));
+      controller.addTask(makeTask('B'));
+      posted = [];
+      gate = Completer<void>();
+      retrySending = Completer<void>()..complete();
+      attempt = 1;
+
+      when(() => dispatcher.send(
+            task: any(named: 'task'),
+            wallet: any(named: 'wallet'),
+            controller: any(named: 'controller'),
+            verifyCancel: any(named: 'verifyCancel'),
+          )).thenAnswer((inv) async {
+        final t = inv.namedArguments[#task] as UploadTask;
+        final c = inv.namedArguments[#controller] as UploadController;
+        final verifyCancel =
+            inv.namedArguments[#verifyCancel] as bool Function();
+        final myAttempt = attempt;
+        if (myAttempt == 1 && t.id == 'A') {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return UploadResult(
+            success: false,
+            error: MetadataTransactionUploadException(
+              message: 'refused',
+              error: UnderFundException(message: '402'),
+            ),
+          );
+        }
+        if (myAttempt == 1 && t.id == 'B') {
+          staleVerifyCancel = verifyCancel;
+          staleController = c;
+          if (bPosting) {
+            await gate.future;
+            posted.add('B@1');
+            c.updateProgress(
+                task: c.tasks[t.id]!
+                    .copyWith(status: UploadStatus.complete, progress: 1));
+            return UploadResult(success: true);
+          }
+          await gate.future;
+        }
+        if (myAttempt == 2 && t.id == 'B') await retrySending.future;
+        if (verifyCancel()) {
+          return UploadResult(success: false, error: Exception('canceled'));
+        }
+        posted.add('${t.id}@$myAttempt');
+        c.updateProgress(
+            task: c.tasks[t.id]!
+                .copyWith(status: UploadStatus.complete, progress: 1));
+        return UploadResult(success: true);
+      });
+    }
+
+    test(
+        'is refused while a post of it is still on its way, and works once '
+        'it has finished, sending nothing twice', () async {
+      setUpAttempts(bPosting: true);
+      controller.sendTasks(MockWallet());
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      attempt = 2;
+      await expectLater(controller.retryFailedTasks(MockWallet()),
+          throwsA(isA<PreviousAttemptStillRunning>()));
+      expect(posted, isEmpty, reason: 'nothing sent over the old attempt');
+
+      // The old post lands.
+      gate.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(posted, ['B@1']);
+
+      await controller.retryFailedTasks(MockWallet());
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(posted, ['B@1', 'A@2'], reason: 'B is not sent again');
+    });
+
+    test(
+        'a task still preparing past the timeout is not sent, by either '
+        'attempt, until the retry sends it', () async {
+      setUpAttempts(bPosting: false);
+      controller.sendTasks(MockWallet());
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      attempt = 2;
+      await expectLater(controller.retryFailedTasks(MockWallet()),
+          throwsA(isA<PreviousAttemptStillRunning>()));
+
+      gate.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(posted, isEmpty, reason: 'the refused attempt stays canceled');
+
+      retrySending = Completer<void>();
+      await controller.retryFailedTasks(MockWallet());
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(posted, ['A@2']);
+
+      // While the retry is still sending B, whatever the old attempt kept
+      // hold of no longer works: it is told it is canceled, and what it
+      // reports goes nowhere, so it can't finish the retry's B for it.
+      expect(staleVerifyCancel(), isTrue);
+      staleController.updateProgress(
+          task: controller.tasks['B']!
+              .copyWith(status: UploadStatus.complete, progress: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(controller.tasks['B']!.status, isNot(UploadStatus.complete));
+      expect(done, isEmpty);
+
+      retrySending.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(posted, ['A@2', 'B@2']);
+      expect(done, hasLength(1));
+    });
+  });
 }
