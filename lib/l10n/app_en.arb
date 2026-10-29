@@ -5486,7 +5486,7 @@
   "@phraseNextPassword": {"description": "Says what comes after the phrase or keyfile."},
   "phraseEmpty": "Enter your 12 words.",
   "@phraseEmpty": {"description": "The recovery phrase field is empty."},
-  "phraseWordCount": "A recovery phrase is 12 words.",
+  "phraseWordCount": "Enter every word of your recovery phrase.",
   "@phraseWordCount": {"description": "The recovery phrase has the wrong number of words."},
   "phraseInvalid": "That isn't a recovery phrase. Check each word.",
   "@phraseInvalid": {"description": "The recovery phrase isn't valid."},

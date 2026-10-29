@@ -34,11 +34,8 @@ class LogInView extends StatefulWidget {
 }
 
 class _LogInViewState extends State<LogInView> {
-  @override
-  void initState() {
-    super.initState();
-    PlausibleEventTracker.trackPageview(page: PlausiblePageView.loginPage);
-  }
+  // Its pageview is sent by the first panel's Log in, once per visit, not
+  // each time this panel comes back after a wallet's Cancel.
 
   void _connectSolanaWallet(BuildContext context) {
     final loginBloc = context.read<LoginBloc>();

@@ -105,143 +105,7 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
 
-          if (loginState is LoginLoadingIfUserAlreadyExists) {
-            showArDriveDialog(
-              context,
-              barrierDismissible: false,
-              content: ProgressDialog(
-                title: 'Loading wallet details...',
-                progressDescription: Text(
-                  'This may take a moment.',
-                  style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color:
-                        ArDriveTheme.of(context).themeData.colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ),
-            );
-
-            return;
-          }
-
-          if (loginState is LoginLoadingIfUserAlreadyExistsSuccess) {
-            Navigator.of(context).pop();
-            return;
-          }
-
-          if (loginState is LoginSuccess) {
-            logger.setContext(logger.context
-                .copyWith(userAddress: loginState.user.walletAddress));
-            context.read<ProfileNameBloc>().add(LoadProfileName());
-          }
-
-          if (loginState is PromptPassword) {
-            // The account already on this device is unlocked in the panel,
-            // Welcome back; a dialog would cover it.
-            if (loginState.alreadyLoggedIn) return;
-            showEnterYourPasswordDialog(
-              context: context,
-              loginBloc: context.read<LoginBloc>(),
-              wallet: loginState.wallet,
-              derivedEthWallet: loginState.derivedEthWallet,
-              alreadyLoggedIn: loginState.alreadyLoggedIn,
-              isPasswordInvalid: loginState.isPasswordInvalid,
-              sourceWalletAddress: loginState.sourceWalletAddress,
-            );
-            return;
-          } else if (loginState is CreateNewPassword) {
-            showSecureYourPasswordDialog(
-                context: context,
-                loginBloc: context.read<LoginBloc>(),
-                wallet: loginState.wallet,
-                mnemonic: loginState.mnemonic,
-                isNewUser: loginState.isNewUser,
-                showWalletCreated: loginState.showWalletCreated,
-                retrying: loginState.retrying,
-                derivedEthWallet: loginState.derivedEthWallet,
-                sourceWalletAddress: loginState.sourceWalletAddress);
-            return;
-          } else if (loginState is LoginShowLoader) {
-            showLoaderDialog(context: context);
-            return;
-          } else if (loginState is LoginShowBlockingDialog) {
-            showBlockingMessageDialog(
-                context: context, message: loginState.message);
-            return;
-          } else if (loginState is LoginCloseBlockingDialog) {
-            Navigator.of(context).pop();
-          } else if (loginState is LoginFailure) {
-            // TODO: Verify if the error is `NoConnectionException` and show an
-            /// appropriate message after validating with UI/UX
-            if (loginState.error is WalletMismatchException) {
-              showErrorDialog(
-                context: context,
-                title: appLocalizationsOf(context).loginFailed,
-                message: appLocalizationsOf(context)
-                    .arConnectWalletDoestNotMatchArDriveWallet,
-              );
-              return;
-            } else if (loginState.error is BiometricException) {
-              showBiometricExceptionDialogForException(
-                  context, loginState.error as BiometricException, () {});
-              return;
-            } else if (loginState.error
-                is ArConnectVersionNotSupportedException) {
-              showErrorDialog(
-                context: context,
-                title: appLocalizationsOf(context).loginFailed,
-                message:
-                    'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
-              );
-              return;
-            }
-
-            // A new account goes straight back to its password step, for
-            // the same wallet, which says what happened. An error dialog
-            // here would be closed at once by the password dialog closing.
-            final loginBloc = context.read<LoginBloc>();
-            if (loginBloc.hasSignUpToRetry) {
-              loginBloc.add(const RetrySignUpPassword());
-              return;
-            }
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              message: appLocalizationsOf(context).pleaseTryAgain,
-            );
-          } else if (loginState is LoginUnknownFailure) {
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              showShareLogsButton: true,
-              message:
-                  'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
-            );
-          } else if (loginState is LoginSuccess) {
-            final profileType = loginState.user.profileType;
-            logger.d('Login Success, unlocking default profile');
-
-            context.read<ProfileCubit>().unlockDefaultProfile(
-                  loginState.user,
-                  profileType,
-                );
-          } else if (loginState is GatewayLoginFailure) {
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              message:
-                  'Unable to connect to the server. Please check your connection and try again.',
-            );
-          } else if (loginState
-              is LoginPasswordFailedWithPrivateDriveNotFound) {
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              message:
-                  'Your drive is still being confirmed. Please wait a few minutes and try again.',
-            );
-          }
+          handleLoginState(context, loginState);
         },
         buildWhen: (previous, current) {
           return current is! LoginCreatePasswordComplete;
@@ -585,6 +449,145 @@ class _PhoneView extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+/// What the login page does for [loginState] besides drawing the panel:
+/// dialogs, errors and the profile.
+@visibleForTesting
+void handleLoginState(BuildContext context, LoginState loginState) {
+  if (loginState is LoginLoadingIfUserAlreadyExists) {
+    showArDriveDialog(
+      context,
+      barrierDismissible: false,
+      content: ProgressDialog(
+        title: 'Loading wallet details...',
+        progressDescription: Text(
+          'This may take a moment.',
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+        ),
+      ),
+    );
+
+    return;
+  }
+
+  if (loginState is LoginLoadingIfUserAlreadyExistsSuccess) {
+    Navigator.of(context).pop();
+    return;
+  }
+
+  if (loginState is LoginSuccess) {
+    logger.setContext(
+        logger.context.copyWith(userAddress: loginState.user.walletAddress));
+    context.read<ProfileNameBloc>().add(LoadProfileName());
+  }
+
+  if (loginState is PromptPassword) {
+    // The account already on this device is unlocked in the panel,
+    // Welcome back; a dialog would cover it.
+    final wallet = loginState.wallet;
+    if (loginState.alreadyLoggedIn || wallet == null) return;
+    showEnterYourPasswordDialog(
+      context: context,
+      loginBloc: context.read<LoginBloc>(),
+      wallet: wallet,
+      derivedEthWallet: loginState.derivedEthWallet,
+      isPasswordInvalid: loginState.isPasswordInvalid,
+      sourceWalletAddress: loginState.sourceWalletAddress,
+    );
+    return;
+  } else if (loginState is CreateNewPassword) {
+    showSecureYourPasswordDialog(
+        context: context,
+        loginBloc: context.read<LoginBloc>(),
+        wallet: loginState.wallet,
+        mnemonic: loginState.mnemonic,
+        isNewUser: loginState.isNewUser,
+        showWalletCreated: loginState.showWalletCreated,
+        retrying: loginState.retrying,
+        derivedEthWallet: loginState.derivedEthWallet,
+        sourceWalletAddress: loginState.sourceWalletAddress);
+    return;
+  } else if (loginState is LoginShowLoader) {
+    showLoaderDialog(context: context);
+    return;
+  } else if (loginState is LoginShowBlockingDialog) {
+    showBlockingMessageDialog(context: context, message: loginState.message);
+    return;
+  } else if (loginState is LoginCloseBlockingDialog) {
+    Navigator.of(context).pop();
+  } else if (loginState is LoginFailure) {
+    // TODO: Verify if the error is `NoConnectionException` and show an
+    /// appropriate message after validating with UI/UX
+    if (loginState.error is WalletMismatchException) {
+      showErrorDialog(
+        context: context,
+        title: appLocalizationsOf(context).loginFailed,
+        message: appLocalizationsOf(context)
+            .arConnectWalletDoestNotMatchArDriveWallet,
+      );
+      return;
+    } else if (loginState.error is BiometricException) {
+      showBiometricExceptionDialogForException(
+          context, loginState.error as BiometricException, () {});
+      return;
+    } else if (loginState.error is ArConnectVersionNotSupportedException) {
+      showErrorDialog(
+        context: context,
+        title: appLocalizationsOf(context).loginFailed,
+        message:
+            'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
+      );
+      return;
+    }
+
+    // A new account goes straight back to its password step, for
+    // the same wallet, which says what happened. An error dialog
+    // here would be closed at once by the password dialog closing.
+    final loginBloc = context.read<LoginBloc>();
+    if (loginBloc.hasSignUpToRetry) {
+      loginBloc.add(const RetrySignUpPassword());
+      return;
+    }
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      message: appLocalizationsOf(context).pleaseTryAgain,
+    );
+  } else if (loginState is LoginUnknownFailure) {
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      showShareLogsButton: true,
+      message:
+          'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
+    );
+  } else if (loginState is LoginSuccess) {
+    final profileType = loginState.user.profileType;
+    logger.d('Login Success, unlocking default profile');
+
+    context.read<ProfileCubit>().unlockDefaultProfile(
+          loginState.user,
+          profileType,
+        );
+  } else if (loginState is GatewayLoginFailure) {
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      message:
+          'Unable to connect to the server. Please check your connection and try again.',
+    );
+  } else if (loginState is LoginPasswordFailedWithPrivateDriveNotFound) {
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      message:
+          'Your drive is still being confirmed. Please wait a few minutes and try again.',
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/authentication/login/views/enter_recovery_phrase_view.dart';
 import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
+import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -44,6 +45,7 @@ void main() {
   late _MockLoginBloc loginBloc;
   late _MockProfileNameBloc profileNameBloc;
   late MockBiometricAuthentication biometrics;
+  late _MockUserPreferencesRepository userPreferences;
 
   setUpAll(() async {
     registerFallbackValue(const CleanProfileName());
@@ -55,6 +57,10 @@ void main() {
     loginBloc = _MockLoginBloc();
     profileNameBloc = _MockProfileNameBloc();
     biometrics = MockBiometricAuthentication();
+    userPreferences = _MockUserPreferencesRepository();
+    when(() => userPreferences.watch())
+        .thenAnswer((_) => const Stream<UserPreferences>.empty());
+    when(() => userPreferences.currentPreferences).thenReturn(null);
     when(() => biometrics.checkDeviceSupport()).thenAnswer((_) async => false);
     when(() => biometrics.isEnabled()).thenAnswer((_) async => false);
     when(() => biometrics.enabledStream)
@@ -77,6 +83,8 @@ void main() {
           BlocProvider<LoginBloc>.value(value: loginBloc),
           BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
           RepositoryProvider<BiometricAuthentication>.value(value: biometrics),
+          RepositoryProvider<UserPreferencesRepository>.value(
+              value: userPreferences),
           ChangeNotifierProvider<ActivityTracker>(
             create: (_) => ActivityTracker(),
           ),
@@ -103,6 +111,36 @@ void main() {
           isA<WelcomeBackView>());
       expect(loginPanelRebuildsOn(const PromptPassword(alreadyLoggedIn: true)),
           isTrue);
+    });
+
+    testWidgets(
+        'the account on this device gets no password dialog over the panel; '
+        'a wallet just chosen does', (tester) async {
+      await pump(
+        tester,
+        Builder(
+          builder: (context) => Column(children: [
+            TextButton(
+              onPressed: () => handleLoginState(
+                  context, const PromptPassword(alreadyLoggedIn: true)),
+              child: const Text('reload'),
+            ),
+            TextButton(
+              onPressed: () => handleLoginState(
+                  context, PromptPassword(wallet: getTestWallet())),
+              child: const Text('keyfile'),
+            ),
+          ]),
+        ),
+      );
+      await tester.tap(find.text('reload'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EnterYourPasswordWidget), findsNothing);
+
+      await tester.tap(find.text('keyfile'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(EnterYourPasswordWidget), findsOneWidget);
     });
 
     test('a password for a wallet just chosen leaves the panel as it was', () {
@@ -240,7 +278,7 @@ void main() {
       await enter(tester, '');
       expect(find.text('Enter your 12 words.'), findsOneWidget);
       await enter(tester, 'abandon abandon abandon');
-      expect(find.text('A recovery phrase is 12 words.'), findsOneWidget);
+      expect(find.text('Enter every word of your recovery phrase.'), findsOneWidget);
       await enter(tester, List.filled(12, 'abandon').join(' '));
       expect(find.text("That isn't a recovery phrase. Check each word."),
           findsOneWidget);
