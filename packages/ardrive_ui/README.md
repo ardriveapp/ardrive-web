@@ -125,10 +125,17 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 ### Menus
 
 Every menu looks the same: the dropdown card, with `ArDriveRadius.md` corners,
-the standard shadow and the dropdown surface. Never use Material's
-`MenuAnchor`, `PopupMenuButton` or `DropdownButton`, or flutter_portal's
-`PortalTarget`. Their items sit under the page in the browser's accessibility
-tree, so with it on a click lands on the row behind the menu.
+the standard shadow and the dropdown surface. Build new menus from the
+components above, not Material's `MenuAnchor`, `PopupMenuButton` or
+`DropdownButton`, or flutter_portal's `PortalTarget`: their items sit under
+the page in the browser's accessibility tree, so with it on a click lands on
+the row behind the menu.
+
+Some Material ones remain, to be moved over: the form dropdowns
+(`ReactiveDropdownField` and `DropdownButtonFormField`, in the license forms,
+Create drive and the publish dialog), which need a select field of our own
+first, and the `PopupMenuButton`s in top-up, the crypto token picker and the
+note editor, and the data table's rows-per-page `MenuAnchor`.
 
 The menus open in the navigator's overlay, so their content is built there,
 not under the button:
