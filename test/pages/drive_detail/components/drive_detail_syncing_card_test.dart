@@ -419,7 +419,7 @@ void main() {
     // content now, so an overflow here is a real regression and must fail.
     expect(tester.takeException(), isNull);
 
-    expect(find.text('Drive not synced'), findsOneWidget);
+    expect(find.text("This drive isn't synced on this device"), findsOneWidget);
     expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
         findsOneWidget);
 
@@ -475,13 +475,13 @@ void main() {
 
       expect(find.text('Nothing found yet'), findsOneWidget);
       expect(
-        find.textContaining('The sync finished, but nothing for this drive'),
+        find.text('A new drive can take a few minutes to appear on Arweave.'),
         findsOneWidget,
       );
 
       // Not the card that was already acted on, and not the button that was
       // already pressed.
-      expect(find.text('Drive not synced'), findsNothing);
+      expect(find.text("This drive isn't synced on this device"), findsNothing);
       expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
           findsNothing);
       expect(find.text('Check again'), findsOneWidget);
@@ -494,7 +494,8 @@ void main() {
 
       await pumpCard(tester, syncFoundNothing: false);
 
-      expect(find.text('Drive not synced'), findsOneWidget);
+      expect(
+          find.text("This drive isn't synced on this device"), findsOneWidget);
       expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
           findsOneWidget);
       expect(find.text('Nothing found yet'), findsNothing);
@@ -527,7 +528,7 @@ void main() {
 
       expect(find.text('Nothing found yet'), findsOneWidget);
       expect(find.text('Check again'), findsOneWidget);
-      expect(find.text('Drive not synced'), findsNothing);
+      expect(find.text("This drive isn't synced on this device"), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });

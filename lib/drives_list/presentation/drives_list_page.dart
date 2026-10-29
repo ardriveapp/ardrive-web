@@ -406,19 +406,25 @@ class DrivesListBody extends StatelessWidget {
       return _SelectionShortcuts(
         selecting: state.selected.isNotEmpty,
         onClear: onClearSelection,
-        child: _DrivesListLoadedView(
-          state: state,
-          onOpenDrive: onOpenDrive,
-          buildMenu: buildMenu,
-          syncMenu: syncMenu,
-          onSort: onSort,
-          onToggleSelected: onToggleSelected,
-          onToggleSelectAll: onToggleSelectAll,
-          onClearSelection: onClearSelection,
-          onRetryFailed: onRetryFailed,
-          onSyncChanged: onSyncChanged,
-          chosenDriveId: chosenDriveId,
-          onChoose: onChoose,
+        child: _ChoosingSeveral(
+          anyTicked: state.selected.isNotEmpty,
+          builder: (context, showsCheckboxes, onLongPress) =>
+              _DrivesListLoadedView(
+            state: state,
+            onOpenDrive: onOpenDrive,
+            buildMenu: buildMenu,
+            syncMenu: syncMenu,
+            onSort: onSort,
+            onToggleSelected: onToggleSelected,
+            onToggleSelectAll: onToggleSelectAll,
+            onClearSelection: onClearSelection,
+            onRetryFailed: onRetryFailed,
+            onSyncChanged: onSyncChanged,
+            chosenDriveId: chosenDriveId,
+            onChoose: onChoose,
+            showsCheckboxes: showsCheckboxes,
+            onLongPress: onLongPress,
+          ),
         ),
       );
     }
@@ -625,10 +631,19 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.onSyncChanged,
     this.chosenDriveId,
     this.onChoose,
+    this.showsCheckboxes = true,
+    this.onLongPress,
   });
 
   final String? chosenDriveId;
   final void Function(String driveId)? onChoose;
+
+  /// Whether the rows' checkboxes and the select-all box are drawn - see
+  /// [_ChoosingSeveral].
+  final bool showsCheckboxes;
+
+  /// A long press on a row - see [_ChoosingSeveral].
+  final VoidCallback? onLongPress;
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
@@ -774,6 +789,7 @@ class _DrivesListLoadedView extends StatelessWidget {
                             state.drives.every(
                                 (drive) => state.selected.contains(drive.id)),
                     onToggleSelectAll: onToggleSelectAll,
+                    showsCheckbox: showsCheckboxes,
                     showsAllColumns: showsAllColumns,
                   ),
                   rows: _rows(state, showsColumns, showsAllColumns),
@@ -817,6 +833,8 @@ class _DrivesListLoadedView extends StatelessWidget {
                 ? null
                 : state.selected.contains(drive.id),
             onSelectedChanged: onToggleSelected,
+            showsCheckbox: showsCheckboxes,
+            onLongPress: onLongPress,
           );
         },
         childCount: state.drives.length,
@@ -1009,6 +1027,58 @@ class _SelectionShortcuts extends StatelessWidget {
         autofocus: true,
         skipTraversal: true,
         child: child,
+      ),
+    );
+  }
+}
+
+/// Whether the reader is choosing several drives, which is when the list
+/// shows its checkboxes: the explorer's rule, [ArDriveMultiSelect].
+///
+/// Once a drive is ticked, while the multi-select key is held (Ctrl on
+/// Windows, Cmd elsewhere), or after a long press on a touch screen. Ticking
+/// still means only one thing here: the drives Sync selected acts on. A
+/// click on a row only chooses it, in or out of this mode.
+class _ChoosingSeveral extends StatefulWidget {
+  const _ChoosingSeveral({required this.anyTicked, required this.builder});
+
+  final bool anyTicked;
+  final Widget Function(
+    BuildContext context,
+    bool showsCheckboxes,
+    VoidCallback onLongPress,
+  ) builder;
+
+  @override
+  State<_ChoosingSeveral> createState() => _ChoosingSeveralState();
+}
+
+class _ChoosingSeveralState extends State<_ChoosingSeveral> {
+  bool _longPressed = false;
+
+  @override
+  void didUpdateWidget(_ChoosingSeveral oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A long press opens the checkboxes until the selection empties again -
+    // the last box unticked, the x or Esc - as the explorer's does.
+    if (oldWidget.anyTicked && !widget.anyTicked) {
+      _longPressed = false;
+    }
+  }
+
+  void _onLongPress() => setState(() => _longPressed = !_longPressed);
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveMultiSelectKey(
+      builder: (context, keyHeld) => widget.builder(
+        context,
+        ArDriveMultiSelect.showsCheckboxes(
+          anyTicked: widget.anyTicked,
+          keyHeld: keyHeld,
+          longPressed: _longPressed,
+        ),
+        _onLongPress,
       ),
     );
   }

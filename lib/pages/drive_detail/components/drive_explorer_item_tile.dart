@@ -715,11 +715,23 @@ class EntityActionsMenu extends StatelessWidget {
     // unavailable while a sync runs, so this menu has to be rebuilt when one
     // starts and when one stops.
     final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
-    final items = _getItems(item, context, withInfo, isFileRevision, isSyncing);
+    // One row height for the menu and its rows, or the menu is sized for
+    // rows shorter or taller than the ones it draws.
     final double height = isMobile(context) ? 44 : 48;
+    final items =
+        _getItems(item, context, withInfo, isFileRevision, isSyncing, height);
+    final anchor = alignment;
     return ArDriveDropdown(
+      // No maxHeight: the dropdown sizes itself from its items, counting a
+      // divider at its own height rather than a row's. With this callback it
+      // also opens up or down by the room there is and, when the menu is
+      // taller than that room (a long menu at a large text size), fits it
+      // and scrolls. The menu keeps the side it opens on.
+      calculateVerticalAlignment: (opensUp) => Alignment(
+        anchor is Aligned ? anchor.follower.x : 1,
+        opensUp ? 1 : -1,
+      ),
       height: height,
-      maxHeight: items.length * height,
       anchor: alignment,
       items: items,
       hasBorder: false,
@@ -748,7 +760,8 @@ class EntityActionsMenu extends StatelessWidget {
       BuildContext context,
       bool withInfo,
       bool isFileRevision,
-      bool isSyncing) {
+      bool isSyncing,
+      double height) {
     void moreInfo() => context.read<DriveDetailCubit>().selectDataItem(item);
     final onMoreInfo = withInfo ? moreInfo : null;
     final drive = this.drive;
@@ -760,6 +773,7 @@ class EntityActionsMenu extends StatelessWidget {
         drive: drive,
         zipName: () => item.name,
         onMoreInfo: onMoreInfo,
+        height: height,
       );
     }
     if (item is DriveDataItem) {
@@ -772,6 +786,7 @@ class EntityActionsMenu extends StatelessWidget {
             _explorerShows(context, drive.id),
         isSyncing: isSyncing,
         onMoreInfo: onMoreInfo,
+        height: height,
       );
     }
     if (!isFileRevision) {
@@ -780,6 +795,7 @@ class EntityActionsMenu extends StatelessWidget {
         file: item as FileDataTableItem,
         drive: drive,
         onMoreInfo: onMoreInfo,
+        height: height,
       );
     }
 
@@ -793,6 +809,7 @@ class EntityActionsMenu extends StatelessWidget {
         content: _buildItem(
           appLocalizationsOf(context).download,
           ArDriveIcons.download(size: defaultIconSize),
+          height: height,
         ),
       ),
       if (drive?.isPublic ?? false)
@@ -802,6 +819,7 @@ class EntityActionsMenu extends StatelessWidget {
           content: _buildItem(
             appLocalizationsOf(context).preview,
             ArDriveIcons.newWindow(size: defaultIconSize),
+            height: height,
           ),
         ),
       ArDriveDropdownItem(
@@ -811,6 +829,7 @@ class EntityActionsMenu extends StatelessWidget {
         content: _buildItem(
           appLocalizationsOf(context).copyDataTxID,
           ArDriveIcons.copy(size: defaultIconSize),
+          height: height,
         ),
       ),
       if (revision.metadataTx != null)
@@ -821,6 +840,7 @@ class EntityActionsMenu extends StatelessWidget {
           content: _buildItem(
             appLocalizationsOf(context).copyMetadataTxID,
             ArDriveIcons.copy(size: defaultIconSize),
+            height: height,
           ),
         ),
     ];
