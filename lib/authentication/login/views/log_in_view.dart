@@ -308,23 +308,30 @@ class LogInDivider extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final type = ArDriveTypographyNew.of(context);
     final rule = Expanded(child: Container(height: 1, color: colors.strokeLow));
-    return Row(
-      children: [
-        rule,
-        // Wraps rather than overflows on a narrow panel or a large text size.
-        Flexible(
-          flex: 3,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: ArDriveSpacing.sm),
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: type.paragraphSmall(color: colors.textLow),
+    return LayoutBuilder(
+      builder: (context, box) {
+        final maxTextWidth = box.maxWidth * 0.8;
+        return Row(
+          children: [
+            rule,
+            // Its natural width, up to most of the row: wraps rather than
+            // overflows on a narrow panel or a large text size.
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxTextWidth),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: ArDriveSpacing.sm),
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: type.paragraphSmall(color: colors.textLow),
+                ),
+              ),
             ),
-          ),
-        ),
-        rule,
-      ],
+            rule,
+          ],
+        );
+      },
     );
   }
 }
