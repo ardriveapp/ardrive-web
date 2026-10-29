@@ -82,6 +82,9 @@ class DriveUnreadableException implements Exception {
   String toString() => 'DriveUnreadableException($driveId)';
 }
 
+/// How many times the unlock dialog's metadata read is tried.
+const unlockMaxRetries = 3;
+
 /// Reads a drive key this device keeps for [driveId], or null.
 typedef StoredDriveKeyReader = Future<DriveKey?> Function(String driveId);
 
@@ -412,7 +415,14 @@ class DriveUnlocker {
     final Uint8List data;
 
     try {
-      driveTx = await _arweave.getLatestDriveTx(driveId, ownerAddress);
+      // A few quick tries, not the eight a sync makes: somebody is watching
+      // the dialog, and "Couldn't reach the network" after a minute and a
+      // half of backoff is a dialog that looks frozen.
+      driveTx = await _arweave.getLatestDriveTx(
+        driveId,
+        ownerAddress,
+        maxRetries: unlockMaxRetries,
+      );
 
       if (driveTx == null) {
         return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);

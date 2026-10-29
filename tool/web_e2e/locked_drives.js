@@ -79,21 +79,39 @@ const OFFLINE = "Couldn't reach the network. Try again.";
   // The locked rows, top to bottom. They sort after every readable drive and
   // among themselves by drive id, which is how each is matched to its drive.
   const lockedRows = async () => (await labels())
-    .filter((n) => n.label.startsWith('Private drive') && n.w > 200)
+    .filter((n) => n.label.includes('Private drive, Locked') && n.w > 200)
     .sort((a, b) => a.y - b.y);
   const lockedIds = (ids) => [...ids].sort();
   const unlockButtonOf = async (row) => (await labels())
     .filter((n) => n.label === 'Unlock' && Math.abs(n.y - row.y) < 20)[0];
+  // The field has focus whenever the dialog is waiting: it opens focused, and
+  // every answer but success hands focus back with the text selected. A click
+  // is not needed, and a click on a label node outside the field would land
+  // on the barrier and close the dialog.
   const typeInField = async (secret) => {
-    const field = (await labels()).find((n) => n.label.includes('Drive password'));
-    await page.mouse.click(field.x, field.y);
     await page.keyboard.press('Control+A');
-    await page.keyboard.type(secret, { delay: 10 });
+    await page.keyboard.press('Backspace');
+    // insertText, not type: type drops characters a US keyboard has no key
+    // for, and the Unicode drive's password has some.
+    await page.keyboard.insertText(secret);
+    await wait(300);
     await page.keyboard.press('Enter');
   };
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.evaluate(() => document.querySelector('flt-semantics-placeholder')?.click());
+  // The placeholder sits in a shadow root.
+  await page.evaluate(() => {
+    const find = (root) => {
+      const hit = root.querySelector('flt-semantics-placeholder');
+      if (hit) return hit;
+      for (const e of root.querySelectorAll('*')) {
+        const inner = e.shadowRoot && find(e.shadowRoot);
+        if (inner) return inner;
+      }
+      return null;
+    };
+    find(document)?.click();
+  });
   await wait(1500);
 
   // 1. Signed in with the login password: its drive opens, the others are
