@@ -15,11 +15,16 @@ import '../../../test_utils/mocks.dart';
 /// row per item. Since the menus have dividers between their groups, that
 /// left a row's worth of empty card under the last item for each divider.
 void main() {
-  testWidgets('the details menu is as tall as its rows and dividers',
-      (tester) async {
-    tester.view.physicalSize = const Size(1440, 900);
+  Future<Rect> openMenu(
+    WidgetTester tester, {
+    required Size size,
+    double textScale = 1,
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
     final syncCubit = MockSyncBloc();
     whenListen(syncCubit, const Stream<SyncState>.empty(),
@@ -74,20 +79,43 @@ void main() {
     await tester.tap(find.byType(EntityActionsMenu));
     await tester.pumpAndSettle();
 
-    final menu = tester.widget<ArDriveDropdown>(find.byType(ArDriveDropdown));
-    final dividers = menu.items.where((item) => item.isDivider).length;
-    final rows = menu.items.length - dividers;
-    expect(dividers, greaterThan(0), reason: 'the folder menu has groups');
-
-    final card = tester.getRect(find
+    return tester.getRect(find
         .descendant(
           of: find.byType(Overlay),
           matching: find.byType(ArDriveCard),
         )
         .last);
-    expect(
-      card.height,
-      rows * menu.height + dividers * ArDriveDropdownItem.dividerHeight,
-    );
+  }
+
+  double expectedHeight(WidgetTester tester) {
+    final menu = tester.widget<ArDriveDropdown>(find.byType(ArDriveDropdown));
+    final dividers = menu.items.where((item) => item.isDivider).length;
+    expect(dividers, greaterThan(0), reason: 'the folder menu has groups');
+    return (menu.items.length - dividers) * menu.height +
+        dividers * ArDriveDropdownItem.dividerHeight;
+  }
+
+  testWidgets('on a desktop, as tall as its rows and dividers', (tester) async {
+    final card = await openMenu(tester, size: const Size(1440, 900));
+    expect(card.height, expectedHeight(tester));
+  });
+
+  testWidgets('on a phone too, its rows drawn at the menu\'s row height',
+      (tester) async {
+    final card = await openMenu(tester, size: const Size(390, 844));
+    final menu = tester.widget<ArDriveDropdown>(find.byType(ArDriveDropdown));
+    expect(menu.height, 44);
+    expect(card.height, expectedHeight(tester));
+    final row = tester.getSize(find
+        .ancestor(of: find.text('Open'), matching: find.byType(SizedBox))
+        .first);
+    expect(row.height, 44, reason: 'a 48 px row in a 44 px slot is cut off');
+  });
+
+  testWidgets('at a large text size it stays on the screen', (tester) async {
+    final card =
+        await openMenu(tester, size: const Size(390, 600), textScale: 2);
+    expect(card.top, greaterThanOrEqualTo(0));
+    expect(card.bottom, lessThanOrEqualTo(600));
   });
 }
