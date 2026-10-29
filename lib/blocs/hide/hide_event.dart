@@ -88,6 +88,15 @@ class ConfirmUploadEvent extends HideEvent {
   List<Object> get props => [];
 }
 
+/// Reads the cost of the change again: Try again, or after credits were
+/// added.
+class HideCostRefreshEvent extends HideEvent {
+  const HideCostRefreshEvent();
+
+  @override
+  List<Object> get props => [];
+}
+
 class SelectUploadMethodEvent extends HideEvent {
   final UploadMethod uploadMethod;
 
