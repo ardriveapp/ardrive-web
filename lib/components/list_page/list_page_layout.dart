@@ -93,13 +93,25 @@ class ListPageChrome extends StatelessWidget {
         body: child,
       ),
       desktop: (context) => Padding(
-        padding: const EdgeInsets.only(top: 32, right: listPagePadding),
+        padding: const EdgeInsets.only(top: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ListPageTopBar(),
+            const Padding(
+              padding: EdgeInsets.only(right: listPagePadding),
+              child: ListPageTopBar(),
+            ),
             const SizedBox(height: listPageSectionGap),
-            Expanded(child: desktopChild ?? child),
+            // The page's right margin is the list's, not the window's: a
+            // details panel opens in it and runs to the window's edge, as
+            // the explorer's does. See [ListDetailsHost].
+            Expanded(
+              child: desktopChild ??
+                  Padding(
+                    padding: const EdgeInsets.only(right: listPagePadding),
+                    child: child,
+                  ),
+            ),
           ],
         ),
       ),
@@ -341,7 +353,12 @@ class _ListDetailsHostState extends State<ListDetailsHost> {
               : MediaQuery.textScalerOf(context).scale(fontSize) / fontSize;
 
           final pushes = panel != null &&
-              widget.pushesList(constraints.maxWidth, panelWidth, textScale);
+              // The list's own width: the gap before the panel is not list.
+              widget.pushesList(
+                constraints.maxWidth - listPagePadding,
+                panelWidth,
+                textScale,
+              );
           final covers = panel != null && !pushes;
 
           return Stack(
@@ -350,9 +367,14 @@ class _ListDetailsHostState extends State<ListDetailsHost> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: widget.buildBody(
-                      chosenId: panel == null ? null : id,
-                      onChoose: _choose,
+                    // The explorer's gap between the list and its panel, and
+                    // the page's right margin when there is no panel.
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: listPagePadding),
+                      child: widget.buildBody(
+                        chosenId: panel == null ? null : id,
+                        onChoose: _choose,
+                      ),
                     ),
                   ),
                   // The explorer's animation, the explorer's width.

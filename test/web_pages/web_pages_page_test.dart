@@ -338,4 +338,22 @@ void main() {
 
     verify(() => driveDao.driveById(driveId: 'd')).called(1);
   });
+
+  /// The explorer's arrangement: the panel stands 16 off the list and runs
+  /// to the window's edge. On the list pages it sat flush against the list.
+  testWidgets('the panel stands apart from the list, as the explorer\'s does',
+      (tester) async {
+    pagesAre([older]);
+    await pump(tester);
+    final listBefore = tester.getRect(find.byType(CustomScrollView));
+    expect(listBefore.right, 1400 - 16, reason: 'the page margin, no panel');
+
+    await choose(tester, 'Recipes');
+
+    final list = tester.getRect(find.byType(CustomScrollView));
+    final panel = tester.getRect(find.byType(WebPageDetailsPanel));
+    expect(panel.left - list.right, 16);
+    expect(panel.right, 1400);
+    expect(panel.width, 375, reason: "the explorer's width at 1400");
+  });
 }
