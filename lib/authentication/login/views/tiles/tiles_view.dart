@@ -55,28 +55,36 @@ class TilesView extends StatelessWidget {
   }
 }
 
-/// The price of 1 GB in USD from Turbo: the credits a gigabyte costs, against
-/// the credits ten dollars buy (Turbo's fees included, as a buyer pays them). Read once per session; null when Turbo can't
-/// be reached, and the tile then leaves the price out.
+/// The price of "1 GB" in USD from Turbo, as the price calculator shows it:
+/// 1 GiB, Turbo's fees included, from one request to `/v1/rates`. Read once
+/// per session. Null when Turbo can't be reached or takes longer than
+/// [pricePerGbTimeout] to answer, and the tile then leaves the price out.
 Future<double?> turboPricePerGb(PaymentService payments) =>
-    _pricePerGb ??= () async {
-      try {
-        final perGb = await payments.getPriceForBytes(byteSize: 1000000000);
-        final perTenDollars = await payments.getPriceForFiat(
-          wallet: null,
-          // In cents, as Turbo takes it.
-          amount: 1000,
-          currency: 'usd',
-        );
-        if (perTenDollars.winc == BigInt.zero) return null;
-        return perGb / perTenDollars.winc * 10;
-      } catch (e) {
-        logger.w('[bento] could not read the price of 1 GB: $e');
-        _pricePerGb = null;
-        return null;
-      }
-    }();
+    _pricePerGb ??= _readPricePerGb(payments).then((price) {
+      // A read that failed is tried again next time.
+      if (price == null) _pricePerGb = null;
+      return price;
+    });
+
+Future<double?> _readPricePerGb(PaymentService payments) async {
+  try {
+    // The whole read, so a body that stalls after its headers can't keep the
+    // loading bar up.
+    return await payments.getUsdPerGiB().timeout(pricePerGbTimeout);
+  } catch (e) {
+    logger.w('[bento] could not read the price of 1 GB: $e');
+    return null;
+  }
+}
+
 Future<double?>? _pricePerGb;
+
+/// How long the bento waits for the price: the HTTP client's own timeout.
+const pricePerGbTimeout = Duration(seconds: 8);
+
+/// Forgets the price read this session.
+@visibleForTesting
+void forgetTurboPricePerGb() => _pricePerGb = null;
 
 class _ThreeColumns extends StatelessWidget {
   const _ThreeColumns({required this.width, required this.loadPrice});
@@ -210,13 +218,11 @@ class _Tile extends StatefulWidget {
     required this.child,
     this.padding = const EdgeInsets.all(24),
     this.onTap,
-    this.semanticsLabel,
   });
 
   final Widget child;
   final EdgeInsets padding;
   final VoidCallback? onTap;
-  final String? semanticsLabel;
 
   @override
   State<_Tile> createState() => _TileState();
@@ -244,18 +250,20 @@ class _TileState extends State<_Tile> {
       child: widget.child,
     );
     if (widget.onTap == null) return tile;
-    return Semantics(
-      link: true,
-      label: widget.semanticsLabel,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) {
-          if (mounted) setState(() => _hovering = true);
-        },
-        onExit: (_) {
-          if (mounted) setState(() => _hovering = false);
-        },
-        child: GestureDetector(onTap: widget.onTap, child: tile),
+    // One link, read as the tile's own text, once.
+    return MergeSemantics(
+      child: Semantics(
+        link: true,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) {
+            if (mounted) setState(() => _hovering = true);
+          },
+          onExit: (_) {
+            if (mounted) setState(() => _hovering = false);
+          },
+          child: GestureDetector(onTap: widget.onTap, child: tile),
+        ),
       ),
     );
   }
@@ -1078,6 +1086,7 @@ class _CostTileState extends State<_CostTile> {
               label: s.bentoCostAmount,
               labelStyle: label,
               value: _PriceLoading(style: price),
+              stacked: compact,
             )
           // Left out when Turbo can't be reached.
           else if (usd != null)
@@ -1086,6 +1095,9 @@ class _CostTileState extends State<_CostTile> {
               label: s.bentoCostAmount,
               labelStyle: label,
               value: Text('\$${usd.toStringAsFixed(2)}', style: price),
+              // The narrow tile has no room for the label and the price side
+              // by side: the label would wrap beside a stub of leader.
+              stacked: compact,
             ),
           _BillLine(
             label: s.bentoCostSubscription,
@@ -1116,7 +1128,6 @@ class _CostTileState extends State<_CostTile> {
 
     return _Tile(
       onTap: () => openUrl(url: Resources.priceCalculatorLink),
-      semanticsLabel: '${s.bentoCostTitle}. ${s.bentoSeePrices}',
       child: LayoutBuilder(
         builder: (context, constraints) {
           final bounded = constraints.hasBoundedHeight;
@@ -1176,6 +1187,7 @@ class _BillLine extends StatelessWidget {
     required this.label,
     required this.labelStyle,
     required this.value,
+    this.stacked = false,
   });
 
   /// The shortest the leader gets before the label wraps.
@@ -1185,9 +1197,33 @@ class _BillLine extends StatelessWidget {
   final TextStyle labelStyle;
   final Widget value;
 
+  /// The label on a line of its own, and the leader and value on the line
+  /// below.
+  final bool stacked;
+
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: labelStyle),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: _Leader(style: labelStyle, color: colors.strokeMid),
+              ),
+              const SizedBox(width: 8),
+              value,
+            ],
+          ),
+        ],
+      );
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
