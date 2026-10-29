@@ -208,6 +208,34 @@ void main() {
   });
 
   group('save your recovery phrase', () {
+    for (final saved in [true, false]) {
+      testWidgets(
+          'a keyfile ${saved ? 'saved' : 'not saved'} '
+          '${saved ? 'lets them' : 'does not let them'} continue',
+          (tester) async {
+        await pump(
+          tester,
+          RecoveryPhraseView(
+            mnemonic: _mnemonic,
+            wallet: getTestWallet(),
+            saveKeyfile: (_) async => saved,
+          ),
+        );
+        await tester.tap(find.text('Download a keyfile instead'));
+        await tester.pump();
+
+        final button = tester.widget<ArDriveButtonNew>(
+            find.byKey(const Key('recoveryContinue')));
+        expect(button.isDisabled, !saved);
+        // The phrase box is about the phrase, and stays as it was.
+        expect(
+            tester
+                .widget<ArDriveCheckBox>(find.byKey(const Key('recoverySaved')))
+                .checked,
+            isFalse);
+      });
+    }
+
     test('stays on screen once the password is set', () {
       // The bloc reports the phrase, then that the password was created.
       expect(

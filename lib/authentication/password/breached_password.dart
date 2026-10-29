@@ -37,6 +37,9 @@ class BreachedPasswordCheck {
       final prefix = hex.substring(0, 5);
       final suffix = hex.substring(5);
 
+      // The http package this app resolves (1.2) can't abort a request, so
+      // after a timeout the request carries on in the background and its
+      // answer is ignored.
       final response = await _client.get(
         _api.resolve(prefix),
         headers: const {'Add-Padding': 'true'},
