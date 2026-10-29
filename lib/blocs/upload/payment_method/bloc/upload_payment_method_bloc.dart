@@ -90,7 +90,17 @@ class UploadPaymentMethodBloc
 
     emit(UploadPaymentMethodLoading(isArConnect: isArConnect));
 
-    final walletMismatch = await _profileCubit.checkIfWalletMismatch();
+    final bool walletMismatch;
+    try {
+      walletMismatch = await _profileCubit.checkIfWalletMismatch();
+    } catch (e) {
+      // Wander couldn't be reached and the person chose Cancel: an error the
+      // sheet can show, not a spinner that never ends.
+      if (superseded()) return;
+      logger.w('Could not check the wallet before an upload: $e');
+      emit(UploadPaymentMethodError());
+      return;
+    }
 
     if (superseded()) {
       return;

@@ -8,6 +8,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/profile_dao.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/user/user.dart';
@@ -656,6 +657,38 @@ void main() {
         // What was read out of the tables goes with them: drive keys and
         // previewed bytes live in memory, not in a table.
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+      });
+
+      test('signs out even when Wander never answers', () async {
+        ArConnectPrompt.readTimeout = const Duration(milliseconds: 50);
+        addTearDown(ArConnectPrompt.reset);
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.hasUser())
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((invocation) async => unlockedUser);
+        await arDriveAuth.unlockUser(password: 'password');
+
+        // Locked, its prompt closed.
+        when(() => mockArConnectService.checkPermissions())
+            .thenAnswer((_) => Completer<bool>().future);
+        when(() => mockUserRepository.deleteUser())
+            .thenAnswer((invocation) async {});
+        when(() => mockSecureKeyValueStore.remove(any()))
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
+
+        await arDriveAuth.logout().timeout(const Duration(seconds: 5));
+
+        expect(() => arDriveAuth.currentUser,
+            throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
+        verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
       });
 
       test('clears what the permanence panel kept', () async {

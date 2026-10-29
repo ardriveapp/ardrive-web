@@ -5595,5 +5595,13 @@
   "welcomeBackWrongPassword": "Invalid password. Please try again.",
   "@welcomeBackWrongPassword": {"description": "The password didn't unlock the account."},
   "welcomeBackDifferentAccount": "Use a different account",
-  "@welcomeBackDifferentAccount": {"description": "Forgets this account on this device, after a confirmation."}
+  "@welcomeBackDifferentAccount": {"description": "Forgets this account on this device, after a confirmation."},
+  "wanderNoAnswerTitle": "Wander didn't answer",
+  "@wanderNoAnswerTitle": {"description": "Title when the Wander browser wallet was asked to sign or confirm the account and did not answer, usually because it is locked."},
+  "wanderNoAnswerDescription": "Unlock Wander, then try again.",
+  "@wanderNoAnswerDescription": {"description": "What to do when Wander did not answer."},
+  "wanderNotInstalledTitle": "Wander isn't available",
+  "@wanderNotInstalledTitle": {"description": "Title when this account signs with the Wander browser wallet and the extension is not in this browser."},
+  "wanderNotInstalledDescription": "This account signs with Wander. Install or turn on Wander in this browser, then try again.",
+  "@wanderNotInstalledDescription": {"description": "What to do when the Wander extension is missing."}
 }

@@ -55,7 +55,11 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     on<FsEntryMoveEvent>(
       (event, emit) async {
-        if (await _profileCubit.logoutIfWalletMismatch()) {
+        // Only before moving: browsing folders is a read, and checking means
+        // asking Wander, which a locked Wander answers with its unlock prompt.
+        final writes =
+            event is FsEntryMoveSubmit || event is FsEntryMoveSkipConflicts;
+        if (writes && await _profileCubit.logoutIfWalletMismatch()) {
           emit(const FsEntryMoveWalletMismatch());
           return;
         }
