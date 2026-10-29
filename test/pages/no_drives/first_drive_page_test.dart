@@ -78,10 +78,12 @@ void main() {
     final making = Completer<FirstDriveOutcome>();
     var asked = 0;
 
-    await pump(tester, (_) {
-      asked++;
-      return making.future;
-    });
+    await pump(
+        tester,
+        (_) => () {
+              asked++;
+              return making.future;
+            });
 
     expect(asked, 1);
     expect(find.text('Setting up My files'), findsOneWidget);
@@ -104,7 +106,7 @@ void main() {
     ];
     var asked = 0;
 
-    await pump(tester, (_) async => outcomes[asked++],
+    await pump(tester, (_) => () async => outcomes[asked++],
         retryDelays: const [Duration(seconds: 3), Duration(seconds: 10)]);
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(seconds: 10));
@@ -120,10 +122,13 @@ void main() {
     when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
     var asked = 0;
 
-    await pump(tester, (_) async {
-      asked++;
-      return FirstDriveOutcome.failed;
-    }, retryDelays: const [Duration(seconds: 3)]);
+    await pump(
+        tester,
+        (_) => () async {
+              asked++;
+              return FirstDriveOutcome.failed;
+            },
+        retryDelays: const [Duration(seconds: 3)]);
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
 
@@ -137,10 +142,13 @@ void main() {
     when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
     var asked = 0;
 
-    await pump(tester, (_) async {
-      asked++;
-      return FirstDriveOutcome.needsCredits;
-    }, retryDelays: const [Duration(seconds: 3)]);
+    await pump(
+        tester,
+        (_) => () async {
+              asked++;
+              return FirstDriveOutcome.needsCredits;
+            },
+        retryDelays: const [Duration(seconds: 3)]);
     await tester.pump();
 
     expect(asked, 1, reason: 'trying again would not change the answer');
@@ -151,7 +159,7 @@ void main() {
   testWidgets('treats a throw as worth trying again later', (tester) async {
     when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
 
-    await pump(tester, (_) async => throw StateError('no profile'));
+    await pump(tester, (_) => () async => throw StateError('no profile'));
     await tester.pump();
 
     expect(find.text('Getting started'), findsOneWidget);
@@ -163,12 +171,41 @@ void main() {
     when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => false);
     var asked = 0;
 
-    await pump(tester, (_) async {
-      asked++;
-      return FirstDriveOutcome.made;
-    });
+    await pump(
+        tester,
+        (_) => () async {
+              asked++;
+              return FirstDriveOutcome.made;
+            });
 
     expect(asked, 0);
+    expect(find.text('Getting started'), findsOneWidget);
+  });
+
+  testWidgets('a page that replaces this one mid-wait joins the attempt',
+      (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+    final making = Completer<FirstDriveOutcome>();
+    var asked = 0;
+    FirstDriveAttempt create(BuildContext _) => () {
+          asked++;
+          return making.future;
+        };
+
+    await pump(tester, create);
+    expect(find.text('Setting up My files'), findsOneWidget);
+
+    // The drive list changed under it: the page is rebuilt from scratch.
+    await tester.pumpWidget(const SizedBox());
+    await pump(tester, create);
+
+    expect(find.text('Setting up My files'), findsOneWidget);
+    verify(() => firstDrive.claim('new-wallet')).called(1);
+    expect(asked, 1);
+
+    making.complete(FirstDriveOutcome.failed);
+    await tester.pump();
+    await tester.pump();
     expect(find.text('Getting started'), findsOneWidget);
   });
 }

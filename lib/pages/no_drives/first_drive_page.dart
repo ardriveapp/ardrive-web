@@ -25,9 +25,12 @@ enum FirstDriveOutcome {
   failed,
 }
 
-/// Makes the new account's first drive.
-typedef CreateFirstDrive = Future<FirstDriveOutcome> Function(
-    BuildContext context);
+/// One attempt at making the first drive.
+typedef FirstDriveAttempt = Future<FirstDriveOutcome> Function();
+
+/// Reads what making the first drive needs, once, from [context]; the
+/// attempts it returns outlive the page that started them.
+typedef CreateFirstDrive = FirstDriveAttempt Function(BuildContext context);
 
 /// What a signed-in user with no drives sees. A new account owed its first
 /// drive has "My files" made here; making it selects it, which opens it.
@@ -64,50 +67,77 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
     _start();
   }
 
+  /// The attempts under way, shared by every page that shows up while they
+  /// run: making the drive adds it to the list and a failed try removes it,
+  /// which can swap this page for a new one mid-wait.
+  static Future<FirstDriveOutcome>? _running;
+
   Future<void> _start() async {
-    final profile = context.read<ProfileCubit>().state;
-    final firstDrive = widget.firstDrive ?? FirstDrive();
-    var owed = false;
+    var running = _running;
 
-    if (profile is ProfileLoggedIn) {
-      try {
-        owed = await firstDrive.claim(profile.user.walletAddress);
-      } catch (e, stackTrace) {
-        logger.e('Could not read the first drive request', e, stackTrace);
+    if (running == null) {
+      final profile = context.read<ProfileCubit>().state;
+      final firstDrive = widget.firstDrive ?? FirstDrive();
+      var owed = false;
+
+      if (profile is ProfileLoggedIn) {
+        try {
+          owed = await firstDrive.claim(profile.user.walletAddress);
+        } catch (e, stackTrace) {
+          logger.e('Could not read the first drive request', e, stackTrace);
+        }
       }
-    }
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (!owed || profile is! ProfileLoggedIn) {
-      setState(() => _stage = _Stage.noDrives);
-      return;
+      if (!owed || profile is! ProfileLoggedIn) {
+        setState(() => _stage = _Stage.noDrives);
+        return;
+      }
+
+      running = _running = _makeFirstDrive(
+        attempt: widget.createFirstDrive(context),
+        firstDrive: firstDrive,
+        walletAddress: profile.user.walletAddress,
+        retryDelays: widget.retryDelays,
+      ).whenComplete(() => _running = null);
     }
 
     setState(() => _stage = _Stage.creating);
 
     // On success the new drive is selected, which opens it.
+    final outcome = await running;
+
+    if (outcome != FirstDriveOutcome.made && mounted) {
+      setState(() => _stage = _Stage.noDrives);
+    }
+  }
+
+  static Future<FirstDriveOutcome> _makeFirstDrive({
+    required FirstDriveAttempt attempt,
+    required FirstDrive firstDrive,
+    required String walletAddress,
+    required List<Duration> retryDelays,
+  }) async {
     var outcome = FirstDriveOutcome.failed;
-    for (var attempt = 0;; attempt++) {
+    for (var tries = 0;; tries++) {
       try {
-        outcome = await widget.createFirstDrive(context);
+        outcome = await attempt();
       } catch (e, stackTrace) {
         logger.e('Could not make the first drive', e, stackTrace);
         outcome = FirstDriveOutcome.failed;
       }
 
-      if (outcome != FirstDriveOutcome.failed ||
-          attempt >= widget.retryDelays.length) {
+      if (outcome != FirstDriveOutcome.failed || tries >= retryDelays.length) {
         break;
       }
-      await Future<void>.delayed(widget.retryDelays[attempt]);
-      if (!mounted) break;
+      await Future<void>.delayed(retryDelays[tries]);
     }
 
     try {
       if (outcome == FirstDriveOutcome.failed) {
         // Kept, so the next time this account has no drives it tries again.
-        await firstDrive.release(profile.user.walletAddress);
+        await firstDrive.release(walletAddress);
       } else {
         await firstDrive.done();
       }
@@ -115,9 +145,7 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
       logger.e('Could not update the first drive request', e, stackTrace);
     }
 
-    if (outcome != FirstDriveOutcome.made && mounted) {
-      setState(() => _stage = _Stage.noDrives);
-    }
+    return outcome;
   }
 
   @override
@@ -158,16 +186,24 @@ class _SettingUpFirstDrive extends StatelessWidget {
 }
 
 /// Makes a private "My files" the way Create new private drive does.
-Future<FirstDriveOutcome> createMyFiles(BuildContext context) async {
-  final cubit = DriveCreateCubit(
-    privacy: DrivePrivacy.private,
-    arweave: context.read<ArweaveService>(),
-    turboUploadService: context.read<TurboUploadService>(),
-    driveDao: context.read<DriveDao>(),
-    profileCubit: context.read<ProfileCubit>(),
-    drivesCubit: context.read<DrivesCubit>(),
-  );
+FirstDriveAttempt createMyFiles(BuildContext context) {
+  final arweave = context.read<ArweaveService>();
+  final turboUploadService = context.read<TurboUploadService>();
+  final driveDao = context.read<DriveDao>();
+  final profileCubit = context.read<ProfileCubit>();
+  final drivesCubit = context.read<DrivesCubit>();
 
+  return () => _createMyFiles(DriveCreateCubit(
+        privacy: DrivePrivacy.private,
+        arweave: arweave,
+        turboUploadService: turboUploadService,
+        driveDao: driveDao,
+        profileCubit: profileCubit,
+        drivesCubit: drivesCubit,
+      ));
+}
+
+Future<FirstDriveOutcome> _createMyFiles(DriveCreateCubit cubit) async {
   try {
     // Closed only once submit is done: closing it sooner would make the
     // success emit throw, and the cubit undoes a drive whose creation threw.
