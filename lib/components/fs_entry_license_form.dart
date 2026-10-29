@@ -1,6 +1,8 @@
 import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/components/turbo_credits_funding.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
@@ -10,6 +12,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -39,6 +42,11 @@ Future<void> promptToLicense(
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             licenseService: context.read<LicenseService>(),
+            costReader: MetadataWriteCostReader(
+              payments: context.read<PaymentService>(),
+              turbo: context.read<TurboUploadService>(),
+              arweave: context.read<ArweaveService>(),
+            ),
           )..add(const FsEntryLicenseInitial()),
         ),
         BlocProvider.value(
@@ -65,23 +73,28 @@ class FsEntryLicenseForm extends StatefulWidget {
 }
 
 class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
+  /// The progress dialog is up over the form.
+  var _progressShown = false;
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<FsEntryLicenseBloc, FsEntryLicenseState>(
       listener: (context, state) {
         if (state is FsEntryLicenseLoadInProgress) {
+          _progressShown = true;
           showProgressDialog(
             context,
-            title: 'Licensing items',
-            // TODO: Localize
-            // title: appLocalizationsOf(context).licensingItemsEmphasized,
+            title: appLocalizationsOf(context).addingLicense,
           );
-        } else if (state is FsEntryLicenseSuccess ||
-            state is FsEntryLicenseFailure) {
-          // close progressDialog
+          return;
+        }
+        if (_progressShown) {
+          // Done, failed, or refused as not paid for and back on the review.
+          _progressShown = false;
           context.read<DriveDetailCubit>().refreshDriveDataTable();
           Navigator.pop(context);
-        } else if (state is FsEntryLicenseComplete) {
+        }
+        if (state is FsEntryLicenseComplete) {
           // close LicenseForm
 
           context.read<DriveDetailCubit>().refreshDriveDataTable();
@@ -94,24 +107,8 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
         return Builder(builder: (context) {
           final licenseMeta =
               context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
-          final typography = ArDriveTypographyNew.of(context);
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final divider = Divider(color: colorTokens.strokeLow, height: 32);
-          final cost = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                // TODO: Localize
-                'Cost: 0 AR',
-                style: typography.paragraphLarge(color: colorTokens.textHigh),
-              ),
-              Text(
-                // TODO: Localize
-                'Free for now, maybe paid later.',
-                style: typography.paragraphSmall(color: colorTokens.textLow),
-              ),
-            ],
-          );
 
           if (state is FsEntryLicenseNoFiles) {
             return _LicenseResult(
@@ -162,8 +159,6 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       ],
                     ),
                   ),
-                  divider,
-                  cost,
                 ],
               ),
               actions: [
@@ -250,42 +245,35 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
               ),
             );
           } else if (state is FsEntryLicenseReviewing) {
-            return ArDriveStandardModalNew(
-              title: 'Review',
-              width: kMediumDialogWidth,
-              scrollableContent: true,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  LicenseFileList(
-                      fileList:
-                          context.read<FsEntryLicenseBloc>().filesToLicense!),
-                  divider,
-                  LicenseSummary(
-                    licenseState: LicenseState(
-                        meta: licenseMeta,
-                        params:
-                            context.read<FsEntryLicenseBloc>().licenseParams),
+            final bloc = context.read<FsEntryLicenseBloc>();
+            final files = bloc.filesToLicense!;
+            final l10n = appLocalizationsOf(context);
+            // The upload review, with the license in place of the files:
+            // the same cost, the same notices, the same Add credits.
+            return UploadReviewDialog(
+              title: l10n.licenseReviewTitle,
+              destination: l10n.licenseReviewFiles(files.length),
+              files: const [],
+              leading: [
+                LicenseFileList(fileList: files),
+                divider,
+                LicenseSummary(
+                  licenseState: LicenseState(
+                    meta: licenseMeta,
+                    params: bloc.licenseParams,
                   ),
-                  divider,
-                  cost,
-                ],
-              ),
-              actions: [
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseReviewBack()),
-                  title: appLocalizationsOf(context).backEmphasized,
-                ),
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseReviewConfirm()),
-                  title: appLocalizationsOf(context).confirmEmphasized,
                 ),
               ],
+              summary: state.summary,
+              primaryLabel: l10n.confirm,
+              subject: ReviewCostSubject.change,
+              onUpload: (_) => bloc.add(const FsEntryLicenseReviewConfirm()),
+              onBack: () => bloc.add(const FsEntryLicenseReviewBack()),
+              onCancel: () => Navigator.of(context).pop(),
+              funding: TurboCreditsFunding(
+                context,
+                onRefresh: () => bloc.add(const FsEntryLicenseCostRefresh()),
+              ),
             );
           } else if (state is FsEntryLicenseSuccess) {
             return _LicenseResult(
@@ -311,32 +299,18 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                 size: 24,
                 color: colorTokens.statusErrorFg,
               ),
-              title: state.isPaymentError
-                  ? appLocalizationsOf(context).freeAllowanceUsedUpTitle
-                  // TODO: Localize
-                  : 'No dice.',
-              message: state.isPaymentError
-                  ? appLocalizationsOf(context).freeAllowanceUsedUpDescription
-                  // TODO: Localize
-                  : 'Your attempted licensing failed, want to try again now?',
+              title: appLocalizationsOf(context).licenseFailedTitle,
+              message: appLocalizationsOf(context).licenseFailedMessage,
               actions: [
                 ModalAction.dismiss(
                   action: () => Navigator.of(context).pop(),
                   title: appLocalizationsOf(context).close,
                 ),
                 ModalAction(
-                  action: () {
-                    if (state.isPaymentError) {
-                      showTurboPaymentRequiredDialog(context);
-                    } else {
-                      context
-                          .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseFailureTryAgain());
-                    }
-                  },
-                  title: state.isPaymentError
-                      ? appLocalizationsOf(context).buyCredits
-                      : appLocalizationsOf(context).tryAgain,
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseFailureTryAgain()),
+                  title: appLocalizationsOf(context).tryAgain,
                 ),
               ],
             );

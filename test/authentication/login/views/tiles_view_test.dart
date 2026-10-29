@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
@@ -74,19 +75,33 @@ void main() {
     expect(find.text('What it costs'), findsOneWidget);
   }
 
+  void expectTheBill() {
+    expect(find.text('1 GB, saved for good'), findsOneWidget);
+    expect(find.text('Subscription'), findsOneWidget);
+    expect(find.text('\$0'), findsOneWidget);
+    expect(find.text('To try it'), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(find.text('See prices'), findsOneWidget);
+  }
+
+  const holds = Key('bentoCostHolds');
+
   testWidgets('three columns keep all five tiles and what a GB holds',
       (tester) async {
     await pumpBento(tester, size: const Size(696, 868));
     expectAllFiveTiles();
-    expect(find.byKey(const Key('bentoEquivalents')), findsOneWidget);
+    expectTheBill();
+    expect(find.byKey(holds), findsOneWidget);
     expect(tester.takeException(), isNull);
     await done(tester);
   });
 
-  testWidgets('two columns keep all five tiles', (tester) async {
+  testWidgets('two columns keep all five tiles and the whole bill',
+      (tester) async {
     await pumpBento(tester, size: const Size(496, 816));
     expectAllFiveTiles();
-    expect(find.byKey(const Key('bentoEquivalents')), findsNothing);
+    expectTheBill();
+    expect(find.byKey(holds), findsNothing);
     expect(tester.takeException(), isNull);
     await done(tester);
   });
@@ -95,7 +110,99 @@ void main() {
       (tester) async {
     await pumpBento(tester, size: const Size(390, 844), scrolling: true);
     expectAllFiveTiles();
+    expectTheBill();
+    expect(find.byKey(holds), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await done(tester);
+  });
+
+  // The bento beside the panel at each login width: 1440, 1280 and 1024 wide
+  // windows 832 and 900 tall, and the narrowest side-by-side window, 834.
+  for (final size in const [
+    Size(708, 884),
+    Size(708, 816),
+    Size(628, 884),
+    Size(628, 816),
+    Size(500, 884),
+    Size(500, 816),
+    Size(405, 816),
+  ]) {
+    testWidgets(
+        'the bill fits at ${size.width.toInt()} x ${size.height.toInt()}',
+        (tester) async {
+      await pumpBento(tester, size: size);
+      expectTheBill();
+      expect(tester.takeException(), isNull);
+      await done(tester);
+    });
+  }
+
+  testWidgets('each value sits on its label\'s baseline, flush right',
+      (tester) async {
+    await pumpBento(tester, size: const Size(696, 868));
+    // The first line's baseline, from the top of the page.
+    double baseline(Finder finder) {
+      final text = tester.widget<Text>(finder);
+      final painter = TextPainter(
+        text: TextSpan(
+          text: text.data,
+          style: DefaultTextStyle.of(tester.element(finder))
+              .style
+              .merge(text.style),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      addTearDown(painter.dispose);
+      return tester.getTopLeft(finder).dy +
+          painter.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+    }
+
+    for (final (label, value) in [
+      ('1 GB, saved for good', '\$23.69'),
+      ('Subscription', '\$0'),
+      ('To try it', 'Free'),
+    ]) {
+      expect(baseline(find.text(value)),
+          moreOrLessEquals(baseline(find.text(label)), epsilon: 0.5),
+          reason: label);
+    }
+    final right = tester.getTopRight(find.text('Free')).dx;
+    expect(tester.getTopRight(find.text('\$0')).dx, right);
+    expect(tester.getTopRight(find.text('\$23.69')).dx, right);
+    await done(tester);
+  });
+
+  testWidgets('Free is in the success colour', (tester) async {
+    await pumpBento(tester, size: const Size(696, 868));
+    final colors = ArDriveTheme.of(tester.element(find.text('Free')))
+        .themeData
+        .colorTokens;
+    expect(tester.widget<Text>(find.text('Free')).style!.color,
+        colors.statusSuccessFg);
+    await done(tester);
+  });
+
+  testWidgets('only a tile that is a link lifts under the pointer',
+      (tester) async {
+    await pumpBento(tester, size: const Size(696, 868));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+
+    Future<double> lift(Finder inTile) async {
+      final before = tester.getTopLeft(inTile).dy;
+      await mouse.moveTo(tester.getCenter(inTile));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final after = tester.getTopLeft(inTile).dy;
+      await mouse.moveTo(Offset.zero);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      return before - after;
+    }
+
+    expect(await lift(find.text('What it costs')), 2);
+    expect(await lift(find.text('Put it online, for good')), 0);
     await done(tester);
   });
 
@@ -138,8 +245,27 @@ void main() {
 
   testWidgets('the price shows when Turbo answers', (tester) async {
     await pumpBento(tester, size: const Size(696, 868));
-    expect(
-        find.textContaining('\$23.69', findRichText: true), findsOneWidget);
+    expect(find.text('\$23.69'), findsOneWidget);
+    expect(find.textContaining('USD'), findsNothing);
+    await done(tester);
+  });
+
+  testWidgets('the bill keeps its place while the price loads', (tester) async {
+    final price = Completer<double?>();
+    await pumpBento(
+      tester,
+      size: const Size(696, 868),
+      price: () => price.future,
+    );
+    expect(find.byKey(const Key('bentoPriceLoading')), findsOneWidget);
+    expect(find.text('1 GB, saved for good'), findsOneWidget);
+    final subscription = tester.getTopLeft(find.text('Subscription'));
+
+    price.complete(23.69);
+    await tester.pump();
+    expect(find.byKey(const Key('bentoPriceLoading')), findsNothing);
+    expect(find.text('\$23.69'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Subscription')), subscription);
     await done(tester);
   });
 
@@ -152,7 +278,10 @@ void main() {
     );
     expect(find.byKey(const Key('bentoPrice')), findsNothing);
     expect(find.byKey(const Key('bentoPriceLoading')), findsNothing);
-    expect(find.text('Free to try. Paid once, no subscription.'), findsOneWidget);
+    expect(find.text('1 GB, saved for good'), findsNothing);
+    expect(find.text('Subscription'), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await done(tester);
   });
 }

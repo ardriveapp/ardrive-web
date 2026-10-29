@@ -1,3 +1,4 @@
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/turbo_url_dialog.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
@@ -109,6 +110,14 @@ class SettingsSubmenu extends StatelessWidget {
                 ),
               );
             },
+          ),
+        ),
+        // The version, for a signed-out reader, who has no Help to find it
+        // in. A line to read, with one link in it, rather than an action.
+        ArDriveSubmenuItem(
+          widget: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            child: AppVersionHelpLine(quiet: true),
           ),
         ),
       ],

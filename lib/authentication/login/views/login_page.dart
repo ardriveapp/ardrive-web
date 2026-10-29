@@ -183,6 +183,16 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   }
 }
 
+/// The page's outer margin, the same on every side for the bento and the
+/// sign-in panel, so their tops and bottoms line up; also the gap between
+/// them, the same as the bento's gap between its tiles.
+const _pageMargin = 8.0;
+
+/// Side by side, the page is the window's height, between 832 and 1024; a
+/// shorter window scrolls it, a taller one centres it.
+double _desktopHeight(BuildContext context) =>
+    MediaQuery.of(context).size.height.clamp(832, 1024);
+
 class _LargeDesktopView extends StatelessWidget {
   final LoginState loginState;
   final GlobalKey globalKey;
@@ -194,32 +204,26 @@ class _LargeDesktopView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-
     return Material(
       color: ArDriveTheme.of(context).themeData.backgroundColor,
       child: SizedBox.expand(
         child: Center(
           child: SingleChildScrollView(
             child: Container(
-              height: height.clamp(832, 1024),
+              height: _desktopHeight(context),
               constraints: const BoxConstraints(
                 maxWidth: 1440,
               ),
+              padding: const EdgeInsets.all(_pageMargin),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
-                      child: TilesView(),
-                    ),
-                  ),
+                  const Expanded(child: TilesView()),
+                  const SizedBox(width: _pageMargin),
                   Expanded(
                     child: _roundedBorderContainer(
                       context: context,
-                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      padding: EdgeInsets.zero,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -283,22 +287,18 @@ class _SmallDesktopView extends StatelessWidget {
       child: SizedBox.expand(
         child: Center(
           child: SingleChildScrollView(
-            child: SizedBox(
-              height: 832,
+            child: Container(
+              height: _desktopHeight(context),
+              padding: const EdgeInsets.all(_pageMargin),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
-                      child: TilesView(),
-                    ),
-                  ),
+                  const Expanded(child: TilesView()),
+                  const SizedBox(width: _pageMargin),
                   Expanded(
                     child: _roundedBorderContainer(
                       context: context,
-                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      padding: EdgeInsets.zero,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [

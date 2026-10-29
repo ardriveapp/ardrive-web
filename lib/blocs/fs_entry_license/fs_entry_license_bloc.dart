@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/forms/cc.dart';
@@ -34,8 +36,10 @@ class FsEntryLicenseBloc
     required ProfileCubit profileCubit,
     required ArDriveCrypto crypto,
     required LicenseService licenseService,
+    required MetadataWriteCostReader costReader,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
+        _costReader = costReader,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -67,6 +71,14 @@ class FsEntryLicenseBloc
   final ProfileCubit _profileCubit;
   final ArDriveCrypto _crypto;
   final LicenseService _licenseService;
+  final MetadataWriteCostReader _costReader;
+
+  /// The cost on the review, once read.
+  UploadReviewSummary? _summary;
+
+  /// Turbo refused a write as not paid for, so it is not free again whatever
+  /// the allowance says.
+  var _refusedByTurbo = false;
 
   final List<String> errorLog = [];
 
@@ -105,7 +117,9 @@ class FsEntryLicenseBloc
     } else if (event is FsEntryLicenseSuccessClose) {
       _handleSuccessClose(event, emit);
     } else if (event is FsEntryLicenseFailureTryAgain) {
-      _handleFailureTryAgain(event, emit);
+      await _readCost(emit);
+    } else if (event is FsEntryLicenseCostRefresh) {
+      await _readCost(emit);
     } else {
       addError('Unsupported event: ${event.runtimeType}');
     }
@@ -152,26 +166,55 @@ class FsEntryLicenseBloc
         addError('Unsupported license category: $selectedLicenseCategory');
     }
 
+    await _readCost(emit);
+  }
+
+  /// Shows the review, and reads what writing the license costs: the size of
+  /// the items it writes, priced the way an upload is.
+  Future<void> _readCost(Emitter<FsEntryLicenseState> emit) async {
+    _summary = null;
     emit(const FsEntryLicenseReviewing());
+    UploadReviewSummary summary;
+    try {
+      final profile = _profileCubit.state as ProfileLoggedIn;
+      final write = await _prepareWrite(profile: profile, sign: false);
+      summary = await _costReader.read(
+        itemSizes: write.items.map(signedDataItemSize).toList(),
+        wallet: profile.user.wallet,
+        walletBalance: profile.user.walletBalance,
+        refusedByTurbo: _refusedByTurbo,
+      );
+    } catch (error, trace) {
+      logger.e('Could not price the license', error, trace);
+      summary = MetadataWriteCostReader.unavailable();
+    }
+    _summary = summary;
+    emit(FsEntryLicenseReviewing(summary: summary));
   }
 
   Future<void> _handleReviewConfirm(
     FsEntryLicenseReviewConfirm event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
+    // Only what is free, or paid for the way the review showed. Nothing is
+    // written while the price is unknown or the credits are short.
+    if (_summary?.isCovered != true) return;
+
     emit(const FsEntryLicenseLoadInProgress());
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
-      await _licenseEntities(
-        profile: profile,
-        licenseMeta: _selectedLicenseMeta,
-        licenseParams: licenseParams,
-      );
+      await _licenseEntities(profile: profile);
       emit(const FsEntryLicenseSuccess());
     } catch (error, trace) {
       logger.e('Error licensing entities', error, trace);
+      if (isTurboPaymentError(error)) {
+        // Back to the review, with the balance read again and Add credits.
+        _refusedByTurbo = true;
+        await _readCost(emit);
+        return;
+      }
       addError('Error licensing entities', trace);
-      emit(FsEntryLicenseFailure(isPaymentError: isTurboPaymentError(error)));
+      emit(const FsEntryLicenseFailure());
     }
   }
 
@@ -181,6 +224,7 @@ class FsEntryLicenseBloc
   ) {
     // Every LicenseCategory has its own configure step
     licenseParams = null;
+    _summary = null;
     emit(const FsEntryLicenseConfiguring());
   }
 
@@ -196,13 +240,6 @@ class FsEntryLicenseBloc
     Emitter<FsEntryLicenseState> emit,
   ) {
     emit(const FsEntryLicenseComplete());
-  }
-
-  void _handleFailureTryAgain(
-    FsEntryLicenseFailureTryAgain event,
-    Emitter<FsEntryLicenseState> emit,
-  ) {
-    emit(const FsEntryLicenseReviewing());
   }
 
   Future<List<FileEntry>> _enumerateFiles({
@@ -243,87 +280,92 @@ class FsEntryLicenseBloc
     return files.where((file) => file.pinnedDataOwnerAddress == null).toList();
   }
 
-  Future<void> _licenseEntities({
+  /// The items licensing the files writes: for each file, a license
+  /// assertion for each of its data transactions, then its new metadata.
+  ///
+  /// Unsigned, [sign] false, they are only measured: the review prices them
+  /// before anything is signed. Signed, they come with the rows to save once
+  /// they are posted.
+  Future<_LicenseWrite> _prepareWrite({
     required ProfileLoggedIn profile,
-    required LicenseMeta licenseMeta,
-    LicenseParams? licenseParams,
+    required bool sign,
   }) async {
+    final licenseMeta = _selectedLicenseMeta;
     final licenseState = LicenseState(
       meta: licenseMeta,
       params: licenseParams,
     );
-
+    final wallet = profile.user.wallet;
     final driveKey =
         await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
+    final owner = await wallet.getOwner();
+    final appInfo = AppInfoServices().appInfo;
+    final signer = ArweaveSigner(wallet);
+    final write = _LicenseWrite();
 
-    final licenseAssertionTxDataItems = <DataItem>[];
-    final fileRevisionTxDataItems = <DataItem>[];
+    for (var file in filesToLicense!) {
+      final allRevisions = await _driveDao
+          .oldestFileRevisionsByFileId(driveId: driveId, fileId: file.id)
+          .get();
+      final dataTxIdsSet = allRevisions.map((rev) => rev.dataTxId).toSet();
 
-    final signer = ArweaveSigner(profile.user.wallet);
+      for (final dataTxId in dataTxIdsSet) {
+        final licenseAssertionEntity = _licenseService.toEntity(
+          licenseState: licenseState,
+          dataTxId: dataTxId,
+        )..ownerAddress = profile.user.walletAddress;
 
-    await _driveDao.transaction(() async {
-      for (var file in filesToLicense!) {
-        final allRevisions = await _driveDao
-            .oldestFileRevisionsByFileId(
-              driveId: driveId,
-              fileId: file.id,
-            )
-            .get();
-        final dataTxIdsSet = allRevisions.map((rev) => rev.dataTxId).toSet();
+        final licenseAssertionDataItem = await licenseAssertionEntity
+            .asPreparedDataItem(owner: owner, appInfo: appInfo);
+        write.assertions.add(licenseAssertionDataItem);
+        if (!sign) continue;
 
-        for (final dataTxId in dataTxIdsSet) {
-          final licenseAssertionEntity = _licenseService.toEntity(
-            licenseState: licenseState,
-            dataTxId: dataTxId,
-          )..ownerAddress = profile.user.walletAddress;
-
-          final owner = await profile.user.wallet.getOwner();
-          final appInfo = AppInfoServices().appInfo;
-          final licenseAssertionDataItem = await licenseAssertionEntity
-              .asPreparedDataItem(owner: owner, appInfo: appInfo);
-          await licenseAssertionDataItem.sign(signer);
-          licenseAssertionTxDataItems.add(licenseAssertionDataItem);
-
-          licenseAssertionEntity.txId = licenseAssertionDataItem.id;
-
-          await _driveDao.insertLicense(
-            licenseAssertionEntity.toCompanion(
-              fileId: file.id,
-              driveId: driveId,
-              licenseType: licenseMeta.licenseType,
-            ),
-          );
-        }
-
-        final latestLicenseAssertionTxId = licenseAssertionTxDataItems.last.id;
-        file = file.copyWith(
-            licenseTxId: Value(latestLicenseAssertionTxId),
-            lastUpdated: DateTime.now());
-
-        final fileEntity = file.asEntity();
-        final fileKey = driveKey != null
-            ? await _crypto.deriveFileKey(driveKey.key, file.id)
-            : null;
-        final fileDataItem = await _arweave.prepareEntityDataItem(
-          fileEntity,
-          profile.user.wallet,
-          key: fileKey,
+        await licenseAssertionDataItem.sign(signer);
+        licenseAssertionEntity.txId = licenseAssertionDataItem.id;
+        write.licenses.add(
+          licenseAssertionEntity.toCompanion(
+            fileId: file.id,
+            driveId: driveId,
+            licenseType: licenseMeta.licenseType,
+          ),
         );
-
-        fileRevisionTxDataItems.add(fileDataItem);
-
-        await _driveDao.writeToFile(file);
-        fileEntity.txId = fileDataItem.id;
-
-        await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
-          performedAction: RevisionAction.assertLicense,
-        ));
       }
-    });
 
-    final dataItems = licenseAssertionTxDataItems + fileRevisionTxDataItems;
+      file = file.copyWith(
+        // Unsigned items have no ID yet; one of the same length stands in.
+        licenseTxId:
+            Value(sign ? write.assertions.last.id : _unsignedTxIdStandIn),
+        lastUpdated: DateTime.now(),
+      );
+
+      final fileEntity = file.asEntity();
+      final fileKey = driveKey != null
+          ? await _crypto.deriveFileKey(driveKey.key, file.id)
+          : null;
+      final fileDataItem = await _arweave.prepareEntityDataItem(
+        fileEntity,
+        wallet,
+        key: fileKey,
+        skipSignature: !sign,
+      );
+      write.fileItems.add(fileDataItem);
+      if (!sign) continue;
+
+      fileEntity.txId = fileDataItem.id;
+      write.files.add(file);
+      write.revisions.add(fileEntity.toRevisionCompanion(
+        performedAction: RevisionAction.assertLicense,
+      ));
+    }
+
+    return write;
+  }
+
+  Future<void> _licenseEntities({required ProfileLoggedIn profile}) async {
+    final write = await _prepareWrite(profile: profile, sign: true);
+
     if (_turboUploadService.useTurboUpload) {
-      for (var dataItem in dataItems) {
+      for (var dataItem in write.items) {
         await _turboUploadService.postDataItem(
           dataItem: dataItem,
           wallet: profile.user.wallet,
@@ -332,12 +374,24 @@ class FsEntryLicenseBloc
     } else {
       final dataBundle = await _arweave.prepareDataBundleTx(
         await DataBundle.fromDataItems(
-          items: dataItems,
+          items: write.items,
         ),
         profile.user.wallet,
       );
       await _arweave.postTx(dataBundle);
     }
+
+    // Saved once posted, so a refused write leaves no license behind that
+    // was never written.
+    await _driveDao.transaction(() async {
+      for (final license in write.licenses) {
+        await _driveDao.insertLicense(license);
+      }
+      for (var i = 0; i < write.files.length; i++) {
+        await _driveDao.writeToFile(write.files[i]);
+        await _driveDao.insertFileRevision(write.revisions[i]);
+      }
+    });
   }
 
   @override
@@ -345,4 +399,17 @@ class FsEntryLicenseBloc
     errorLog.add(error.toString());
     super.onError(error, stackTrace);
   }
+}
+
+/// A transaction ID's length, for measuring items not yet signed.
+final _unsignedTxIdStandIn = 'x' * 43;
+
+class _LicenseWrite {
+  final assertions = <DataItem>[];
+  final fileItems = <DataItem>[];
+  final licenses = <LicensesCompanion>[];
+  final files = <FileEntry>[];
+  final revisions = <FileRevisionsCompanion>[];
+
+  List<DataItem> get items => [...assertions, ...fileItems];
 }

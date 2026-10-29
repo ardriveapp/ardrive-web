@@ -8,6 +8,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 /// One file on the upload review.
@@ -15,6 +16,45 @@ typedef UploadReviewFile = ({String name, int size, String contentType});
 
 /// The amounts offered on the Add Turbo Credits step, in US dollars.
 const addCreditsPresetsUsd = [10, 25, 50, 100];
+
+/// What the review is paying for, which its notices name: an upload, or a
+/// change such as a license.
+enum ReviewCostSubject { upload, change }
+
+/// The review's notices about paying, worded for its [ReviewCostSubject].
+class ReviewCostCopy {
+  ReviewCostCopy(this._l10n, this.subject);
+
+  final AppLocalizations _l10n;
+  final ReviewCostSubject subject;
+
+  bool get _upload => subject == ReviewCostSubject.upload;
+
+  String get overFreeAllowance =>
+      _upload ? _l10n.uploadOverFreeAllowance : _l10n.changeOverFreeAllowance;
+
+  String creditsShort(String balance, String cost) => _upload
+      ? _l10n.uploadCreditsShort(balance, cost)
+      : _l10n.changeCreditsShort(balance, cost);
+
+  String get priceUnavailable =>
+      _upload ? _l10n.uploadPriceUnavailable : _l10n.changePriceUnavailable;
+
+  String needs(String cost) => _upload
+      ? _l10n.addCreditsUploadNeeds(cost)
+      : _l10n.addCreditsChangeNeeds(cost);
+
+  String enough(String left) => _upload
+      ? _l10n.addCreditsEnough(left)
+      : _l10n.addCreditsEnoughChange(left);
+
+  String get notEnough =>
+      _upload ? _l10n.addCreditsNotEnough : _l10n.addCreditsNotEnoughChange;
+
+  String addedLeft(String added, String left) => _upload
+      ? _l10n.creditsAddedLeft(added, left)
+      : _l10n.creditsAddedLeftChange(added, left);
+}
 
 /// How the upload review buys Turbo Credits: what an amount buys, paying for
 /// it by card, and waiting for the credits to arrive.
@@ -55,6 +95,9 @@ class UploadReviewDialog extends StatefulWidget {
     this.sourceWalletNotice,
     this.extras = const [],
     this.onShown,
+    this.leading = const [],
+    this.onBack,
+    this.subject = ReviewCostSubject.upload,
   });
 
   final String title;
@@ -89,6 +132,16 @@ class UploadReviewDialog extends StatefulWidget {
 
   /// The rest, below the cost: names, options.
   final List<Widget> extras;
+
+  /// Above the cost, after the files: what a change is, such as a license.
+  final List<Widget> leading;
+
+  /// When set, the secondary action is Back, to the step before, rather than
+  /// Cancel. The close button still cancels.
+  final VoidCallback? onBack;
+
+  /// What is being paid for, which the notices name.
+  final ReviewCostSubject subject;
 
   @override
   State<UploadReviewDialog> createState() => _UploadReviewDialogState();
@@ -204,6 +257,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
         funding: widget.funding,
         onBack: () => setState(() => _step = _Step.review),
         onContinue: _payByCard,
+        subject: widget.subject,
       );
     }
     return _review(context, dialogWidth);
@@ -214,7 +268,10 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
     final summary = _adding ? null : widget.summary;
 
     final List<ModalAction> actions = [
-      ModalAction.dismiss(action: widget.onCancel, title: l10n.cancel),
+      ModalAction.dismiss(
+        action: widget.onBack ?? widget.onCancel,
+        title: widget.onBack != null ? l10n.back : l10n.cancel,
+      ),
       if (summary == null)
         ModalAction(
           action: () {},
@@ -247,6 +304,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ..._fileRows(context),
+          ...widget.leading,
           const SizedBox(height: ArDriveSpacing.lg),
           if (_adding)
             _Waiting(
@@ -277,6 +335,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
 
   List<Widget> _notices(BuildContext context, UploadReviewSummary summary) {
     final l10n = appLocalizationsOf(context);
+    final copy = ReviewCostCopy(l10n, widget.subject);
     final added = _added;
     return [
       if (summary.priceUnavailable)
@@ -284,7 +343,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           width: double.infinity,
           child: ArDriveNotice(
             type: ArDriveNoticeType.error,
-            message: l10n.uploadPriceUnavailable,
+            message: copy.priceUnavailable,
             actionLabel: l10n.tryAgain,
             onAction: _refresh,
           ),
@@ -296,8 +355,8 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           child: ArDriveNotice(
             type: ArDriveNoticeType.warning,
             message: [
-              if (summary.overFreeAllowance) l10n.uploadOverFreeAllowance,
-              l10n.uploadCreditsShort(
+              if (summary.overFreeAllowance) copy.overFreeAllowance,
+              copy.creditsShort(
                 convertWinstonToLiteralString(summary.creditsBalance),
                 convertWinstonToCostString(summary.creditsCost),
               ),
@@ -317,7 +376,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           width: double.infinity,
           child: ArDriveNotice(
             type: ArDriveNoticeType.success,
-            message: l10n.creditsAddedLeft(
+            message: copy.addedLeft(
               convertWinstonToLiteralString(added),
               convertWinstonToLiteralString(summary.creditsLeftAfter),
             ),
@@ -613,6 +672,7 @@ class AddTurboCreditsStep extends StatefulWidget {
     required this.funding,
     required this.onBack,
     required this.onContinue,
+    this.subject = ReviewCostSubject.upload,
   });
 
   final double width;
@@ -620,6 +680,7 @@ class AddTurboCreditsStep extends StatefulWidget {
   final UploadCreditsFunding funding;
   final VoidCallback onBack;
   final void Function(int amountUsd) onContinue;
+  final ReviewCostSubject subject;
 
   @override
   State<AddTurboCreditsStep> createState() => _AddTurboCreditsStepState();
@@ -670,6 +731,7 @@ class _AddTurboCreditsStepState extends State<AddTurboCreditsStep> {
   @override
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
+    final copy = ReviewCostCopy(l10n, widget.subject);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final credits = _credits;
@@ -685,8 +747,8 @@ class _AddTurboCreditsStepState extends State<AddTurboCreditsStep> {
       closeLabel: l10n.back,
       titleWidget: _Heading(
         title: l10n.addTurboCreditsTitle,
-        subtitle: l10n.addCreditsUploadNeeds(
-            convertWinstonToCostString(widget.summary.creditsCost)),
+        subtitle:
+            copy.needs(convertWinstonToCostString(widget.summary.creditsCost)),
       ),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,7 +773,7 @@ class _AddTurboCreditsStepState extends State<AddTurboCreditsStep> {
               width: double.infinity,
               child: ArDriveNotice(
                 type: ArDriveNoticeType.error,
-                message: l10n.uploadPriceUnavailable,
+                message: copy.priceUnavailable,
                 actionLabel: l10n.tryAgain,
                 onAction: _load,
               ),
@@ -746,9 +808,9 @@ class _AddTurboCreditsStepState extends State<AddTurboCreditsStep> {
               const SizedBox(height: ArDriveSpacing.lg),
               Text(
                 _leftAfter(bought) >= BigInt.zero
-                    ? l10n.addCreditsEnough(
+                    ? copy.enough(
                         convertWinstonToLiteralString(_leftAfter(bought)))
-                    : l10n.addCreditsNotEnough,
+                    : copy.notEnough,
                 style: typography.paragraphSmall(color: colorTokens.textMid),
               ),
             ],

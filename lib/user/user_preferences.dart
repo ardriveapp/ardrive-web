@@ -28,6 +28,10 @@ class UserPreferences extends Equatable {
   /// that was synced and found to be empty - the drives list says so.
   final Map<String, DateTime> driveLastSyncedAt;
 
+  /// The sidebar headings folded away, by `NavSection` name. Empty, every
+  /// heading open, until the user folds one.
+  final Set<String> foldedNavSections;
+
   const UserPreferences({
     required this.currentTheme,
     required this.lastSelectedDriveId,
@@ -35,6 +39,7 @@ class UserPreferences extends Equatable {
     this.userHasHiddenDrive = false,
     this.syncAllDrivesOnLogin = false,
     this.driveLastSyncedAt = const {},
+    this.foldedNavSections = const {},
   });
 
   @override
@@ -45,6 +50,7 @@ class UserPreferences extends Equatable {
         userHasHiddenDrive,
         syncAllDrivesOnLogin,
         driveLastSyncedAt,
+        foldedNavSections,
       ];
 
   UserPreferences copyWith({
@@ -54,6 +60,7 @@ class UserPreferences extends Equatable {
     bool? userHasHiddenDrive,
     bool? syncAllDrivesOnLogin,
     Map<String, DateTime>? driveLastSyncedAt,
+    Set<String>? foldedNavSections,
   }) {
     return UserPreferences(
       currentTheme: currentTheme ?? this.currentTheme,
@@ -64,6 +71,7 @@ class UserPreferences extends Equatable {
       userHasHiddenDrive: userHasHiddenDrive ?? this.userHasHiddenDrive,
       syncAllDrivesOnLogin: syncAllDrivesOnLogin ?? this.syncAllDrivesOnLogin,
       driveLastSyncedAt: driveLastSyncedAt ?? this.driveLastSyncedAt,
+      foldedNavSections: foldedNavSections ?? this.foldedNavSections,
     );
   }
 }

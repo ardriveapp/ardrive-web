@@ -112,6 +112,14 @@ void main() {
   List<LoginEvent> added() =>
       verify(() => loginBloc.add(captureAny())).captured.cast<LoginEvent>();
 
+  /// The version is in Help, not under "Open a drive without logging in".
+  testWidgets('the landing says no version', (tester) async {
+    await pump(tester, const LandingView());
+
+    expect(find.byKey(const Key('openDriveLandingLink')), findsOneWidget);
+    expect(find.textContaining('Version'), findsNothing);
+  });
+
   group('which panel', () {
     test('the account on this device is unlocked in the panel', () {
       expect(

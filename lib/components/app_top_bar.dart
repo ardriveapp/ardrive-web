@@ -2,6 +2,8 @@ import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
+import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
@@ -977,7 +979,11 @@ class _SyncButtonMenu extends StatelessWidget {
           onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).yourDrives,
-            icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+            // The sidebar's Your drives icon: the same place, the same icon.
+            icon: ArDriveIcon(
+              icon: DriveScopeRail.iconFor(DriveScope.all),
+              color: iconColor,
+            ),
           ),
         ),
     ];
