@@ -102,6 +102,43 @@ void main() {
       expect(rowColour('b'), table.cellColor);
     });
 
+    testWidgets('shows hover on the row\'s card, selected or not',
+        (tester) async {
+      await pumpTable(tester, const [
+        _Row(0, id: 'a', size: 640),
+        _Row(1, id: 'b', size: 10),
+      ]);
+
+      Color rowColour(String id) => tester
+          .widget<ArDriveCard>(find
+              .ancestor(of: find.text(id), matching: find.byType(ArDriveCard))
+              .first)
+          .backgroundColor!;
+      final table =
+          ArDriveTheme.of(tester.element(find.text('a'))).themeData.tableTheme;
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('b')));
+      await tester.pumpAndSettle();
+
+      expect(rowColour('b'), table.hoverItemColor);
+      expect(rowColour('a'), table.cellColor);
+
+      await tester.tap(find.text('b'), kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle(kDoubleTapTimeout);
+
+      expect(rowColour('b'), table.selectedItemColor,
+          reason: 'a selected row keeps its colour under the pointer');
+
+      await mouse.moveTo(tester.getCenter(find.text('a')));
+      await tester.pumpAndSettle();
+
+      expect(rowColour('a'), table.hoverItemColor);
+      expect(rowColour('b'), table.selectedItemColor);
+    });
+
     test('a selected row looks different from the others in both themes', () {
       for (final theme in [
         ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
@@ -109,6 +146,10 @@ void main() {
       ]) {
         expect(theme.tableTheme.selectedItemColor,
             isNot(theme.tableTheme.cellColor),
+            reason: theme.name);
+        final hover = theme.tableTheme.hoverItemColor;
+        expect(hover, isNot(theme.tableTheme.cellColor), reason: theme.name);
+        expect(hover, isNot(theme.tableTheme.selectedItemColor),
             reason: theme.name);
       }
     });

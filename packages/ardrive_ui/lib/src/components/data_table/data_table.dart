@@ -1104,6 +1104,15 @@ class _ArDriveDataTableState<T extends IndexedItem>
     );
   }
 
+  /// A row's card: selected, under the pointer, or neither. The card is
+  /// opaque, so a hover painted behind it would not show. A selected row
+  /// keeps its colour under the pointer.
+  Color _rowColour(BuildContext context, {required bool selected}) {
+    final table = ArDriveTheme.of(context).themeData.tableTheme;
+    if (selected) return table.selectedItemColor;
+    return _RowHover.of(context) ? table.hoverItemColor : table.cellColor;
+  }
+
   /// The widest [ArDriveDataTable.trailingWidth] over every row, so the
   /// header and all rows reserve the same space.
   double _trailingSlotWidth() {
@@ -1152,59 +1161,61 @@ class _ArDriveDataTableState<T extends IndexedItem>
         children: [
           _multiSelectColumn(false, index: index, row: row),
           Flexible(
-            child: ArDriveCard(
-              key: ValueKey(row),
-              backgroundColor: (!_isMultiSelecting && _selectedItem == row) ||
-                      multiselect.selectedItems.contains(row)
-                  ? ArDriveTheme.of(context)
-                      .themeData
-                      .tableTheme
-                      .selectedItemColor
-                  : ArDriveTheme.of(context).themeData.tableTheme.cellColor,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-              content: Row(
-                children: [
-                  if (widget.leading != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 40,
-                          maxHeight: 40,
-                        ),
-                        child: widget.leading!.call(row),
-                      ),
-                    ),
-                  ...List.generate(
-                    columns.length,
-                    (index) {
-                      if (!columns[index].isVisible) {
-                        return const SizedBox();
-                      }
-                      return Flexible(
-                        flex: columns[columns[index].index].size,
-                        child: ArDriveClickArea(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: buildRow[columns[index].index],
+            // A Builder, so the card reads the hover of the row it is in:
+            // this method's own context is the table's.
+            child: Builder(
+              builder: (context) => ArDriveCard(
+                key: ValueKey(row),
+                backgroundColor: _rowColour(
+                  context,
+                  selected: (!_isMultiSelecting && _selectedItem == row) ||
+                      multiselect.selectedItems.contains(row),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+                content: Row(
+                  children: [
+                    if (widget.leading != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: 40,
+                            maxHeight: 40,
                           ),
+                          child: widget.leading!.call(row),
                         ),
-                      );
-                    },
-                    growable: false,
-                  ),
-                  if (widget.trailing != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20),
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: 44,
-                        width: trailingSlot,
-                        child: widget.trailing!.call(row),
                       ),
+                    ...List.generate(
+                      columns.length,
+                      (index) {
+                        if (!columns[index].isVisible) {
+                          return const SizedBox();
+                        }
+                        return Flexible(
+                          flex: columns[columns[index].index].size,
+                          child: ArDriveClickArea(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: buildRow[columns[index].index],
+                            ),
+                          ),
+                        );
+                      },
+                      growable: false,
                     ),
-                ],
+                    if (widget.trailing != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20),
+                        child: Container(
+                          alignment: Alignment.center,
+                          height: 44,
+                          width: trailingSlot,
+                          child: widget.trailing!.call(row),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1985,14 +1996,23 @@ class _HoverableRowState extends State<_HoverableRow> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
-      child: ColoredBox(
-        color: _isHovering
-            ? ArDriveTheme.of(context).themeData.colorTokens.containerL1
-            : Colors.transparent,
-        child: widget.child,
-      ),
+      child: _RowHover(hovered: _isHovering, child: widget.child),
     );
   }
+}
+
+/// Whether the pointer is on the row: the row's card paints the hover, see
+/// [_ArDriveDataTableState._rowColour].
+class _RowHover extends InheritedWidget {
+  const _RowHover({required this.hovered, required super.child});
+
+  final bool hovered;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_RowHover>()?.hovered ?? false;
+
+  @override
+  bool updateShouldNotify(_RowHover oldWidget) => hovered != oldWidget.hovered;
 }
 
 /// Tells the second click of a double-click from a click, without holding
