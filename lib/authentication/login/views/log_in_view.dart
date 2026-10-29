@@ -13,14 +13,26 @@ import 'package:flutter_svg/svg.dart';
 /// Log in, in the sign-in panel: an account made with ArDrive, by its
 /// recovery phrase or keyfile, or a browser wallet. A wallet is offered only
 /// when its extension is in this browser.
+///
+/// With [signUp] it is Sign up's choice instead, shown when a wallet was
+/// found: a new account first, then the same wallets, which log in the same
+/// way. A wallet ArDrive hasn't seen becomes a new account.
 class LogInView extends StatefulWidget {
   const LogInView({
     super.key,
     required this.isArConnectAvailable,
     required this.isMetamaskAvailable,
     required this.isSolanaAvailable,
+    this.signUp = false,
+    this.backToLogIn = false,
     this.detectSolanaWallets,
   });
+
+  /// Sign up's choice opened from Log in: Back returns to Log in.
+  final bool backToLogIn;
+
+  /// Sign up's choice rather than Log in.
+  final bool signUp;
 
   final bool isArConnectAvailable;
   final bool isMetamaskAvailable;
@@ -59,7 +71,9 @@ class _LogInViewState extends State<LogInView> {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final type = ArDriveTypographyNew.of(context);
     final loginBloc = context.read<LoginBloc>();
-    const pageView = PlausiblePageView.loginPage;
+    final signUp = widget.signUp;
+    final pageView =
+        signUp ? PlausiblePageView.signUpPage : PlausiblePageView.loginPage;
     final anyWallet = widget.isArConnectAvailable ||
         widget.isMetamaskAvailable ||
         widget.isSolanaAvailable;
@@ -77,35 +91,52 @@ class _LogInViewState extends State<LogInView> {
                 key: const Key('logInBack'),
                 text: s.back,
                 isAction: true,
-                onTap: () => loginBloc.add(const ShowLanding()),
+                onTap: () => loginBloc.add(widget.backToLogIn
+                    ? const SelectLoginFlow(existingUser: true)
+                    : const ShowLanding()),
               ),
             ),
             const SizedBox(height: ArDriveSpacing.lg),
             Text(
-              s.logIn,
+              signUp ? s.signUpTitle : s.logIn,
               style: type.heading2(
                 color: colors.textHigh,
                 fontWeight: ArFontWeight.bold,
               ),
             ),
-            const SizedBox(height: ArDriveSpacing.xs),
-            Text(
-              s.logInBody,
-              style: type.paragraphNormal(color: colors.textMid),
-            ),
+            if (!signUp) ...[
+              const SizedBox(height: ArDriveSpacing.xs),
+              Text(
+                s.logInBody,
+                style: type.paragraphNormal(color: colors.textMid),
+              ),
+            ],
             const SizedBox(height: ArDriveSpacing.lg),
-            LogInOption(
-              key: const Key('logInPhraseOrKeyfile'),
-              icon: Icon(Icons.key_outlined, size: 20, color: colors.iconMid),
-              label: s.logInPhraseOrKeyfile,
-              onPressed: () {
-                PlausibleEventTracker.trackClickImportWalletButton();
-                loginBloc.add(const EnterSeedPhrase());
-              },
-            ),
+            if (signUp)
+              LogInOption(
+                key: const Key('signUpCreateAccount'),
+                icon: ArDriveIcons.plus(size: 20, color: colors.iconMid),
+                label: s.logInCreateAccount,
+                onPressed: () {
+                  PlausibleEventTracker.trackClickCreateWallet();
+                  loginBloc.add(const CreateNewWallet());
+                },
+              )
+            else
+              LogInOption(
+                key: const Key('logInPhraseOrKeyfile'),
+                icon: Icon(Icons.key_outlined, size: 20, color: colors.iconMid),
+                label: s.logInPhraseOrKeyfile,
+                onPressed: () {
+                  PlausibleEventTracker.trackClickImportWalletButton();
+                  loginBloc.add(const EnterSeedPhrase());
+                },
+              ),
             if (anyWallet) ...[
               const SizedBox(height: ArDriveSpacing.lg),
-              LogInDivider(text: s.logInBrowserWallet),
+              LogInDivider(
+                text: signUp ? s.signUpUseYourWallet : s.logInBrowserWallet,
+              ),
               const SizedBox(height: ArDriveSpacing.lg),
               if (widget.isArConnectAvailable)
                 LogInOption(
@@ -160,31 +191,63 @@ class _LogInViewState extends State<LogInView> {
               ],
             ],
             const SizedBox(height: ArDriveSpacing.lg),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: '${s.logInNewToArDrive} '),
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.baseline,
-                    baseline: TextBaseline.alphabetic,
-                    child: ArDriveLink(
-                      key: const Key('logInCreateAccount'),
-                      text: s.logInCreateAccount,
-                      isAction: true,
-                      style: type.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
+            if (signUp)
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: '${s.signUpHaveAccount} '),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: ArDriveLink(
+                        key: const Key('signUpLogIn'),
+                        text: s.logIn,
+                        isAction: true,
+                        style: type.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                        onTap: () {
+                          PlausibleEventTracker.trackClickAlreadyHaveAWallet();
+                          PlausibleEventTracker.trackPageview(
+                              page: PlausiblePageView.loginPage);
+                          loginBloc
+                              .add(const SelectLoginFlow(existingUser: true));
+                        },
                       ),
-                      onTap: () {
-                        PlausibleEventTracker.trackClickSignUp();
-                        loginBloc.add(const CreateNewWallet());
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                textAlign: TextAlign.center,
+                style: type.paragraphNormal(color: colors.textLow),
+              )
+            else
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: '${s.logInNewToArDrive} '),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: ArDriveLink(
+                        key: const Key('logInCreateAccount'),
+                        text: s.logInCreateAccount,
+                        isAction: true,
+                        style: type.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                        onTap: () {
+                          PlausibleEventTracker.trackClickSignUp();
+                          // Sign up's choice: a wallet in the browser is
+                          // offered as a new account first.
+                          loginBloc.add(const StartSignUp(fromLogIn: true));
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+                style: type.paragraphNormal(color: colors.textLow),
               ),
-              textAlign: TextAlign.center,
-              style: type.paragraphNormal(color: colors.textLow),
-            ),
           ],
         ),
       ),
@@ -253,15 +316,30 @@ class LogInDivider extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final type = ArDriveTypographyNew.of(context);
     final rule = Expanded(child: Container(height: 1, color: colors.strokeLow));
-    return Row(
-      children: [
-        rule,
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ArDriveSpacing.sm),
-          child: Text(text, style: type.paragraphSmall(color: colors.textLow)),
-        ),
-        rule,
-      ],
+    return LayoutBuilder(
+      builder: (context, box) {
+        final maxTextWidth = box.maxWidth * 0.8;
+        return Row(
+          children: [
+            rule,
+            // Its natural width, up to most of the row: wraps rather than
+            // overflows on a narrow panel or a large text size.
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxTextWidth),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: ArDriveSpacing.sm),
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: type.paragraphSmall(color: colors.textLow),
+                ),
+              ),
+            ),
+            rule,
+          ],
+        );
+      },
     );
   }
 }

@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
       create: (context) => _loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, loginState) {
-          if (loginState is! LoginLoading && loginState is! LoginInitial) {
+          if (gettingStartedReady(loginState)) {
             setState(() {
               didGettingStartedLoadedAlready = true;
             });
@@ -510,6 +510,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
         isNewUser: loginState.isNewUser,
         showWalletCreated: loginState.showWalletCreated,
         retrying: loginState.retrying,
+        fromSignUp: loginState.fromSignUp,
         derivedEthWallet: loginState.derivedEthWallet,
         sourceWalletAddress: loginState.sourceWalletAddress);
     return;
@@ -591,6 +592,12 @@ void handleLoginState(BuildContext context, LoginState loginState) {
     );
   }
 }
+
+/// Whether the get-started link's spinner can give way to the panel: once
+/// the check for an account on this device is done. Sign up's choice is a
+/// [LoginInitial], so that state no longer means "still loading".
+@visibleForTesting
+bool gettingStartedReady(LoginState state) => state is! LoginLoading;
 
 /// Whether the sign-in panel redraws for [current]. Dialogs, loaders and
 /// transient states leave the panel as it is.
@@ -677,14 +684,24 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
       wallet: loginState.wallet,
     );
   } else if (loginState is LoginCreatingAccount) {
-    content = const CreatingAccountView(key: Key('creatingAccountView'));
+    content = CreatingAccountView(
+      key: const Key('creatingAccountView'),
+      noWalletFound: loginState.noWalletFound,
+    );
   } else if (loginState is LoginLoading || loginState is LoginLanding) {
     content = const LandingView(
       key: Key('landingPageView'),
     );
   } else {
+    // Sign up's choice, or Log in. Other states that land here keep the
+    // flow the bloc is in.
+    final signUp = loginState is LoginInitial
+        ? !loginState.existingUserFlow
+        : !loginBloc.existingUserFlow;
     content = LogInView(
       key: const Key('logInView'),
+      signUp: signUp,
+      backToLogIn: signUp && loginBloc.signUpFromLogIn,
       isArConnectAvailable: loginBloc.isArConnectAvailable,
       isMetamaskAvailable: loginBloc.isMetamaskAvailable,
       isSolanaAvailable: loginBloc.isSolanaAvailable,

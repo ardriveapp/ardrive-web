@@ -5585,5 +5585,13 @@
   "welcomeBackWrongPassword": "Invalid password. Please try again.",
   "@welcomeBackWrongPassword": {"description": "The password didn't unlock the account."},
   "welcomeBackDifferentAccount": "Use a different account",
-  "@welcomeBackDifferentAccount": {"description": "Forgets this account on this device, after a confirmation."}
+  "@welcomeBackDifferentAccount": {"description": "Forgets this account on this device, after a confirmation."},
+  "signUpTitle": "Create your account",
+  "@signUpTitle": {"description": "Title of Sign up's choice between a new account and a wallet."},
+  "signUpUseYourWallet": "or use a wallet you already have",
+  "@signUpUseYourWallet": {"description": "Divider above the browser wallets on Sign up's choice."},
+  "signUpHaveAccount": "Already have an account?",
+  "@signUpHaveAccount": {"description": "Before the Log in link on Sign up's choice."},
+  "creatingAccountNoWallet": "No wallet found in this browser, so we're making one for you.",
+  "@creatingAccountNoWallet": {"description": "Under Creating your account when Sign up found no browser wallet."}
 }
