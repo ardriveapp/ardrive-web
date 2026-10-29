@@ -190,11 +190,17 @@ class _LoginPageState extends State<LoginPage> {
               return;
             }
 
+            final loginBloc = context.read<LoginBloc>();
             showErrorDialog(
               context: context,
               title: appLocalizationsOf(context).loginFailed,
               message: appLocalizationsOf(context).pleaseTryAgain,
-            );
+            ).then((_) {
+              // A new account goes back to its password step, same wallet.
+              if (loginBloc.hasSignUpToRetry) {
+                loginBloc.add(const RetrySignUpPassword());
+              }
+            });
           } else if (loginState is LoginUnknownFailure) {
             showErrorDialog(
               context: context,

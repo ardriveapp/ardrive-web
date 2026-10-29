@@ -95,6 +95,12 @@ class ForgetWallet extends LoginEvent {
   const ForgetWallet();
 }
 
+/// Asks again for the password of a new account whose password step failed,
+/// for the same wallet: making another would take a minute.
+class RetrySignUpPassword extends LoginEvent {
+  const RetrySignUpPassword();
+}
+
 class FinishOnboarding extends LoginEvent {
   const FinishOnboarding({required this.wallet});
 

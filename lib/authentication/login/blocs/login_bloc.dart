@@ -70,6 +70,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ProfileType? profileType;
 
   bool usingSeedphrase = false;
+
+  /// A new account's password step that failed, kept to be asked again.
+  CreateNewPassword? _signUpToRetry;
+
+  /// Whether a new account's password step failed and can be asked again.
+  bool get hasSignUpToRetry => _signUpToRetry != null;
   bool existingUserFlow = true;
 
   LoginBloc({
@@ -126,6 +132,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleForgetWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
       await _handleFinishOnboardingEvent(event, emit);
+    } else if (event is RetrySignUpPassword) {
+      final retry = _signUpToRetry;
+      _signUpToRetry = null;
+      emit(retry ?? const LoginLanding());
     } else if (event is UnLockWithBiometrics) {
       await _handleUnlockUserWithBiometricsEvent(event, emit);
     } else if (event is AddWalletFromSeedPhraseLogin) {
@@ -520,13 +530,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       usingSeedphrase = false;
       // Close any open dialogs (loader, blocking message)
       emit(LoginCloseBlockingDialog());
-      emit(LoginFailure(e));
-      // A new account's panel still says "Creating your account", with
-      // nothing to press; the landing view lets them try again.
+      // A new account's wallet took a minute to make. Kept, so once the
+      // error is read the same password step opens again for it.
       if (previousState is CreateNewPassword &&
           previousState.mnemonic != null) {
-        emit(const LoginLanding());
+        _signUpToRetry = previousState;
       }
+      emit(LoginFailure(e));
     }
   }
 
@@ -713,6 +723,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     usingSeedphrase = false;
     _sourceWalletAddress = null;
+    _signUpToRetry = null;
     await _solanaProviderService.disconnect();
 
     emit(const LoginLanding());
