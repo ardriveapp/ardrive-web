@@ -8,7 +8,10 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bip39/bip39.dart' as bip39;
@@ -25,6 +28,9 @@ import '../../../test_utils/utils.dart';
 
 class _MockLoginBloc extends MockBloc<LoginEvent, LoginState>
     implements LoginBloc {}
+
+class _MockUserPreferencesRepository extends Mock
+    implements UserPreferencesRepository {}
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
@@ -274,6 +280,62 @@ void main() {
       await tester.tap(find.byKey(const Key('phraseBack')));
       expect(added().single, const SelectLoginFlow(existingUser: true));
     });
+  });
+
+  group('the phrase panel on a narrow phone with the keyboard up', () {
+    for (final size in const [Size(360, 640), Size(375, 667)]) {
+      testWidgets('fits at ${size.width.toInt()} wide, error showing',
+          (tester) async {
+        final preferences = _MockUserPreferencesRepository();
+        when(() => preferences.watch())
+            .thenAnswer((_) => const Stream<UserPreferences>.empty());
+        when(() => preferences.currentPreferences).thenReturn(null);
+        whenListen(loginBloc, const Stream<LoginState>.empty(),
+            initialState: const LoginEnterRecoveryPhrase());
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = size;
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MultiBlocProvider(
+            providers: [
+              BlocProvider<LoginBloc>.value(value: loginBloc),
+              BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+              RepositoryProvider<UserPreferencesRepository>.value(
+                  value: preferences),
+              BlocProvider<ThemeSwitcherBloc>(
+                create: (_) =>
+                    ThemeSwitcherBloc(userPreferencesRepository: preferences),
+              ),
+            ],
+            child: ArDriveApp(
+              builder: (context) => MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: const LoginPageScaffold(
+                    loginState: LoginEnterRecoveryPhrase()),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+
+        final continueButton = find.byKey(const Key('phraseContinue'));
+        await tester.ensureVisible(continueButton);
+        await tester.tap(continueButton);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull,
+            reason: 'the panel must scroll, not overflow');
+        expect(find.text('Enter your 12 words.'), findsOneWidget);
+
+        final keyfile = find.byKey(const Key('phraseChooseKeyfile'));
+        await tester.ensureVisible(keyfile);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(keyfile).bottom,
+            lessThanOrEqualTo(size.height - 300));
+      });
+    }
   });
 
   group('Approve in your wallet', () {

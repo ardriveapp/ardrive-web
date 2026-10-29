@@ -516,11 +516,27 @@ class _PhoneView extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       child: Stack(
                         children: [
-                          Center(
-                            child: _buildContent(
-                              context,
-                              loginState: loginState,
-                              globalKey: globalKey,
+                          // Scrolls when a step is taller than the panel,
+                          // as on a narrow phone with the keyboard up, and
+                          // keeps clear of the buttons in the corner.
+                          Positioned.fill(
+                            child: LayoutBuilder(
+                              builder: (context, box) => SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 40),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: math.max(0, box.maxHeight - 80),
+                                  ),
+                                  child: Center(
+                                    child: _buildContent(
+                                      context,
+                                      loginState: loginState,
+                                      globalKey: globalKey,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                           Positioned(
