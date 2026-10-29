@@ -304,12 +304,14 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
   }
 }
 
-/// Whether small files upload free here: Turbo is on and gives some free.
+/// Whether small files upload free here: Turbo has said it gives some free.
+/// Its configured fallback isn't enough; Turbo may be away or have no free
+/// tier.
 bool _offersFreeUploads(BuildContext context) {
-  final turboUploadService = context.read<TurboUploadService>();
+  final reported =
+      context.read<TurboUploadService>().reportedMaxFreeItemSizeBytes;
 
-  return turboUploadService is! DontUseUploadService &&
-      turboUploadService.maxFreeItemSizeBytes > 0;
+  return reported != null && reported > 0;
 }
 
 class _ExistingUserEmptyRootFolder extends StatelessWidget {

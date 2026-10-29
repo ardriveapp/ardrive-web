@@ -142,6 +142,10 @@ class TurboUploadService {
 
   int get maxFreeItemSizeBytes => _serverMaxItemBytes ?? allowedDataItemSize;
 
+  /// The free item size Turbo itself reported, or null when it has not
+  /// answered: a promise of free uploads should rest on this, not on config.
+  int? get reportedMaxFreeItemSizeBytes => _serverMaxItemBytes;
+
   Future<void> refreshMaxItemBytes() async {
     try {
       final response = await httpClient.get(url: '$turboUploadUri/v1/info');
@@ -249,6 +253,9 @@ class DontUseUploadService implements TurboUploadService {
 
   @override
   int get maxFreeItemSizeBytes => throw UnimplementedError();
+
+  @override
+  int? get reportedMaxFreeItemSizeBytes => null;
 
   @override
   Future<void> refreshMaxItemBytes() async {}

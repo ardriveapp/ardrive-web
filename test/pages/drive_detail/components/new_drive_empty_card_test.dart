@@ -67,6 +67,7 @@ void main() {
 
     // What Turbo reports today: 105 KiB.
     when(() => turbo.maxFreeItemSizeBytes).thenReturn(107520);
+    when(() => turbo.reportedMaxFreeItemSizeBytes).thenReturn(107520);
 
     final appConfig = _MockAppConfig();
     when(() => appConfig.allowedDataItemSizeForTurbo).thenReturn(100000);
@@ -265,8 +266,18 @@ void main() {
       expect(find.textContaining('upload free'), findsNothing);
     });
 
+    testWidgets('makes no free promise when Turbo has not answered',
+        (tester) async {
+      when(() => turboUploadService.reportedMaxFreeItemSizeBytes)
+          .thenReturn(null);
+
+      await pumpAt(tester, const Size(1280, 800), desktop: true);
+
+      expect(find.textContaining('upload free'), findsNothing);
+    });
+
     testWidgets('makes no free promise when nothing is free', (tester) async {
-      when(() => turboUploadService.maxFreeItemSizeBytes).thenReturn(0);
+      when(() => turboUploadService.reportedMaxFreeItemSizeBytes).thenReturn(0);
 
       await pumpAt(tester, const Size(1280, 800), desktop: true);
 

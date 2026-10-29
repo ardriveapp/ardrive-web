@@ -44,7 +44,8 @@ void main() {
     );
   });
 
-  Future<void> pump(WidgetTester tester, CreateFirstDrive create) async {
+  Future<void> pump(WidgetTester tester, CreateFirstDrive create,
+      {List<Duration> retryDelays = const []}) async {
     await tester.pumpWidget(
       ArDriveApp(
         builder: (context) => MaterialApp(
@@ -57,6 +58,7 @@ void main() {
                 noDrives: (_) => const Text('Getting started'),
                 firstDrive: firstDrive,
                 createFirstDrive: create,
+                retryDelays: retryDelays,
               ),
             ),
           ),
@@ -66,9 +68,14 @@ void main() {
     await tester.pump();
   }
 
+  setUp(() {
+    when(() => firstDrive.done()).thenAnswer((_) async {});
+    when(() => firstDrive.release(any())).thenAnswer((_) async {});
+  });
+
   testWidgets('a new account has My files made for it', (tester) async {
     when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
-    final making = Completer<bool>();
+    final making = Completer<FirstDriveOutcome>();
     var asked = 0;
 
     await pump(tester, (_) {
@@ -78,24 +85,77 @@ void main() {
 
     expect(asked, 1);
     expect(find.text('Setting up My files'), findsOneWidget);
-    expect(find.text('Getting started'), findsNothing);
     expect(find.byType(SyncLoadingIndicator), findsOneWidget);
+    expect(find.text('Getting started'), findsNothing);
 
-    // Made: the explorer opens it, so this page waits to be replaced.
-    making.complete(true);
+    // Made: selecting it opens it, so this page waits to be replaced.
+    making.complete(FirstDriveOutcome.made);
     await tester.pump();
     expect(find.text('Getting started'), findsNothing);
+    verify(() => firstDrive.done()).called(1);
   });
 
-  testWidgets('falls back to Getting started when the drive is not made',
+  testWidgets('tries again while Turbo is away, then makes it', (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+    final outcomes = [
+      FirstDriveOutcome.failed,
+      FirstDriveOutcome.failed,
+      FirstDriveOutcome.made,
+    ];
+    var asked = 0;
+
+    await pump(tester, (_) async => outcomes[asked++],
+        retryDelays: const [Duration(seconds: 3), Duration(seconds: 10)]);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 10));
+
+    expect(asked, 3);
+    expect(find.text('Getting started'), findsNothing);
+    verify(() => firstDrive.done()).called(1);
+    verifyNever(() => firstDrive.release(any()));
+  });
+
+  testWidgets('keeps the request for later when Turbo stays away',
       (tester) async {
     when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+    var asked = 0;
 
-    await pump(tester, (_) async => false);
+    await pump(tester, (_) async {
+      asked++;
+      return FirstDriveOutcome.failed;
+    }, retryDelays: const [Duration(seconds: 3)]);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+
+    expect(asked, 2);
+    expect(find.text('Getting started'), findsOneWidget);
+    verify(() => firstDrive.release('new-wallet')).called(1);
+    verifyNever(() => firstDrive.done());
+  });
+
+  testWidgets('drops the request when it needs credits', (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+    var asked = 0;
+
+    await pump(tester, (_) async {
+      asked++;
+      return FirstDriveOutcome.needsCredits;
+    }, retryDelays: const [Duration(seconds: 3)]);
+    await tester.pump();
+
+    expect(asked, 1, reason: 'trying again would not change the answer');
+    expect(find.text('Getting started'), findsOneWidget);
+    verify(() => firstDrive.done()).called(1);
+  });
+
+  testWidgets('treats a throw as worth trying again later', (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+
+    await pump(tester, (_) async => throw StateError('no profile'));
     await tester.pump();
 
     expect(find.text('Getting started'), findsOneWidget);
-    expect(find.text('Setting up My files'), findsNothing);
+    verify(() => firstDrive.release('new-wallet')).called(1);
   });
 
   testWidgets('anyone else with no drives sees Getting started',
@@ -105,20 +165,10 @@ void main() {
 
     await pump(tester, (_) async {
       asked++;
-      return true;
+      return FirstDriveOutcome.made;
     });
 
     expect(asked, 0);
-    expect(find.text('Getting started'), findsOneWidget);
-  });
-
-  testWidgets('falls back to Getting started when making the drive throws',
-      (tester) async {
-    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
-
-    await pump(tester, (_) async => throw StateError('no profile'));
-    await tester.pump();
-
     expect(find.text('Getting started'), findsOneWidget);
   });
 }
