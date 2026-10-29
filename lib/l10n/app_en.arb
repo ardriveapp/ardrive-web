@@ -2167,6 +2167,18 @@
   "@moreInfo": {
     "description": "More info"
   },
+  "open": "Open",
+  "@open": {
+    "description": "Menu item that opens a folder"
+  },
+  "addLicense": "Add license",
+  "@addLicense": {
+    "description": "Menu item that licenses a file or the files in a folder"
+  },
+  "updateLicense": "Update license",
+  "@updateLicense": {
+    "description": "Menu item that changes a licensed file's license"
+  },
   "move": "Move",
   "@move": {
     "description": "Action of moving certain file or folder"

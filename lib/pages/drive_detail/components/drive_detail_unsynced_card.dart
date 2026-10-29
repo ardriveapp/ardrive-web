@@ -44,97 +44,26 @@ class UnsyncedDriveMenu extends StatelessWidget {
     BuildContext context, {
     required bool isSyncing,
   }) {
-    return [
-      // Sync This Drive
-      ArDriveDropdownItem(
-        // One sync at a time: `SyncCubit` refuses a second one outright, so a
-        // press taken while one runs starts nothing at all - and
-        // `syncCurrentDrive` used to come back from that refusal and report
-        // that the sync had looked and found nothing. `isDisabled` as well as a
-        // null callback, because [ArDriveDropdownItemTile] picks its colours off
-        // the flag alone: without it the item looks live and does nothing, which
-        // is the same silence one layer down.
-        onClick: isSyncing
-            ? null
-            : () {
-                context.read<DriveDetailCubit>().syncCurrentDrive();
-              },
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).syncThisDrive,
-          isDisabled: isSyncing,
-          icon: ArDriveIcons.refresh(size: defaultIconSize),
-        ),
-      ),
-      // Hide (only for owner)
-      if (isOwner)
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToToggleHideState(
-              context,
-              item: DriveDataTableItemMapper.fromDrive(
-                drive,
-                (_) => null,
-                0,
-                isOwner,
+    // The drive's one menu, for a drive this device hasn't synced: only what
+    // doesn't need its contents. Sync goes through the explorer's cubit, which
+    // shows the drive once it lands.
+    return driveMenuItems(
+      context,
+      drive: drive,
+      isOwner: isOwner,
+      isSynced: false,
+      isSyncing: isSyncing,
+      onSync: () => context.read<DriveDetailCubit>().syncCurrentDrive(),
+      onMoreInfo: () =>
+          context.read<DriveDetailCubit>().selectDriveInfoForUnsyncedDrive(
+                DriveDataTableItemMapper.fromDrive(
+                  drive,
+                  (_) => null,
+                  0,
+                  isOwner,
+                ),
               ),
-            );
-          },
-          content: ArDriveDropdownItemTile(
-            name: drive.isHidden
-                ? appLocalizationsOf(context).unhide
-                : appLocalizationsOf(context).hide,
-            icon: drive.isHidden
-                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
-                : ArDriveIcons.eyeClosed(size: defaultIconSize),
-          ),
-        ),
-      // Share Drive
-      ArDriveDropdownItem(
-        onClick: () {
-          promptToShareDrive(
-            context: context,
-            drive: drive,
-          );
-        },
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).shareDrive,
-          icon: ArDriveIcons.share(size: defaultIconSize),
-        ),
-      ),
-      // More Info
-      ArDriveDropdownItem(
-        onClick: () {
-          final bloc = context.read<DriveDetailCubit>();
-          bloc.selectDriveInfoForUnsyncedDrive(
-            DriveDataTableItemMapper.fromDrive(
-              drive,
-              (_) => null,
-              0,
-              isOwner,
-            ),
-          );
-        },
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).moreInfo,
-          icon: ArDriveIcons.info(size: defaultIconSize),
-        ),
-      ),
-      // Detach Drive (for non-owners who are logged in)
-      if (!isOwner && context.read<ProfileCubit>().state is ProfileLoggedIn)
-        ArDriveDropdownItem(
-          onClick: () {
-            showDetachDriveDialog(
-              context: context,
-              driveID: drive.id,
-              driveName: drive.name,
-            );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).detachDrive,
-            icon: ArDriveIcons.detach(),
-          ),
-        ),
-    ];
+    );
   }
 }
 

@@ -117,7 +117,7 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | A text field | `ArDriveTextFieldNew` | |
 | A form field that picks one of a list | `ArDriveSelectField` with `ArDriveChoice`s; in a reactive form, the app's `ReactiveArDriveSelectField` | A text field's look and height, label above. Opens the choices under it, at least as wide, the current one ticked |
 | A button that picks one value from a menu | `ArDriveChoiceMenu` with `ArDriveChoice`s, its button an `ArDriveChoiceButton` | For a button that isn't a field: the rows-per-page picker, the crypto token, the storage unit, the note editor's headings |
-| A menu of actions on a button or row | `ArDriveDropdown` with `ArDriveDropdownItem`s, each an `ArDriveDropdownItemTile` | Opens below its button, or above it in the lower half of the screen |
+| A menu of actions on a button or row | `ArDriveDropdown` with `ArDriveDropdownItem`s, each an `ArDriveDropdownItemTile` | Opens below its button, or above it in the lower half of the screen. `ArDriveDropdownItem.divider()` separates groups; it takes no tap and isn't announced. In the app, a drive's, folder's or file's menu comes from `lib/pages/drive_detail/components/item_menus.dart`, the same on every surface |
 | A menu with menus inside it | `ArDriveSubmenu` with `ArDriveSubmenuItem`s | An item with `children` opens its menu beside it. The New menu |
 | A menu of your own widgets, opened from code | `ArDriveMenuAnchor` with an `ArDriveMenuController` | `MenuAnchor`'s shape: `open()`, `close()`, `menuChildren`. The video players' speed menus |
 | Anything else that floats over the page from a button | `ArDriveOverlay` | `anchor` places it; `closeOnBarrierTap` and `closeOnEscape` |

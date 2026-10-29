@@ -1,7 +1,4 @@
-import 'package:ardrive/download/multiple_file_download_modal.dart';
-import 'package:ardrive/publication/presentation/publish_to_web.dart';
-import 'package:ardrive/components/csv_export_dialog.dart';
-import 'package:ardrive/components/create_snapshot_dialog.dart';
+import 'package:ardrive/pages/drive_detail/components/item_menus.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:provider/provider.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -10,9 +7,7 @@ import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/drive_share_dialog.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
-import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -46,14 +41,15 @@ const double _menuIconSize = 20;
 /// when it reports the drive loaded, which is where a side panel belongs and
 /// where its Activity and Snapshots tabs work.
 ///
-/// An action that does not apply is absent rather than disabled: renaming and
-/// hiding belong to the owner, detaching belongs to somebody else's drive, and
-/// hide and unhide are one item that says which of the two it is.
+/// The items, their order and when each appears are the drive's one menu,
+/// [driveMenuItems], the same as in the explorer. An action that does not
+/// apply is absent rather than disabled.
 class DriveActionsMenu extends StatelessWidget {
   const DriveActionsMenu({
     super.key,
     required this.drive,
     required this.isOwner,
+    required this.isSynced,
   });
 
   /// The drive as stored, not the row's view of it: [promptToShareDrive] and
@@ -62,6 +58,10 @@ class DriveActionsMenu extends StatelessWidget {
 
   /// Whether this wallet owns the drive, which decides three of the items.
   final bool isOwner;
+
+  /// Whether this device has the drive's contents. Until it does, the menu
+  /// leaves out what reads them, as the drive's other menus do.
+  final bool isSynced;
 
   @override
   Widget build(BuildContext context) {
@@ -86,143 +86,20 @@ class DriveActionsMenu extends StatelessWidget {
         // screen's left edge and takes every item's icon with it.
         shiftToWithinBound: AxisFlag(x: true),
       ),
-      items: [
-        ArDriveDropdownItem(
-          // Nothing at all rather than a call that returns immediately.
-          onClick: isSyncing
-              ? null
-              : () {
-                  // Somebody pressed Sync, so it is theirs: the history has
-                  // to say Manual, and the result is theirs to be told about.
-                  // It ran as `background` to keep the old blocking modal off
-                  // the list - but that modal is gone, and the summary that
-                  // replaced it neither scrims nor takes a click, so the
-                  // reason no longer holds and the record was simply wrong.
-                  context.read<SyncCubit>().startSyncForDrive(
-                        driveId: drive.id,
-                      );
-                },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).syncThisDrive,
-            isDisabled: isSyncing,
-            icon: ArDriveIcons.refresh(size: _menuIconSize),
-          ),
-        ),
-        if (isOwner)
-          ArDriveDropdownItem(
-            onClick: () => promptToRenameDrive(
-              context,
-              driveId: drive.id,
-              driveName: drive.name,
-            ),
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).renameDrive,
-              icon: ArDriveIcons.edit(size: _menuIconSize),
-            ),
-          ),
-        ArDriveDropdownItem(
-          onClick: () {
-            // Order matters: the request has to be standing before the
-            // selection reaches the explorer, or the drive loads with nothing
-            // asked of it.
-            context.read<AppRouterDelegate>().requestDriveInfo(drive.id);
-            context.read<DrivesCubit>().selectDrive(drive.id);
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).moreInfo,
-            icon: ArDriveIcons.info(size: _menuIconSize),
-          ),
-        ),
-        ArDriveDropdownItem(
-          onClick: () => promptToShareDrive(context: context, drive: drive),
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).shareDrive,
-            icon: ArDriveIcons.share(size: _menuIconSize),
-          ),
-        ),
-        if (offersPublishToWeb(context, drive))
-          ArDriveDropdownItem(
-            onClick: () => openPublishToWeb(context, drive: drive),
-            content: PublishToWebMenuItem(
-              drive: drive,
-              iconSize: _menuIconSize,
-            ),
-          ),
-        // The rest of what a drive's own menu offers. Every one of these is
-        // drive-wide, so a reader who can do it from inside the drive should be
-        // able to do it from the list of drives - and having to open a drive to
-        // act on it is the thing this page exists to remove.
-        if (isOwner)
-          ArDriveDropdownItem(
-            onClick: () => promptToCreateSnapshot(context, drive),
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).createSnapshot,
-              icon: ArDriveIcons.iconCreateSnapshot(size: _menuIconSize),
-            ),
-          ),
-        ArDriveDropdownItem(
-          onClick: () => promptToExportCSVData(
-            context: context,
-            driveId: drive.id,
-          ),
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).exportDriveContents,
-            icon: ArDriveIcons.download(size: _menuIconSize),
-          ),
-        ),
-        ArDriveDropdownItem(
-          onClick: () {
-            final item = DriveDataTableItemMapper.fromDrive(
-              drive,
-              (_) => null,
-              0,
-              isOwner,
-            );
-
-            promptToDownloadMultipleFiles(
-              context,
-              selectedItems: [item],
-              zipName: item.name,
-            );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).download,
-            icon: ArDriveIcons.arrowDownload(size: _menuIconSize),
-          ),
-        ),
-        if (isOwner)
-          ArDriveDropdownItem(
-            onClick: () => promptToToggleHideState(
-              context,
-              item: DriveDataTableItemMapper.fromDrive(
-                drive,
-                (_) => null,
-                0,
-                isOwner,
-              ),
-            ),
-            content: ArDriveDropdownItemTile(
-              name: drive.isHidden
-                  ? appLocalizationsOf(context).unhide
-                  : appLocalizationsOf(context).hide,
-              icon: drive.isHidden
-                  ? ArDriveIcons.eyeOpen(size: _menuIconSize)
-                  : ArDriveIcons.eyeClosed(size: _menuIconSize),
-            ),
-          ),
-        if (!isOwner)
-          ArDriveDropdownItem(
-            onClick: () => showDetachDriveDialog(
-              context: context,
-              driveID: drive.id,
-              driveName: drive.name,
-            ),
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).detachDriveAction,
-              icon: ArDriveIcons.detach(size: _menuIconSize),
-            ),
-          ),
-      ],
+      items: driveMenuItems(
+        context,
+        drive: drive,
+        isOwner: isOwner,
+        isSynced: isSynced,
+        isSyncing: isSyncing,
+        onMoreInfo: () {
+          // Order matters: the request has to be standing before the
+          // selection reaches the explorer, or the drive loads with nothing
+          // asked of it.
+          context.read<AppRouterDelegate>().requestDriveInfo(drive.id);
+          context.read<DrivesCubit>().selectDrive(drive.id);
+        },
+      ),
       // The name once. The tooltip carries its message to a screen reader as
       // well, so with a label of its own inside it the button was announced
       // as "Show menu Show menu".

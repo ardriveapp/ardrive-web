@@ -202,7 +202,13 @@ void main() {
         find.byType(ArDriveDropdown),
       );
 
-      return menu.items.first;
+      // Found by its label, not its place: the drive's one menu puts sharing
+      // first.
+      return menu.items.firstWhere(
+        (item) =>
+            item.content is ArDriveDropdownItemTile &&
+            (item.content as ArDriveDropdownItemTile).name == 'Sync this drive',
+      );
     }
 
     testWidgets('live when nothing is running', (tester) async {

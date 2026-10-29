@@ -170,6 +170,11 @@ class _DrivesListChrome extends StatelessWidget {
   /// take the record itself. Ownership is read the way this page already reads
   /// it: a drive the drives cubit lists as shared is one this wallet does not
   /// own.
+  /// Whether this device has the drive's contents: its history was read, or
+  /// it holds files of it already (a drive made and uploaded to here).
+  static bool _isSynced(DriveListItem drive) =>
+      drive.hasBeenWalked || (drive.fileCount ?? 0) > 0;
+
   Widget? _menuFor(DrivesState drivesState, DriveListItem drive) {
     if (drivesState is! DrivesLoadSuccess) {
       return null;
@@ -177,13 +182,21 @@ class _DrivesListChrome extends StatelessWidget {
 
     for (final owned in drivesState.userDrives) {
       if (owned.id == drive.id) {
-        return DriveActionsMenu(drive: owned, isOwner: true);
+        return DriveActionsMenu(
+          drive: owned,
+          isOwner: true,
+          isSynced: _isSynced(drive),
+        );
       }
     }
 
     for (final shared in drivesState.sharedDrives) {
       if (shared.id == drive.id) {
-        return DriveActionsMenu(drive: shared, isOwner: false);
+        return DriveActionsMenu(
+          drive: shared,
+          isOwner: false,
+          isSynced: _isSynced(drive),
+        );
       }
     }
 
@@ -229,7 +242,6 @@ class _DrivesListChrome extends StatelessWidget {
                 noDrives: (_) => const _DrivesListEmpty(),
               ),
             );
-
 
         // The list pages' shared chrome: on desktop a click on a drive opens
         // its details on the right, as a click on a row does in the
