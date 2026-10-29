@@ -61,25 +61,38 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
         reverseDuration: _fadeOutDuration,
         vsync: this,
       )..addStatusListener(_onFadeStatus);
+  late final _fadeCurve = CurvedAnimation(
+    parent: _fade,
+    curve: Curves.fastOutSlowIn,
+  );
   LongPressGestureRecognizer? _longPress;
   Timer? _timer;
 
-  @override
-  void initState() {
-    super.initState();
-    // Told of every pointer, after the widgets it lands on, so a click
-    // anywhere puts the tooltip away.
-    GestureBinding.instance.pointerRouter.addGlobalRoute(_onAnyPointer);
+  /// Whether [_onAnyPointer] is told of every pointer, so a click anywhere
+  /// puts the label away. Only while the label is up: a long table has a
+  /// tooltip on every row, and each would otherwise hear every event.
+  bool _hearsEveryPointer = false;
+
+  void _hearEveryPointer(bool hear) {
+    if (hear == _hearsEveryPointer) return;
+    _hearsEveryPointer = hear;
+    final router = GestureBinding.instance.pointerRouter;
+    if (hear) {
+      router.addGlobalRoute(_onAnyPointer);
+    } else {
+      router.removeGlobalRoute(_onAnyPointer);
+    }
   }
 
   @override
   void dispose() {
-    GestureBinding.instance.pointerRouter.removeGlobalRoute(_onAnyPointer);
+    _hearEveryPointer(false);
     _shown.remove(this);
     _timer?.cancel();
     _longPress
       ?..onLongPressCancel = null
       ..dispose();
+    if (_backingFade != null) _fadeCurve.dispose();
     _backingFade?.dispose();
     super.dispose();
   }
@@ -87,6 +100,7 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
   void _onFadeStatus(AnimationStatus status) {
     if (status == AnimationStatus.dismissed) {
       _shown.remove(this);
+      _hearEveryPointer(false);
       _overlay.hide();
     }
   }
@@ -100,6 +114,7 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
       if (other != this) other._hide();
     }
     _shown.add(this);
+    _hearEveryPointer(true);
 
     if (!_overlay.isShowing) {
       _overlay.show();
@@ -156,12 +171,18 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
 
     // Material's tooltip still names [child] for a screen reader, and is
     // what `find.byTooltip` finds. Only its own label, which takes clicks, is
-    // switched off; the one drawn here stands in for it.
+    // switched off; the one drawn here stands in for it. The switch is put
+    // back as it was for [child], so the tooltips inside it still show: a
+    // truncated name in a tooltip inside a button that has one.
+    final visible = TooltipVisibility.of(context);
     final child = TooltipVisibility(
       visible: false,
-      child: Tooltip(message: widget.message, child: widget.child),
+      child: Tooltip(
+        message: widget.message,
+        child: TooltipVisibility(visible: visible, child: widget.child),
+      ),
     );
-    if (!TooltipVisibility.of(context)) {
+    if (!visible) {
       return child;
     }
 
@@ -209,10 +230,7 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
           child: CustomSingleChildLayout(
             delegate: _LabelPosition(target: target),
             child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: _fade,
-                curve: Curves.fastOutSlowIn,
-              ),
+              opacity: _fadeCurve,
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: isDesktop ? 24 : 32),
                 child: DefaultTextStyle(

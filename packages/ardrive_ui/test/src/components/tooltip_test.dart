@@ -180,4 +180,65 @@ void main() {
       findsNothing,
     );
   });
+
+  // Material's own tooltip is kept around the child with its label switched
+  // off, and that switch must not reach the tooltips inside the child: the
+  // profile chip's truncated name sits in a tooltip inside another.
+  group('a tooltip inside one still shows', () {
+    Future<void> pumpNested(WidgetTester tester, Widget inner) =>
+        tester.pumpWidget(
+          ArDriveTheme(
+            themeData: lightTheme(),
+            child: MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: ArDriveTooltip(message: 'outer', child: inner),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets("Material's, on hover", (tester) async {
+      await pumpNested(
+        tester,
+        const Tooltip(message: 'inner', child: Text('name')),
+      );
+      final pointer = await mouse(tester);
+
+      await pointer.moveTo(tester.getCenter(find.text('name')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('inner'), findsOneWidget);
+    });
+
+    testWidgets("an icon button's, on a long press", (tester) async {
+      await pumpNested(
+        tester,
+        IconButton(
+          tooltip: 'inner',
+          onPressed: () {},
+          icon: const Icon(Icons.close),
+        ),
+      );
+
+      await tester.longPress(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('inner'), findsOneWidget);
+    });
+
+    testWidgets('our own, on hover', (tester) async {
+      await pumpNested(
+        tester,
+        const ArDriveTooltip(message: 'inner', child: Text('name')),
+      );
+      final pointer = await mouse(tester);
+
+      await pointer.moveTo(tester.getCenter(find.text('name')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('inner'), findsOneWidget);
+    });
+  });
 }
