@@ -1162,69 +1162,73 @@ class _ArDriveDataTableState<T extends IndexedItem>
         }
       },
       behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          _multiSelectColumn(false, index: index, row: row),
-          Flexible(
-            // A Builder, so the card reads the hover of the row it is in:
-            // this method's own context is the table's.
-            child: Builder(
-              builder: (context) => ArDriveCard(
-                key: ValueKey(row),
-                backgroundColor: _rowColour(
-                  context,
-                  selected: (!_isMultiSelecting && _selectedItem == row) ||
-                      multiselect.selectedItems.contains(row),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-                content: Row(
-                  children: [
-                    if (widget.leading != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: 40,
-                            maxHeight: 40,
-                          ),
-                          child: widget.leading!.call(row),
-                        ),
-                      ),
-                    ...List.generate(
-                      columns.length,
-                      (index) {
-                        if (!columns[index].isVisible) {
-                          return const SizedBox();
-                        }
-                        return Flexible(
-                          flex: columns[columns[index].index].size,
-                          child: ArDriveClickArea(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: buildRow[columns[index].index],
+      // The row's long press starts selecting; a tooltip in a cell leaves it
+      // to the row.
+      child: ArDriveTooltipLongPressYields(
+        child: Row(
+          children: [
+            _multiSelectColumn(false, index: index, row: row),
+            Flexible(
+              // A Builder, so the card reads the hover of the row it is in:
+              // this method's own context is the table's.
+              child: Builder(
+                builder: (context) => ArDriveCard(
+                  key: ValueKey(row),
+                  backgroundColor: _rowColour(
+                    context,
+                    selected: (!_isMultiSelecting && _selectedItem == row) ||
+                        multiselect.selectedItems.contains(row),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+                  content: Row(
+                    children: [
+                      if (widget.leading != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 40,
+                              maxHeight: 40,
                             ),
+                            child: widget.leading!.call(row),
                           ),
-                        );
-                      },
-                      growable: false,
-                    ),
-                    if (widget.trailing != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 20),
-                        child: Container(
-                          alignment: Alignment.center,
-                          height: 44,
-                          width: trailingSlot,
-                          child: widget.trailing!.call(row),
                         ),
+                      ...List.generate(
+                        columns.length,
+                        (index) {
+                          if (!columns[index].isVisible) {
+                            return const SizedBox();
+                          }
+                          return Flexible(
+                            flex: columns[columns[index].index].size,
+                            child: ArDriveClickArea(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: buildRow[columns[index].index],
+                              ),
+                            ),
+                          );
+                        },
+                        growable: false,
                       ),
-                  ],
+                      if (widget.trailing != null)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20),
+                          child: Container(
+                            alignment: Alignment.center,
+                            height: 44,
+                            width: trailingSlot,
+                            child: widget.trailing!.call(row),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

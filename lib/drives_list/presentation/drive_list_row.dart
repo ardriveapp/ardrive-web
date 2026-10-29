@@ -370,7 +370,9 @@ class DriveListRow extends StatelessWidget {
     return ListNameCell(
       // Public or private, said with the same icon the rest of the app uses
       // for it rather than a word this row has no space for.
-      icon: Tooltip(
+      // ArDriveTooltip, not Material's: under a row that starts selecting
+      // on a long press, it leaves the long press to the row.
+      icon: ArDriveTooltip(
         message: drive.isPrivate
             ? appLocalizationsOf(context).private
             : appLocalizationsOf(context).public,
@@ -509,7 +511,7 @@ class DriveListRow extends StatelessWidget {
       return label;
     }
 
-    return Tooltip(
+    return ArDriveTooltip(
       message: appLocalizationsOf(context).notKnownUntilSynced,
       child: label,
     );

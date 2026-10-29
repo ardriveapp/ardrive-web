@@ -1,4 +1,5 @@
-import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -20,10 +21,18 @@ import 'package:flutter/widgets.dart';
 /// The explorer's table ([ArDriveDataTable]) and the drives list both go by
 /// this, so the two lists agree.
 abstract final class ArDriveMultiSelect {
-  /// Whether the multi-select key is held: Ctrl on Windows, Cmd elsewhere.
-  static bool get keyPressed => AppPlatform.isWindows()
-      ? HardwareKeyboard.instance.isControlPressed
-      : HardwareKeyboard.instance.isMetaPressed;
+  /// Whether the multi-select key is held: Cmd on macOS and iOS, Ctrl
+  /// everywhere else - Windows, Linux, ChromeOS, Android - in the app and on
+  /// the web alike.
+  static bool get keyPressed => usesCmd
+      ? HardwareKeyboard.instance.isMetaPressed
+      : HardwareKeyboard.instance.isControlPressed;
+
+  /// Whether that key is Cmd rather than Ctrl. [defaultTargetPlatform] is
+  /// the reader's OS on the web too.
+  static bool get usesCmd =>
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.iOS;
 
   /// Whether the reader is choosing several rows, which shows every row's box
   /// and the header's select-all.
@@ -50,9 +59,11 @@ abstract final class ArDriveMultiSelect {
 /// A row's checkbox, or the header's select-all, in a column of [width]
 /// that is reserved whether or not the box shows.
 ///
-/// Hidden, it is transparent and takes no pointer, so a click there lands on
-/// the row; it stays in the focus order, and focus on it shows it.
-class ArDriveMultiSelectBox extends StatelessWidget {
+/// Hidden, it is transparent and a pointer passes through it to the row, so
+/// a click there chooses the row. It stays in the focus order and in the
+/// semantics tree: Tab reaches it, focus on it shows it, and a screen reader
+/// can tick it whether or not it shows.
+class ArDriveMultiSelectBox extends StatefulWidget {
   const ArDriveMultiSelectBox({
     super.key,
     required this.visible,
@@ -65,22 +76,68 @@ class ArDriveMultiSelectBox extends StatelessWidget {
   final Widget child;
 
   @override
+  State<ArDriveMultiSelectBox> createState() => _ArDriveMultiSelectBoxState();
+}
+
+class _ArDriveMultiSelectBoxState extends State<ArDriveMultiSelectBox> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
+    final visible = widget.visible || _focused;
+
     return SizedBox(
-      width: width,
+      width: widget.width,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: IgnorePointer(
-          ignoring: !visible,
-          child: AnimatedOpacity(
-            opacity: visible ? 1 : 0,
-            duration: ArDriveMultiSelect.fade,
-            child: child,
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          includeSemantics: false,
+          onFocusChange: (focused) => setState(() => _focused = focused),
+          child: _PointerPassThrough(
+            passThrough: !visible,
+            child: AnimatedOpacity(
+              opacity: visible ? 1 : 0,
+              duration: ArDriveMultiSelect.fade,
+              // Transparent is not gone: a screen reader still finds it.
+              alwaysIncludeSemantics: true,
+              child: widget.child,
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Lets a pointer through to what is behind while [passThrough], without
+/// touching semantics: [IgnorePointer] also blocks a screen reader's actions.
+class _PointerPassThrough extends SingleChildRenderObjectWidget {
+  const _PointerPassThrough({required this.passThrough, super.child});
+
+  final bool passThrough;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderPointerPassThrough(passThrough);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderPointerPassThrough renderObject,
+  ) =>
+      renderObject.passThrough = passThrough;
+}
+
+class _RenderPointerPassThrough extends RenderProxyBox {
+  _RenderPointerPassThrough(this.passThrough);
+
+  bool passThrough;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) =>
+      !passThrough && super.hitTest(result, position: position);
 }
 
 /// Builds [builder] with whether the multi-select key is held, and builds it
@@ -98,7 +155,8 @@ class ArDriveMultiSelectKey extends StatefulWidget {
 }
 
 class _ArDriveMultiSelectKeyState extends State<ArDriveMultiSelectKey> {
-  bool _keyHeld = false;
+  /// A key already held when this is built counts.
+  bool _keyHeld = ArDriveMultiSelect.keyPressed;
 
   @override
   void initState() {

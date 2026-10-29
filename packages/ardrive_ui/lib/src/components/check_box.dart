@@ -15,7 +15,12 @@ class ArDriveCheckBox extends StatefulWidget {
     this.titleWidget,
     this.useNewIcons = true,
     this.iconSize = 18.5,
+    this.semanticLabel,
   });
+
+  /// What a screen reader calls the box when it has no [title]: the row it
+  /// ticks, say.
+  final String? semanticLabel;
 
   /// Initial state of the checkbox.
   final bool checked;
@@ -65,80 +70,115 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
     super.initState();
   }
 
+  void _toggle() {
+    switch (state) {
+      case CheckBoxState.normal:
+      case CheckBoxState.hover:
+        setState(() {
+          state = CheckBoxState.checked;
+          checked = true;
+        });
+        break;
+      case CheckBoxState.indeterminate:
+        setState(() {
+          checked = !checked;
+        });
+        break;
+      case CheckBoxState.checked:
+        setState(() {
+          state = CheckBoxState.normal;
+          checked = false;
+        });
+        break;
+      case CheckBoxState.disabled:
+        break;
+    }
+    widget.onChange?.call(checked);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        switch (state) {
-          case CheckBoxState.normal:
-          case CheckBoxState.hover:
-            setState(() {
-              state = CheckBoxState.checked;
-              checked = true;
-            });
-            break;
-          case CheckBoxState.indeterminate:
-            setState(() {
-              checked = !checked;
-            });
-            break;
-          case CheckBoxState.checked:
-            setState(() {
-              state = CheckBoxState.normal;
-              checked = false;
-            });
-            break;
-          case CheckBoxState.disabled:
-            break;
-        }
-        widget.onChange?.call(checked);
-      },
-      child: widget.useNewIcons
-          ? _buildNewIcons()
-          : ArDriveClickArea(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  state == CheckBoxState.indeterminate
-                      ? ArDriveIcon(
-                          icon: ArDriveIconsData.minus_rectangle,
-                          size: 22,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .iconHigh,
-                        )
-                      : AnimatedContainer(
-                          height: widget.iconSize,
-                          width: widget.iconSize,
-                          margin: const EdgeInsets.fromLTRB(3.25, 3.5, 5, 4),
-                          decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(checkboxBorderRadius),
-                            border: Border.all(
-                              color: _boxColor(),
-                              width: 2,
-                            ),
-                            color: _backgroundColor(),
-                          ),
-                          duration: const Duration(milliseconds: 300),
-                          child: checked
-                              ? ArDriveIcon(
-                                  icon: ArDriveIconsData.checkmark,
-                                  size: 12,
-                                  color: _checkColor(),
-                                )
-                              : null,
-                        ),
-                  if (_buildTitle() != null) ...[
-                    const SizedBox(width: 8.0),
-                    _buildTitle()!,
-                  ]
-                ],
-              ),
-            ),
+    final enabled = !widget.isDisabled;
+
+    // A checkbox to the keyboard and to a screen reader as well as to the
+    // pointer: it takes focus, Space or Enter ticks it, and it is announced
+    // as a checkbox with its state. It was a bare GestureDetector, reachable
+    // by the mouse alone.
+    // The focus node's semantics join the checkbox's own node, so a screen
+    // reader finds one focusable, tickable checkbox.
+    return Semantics(
+      container: true,
+      checked: checked && state != CheckBoxState.indeterminate,
+      mixed: state == CheckBoxState.indeterminate ? true : null,
+      enabled: enabled,
+      label: widget.title ?? widget.semanticLabel,
+      onTap: enabled ? _toggle : null,
+      child: FocusableActionDetector(
+        enabled: enabled,
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              _toggle();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          // The Semantics above carries the tap, once.
+          excludeFromSemantics: true,
+          onTap: _toggle,
+          child: _content(),
+        ),
+      ),
     );
+  }
+
+  Widget _content() {
+    return widget.useNewIcons
+        ? _buildNewIcons()
+        : ArDriveClickArea(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                state == CheckBoxState.indeterminate
+                    ? ArDriveIcon(
+                        icon: ArDriveIconsData.minus_rectangle,
+                        size: 22,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colorTokens
+                            .iconHigh,
+                      )
+                    : AnimatedContainer(
+                        height: widget.iconSize,
+                        width: widget.iconSize,
+                        margin: const EdgeInsets.fromLTRB(3.25, 3.5, 5, 4),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(checkboxBorderRadius),
+                          border: Border.all(
+                            color: _boxColor(),
+                            width: 2,
+                          ),
+                          color: _backgroundColor(),
+                        ),
+                        duration: const Duration(milliseconds: 300),
+                        child: checked
+                            ? ArDriveIcon(
+                                icon: ArDriveIconsData.checkmark,
+                                size: 12,
+                                color: _checkColor(),
+                              )
+                            : null,
+                      ),
+                if (_buildTitle() != null) ...[
+                  const SizedBox(width: 8.0),
+                  _buildTitle()!,
+                ]
+              ],
+            ),
+          );
   }
 
   Widget _buildNewIcons() {

@@ -38,11 +38,13 @@ void main() {
       );
 
   var toggled = <String>[];
+  var chosen = <String>[];
   var cleared = 0;
   var retried = 0;
 
   setUp(() {
     toggled = <String>[];
+    chosen = <String>[];
     cleared = 0;
     retried = 0;
   });
@@ -75,6 +77,7 @@ void main() {
               onToggleSelectAll: () {},
               onClearSelection: () => cleared++,
               onRetryFailed: () => retried++,
+              onChoose: chosen.add,
             ),
           ),
         ),
@@ -93,8 +96,8 @@ void main() {
     // explorer: a row's box shows while the pointer is on it or it has
     // focus; every box and select-all show while choosing several - once one
     // is ticked, while the multi-select key is held, or after a long press.
-    // Cmd is that key here: the test platform is not Windows. The column is
-    // always reserved, so nothing moves when a box shows.
+    // Ctrl is that key here: the test platform is not macOS or iOS. The
+    // column is always reserved, so nothing moves when a box shows.
     List<bool> shown(WidgetTester tester) => tester
         .widgetList<ArDriveMultiSelectBox>(find.byType(ArDriveMultiSelectBox))
         .map((b) => b.visible)
@@ -176,7 +179,7 @@ void main() {
     testWidgets('holding the multi-select key shows them all', (tester) async {
       await pump(tester, twoDrives);
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
       await tester.pumpAndSettle();
       expect(shown(tester), [true, true, true]);
 
@@ -184,7 +187,7 @@ void main() {
       await tester.pump();
       expect(toggled, ['b']);
 
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       await tester.pumpAndSettle();
       expect(shown(tester), [false, false, false],
           reason: 'released with nothing ticked, they go again');
@@ -209,16 +212,93 @@ void main() {
     testWidgets('a click on a row only chooses it, even while choosing several',
         (tester) async {
       await pump(tester, twoDrives);
+      final pointer = await mouse(tester);
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('b'));
+      // A mouse click: a tap on a touch screen opens the drive instead.
+      await pointer.moveTo(tester.getCenter(find.text('b')));
+      await pointer.down(tester.getCenter(find.text('b')));
+      await pointer.up();
       await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       await tester.pumpAndSettle();
 
+      expect(chosen.toSet(), {'b'}, reason: 'the click chose the row');
       expect(toggled, isEmpty,
           reason: 'ticking is only the box: it picks what Sync acts on');
+    });
+
+    testWidgets('Esc ends a long press with nothing ticked', (tester) async {
+      await pump(tester, twoDrives);
+
+      await tester.longPress(find.text('a'));
+      await tester.pumpAndSettle();
+      expect(shown(tester), [true, true, true]);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [false, false, false]);
+      expect(cleared, 0, reason: 'nothing was ticked to clear');
+    });
+
+    testWidgets('a long press on the privacy icon starts selecting too',
+        (tester) async {
+      // Its tooltip used to take the long press and show its label.
+      await pump(tester, twoDrives);
+
+      await tester.longPress(find
+          .byWidgetPredicate(
+              (w) => w is ArDriveTooltip && w.message == 'Public')
+          .first);
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [true, true, true]);
+    });
+
+    testWidgets('a hidden box is still a checkbox to a screen reader',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, twoDrives);
+
+      final node =
+          tester.getSemantics(find.byKey(const ValueKey('select-a-false')));
+      expect(
+        node,
+        matchesSemantics(
+          label: 'a',
+          hasCheckedState: true,
+          isChecked: false,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets("Tab to a row's box shows it, and Space ticks it",
+        (tester) async {
+      await pump(tester, twoDrives);
+      final pointer = await mouse(tester);
+
+      // Focus on the row, then Tab to the next stop: the next row's box.
+      await pointer.down(tester.getCenter(find.text('a')));
+      await pointer.up();
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      await pointer.moveTo(const Offset(1, 1));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      final visible = shown(tester);
+      expect(visible[2], isTrue, reason: "b's box has focus, so it shows");
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+
+      expect(toggled, ['b']);
     });
 
     testWidgets('names and headings do not move when the boxes show',

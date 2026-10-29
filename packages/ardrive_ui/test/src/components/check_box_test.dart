@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -220,5 +221,80 @@ void main() {
         tester.state<ArDriveCheckBoxState>(find.byType(ArDriveCheckBox));
 
     expect(stateAfterTap.state, CheckBoxState.indeterminate);
+  });
+
+  group('to the keyboard and a screen reader', () {
+    // It was a bare GestureDetector: the mouse could tick it, Tab could not
+    // reach it, and a screen reader did not know it was a checkbox.
+    testWidgets('Tab reaches it, and Space and Enter tick it', (tester) async {
+      final changes = <bool>[];
+      await tester.pumpWidget(ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: ArDriveCheckBox(
+              semanticLabel: 'Photos',
+              onChange: changes.add,
+            ),
+          ),
+        ),
+      ));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(changes, [true, false]);
+    });
+
+    testWidgets('is announced as a checkbox with its state and label',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(ArDriveApp(
+        builder: (context) => const MaterialApp(
+          home: Scaffold(
+            body: ArDriveCheckBox(semanticLabel: 'Photos', checked: true),
+          ),
+        ),
+      ));
+
+      expect(
+        tester.getSemantics(find.byType(ArDriveCheckBox)),
+        matchesSemantics(
+          label: 'Photos',
+          hasCheckedState: true,
+          isChecked: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('a disabled one is announced as disabled and takes no tap',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(ArDriveApp(
+        builder: (context) => const MaterialApp(
+          home: Scaffold(
+            body: ArDriveCheckBox(semanticLabel: 'Photos', isDisabled: true),
+          ),
+        ),
+      ));
+
+      expect(
+        tester.getSemantics(find.byType(ArDriveCheckBox)),
+        matchesSemantics(
+          label: 'Photos',
+          hasCheckedState: true,
+          hasEnabledState: true,
+        ),
+      );
+      semantics.dispose();
+    });
   });
 }

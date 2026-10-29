@@ -394,6 +394,18 @@ void main() {
     testWidgets('and so does Enter on a row reached with Tab', (tester) async {
       await pumpClickable(tester);
 
+      // The row's checkbox comes first, left to right: Tab shows it, and
+      // Enter there would tick it. The next Tab is the row.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ArDriveMultiSelectBox>(find.byType(ArDriveMultiSelectBox))
+            .visible,
+        isTrue,
+        reason: 'focus in the row shows its box',
+      );
+
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
 
@@ -403,6 +415,7 @@ void main() {
       await tester.pump();
 
       expect(opened, 1);
+      expect(ticked, 0);
     });
 
     testWidgets('a ticked drive is drawn chosen', (tester) async {

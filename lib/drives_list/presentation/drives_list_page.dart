@@ -403,27 +403,24 @@ class DrivesListBody extends StatelessWidget {
     }
 
     if (state is DrivesListLoaded) {
-      return _SelectionShortcuts(
-        selecting: state.selected.isNotEmpty,
+      return _ChoosingSeveral(
+        anyTicked: state.selected.isNotEmpty,
         onClear: onClearSelection,
-        child: _ChoosingSeveral(
-          anyTicked: state.selected.isNotEmpty,
-          builder: (context, selecting, onLongPress) => _DrivesListLoadedView(
-            state: state,
-            onOpenDrive: onOpenDrive,
-            buildMenu: buildMenu,
-            syncMenu: syncMenu,
-            onSort: onSort,
-            onToggleSelected: onToggleSelected,
-            onToggleSelectAll: onToggleSelectAll,
-            onClearSelection: onClearSelection,
-            onRetryFailed: onRetryFailed,
-            onSyncChanged: onSyncChanged,
-            chosenDriveId: chosenDriveId,
-            onChoose: onChoose,
-            selecting: selecting,
-            onLongPress: onLongPress,
-          ),
+        builder: (context, selecting, onLongPress) => _DrivesListLoadedView(
+          state: state,
+          onOpenDrive: onOpenDrive,
+          buildMenu: buildMenu,
+          syncMenu: syncMenu,
+          onSort: onSort,
+          onToggleSelected: onToggleSelected,
+          onToggleSelectAll: onToggleSelectAll,
+          onClearSelection: onClearSelection,
+          onRetryFailed: onRetryFailed,
+          onSyncChanged: onSyncChanged,
+          chosenDriveId: chosenDriveId,
+          onChoose: onChoose,
+          selecting: selecting,
+          onLongPress: onLongPress,
         ),
       );
     }
@@ -1040,9 +1037,16 @@ class _SelectionShortcuts extends StatelessWidget {
 /// Ticking still means only one thing here: the drives Sync selected acts
 /// on. A click on a row only chooses it; only a click on the box ticks.
 class _ChoosingSeveral extends StatefulWidget {
-  const _ChoosingSeveral({required this.anyTicked, required this.builder});
+  const _ChoosingSeveral({
+    required this.anyTicked,
+    required this.onClear,
+    required this.builder,
+  });
 
   final bool anyTicked;
+
+  /// Clears the ticks.
+  final VoidCallback? onClear;
   final Widget Function(
     BuildContext context,
     bool selecting,
@@ -1068,17 +1072,31 @@ class _ChoosingSeveralState extends State<_ChoosingSeveral> {
 
   void _onLongPress() => setState(() => _longPressed = !_longPressed);
 
+  /// Esc ends choosing several, ticked or not, as it does in the explorer: a
+  /// long press with nothing ticked yet is ended by it too.
+  void _end() {
+    setState(() => _longPressed = false);
+    if (widget.anyTicked) widget.onClear?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ArDriveMultiSelectKey(
-      builder: (context, keyHeld) => widget.builder(
-        context,
-        ArDriveMultiSelect.isSelecting(
-          anyTicked: widget.anyTicked,
-          keyHeld: keyHeld,
-          longPressed: _longPressed,
+    final choosing = widget.anyTicked || _longPressed;
+
+    return _SelectionShortcuts(
+      selecting: choosing,
+      onClear:
+          choosing && (widget.onClear != null || _longPressed) ? _end : null,
+      child: ArDriveMultiSelectKey(
+        builder: (context, keyHeld) => widget.builder(
+          context,
+          ArDriveMultiSelect.isSelecting(
+            anyTicked: widget.anyTicked,
+            keyHeld: keyHeld,
+            longPressed: _longPressed,
+          ),
+          _onLongPress,
         ),
-        _onLongPress,
       ),
     );
   }

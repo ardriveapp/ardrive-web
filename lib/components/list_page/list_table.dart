@@ -437,16 +437,19 @@ class ListTableRow extends StatelessWidget {
                     onOpen: onOpen,
                     onChoose: onChoose,
                     onLongPress: selection?.onLongPress,
-                    child: Padding(
-                      // The checkbox column already supplies the gutter on
-                      // its side.
-                      padding: EdgeInsets.only(
-                        left: hasCheckbox ? 0 : listRowHorizontalPadding,
-                        right: listRowHorizontalPadding,
-                        top: listRowVerticalPadding,
-                        bottom: listRowVerticalPadding,
+                    child: _yieldLongPress(
+                      selection?.onLongPress != null,
+                      Padding(
+                        // The checkbox column already supplies the gutter on
+                        // its side.
+                        padding: EdgeInsets.only(
+                          left: hasCheckbox ? 0 : listRowHorizontalPadding,
+                          right: listRowHorizontalPadding,
+                          top: listRowVerticalPadding,
+                          bottom: listRowVerticalPadding,
+                        ),
+                        child: child,
                       ),
-                      child: child,
                     ),
                   ),
                 ),
@@ -472,6 +475,11 @@ class ListTableRow extends StatelessWidget {
   }
 }
 
+/// [child], with any tooltip in it leaving a long press to the row when the
+/// row starts selecting on one - see [ArDriveTooltipLongPressYields].
+Widget _yieldLongPress(bool rowTakesLongPress, Widget child) =>
+    rowTakesLongPress ? ArDriveTooltipLongPressYields(child: child) : child;
+
 /// A row's checkbox, in its reserved column: shown while the reader is
 /// selecting, or while this row is under the pointer or has focus.
 class _RowCheckbox extends StatelessWidget {
@@ -494,6 +502,7 @@ class _RowCheckbox extends StatelessWidget {
       // Its own target, so ticking is never mistaken for opening.
       child: ArDriveCheckBox(
         key: selection.checkboxKey,
+        semanticLabel: semanticLabel,
         checked: selection.ticked,
         onChange: (_) => selection.onTickChanged(),
       ),

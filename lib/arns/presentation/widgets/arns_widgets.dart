@@ -100,7 +100,7 @@ class ArNSChoiceRow extends StatelessWidget {
   final String title;
   final String? subtitle;
 
-  /// A quiet label at the end, such as "Managed for its owner".
+  /// A quiet label at the end, such as "Controller".
   final String? tag;
   final bool enabled;
   final bool indent;

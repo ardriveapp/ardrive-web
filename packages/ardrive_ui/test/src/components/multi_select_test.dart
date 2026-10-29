@@ -1,4 +1,5 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -77,26 +78,80 @@ void main() {
       expect(tester.getSize(find.byType(ArDriveMultiSelectBox)).width, 40);
     });
 
-    testWidgets('hidden, it is transparent and takes no pointer',
+    testWidgets('hidden, it is transparent and a click passes through',
         (tester) async {
-      await pump(tester, visible: false);
-      await tester.pumpAndSettle();
+      var boxTaps = 0;
+      var behindTaps = 0;
+      Future<void> pumpOver({required bool visible}) =>
+          tester.pumpWidget(Directionality(
+            textDirection: TextDirection.ltr,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => behindTaps++,
+              child: ArDriveMultiSelectBox(
+                visible: visible,
+                width: 40,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => boxTaps++,
+                  child: const SizedBox(key: Key('box'), width: 18, height: 18),
+                ),
+              ),
+            ),
+          ));
 
+      await pumpOver(visible: false);
+      await tester.pumpAndSettle();
       expect(
         tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
         0,
       );
-      expect(
-        tester
-            .widget<IgnorePointer>(find
-                .ancestor(
-                  of: find.byKey(const Key('box')),
-                  matching: find.byType(IgnorePointer),
-                )
-                .first)
-            .ignoring,
-        isTrue,
-      );
+      await tester.tap(find.byKey(const Key('box')), warnIfMissed: false);
+      expect([boxTaps, behindTaps], [0, 1]);
+
+      await pumpOver(visible: true);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('box')));
+      expect([boxTaps, behindTaps], [1, 1]);
+    });
+  });
+
+  group('the multi-select key', () {
+    testWidgets('is Ctrl off Apple platforms', (tester) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      expect(ArDriveMultiSelect.keyPressed, isTrue);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      expect(ArDriveMultiSelect.keyPressed, isFalse,
+          reason: 'Meta is Super on Linux and ChromeOS');
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    });
+
+    testWidgets('and Cmd on macOS and iOS', (tester) async {
+      for (final platform in [TargetPlatform.macOS, TargetPlatform.iOS]) {
+        debugDefaultTargetPlatformOverride = platform;
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+        expect(ArDriveMultiSelect.keyPressed, isTrue);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        expect(ArDriveMultiSelect.keyPressed, isFalse);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      }
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('already held when the list is built counts', (tester) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      bool? held;
+      await tester.pumpWidget(ArDriveMultiSelectKey(
+        builder: (context, h) {
+          held = h;
+          return const SizedBox();
+        },
+      ));
+      expect(held, isTrue);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     });
   });
 
@@ -110,10 +165,10 @@ void main() {
       },
     ));
 
-    // Cmd: the test platform is not Windows.
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    // Ctrl: the test platform is not macOS or iOS.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.pump();
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pump();
 
     expect(seen, [false, true, false]);
@@ -146,7 +201,10 @@ void main() {
             body: ArDriveDataTable<_Row>(
               columns: [TableColumn('Name', 1, index: 0)],
               rows: const [_Row(0, 'one'), _Row(1, 'two')],
-              buildRow: (row) => TableRowWidget([Text(row.id)]),
+              // In a tooltip, as the explorer's names are.
+              buildRow: (row) => TableRowWidget([
+                ArDriveTooltip(message: row.id, child: Text(row.id)),
+              ]),
               rowsPerPageText: 'Rows per page',
               onChangeMultiSelecting: (_) {},
               onRowOpen: (_) {},
@@ -176,7 +234,7 @@ void main() {
       expect(shown(tester), [false, false, false]);
 
       final pointer = await mouse(tester);
-      await pointer.moveTo(tester.getCenter(find.text('two')));
+      await pointer.moveTo(tester.getCenter(find.text('two').first));
       await tester.pumpAndSettle();
 
       expect(shown(tester), [false, false, true]);
@@ -188,7 +246,7 @@ void main() {
 
       // A click chooses the row and puts focus in the table, where Enter
       // opens it; the pointer then leaves.
-      await pointer.down(tester.getCenter(find.text('one')));
+      await pointer.down(tester.getCenter(find.text('one').first));
       await pointer.up();
       await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
       await pointer.moveTo(const Offset(1, 1));
@@ -197,10 +255,32 @@ void main() {
       expect(shown(tester), [false, true, false]);
     });
 
+    testWidgets('holding the multi-select key shows every box', (tester) async {
+      await pumpTable(tester);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(shown(tester), [true, true, true]);
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(shown(tester), [false, false, false]);
+    });
+
+    testWidgets('a long press on a cell with a tooltip starts selecting',
+        (tester) async {
+      await pumpTable(tester);
+
+      await tester.longPress(find.text('one').first);
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [true, true, true]);
+    });
+
     testWidgets('a tick shows every box and select-all', (tester) async {
       await pumpTable(tester);
       final pointer = await mouse(tester);
-      await pointer.moveTo(tester.getCenter(find.text('one')));
+      await pointer.moveTo(tester.getCenter(find.text('one').first));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(ArDriveCheckBox).at(1));
@@ -214,13 +294,13 @@ void main() {
     testWidgets("a row's content does not move when its box shows",
         (tester) async {
       await pumpTable(tester);
-      final before = tester.getTopLeft(find.text('two'));
+      final before = tester.getTopLeft(find.text('two').first);
 
       final pointer = await mouse(tester);
-      await pointer.moveTo(tester.getCenter(find.text('two')));
+      await pointer.moveTo(tester.getCenter(find.text('two').first));
       await tester.pumpAndSettle();
 
-      expect(tester.getTopLeft(find.text('two')), before);
+      expect(tester.getTopLeft(find.text('two').first), before);
       expect(tester.getTopLeft(find.text('Name')).dx, isNonZero);
     });
   });
