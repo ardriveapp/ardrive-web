@@ -162,7 +162,7 @@ void main() {
     (Flavor.development, 'https://github.com/ardriveapp/ardrive-web/releases'),
   ]) {
     testWidgets(
-        "the sign-in settings menu ends with the version, for ${flavor.name}",
+        'the sign-in settings menu ends with the version, for ${flavor.name}',
         (tester) async {
       final config = _MockConfigService();
       when(() => config.flavor).thenReturn(flavor);
@@ -182,10 +182,10 @@ void main() {
             ),
           ],
           child: ArDriveApp(
-            builder: (context) => MaterialApp(
+            builder: (context) => const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: const [Locale('en', '')],
-              home: const Scaffold(
+              supportedLocales: [Locale('en', '')],
+              home: Scaffold(
                 body: Align(
                   alignment: Alignment.topLeft,
                   child: SettingsSubmenu(child: Text('cog')),
