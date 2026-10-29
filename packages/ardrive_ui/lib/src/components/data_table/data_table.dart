@@ -1160,11 +1160,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       .themeData
                       .tableTheme
                       .selectedItemColor
-                  : ArDriveTheme.of(context)
-                      .themeData
-                      .colorTokens
-                      .strokeMid
-                      .withOpacity(0.25),
+                  : ArDriveTheme.of(context).themeData.tableTheme.cellColor,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
               content: Row(

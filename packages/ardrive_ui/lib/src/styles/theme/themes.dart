@@ -238,7 +238,9 @@ ArDriveThemeData lightTheme() {
       tableTheme: ArDriveTableTheme(
         backgroundColor: const Color(0xffFBF9FA),
         cellColor: const Color(0xffF1EFF0),
-        selectedItemColor: const Color(0xffF1EFF0),
+        // One step darker than a row, as dark's is one step lighter, so a
+        // clicked row shows it is selected.
+        selectedItemColor: colorTokens.containerL3,
       ),
       dropdownTheme: ArDriveDropdownTheme(
         backgroundColor: const Color(0xffFBF9FA),
