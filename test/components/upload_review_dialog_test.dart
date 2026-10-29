@@ -42,8 +42,13 @@ class _FakeFunding implements UploadCreditsFunding {
     return payment.future;
   }
 
+  var landed = true;
+
   @override
-  Future<void> awaitCredits({required BigInt above}) async => waited++;
+  Future<bool> awaitCredits({required BigInt above}) async {
+    waited++;
+    return landed;
+  }
 
   @override
   void refresh() => refreshed++;
@@ -85,10 +90,14 @@ UploadReviewSummary summary({
 void main() {
   late _FakeFunding funding;
   late int uploads;
+  late List<UploadMethod> methods;
+  late int shown;
   late int cancels;
 
   setUp(() {
     uploads = 0;
+    methods = [];
+    shown = 0;
     cancels = 0;
   });
 
@@ -118,7 +127,11 @@ void main() {
                 ],
                 summary: s,
                 primaryLabel: 'Upload',
-                onUpload: () => uploads++,
+                onUpload: (method) {
+                  uploads++;
+                  methods.add(method);
+                },
+                onShown: () => shown++,
                 onCancel: () => cancels++,
                 funding: funding,
               ),
@@ -158,6 +171,9 @@ void main() {
 
     await tester.tap(button('Upload'));
     expect(uploads, 1);
+    expect(methods, [UploadMethod.turbo],
+        reason: 'the upload is paid the way the review showed');
+    expect(shown, 1);
   });
 
   testWidgets('not free and not covered: the notice, and no Upload',
@@ -236,11 +252,21 @@ void main() {
     await tester.pump();
 
     funding.payment.complete(credits(9.1388));
-    await tester.pumpAndSettle();
+    // The wait spins, so it never settles.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(funding.waited, 1);
     expect(funding.refreshed, 1);
 
+    // Until the fresh read is in, the wait, not the summary from before the
+    // payment and its Add credits.
+    expect(find.text('Adding your credits'), findsOneWidget);
+    expect(find.text('Add credits'), findsNothing);
+
     // The review is read again with the new balance.
+    await tester.pumpWidget(host(null));
+    await tester.pump();
+    expect(find.text('Add credits'), findsNothing);
     await tester.pumpWidget(host(summary(balance: 9.1388)));
     await tester.pump();
 
@@ -281,5 +307,73 @@ void main() {
     await pump(tester, null);
 
     expect(enabled(tester, 'Upload'), isFalse);
+  });
+
+  testWidgets(
+      'credits slow to arrive: keeps waiting, offers to check again, '
+      'and never goes back to Add credits', (tester) async {
+    await pump(tester, summary());
+    funding.landed = false;
+    await tester.tap(button('Add credits'));
+    await tester.pumpAndSettle();
+    await tester.tap(button('Continue to payment'));
+    await tester.pump();
+    funding.payment.complete(credits(9.1388));
+    // The wait spins, so it never settles.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Adding your credits'), findsOneWidget);
+    expect(find.text('Check again'), findsOneWidget);
+    expect(find.text('Add credits'), findsNothing);
+    expect(funding.refreshed, 0);
+
+    // They land.
+    funding.landed = true;
+    await tester.tap(find.text('Check again'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(funding.refreshed, 1);
+
+    // Read again, still short: still the wait, with Check again.
+    await tester.pumpWidget(host(null));
+    await tester.pump();
+    await tester.pumpWidget(host(summary()));
+    await tester.pump();
+    expect(find.text('Check again'), findsOneWidget);
+    expect(find.text('Add credits'), findsNothing);
+  });
+
+  testWidgets(
+      'Upload stays off when the upload is not covered and there is '
+      'nothing to add', (tester) async {
+    // Only the wallet can take it, and the wallet can't pay.
+    await pump(
+      tester,
+      UploadReviewSummary.fromPaymentInfo(
+        UploadPaymentMethodInfo(
+          uploadMethod: UploadMethod.ar,
+          costEstimateTurbo: null,
+          costEstimateAr: UploadCostEstimate(
+            pstFee: BigInt.zero,
+            totalCost: BigInt.from(100),
+            totalSize: 1,
+            usdUploadCost: null,
+          ),
+          hasNoTurboBalance: true,
+          isTurboUploadPossible: false,
+          arBalance: '0',
+          sufficientArBalance: false,
+          turboCredits: '0',
+          sufficentCreditsBalance: false,
+          freeStatus: FreeUploadStatus.notEligible,
+          totalSize: 1,
+        ),
+      ),
+    );
+
+    expect(enabled(tester, 'Upload'), isFalse);
+    await tester.tap(button('Upload'), warnIfMissed: false);
+    expect(uploads, 0);
   });
 }

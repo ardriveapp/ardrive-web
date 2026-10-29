@@ -274,21 +274,33 @@ class _UploadFormState extends State<UploadForm> {
     final folder = reviewed?.params.targetFolder;
 
     VoidCallback? share;
-    if (state.fileIds.length == 1 && drive != null) {
-      share = () => promptToShareFile(
-            context: navigatorContext,
-            driveId: drive.id,
-            fileId: state.fileIds.single,
-          );
-    } else if (drive != null && folder != null) {
-      // Several files: where they went.
-      final isRoot = folder.id == drive.rootFolderId;
-      share = () => promptToShareDrive(
-            context: navigatorContext,
-            drive: drive,
-            folderId: isRoot ? null : folder.id,
-            folderName: isRoot ? null : folder.name,
-          );
+    if (drive != null && folder != null) {
+      switch (uploadSavedShare(
+        fileIds: state.fileIds,
+        inDriveRoot: folder.id == drive.rootFolderId,
+        drivePublic: drive.isPublic,
+      )) {
+        case UploadSavedShare.file:
+          share = () => promptToShareFile(
+                context: navigatorContext,
+                driveId: drive.id,
+                fileId: state.fileIds.single,
+              );
+        case UploadSavedShare.folder:
+          share = () => promptToShareDrive(
+                context: navigatorContext,
+                drive: drive,
+                folderId: folder.id,
+                folderName: folder.name,
+              );
+        case UploadSavedShare.drive:
+          share = () => promptToShareDrive(
+                context: navigatorContext,
+                drive: drive,
+              );
+        case UploadSavedShare.none:
+          share = null;
+      }
     }
 
     showUploadSavedToast(
@@ -1922,15 +1934,11 @@ class _UploadReadyWidget extends StatelessWidget {
 
           // A license is set up, and manifests chosen, on steps of their own
           // before the upload starts; the button goes to the first of them.
-          final (String label, VoidCallback onUpload) = licenseCategory != null
-              ? (
-                  l10n.configure,
-                  () =>
-                      cubit.initialScreenNext(licenseCategory: licenseCategory),
-                )
+          final label = licenseCategory != null
+              ? l10n.configure
               : state.selectedManifestSelections.isNotEmpty
-                  ? (l10n.review, cubit.initialScreenUpload)
-                  : (l10n.upload, cubit.initialScreenUpload);
+                  ? l10n.review
+                  : l10n.upload;
 
           return UploadReviewDialog(
             title: l10n.uploadNFiles(state.numberOfFiles),
@@ -1941,7 +1949,18 @@ class _UploadReadyWidget extends StatelessWidget {
             summary: summary,
             primaryLabel: label,
             primaryEnabled: state.isNextButtonEnabled && (names?.ready ?? true),
-            onUpload: onUpload,
+            // The way the review showed is the way it is paid, whatever the
+            // payment sheet defaulted to.
+            onUpload: (method) => cubit.uploadFromReview(
+              method: method,
+              licenseCategory: licenseCategory,
+            ),
+            onShown: () => PlausibleEventTracker.trackUploadReview(
+              drivePrivacy: state.uploadIsPublic
+                  ? DrivePrivacy.public
+                  : DrivePrivacy.private,
+              dragNDrop: state.isDragNDrop,
+            ),
             onCancel: () => Navigator.of(context).pop(false),
             funding: UploadFormCreditsFunding(
               context,
@@ -1954,6 +1973,7 @@ class _UploadReadyWidget extends StatelessWidget {
                 // The review says what is short, above the choice; only the
                 // wallet-only case keeps the selector's own messages.
                 showBalanceMessages: summary?.usesLegacySelector ?? false,
+                walletOnlyWhenChosen: !(summary?.usesLegacySelector ?? false),
                 onError: cubit.emitErrorFromPreparation,
                 onTurboTopupSucess: () => cubit.startUploadPreparation(
                     isRetryingToPayWithTurbo: true),
@@ -3216,20 +3236,21 @@ class UploadFormCreditsFunding implements UploadCreditsFunding {
       showTurboCardPayment(context, amountUsd: amountUsd);
 
   @override
-  Future<void> awaitCredits({required BigInt above}) async {
+  Future<bool> awaitCredits({required BigInt above}) async {
     final wallet = context.read<ArDriveAuth>().currentUser.wallet;
     final payments = _payments;
     // Turbo adds the credits when Stripe tells it the payment went through,
     // which can take a few seconds after the card is charged.
     for (var i = 0; i < _pollTimes; i++) {
       try {
-        if (await payments.getBalance(wallet: wallet) > above) return;
+        if (await payments.getBalance(wallet: wallet) > above) return true;
       } catch (e) {
         // A new account is unknown to Turbo until its credits land.
         logger.d('Waiting for credits: $e');
       }
       await Future.delayed(_pollEvery);
     }
+    return false;
   }
 
   @override
@@ -3284,7 +3305,10 @@ class _UploadPaymentRequiredWidgetState
       // The refused files go to Turbo again; the wallet can't take them over.
       sufficientArBalance: false,
       uploadMethod: UploadMethod.turbo,
-      turboUnreachable: _unreachable,
+      // Either could not be read: the price at review, or the balance now.
+      // Replacing the first with the second turned an unread price into a
+      // zero one that any balance covered.
+      turboUnreachable: _unreachable || reviewed.paymentInfo.turboUnreachable,
     );
     final folderName = reviewed.params.targetFolder.name;
     final balance = _balance;
@@ -3303,7 +3327,7 @@ class _UploadPaymentRequiredWidgetState
               creditsBalance: balance,
             ),
       primaryLabel: l10n.upload,
-      onUpload: context.read<UploadCubit>().retryUploads,
+      onUpload: (_) => context.read<UploadCubit>().retryUploads(),
       onCancel: () => Navigator.of(context).pop(false),
       funding: UploadFormCreditsFunding(context, onRefresh: _readBalance),
     );
@@ -3371,4 +3395,21 @@ void showUploadSavedToast(
       ),
     ),
   );
+}
+
+/// What Share offers after an upload.
+enum UploadSavedShare { file, folder, drive, none }
+
+/// One file shares the file. Several share the folder they went into. Several
+/// in a drive's root share the drive only when it is public: a private
+/// drive's share carries its key, which opens everything in it, far more than
+/// the files just saved.
+UploadSavedShare uploadSavedShare({
+  required List<String> fileIds,
+  required bool inDriveRoot,
+  required bool drivePublic,
+}) {
+  if (fileIds.length == 1) return UploadSavedShare.file;
+  if (!inDriveRoot) return UploadSavedShare.folder;
+  return drivePublic ? UploadSavedShare.drive : UploadSavedShare.none;
 }

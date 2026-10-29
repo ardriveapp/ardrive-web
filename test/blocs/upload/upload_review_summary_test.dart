@@ -24,6 +24,7 @@ void main() {
     bool sufficientAr = false,
     bool turboPossible = true,
     bool turboUnreachable = false,
+    bool arChosen = false,
   }) =>
       UploadPaymentMethodInfo(
         uploadMethod: method,
@@ -39,6 +40,7 @@ void main() {
         totalSize: 1,
         turboBalanceWinc: BigInt.from(balance),
         turboUnreachable: turboUnreachable,
+        arChosen: arChosen,
       );
 
   test('a free upload is covered, whatever the balance', () {
@@ -93,11 +95,31 @@ void main() {
     expect(s.needsCredits, isFalse);
   });
 
-  test('no Turbo price, but the wallet can pay: the wallet pays', () {
+  test(
+      'no Turbo price, and a wallet that can pay: still no upload until '
+      'the person picks the wallet', () {
+    // What preparation emits when Turbo is down: AR by default.
     final s = UploadReviewSummary.fromPaymentInfo(info(
       turboUnreachable: true,
+      turboCost: 0,
       sufficientAr: true,
       method: UploadMethod.ar,
+    ));
+
+    expect(s.priceUnavailable, isTrue);
+    expect(s.isCovered, isFalse);
+    expect(s.method, UploadMethod.turbo);
+    expect(s.offersPaymentChoice, isTrue,
+        reason: 'the wallet is there to pick, beside its warning');
+  });
+
+  test('no Turbo price, and the person picked the wallet: the wallet pays', () {
+    final s = UploadReviewSummary.fromPaymentInfo(info(
+      turboUnreachable: true,
+      turboCost: 0,
+      sufficientAr: true,
+      method: UploadMethod.ar,
+      arChosen: true,
     ));
 
     expect(s.priceUnavailable, isFalse);
@@ -105,22 +127,45 @@ void main() {
     expect(s.isCovered, isTrue);
   });
 
+  test('a zero Turbo price is a placeholder, never covered', () {
+    final s = UploadReviewSummary.fromPaymentInfo(info(turboCost: 0));
+
+    expect(s.priceUnavailable, isTrue);
+    expect(s.isCovered, isFalse);
+  });
+
+  test('exactly enough credits covers it', () {
+    final s = UploadReviewSummary.fromPaymentInfo(info(balance: 5875));
+
+    expect(s.isCovered, isTrue);
+    expect(s.creditsLeftAfter, BigInt.zero);
+  });
+
   test('a wallet price of zero is a price nobody read, and pays nothing', () {
-    final s = UploadReviewSummary.fromPaymentInfo(
-        info(sufficientAr: true, arCost: 0, method: UploadMethod.ar));
+    final s = UploadReviewSummary.fromPaymentInfo(info(
+        sufficientAr: true,
+        arCost: 0,
+        method: UploadMethod.ar,
+        arChosen: true));
 
     expect(s.offersPaymentChoice, isFalse);
     expect(s.method, UploadMethod.turbo);
     expect(s.isCovered, isFalse);
   });
 
-  test('a wallet that can pay is offered beside credits', () {
-    final s = UploadReviewSummary.fromPaymentInfo(
+  test(
+      'a wallet that can pay is offered beside credits, and pays only once '
+      'picked', () {
+    final byDefault = UploadReviewSummary.fromPaymentInfo(
         info(sufficientAr: true, method: UploadMethod.ar));
+    expect(byDefault.offersPaymentChoice, isTrue);
+    expect(byDefault.method, UploadMethod.turbo);
+    expect(byDefault.needsCredits, isTrue);
 
-    expect(s.offersPaymentChoice, isTrue);
-    expect(s.method, UploadMethod.ar);
-    expect(s.isCovered, isTrue);
+    final picked = UploadReviewSummary.fromPaymentInfo(
+        info(sufficientAr: true, method: UploadMethod.ar, arChosen: true));
+    expect(picked.method, UploadMethod.ar);
+    expect(picked.isCovered, isTrue);
   });
 
   test(
@@ -145,5 +190,16 @@ void main() {
     expect(s.usesLegacySelector, isTrue);
     expect(s.method, UploadMethod.ar);
     expect(s.isCovered, isTrue);
+  });
+
+  test(
+      'an upload only the wallet can take, and a wallet that can not pay: '
+      'not covered', () {
+    final s = UploadReviewSummary.fromPaymentInfo(
+        info(turboPossible: false, sufficientAr: false));
+
+    expect(s.usesLegacySelector, isTrue);
+    expect(s.isCovered, isFalse);
+    expect(s.needsCredits, isFalse);
   });
 }

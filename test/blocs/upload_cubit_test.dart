@@ -422,6 +422,34 @@ void main() {
     );
 
     blocTest<UploadCubit, UploadState>(
+      'Upload on the review pays the way the review showed, not the way the '
+      'payment sheet last defaulted',
+      build: () {
+        when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+            .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+        return getUploadCubitInstanceWith([]);
+      },
+      act: (bloc) async {
+        await bloc.startUploadPreparation();
+        await bloc.checkConflictingFiles();
+        // Preparation defaulted to the wallet: credits short, or Turbo down.
+        bloc.setUploadMethod(UploadMethod.ar, stubPaymentInfo, false);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(bloc.state, isA<UploadReady>());
+        // The review showed Turbo Credits. With a license it goes on to the
+        // license step, which uploads later with the method set here.
+        bloc.uploadFromReview(
+          method: UploadMethod.turbo,
+          licenseCategory: LicenseCategory.udl,
+        );
+      },
+      verify: (bloc) {
+        expect(bloc.state, isA<UploadConfiguringLicense>());
+        expect(bloc.uploadMethod, UploadMethod.turbo);
+      },
+    );
+
+    blocTest<UploadCubit, UploadState>(
       'does not mark it free when the allowance is used up, so payment '
       'selection is not skipped',
       build: () {

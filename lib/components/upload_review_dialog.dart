@@ -26,9 +26,9 @@ abstract class UploadCreditsFunding {
   /// was cancelled or did not go through.
   Future<BigInt?> payByCard(int amountUsd);
 
-  /// Completes once the balance is above [balance], or after a while if it
-  /// never gets there: the review reads it again either way.
-  Future<void> awaitCredits({required BigInt above});
+  /// Waits for the balance to rise above [above]: true once it has, false if
+  /// it has not after a while.
+  Future<bool> awaitCredits({required BigInt above});
 
   /// Reads the price and the balance again.
   void refresh();
@@ -54,6 +54,7 @@ class UploadReviewDialog extends StatefulWidget {
     this.paymentChoice,
     this.sourceWalletNotice,
     this.extras = const [],
+    this.onShown,
   });
 
   final String title;
@@ -70,9 +71,15 @@ class UploadReviewDialog extends StatefulWidget {
 
   /// Other things that hold Upload back, such as a name being priced.
   final bool primaryEnabled;
-  final VoidCallback onUpload;
+
+  /// Starts the upload, paid the way the summary says. The method is passed
+  /// on so the upload uses exactly what the review showed.
+  final void Function(UploadMethod method) onUpload;
   final VoidCallback onCancel;
   final UploadCreditsFunding funding;
+
+  /// Called once, when the review is first shown.
+  final VoidCallback? onShown;
 
   /// The wallet-or-credits choice, shown when the summary offers one.
   final Widget? paymentChoice;
@@ -95,8 +102,67 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   /// Credits bought on the way through, for saying so once they cover it.
   BigInt? _added;
 
-  /// Between a card payment and its credits reaching the account.
+  /// Between a card payment and the review showing its credits. Until then
+  /// the review shows the wait, never the summary from before the payment.
   var _adding = false;
+
+  /// The credits have not arrived in the time it waited: it offers to check
+  /// again rather than going back to Add credits.
+  var _slow = false;
+
+  /// A read of the price and balance is under way, and has not yet started
+  /// loading. See [didUpdateWidget].
+  var _refreshing = false;
+  var _sawLoading = false;
+
+  /// The balance before the payment, for knowing when its credits are in.
+  BigInt _balanceBefore = BigInt.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.onShown?.call();
+  }
+
+  @override
+  void didUpdateWidget(UploadReviewDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_refreshing) return;
+    final summary = widget.summary;
+    if (summary == null) {
+      _sawLoading = true;
+      return;
+    }
+    if (!_sawLoading) return;
+    // The fresh read is in.
+    _refreshing = false;
+    _sawLoading = false;
+    if (_adding) {
+      if (summary.isFree || summary.isCovered) {
+        _adding = false;
+        _slow = false;
+      } else {
+        _slow = true;
+      }
+    }
+  }
+
+  void _refresh() {
+    _refreshing = true;
+    _sawLoading = false;
+    widget.funding.refresh();
+  }
+
+  Future<void> _checkAgain() async {
+    setState(() => _slow = false);
+    final landed = await widget.funding.awaitCredits(above: _balanceBefore);
+    if (!mounted) return;
+    if (landed) {
+      _refresh();
+    } else {
+      setState(() => _slow = true);
+    }
+  }
 
   /// With more files than this, the list shows the first [_collapsedRows]
   /// and a "+ N more" line.
@@ -105,7 +171,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   var _showAllFiles = false;
 
   Future<void> _payByCard(int amountUsd) async {
-    final balanceBefore = widget.summary?.creditsBalance ?? BigInt.zero;
+    _balanceBefore = widget.summary?.creditsBalance ?? BigInt.zero;
     final added = await widget.funding.payByCard(amountUsd);
     if (!mounted) return;
     // Cancelled or refused: back to the review, as it was.
@@ -116,14 +182,16 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
     setState(() {
       _step = _Step.review;
       _adding = true;
-    });
-    await widget.funding.awaitCredits(above: balanceBefore);
-    if (!mounted) return;
-    widget.funding.refresh();
-    setState(() {
-      _adding = false;
+      _slow = false;
       _added = added;
     });
+    final landed = await widget.funding.awaitCredits(above: _balanceBefore);
+    if (!mounted) return;
+    if (landed) {
+      _refresh();
+    } else {
+      setState(() => _slow = true);
+    }
   }
 
   @override
@@ -163,7 +231,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
       // No price, no upload: the notice says so and offers to try again.
       else if (!summary.priceUnavailable)
         ModalAction(
-          action: widget.onUpload,
+          action: () => widget.onUpload(summary.method),
           title: widget.primaryLabel,
           isEnable: summary.isCovered && widget.primaryEnabled,
         ),
@@ -183,7 +251,11 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           ..._fileRows(context),
           const SizedBox(height: ArDriveSpacing.lg),
           if (_adding)
-            _Waiting(text: l10n.addingYourCredits)
+            _Waiting(
+              text: l10n.addingYourCredits,
+              actionLabel: _slow ? l10n.checkAgain : null,
+              onAction: _checkAgain,
+            )
           else if (summary == null)
             const _Waiting()
           else ...[
@@ -216,7 +288,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
             type: ArDriveNoticeType.error,
             message: l10n.uploadPriceUnavailable,
             actionLabel: l10n.tryAgain,
-            onAction: widget.funding.refresh,
+            onAction: _refresh,
           ),
         )
       else if (summary.needsCredits) ...[
@@ -372,9 +444,13 @@ class _Heading extends StatelessWidget {
 /// A wait in place of the cost, with what is being waited for if it is
 /// worth saying.
 class _Waiting extends StatelessWidget {
-  const _Waiting({this.text});
+  const _Waiting({this.text, this.actionLabel, this.onAction});
 
   final String? text;
+
+  /// A way out of a wait that has gone on too long, such as Check again.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -394,6 +470,14 @@ class _Waiting extends StatelessWidget {
             Text(
               text!,
               style: typography.paragraphNormal(color: colorTokens.textMid),
+            ),
+          ],
+          if (actionLabel != null) ...[
+            const Spacer(),
+            ArDriveLink(
+              text: actionLabel!,
+              isAction: true,
+              onTap: onAction,
             ),
           ],
         ],

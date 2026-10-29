@@ -306,8 +306,10 @@ class UploadPaymentMethodBloc
       final currentState = state as UploadPaymentMethodLoaded;
       final canUpload = _canUploadWithMethod(event.paymentMethod);
       emit(currentState.copyWith(
-        paymentMethodInfo: currentState.paymentMethodInfo
-            .copyWith(uploadMethod: event.paymentMethod),
+        paymentMethodInfo: currentState.paymentMethodInfo.copyWith(
+          uploadMethod: event.paymentMethod,
+          arChosen: event.paymentMethod == UploadMethod.ar,
+        ),
         canUpload: canUpload,
       ));
     }

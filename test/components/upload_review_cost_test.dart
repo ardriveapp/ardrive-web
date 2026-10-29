@@ -34,6 +34,8 @@ void main() {
       sufficentCreditsBalance: true,
       freeStatus: freeStatus,
       totalSize: 1,
+      // Chosen, as it is by the time a later step shows the cost.
+      arChosen: method == UploadMethod.ar,
     );
   }
 

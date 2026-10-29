@@ -45,6 +45,11 @@ class UploadPaymentMethodInfo extends Equatable {
   /// shown or compared. See [UploadPaymentInfo.turboUnreachable].
   final bool turboUnreachable;
 
+  /// The person picked the wallet themselves. The wallet is never chosen for
+  /// them: a default of AR, as preparation picks when credits are short or
+  /// Turbo can't be reached, is not a choice.
+  final bool arChosen;
+
   const UploadPaymentMethodInfo({
     required this.uploadMethod,
     required this.costEstimateTurbo,
@@ -63,6 +68,7 @@ class UploadPaymentMethodInfo extends Equatable {
     this.sourceWalletCredits,
     this.turboBalanceWinc,
     this.turboUnreachable = false,
+    this.arChosen = false,
   });
 
   bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
@@ -92,6 +98,7 @@ class UploadPaymentMethodInfo extends Equatable {
     SourceWalletCredits? sourceWalletCredits,
     BigInt? turboBalanceWinc,
     bool? turboUnreachable,
+    bool? arChosen,
   }) {
     return UploadPaymentMethodInfo(
       totalSize: totalSize ?? this.totalSize,
@@ -113,6 +120,7 @@ class UploadPaymentMethodInfo extends Equatable {
       sourceWalletCredits: sourceWalletCredits ?? this.sourceWalletCredits,
       turboBalanceWinc: turboBalanceWinc ?? this.turboBalanceWinc,
       turboUnreachable: turboUnreachable ?? this.turboUnreachable,
+      arChosen: arChosen ?? this.arChosen,
     );
   }
 
@@ -132,5 +140,6 @@ class UploadPaymentMethodInfo extends Equatable {
         sourceWalletCredits,
         turboBalanceWinc,
         turboUnreachable,
+        arChosen,
       ];
 }

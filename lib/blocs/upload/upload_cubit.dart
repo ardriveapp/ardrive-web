@@ -1043,16 +1043,53 @@ class UploadCubit extends Cubit<UploadState> {
     return;
   }
 
-  void retryUploads() {
-    if (state is UploadFailure) {
-      final controller = (state as UploadFailure).controller!;
+  /// Whether a retry is starting, so a second press does nothing.
+  bool _retrying = false;
 
-      controller.retryFailedTasks(_auth.currentUser.wallet);
+  /// Sends the failed files again. It waits for whatever is left of the
+  /// attempt before to stop, so nothing is sent or paid for twice, and a
+  /// second press while it starts is ignored.
+  Future<void> retryUploads() async {
+    final current = state;
+    if (_retrying || current is! UploadFailure) return;
+    final controller = current.controller;
+    if (controller == null) return;
+    _retrying = true;
+    emit(UploadPreparationInProgress());
+    try {
+      await controller.retryFailedTasks(_auth.currentUser.wallet);
+    } finally {
+      _retrying = false;
     }
   }
 
+  /// Upload, pressed on the review: paid the way the review showed, whatever
+  /// the payment sheet last defaulted to, which can be the wallet when credits
+  /// are short or Turbo is down. Goes on to the license step when there is
+  /// one, the manifest review when manifests are chosen, or the upload.
+  void uploadFromReview({
+    required UploadMethod method,
+    LicenseCategory? licenseCategory,
+  }) {
+    _uploadMethod = method;
+    if (licenseCategory != null) {
+      initialScreenNext(licenseCategory: licenseCategory);
+    } else {
+      initialScreenUpload();
+    }
+  }
+
+  /// How this upload will be paid for.
+  @visibleForTesting
+  UploadMethod? get uploadMethod => _uploadMethod;
+
+  /// Set once the person cancels. A canceled upload is never reported
+  /// complete, so it never says the files are saved.
+  bool _uploadCanceled = false;
+
   Future<void> cancelUpload() async {
     if (state is UploadInProgress) {
+      _uploadCanceled = true;
       try {
         final state = this.state as UploadInProgress;
 
@@ -1133,6 +1170,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
+        if (_uploadCanceled) return;
         if (_selectedManifestModels.isNotEmpty) {
           await prepareManifestUpload();
         }
@@ -1193,6 +1231,7 @@ class UploadCubit extends Cubit<UploadState> {
     // TODO: implement on the upload repository
     uploadController.onDone(
       (tasks) async {
+        if (_uploadCanceled) return;
         unawaited(_profileCubit.refreshBalance());
 
         logger.i(

@@ -31,8 +31,9 @@ class UploadReviewSummary extends Equatable {
   /// Covered by the free upload allowance.
   final bool isFree;
 
-  /// Turbo's price or the balance could not be read, and the wallet can't pay
-  /// instead. There is no upload until it can be read: a retry.
+  /// Turbo's price or the balance could not be read. There is no upload with
+  /// Turbo Credits until it can: a retry. The wallet still pays if the person
+  /// picks it.
   final bool priceUnavailable;
 
   /// Free, or paid for by [method]. The only case in which Upload is offered.
@@ -125,23 +126,31 @@ class UploadReviewSummary extends Equatable {
       );
     }
 
-    if (info.turboUnreachable) {
-      return walletCanPay
-          ? make(method: UploadMethod.ar, isCovered: true)
-          : make(
-              method: UploadMethod.turbo,
-              isCovered: false,
-              priceUnavailable: true,
-            );
+    // The wallet pays only when the person picked it, beside its warning to
+    // keep the tab open. Never as a fallback: not when credits are short, not
+    // when Turbo can't be reached, not after a card payment.
+    if (walletCanPay && info.arChosen && info.uploadMethod == UploadMethod.ar) {
+      return make(
+        method: UploadMethod.ar,
+        isCovered: true,
+        offersPaymentChoice: true,
+      );
     }
 
-    // Without a wallet that can pay, Turbo Credits are the only way, whatever
-    // the default was.
-    final method = walletCanPay ? info.uploadMethod : UploadMethod.turbo;
+    // No price from Turbo. A zero estimate is the placeholder for one, and is
+    // never a price anything covers.
+    if (info.turboUnreachable || creditsCost <= BigInt.zero) {
+      return make(
+        method: UploadMethod.turbo,
+        isCovered: false,
+        priceUnavailable: true,
+        offersPaymentChoice: walletCanPay,
+      );
+    }
 
     return make(
-      method: method,
-      isCovered: method == UploadMethod.ar || balance >= creditsCost,
+      method: UploadMethod.turbo,
+      isCovered: balance >= creditsCost,
       offersPaymentChoice: walletCanPay,
     );
   }
