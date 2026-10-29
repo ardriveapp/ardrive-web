@@ -5,6 +5,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -59,8 +60,15 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         // asking Wander, which a locked Wander answers with its unlock prompt.
         final writes =
             event is FsEntryMoveSubmit || event is FsEntryMoveSkipConflicts;
-        if (writes && await _profileCubit.logoutIfWalletMismatch()) {
-          emit(const FsEntryMoveWalletMismatch());
+        try {
+          if (writes && await _profileCubit.logoutIfWalletMismatch()) {
+            emit(const FsEntryMoveWalletMismatch());
+            return;
+          }
+        } on ArConnectUnavailableException catch (e) {
+          // Wander couldn't be reached and the person chose Cancel. Nothing
+          // moved: the folder stays in view, to try again or close.
+          logger.w('Could not check the wallet before moving: $e');
           return;
         }
 

@@ -3,6 +3,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -329,6 +330,64 @@ void main() {
         isA<FsEntryMoveSuccess>(),
       ],
     );
+
+    group('the wallet check before moving', () {
+      FsEntryMoveBloc build() => FsEntryMoveBloc(
+            crypto: ArDriveCrypto(),
+            arweave: arweave,
+            turboUploadService: turboUploadService,
+            syncCubit: syncBloc,
+            driveId: driveId,
+            driveDao: driveDao,
+            profileCubit: profileCubit,
+            selectedItems: [
+              createMockFileDataTableItem(
+                driveId: driveId,
+                name: 'nothing-like-it.txt',
+              ),
+            ],
+            platform: FakePlatform(operatingSystem: 'android'),
+          );
+
+      Future<void> submit(FsEntryMoveBloc bloc) async => bloc.add(
+            FsEntryMoveSubmit(
+              folderInView: await driveDao
+                  .folderById(folderId: nestedFolderId)
+                  .getSingle(),
+              showHiddenItems: false,
+            ),
+          );
+
+      void nothingWasWritten() {
+        verifyNever(() => arweave.prepareEntityDataItem(any(), any(),
+            key: any(named: 'key')));
+        verifyNever(() => arweave.prepareDataBundleTx(any(), any()));
+      }
+
+      blocTest<FsEntryMoveBloc, FsEntryMoveState>(
+        'on another wallet, says so and moves nothing',
+        setUp: () => when(profileCubit.logoutIfWalletMismatch)
+            .thenAnswer((_) async => true),
+        build: build,
+        act: submit,
+        expect: () => [isA<FsEntryMoveWalletMismatch>()],
+        verify: (_) => nothingWasWritten(),
+      );
+
+      blocTest<FsEntryMoveBloc, FsEntryMoveState>(
+        'Wander unavailable, then Cancel: moves nothing, the folder stays',
+        setUp: () => when(profileCubit.logoutIfWalletMismatch).thenThrow(
+          const ArConnectUnavailableException(
+            ArConnectUnavailableReason.noAnswer,
+          ),
+        ),
+        build: build,
+        act: submit,
+        expect: () => const <FsEntryMoveState>[],
+        errors: () => const <Object>[],
+        verify: (_) => nothingWasWritten(),
+      );
+    });
 
     group('a name conflict names the destination', () {
       FsEntryMoveBloc buildWithFileNamed(String name) => FsEntryMoveBloc(
