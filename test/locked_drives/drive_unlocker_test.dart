@@ -8,7 +8,6 @@ import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
@@ -16,7 +15,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/locked_drive_fixtures.dart';
-import '../test_utils/mocks.dart';
 import '../test_utils/utils.dart';
 
 const _driveA = '6939b9e0-cc98-42cb-bae0-5888eca78885';

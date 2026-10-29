@@ -116,6 +116,7 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          askWalletAgain: any(named: 'askWalletAgain'),
           onDriveRead: any(named: 'onDriveRead'),
           onDriveUnlocked: any(named: 'onDriveUnlocked'),
         )).thenAnswer((_) async {});

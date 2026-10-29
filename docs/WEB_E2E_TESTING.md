@@ -333,6 +333,30 @@ page. `solana_wallet.js` gives the page one, a Wallet Standard wallet called
 as an `arns-action` line with Turbo's nonce and status. `launch.js` refuses
 ArNS actions on any payment service but the testnet one.
 
+**Locked drives.** A wallet whose private drives have different passwords
+signs in with one; the others show as locked and are unlocked from the list.
+It needs its own wallet, so it runs in its own profile and credentials:
+1. Once, make the wallet and its drives: a fresh wallet owning *E2E Locked
+   Login* (the login password), *E2E Locked A* and *E2E Locked B* (a second
+   password) and *E2E Locked Unicode* (a non-ASCII password, made with
+   core-js, whose encoding of it differs from web's). Each is free metadata
+   on Turbo. Keep everything in `~/.config/ardrive-e2e/locked-drives/`,
+   chmod 600: `wallet.json`, `env` (login.js's credentials for it),
+   `passwords.json` (`login`, `other`, `unicode`) and `drives.json`
+   (`name`, `password`, `driveId`).
+2. Start the browser and log in with them, in a profile of their own:
+   `export E2E_DIR=~/.cache/ardrive-e2e-locked CREDENTIALS=~/.config/ardrive-e2e/locked-drives/env`,
+   then `node launch.js` and `node login.js` as usual.
+3. `node locked_drives.js`. It checks, through the accessibility tree: the
+   three drives are listed as locked with their emoji; a wrong password says
+   *Wrong password*; offline says *Couldn't reach the network. Try again.*;
+   the right password opens the drive; one password with *Try on my other
+   locked drives* opens the drives that share it. Screenshots are
+   `$E2E_DIR/shots/locked-*.png`, at desktop and phone width.
+
+A drive unlocked this way is remembered on this profile, so a second run
+needs a fresh `E2E_DIR`.
+
 ## What to test
 
 Don't try to test everything. There are three kinds of run:

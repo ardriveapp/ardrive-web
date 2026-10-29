@@ -96,6 +96,7 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          askWalletAgain: any(named: 'askWalletAgain'),
         )).thenAnswer((_) async {});
     when(() => tabVisibility.isTabFocused()).thenReturn(true);
     when(() => tabVisibility.onTabGetsFocused(any()))
@@ -371,6 +372,7 @@ void main() {
             wallet: any(named: 'wallet'),
             password: any(named: 'password'),
             cipherKey: any(named: 'cipherKey'),
+          askWalletAgain: any(named: 'askWalletAgain'),
           )).thenThrow(Exception('the gateway said no'));
 
       final cubit = buildCubit();

@@ -376,6 +376,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
   /// and one couldn't be read, the sign-in reports the gateway, not "Wrong
   /// password". A wallet prompt that is cancelled ends the check
   /// as "Wrong password", as it always has.
+  @visibleForTesting
+  Future<void> validateUser(Wallet wallet, String password) =>
+      _validateUser(wallet, password);
+
   Future<void> _validateUser(
     Wallet wallet,
     String password,
