@@ -78,6 +78,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   bool get hasSignUpToRetry => _signUpToRetry != null;
   bool existingUserFlow = true;
 
+  /// Completed by Cancel while a browser wallet is asked for something. Each
+  /// request has its own, so a late answer to a cancelled one is dropped.
+  Completer<void>? _walletCancel;
+
   LoginBloc({
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
@@ -158,6 +162,69 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleLoginWithMetamaskEvent(event, emit);
     } else if (event is LoginWithSolana) {
       await _handleLoginWithSolanaEvent(event, emit);
+    } else if (event is EnterSeedPhrase) {
+      emit(const LoginEnterRecoveryPhrase());
+    } else if (event is ShowLanding) {
+      emit(const LoginLanding());
+    } else if (event is CancelWalletLogin) {
+      await _handleCancelWalletLoginEvent(emit);
+    }
+  }
+
+  /// The Log in panel.
+  LoginState get _logInPanel => LoginInitial(
+        isArConnectAvailable: _arConnectService.isExtensionPresent(),
+        existingUserFlow: true,
+      );
+
+  /// Shows the panel that waits on [wallet] and returns what Cancel
+  /// completes.
+  Completer<void> _askWallet(Emitter<LoginState> emit, BrowserWallet wallet) {
+    final previous = _walletCancel;
+    if (previous != null && !previous.isCompleted) previous.complete();
+    final cancel = Completer<void>();
+    _walletCancel = cancel;
+    emit(LoginWaitingOnWallet(wallet: wallet));
+    return cancel;
+  }
+
+  /// The wallet answered, so there is nothing left to cancel.
+  void _walletAnswered(Completer<void> cancel) {
+    if (identical(_walletCancel, cancel)) _walletCancel = null;
+  }
+
+  /// [request]'s answer, or [WalletLoginCancelled] once Cancel is pressed,
+  /// whichever comes first. An extension that never answers can't keep the
+  /// panel waiting.
+  Future<T> _walletAnswer<T>(Completer<void> cancel, Future<T> request) async {
+    if (cancel.isCompleted) throw const WalletLoginCancelled();
+    final answer = await Future.any<Object?>([
+      request,
+      cancel.future.then((_) => null),
+    ]);
+    if (cancel.isCompleted) throw const WalletLoginCancelled();
+    return answer as T;
+  }
+
+  Future<void> _handleCancelWalletLoginEvent(Emitter<LoginState> emit) async {
+    final cancel = _walletCancel;
+    final waitingOn = state;
+    if (cancel == null || waitingOn is! LoginWaitingOnWallet) return;
+
+    _walletCancel = null;
+    cancel.complete();
+    ignoreNextWaletSwitch = false;
+    _sourceWalletAddress = null;
+    emit(_logInPanel);
+
+    final wallet = waitingOn.wallet;
+    if (wallet != BrowserWallet.wander && wallet != BrowserWallet.metamask) {
+      // Phantom and Solflare can drop a connection; the others can't.
+      try {
+        await _solanaProviderService.disconnect();
+      } catch (e) {
+        logger.w('Could not disconnect the Solana wallet after Cancel');
+      }
     }
   }
 
@@ -198,7 +265,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       return wallet;
     } catch (e) {
-      logger.e('Invalid wallet file', e);
+      // Not the error itself: a parse error quotes the file, which can be
+      // a key.
+      logger.w('The chosen file is not a keyfile');
 
       return null;
     }
@@ -649,48 +718,67 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     usingSeedphrase = false;
     _sourceWalletAddress = null;
 
-    final arconnectVersionSupported =
-        await _arConnectService.isWalletVersionSupported();
-    if (!arconnectVersionSupported) {
-      emit(const LoginFailure(ArConnectVersionNotSupportedException()));
-      return;
-    }
-
-    // 1. Connect wallet (ArConnect handles its own popup)
-    bool hasPermissions = await _arConnectService.checkPermissions();
-    if (!hasPermissions) {
-      try {
-        // If we have partial permissions, disconnect before reconnecting.
-        ignoreNextWaletSwitch = true;
-        await _arConnectService.disconnect();
-      } catch (_) {}
-
-      try {
-        await _arConnectService.connect();
-      } catch (e) {
-        // User rejected or extension error — return silently
-        ignoreNextWaletSwitch = false;
+    final cancel = _askWallet(emit, BrowserWallet.wander);
+    final ArConnectWallet wallet;
+    try {
+      final arconnectVersionSupported = await _walletAnswer(
+          cancel, _arConnectService.isWalletVersionSupported());
+      if (!arconnectVersionSupported) {
+        _walletAnswered(cancel);
+        emit(_logInPanel);
+        emit(const LoginFailure(ArConnectVersionNotSupportedException()));
         return;
       }
 
-      // Clear the flag after connect completes — if the wallet switch
-      // event was going to fire, it already did during disconnect/connect.
-      ignoreNextWaletSwitch = false;
-    }
+      // 1. Connect wallet (ArConnect handles its own popup)
+      bool hasPermissions =
+          await _walletAnswer(cancel, _arConnectService.checkPermissions());
+      if (!hasPermissions) {
+        try {
+          // If we have partial permissions, disconnect before reconnecting.
+          ignoreNextWaletSwitch = true;
+          await _walletAnswer(cancel, _arConnectService.disconnect());
+        } on WalletLoginCancelled {
+          rethrow;
+        } catch (_) {}
 
-    hasPermissions = await _arConnectService.checkPermissions();
-    if (!hasPermissions) {
-      // User didn't grant permissions — return silently
+        try {
+          await _walletAnswer(cancel, _arConnectService.connect());
+        } on WalletLoginCancelled {
+          rethrow;
+        } catch (e) {
+          // User rejected or extension error: back to Log in, no error.
+          ignoreNextWaletSwitch = false;
+          _walletAnswered(cancel);
+          emit(_logInPanel);
+          return;
+        }
+
+        // Clear the flag after connect completes — if the wallet switch
+        // event was going to fire, it already did during disconnect/connect.
+        ignoreNextWaletSwitch = false;
+      }
+
+      hasPermissions =
+          await _walletAnswer(cancel, _arConnectService.checkPermissions());
+      if (!hasPermissions) {
+        // User didn't grant permissions: back to Log in, no error.
+        _walletAnswered(cancel);
+        emit(_logInPanel);
+        return;
+      }
+
+      wallet = ArConnectWallet(_arConnectService);
+      lastKnownWalletAddress = await _walletAnswer(cancel, wallet.getAddress());
+    } on WalletLoginCancelled {
       return;
     }
-
-    final wallet = ArConnectWallet(_arConnectService);
+    _walletAnswered(cancel);
 
     profileType = ProfileType.arConnect;
 
-    lastKnownWalletAddress = await wallet.getAddress();
-
     // 2. Server-side check (user waits — show blocking dialog)
+    emit(_logInPanel);
     emit(const LoginShowBlockingDialog(
         message: 'Setting up your account.\nThis may take a moment.'));
 
@@ -849,7 +937,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginShowLoader());
 
     try {
-      final wallet = await generateWalletFromMnemonic(event.mnemonic);
+      final wallet = await _walletFromMnemonic(event.mnemonic);
 
       emit(LoginCloseBlockingDialog());
 
@@ -861,8 +949,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             wallet: wallet, isNewUser: !hasDrives, showWalletCreated: true));
       }
     } catch (e) {
+      usingSeedphrase = false;
       emit(LoginCloseBlockingDialog());
-      emit(LoginFailure(e));
+      if (e is AuthenticationGatewayException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+      } else {
+        emit(LoginFailure(e));
+      }
     }
   }
 
@@ -938,41 +1031,65 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    // 1. Connect wallet (MetaMask handles its own popup)
-    EthereumWallet? ethWallet;
-    try {
-      ethWallet = await _ethereumProviderService.connect();
-    } catch (e) {
-      // User rejected or extension error — return silently
-      return;
-    }
-
-    if (ethWallet == null) {
-      return;
-    }
-
-    _sourceWalletAddress = await ethWallet.getAddress();
-
-    // 2. Sign verification message (MetaMask handles its own popup)
-    const signMessage = 'Sign message to verify wallet address.';
-
+    final cancel = _askWallet(emit, BrowserWallet.metamask);
+    final EthereumWallet ethWallet;
     late EthereumProviderWallet derivedEthWallet;
     try {
-      final signature =
-          await ethWallet.sign(Uint8List.fromList(signMessage.codeUnits));
+      // 1. Connect wallet (MetaMask handles its own popup)
+      EthereumWallet? connected;
+      try {
+        connected =
+            await _walletAnswer(cancel, _ethereumProviderService.connect());
+      } on WalletLoginCancelled {
+        rethrow;
+      } catch (e) {
+        // User rejected or extension error: back to Log in, no error.
+        connected = null;
+      }
 
-      final signatureSha256 = await sha256.hash(signature);
+      if (connected == null) {
+        _walletAnswered(cancel);
+        emit(_logInPanel);
+        return;
+      }
+      ethWallet = connected;
 
-      final privateKey = web3credentials.EthPrivateKey(
-          Uint8List.fromList(signatureSha256.bytes));
+      _sourceWalletAddress =
+          await _walletAnswer(cancel, ethWallet.getAddress());
 
-      derivedEthWallet = EthereumProviderWallet(privateKey);
-    } catch (e) {
-      // User rejected signature or extension error — return silently
+      // 2. Sign verification message (MetaMask handles its own popup)
+      emit(const LoginWaitingOnWallet(
+        wallet: BrowserWallet.metamask,
+        request: BrowserWalletRequest.signIn,
+      ));
+      const signMessage = 'Sign message to verify wallet address.';
+
+      try {
+        final signature = await _walletAnswer(
+            cancel, ethWallet.sign(Uint8List.fromList(signMessage.codeUnits)));
+
+        final signatureSha256 = await sha256.hash(signature);
+
+        final privateKey = web3credentials.EthPrivateKey(
+            Uint8List.fromList(signatureSha256.bytes));
+
+        derivedEthWallet = EthereumProviderWallet(privateKey);
+      } on WalletLoginCancelled {
+        rethrow;
+      } catch (e) {
+        // User rejected signature or extension error: back to Log in.
+        _sourceWalletAddress = null;
+        _walletAnswered(cancel);
+        emit(_logInPanel);
+        return;
+      }
+    } on WalletLoginCancelled {
       return;
     }
+    _walletAnswered(cancel);
 
     // 3. Server-side check (user waits — show blocking dialog)
+    emit(_logInPanel);
     emit(const LoginShowBlockingDialog(
         message: 'Setting up your account.\nThis may take a moment.'));
 
@@ -1023,32 +1140,58 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
+    final browserWallet = switch (event.provider) {
+      'phantom' => BrowserWallet.phantom,
+      'solflare' => BrowserWallet.solflare,
+      _ => BrowserWallet.otherSolana,
+    };
+    final cancel = _askWallet(emit, browserWallet);
+    var settingUp = false;
+
     try {
-      // 1. Connect wallet (Phantom/Solflare handles its own popup)
-      final connection =
-          await _solanaProviderService.connect(provider: event.provider);
-
-      if (connection == null) {
-        await _solanaProviderService.disconnect();
-        return;
-      }
-
-      _sourceWalletAddress = connection.address;
-
-      // 2. Sign identity message (wallet extension shows its own popup)
       final Uint8List signature;
       try {
-        signature =
-            await _solanaProviderService.signMessage(solanaIdentityMessage);
-      } catch (e) {
-        await _solanaProviderService.disconnect();
-        _sourceWalletAddress = null;
+        // 1. Connect wallet (Phantom/Solflare handles its own popup)
+        final connection = await _walletAnswer(
+            cancel, _solanaProviderService.connect(provider: event.provider));
+
+        if (connection == null) {
+          _walletAnswered(cancel);
+          emit(_logInPanel);
+          await _solanaProviderService.disconnect();
+          return;
+        }
+
+        _sourceWalletAddress = connection.address;
+
+        // 2. Sign identity message (wallet extension shows its own popup)
+        emit(LoginWaitingOnWallet(
+          wallet: browserWallet,
+          request: BrowserWalletRequest.signIn,
+        ));
+        try {
+          signature = await _walletAnswer(cancel,
+              _solanaProviderService.signMessage(solanaIdentityMessage));
+        } on WalletLoginCancelled {
+          rethrow;
+        } catch (e) {
+          _walletAnswered(cancel);
+          emit(_logInPanel);
+          await _solanaProviderService.disconnect();
+          _sourceWalletAddress = null;
+          return;
+        }
+      } on WalletLoginCancelled {
+        // Cancel has gone back to Log in and dropped the connection.
         return;
       }
+      _walletAnswered(cancel);
+      emit(_logInPanel);
 
       // 3. Derive wallet and check account (show themed loader)
       emit(const LoginShowBlockingDialog(
           message: 'Setting up your account.\nThis may take a moment.'));
+      settingUp = true;
 
       final mnemonic = await deriveMnemonicFromSolanaSignature(signature);
       final wallet = await _walletFromMnemonic(mnemonic);
@@ -1075,9 +1218,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         ));
       }
     } catch (e) {
+      _walletAnswered(cancel);
       await _solanaProviderService.disconnect();
       _sourceWalletAddress = null;
-      emit(LoginCloseBlockingDialog());
+      // Closes the dialog only if it opened: before it, there is none, and
+      // the pop would close the page instead.
+      if (settingUp) {
+        emit(LoginCloseBlockingDialog());
+      } else {
+        emit(_logInPanel);
+      }
       if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));
       } else {
@@ -1089,4 +1239,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   String _getGatewayUrl() {
     return _configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
   }
+}
+
+/// Cancel was pressed while a browser wallet was asked for something.
+class WalletLoginCancelled implements Exception {
+  const WalletLoginCancelled();
 }

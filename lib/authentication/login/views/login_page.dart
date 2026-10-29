@@ -35,10 +35,13 @@ import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
 import 'creating_account_view.dart';
+import 'enter_recovery_phrase_view.dart';
 import 'landing_view.dart';
+import 'log_in_view.dart';
 import 'recovery_phrase_view.dart';
 import 'modals/enter_your_password_modal.dart';
-import 'prompt_wallet_view.dart';
+import 'wallet_wait_view.dart';
+import 'welcome_back_view.dart';
 
 class LoginPage extends StatefulWidget {
   final bool gettingStarted;
@@ -134,6 +137,9 @@ class _LoginPageState extends State<LoginPage> {
           }
 
           if (loginState is PromptPassword) {
+            // The account already on this device is unlocked in the panel,
+            // Welcome back; a dialog would cover it.
+            if (loginState.alreadyLoggedIn) return;
             showEnterYourPasswordDialog(
               context: context,
               loginBloc: context.read<LoginBloc>(),
@@ -504,47 +510,59 @@ class _PhoneView extends StatelessWidget {
                   child: SizedBox(
                     width: constraints.maxWidth,
                     height: math.max(520, constraints.maxHeight - 16),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: _buildContent(
-                            context,
-                            loginState: loginState,
-                            globalKey: globalKey,
+                    // The panel's own inset, so a step's fields and buttons
+                    // don't run into its border.
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: _buildContent(
+                              context,
+                              loginState: loginState,
+                              globalKey: globalKey,
+                            ),
                           ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SettingsSubmenu(
-                                child: ArDriveClickArea(
-                                  tooltip: 'Advanced settings',
-                                  child: Icon(
-                                    Icons.settings,
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colorTokens
-                                        .iconLow,
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SettingsSubmenu(
+                                  child: ArDriveClickArea(
+                                    tooltip: 'Advanced settings',
+                                    child: Icon(
+                                      Icons.settings,
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .iconLow,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              const IconThemeSwitcher(),
-                            ],
+                                const SizedBox(width: 16),
+                                const IconThemeSwitcher(),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 // The whole bento, after the panel: on a phone the way in
-                // comes first.
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: TilesView(),
+                // comes first. A step past the first panel takes the whole
+                // screen, so the bento is for the first panel only.
+                BlocBuilder<LoginBloc, LoginState>(
+                  buildWhen: (_, current) => loginPanelRebuildsOn(current),
+                  builder: (context, state) =>
+                      state is LoginLanding || state is LoginLoading
+                          ? const Padding(
+                              padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                              child: TilesView(),
+                            )
+                          : const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -559,11 +577,20 @@ class _PhoneView extends StatelessWidget {
 /// transient states leave the panel as it is.
 @visibleForTesting
 bool loginPanelRebuildsOn(LoginState current) {
-  final isFailure = current is LoginFailure;
+  final isFailure = current is LoginFailure ||
+      current is LoginUnknownFailure ||
+      current is GatewayLoginFailure ||
+      current is LoginPasswordFailedWithPrivateDriveNotFound;
   final isSuccess = current is LoginSuccess;
   final isLoading = current is LoginLoading ||
       current is LoginShowLoader ||
+      current is LoginShowBlockingDialog ||
       current is LoginCloseBlockingDialog;
+  // A password for a wallet just chosen is asked in a dialog over the panel
+  // it was chosen on. Only the account already on this device is unlocked
+  // in the panel itself.
+  final isPasswordDialog =
+      current is PromptPassword && !current.alreadyLoggedIn;
   final isPasswordChecking =
       current is LoginCheckingPassword || current is LoginPasswordFailed;
   // The password dialog opens over whatever the panel shows: for a new
@@ -578,6 +605,7 @@ bool loginPanelRebuildsOn(LoginState current) {
   return !(isFailure ||
       isSuccess ||
       isLoading ||
+      isPasswordDialog ||
       isPasswordChecking ||
       isChoosingPassword ||
       isPasswordCreated ||
@@ -592,44 +620,59 @@ Widget _buildContent(
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
     buildWhen: (previous, current) => loginPanelRebuildsOn(current),
-    builder: (context, loginState) {
-      late Widget content;
-      final loginBloc = context.read<LoginBloc>();
-
-      if (loginState is LoginSuccess) {
-        content = const MaxDeviceSizesConstrainedBox(
-          child: LoginCard(
-            content: Center(
-              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
-            ),
-          ),
-        );
-      } else if (loginState is LoginDownloadGeneratedWallet &&
-          loginState.mnemonic != null) {
-        content = RecoveryPhraseView(
-          key: const Key('recoveryPhraseView'),
-          mnemonic: loginState.mnemonic!,
-          wallet: loginState.wallet,
-        );
-      } else if (loginState is LoginCreatingAccount) {
-        content = const CreatingAccountView(key: Key('creatingAccountView'));
-      } else if (loginState is LoginLoading || loginState is LoginLanding) {
-        content = const LandingView(
-          key: Key('landingPageView'),
-        );
-      } else {
-        content = PromptWalletView(
-          key: const Key('promptWalletView'),
-          isArConnectAvailable: loginBloc.isArConnectAvailable,
-          isMetamaskAvailable: loginBloc.isMetamaskAvailable,
-          isSolanaAvailable: loginBloc.isSolanaAvailable,
-          existingUserFlow: loginBloc.existingUserFlow,
-        );
-      }
-
-      return content;
-    },
+    builder: (context, loginState) =>
+        loginPanelFor(loginState, context.read<LoginBloc>()),
   );
+}
+
+/// The sign-in panel for [loginState].
+@visibleForTesting
+Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
+  late Widget content;
+
+  if (loginState is PromptPassword && loginState.alreadyLoggedIn) {
+    content = const WelcomeBackView(key: Key('welcomeBackView'));
+  } else if (loginState is LoginEnterRecoveryPhrase) {
+    content = const EnterRecoveryPhraseView(
+      key: Key('enterRecoveryPhraseView'),
+    );
+  } else if (loginState is LoginWaitingOnWallet) {
+    content = WalletWaitView(
+      key: const Key('walletWaitView'),
+      wallet: loginState.wallet,
+      request: loginState.request,
+    );
+  } else if (loginState is LoginSuccess) {
+    content = const MaxDeviceSizesConstrainedBox(
+      child: LoginCard(
+        content: Center(
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+        ),
+      ),
+    );
+  } else if (loginState is LoginDownloadGeneratedWallet &&
+      loginState.mnemonic != null) {
+    content = RecoveryPhraseView(
+      key: const Key('recoveryPhraseView'),
+      mnemonic: loginState.mnemonic!,
+      wallet: loginState.wallet,
+    );
+  } else if (loginState is LoginCreatingAccount) {
+    content = const CreatingAccountView(key: Key('creatingAccountView'));
+  } else if (loginState is LoginLoading || loginState is LoginLanding) {
+    content = const LandingView(
+      key: Key('landingPageView'),
+    );
+  } else {
+    content = LogInView(
+      key: const Key('logInView'),
+      isArConnectAvailable: loginBloc.isArConnectAvailable,
+      isMetamaskAvailable: loginBloc.isMetamaskAvailable,
+      isSolanaAvailable: loginBloc.isSolanaAvailable,
+    );
+  }
+
+  return content;
 }
 
 Widget _roundedBorderContainer({

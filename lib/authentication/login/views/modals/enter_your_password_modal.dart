@@ -395,9 +395,17 @@ void showEnterYourPasswordDialog(
 }
 
 class ForgetWalletDialog extends StatelessWidget {
-  const ForgetWalletDialog({super.key, required this.loginBloc});
+  const ForgetWalletDialog({
+    super.key,
+    required this.loginBloc,
+    this.closesDialogBelow = true,
+  });
 
   final LoginBloc loginBloc;
+
+  /// Whether Confirm also closes the dialog this one opened over. False when
+  /// it opened over the sign-in panel itself.
+  final bool closesDialogBelow;
 
   @override
   Widget build(BuildContext context) {
@@ -415,7 +423,7 @@ class ForgetWalletDialog extends StatelessWidget {
           title: 'Confirm',
           action: () {
             Navigator.of(context).pop();
-            Navigator.of(context).pop();
+            if (closesDialogBelow) Navigator.of(context).pop();
             loginBloc.add(const ForgetWallet());
             context.read<ProfileNameBloc>().add(const CleanProfileName());
             PlausibleEventTracker.trackClickForgetWalletTextButton();
