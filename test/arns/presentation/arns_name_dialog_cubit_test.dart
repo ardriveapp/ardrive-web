@@ -12,6 +12,7 @@ import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -628,6 +629,35 @@ void main() {
 
       expect(cubit.state.stage, ArNSDialogStage.done);
       expect(executedChange(), isA<ArNSSetRecord>());
+    });
+
+    // The dialog is on "committing", which has no actions and can't be
+    // dismissed: Cancel on "Wander didn't answer" must not leave it there.
+    test('Wander unavailable, then Cancel, fails, charged nothing', () async {
+      final cubit = await open(
+        walletMismatch: () => Future.error(
+          const ArConnectUnavailableException(
+            ArConnectUnavailableReason.noAnswer,
+          ),
+        ),
+      );
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      await cubit.commit();
+
+      expect(cubit.state.stage, ArNSDialogStage.failed);
+      expect(cubit.state.failure?.kind, ArNSFailureKind.rejected);
+      expect(cubit.canTryAgain, isTrue);
+      verifyNever(() => executor.execute(
+            name: any(named: 'name'),
+            change: any(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          ));
     });
 
     // With nobody signed in, finding the payer threw past the dialog's

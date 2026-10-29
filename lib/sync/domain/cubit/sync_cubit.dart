@@ -904,7 +904,10 @@ class SyncCubit extends Cubit<SyncState> {
     if (PublicationMode.isOn) return;
     final isTabFocused = _tabVisibility.isTabFocused();
     logger.i('[ArConnect SYNC] isTabFocused: $isTabFocused');
-    if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
+    // Quietly: a sync is no reason to bring up Wander's unlock prompt. See
+    // [ProfileCubit.logoutIfWalletMismatchInBackground].
+    if (isTabFocused &&
+        await _profileCubit.logoutIfWalletMismatchInBackground()) {
       _emitIfOpen(SyncWalletMismatch());
       return;
     }

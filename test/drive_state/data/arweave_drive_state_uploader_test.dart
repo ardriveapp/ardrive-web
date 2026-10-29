@@ -6,6 +6,7 @@ import 'package:ardrive/drive_state/data/arweave_drive_state_uploader.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:arweave/arweave.dart';
@@ -257,6 +258,30 @@ void main() {
 
       expect(result.isFailed, isTrue);
       expect(result.reason, contains('wallet changed'));
+      verifyNever(() => arweave.prepareEntityDataItem(any(), any(),
+          skipSignature: any(named: 'skipSignature')));
+      verifyNever(() => turboUploadService.postDataItem(
+            dataItem: any(named: 'dataItem'),
+            wallet: any(named: 'wallet'),
+          ));
+    });
+
+    test('Wander unavailable, then Cancel, publishes nothing and says so',
+        () async {
+      when(() => profileCubit.logoutIfWalletMismatch()).thenThrow(
+        const ArConnectUnavailableException(
+          ArConnectUnavailableReason.noAnswer,
+        ),
+      );
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.turbo,
+      );
+
+      expect(result.isFailed, isTrue);
+      expect(result.reason, contains("Wander didn't answer"));
+      expect(result.reason, contains('nothing was spent'));
       verifyNever(() => arweave.prepareEntityDataItem(any(), any(),
           skipSignature: any(named: 'skipSignature')));
       verifyNever(() => turboUploadService.postDataItem(
