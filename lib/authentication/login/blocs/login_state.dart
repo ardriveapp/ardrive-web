@@ -120,10 +120,15 @@ class CreateNewPassword extends LoginState {
       this.mnemonic,
       required this.isNewUser,
       required this.showWalletCreated,
+      this.fromSignUp = false,
       this.retrying = false});
 
   final String? mnemonic;
   final Wallet wallet;
+
+  /// A browser wallet chosen from Sign up's choice: a new ArDrive account,
+  /// so its password follows the new-account rules.
+  final bool fromSignUp;
 
   /// Asked again because the last try could not finish.
   final bool retrying;
@@ -138,7 +143,7 @@ class CreateNewPassword extends LoginState {
 
   @override
   List<Object?> get props =>
-      [mnemonic, wallet, isNewUser, showWalletCreated, retrying];
+      [mnemonic, wallet, isNewUser, showWalletCreated, fromSignUp, retrying];
 }
 
 class LoginFailure extends LoginState {

@@ -166,7 +166,13 @@ class CreateNewWallet extends LoginEvent {
 /// Sign up on the first panel: offers the browser wallets found, if any,
 /// before a new account; with none, makes the account straight away.
 class StartSignUp extends LoginEvent {
-  const StartSignUp();
+  const StartSignUp({this.fromLogIn = false});
+
+  /// Opened from Log in's "Create an account": Back returns there.
+  final bool fromLogIn;
+
+  @override
+  List<Object> get props => [fromLogIn];
 }
 
 class CompleteWalletGeneration extends LoginEvent {

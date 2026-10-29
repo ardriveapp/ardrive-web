@@ -25,6 +25,7 @@ import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -101,6 +102,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ConfigService configService,
     WalletFromMnemonic? walletFromMnemonic,
     FirstDrive? firstDrive,
+    Duration walletInjectionWait = const Duration(seconds: 1),
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
@@ -112,6 +114,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _configService = configService,
         _walletFromMnemonic = walletFromMnemonic ?? generateWalletFromMnemonic,
         _firstDrive = firstDrive ?? FirstDrive(),
+        _walletInjectionWait = walletInjectionWait,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -152,6 +155,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
               mnemonic: retry.mnemonic,
               isNewUser: retry.isNewUser,
               showWalletCreated: retry.showWalletCreated,
+              fromSignUp: retry.fromSignUp,
               retrying: true,
             ));
     } else if (event is UnLockWithBiometrics) {
@@ -163,7 +167,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else if (event is CreateNewWallet) {
       await _handleCreateNewWalletEvent(event, emit);
     } else if (event is StartSignUp) {
-      await _handleStartSignUpEvent(emit);
+      await _handleStartSignUpEvent(emit, fromLogIn: event.fromLogIn);
     } else if (event is CompleteWalletGeneration) {
       await _handleCompleteWalletGenerationEvent(event, emit);
     } else if (event is LoginWithMetamask) {
@@ -191,9 +195,39 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       _ethereumProviderService.isExtensionPresent() ||
       _solanaProviderService.isExtensionPresent();
 
-  Future<void> _handleStartSignUpEvent(Emitter<LoginState> emit) async {
-    if (anyWalletDetected) {
+  /// Whether Sign up's choice was opened from Log in, so its Back goes
+  /// there rather than to the first panel.
+  bool signUpFromLogIn = false;
+
+  /// How long the get-started link looks for a wallet extension before
+  /// deciding there is none. On a fresh page load an extension can inject
+  /// itself after the app starts.
+  final Duration _walletInjectionWait;
+
+  /// Whether a wallet extension is in this browser, looking again for up to
+  /// [_walletInjectionWait] when there is none yet.
+  Future<bool> _walletDetectedSoon() async {
+    final until = DateTime.now().add(_walletInjectionWait);
+    while (!anyWalletDetected) {
+      if (!DateTime.now().isBefore(until)) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    return true;
+  }
+
+  Future<void> _handleStartSignUpEvent(
+    Emitter<LoginState> emit, {
+    bool fromLogIn = false,
+    bool waitForWallets = false,
+  }) async {
+    signUpFromLogIn = fromLogIn;
+    final walletFound =
+        waitForWallets ? await _walletDetectedSoon() : anyWalletDetected;
+    if (walletFound) {
       existingUserFlow = false;
+      // Every way in (the Sign up button, Log in's link, the get-started
+      // link) reports the panel here, once.
+      PlausibleEventTracker.trackPageview(page: PlausiblePageView.signUpPage);
       emit(_logInPanel);
     } else {
       await _handleCreateNewWalletEvent(
@@ -589,8 +623,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     if (event.gettingStarted) {
-      // The same choice as Sign up. Awaited: it emits for up to a minute.
-      await _handleStartSignUpEvent(emit);
+      // The same choice as Sign up, after a moment for a wallet extension
+      // that is still injecting itself. Awaited: it emits for up to a
+      // minute.
+      await _handleStartSignUpEvent(emit, waitForWallets: true);
     } else {
       emit(const LoginLanding());
     }
@@ -847,6 +883,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             wallet: wallet,
             isNewUser: !hasDrives,
             showWalletCreated: false,
+            fromSignUp: !existingUserFlow,
           ),
         );
       }
@@ -1186,7 +1223,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           derivedEthWallet: derivedEthWallet,
           sourceWalletAddress: _sourceWalletAddress,
           isNewUser: true,
-          showWalletCreated: false));
+          showWalletCreated: false,
+          fromSignUp: !existingUserFlow));
     }
   }
 
@@ -1289,6 +1327,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           isNewUser: !hasDrives,
           showWalletCreated: false,
           sourceWalletAddress: _sourceWalletAddress,
+          fromSignUp: !existingUserFlow,
         ));
       }
     } catch (e) {

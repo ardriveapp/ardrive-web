@@ -24,8 +24,12 @@ class LogInView extends StatefulWidget {
     required this.isMetamaskAvailable,
     required this.isSolanaAvailable,
     this.signUp = false,
+    this.backToLogIn = false,
     this.detectSolanaWallets,
   });
+
+  /// Sign up's choice opened from Log in: Back returns to Log in.
+  final bool backToLogIn;
 
   /// Sign up's choice rather than Log in.
   final bool signUp;
@@ -87,7 +91,9 @@ class _LogInViewState extends State<LogInView> {
                 key: const Key('logInBack'),
                 text: s.back,
                 isAction: true,
-                onTap: () => loginBloc.add(const ShowLanding()),
+                onTap: () => loginBloc.add(widget.backToLogIn
+                    ? const SelectLoginFlow(existingUser: true)
+                    : const ShowLanding()),
               ),
             ),
             const SizedBox(height: ArDriveSpacing.lg),
@@ -233,7 +239,7 @@ class _LogInViewState extends State<LogInView> {
                           PlausibleEventTracker.trackClickSignUp();
                           // Sign up's choice: a wallet in the browser is
                           // offered as a new account first.
-                          loginBloc.add(const StartSignUp());
+                          loginBloc.add(const StartSignUp(fromLogIn: true));
                         },
                       ),
                     ),

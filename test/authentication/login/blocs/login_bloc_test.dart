@@ -1389,6 +1389,80 @@ void main() {
         ],
       );
 
+      test('remembers whether it came from Log in, for Back', () async {
+        wallets(ar: true);
+        final bloc = logInBloc();
+        addTearDown(bloc.close);
+        bloc.add(const StartSignUp(fromLogIn: true));
+        await bloc.stream.first;
+        expect(bloc.signUpFromLogIn, isTrue);
+        bloc.add(const StartSignUp());
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.signUpFromLogIn, isFalse);
+      });
+
+      group('a wallet from the choice is a new account, from Log in not', () {
+        void wanderWithoutPassword() {
+          when(() => mockArConnectService.isWalletVersionSupported())
+              .thenAnswer((_) async => true);
+          when(() => mockArConnectService.checkPermissions())
+              .thenAnswer((_) async => true);
+          when(() => mockArConnectService.getWalletAddress())
+              .thenAnswer((_) async => 'walletAddress');
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async => false);
+          when(() => mockArDriveAuth.isExistingUser(any()))
+              .thenAnswer((_) async => false);
+        }
+
+        void solanaWithoutPassword() {
+          when(() => mockSolanaProviderService.connect(
+                  provider: any(named: 'provider')))
+              .thenAnswer((_) async => const SolanaConnection(
+                  address: 'SoLAddr123', providerType: 'phantom'));
+          when(() => mockSolanaProviderService.signMessage(any()))
+              .thenAnswer((_) async => Uint8List(64));
+          when(() => mockSolanaProviderService.disconnect(
+              provider: any(named: 'provider'))).thenAnswer((_) async {});
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async => false);
+          when(() => mockArDriveAuth.isExistingUser(any()))
+              .thenAnswer((_) async => true);
+        }
+
+        for (final (name, setUpWallet, login) in [
+          ('Wander', wanderWithoutPassword, const AddWalletFromArConnect()),
+          (
+            'Phantom',
+            solanaWithoutPassword,
+            const LoginWithSolana(provider: 'phantom')
+          ),
+        ]) {
+          for (final fromSignUp in [true, false]) {
+            blocTest<LoginBloc, LoginState>(
+              '$name from ${fromSignUp ? 'Sign up' : 'Log in'}',
+              build: logInBloc,
+              setUp: () {
+                wallets(ar: true, sol: true);
+                setUpWallet();
+              },
+              act: (bloc) async {
+                bloc.add(fromSignUp
+                    ? const StartSignUp()
+                    : const SelectLoginFlow(existingUser: true));
+                await Future<void>.delayed(Duration.zero);
+                bloc.add(login);
+                await bloc.stream.firstWhere((s) => s is CreateNewPassword);
+              },
+              verify: (bloc) {
+                final asked = bloc.state as CreateNewPassword;
+                expect(asked.fromSignUp, fromSignUp);
+              },
+            );
+          }
+        }
+      });
+
       blocTest<LoginBloc, LoginState>(
         'Log in from the choice is Log in again',
         build: logInBloc,
@@ -1429,10 +1503,31 @@ void main() {
       );
 
       blocTest<LoginBloc, LoginState>(
-        'no wallet: straight to making one, saying why',
+        'Wander injected a moment after the page loads: still the choice',
         build: logInBloc,
+        setUp: () {
+          final loaded = DateTime.now().add(const Duration(milliseconds: 300));
+          when(() => mockArConnectService.isExtensionPresent())
+              .thenAnswer((_) => DateTime.now().isAfter(loaded));
+        },
         act: (bloc) =>
             bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
+        wait: const Duration(milliseconds: 1500),
+        expect: () => [
+          LoginLoading(),
+          predicate<LoginInitial>((s) => !s.existingUserFlow),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'no wallet: straight to making one, saying why',
+        build: logInBloc,
+        setUp: () => when(() => mockArConnectService.isExtensionPresent())
+            .thenReturn(false),
+        act: (bloc) =>
+            bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
+        // It looks for a wallet for up to a second first.
+        wait: const Duration(milliseconds: 1500),
         expect: () => [
           LoginLoading(),
           const LoginCreatingAccount(noWalletFound: true),
@@ -1479,6 +1574,8 @@ void main() {
     );
 
     group('Cancel while a wallet never answers', () {
+      late void Function() wanderApproves;
+
       blocTest<LoginBloc, LoginState>(
         'Wander: back to Log in, and a late approval is ignored',
         build: logInBloc,
@@ -1492,19 +1589,22 @@ void main() {
               .thenAnswer((_) async => asked++ > 0);
           when(() => mockArConnectService.disconnect())
               .thenAnswer((_) async {});
-          when(() => mockArConnectService.connect()).thenAnswer((_) {
-            Future<void>.delayed(const Duration(milliseconds: 20))
-                .then((_) => connect.complete());
-            return connect.future;
-          });
+          wanderApproves = connect.complete;
+          when(() => mockArConnectService.connect())
+              .thenAnswer((_) => connect.future);
           when(() => mockArConnectService.getWalletAddress())
               .thenAnswer((_) async => 'walletAddress');
         },
         act: (bloc) async {
+          final waiting =
+              bloc.stream.firstWhere((s) => s is LoginWaitingOnWallet);
           bloc.add(const AddWalletFromArConnect());
-          await Future<void>.delayed(Duration.zero);
+          await waiting;
+          final back = bloc.stream.firstWhere((s) => s is LoginInitial);
           bloc.add(const CancelWalletLogin());
+          await back;
           // The extension approves after Cancel.
+          wanderApproves();
           await Future<void>.delayed(const Duration(milliseconds: 50));
         },
         expect: () => [
@@ -1585,14 +1685,37 @@ void main() {
         }
       }
 
-      Future<T> late<T>(T value) =>
-          Future<T>.delayed(const Duration(milliseconds: 20), () => value);
+      // Answers held back until the test lets them through, after Cancel:
+      // no race with a timer, however loaded the machine.
+      final heldBack = <void Function()>[];
+      setUp(heldBack.clear);
 
-      Future<void> cancelThenWait(LoginBloc bloc, LoginEvent login) async {
+      Future<T> late<T>(T value) {
+        final answer = Completer<T>();
+        heldBack.add(() => answer.complete(value));
+        return answer.future;
+      }
+
+      bool connecting(LoginState s) =>
+          s is LoginWaitingOnWallet &&
+          s.request == BrowserWalletRequest.connect;
+      bool signing(LoginState s) =>
+          s is LoginWaitingOnWallet && s.request == BrowserWalletRequest.signIn;
+
+      /// Starts [login], presses Cancel once the panel reaches [at], then
+      /// lets the wallet answer.
+      Future<void> cancelThenAnswer(LoginBloc bloc, LoginEvent login,
+          {bool Function(LoginState)? at}) async {
+        final reached = bloc.stream.firstWhere(at ?? connecting);
         bloc.add(login);
-        await Future<void>.delayed(Duration.zero);
+        await reached;
+        final back = bloc.stream.firstWhere((s) => s is LoginInitial);
         bloc.add(const CancelWalletLogin());
-        await Future<void>.delayed(const Duration(milliseconds: 60));
+        await back;
+        for (final answer in heldBack) {
+          answer();
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 50));
       }
 
       blocTest<LoginBloc, LoginState>(
@@ -1606,7 +1729,7 @@ void main() {
           when(() => mockEthereumProviderService.connect())
               .thenAnswer((_) => late<EthereumWallet?>(ethWallet));
         },
-        act: (bloc) => cancelThenWait(bloc, const LoginWithMetamask()),
+        act: (bloc) => cancelThenAnswer(bloc, const LoginWithMetamask()),
         expect: () => [
           const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
           const TypeMatcher<LoginInitial>(),
@@ -1628,12 +1751,8 @@ void main() {
           when(() => mockEthereumProviderService.connect())
               .thenAnswer((_) async => ethWallet);
         },
-        act: (bloc) async {
-          bloc.add(const LoginWithMetamask());
-          await Future<void>.delayed(const Duration(milliseconds: 5));
-          bloc.add(const CancelWalletLogin());
-          await Future<void>.delayed(const Duration(milliseconds: 60));
-        },
+        act: (bloc) =>
+            cancelThenAnswer(bloc, const LoginWithMetamask(), at: signing),
         expect: () => [
           const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
           const LoginWaitingOnWallet(
@@ -1655,7 +1774,7 @@ void main() {
           sign: () async => Uint8List(64),
         ),
         act: (bloc) =>
-            cancelThenWait(bloc, const LoginWithSolana(provider: 'phantom')),
+            cancelThenAnswer(bloc, const LoginWithSolana(provider: 'phantom')),
         expect: () => [
           const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
           const TypeMatcher<LoginInitial>(),
@@ -1675,25 +1794,31 @@ void main() {
         build: logInBloc,
         setUp: () {
           var connects = 0;
+          const phantom =
+              SolanaConnection(address: 'SoLAddr123', providerType: 'phantom');
           solana(
             connect: () => connects++ == 0
                 // The first popup is approved only after the second try.
-                ? Future<SolanaConnection?>.delayed(
-                    const Duration(milliseconds: 40),
-                    () => const SolanaConnection(
-                        address: 'SoLAddr123', providerType: 'phantom'))
-                : Future<SolanaConnection?>.value(const SolanaConnection(
-                    address: 'SoLAddr123', providerType: 'phantom')),
+                ? late<SolanaConnection?>(phantom)
+                : Future<SolanaConnection?>.value(phantom),
             sign: () => Completer<Uint8List>().future,
           );
         },
         act: (bloc) async {
+          final reached = bloc.stream.firstWhere(connecting);
           bloc.add(const LoginWithSolana(provider: 'phantom'));
-          await Future<void>.delayed(Duration.zero);
+          await reached;
+          final back = bloc.stream.firstWhere((s) => s is LoginInitial);
           bloc.add(const CancelWalletLogin());
-          await Future<void>.delayed(const Duration(milliseconds: 5));
+          await back;
+          final secondSigning = bloc.stream.firstWhere(signing);
           bloc.add(const LoginWithSolana(provider: 'phantom'));
-          await Future<void>.delayed(const Duration(milliseconds: 80));
+          await secondSigning;
+          // The first popup is approved now.
+          for (final answer in heldBack) {
+            answer();
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 50));
         },
         expect: () => [
           const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
@@ -1720,12 +1845,9 @@ void main() {
               address: 'SoLAddr123', providerType: 'solflare'),
           sign: () => late(Uint8List(64)),
         ),
-        act: (bloc) async {
-          bloc.add(const LoginWithSolana(provider: 'solflare'));
-          await Future<void>.delayed(const Duration(milliseconds: 5));
-          bloc.add(const CancelWalletLogin());
-          await Future<void>.delayed(const Duration(milliseconds: 60));
-        },
+        act: (bloc) => cancelThenAnswer(
+            bloc, const LoginWithSolana(provider: 'solflare'),
+            at: signing),
         expect: () => [
           const LoginWaitingOnWallet(wallet: BrowserWallet.solflare),
           const LoginWaitingOnWallet(

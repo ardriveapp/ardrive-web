@@ -237,8 +237,9 @@ void main() {
       expect(events[1], isA<AddWalletFromArConnect>());
       expect(events[2], isA<LoginWithMetamask>());
       expect(events[3], isA<ShowLanding>());
-      // Sign up's choice, which offers a wallet if there is one.
-      expect(events[4], isA<StartSignUp>());
+      // Sign up's choice, which offers a wallet if there is one, and whose
+      // Back comes back here.
+      expect(events[4], const StartSignUp(fromLogIn: true));
     });
   });
 
@@ -285,7 +286,23 @@ void main() {
       expect(events[4], const SelectLoginFlow(existingUser: true));
     });
 
+    testWidgets('Back returns to Log in when it came from there',
+        (tester) async {
+      await pump(
+          tester,
+          const LogInView(
+            signUp: true,
+            backToLogIn: true,
+            isArConnectAvailable: true,
+            isMetamaskAvailable: false,
+            isSolanaAvailable: false,
+          ));
+      await tester.tap(find.byKey(const Key('logInBack')));
+      expect(added().single, const SelectLoginFlow(existingUser: true));
+    });
+
     test('the panel follows the flow', () {
+      when(() => loginBloc.signUpFromLogIn).thenReturn(false);
       when(() => loginBloc.isArConnectAvailable).thenReturn(true);
       when(() => loginBloc.isMetamaskAvailable).thenReturn(false);
       when(() => loginBloc.isSolanaAvailable).thenReturn(false);
@@ -294,6 +311,15 @@ void main() {
               isArConnectAvailable: true, existingUserFlow: false),
           loginBloc) as LogInView;
       expect(choice.signUp, isTrue);
+      expect(choice.backToLogIn, isFalse);
+      when(() => loginBloc.signUpFromLogIn).thenReturn(true);
+      expect(
+          (loginPanelFor(
+                  const LoginInitial(
+                      isArConnectAvailable: true, existingUserFlow: false),
+                  loginBloc) as LogInView)
+              .backToLogIn,
+          isTrue);
       final logIn = loginPanelFor(
           const LoginInitial(
               isArConnectAvailable: true, existingUserFlow: true),
@@ -317,6 +343,7 @@ void main() {
       when(() => loginBloc.isMetamaskAvailable).thenReturn(false);
       when(() => loginBloc.isSolanaAvailable).thenReturn(false);
       when(() => loginBloc.existingUserFlow).thenReturn(false);
+      when(() => loginBloc.signUpFromLogIn).thenReturn(false);
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(390, 844);
       addTearDown(tester.view.reset);

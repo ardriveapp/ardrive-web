@@ -510,6 +510,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
         isNewUser: loginState.isNewUser,
         showWalletCreated: loginState.showWalletCreated,
         retrying: loginState.retrying,
+        fromSignUp: loginState.fromSignUp,
         derivedEthWallet: loginState.derivedEthWallet,
         sourceWalletAddress: loginState.sourceWalletAddress);
     return;
@@ -692,13 +693,15 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
       key: Key('landingPageView'),
     );
   } else {
+    // Sign up's choice, or Log in. Other states that land here keep the
+    // flow the bloc is in.
+    final signUp = loginState is LoginInitial
+        ? !loginState.existingUserFlow
+        : !loginBloc.existingUserFlow;
     content = LogInView(
       key: const Key('logInView'),
-      // Sign up's choice, or Log in. Other states that land here keep the
-      // flow the bloc is in.
-      signUp: loginState is LoginInitial
-          ? !loginState.existingUserFlow
-          : !loginBloc.existingUserFlow,
+      signUp: signUp,
+      backToLogIn: signUp && loginBloc.signUpFromLogIn,
       isArConnectAvailable: loginBloc.isArConnectAvailable,
       isMetamaskAvailable: loginBloc.isMetamaskAvailable,
       isSolanaAvailable: loginBloc.isSolanaAvailable,
