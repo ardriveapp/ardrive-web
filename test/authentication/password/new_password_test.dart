@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:ardrive/authentication/password/new_password.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -27,8 +28,8 @@ void main() {
           PasswordStrength.strong);
       expect(assessNewPassword('maple-orbit-quiet-ember-signal-canvas'),
           PasswordStrength.strong);
-      expect(assessNewPassword('my cat likes tuna fish'),
-          PasswordStrength.strong);
+      expect(
+          assessNewPassword('my cat likes tuna fish'), PasswordStrength.strong);
       expect(assessNewPassword('k8#Lq!v2Zp@w'), PasswordStrength.strong);
     });
 
@@ -65,5 +66,20 @@ void main() {
         expect(c, inInclusiveRange(850, 1150));
       }
     });
+  });
+
+  testWidgets('every word on the real list can be suggested and stays strong',
+      (tester) async {
+    final words = await tester.runAsync(() => loadPassphraseWords(rootBundle))
+        as List<String>;
+
+    expect(words.length, greaterThan(7700));
+    final weak = [
+      for (final word in words)
+        if (assessNewPassword('$word-river-lantern-orbit-maple-quiet') !=
+            PasswordStrength.strong)
+          word,
+    ];
+    expect(weak, isEmpty);
   });
 }

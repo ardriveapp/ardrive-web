@@ -1136,6 +1136,49 @@ void main() {
       ],
     );
 
+    blocTest<LoginBloc, LoginState>(
+      'goes back to the landing panel when the password step fails',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => wallet,
+      ),
+      setUp: () {
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+        when(() => mockArDriveAuth.login(any(), any(), ProfileType.json,
+                sourceWalletAddress: any(named: 'sourceWalletAddress')))
+            .thenThrow(Exception('the gateway went away'));
+      },
+      act: (bloc) async {
+        bloc.add(const CreateNewWallet());
+        await Future<void>.delayed(Duration.zero);
+        final created = bloc.state as CreateNewPassword;
+        bloc.add(CreatePassword(
+          password: 'river-lantern-orbit-maple-quiet-harbor',
+          wallet: created.wallet,
+          mnemonic: created.mnemonic,
+          isNewUser: true,
+          showWalletCreated: true,
+        ));
+      },
+      skip: 2,
+      expect: () => [
+        isA<LoginLoading>(),
+        isA<LoginCloseBlockingDialog>(),
+        isA<LoginFailure>(),
+        isA<LoginLanding>(),
+      ],
+    );
+
     group('first drive', () {
       late _MockFirstDrive firstDrive;
 

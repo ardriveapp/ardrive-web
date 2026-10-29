@@ -53,4 +53,13 @@ void main() {
     expect(await firstDrive.claim('wallet-b'), isFalse);
     expect(await firstDrive.claim('wallet-a'), isFalse);
   });
+
+  test('two claims at once make one drive', () async {
+    await firstDrive.request('wallet-a');
+
+    final claims = await Future.wait(
+        [firstDrive.claim('wallet-a'), firstDrive.claim('wallet-a')]);
+
+    expect(claims.where((owed) => owed), hasLength(1));
+  });
 }

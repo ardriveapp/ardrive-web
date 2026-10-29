@@ -30,7 +30,10 @@ class FirstDrive {
   /// second drive.
   Future<bool> claim(String walletAddress) async {
     final store = await _openStore();
-    final pendingFor = await store.getString(_key);
+    // Read and spent with no await between, so two claims at once can't
+    // both win (the local store reads synchronously).
+    final read = store.getString(_key);
+    final pendingFor = read is Future<String?> ? await read : read;
 
     if (pendingFor == null) return false;
 

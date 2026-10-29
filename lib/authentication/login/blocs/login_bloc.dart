@@ -521,6 +521,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // Close any open dialogs (loader, blocking message)
       emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
+      // A new account's panel still says "Creating your account", with
+      // nothing to press; the landing view lets them try again.
+      if (previousState is CreateNewPassword &&
+          previousState.mnemonic != null) {
+        emit(const LoginLanding());
+      }
     }
   }
 

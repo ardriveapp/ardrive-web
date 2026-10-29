@@ -111,4 +111,14 @@ void main() {
     expect(asked, 0);
     expect(find.text('Getting started'), findsOneWidget);
   });
+
+  testWidgets('falls back to Getting started when making the drive throws',
+      (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+
+    await pump(tester, (_) async => throw StateError('no profile'));
+    await tester.pump();
+
+    expect(find.text('Getting started'), findsOneWidget);
+  });
 }

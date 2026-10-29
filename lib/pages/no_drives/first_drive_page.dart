@@ -69,7 +69,12 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
     setState(() => _stage = _Stage.creating);
 
     // On success the new drive is selected, which opens it.
-    final made = await widget.createFirstDrive(context);
+    var made = false;
+    try {
+      made = await widget.createFirstDrive(context);
+    } catch (e, stackTrace) {
+      logger.e('Could not make the first drive', e, stackTrace);
+    }
 
     if (!made && mounted) {
       setState(() => _stage = _Stage.noDrives);
