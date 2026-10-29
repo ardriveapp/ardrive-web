@@ -46,25 +46,135 @@ class ArDriveSubmenu extends StatefulWidget {
 }
 
 class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
-  bool _open = false;
+  final _controller = ArDriveMenuController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   void _toggle() {
-    if (_open) {
+    if (_controller.isOpen) {
       _close();
     } else {
-      setState(() => _open = true);
+      _controller.open();
       widget.onOpen?.call();
     }
   }
 
   void _close() {
-    if (!_open) return;
-    setState(() => _open = false);
+    if (!_controller.isOpen) return;
+    _controller.close();
     widget.onClose?.call();
   }
 
   @override
   Widget build(BuildContext context) {
+    return ArDriveMenuAnchor(
+      controller: _controller,
+      alignmentOffset: widget.alignmentOffset,
+      tapRegionGroupId: this,
+      onClose: () => widget.onClose?.call(),
+      menuChildren: [
+        for (final item in widget.menuChildren)
+          item.children == null
+              ? _MenuItem(item: item, closeAll: _close)
+              : _SubmenuItem(item: item, groupId: this, closeAll: _close),
+      ],
+      // What opens the menu is the caller's own button, which names itself.
+      child: GestureDetector(
+        onTap: _toggle,
+        child: ArDriveClickArea(child: widget.child),
+      ),
+    );
+  }
+}
+
+/// Opens and closes an [ArDriveMenuAnchor].
+class ArDriveMenuController extends ChangeNotifier {
+  bool _isOpen = false;
+
+  bool get isOpen => _isOpen;
+
+  void open() {
+    if (_isOpen) return;
+    _isOpen = true;
+    notifyListeners();
+  }
+
+  void close() {
+    if (!_isOpen) return;
+    _isOpen = false;
+    notifyListeners();
+  }
+}
+
+/// Material's MenuAnchor, drawn and placed as it did, in the navigator's
+/// overlay through [ArDriveOverlay]: with the browser's accessibility tree
+/// on, a click on an item lands on the item rather than on the page behind
+/// it. [controller] opens and closes it; a click outside closes it and still
+/// reaches what it lands on, and Escape closes it.
+class ArDriveMenuAnchor extends StatefulWidget {
+  const ArDriveMenuAnchor({
+    super.key,
+    required this.controller,
+    required this.menuChildren,
+    required this.child,
+    this.alignmentOffset = Offset.zero,
+    this.tapRegionGroupId,
+    this.onClose,
+  });
+
+  final ArDriveMenuController controller;
+  final List<Widget> menuChildren;
+  final Widget child;
+  final Offset alignmentOffset;
+
+  /// Shared with any menu that opens from this one, so a click in it isn't a
+  /// click outside. Defaults to this menu alone.
+  final Object? tapRegionGroupId;
+
+  /// Called when it closes itself: on a click outside, or Escape.
+  final VoidCallback? onClose;
+
+  @override
+  State<ArDriveMenuAnchor> createState() => _ArDriveMenuAnchorState();
+}
+
+class _ArDriveMenuAnchorState extends State<ArDriveMenuAnchor> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_changed);
+  }
+
+  @override
+  void didUpdateWidget(ArDriveMenuAnchor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_changed);
+      widget.controller.addListener(_changed);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() => setState(() {});
+
+  void _closeItself() {
+    if (!widget.controller.isOpen) return;
+    widget.controller.close();
+    widget.onClose?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final groupId = widget.tapRegionGroupId ?? this;
     // While a dialog covers the page the menu is offstage, and a tap in the
     // dialog is outside it: that must not close it, or it would be gone when
     // the dialog closes.
@@ -72,9 +182,9 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
     final covered = route != null && !route.isCurrent;
 
     return ArDriveOverlay(
-      visible: _open,
+      visible: widget.controller.isOpen,
       onVisibleChange: (visible) {
-        if (!visible) _close();
+        if (!visible) _closeItself();
       },
       closeOnBarrierTap: false,
       closeOnEscape: true,
@@ -84,37 +194,20 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
         parentOrientation: Axis.horizontal,
       ),
       content: TapRegion(
-        groupId: this,
-        onTapOutside: covered ? null : (_) => _close(),
-        child: _MenuPanel(
-          items: widget.menuChildren,
-          groupId: this,
-          closeAll: _close,
-        ),
+        groupId: groupId,
+        onTapOutside: covered ? null : (_) => _closeItself(),
+        child: _MenuPanel(children: widget.menuChildren),
       ),
-      // What opens the menu is the caller's own button, which names itself.
-      child: TapRegion(
-        groupId: this,
-        child: GestureDetector(
-          onTap: _toggle,
-          child: ArDriveClickArea(child: widget.child),
-        ),
-      ),
+      child: TapRegion(groupId: groupId, child: widget.child),
     );
   }
 }
 
 /// The menu itself: Material's menu panel, which MenuAnchor drew.
 class _MenuPanel extends StatelessWidget {
-  const _MenuPanel({
-    required this.items,
-    required this.groupId,
-    required this.closeAll,
-  });
+  const _MenuPanel({required this.children});
 
-  final List<ArDriveSubmenuItem> items;
-  final Object groupId;
-  final VoidCallback closeAll;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
@@ -141,16 +234,7 @@ class _MenuPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final item in items)
-                  item.children == null
-                      ? _MenuItem(item: item, closeAll: closeAll)
-                      : _SubmenuItem(
-                          item: item,
-                          groupId: groupId,
-                          closeAll: closeAll,
-                        ),
-              ],
+              children: children,
             ),
           ),
         ),
@@ -228,9 +312,16 @@ class _SubmenuItemState extends State<_SubmenuItem> {
       content: TapRegion(
         groupId: widget.groupId,
         child: _MenuPanel(
-          items: item.children!,
-          groupId: widget.groupId,
-          closeAll: widget.closeAll,
+          children: [
+            for (final child in item.children!)
+              child.children == null
+                  ? _MenuItem(item: child, closeAll: widget.closeAll)
+                  : _SubmenuItem(
+                      item: child,
+                      groupId: widget.groupId,
+                      closeAll: widget.closeAll,
+                    ),
+          ],
         ),
       ),
       child: Semantics(

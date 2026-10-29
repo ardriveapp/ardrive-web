@@ -210,6 +210,9 @@ void main() {
   Future<void> key(WidgetTester tester, LogicalKeyboardKey key) async {
     await tester.sendKeyEvent(key);
     await tester.pump();
+    // The dropdown is in the navigator's overlay, and shows a change on the
+    // frame after it.
+    await tester.pump();
   }
 
   /// Enter as the browser delivers it: a key event, and the text field's own
@@ -407,10 +410,15 @@ void main() {
     // the field and the dropdown, which is all this needs.
     await tester.tap(find.byKey(const Key('elsewhere')), warnIfMissed: false);
     await tester.pump();
+    // The dropdown is in the navigator's overlay, and shows a change on the
+    // frame after it.
+    await tester.pump();
 
     expect(find.text('report.pdf'), findsNothing);
 
     await tester.tap(find.byType(TextField));
+    await tester.pump();
+    // And back on the frame after.
     await tester.pump();
     expect(find.text('report.pdf'), findsOneWidget);
   });
@@ -442,6 +450,9 @@ void main() {
     await gesture.addPointer(location: Offset.zero);
     addTearDown(gesture.removePointer);
     await gesture.moveTo(tester.getCenter(find.text('reports-2024.zip')));
+    await tester.pump();
+    // The dropdown is in the navigator's overlay, and shows a change on the
+    // frame after it.
     await tester.pump();
 
     expect(isHighlighted(tester, 'reports-2024.zip'), isTrue);
