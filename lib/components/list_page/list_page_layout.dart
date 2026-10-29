@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -396,11 +397,13 @@ class _ListDetailsHostState extends State<ListDetailsHost> {
 }
 
 /// A list page's details panel, in the explorer panel's frame: the toolbar
-/// with close, the title card, then one card of details.
+/// with the actions and close, the title card, then one card of details.
 ///
 /// The explorer's [DetailsPanel] is built around a drive item and its tabs;
-/// this shares its toolbar ([DetailsPanelToolbarFrame]) and title card
-/// ([DetailsPanelTitleCard]) and puts plain rows of details under them.
+/// this shares its toolbar ([DetailsPanelToolbarFrame]), title card
+/// ([DetailsPanelTitleCard]) and rows ([DetailsPanelItem]), laid out as its
+/// details tab lays them out. Every action is in the toolbar, as the file
+/// panel's are: there are none under the details.
 class ListDetailsPanel extends StatelessWidget {
   const ListDetailsPanel({
     super.key,
@@ -410,7 +413,6 @@ class ListDetailsPanel extends StatelessWidget {
     this.marks = const [],
     this.toolbarActions = const [],
     required this.details,
-    this.actions = const [],
   });
 
   final VoidCallback onClose;
@@ -420,14 +422,11 @@ class ListDetailsPanel extends StatelessWidget {
   /// Beside the title: a tag.
   final List<Widget> marks;
 
-  /// Icon buttons in the toolbar.
+  /// The actions: [DetailsPanelToolbarAction]s, in the row menu's order.
   final List<Widget> toolbarActions;
 
   /// Rows of details, each a [DetailsPanelItem].
   final List<Widget> details;
-
-  /// Buttons under the details: the row menu's actions.
-  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -449,16 +448,17 @@ class ListDetailsPanel extends StatelessWidget {
           Expanded(
             child: ArDriveCard(
               backgroundColor: theme.colorTokens.containerRaised,
-              contentPadding: const EdgeInsets.all(24),
+              contentPadding: EdgeInsets.zero,
+              // The file panel's details tab: its padding, its gap.
               content: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 16,
+                ),
                 children: [
-                  for (final item in details) ...[
+                  for (final (i, item) in details.indexed) ...[
+                    if (i > 0) sizedBoxHeight16px,
                     item,
-                    const SizedBox(height: 18),
-                  ],
-                  if (actions.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Wrap(spacing: 8, runSpacing: 8, children: actions),
                   ],
                 ],
               ),

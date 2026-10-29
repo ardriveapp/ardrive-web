@@ -543,8 +543,6 @@ class WebPageDetailsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final link = webPageLink(context, page);
     final actions = _WebPageActions(context, page, link);
 
@@ -606,10 +604,7 @@ class WebPageDetailsPanel extends StatelessWidget {
         ),
         DetailsPanelItem(
           itemTitle: strings.webPagesUpdated,
-          leading: Text(
-            formatDate(page.updatedAt),
-            style: typography.paragraphNormal(color: colors.textMid),
-          ),
+          leading: DetailsPanelValueText(formatDate(page.updatedAt)),
         ),
       ],
     );

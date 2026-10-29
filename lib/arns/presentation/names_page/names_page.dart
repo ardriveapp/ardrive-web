@@ -19,6 +19,7 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -495,8 +496,10 @@ class ArNSNameMenu extends StatelessWidget {
   }
 }
 
-/// A name's details beside the Names list: when its lease ends, with Renew;
-/// undernames used; its link; and its page.
+/// A name's details beside the Names list, in the file details panel's
+/// shape: Open and, for a lease, Renew as icon buttons in the toolbar; then
+/// the name; then when its lease ends, undernames used and its link, on the
+/// file panel's label and value grid.
 class ArNSNameDetailsPanel extends StatelessWidget {
   const ArNSNameDetailsPanel({
     super.key,
@@ -510,33 +513,36 @@ class ArNSNameDetailsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final now = DateTime.now();
     final host = arnsHostFor(name.name);
     void open() => context.read<AppRouterDelegate>().showNames(name: name.name);
-
-    Widget button(String text, VoidCallback onPressed,
-            {bool primary = false}) =>
-        ArDriveButtonNew(
-          text: text,
-          typography: typography,
-          variant: primary ? ButtonVariant.primary : ButtonVariant.secondary,
-          size: ArDriveButtonSize.compact,
-          maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: 96),
-          onPressed: onPressed,
-        );
 
     return ListDetailsPanel(
       onClose: onClose,
       icon: Icon(arnsNameIcon, size: 24, color: colors.textMid),
       title: host,
       toolbarActions: [
-        ArDriveIconButton(
+        DetailsPanelToolbarAction(
           tooltip: strings.listOpen,
-          icon: const ArDriveIcon(icon: Icons.arrow_forward, size: 20),
-          onPressed: open,
+          icon: const ArDriveIcon(
+            icon: Icons.arrow_forward,
+            size: defaultIconSize,
+          ),
+          onTap: open,
         ),
+        if (name.endTimestamp != null)
+          DetailsPanelToolbarAction(
+            tooltip: strings.arnsRenew,
+            // Red while the lease is about to be lost, as the date below
+            // it is: the one action that cannot wait.
+            icon: ArDriveIcon(
+              icon: Icons.autorenew,
+              size: defaultIconSize,
+              color: arnsNeedsRenewal(name, now) ? colors.statusErrorFg : null,
+            ),
+            onTap: () => openUrl(url: arnsRenewUrlFor(name.name)),
+          ),
       ],
       details: [
         // Said once, here, rather than as a tag on every row: a controller
@@ -552,13 +558,12 @@ class ArNSNameDetailsPanel extends StatelessWidget {
           ),
         DetailsPanelItem(
           itemTitle: strings.arnsLeaseEndsHeading,
-          leading: ArNSLeaseCell(name: name, now: now),
+          leading: _LeaseValue(name: name, now: now),
         ),
         DetailsPanelItem(
           itemTitle: strings.arnsUndernames,
-          leading: Text(
+          leading: DetailsPanelValueText(
             strings.arnsUndernamesOf(name.undernamesUsed, name.undernameLimit),
-            style: typography.paragraphNormal(color: colors.textMid),
           ),
         ),
         DetailsPanelItem(
@@ -579,16 +584,36 @@ class ArNSNameDetailsPanel extends StatelessWidget {
           ),
         ),
       ],
-      actions: [
-        button(strings.listOpen, open),
-        if (name.endTimestamp != null)
-          button(
-            strings.arnsRenew,
-            () => openUrl(url: arnsRenewUrlFor(name.name)),
-            primary: arnsNeedsRenewal(name, now),
-          ),
-      ],
     );
+  }
+}
+
+/// When a lease ends, as a value in the panel: on the right like the rest,
+/// in red while it is about to be lost. The table's [ArNSLeaseCell] holds
+/// itself to the start of its column, which in the panel put it on the left
+/// of every other value.
+class _LeaseValue extends StatelessWidget {
+  const _LeaseValue({required this.name, required this.now});
+
+  final ArNSManagedName name;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final end = name.endTimestamp;
+    if (end == null) return DetailsPanelValueText(strings.arnsLeaseNeverEnds);
+    Widget status(String text) => ArDriveStatusText(
+          text: text,
+          type: ArDriveStatusType.error,
+          maxLines: 1,
+        );
+    if (name.isInGracePeriod(now)) return status(strings.arnsLeaseEnded);
+    final left = end.difference(now);
+    if (left <= arnsRenewalNoticeWindow) {
+      return status(strings.arnsEndsInDays(left.inDays.clamp(0, 30)));
+    }
+    return DetailsPanelValueText(formatDate(end));
   }
 }
 

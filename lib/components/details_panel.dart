@@ -1264,6 +1264,23 @@ class _SizeFigure extends StatelessWidget {
   }
 }
 
+/// A plain value in a [DetailsPanelItem]: the file panel's dates and
+/// counts, on the right of the row like every other value.
+class DetailsPanelValueText extends StatelessWidget {
+  const DetailsPanelValueText(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: ArDriveTypographyNew.of(context).paragraphNormal(),
+      textAlign: TextAlign.right,
+    );
+  }
+}
+
 class DetailsPanelItem extends StatelessWidget {
   const DetailsPanelItem({
     super.key,
