@@ -47,7 +47,7 @@ typedef ArConnectRetryPrompt = Future<bool> Function(
 ///
 /// Wander's own prompt opens in a window of its own that ArDrive can't see.
 /// When the person comes back to ArDrive while a request is still waiting
-/// (see [focusRegained]), they most likely closed that window without
+/// (see [tabFocus]), they most likely closed that window without
 /// answering, so the Try again prompt shows then, without waiting out the
 /// deadline. Coming back is never taken as an answer: an answer that arrives
 /// late, to any request made since, still wins and closes the prompt.
@@ -67,16 +67,19 @@ class ArConnectPrompt {
   /// How long a signature may take: Wander can show its own confirmation.
   static Duration signTimeout = const Duration(seconds: 60);
 
-  /// Fires when the ArDrive tab gets focus back, or becomes visible again.
-  /// Set by the app shell; nothing fires until then.
-  static Stream<void> Function() focusRegained = _never;
+  /// True each time the ArDrive tab gets focus back or becomes visible
+  /// again, false each time it loses focus or is hidden. Set by the app
+  /// shell; nothing fires until then.
+  static Stream<bool> Function() tabFocus = _never;
 
   /// How long a request may still take to answer once the person is back in
   /// ArDrive. Wander's window closing and its answer arriving race each
-  /// other, and an answer on its way should not flash the prompt.
+  /// other, and an answer on its way should not flash the prompt. Leaving
+  /// ArDrive again within it, as when Wander's unlock window closes and its
+  /// signature window opens, starts the wait over.
   static Duration focusGrace = const Duration(seconds: 1);
 
-  static Stream<void> _never() => const Stream.empty();
+  static Stream<bool> _never() => const Stream.empty();
 
   static ArConnectRetryPrompt? _retryPrompt;
   static _ShownPrompt? _shownPrompt;
@@ -143,7 +146,7 @@ class ArConnectPrompt {
   }
 
   /// Until [settled], [within] passes, or, with [watchFocus], the person has
-  /// been back in ArDrive for [focusGrace].
+  /// been back in ArDrive for [focusGrace] without leaving again.
   static Future<void> _waitForAnswer(
     Future<void> settled,
     Duration within, {
@@ -157,8 +160,14 @@ class ArConnectPrompt {
     Timer? afterFocus;
     final deadline = Timer(within, finish);
     final focus = watchFocus
-        ? focusRegained().listen((_) {
-            afterFocus ??= Timer(focusGrace, finish);
+        ? tabFocus().listen((focused) {
+            if (focused) {
+              afterFocus ??= Timer(focusGrace, finish);
+            } else {
+              // Gone again, most likely to another Wander window.
+              afterFocus?.cancel();
+              afterFocus = null;
+            }
           })
         : null;
     settled.then((_) => finish());
@@ -177,27 +186,18 @@ class ArConnectPrompt {
     ArConnectUnavailableReason reason,
     Future<void> settled,
   ) {
-    final shown = _shownPrompt ?? _open(prompt, reason);
+    final shown = _shownPrompt ??= _ShownPrompt(prompt, reason, (shown) {
+      if (identical(_shownPrompt, shown)) _shownPrompt = null;
+    });
     settled.then((_) => shown.close());
     return shown.choice;
-  }
-
-  static _ShownPrompt _open(
-    ArConnectRetryPrompt prompt,
-    ArConnectUnavailableReason reason,
-  ) {
-    final shown = _shownPrompt = _ShownPrompt(prompt, reason);
-    shown.choice.whenComplete(() {
-      if (identical(_shownPrompt, shown)) _shownPrompt = null;
-    }).ignore();
-    return shown;
   }
 
   @visibleForTesting
   static void reset() {
     readTimeout = const Duration(seconds: 20);
     signTimeout = const Duration(seconds: 60);
-    focusRegained = _never;
+    tabFocus = _never;
     focusGrace = const Duration(seconds: 1);
     _retryPrompt = null;
     _shownPrompt = null;
@@ -250,15 +250,40 @@ class _Requests<T> {
   }
 }
 
+/// The prompt on screen, shared by every ask that is waiting on it.
+///
+/// Its [choice] settles when the prompt answers, or at [close] with true,
+/// whichever is first, and it lets go of the shared slot either way. So a
+/// prompt that never answers, such as a dialog removed from under another
+/// route, can't leave every later ask waiting on it.
 class _ShownPrompt {
-  _ShownPrompt(ArConnectRetryPrompt prompt, ArConnectUnavailableReason reason) {
-    choice = prompt(reason, _closed.future);
+  _ShownPrompt(
+    ArConnectRetryPrompt prompt,
+    ArConnectUnavailableReason reason,
+    this._onDone,
+  ) {
+    prompt(reason, _closed.future).then(_settle, onError: (Object e) {
+      logger.w('The Wander prompt failed: $e');
+      _settle(false);
+    });
   }
 
+  final void Function(_ShownPrompt) _onDone;
   final _closed = Completer<void>();
-  late final Future<bool> choice;
+  final _choice = Completer<bool>();
 
+  Future<bool> get choice => _choice.future;
+
+  void _settle(bool retry) {
+    if (_choice.isCompleted) return;
+    _choice.complete(retry);
+    _onDone(this);
+  }
+
+  /// Wander answered: the prompt is told to close, and anyone still waiting
+  /// on it tries again.
   void close() {
     if (!_closed.isCompleted) _closed.complete();
+    _settle(true);
   }
 }

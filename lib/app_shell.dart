@@ -63,7 +63,7 @@ class AppShellState extends State<AppShell> {
     );
     // Back from Wander's window with a request still waiting: say so now
     // rather than at the deadline.
-    ArConnectPrompt.focusRegained = TabVisibilitySingleton().onTabRegainsFocus;
+    ArConnectPrompt.tabFocus = TabVisibilitySingleton().onTabFocusChanged;
 
     onArConnectWalletSwitch(() {
       logger.d('Wallet switch detected');

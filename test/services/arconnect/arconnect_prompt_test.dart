@@ -9,7 +9,7 @@ import '../../test_utils/utils.dart';
 
 void main() {
   late MockArConnectService wander;
-  late StreamController<void> focus;
+  late StreamController<bool> focus;
 
   /// What the prompt was shown for, and the `answered` it was given.
   late List<ArConnectUnavailableReason> shown;
@@ -22,8 +22,8 @@ void main() {
     ArConnectPrompt.reset();
     wander = MockArConnectService();
     when(() => wander.isExtensionPresent()).thenReturn(true);
-    focus = StreamController<void>.broadcast();
-    ArConnectPrompt.focusRegained = () => focus.stream;
+    focus = StreamController<bool>.broadcast();
+    ArConnectPrompt.tabFocus = () => focus.stream;
     shown = [];
     answeredSignals = [];
     pick = () => false;
@@ -55,7 +55,7 @@ void main() {
         async.elapse(const Duration(seconds: 5));
         expect(shown, isEmpty);
 
-        focus.add(null);
+        focus.add(true);
         async.elapse(ArConnectPrompt.focusGrace);
 
         expect(shown, [ArConnectUnavailableReason.noAnswer]);
@@ -74,7 +74,7 @@ void main() {
         }).then((value) => answer = value);
 
         async.elapse(const Duration(seconds: 1));
-        focus.add(null);
+        focus.add(true);
         async.elapse(ArConnectPrompt.focusGrace);
 
         expect(calls, 2);
@@ -90,7 +90,7 @@ void main() {
             .then((value) => answer = value);
 
         async.elapse(const Duration(seconds: 1));
-        focus.add(null);
+        focus.add(true);
         async.elapse(ArConnectPrompt.focusGrace ~/ 2);
         request.complete(true);
         async.elapse(ArConnectPrompt.focusGrace);
@@ -113,7 +113,7 @@ void main() {
         });
 
         async.elapse(const Duration(seconds: 1));
-        focus.add(null);
+        focus.add(true);
         async.elapse(ArConnectPrompt.focusGrace * 2);
         expect(error, isNull);
 
@@ -179,6 +179,138 @@ void main() {
       async.flushMicrotasks();
 
       expect(answer, 'late');
+    });
+  });
+
+  test('leaving again within the grace starts the wait over', () {
+    fakeAsync((async) {
+      ArConnectPrompt.ask(wander, () => Completer<bool>().future)
+          .catchError((Object _) => false);
+
+      // Wander's unlock window closes, then its signature window opens.
+      async.elapse(const Duration(seconds: 1));
+      focus.add(true);
+      async.elapse(ArConnectPrompt.focusGrace ~/ 2);
+      focus.add(false);
+      async.elapse(ArConnectPrompt.focusGrace * 3);
+      expect(shown, isEmpty);
+
+      // Back for good.
+      focus.add(true);
+      async.elapse(ArConnectPrompt.focusGrace);
+      expect(shown, [ArConnectUnavailableReason.noAnswer]);
+    });
+  });
+
+  group('two asks at once', () {
+    test('share one prompt, and Cancel ends both', () {
+      fakeAsync((async) {
+        final choice = Completer<bool>();
+        ArConnectPrompt.registerRetryPrompt((reason, answered) {
+          shown.add(reason);
+          return choice.future;
+        });
+        final errors = <Object>[];
+        for (var i = 0; i < 2; i++) {
+          ArConnectPrompt.ask(wander, () => Completer<bool>().future)
+              .catchError((Object e) {
+            errors.add(e);
+            return false;
+          });
+        }
+
+        async.elapse(ArConnectPrompt.readTimeout);
+        expect(shown, hasLength(1));
+        expect(errors, isEmpty);
+
+        choice.complete(false);
+        async.flushMicrotasks();
+
+        expect(shown, hasLength(1));
+        expect(errors, hasLength(2));
+        expect(errors, everyElement(isA<ArConnectUnavailableException>()));
+      });
+    });
+
+    test('an answer to one closes the prompt, and the other asks again', () {
+      fakeAsync((async) {
+        pick = () => null;
+        final a = Completer<bool>();
+        var bCalls = 0;
+        bool? aAnswer, bAnswer;
+        ArConnectPrompt.ask(wander, () => a.future)
+            .then((value) => aAnswer = value);
+        ArConnectPrompt.ask(wander, () {
+          bCalls++;
+          return bCalls == 1 ? Completer<bool>().future : Future.value(true);
+        }).then((value) => bAnswer = value);
+
+        async.elapse(ArConnectPrompt.readTimeout);
+        expect(shown, hasLength(1));
+
+        a.complete(false);
+        async.flushMicrotasks();
+
+        expect(aAnswer, isFalse);
+        expect(bCalls, 2);
+        expect(bAnswer, isTrue);
+        expect(shown, hasLength(1));
+      });
+    });
+  });
+
+  test('stops listening for focus once each ask is over', () {
+    fakeAsync((async) {
+      var listening = 0;
+      ArConnectPrompt.tabFocus = () {
+        late StreamController<bool> c;
+        c = StreamController<bool>(
+          onListen: () => listening++,
+          onCancel: () => listening--,
+        );
+        return c.stream;
+      };
+      for (var i = 0; i < 3; i++) {
+        ArConnectPrompt.ask(wander, () => Future.value(true));
+        ArConnectPrompt.ask(wander, () => Completer<bool>().future)
+            .catchError((Object _) => false);
+      }
+
+      async.elapse(ArConnectPrompt.readTimeout * 2);
+
+      expect(listening, 0);
+    });
+  });
+
+  // A dialog removed from under another route never answers. The answer
+  // that removed it must still free the prompt for the next ask.
+  test('a prompt that never answers is let go once Wander answers', () {
+    fakeAsync((async) {
+      var prompts = 0;
+      ArConnectPrompt.registerRetryPrompt((reason, answered) {
+        prompts++;
+        return prompts == 1 ? Completer<bool>().future : Future.value(false);
+      });
+
+      final first = Completer<bool>();
+      bool? firstAnswer;
+      ArConnectPrompt.ask(wander, () => first.future)
+          .then((value) => firstAnswer = value);
+      async.elapse(ArConnectPrompt.readTimeout);
+      first.complete(true);
+      async.flushMicrotasks();
+      expect(firstAnswer, isTrue);
+
+      Object? second;
+      ArConnectPrompt.ask(wander, () => Completer<bool>().future)
+          .catchError((Object e) {
+        second = e;
+        return false;
+      });
+      async.elapse(ArConnectPrompt.readTimeout);
+
+      expect(prompts, 2, reason: 'the next failure shows a prompt again');
+      expect(second, isA<ArConnectUnavailableException>());
     });
   });
 }

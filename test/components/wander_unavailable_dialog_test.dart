@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 void main() {
   bool? answer;
+  late ActivityTracker tracker;
 
   Future<void> open(
     WidgetTester tester,
@@ -18,6 +19,7 @@ void main() {
     Future<void>? answered,
   }) async {
     answer = null;
+    tracker = ActivityTracker();
     await tester.pumpWidget(
       ArDriveTheme(
         themeData: lightTheme(),
@@ -25,7 +27,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: const [Locale('en', '')],
           home: ChangeNotifierProvider<ActivityTracker>.value(
-            value: ActivityTracker(),
+            value: tracker,
             child: Builder(
               builder: (context) => Scaffold(
                 body: TextButton(
@@ -89,5 +91,49 @@ void main() {
 
     expect(find.text("Wander didn't answer"), findsNothing);
     expect(answer, isTrue);
+  });
+
+  // The wallet-switch dialog can open above this one. Wander answering then
+  // removes this one from under it, and its route's future never completes:
+  // the ask must end anyway, and the next one must show a dialog again.
+  testWidgets('Wander answering with another dialog on top still ends it',
+      (tester) async {
+    final answered = Completer<void>();
+    await open(
+      tester,
+      ArConnectUnavailableReason.noAnswer,
+      answered: answered.future,
+    );
+    showDialog<void>(
+      context: tester.element(find.text("Wander didn't answer")),
+      builder: (_) => const AlertDialog(content: Text('On top')),
+    );
+    await tester.pumpAndSettle();
+    expect(tracker.isMultiSelectEnabled, isFalse);
+
+    answered.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text("Wander didn't answer"), findsNothing);
+    expect(find.text('On top'), findsOneWidget);
+    expect(answer, isTrue);
+    expect(tracker.isMultiSelectEnabled, isTrue,
+        reason: 'the open-dialog count is back where it was');
+
+    // Close the one on top, then the next ask that fails.
+    Navigator.of(tester.element(find.text('On top'))).pop();
+    await tester.pumpAndSettle();
+    bool? again;
+    askToRetryWander(
+      tester.element(find.text('write')),
+      ArConnectUnavailableReason.noAnswer,
+    ).then((value) => again = value);
+    await tester.pumpAndSettle();
+    expect(find.text("Wander didn't answer"), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(again, isFalse);
+    expect(tracker.isMultiSelectEnabled, isTrue);
   });
 }

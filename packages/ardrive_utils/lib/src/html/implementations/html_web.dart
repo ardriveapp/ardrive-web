@@ -26,19 +26,22 @@ StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
   return subscription;
 }
 
-Stream<void> onTabRegainsFocus() {
+Stream<bool> onTabFocusChanged() {
   StreamSubscription? focus;
+  StreamSubscription? blur;
   StreamSubscription? visibility;
-  late final StreamController<void> controller;
-  controller = StreamController<void>(
+  late final StreamController<bool> controller;
+  controller = StreamController<bool>(
     onListen: () {
-      focus = window.onFocus.listen((_) => controller.add(null));
+      focus = window.onFocus.listen((_) => controller.add(true));
+      blur = window.onBlur.listen((_) => controller.add(false));
       visibility = document.onVisibilityChange.listen((_) {
-        if (document.visibilityState == 'visible') controller.add(null);
+        controller.add(document.visibilityState == 'visible');
       });
     },
     onCancel: () async {
       await focus?.cancel();
+      await blur?.cancel();
       await visibility?.cancel();
     },
   );
