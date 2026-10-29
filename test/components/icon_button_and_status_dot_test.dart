@@ -1,8 +1,12 @@
+import 'dart:ui' as ui;
+
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,6 +74,60 @@ void main() {
         'Waiting to be mined on Arweave. This is checked for you until it is.',
       ),
       findsOneWidget,
+    );
+  });
+
+  /// The close button on the sign-in dialogs drew its X 6 px left of the
+  /// middle of its hover highlight, on the web only: the icon font's
+  /// metrics put every glyph's left edge at the side of its box. Drawn with
+  /// the real font, which the rest of the suite never loads.
+  testWidgets('an icon button draws its icon in the middle of the button',
+      (tester) async {
+    final loader = FontLoader('packages/ardrive_ui/ArDriveIcons')
+      ..addFont(
+        rootBundle.load('packages/ardrive_ui/assets/fonts/ArDriveIcons.ttf'),
+      );
+    await loader.load();
+
+    final key = GlobalKey();
+    await _pump(
+      tester,
+      RepaintBoundary(
+        key: key,
+        child: ArDriveIconButton(
+          icon: ArDriveIcons.x(size: 24, color: const Color(0xFF000000)),
+          tooltip: 'Close',
+          onPressed: () {},
+        ),
+      ),
+    );
+
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final ink = await tester.runAsync(() async {
+      final image = await boundary.toImage();
+      final rgba =
+          (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+      var left = image.width;
+      var right = -1;
+      for (var y = 0; y < image.height; y++) {
+        for (var x = 0; x < image.width; x++) {
+          if (rgba.getUint8((y * image.width + x) * 4 + 3) > 0) {
+            if (x < left) left = x;
+            if (x > right) right = x;
+          }
+        }
+      }
+      final width = image.width;
+      image.dispose();
+      return (left: left, right: right, width: width);
+    });
+
+    expect(ink!.right, greaterThan(ink.left), reason: 'nothing was drawn');
+    expect(
+      (ink.left + ink.right + 1) / 2,
+      moreOrLessEquals(ink.width / 2, epsilon: 1.0),
+      reason: 'ink spans columns ${ink.left}-${ink.right} of ${ink.width}',
     );
   });
 }
