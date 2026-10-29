@@ -709,11 +709,11 @@
   },
   "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
   "@driveDoingInitialSetupMessage": {},
-  "driveNotSynced": "Drive not synced",
+  "driveNotSynced": "This drive isn't synced on this device",
   "@driveNotSynced": {
     "description": "Title shown when a drive has metadata but content has not been synced"
   },
-  "driveNotSyncedDescription": "This drive needs to be synced before you can view its contents. Sync now to see your files and folders.",
+  "driveNotSyncedDescription": "Sync it to see its files and folders.",
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
@@ -721,9 +721,9 @@
   "@driveSyncFoundNothing": {
     "description": "Title of the unsynced drive card after a sync has already run against it and found no root metadata, so the card does not repeat the screen the user just pressed Sync Now on"
   },
-  "driveSyncFoundNothingDescription": "The sync finished, but nothing for this drive has appeared on Arweave yet. A drive created moments ago can take a few minutes to show up.",
+  "driveSyncFoundNothingDescription": "A new drive can take a few minutes to appear on Arweave.",
   "@driveSyncFoundNothingDescription": {
-    "description": "Says what the sync actually did, so a second identical card does not read as a button that did nothing"
+    "description": "The line under 'Nothing found yet' after a sync found nothing for this drive: why a new drive may not be there yet"
   },
   "checkAgain": "Check again",
   "@checkAgain": {
@@ -1079,19 +1079,7 @@
   "@nothingSyncedYetDescription": {
     "description": "Says what the drives list can and cannot show before anything has been synced, and offers the two ways out. Names the drives itself: it read 'Their contents have not been fetched yet.', and the title above it never says whose"
   },
-  "syncThisDriveDescription": "Fetch the latest files and folders from this drive.",
-  "syncThisDriveCheckAgainDescription": "Look again for this drive's files and folders on Arweave.",
-  "@syncThisDriveCheckAgainDescription": {
-    "description": "Action tile description on the card shown after a sync found nothing for this drive"
-  },
-  "@syncThisDriveDescription": {
-    "description": "Description for the sync drive action card"
-  },
   "syncAllDrives": "Sync all drives",
-  "syncAllDrivesDescription": "Sync all your drives at once to ensure all content is up to date.",
-  "@syncAllDrivesDescription": {
-    "description": "Description for the sync all drives action card"
-  },
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -5167,8 +5155,10 @@
   "@arnsChooseNameFor": {"description": "Name dialog intro.", "placeholders": {"item": {"type": "String"}}},
   "arnsUndernameExplainer": "An undername is a name under a name, like blog_acme.ar.io.",
   "@arnsUndernameExplainer": {"description": "Explains undernames once, in the picker."},
-  "arnsManagedForOwner": "Managed for its owner",
-  "@arnsManagedForOwner": {"description": "Tag on a name the wallet controls but doesn't own."},
+  "arnsController": "Controller",
+  "@arnsController": {"description": "A name the wallet controls but doesn't own: its role, in the name's details, and a tag in the name picker and on the name's page."},
+  "arnsRoleHeading": "Role",
+  "@arnsRoleHeading": {"description": "Details panel heading: whether the wallet owns the name or controls it for its owner."},
   "arnsNewUndername": "New undername",
   "@arnsNewUndername": {"description": "Creates an undername inline."},
   "arnsUndernamesUsed": "{used} of {limit} undernames used",

@@ -24,10 +24,15 @@ class _MockNamesCubit extends MockCubit<ArNSNamesState>
 class _MockWalletCubit extends MockCubit<ArNSWalletState>
     implements ArNSWalletCubit {}
 
-ArNSManagedName _name(String name, {Duration? leaseLeft}) => ArNSManagedName(
+ArNSManagedName _name(
+  String name, {
+  Duration? leaseLeft,
+  ArNSRole role = ArNSRole.owner,
+}) =>
+    ArNSManagedName(
       name: name,
       processId: 'ant-$name',
-      role: ArNSRole.owner,
+      role: role,
       type: leaseLeft == null ? ArNSNameType.permabuy : ArNSNameType.lease,
       endTimestamp: leaseLeft == null ? null : DateTime.now().add(leaseLeft),
       undernameLimit: 10,
@@ -185,5 +190,64 @@ void main() {
 
     expect(find.textContaining('what each points to'), findsNothing);
     expect(find.text('Get a name'), findsOneWidget);
+  });
+  group('a name the wallet controls but does not own', () {
+    // Said once, in the name's details, not as a tag on every row: the row
+    // tag ("Managed for its owner") was clutter, and it read oddly.
+    setUp(() {
+      whenListen(
+        names,
+        const Stream<ArNSNamesState>.empty(),
+        initialState: ArNSNamesState(
+          status: ArNSNamesStatus.loaded,
+          address: 'sol',
+          names: [
+            _name('studio', role: ArNSRole.controller),
+            _name('maya'),
+          ],
+        ),
+      );
+    });
+
+    testWidgets('carries no tag in the list', (tester) async {
+      await pump(tester);
+
+      expect(find.text('studio'), findsOneWidget);
+      expect(find.byType(ArDriveTag), findsNothing);
+      expect(find.text('Managed for its owner'), findsNothing);
+      expect(find.text('Controller'), findsNothing);
+    });
+
+    testWidgets('says its role once, in the details panel', (tester) async {
+      await pump(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'studio');
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      final panel = find.byType(ArNSNameDetailsPanel);
+      expect(panel, findsOneWidget);
+      expect(find.descendant(of: panel, matching: find.text('Role')),
+          findsOneWidget);
+      expect(find.descendant(of: panel, matching: find.text('Controller')),
+          findsOneWidget);
+      expect(find.descendant(of: panel, matching: find.byType(ArDriveTag)),
+          findsNothing);
+    });
+
+    testWidgets('a name the wallet owns has no role row', (tester) async {
+      await pump(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'maya');
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      final panel = find.byType(ArNSNameDetailsPanel);
+      expect(panel, findsOneWidget);
+      expect(find.descendant(of: panel, matching: find.text('Role')),
+          findsNothing);
+    });
   });
 }
