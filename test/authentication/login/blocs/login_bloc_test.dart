@@ -1416,8 +1416,8 @@ void main() {
         setUp: () {
           when(() => mockSolanaProviderService.isExtensionPresent())
               .thenReturn(true);
-          when(() => mockSolanaProviderService.disconnect())
-              .thenAnswer((_) async {});
+          when(() => mockSolanaProviderService.disconnect(
+              provider: any(named: 'provider'))).thenAnswer((_) async {});
           when(() => mockSolanaProviderService.connect(
                   provider: any(named: 'provider')))
               .thenAnswer((_) => Completer<SolanaConnection?>().future);
@@ -1431,8 +1431,186 @@ void main() {
           const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
           const TypeMatcher<LoginInitial>(),
         ],
+        verify: (_) => verify(
+                () => mockSolanaProviderService.disconnect(provider: 'phantom'))
+            .called(1),
+      );
+    });
+
+    group('a late answer after Cancel goes no further', () {
+      // Cancel goes back to Log in by itself, so these check what matters:
+      // the wallet's late answer must not carry the log in on.
+      void solana({
+        required Future<SolanaConnection?> Function() connect,
+        Future<Uint8List> Function()? sign,
+      }) {
+        when(() => mockSolanaProviderService.isExtensionPresent())
+            .thenReturn(true);
+        when(() => mockSolanaProviderService.disconnect(
+            provider: any(named: 'provider'))).thenAnswer((_) async {});
+        when(() => mockSolanaProviderService.disconnect())
+            .thenAnswer((_) async {});
+        when(() => mockSolanaProviderService.connect(
+            provider: any(named: 'provider'))).thenAnswer((_) => connect());
+        if (sign != null) {
+          when(() => mockSolanaProviderService.signMessage(any()))
+              .thenAnswer((_) => sign());
+        }
+      }
+
+      Future<T> late<T>(T value) =>
+          Future<T>.delayed(const Duration(milliseconds: 20), () => value);
+
+      Future<void> cancelThenWait(LoginBloc bloc, LoginEvent login) async {
+        bloc.add(login);
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const CancelWalletLogin());
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      }
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask approving the connection',
+        build: logInBloc,
+        setUp: () {
+          final ethWallet = _MockEthereumWallet();
+          when(() => ethWallet.getAddress()).thenAnswer((_) async => '0xabc');
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) => late<EthereumWallet?>(ethWallet));
+        },
+        act: (bloc) => cancelThenWait(bloc, const LoginWithMetamask()),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const TypeMatcher<LoginInitial>(),
+        ],
         verify: (_) =>
-            verify(() => mockSolanaProviderService.disconnect()).called(1),
+            verifyNever(() => mockArweaveService.getFirstTxForWallet(any())),
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask signing',
+        build: logInBloc,
+        setUp: () {
+          final ethWallet = _MockEthereumWallet();
+          when(() => ethWallet.getAddress()).thenAnswer((_) async => '0xabc');
+          when(() => ethWallet.sign(any()))
+              .thenAnswer((_) => late(Uint8List(65)));
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) async => ethWallet);
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithMetamask());
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const CancelWalletLogin());
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const LoginWaitingOnWallet(
+            wallet: BrowserWallet.metamask,
+            request: BrowserWalletRequest.signIn,
+          ),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) =>
+            verifyNever(() => mockArweaveService.getFirstTxForWallet(any())),
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Phantom approving the connection: it is disconnected again',
+        build: logInBloc,
+        setUp: () => solana(
+          connect: () => late<SolanaConnection?>(const SolanaConnection(
+              address: 'SoLAddr123', providerType: 'phantom')),
+          sign: () async => Uint8List(64),
+        ),
+        act: (bloc) =>
+            cancelThenWait(bloc, const LoginWithSolana(provider: 'phantom')),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) {
+          verifyNever(() => mockSolanaProviderService.signMessage(any()));
+          verifyNever(() => mockArDriveAuth.userHasPassword(any()));
+          // Once on Cancel, once when the late approval lands.
+          verify(() =>
+                  mockSolanaProviderService.disconnect(provider: 'phantom'))
+              .called(2);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Solflare signing: only Solflare is disconnected',
+        build: logInBloc,
+        setUp: () => solana(
+          connect: () async => const SolanaConnection(
+              address: 'SoLAddr123', providerType: 'solflare'),
+          sign: () => late(Uint8List(64)),
+        ),
+        act: (bloc) async {
+          bloc.add(const LoginWithSolana(provider: 'solflare'));
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const CancelWalletLogin());
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.solflare),
+          const LoginWaitingOnWallet(
+            wallet: BrowserWallet.solflare,
+            request: BrowserWalletRequest.signIn,
+          ),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) {
+          verifyNever(() => mockArDriveAuth.userHasPassword(any()));
+          verify(() =>
+                  mockSolanaProviderService.disconnect(provider: 'solflare'))
+              .called(1);
+          verifyNever(() => mockSolanaProviderService.disconnect());
+        },
+      );
+    });
+
+    group('an extension that throws goes back to Log in and says so', () {
+      blocTest<LoginBloc, LoginState>(
+        'Wander',
+        build: logInBloc,
+        setUp: () {
+          when(() => mockArConnectService.isWalletVersionSupported())
+              .thenAnswer((_) async => true);
+          when(() => mockArConnectService.checkPermissions())
+              .thenThrow(Exception('extension crashed'));
+        },
+        act: (bloc) => bloc.add(const AddWalletFromArConnect()),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+          const TypeMatcher<LoginInitial>(),
+          const TypeMatcher<LoginFailure>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask',
+        build: logInBloc,
+        setUp: () {
+          final ethWallet = _MockEthereumWallet();
+          when(() => ethWallet.getAddress())
+              .thenThrow(Exception('extension crashed'));
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) async => ethWallet);
+        },
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const TypeMatcher<LoginInitial>(),
+          const TypeMatcher<LoginFailure>(),
+        ],
       );
     });
 
@@ -1450,3 +1628,5 @@ void main() {
 }
 
 class _MockFirstDrive extends Mock implements FirstDrive {}
+
+class _MockEthereumWallet extends Mock implements EthereumWallet {}

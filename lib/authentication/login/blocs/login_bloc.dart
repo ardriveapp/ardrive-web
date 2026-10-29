@@ -220,12 +220,37 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final wallet = waitingOn.wallet;
     if (wallet != BrowserWallet.wander && wallet != BrowserWallet.metamask) {
       // Phantom and Solflare can drop a connection; the others can't.
-      try {
-        await _solanaProviderService.disconnect();
-      } catch (e) {
-        logger.w('Could not disconnect the Solana wallet after Cancel');
-      }
+      await _disconnectSolana(_solanaProviderName(wallet));
     }
+  }
+
+  /// The Solana bridge's name for [wallet], or null for another wallet.
+  static String? _solanaProviderName(BrowserWallet wallet) => switch (wallet) {
+        BrowserWallet.phantom => 'phantom',
+        BrowserWallet.solflare => 'solflare',
+        _ => null,
+      };
+
+  /// Drops the connection to [provider], the wallet that was asked, not
+  /// whichever one the bridge would pick.
+  Future<void> _disconnectSolana(String? provider) async {
+    try {
+      await _solanaProviderService.disconnect(provider: provider);
+    } catch (e) {
+      logger.w('Could not disconnect the Solana wallet after Cancel');
+    }
+  }
+
+  /// The wallet's extension failed rather than answering: back to Log in,
+  /// with an error.
+  void _walletFailed(
+      Completer<void> cancel, Emitter<LoginState> emit, Object error) {
+    logger.w('The browser wallet failed while asked to log in');
+    _walletAnswered(cancel);
+    ignoreNextWaletSwitch = false;
+    _sourceWalletAddress = null;
+    emit(_logInPanel);
+    emit(LoginFailure(error));
   }
 
   Future<void> _handleSelectLoginFlowEvent(
@@ -772,6 +797,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       lastKnownWalletAddress = await _walletAnswer(cancel, wallet.getAddress());
     } on WalletLoginCancelled {
       return;
+    } catch (e) {
+      _walletFailed(cancel, emit, e);
+      return;
     }
     _walletAnswered(cancel);
 
@@ -1054,8 +1082,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
       ethWallet = connected;
 
-      _sourceWalletAddress =
-          await _walletAnswer(cancel, ethWallet.getAddress());
+      try {
+        _sourceWalletAddress =
+            await _walletAnswer(cancel, ethWallet.getAddress());
+      } on WalletLoginCancelled {
+        rethrow;
+      } catch (e) {
+        _walletFailed(cancel, emit, e);
+        return;
+      }
 
       // 2. Sign verification message (MetaMask handles its own popup)
       emit(const LoginWaitingOnWallet(
@@ -1150,10 +1185,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     try {
       final Uint8List signature;
+      final connecting =
+          _solanaProviderService.connect(provider: event.provider);
+      var connected = false;
       try {
         // 1. Connect wallet (Phantom/Solflare handles its own popup)
-        final connection = await _walletAnswer(
-            cancel, _solanaProviderService.connect(provider: event.provider));
+        final connection = await _walletAnswer(cancel, connecting);
+        connected = true;
 
         if (connection == null) {
           _walletAnswered(cancel);
@@ -1182,7 +1220,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           return;
         }
       } on WalletLoginCancelled {
-        // Cancel has gone back to Log in and dropped the connection.
+        // Cancel has gone back to Log in and dropped the connection. If the
+        // wallet approves the connection afterwards, drop that too.
+        if (connected) return;
+        unawaited(connecting.then((connection) async {
+          if (connection != null) {
+            await _disconnectSolana(connection.providerType);
+          }
+        }, onError: (_) {}));
         return;
       }
       _walletAnswered(cancel);

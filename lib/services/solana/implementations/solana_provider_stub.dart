@@ -13,4 +13,4 @@ Future<SolanaConnection?> connect({String? provider}) =>
 
 Future<Uint8List> signMessage(String message) => throw UnimplementedError();
 
-Future<void> disconnect() async {}
+Future<void> disconnect({String? provider}) async {}

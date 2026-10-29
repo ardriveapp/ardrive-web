@@ -8,8 +8,7 @@ import 'package:convert/convert.dart';
 /// Fixed message signed by Solana wallet to derive ArDrive identity.
 /// MUST NEVER change — changing this invalidates all Solana-derived wallets.
 /// This text is displayed to users in the Phantom/Solflare signing popup.
-const solanaIdentityMessage =
-    'ArDrive wants to access your account. '
+const solanaIdentityMessage = 'ArDrive wants to access your account. '
     'Only approve this on a gateway you trust (e.g. app.ardrive.io). '
     'ArDrive Identity v1';
 
