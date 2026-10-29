@@ -137,8 +137,7 @@ class _UploadOptionsState extends State<UploadOptions> {
                               size: 16,
                               color: colorTokens.textMid,
                             ),
-                            tooltip:
-                                'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
+                            tooltip: l10n.thumbnailsCostNote,
                           ),
                         ),
                       ],

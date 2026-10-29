@@ -30,6 +30,7 @@ class SecureYourWalletWidget extends StatefulWidget {
       required this.isNewUser,
       required this.showWalletCreated,
       this.retrying = false,
+      this.fromSignUp = false,
       this.breachCheck});
 
   final Wallet wallet;
@@ -42,6 +43,9 @@ class SecureYourWalletWidget extends StatefulWidget {
 
   /// The last try to finish with this password could not; says so.
   final bool retrying;
+
+  /// A browser wallet chosen from Sign up: a new ArDrive account.
+  final bool fromSignUp;
 
   /// Asks whether a typed password is in a known breach. Replaced in tests.
   final BreachedPasswordCheck? breachCheck;
@@ -63,13 +67,15 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   PasswordStrength? _strength;
 
   /// An account being made now, whose password locks everything it will
-  /// keep: one from Sign up, or a new MetaMask account, whose wallet is
-  /// derived from it. It must be strong and not in a known breach, and one
-  /// can be suggested. Anyone else, including a returning wallet that has no
-  /// drives yet, keeps whatever password they have.
+  /// keep: one Sign up made, a browser wallet chosen from Sign up, or a new
+  /// MetaMask account, whose wallet is derived from it. It must be strong
+  /// and not in a known breach, and one can be suggested. Anyone else,
+  /// including a wallet from Log in that has no drives yet, keeps whatever
+  /// password they have.
   bool get _rulesApply =>
-      widget.isNewUser &&
-      (widget.mnemonic != null || widget.derivedEthWallet != null);
+      widget.fromSignUp ||
+      (widget.isNewUser &&
+          (widget.mnemonic != null || widget.derivedEthWallet != null));
 
   /// A password the breach check found, so the field says so until changed.
   String? _breachedPassword;
@@ -448,6 +454,7 @@ void showSecureYourPasswordDialog(
     String? mnemonic,
     required bool isNewUser,
     required bool showWalletCreated,
+    bool fromSignUp = false,
     bool retrying = false}) {
   showArDriveDialog(context,
       barrierDismissible: false,
@@ -476,6 +483,7 @@ void showSecureYourPasswordDialog(
               mnemonic: mnemonic,
               isNewUser: isNewUser,
               showWalletCreated: showWalletCreated,
+              fromSignUp: fromSignUp,
               retrying: retrying);
         },
       ));

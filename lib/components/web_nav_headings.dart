@@ -1,6 +1,7 @@
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
+import 'package:ardrive/components/nav_sections.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -47,6 +48,7 @@ class WebNavHeadings extends StatelessWidget {
 /// One heading and the items under it, the way a drive sits under Public.
 class _WebNavSection extends StatefulWidget {
   const _WebNavSection({
+    required this.section,
     required this.icon,
     required this.label,
     required this.showLabel,
@@ -55,6 +57,8 @@ class _WebNavSection extends StatefulWidget {
     required this.items,
   });
 
+  /// Which heading this is, for remembering whether it is folded.
+  final NavSection section;
   final IconData icon;
   final String label;
   final bool showLabel;
@@ -68,9 +72,7 @@ class _WebNavSection extends StatefulWidget {
   State<_WebNavSection> createState() => _WebNavSectionState();
 }
 
-class _WebNavSectionState extends State<_WebNavSection> {
-  bool _isExpanded = true;
-
+class _WebNavSectionState extends State<_WebNavSection> with FoldsNavSections {
   @override
   Widget build(BuildContext context) {
     // The collapsed rail has no room for the items: the icon opens the page.
@@ -86,6 +88,7 @@ class _WebNavSectionState extends State<_WebNavSection> {
     final items = widget.items;
     // No chevron with nothing under it: it would fold away nothing.
     final hasItems = items.isNotEmpty;
+    final isExpanded = !isFolded(widget.section);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -96,12 +99,10 @@ class _WebNavSectionState extends State<_WebNavSection> {
           label: widget.label,
           isCurrent: widget.isCurrent,
           onTap: widget.onOpen,
-          isExpanded: hasItems ? _isExpanded : null,
-          onToggle: hasItems
-              ? () => setState(() => _isExpanded = !_isExpanded)
-              : null,
+          isExpanded: hasItems ? isExpanded : null,
+          onToggle: hasItems ? () => toggleFolded(widget.section) : null,
         ),
-        if (hasItems && _isExpanded) ...[
+        if (hasItems && isExpanded) ...[
           ...items.take(webNavItemLimit),
           if (items.length > webNavItemLimit)
             DriveNavRow(
@@ -137,6 +138,7 @@ class WebPagesNavHeading extends StatelessWidget {
     final pages = context.watch<WebPagesCubit>().state.pages;
 
     return _WebNavSection(
+      section: NavSection.webPages,
       icon: icon,
       label: appLocalizationsOf(context).webPages,
       showLabel: showLabel,
@@ -183,6 +185,7 @@ class NamesNavHeading extends StatelessWidget {
         .toList();
 
     return _WebNavSection(
+      section: NavSection.names,
       icon: icon,
       label: strings.arnsNames,
       showLabel: showLabel,

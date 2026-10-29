@@ -15,6 +15,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
+import 'package:ardrive/components/nav_sections.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -355,6 +356,12 @@ class AppState extends State<App> {
   List<SingleChildWidget> get blocProviders => [
         ChangeNotifierProvider<ActivityTracker>(
             create: (_) => ActivityTracker()),
+        // Above the router, which builds a sidebar per page: see the cubit.
+        BlocProvider(
+          create: (context) => NavSectionsCubit(
+            preferences: context.read<UserPreferencesRepository>(),
+          ),
+        ),
         BlocProvider(
           create: (context) => GlobalHideBloc(
             userPreferencesRepository:

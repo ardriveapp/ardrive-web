@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/app_top_bar.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
+import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -615,6 +618,40 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.byType(ArDriveDropdown), findsOneWidget);
+  });
+
+  /// The sidebar's Your drives row is a house; the menu item for the same
+  /// place was an arrow, a second icon for one destination.
+  testWidgets("the menu's Your drives is the sidebar's, lined up with Stop",
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+    await startSyncing(tester);
+
+    await tester.tap(find.byType(SyncButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    Finder iconOf(String item) => find.descendant(
+          of: find.ancestor(
+            of: find.text(item),
+            matching: find.byType(ArDriveDropdownItemTile),
+          ),
+          matching: find.byType(Icon),
+        );
+
+    final drives = iconOf('Your drives');
+    final stop = iconOf('Stop syncing');
+    expect(
+      tester.widget<Icon>(drives).icon,
+      DriveScopeRail.iconFor(DriveScope.all),
+    );
+    expect(tester.getSize(drives), tester.getSize(stop));
+    expect(tester.getTopLeft(drives).dx, tester.getTopLeft(stop).dx);
+    expect(
+      tester.getTopLeft(find.text('Your drives')).dx,
+      tester.getTopLeft(find.text('Stop syncing')).dx,
+    );
   });
 
   /// A sync that ended with drives it could not read, as the cubit reports it.
