@@ -1,4 +1,3 @@
-import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
@@ -821,8 +820,9 @@ class _Failed extends StatelessWidget {
           Text.rich(TextSpan(
             style: typography.paragraphSmall(color: colors.textMid),
             children: ArDriveIdText.spansIn(
-              strings.publishPaidNote(shortenId(state.paidTxId!)),
-              shortenId(state.paidTxId!),
+              // Whole: the owner may need it to look the payment up.
+              strings.publishPaidNote(state.paidTxId!),
+              state.paidTxId!,
               idStyle: typography.code(color: colors.textMid, fontSize: 11),
             ),
           )),

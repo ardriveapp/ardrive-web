@@ -174,7 +174,8 @@ class ArNSChoiceRow extends StatelessWidget {
                               children: ArDriveIdText.spansIn(
                                 subtitle!,
                                 subtitleId ?? '',
-                                idStyle: typography.code(color: colors.textLow),
+                                idStyle: typography.code(
+                                    color: colors.textLow, fontSize: 11),
                               ),
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -457,7 +458,7 @@ class ArNSPointsTo extends StatelessWidget {
             message: id,
             child: ArDriveIdText(
               shortenId(id),
-              style: typography.code(color: colors.textMid),
+              style: typography.code(color: colors.textMid, fontSize: 11),
             ),
           ),
         ),

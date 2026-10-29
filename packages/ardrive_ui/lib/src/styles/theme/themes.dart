@@ -365,7 +365,7 @@ const _fontFamily = 'packages/ardrive_ui/Wavehaus';
 
 /// [textTheme] with nothing lighter than Book. Material's defaults are 400
 /// (300 for its display styles), and Wavehaus declares Light as 400, so text
-/// that names no weight (a plain `Text`, a snackbar, a tooltip) was drawn in
+/// that names no weight (a plain `Text`, a tooltip, a field's label) was drawn in
 /// Light, which is for large figures only (README, "Tokens").
 TextTheme _bookByDefault(TextTheme textTheme) {
   TextStyle? book(TextStyle? style) {
