@@ -2199,6 +2199,15 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
+  "multiDownloadSaved": "Saved {fileName}",
+  "@multiDownloadSaved": {
+    "description": "After a multi-file download, once the zip is handed to the browser to save",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
   "multiDownloadCompleteWithSkippedFiles": "{numSkippedFiles, plural, =0{Download complete} =1{Download complete, 1 file skipped} other{Download complete, {numSkippedFiles} files skipped}}",
   "@multiDownloadCompleteWithSkippedFiles": {
     "description": "Title to modal shown when user completes multi-file download, with how many files were skipped, if any.",
