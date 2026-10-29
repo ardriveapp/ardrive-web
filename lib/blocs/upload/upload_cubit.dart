@@ -1044,6 +1044,9 @@ class UploadCubit extends Cubit<UploadState> {
           ),
         );
         _hasEmittedWarning = true;
+        // Nothing was sent: "Upload anyway" calls this again, and must not
+        // find an upload in progress. The warning is shown only once.
+        _uploadIsInProgress = false;
         return;
       }
     } else {

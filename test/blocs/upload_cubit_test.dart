@@ -1095,6 +1095,75 @@ void main() {
             turboUploadService: DontUseUploadService(),
           );
 
+      // Broken since the warning was added: the first call left the
+      // upload marked in progress, so "Upload anyway" did nothing.
+      blocTest<UploadCubit, UploadState>(
+        'Upload anyway, after the large Turbo upload warning, uploads once',
+        setUp: () {
+          clearInteractions(mockUploadRepository);
+          when(() => mockProfileCubit!.checkIfWalletMismatch())
+              .thenAnswer((_) async => false);
+          when(() => mockUploadFileSizeChecker.hasFileAboveSizeLimit(
+              files: any(named: 'files'))).thenAnswer((_) async => true);
+          when(() => mockUploadRepository.uploadFiles(
+                files: any(named: 'files'),
+                targetDrive: any(named: 'targetDrive'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                licenseStateConfigured: any(named: 'licenseStateConfigured'),
+                targetFolder: any(named: 'targetFolder'),
+                uploadMethod: any(named: 'uploadMethod'),
+                uploadThumbnail: any(named: 'uploadThumbnail'),
+                paidBy: any(named: 'paidBy'),
+              )).thenAnswer((_) async => _MockUploadController());
+        },
+        tearDown: () {
+          when(() => mockUploadFileSizeChecker.hasFileAboveSizeLimit(
+              files: any(named: 'files'))).thenAnswer((_) async => false);
+        },
+        build: () => getUploadCubitInstanceWith(tNoConflictingFiles),
+        act: (cubit) async {
+          await cubit.startUploadPreparation();
+          cubit.setUploadMethod(
+            UploadMethod.turbo,
+            UploadPaymentMethodInfo(
+              uploadMethod: UploadMethod.turbo,
+              costEstimateTurbo: costEstimate,
+              costEstimateAr: costEstimate,
+              hasNoTurboBalance: false,
+              isTurboUploadPossible: true,
+              arBalance: '0',
+              sufficientArBalance: true,
+              turboCredits: '0',
+              sufficentCreditsBalance: true,
+              freeStatus: FreeUploadStatus.free,
+              totalSize: 1,
+            ),
+            true,
+          );
+          final uploadPlan = await plan();
+          await cubit.startUpload(uploadPlanForAr: uploadPlan);
+          expect(cubit.state, isA<UploadShowingWarning>());
+
+          // Upload anyway, pressed twice.
+          await Future.wait([
+            cubit.startUpload(uploadPlanForAr: uploadPlan),
+            cubit.startUpload(uploadPlanForAr: uploadPlan),
+          ]);
+        },
+        verify: (_) {
+          verify(() => mockUploadRepository.uploadFiles(
+                files: any(named: 'files'),
+                targetDrive: any(named: 'targetDrive'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                licenseStateConfigured: any(named: 'licenseStateConfigured'),
+                targetFolder: any(named: 'targetFolder'),
+                uploadMethod: any(named: 'uploadMethod'),
+                uploadThumbnail: any(named: 'uploadThumbnail'),
+                paidBy: any(named: 'paidBy'),
+              )).called(1);
+        },
+      );
+
       blocTest<UploadCubit, UploadState>(
         'on another wallet, says so and uploads nothing',
         setUp: () {
