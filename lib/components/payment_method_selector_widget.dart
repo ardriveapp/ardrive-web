@@ -27,6 +27,10 @@ class PaymentMethodSelector extends StatefulWidget {
 
   final bool showCongestionWarning;
 
+  /// Whether to say what is short and how to add credits under the choice.
+  /// The upload review says that itself, above the choice.
+  final bool showBalanceMessages;
+
   const PaymentMethodSelector({
     super.key,
     required this.uploadMethodInfo,
@@ -35,6 +39,7 @@ class PaymentMethodSelector extends StatefulWidget {
     required this.onArSelect,
     required this.onTurboSelect,
     this.showCongestionWarning = false,
+    this.showBalanceMessages = true,
   });
 
   @override
@@ -76,7 +81,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               ),
             ),
           ),
-        _getInsufficientBalanceMessage(context: context),
+        if (widget.showBalanceMessages)
+          _getInsufficientBalanceMessage(context: context),
       ],
     );
   }
@@ -184,7 +190,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         return const SizedBox();
       }
 
-      final notice = _SourceWalletCreditsNotice(
+      final notice = SourceWalletCreditsNotice(
         credits: credits,
         onShare: widget.onShareCredits,
       );
@@ -270,8 +276,9 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 /// It names both addresses rather than explaining the derivation. Somebody who
 /// has just been refused an upload wants to know where their money is, and the
 /// account menu already explains how the two wallets relate.
-class _SourceWalletCreditsNotice extends StatefulWidget {
-  const _SourceWalletCreditsNotice({
+class SourceWalletCreditsNotice extends StatefulWidget {
+  const SourceWalletCreditsNotice({
+    super.key,
     required this.credits,
     this.onShare,
   });
@@ -282,12 +289,11 @@ class _SourceWalletCreditsNotice extends StatefulWidget {
   final Future<bool> Function()? onShare;
 
   @override
-  State<_SourceWalletCreditsNotice> createState() =>
+  State<SourceWalletCreditsNotice> createState() =>
       _SourceWalletCreditsNoticeState();
 }
 
-class _SourceWalletCreditsNoticeState
-    extends State<_SourceWalletCreditsNotice> {
+class _SourceWalletCreditsNoticeState extends State<SourceWalletCreditsNotice> {
   bool _sharing = false;
   bool _failed = false;
 

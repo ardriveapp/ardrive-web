@@ -258,12 +258,12 @@ class UploadCubit extends Cubit<UploadState> {
       ));
     }
 
-    emit(UploadComplete());
+    emit(UploadComplete(numberOfFiles: _files.length));
   }
 
   void cancelManifestsUpload() {
     _isManifestsUploadCancelled = true;
-    emit(UploadComplete());
+    emit(UploadComplete(numberOfFiles: _files.length));
   }
 
   /// License forms
@@ -1043,16 +1043,62 @@ class UploadCubit extends Cubit<UploadState> {
     return;
   }
 
-  void retryUploads() {
-    if (state is UploadFailure) {
-      final controller = (state as UploadFailure).controller!;
+  /// Whether a retry is starting, so a second press does nothing.
+  bool _retrying = false;
 
-      controller.retryFailedTasks(_auth.currentUser.wallet);
+  /// Sends the failed files again. It waits for whatever is left of the
+  /// attempt before to stop, so nothing is sent or paid for twice, and a
+  /// second press while it starts is ignored.
+  Future<void> retryUploads() async {
+    final current = state;
+    if (_retrying || current is! UploadFailure) return;
+    final controller = current.controller;
+    if (controller == null) return;
+    _retrying = true;
+    emit(UploadPreparationInProgress());
+    try {
+      await controller.retryFailedTasks(_auth.currentUser.wallet);
+    } on PreviousAttemptStillRunning {
+      // Nothing was sent. Back to where the person pressed Upload, with Upload
+      // still there and a word on why nothing happened.
+      emit(UploadFailure(
+        error: current.error,
+        failedTasks: current.failedTasks,
+        controller: controller,
+        lastTryStillFinishing: true,
+      ));
+    } finally {
+      _retrying = false;
     }
   }
 
+  /// Upload, pressed on the review: paid the way the review showed, whatever
+  /// the payment sheet last defaulted to, which can be the wallet when credits
+  /// are short or Turbo is down. Goes on to the license step when there is
+  /// one, the manifest review when manifests are chosen, or the upload.
+  void uploadFromReview({
+    required UploadMethod method,
+    LicenseCategory? licenseCategory,
+  }) {
+    _uploadMethod = method;
+    if (licenseCategory != null) {
+      initialScreenNext(licenseCategory: licenseCategory);
+    } else {
+      initialScreenUpload();
+    }
+  }
+
+  /// How this upload will be paid for.
+  @visibleForTesting
+  UploadMethod? get uploadMethod => _uploadMethod;
+
+  /// Set once the person cancels. A canceled upload is never reported
+  /// complete, so it never says the files are saved.
+  bool _uploadCanceled = false;
+
   Future<void> cancelUpload() async {
     if (state is UploadInProgress) {
+      _uploadCanceled = true;
       try {
         final state = this.state as UploadInProgress;
 
@@ -1133,11 +1179,12 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
+        if (_uploadCanceled) return;
         if (_selectedManifestModels.isNotEmpty) {
           await prepareManifestUpload();
         }
 
-        emit(UploadComplete());
+        emit(UploadComplete(numberOfFiles: _files.length));
 
         unawaited(_profileCubit.refreshBalance());
       },
@@ -1193,6 +1240,7 @@ class UploadCubit extends Cubit<UploadState> {
     // TODO: implement on the upload repository
     uploadController.onDone(
       (tasks) async {
+        if (_uploadCanceled) return;
         unawaited(_profileCubit.refreshBalance());
 
         logger.i(
@@ -1203,11 +1251,16 @@ class UploadCubit extends Cubit<UploadState> {
           await prepareManifestUpload();
         }
 
-        emit(UploadComplete(dataTxIds: [
+        final uploaded = [
           for (final task in tasks)
             for (final item in task.content ?? const [])
-              if (item is ARFSFileUploadMetadata) item.dataTxId!,
-        ]));
+              if (item is ARFSFileUploadMetadata) item,
+        ];
+        emit(UploadComplete(
+          dataTxIds: [for (final item in uploaded) item.dataTxId!],
+          fileIds: [for (final item in uploaded) item.id],
+          numberOfFiles: _files.length,
+        ));
 
         PlausibleEventTracker.trackUploadSuccess();
       },
@@ -1281,9 +1334,16 @@ class UploadCubit extends Cubit<UploadState> {
   /// transaction before sending its data, and only this tab holds what is
   /// needed to send the data, so closing it then leaves a paid transaction
   /// with nothing in it.
+  /// The upload as it was last reviewed, for asking for Turbo Credits after
+  /// Turbo refused it: the files, and what they cost.
+  UploadReady? get lastReadyState => _lastReadyState;
+  UploadReady? _lastReadyState;
+
   @override
   void onChange(Change<UploadState> change) {
     super.onChange(change);
+    final next = change.nextState;
+    if (next is UploadReady) _lastReadyState = next;
     if (isWalletPaidUploadAtRisk(change.nextState)) {
       holdLeavePageGuard(this);
     } else {

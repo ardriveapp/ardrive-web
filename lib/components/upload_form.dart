@@ -4,9 +4,14 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/components/upload_options.dart';
 import 'package:ardrive/components/upload_review_cost.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
+import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
+import 'package:ardrive/components/file_share_dialog.dart';
+import 'package:ardrive/components/drive_share_dialog.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -35,6 +40,7 @@ import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
 import 'package:ardrive/core/upload/view/manifest_options/manifest_options.dart';
@@ -175,6 +181,8 @@ Future<void> _showUploadForm(
       ),
     ),
     barrierDismissible: false,
+    // The review fills a phone less a 16 margin.
+    insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
   );
 }
 
@@ -256,6 +264,55 @@ class _UploadFormState extends State<UploadForm> {
     );
   }
 
+  /// Says the files are saved, with a way to share them, once the dialog has
+  /// closed.
+  void _showSaved(BuildContext navigatorContext, UploadComplete state) {
+    final messenger = ScaffoldMessenger.maybeOf(navigatorContext);
+    final reviewed = context.read<UploadCubit>().lastReadyState;
+    final count = state.numberOfFiles;
+    if (messenger == null || count == 0) return;
+    final drive = reviewed?.params.targetDrive;
+    final folder = reviewed?.params.targetFolder;
+
+    VoidCallback? share;
+    if (drive != null && folder != null) {
+      switch (uploadSavedShare(
+        fileCount: count,
+        fileIds: state.fileIds,
+        inDriveRoot: folder.id == drive.rootFolderId,
+        drivePublic: drive.isPublic,
+      )) {
+        case UploadSavedShare.file:
+          share = () => promptToShareFile(
+                context: navigatorContext,
+                driveId: drive.id,
+                fileId: state.fileIds.single,
+              );
+        case UploadSavedShare.folder:
+          share = () => promptToShareDrive(
+                context: navigatorContext,
+                drive: drive,
+                folderId: folder.id,
+                folderName: folder.name,
+              );
+        case UploadSavedShare.drive:
+          share = () => promptToShareDrive(
+                context: navigatorContext,
+                drive: drive,
+              );
+        case UploadSavedShare.none:
+          share = null;
+      }
+    }
+
+    showUploadSavedToast(
+      messenger,
+      text: appLocalizationsOf(context).filesSavedForGood(count),
+      shareLabel: appLocalizationsOf(context).share,
+      onShare: share,
+    );
+  }
+
   @override
   void dispose() {
     _names?.close();
@@ -294,6 +351,7 @@ class _UploadFormState extends State<UploadForm> {
                 final navigatorContext = Navigator.of(context).context;
                 Navigator.pop(context);
                 if (state is UploadComplete) {
+                  _showSaved(navigatorContext, state);
                   _applyNames(navigatorContext, state);
                 }
                 context.read<ActivityTracker>().setUploading(false);
@@ -1859,62 +1917,82 @@ class _UploadReadyWidget extends StatelessWidget {
   Widget _build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
+    final paymentBloc = context.watch<UploadPaymentMethodBloc>();
+    final info = state.paymentInfo;
+    // Read again after Add credits or Try again: no price until it is back.
+    final summary = paymentBloc.state is UploadPaymentMethodLoading
+        ? null
+        : UploadReviewSummary.fromPaymentInfo(info);
+    final folderName = state.params.targetFolder.name;
+
     return ReactiveForm(
       formGroup: context.watch<UploadCubit>().licenseCategoryForm,
       child: ReactiveFormConsumer(
         builder: (_, form, __) {
           final LicenseCategory? licenseCategory =
               form.control('licenseCategory').value;
-          return StatsScreen(
-            readyState: state,
-            // Don't show on first screen?
-            hasCloseButton: false,
-            showAdvancedLink: false,
-            modalActions: [
-              ArDriveButtonNew(
-                onPressed: () => Navigator.of(context).pop(false),
-                text: appLocalizationsOf(context).cancel,
-                typography: typography,
-                maxWidth: 100,
-                variant: ButtonVariant.secondary,
+          final cubit = context.read<UploadCubit>();
+
+          // A license is set up, and manifests chosen, on steps of their own
+          // before the upload starts; the button goes to the first of them.
+          final label = licenseCategory != null
+              ? l10n.configure
+              : state.selectedManifestSelections.isNotEmpty
+                  ? l10n.review
+                  : l10n.upload;
+
+          return UploadReviewDialog(
+            title: l10n.uploadNFiles(state.numberOfFiles),
+            destination: state.uploadIsPublic
+                ? l10n.uploadReviewToPublic(folderName)
+                : l10n.uploadReviewToPrivate(folderName),
+            files: uploadReviewFiles(info),
+            summary: summary,
+            primaryLabel: label,
+            primaryEnabled: state.isNextButtonEnabled && (names?.ready ?? true),
+            // The way the review showed is the way it is paid, whatever the
+            // payment sheet defaulted to.
+            onUpload: (method) => cubit.uploadFromReview(
+              method: method,
+              licenseCategory: licenseCategory,
+            ),
+            onShown: () => PlausibleEventTracker.trackUploadReview(
+              drivePrivacy: state.uploadIsPublic
+                  ? DrivePrivacy.public
+                  : DrivePrivacy.private,
+              dragNDrop: state.isDragNDrop,
+            ),
+            onCancel: () => Navigator.of(context).pop(false),
+            funding: UploadFormCreditsFunding(
+              context,
+              onRefresh: () => paymentBloc
+                  .add(PrepareUploadPaymentMethod(params: state.params)),
+            ),
+            paymentChoice: RepositoryProvider.value(
+              value: context.read<ArDriveUploadPreparationManager>(),
+              child: UploadPaymentMethodView(
+                // The review says what is short, above the choice; only the
+                // wallet-only case keeps the selector's own messages.
+                showBalanceMessages: summary?.usesLegacySelector ?? false,
+                walletOnlyWhenChosen: !(summary?.usesLegacySelector ?? false),
+                onError: cubit.emitErrorFromPreparation,
+                onTurboTopupSucess: () => cubit.startUploadPreparation(
+                    isRetryingToPayWithTurbo: true),
+                onUploadMethodChanged: (method, info, canUpload) =>
+                    cubit.setUploadMethod(method, info, canUpload),
               ),
-              ...getModalActions(
-                context,
-                state,
-                licenseCategory,
-                namesReady: names?.ready ?? true,
-              ),
-            ],
-            children: [
-              // What it costs and how to pay: the one choice every upload
-              // needs, so it comes first.
-              TurboFreeStatusMessage(
-                status: state.paymentInfo.freeStatus,
-                padding: const EdgeInsets.only(bottom: 16),
-              ),
-              if (!state.paymentInfo.isFreeThanksToTurbo)
-                RepositoryProvider.value(
-                  value: context.read<ArDriveUploadPreparationManager>(),
-                  child: UploadPaymentMethodView(
-                    onError: () {
-                      context.read<UploadCubit>().emitErrorFromPreparation();
-                    },
-                    onTurboTopupSucess: () {
-                      context.read<UploadCubit>().startUploadPreparation(
-                          isRetryingToPayWithTurbo: true);
-                    },
-                    onUploadMethodChanged: (method, info, canUpload) {
-                      context
-                          .read<UploadCubit>()
-                          .setUploadMethod(method, info, canUpload);
-                    },
+            ),
+            sourceWalletNotice: info.sourceWalletCredits == null
+                ? null
+                : SourceWalletCreditsNotice(
+                    credits: info.sourceWalletCredits!,
+                    onShare: paymentBloc.canShareSourceWalletCredits
+                        ? paymentBloc.shareSourceWalletCredits
+                        : null,
                   ),
-                ),
-              if (names != null) ...[
-                const SizedBox(height: 16),
-                ArNSFlowNameSection(cubit: names!),
-              ],
-              const Divider(height: 32),
+            extras: [
+              if (names != null) ArNSFlowNameSection(cubit: names!),
               // Everything else is optional, and most uploads leave it as it
               // is: one line saying what is set, opened on request.
               UploadOptions(
@@ -1923,38 +2001,34 @@ class _UploadReadyWidget extends StatelessWidget {
                 // coming back from the license screens must not undo it.
                 thumbnails: state
                         .params.containsSupportedImageTypeForThumbnailGeneration
-                    ? context.read<UploadCubit>().uploadThumbnail
+                    ? cubit.uploadThumbnail
                     : null,
-                onThumbnailsChanged: (value) => context
-                    .read<UploadCubit>()
-                    .changeUploadThumbnailOption(value),
+                onThumbnailsChanged: cubit.changeUploadThumbnailOption,
                 summary: [
                   if (licenseCategory == null)
-                    appLocalizationsOf(context).noLicense
+                    l10n.noLicense
                   else
-                    appLocalizationsOf(context).namedLicense(
-                        _licenseShortNames[licenseCategory] ??
-                            licenseCategoryNames[licenseCategory]!),
+                    l10n.namedLicense(_licenseShortNames[licenseCategory] ??
+                        licenseCategoryNames[licenseCategory]!),
                   if (state.shouldShowCustomManifestCheckbox &&
                       state.uploadFileAsCustomManifest)
-                    appLocalizationsOf(context).uploadAsManifest,
+                    l10n.uploadAsManifest,
                   if (state.selectedManifestSelections.isNotEmpty)
-                    appLocalizationsOf(context).manifestsToUpdate(
+                    l10n.manifestsToUpdate(
                         state.selectedManifestSelections.length),
                 ],
                 children: [
                   Row(
                     children: [
                       Text(
-                        appLocalizationsOf(context).licenseHeading,
+                        l10n.licenseHeading,
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
                         ),
                       ),
                       const SizedBox(width: 8),
                       ArDriveClickArea(
-                        tooltip:
-                            appLocalizationsOf(context).learnMoreAboutLicenses,
+                        tooltip: l10n.learnMoreAboutLicenses,
                         child: GestureDetector(
                           onTap: () {
                             showLicensingInfoModal(context: context);
@@ -1971,20 +2045,18 @@ class _UploadReadyWidget extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
                     child: ReactiveForm(
-                      formGroup:
-                          context.watch<UploadCubit>().licenseCategoryForm,
+                      formGroup: cubit.licenseCategoryForm,
                       child: ReactiveArDriveSelectField<LicenseCategory?>(
                         formControlName: 'licenseCategory',
                         showErrors: (control) =>
                             control.dirty && control.invalid,
-                        validationMessages:
-                            kValidationMessages(appLocalizationsOf(context)),
+                        validationMessages: kValidationMessages(l10n),
                         choices: [
                           for (final value in [null, ...LicenseCategory.values])
                             ArDriveChoice(
                               value: value,
-                              label: licenseCategoryNames[value] ??
-                                  appLocalizationsOf(context).noLicense,
+                              label:
+                                  licenseCategoryNames[value] ?? l10n.noLicense,
                             ),
                         ],
                       ),
@@ -1992,41 +2064,61 @@ class _UploadReadyWidget extends StatelessWidget {
                   ),
                   if (state.shouldShowCustomManifestCheckbox)
                     ArDriveCheckBox(
-                      title: appLocalizationsOf(context)
-                          .publishManifestAsDeployment,
+                      title: l10n.publishManifestAsDeployment,
                       checked: state.uploadFileAsCustomManifest,
                       useNewIcons: true,
                       titleStyle: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
                       ),
-                      onChange: (value) {
-                        context
-                            .read<UploadCubit>()
-                            .setIsUploadingCustomManifest(value);
-                      },
+                      onChange: cubit.setIsUploadingCustomManifest,
                     ),
-                  // Only where the panel can open: the phone layout has none,
-                  // and once it is open the link has nothing left to do.
-                  if (state.canShowSettings &&
-                      !state.showSettings &&
-                      getDeviceType(MediaQuery.sizeOf(context)) !=
-                          DeviceScreenType.mobile)
-                    ArDriveClickArea(
-                      child: GestureDetector(
-                        onTap: () => context.read<UploadCubit>().showSettings(),
-                        child: Text(
-                          appLocalizationsOf(context).updateManifests,
-                          style: typography
-                              .paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold,
-                                color: colorTokens.textMid,
-                              )
-                              .copyWith(decoration: TextDecoration.underline),
-                        ),
+                  if (state.canShowSettings && !state.showSettings)
+                    ArDriveLink(
+                      text: l10n.updateManifests,
+                      isAction: true,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
                       ),
+                      onTap: cubit.showSettings,
                     ),
                 ],
               ),
+              // The deployments to update, in the review rather than a panel
+              // beside it, so the review keeps one width.
+              if (state.canShowSettings && state.showSettings)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.updateDeployments,
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                        ),
+                        ArDriveLink(
+                          text: l10n.close,
+                          isAction: true,
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textMid,
+                          ),
+                          onTap: cubit.hideSettings,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: ArDriveSpacing.xs),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: const ManifestOptions(),
+                    ),
+                  ],
+                ),
             ],
           );
         },
@@ -2341,6 +2433,18 @@ class _UploadFailureWidget extends StatelessWidget {
             title: appLocalizationsOf(context).ok,
           ),
         ],
+      );
+    }
+
+    final reviewed = context.read<UploadCubit>().lastReadyState;
+    if (state.error == UploadErrors.turboPaymentRequired &&
+        state.controller != null &&
+        reviewed != null) {
+      // Turbo refused it: the review again, with Add credits, and Upload
+      // sends the files that were refused.
+      return _UploadPaymentRequiredWidget(
+        reviewed: reviewed,
+        lastTryStillFinishing: state.lastTryStillFinishing,
       );
     }
 
@@ -3086,3 +3190,284 @@ String uploadButtonLabel(BuildContext context, int numberOfFiles) =>
         ? appLocalizationsOf(context).uploadNFiles(numberOfFiles)
         : appLocalizationsOf(context).upload;
 //
+
+/// Every file on [info]'s plan, taken out of its bundles, for the review.
+List<UploadReviewFile> uploadReviewFiles(UploadPaymentMethodInfo info) {
+  final plan = info.uploadPlanForAR;
+  if (plan == null) return const [];
+  return [
+    for (final file in plan.fileV2UploadHandles.values)
+      (
+        name: file.entity.name!,
+        size: file.size,
+        contentType: file.entity.dataContentType ?? '',
+      ),
+    for (final bundle in plan.bundleUploadHandles)
+      for (final entity in bundle.fileEntities)
+        (
+          name: entity.name!,
+          size: entity.size!,
+          contentType: entity.dataContentType ?? '',
+        ),
+  ];
+}
+
+/// Buys Turbo Credits for the upload review: Turbo's quote for an amount,
+/// the app's card payment, and the balance until the credits arrive.
+class UploadFormCreditsFunding implements UploadCreditsFunding {
+  UploadFormCreditsFunding(this.context, {required this.onRefresh});
+
+  final BuildContext context;
+  final VoidCallback onRefresh;
+
+  /// How often, and how many times, to look for credits after a payment.
+  static const _pollEvery = Duration(seconds: 2);
+  static const _pollTimes = 20;
+
+  PaymentService get _payments => context.read<PaymentService>();
+
+  @override
+  Future<BigInt> creditsFor(int amountUsd) async {
+    final price = await _payments.getPriceForFiat(
+      wallet: context.read<ArDriveAuth>().currentUser.wallet,
+      amount: amountUsd * 100,
+      currency: 'usd',
+    );
+    return price.winstonCredits;
+  }
+
+  @override
+  Future<BigInt?> payByCard(int amountUsd) =>
+      showTurboCardPayment(context, amountUsd: amountUsd);
+
+  @override
+  Future<bool> awaitCredits({required BigInt above}) async {
+    final wallet = context.read<ArDriveAuth>().currentUser.wallet;
+    final payments = _payments;
+    // Turbo adds the credits when Stripe tells it the payment went through,
+    // which can take a few seconds after the card is charged.
+    for (var i = 0; i < _pollTimes; i++) {
+      try {
+        if (await payments.getBalance(wallet: wallet) > above) return true;
+      } catch (e) {
+        // A new account is unknown to Turbo until its credits land.
+        logger.d('Waiting for credits: $e');
+      }
+      await Future.delayed(_pollEvery);
+    }
+    return false;
+  }
+
+  @override
+  void refresh() => onRefresh();
+}
+
+/// After Turbo refused an upload as not paid for: the review again, with the
+/// balance read fresh, Add credits, and Upload sending the refused files.
+class _UploadPaymentRequiredWidget extends StatefulWidget {
+  const _UploadPaymentRequiredWidget({
+    required this.reviewed,
+    this.lastTryStillFinishing = false,
+  });
+
+  final UploadReady reviewed;
+
+  /// Upload was pressed while the refused try was still finishing, and
+  /// nothing was sent.
+  final bool lastTryStillFinishing;
+
+  @override
+  State<_UploadPaymentRequiredWidget> createState() =>
+      _UploadPaymentRequiredWidgetState();
+}
+
+class _UploadPaymentRequiredWidgetState
+    extends State<_UploadPaymentRequiredWidget> {
+  /// Null while it is read.
+  UploadReviewSummary? _summary;
+
+  @override
+  void initState() {
+    super.initState();
+    _read();
+  }
+
+  /// Reads the balance again, and Turbo's price too if it couldn't be read at
+  /// review: reading only the balance, Try again could never clear "no price".
+  Future<void> _read() async {
+    setState(() => _summary = null);
+    final payments = context.read<PaymentService>();
+    final wallet = context.read<ArDriveAuth>().currentUser.wallet;
+    final summary = await readRefusedUploadSummary(
+      widget.reviewed.paymentInfo,
+      readBalance: () => payments.getBalance(wallet: wallet),
+      readPrice: (bytes) async {
+        final winc = await payments.getPriceForBytes(byteSize: bytes);
+        final perDollar = await payments.getPriceForFiat(
+            wallet: null, amount: 100, currency: 'usd');
+        return UploadCostEstimate(
+          pstFee: BigInt.zero,
+          totalCost: winc,
+          totalSize: bytes,
+          usdUploadCost: winc / perDollar.winstonCredits,
+        );
+      },
+    );
+    if (mounted) setState(() => _summary = summary);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+    final reviewed = widget.reviewed;
+    final folderName = reviewed.params.targetFolder.name;
+
+    return UploadReviewDialog(
+      title: l10n.uploadNFiles(reviewed.numberOfFiles),
+      destination: reviewed.uploadIsPublic
+          ? l10n.uploadReviewToPublic(folderName)
+          : l10n.uploadReviewToPrivate(folderName),
+      files: uploadReviewFiles(reviewed.paymentInfo),
+      summary: _summary,
+      primaryLabel: l10n.upload,
+      onUpload: (_) => context.read<UploadCubit>().retryUploads(),
+      extras: [
+        if (widget.lastTryStillFinishing)
+          SizedBox(
+            width: double.infinity,
+            child: ArDriveNotice(
+              type: ArDriveNoticeType.info,
+              message: l10n.uploadLastTryStillFinishing,
+            ),
+          ),
+      ],
+      onCancel: () => Navigator.of(context).pop(false),
+      funding: UploadFormCreditsFunding(context, onRefresh: _read),
+    );
+  }
+}
+
+/// The note after an upload: how many files are saved, and Share.
+void showUploadSavedToast(
+  ScaffoldMessengerState messenger, {
+  required String text,
+  required String shareLabel,
+  VoidCallback? onShare,
+}) {
+  final colors = ArDriveTheme.of(messenger.context).themeData.colorTokens;
+  final screenWidth = MediaQuery.sizeOf(messenger.context).width;
+  messenger.showSnackBar(
+    SnackBar(
+      behavior: SnackBarBehavior.floating,
+      width: min(screenWidth - 32, 400),
+      elevation: 0,
+      backgroundColor: colors.statusSuccessContainer,
+      duration: const Duration(seconds: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.md,
+        vertical: ArDriveSpacing.sm,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
+        side: BorderSide(color: colors.statusSuccessStroke),
+      ),
+      // Typography reads the screen width, known where the snackbar shows.
+      content: Builder(
+        builder: (context) {
+          final typography = ArDriveTypographyNew.of(context);
+          return Row(
+            children: [
+              ArDriveIcons.checkmark(size: 20, color: colors.statusSuccessFg),
+              const SizedBox(width: ArDriveSpacing.sm),
+              Expanded(
+                child: Text(
+                  text,
+                  style: typography.paragraphNormal(color: colors.textHigh),
+                ),
+              ),
+              if (onShare != null) ...[
+                const SizedBox(width: ArDriveSpacing.xs),
+                ArDriveLink(
+                  text: shareLabel,
+                  isAction: true,
+                  style: typography
+                      .paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.textHigh,
+                      )
+                      .copyWith(decoration: TextDecoration.underline),
+                  onTap: () {
+                    messenger.hideCurrentSnackBar();
+                    onShare();
+                  },
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    ),
+  );
+}
+
+/// What Share offers after an upload.
+enum UploadSavedShare { file, folder, drive, none }
+
+/// One file shares the file. Several files share where they went only in a
+/// public drive: the folder, or the drive from its root. In a private drive
+/// both of those shares carry the drive's key, which opens everything in it,
+/// far more than the files just saved, so several files offer no Share there.
+///
+/// [fileCount] is how many files the upload covered, the number the note
+/// says. [fileIds] can be fewer: after a retry, only the files it sent again.
+/// So one file shares the file only when the upload was one file.
+UploadSavedShare uploadSavedShare({
+  required int fileCount,
+  required List<String> fileIds,
+  required bool inDriveRoot,
+  required bool drivePublic,
+}) {
+  if (fileCount == 1) {
+    return fileIds.length == 1 ? UploadSavedShare.file : UploadSavedShare.none;
+  }
+  if (!drivePublic) return UploadSavedShare.none;
+  return inDriveRoot ? UploadSavedShare.drive : UploadSavedShare.folder;
+}
+
+/// The review after Turbo refused an upload, read again: the balance, and
+/// Turbo's price for its [UploadPaymentMethodInfo.totalSize] bytes when the
+/// price at review was the zero placeholder for one that couldn't be read.
+Future<UploadReviewSummary> readRefusedUploadSummary(
+  UploadPaymentMethodInfo reviewed, {
+  required Future<BigInt> Function() readBalance,
+  required Future<UploadCostEstimate> Function(int byteCount) readPrice,
+}) async {
+  BigInt? balance;
+  var balanceUnreadable = false;
+  try {
+    balance = await readBalance();
+  } on TurboUserNotFound {
+    balance = BigInt.zero;
+  } catch (e) {
+    logger.d('Could not read the balance after Turbo refused payment: $e');
+    balanceUnreadable = true;
+  }
+
+  var info = reviewed;
+  final price = reviewed.costEstimateTurbo?.totalCost ?? BigInt.zero;
+  if (price <= BigInt.zero && reviewed.totalSize > 0) {
+    try {
+      info = reviewed.copyWith(
+          costEstimateTurbo: await readPrice(reviewed.totalSize));
+    } catch (e) {
+      // Still no price: the summary says so, with Try again.
+      logger.d('Could not read the price after Turbo refused payment: $e');
+    }
+  }
+
+  return UploadReviewSummary.afterRefusal(
+    info,
+    creditsBalance: balance,
+    balanceUnreadable: balanceUnreadable,
+  );
+}

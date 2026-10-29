@@ -26,6 +26,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -333,6 +334,52 @@ void main() {
   /// The manifest re-upload path marks each manifest free/paid itself rather
   /// than going through UploadPaymentEvaluator, so it needs its own coverage:
   /// if every manifest is marked free, payment selection is skipped entirely.
+  group('retrying after Turbo refused payment', () {
+    late _MockUploadController controller;
+
+    setUp(() {
+      controller = _MockUploadController();
+      when(() => mockArDriveAuth.currentUser).thenReturn(getFakeUser());
+    });
+
+    blocTest<UploadCubit, UploadState>(
+      'while the try before is still finishing, sends nothing and comes back '
+      'to the review saying so, with Upload still there',
+      build: () {
+        when(() => controller.retryFailedTasks(any()))
+            .thenThrow(PreviousAttemptStillRunning());
+        return getUploadCubitInstanceWith([]);
+      },
+      seed: () => UploadFailure(
+        error: UploadErrors.turboPaymentRequired,
+        controller: controller,
+      ),
+      act: (cubit) => cubit.retryUploads(),
+      expect: () => [
+        isA<UploadPreparationInProgress>(),
+        isA<UploadFailure>()
+            .having((s) => s.lastTryStillFinishing, 'still finishing', isTrue)
+            .having((s) => s.error, 'error', UploadErrors.turboPaymentRequired)
+            .having((s) => s.controller, 'controller', controller),
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'a second press while the retry starts is ignored',
+      build: () {
+        when(() => controller.retryFailedTasks(any())).thenAnswer(
+            (_) => Future<void>.delayed(const Duration(milliseconds: 50)));
+        return getUploadCubitInstanceWith([]);
+      },
+      seed: () => UploadFailure(
+        error: UploadErrors.turboPaymentRequired,
+        controller: controller,
+      ),
+      act: (cubit) => Future.wait([cubit.retryUploads(), cubit.retryUploads()]),
+      verify: (_) => verify(() => controller.retryFailedTasks(any())).called(1),
+    );
+  });
+
   group('manifest free-vs-paid honours the wallet free allowance', () {
     final stubPaymentInfo = UploadPaymentMethodInfo(
       uploadMethod: UploadMethod.turbo,
@@ -418,6 +465,34 @@ void main() {
       verify: (bloc) {
         final state = bloc.state as UploadReady;
         expect(state.manifestFiles.single.freeThanksToTurbo, isTrue);
+      },
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'Upload on the review pays the way the review showed, not the way the '
+      'payment sheet last defaulted',
+      build: () {
+        when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+            .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+        return getUploadCubitInstanceWith([]);
+      },
+      act: (bloc) async {
+        await bloc.startUploadPreparation();
+        await bloc.checkConflictingFiles();
+        // Preparation defaulted to the wallet: credits short, or Turbo down.
+        bloc.setUploadMethod(UploadMethod.ar, stubPaymentInfo, false);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(bloc.state, isA<UploadReady>());
+        // The review showed Turbo Credits. With a license it goes on to the
+        // license step, which uploads later with the method set here.
+        bloc.uploadFromReview(
+          method: UploadMethod.turbo,
+          licenseCategory: LicenseCategory.udl,
+        );
+      },
+      verify: (bloc) {
+        expect(bloc.state, isA<UploadConfiguringLicense>());
+        expect(bloc.uploadMethod, UploadMethod.turbo);
       },
     );
 
@@ -981,3 +1056,5 @@ void main() {
     );
   });
 }
+
+class _MockUploadController extends Mock implements UploadController {}

@@ -478,8 +478,8 @@ void main() {
         });
 
         test(
-            'falls back to size-only free when the allowance is unknown, so an '
-            'unreachable endpoint never forces the user to pay', () async {
+            'is not free when the allowance is unknown: the review shows the '
+            'price rather than promise free on a guess', () async {
           when(() => turboBalanceRetriever.getFreeAllowance(any()))
               .thenAnswer((_) async => const TurboFreeAllowance.unknown());
 
@@ -489,9 +489,12 @@ void main() {
             uploadPlanForTurbo: uploadPlan,
           );
 
-          expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.freeStatus, FreeUploadStatus.unknown);
           expect(result.isFreeAllowanceExhausted, isFalse,
               reason: '"could not check" must not be reported as "used up"');
+          // 500 credits cover the 400 it costs, so Turbo still pays.
+          expect(result.defaultPaymentMethod, UploadMethod.turbo);
         });
 
         test(
@@ -696,6 +699,13 @@ void main() {
 
           // the payment method must be AR
           expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
+
+          // A balance nobody could read is not a zero balance.
+          expect(result.turboUnreachable, isTrue);
+
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
+              .thenAnswer((_) async =>
+                  TurboBalanceInterface(paidBy: [], balance: BigInt.from(500)));
         });
 
         test('isTurboAvailable returns false when calculateCost throws',
@@ -720,6 +730,25 @@ void main() {
 
           // the payment method must be AR
           expect(result.defaultPaymentMethod, equals(UploadMethod.ar));
+
+          // The zero estimate stands in for a price nobody could read.
+          expect(result.turboUnreachable, isTrue);
+
+          // Trying again once Turbo answers brings it back: a failure used
+          // to keep Turbo off for the rest of the session.
+          when(() => turboUploadCostCalculator.calculateCost(
+                  totalSize: any(named: 'totalSize')))
+              .thenAnswer((_) async => mockUploadCostEstimateTurbo);
+
+          final again =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(again.isTurboAvailable, isTrue);
+          expect(again.turboUnreachable, isFalse);
+          expect(again.turboCostEstimate, mockUploadCostEstimateTurbo);
         });
       });
 
@@ -763,6 +792,9 @@ void main() {
           // balance 100
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenAnswer((_) async => BigInt.from(500));
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
+              .thenAnswer((_) async =>
+                  TurboBalanceInterface(paidBy: [], balance: BigInt.from(500)));
 
           final result =
               await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
@@ -793,6 +825,9 @@ void main() {
           // balance 100
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenAnswer((_) async => BigInt.from(100));
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
+              .thenAnswer((_) async =>
+                  TurboBalanceInterface(paidBy: [], balance: BigInt.from(100)));
 
           when(() => turboUploadCostCalculator.calculateCost(
                   totalSize: any(named: 'totalSize')))
@@ -830,6 +865,9 @@ void main() {
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenAnswer((_) async => BigInt.from(500));
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
+              .thenAnswer((_) async =>
+                  TurboBalanceInterface(paidBy: [], balance: BigInt.from(500)));
 
           final result =
               await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
@@ -857,6 +895,9 @@ void main() {
           // balance 100
           when(() => turboBalanceRetriever.getBalance(any()))
               .thenAnswer((_) async => BigInt.from(100));
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
+              .thenAnswer((_) async =>
+                  TurboBalanceInterface(paidBy: [], balance: BigInt.from(100)));
 
           when(() => turboUploadCostCalculator.calculateCost(
                   totalSize: any(named: 'totalSize')))

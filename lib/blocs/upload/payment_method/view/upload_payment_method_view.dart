@@ -15,6 +15,8 @@ class UploadPaymentMethodView extends StatefulWidget {
     required this.onError,
     this.onTurboTopupSucess,
     this.loadingIndicator,
+    this.showBalanceMessages = true,
+    this.walletOnlyWhenChosen = false,
   });
 
   final Function(UploadMethod, UploadPaymentMethodInfo, bool)
@@ -22,6 +24,14 @@ class UploadPaymentMethodView extends StatefulWidget {
   final Function() onError;
   final Function()? onTurboTopupSucess;
   final Widget? loadingIndicator;
+
+  /// See [PaymentMethodSelector.showBalanceMessages].
+  final bool showBalanceMessages;
+
+  /// Shows Turbo Credits as the way to pay until the person picks the wallet,
+  /// whatever preparation defaulted to, and no Turbo row while Turbo's price
+  /// can't be read. The upload review never pays from the wallet unasked.
+  final bool walletOnlyWhenChosen;
 
   @override
   State<UploadPaymentMethodView> createState() =>
@@ -87,9 +97,22 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
       },
       builder: (context, state) {
         if (state is UploadPaymentMethodLoaded) {
+          var info = state.paymentMethodInfo;
+          if (widget.walletOnlyWhenChosen) {
+            info = info.copyWith(
+              uploadMethod:
+                  info.arChosen ? info.uploadMethod : UploadMethod.turbo,
+              isTurboUploadPossible:
+                  info.isTurboUploadPossible && !info.turboUnreachable,
+            );
+          }
           return PaymentMethodSelector(
-            uploadMethodInfo: state.paymentMethodInfo,
+            // A new key when the shown method changes: the selector keeps its
+            // own idea of the selection from when it was built.
+            key: ValueKey(info.uploadMethod),
+            uploadMethodInfo: info,
             showCongestionWarning: _showCongestionWarning,
+            showBalanceMessages: widget.showBalanceMessages,
             onArSelect: () {
               context.read<UploadPaymentMethodBloc>().add(
                     const ChangeUploadPaymentMethod(

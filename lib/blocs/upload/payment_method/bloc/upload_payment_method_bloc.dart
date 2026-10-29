@@ -147,6 +147,8 @@ class UploadPaymentMethodBloc
             turboCredits: literalTurboBalance,
             uploadMethod: paymentInfo.defaultPaymentMethod,
             paidBy: paymentInfo.turboBalance.paidBy,
+            turboBalanceWinc: paymentInfo.turboBalance.balance,
+            turboUnreachable: paymentInfo.turboUnreachable,
           ),
         ),
       );
@@ -304,8 +306,10 @@ class UploadPaymentMethodBloc
       final currentState = state as UploadPaymentMethodLoaded;
       final canUpload = _canUploadWithMethod(event.paymentMethod);
       emit(currentState.copyWith(
-        paymentMethodInfo: currentState.paymentMethodInfo
-            .copyWith(uploadMethod: event.paymentMethod),
+        paymentMethodInfo: currentState.paymentMethodInfo.copyWith(
+          uploadMethod: event.paymentMethod,
+          arChosen: event.paymentMethod == UploadMethod.ar,
+        ),
         canUpload: canUpload,
       ));
     }
@@ -316,9 +320,12 @@ class UploadPaymentMethodBloc
 
     final paymentInfo = uploadPreparation.uploadPaymentInfo;
 
+    // A price that could not be read stands in as zero, which any balance
+    // would cover. Neither way of paying is open on a price nobody knows.
     bool sufficientBalanceToPayWithAR =
-        profile.user.walletBalance >= paymentInfo.arCostEstimate.totalCost;
-    bool sufficientBalanceToPayWithTurbo =
+        paymentInfo.arCostEstimate.totalCost > BigInt.zero &&
+            profile.user.walletBalance >= paymentInfo.arCostEstimate.totalCost;
+    bool sufficientBalanceToPayWithTurbo = !paymentInfo.turboUnreachable &&
         paymentInfo.turboCostEstimate.totalCost <=
             uploadPreparation.uploadPaymentInfo.turboBalance.balance;
 

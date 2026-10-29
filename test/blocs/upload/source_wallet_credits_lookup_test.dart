@@ -155,6 +155,27 @@ void main() {
     }
   }
 
+  test('the wallet counts as chosen only when the person picks it', () async {
+    final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+    addTearDown(bloc.close);
+    await prepare(bloc);
+
+    final prepared = bloc.state as UploadPaymentMethodLoaded;
+    expect(prepared.paymentMethodInfo.arChosen, isFalse,
+        reason: 'a default is not a choice');
+
+    bloc.add(const ChangeUploadPaymentMethod(paymentMethod: UploadMethod.ar));
+    await Future<void>.delayed(Duration.zero);
+    expect((bloc.state as UploadPaymentMethodLoaded).paymentMethodInfo.arChosen,
+        isTrue);
+
+    bloc.add(
+        const ChangeUploadPaymentMethod(paymentMethod: UploadMethod.turbo));
+    await Future<void>.delayed(Duration.zero);
+    expect((bloc.state as UploadPaymentMethodLoaded).paymentMethodInfo.arChosen,
+        isFalse);
+  });
+
   test('is asked when the sheet refuses and there is a wallet to ask about',
       () async {
     final bloc = build(

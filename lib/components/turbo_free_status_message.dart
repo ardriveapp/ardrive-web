@@ -29,7 +29,8 @@ class TurboFreeStatusMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     // notEligible has nothing to say — the payment selector alone is the whole
     // story — so render nothing and consume no padding.
-    if (status == FreeUploadStatus.notEligible) {
+    if (status == FreeUploadStatus.notEligible ||
+        status == FreeUploadStatus.unknown) {
       return const SizedBox.shrink();
     }
 
@@ -50,6 +51,7 @@ class TurboFreeStatusMessage extends StatelessWidget {
           false,
         ),
       FreeUploadStatus.notEligible => ('', false), // handled above
+      FreeUploadStatus.unknown => ('', false), // handled above
     };
 
     return Padding(

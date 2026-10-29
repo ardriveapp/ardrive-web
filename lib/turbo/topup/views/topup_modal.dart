@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -35,6 +37,39 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 
 void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
+  _showTurboModal(context, onSuccess: (_) => onSuccess?.call());
+}
+
+/// Pays [amountUsd] by card, straight to the card details: the amount was
+/// already chosen, as on the upload review's Add Turbo Credits step.
+///
+/// Completes with the Turbo Credits bought, in winston credits, or null when
+/// the payment was cancelled or did not go through. There is no success
+/// screen: the caller says what happened, where the person already is.
+Future<BigInt?> showTurboCardPayment(
+  BuildContext context, {
+  required int amountUsd,
+}) {
+  final result = Completer<BigInt?>();
+  _showTurboModal(
+    context,
+    cardAmountUsd: amountUsd,
+    onSuccess: (credits) {
+      if (!result.isCompleted) result.complete(credits);
+    },
+    onClosed: () {
+      if (!result.isCompleted) result.complete(null);
+    },
+  );
+  return result.future;
+}
+
+void _showTurboModal(
+  BuildContext context, {
+  void Function(BigInt credits)? onSuccess,
+  void Function()? onClosed,
+  int? cardAmountUsd,
+}) {
   final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
   final appConfig = context.read<ConfigService>().config;
@@ -87,9 +122,14 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
       providers: [
         RepositoryProvider<Turbo>(create: (context) => turbo),
         BlocProvider(
-          create: (context) => TurboTopupFlowBloc(
-            context.read<Turbo>(),
-          )..add(const TurboTopUpShowEstimationView()),
+          create: (context) {
+            final bloc = TurboTopupFlowBloc(context.read<Turbo>());
+            // With the amount chosen, the modal starts on the card details
+            // once it has priced that amount; see TurboModal.cardAmountUsd.
+            return cardAmountUsd == null
+                ? (bloc..add(const TurboTopUpShowEstimationView()))
+                : bloc;
+          },
         ),
         BlocProvider(
           create: (context) => TurboTopUpEstimationBloc(
@@ -120,7 +160,10 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
           },
         ),
       ],
-      child: TurboModal(parentContext: modalContext),
+      child: TurboModal(
+        parentContext: modalContext,
+        cardAmountUsd: cardAmountUsd,
+      ),
     ),
     barrierDismissible: false,
   ).then((value) {
@@ -131,7 +174,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
       PlausibleEventTracker.trackPageview(
           page: PlausiblePageView.turboTopUpSuccess);
 
-      onSuccess?.call();
+      onSuccess?.call(turbo.currentPriceEstimate.winstonCredits);
     } else {
       logger.d('Turbo payment error');
       PlausibleEventTracker.trackPageview(
@@ -141,15 +184,23 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
     turbo.dispose();
   }).whenComplete(() {
     activityTracker.setToppingUp(false);
+    // After onSuccess, so a caller waiting on either hears the payment first.
+    onClosed?.call();
   });
 }
 
 class TurboModal extends StatefulWidget {
   final BuildContext parentContext;
 
+  /// The amount to pay by card, already chosen. The modal prices it and opens
+  /// on the card details, Back from there closes it, and a payment that goes
+  /// through closes it without the success screen.
+  final int? cardAmountUsd;
+
   const TurboModal({
     super.key,
     required this.parentContext,
+    this.cardAmountUsd,
   });
 
   @override
@@ -164,12 +215,30 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   // so the Stripe CardField element stays mounted with card data
   PaymentFormBloc? _paymentFormBloc;
 
+  bool get _cardOnly => widget.cardAmountUsd != null;
+
   @override
   initState() {
     super.initState();
     _opacityController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
+    );
+    if (_cardOnly) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _priceCardAmount());
+    }
+  }
+
+  /// Prices [TurboModal.cardAmountUsd] and opens the card details, as
+  /// Continue does from the amount screen. Also Try again after an error, in
+  /// place: closing and opening the modal again would end the caller's wait.
+  void _priceCardAmount() {
+    if (!mounted) return;
+    _handleUnifiedContinue(
+      context,
+      PaymentMethod.card,
+      null,
+      widget.cardAmountUsd!.toDouble(),
     );
   }
 
@@ -186,6 +255,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
       listener: (context, state) {
         if (state is TurboTopupFlowShowingSuccessView) {
           Navigator.of(context).pop();
+          // Whoever chose the amount says what happened.
+          if (_cardOnly) return;
           _showSuccessDialog(
             amountPaid: state.amountPaid,
             creditsReceived: state.creditsReceived,
@@ -218,6 +289,12 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             previous is! TurboTopupFlowInitial;
       },
       listener: (context, state) {
+        // With the amount already chosen there is nothing to go back to here:
+        // Back from the card details goes back to where the amount was.
+        if (_cardOnly && state is TurboTopupFlowShowingEstimationView) {
+          Navigator.of(context).pop();
+          return;
+        }
         // When going back to estimation view, restore the unified bloc state
         if (state is TurboTopupFlowShowingEstimationView) {
           context
@@ -231,7 +308,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
       builder: (context, state) {
         Widget view;
 
-        if (state is TurboTopupFlowShowingEstimationView) {
+        if (state is TurboTopupFlowShowingEstimationView && !_cardOnly) {
           // Unified flow is the only supported flow
           view = UnifiedPayView(
             onContinue: (method, token, amount) {
@@ -367,6 +444,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             // The error view's close button pops the dialog itself.
             onDismiss: () {},
             onTryAgain: () {
+              if (_cardOnly) {
+                _priceCardAmount();
+                return;
+              }
               Navigator.of(context).pop();
               showTurboTopupModal(widget.parentContext);
             },
