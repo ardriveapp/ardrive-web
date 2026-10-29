@@ -82,6 +82,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// request has its own, so a late answer to a cancelled one is dropped.
   Completer<void>? _walletCancel;
 
+  /// Each Solana log in's number, by the wallet it asked for ('*' for any).
+  /// A connection approved after Cancel is dropped only if no newer attempt
+  /// could be using that wallet.
+  int _solanaAttempts = 0;
+  final _latestSolanaAttempt = <String, int>{};
+
   LoginBloc({
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
@@ -1181,6 +1187,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       _ => BrowserWallet.otherSolana,
     };
     final cancel = _askWallet(emit, browserWallet);
+    final attempt = ++_solanaAttempts;
+    _latestSolanaAttempt[event.provider ?? '*'] = attempt;
     var settingUp = false;
 
     try {
@@ -1224,9 +1232,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         // wallet approves the connection afterwards, drop that too.
         if (connected) return;
         unawaited(connecting.then((connection) async {
-          if (connection != null) {
-            await _disconnectSolana(connection.providerType);
-          }
+          if (connection == null) return;
+          final provider = connection.providerType;
+          final newer = (_latestSolanaAttempt[provider] ?? 0) > attempt ||
+              (_latestSolanaAttempt['*'] ?? 0) > attempt;
+          if (!newer) await _disconnectSolana(provider);
         }, onError: (_) {}));
         return;
       }

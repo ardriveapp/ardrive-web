@@ -1544,6 +1544,48 @@ void main() {
       );
 
       blocTest<LoginBloc, LoginState>(
+        'a late Phantom approval leaves a newer Phantom attempt connected',
+        build: logInBloc,
+        setUp: () {
+          var connects = 0;
+          solana(
+            connect: () => connects++ == 0
+                // The first popup is approved only after the second try.
+                ? Future<SolanaConnection?>.delayed(
+                    const Duration(milliseconds: 40),
+                    () => const SolanaConnection(
+                        address: 'SoLAddr123', providerType: 'phantom'))
+                : Future<SolanaConnection?>.value(const SolanaConnection(
+                    address: 'SoLAddr123', providerType: 'phantom')),
+            sign: () => Completer<Uint8List>().future,
+          );
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithSolana(provider: 'phantom'));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CancelWalletLogin());
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const LoginWithSolana(provider: 'phantom'));
+          await Future<void>.delayed(const Duration(milliseconds: 80));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const TypeMatcher<LoginInitial>(),
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const LoginWaitingOnWallet(
+            wallet: BrowserWallet.phantom,
+            request: BrowserWalletRequest.signIn,
+          ),
+        ],
+        verify: (_) {
+          // Only Cancel's: the late approval must not drop the new attempt.
+          verify(() =>
+                  mockSolanaProviderService.disconnect(provider: 'phantom'))
+              .called(1);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
         'Solflare signing: only Solflare is disconnected',
         build: logInBloc,
         setUp: () => solana(

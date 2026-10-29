@@ -36,8 +36,11 @@ RecoveryPhraseProblem? checkRecoveryPhrase(String phrase) {
   return null;
 }
 
-/// The recovery phrase field's text: blurred until shown, and only bullets
-/// to a screen reader while it is.
+/// The recovery phrase field's text: blurred until shown, and bullets in the
+/// semantics tree while it is. iOS and Android screen readers read the
+/// bullets. On the web they don't: with semantics on, the engine edits
+/// through a real DOM textarea whose value is the plain text, so a web
+/// screen reader can read the words, as it could in the old import dialog.
 @visibleForTesting
 class RecoveryPhraseController extends TextEditingController {
   bool _hidden = true;
@@ -66,7 +69,8 @@ class RecoveryPhraseController extends TextEditingController {
         color: color.withOpacity(0),
         shadows: [Shadow(color: color, blurRadius: 8)],
       ),
-      // What the field reports to a screen reader, in place of the words.
+      // The semantics value in place of the words. Not on the web, where
+      // the DOM textarea underneath holds the plain text.
       semanticsLabel: '\u2022' * text.length,
     );
   }
@@ -77,9 +81,10 @@ class RecoveryPhraseController extends TextEditingController {
 ///
 /// The phrase is a secret, but not a password: a password field would have
 /// the browser offer to save the 12 words in its password manager. So it is
-/// a plain multi-line field with its words blurred until shown, bullets to a
-/// screen reader, and no autocomplete, spell check or suggestions. It is
-/// never logged.
+/// a plain multi-line field with its words blurred until shown, bullets to
+/// iOS and Android screen readers (not web ones, see
+/// [RecoveryPhraseController]), and no autocomplete, spell check or
+/// suggestions. It is never logged.
 class EnterRecoveryPhraseView extends StatefulWidget {
   const EnterRecoveryPhraseView({super.key, this.pickKeyfile});
 
