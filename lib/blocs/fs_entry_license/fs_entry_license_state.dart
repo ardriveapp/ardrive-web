@@ -4,7 +4,7 @@ abstract class FsEntryLicenseState extends Equatable {
   const FsEntryLicenseState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class FsEntryLicenseLoadInProgress extends FsEntryLicenseState {
@@ -24,7 +24,14 @@ class FsEntryLicenseConfiguring extends FsEntryLicenseState {
 }
 
 class FsEntryLicenseReviewing extends FsEntryLicenseState {
-  const FsEntryLicenseReviewing() : super();
+  /// What writing the license costs, and whether it can go ahead. Null while
+  /// it is read.
+  final UploadReviewSummary? summary;
+
+  const FsEntryLicenseReviewing({this.summary}) : super();
+
+  @override
+  List<Object?> get props => [summary];
 }
 
 class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
@@ -35,12 +42,10 @@ class FsEntryLicenseSuccess extends FsEntryLicenseState {
   const FsEntryLicenseSuccess() : super();
 }
 
+/// The write failed for a reason other than payment. A refused payment goes
+/// back to [FsEntryLicenseReviewing], where Add credits is.
 class FsEntryLicenseFailure extends FsEntryLicenseState {
-  final bool isPaymentError;
-  const FsEntryLicenseFailure({this.isPaymentError = false}) : super();
-
-  @override
-  List<Object> get props => [isPaymentError];
+  const FsEntryLicenseFailure() : super();
 }
 
 class FsEntryLicenseComplete extends FsEntryLicenseState {

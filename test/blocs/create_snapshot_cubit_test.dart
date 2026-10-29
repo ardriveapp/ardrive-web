@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
@@ -323,6 +324,48 @@ void main() {
           PreparingAndSigningTransaction(isArConnectProfile: false),
           UploadingSnapshot(),
           SnapshotUploadSuccess(),
+        ],
+      );
+
+      blocTest(
+        'without a price from Turbo, credits do not pay for it at 0',
+        setUp: () {
+          when(() => paymentService.getPriceForBytes(
+                  byteSize: any(named: 'byteSize')))
+              .thenThrow(Exception('Turbo price blocked'));
+          // Not free, so the price matters.
+          when(() => appConfig.allowedDataItemSizeForTurbo)
+              .thenAnswer((invocation) => 0);
+        },
+        build: () => CreateSnapshotCubit(
+          arweave: arweave,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          tabVisibility: tabVisibility,
+          pst: pst,
+          auth: auth,
+          configService: configService,
+          paymentService: paymentService,
+          turboBalanceRetriever: turboBalanceRetriever,
+          turboService: turboService,
+        ),
+        act: (cubit) => cubit
+            .confirmDriveAndHeighRange(
+              driveId,
+              range: Range(start: 0, end: 1),
+            )
+            .then((_) => cubit.setUploadMethod(UploadMethod.turbo)),
+        skip: 1,
+        expect: () => [
+          isA<ConfirmingSnapshotCreation>()
+              .having((s) => s.costEstimateTurbo?.totalCost, 'Turbo cost',
+                  BigInt.zero)
+              .having((s) => s.sufficientBalanceToPayWithTurbo,
+                  'credits cover it', isFalse)
+              .having(
+                  (s) => s.isTurboUploadPossible, 'Turbo possible', isFalse),
+          isA<ConfirmingSnapshotCreation>()
+              .having((s) => s.isButtonToUploadEnabled, 'can confirm', isFalse),
         ],
       );
 

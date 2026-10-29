@@ -38,3 +38,8 @@ class FsEntryLicenseSuccessClose extends FsEntryLicenseEvent {
 class FsEntryLicenseFailureTryAgain extends FsEntryLicenseEvent {
   const FsEntryLicenseFailureTryAgain() : super();
 }
+
+/// Reads the cost again: Try again, or after credits were added.
+class FsEntryLicenseCostRefresh extends FsEntryLicenseEvent {
+  const FsEntryLicenseCostRefresh() : super();
+}
