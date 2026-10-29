@@ -6,6 +6,7 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
   final String parentFolderId;
   final String folderName;
   final bool isRootFolder;
+  final bool isPrivate;
 
   /// A sync is still reading this drive for the first time, so the folder may
   /// be empty only so far - see `DriveDetailLoadSuccess.contentsStillArriving`.
@@ -18,6 +19,7 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
     required this.parentFolderId,
     required this.folderName,
     required this.isRootFolder,
+    this.isPrivate = false,
     this.contentsStillArriving = false,
   });
 
@@ -70,6 +72,22 @@ class _DriveDetailFolderEmptyCardState
       builder: (context, state) {
         final isANewUser = (state as DrivesLoadSuccess).userDrives.length == 1;
 
+        // A new user's only drive opens on a place to put their files.
+        if (widget.isRootFolder && isANewUser) {
+          final phone = getDeviceType(MediaQuery.sizeOf(context)) !=
+              DeviceScreenType.desktop;
+          return Padding(
+            padding: phone
+                ? const EdgeInsets.fromLTRB(16, 8, 16, 16)
+                : const EdgeInsets.symmetric(vertical: 20),
+            child: _NewUserEmptyRootFolder(
+              driveId: widget.driveId,
+              parentFolderId: widget.parentFolderId,
+              isPrivate: widget.isPrivate,
+            ),
+          );
+        }
+
         return ScreenTypeLayout.builder(mobile: (context) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -90,15 +108,10 @@ class _DriveDetailFolderEmptyCardState
                           driveId: widget.driveId,
                           parentFolderId: widget.parentFolderId,
                         )
-                      : isANewUser
-                          ? _NewUserEmptyRootFolder(
-                              driveId: widget.driveId,
-                              parentFolderId: widget.parentFolderId,
-                            )
-                          : _ExistingUserEmptyRootFolder(
-                              driveId: widget.driveId,
-                              parentFolderId: widget.parentFolderId,
-                            ),
+                      : _ExistingUserEmptyRootFolder(
+                          driveId: widget.driveId,
+                          parentFolderId: widget.parentFolderId,
+                        ),
                 ),
               ],
             ),
@@ -116,15 +129,10 @@ class _DriveDetailFolderEmptyCardState
                         driveId: widget.driveId,
                         parentFolderId: widget.parentFolderId,
                       )
-                    : isANewUser
-                        ? _NewUserEmptyRootFolder(
-                            driveId: widget.driveId,
-                            parentFolderId: widget.parentFolderId,
-                          )
-                        : _ExistingUserEmptyRootFolder(
-                            driveId: widget.driveId,
-                            parentFolderId: widget.parentFolderId,
-                          ),
+                    : _ExistingUserEmptyRootFolder(
+                        driveId: widget.driveId,
+                        parentFolderId: widget.parentFolderId,
+                      ),
               ),
             ),
           );
@@ -211,145 +219,99 @@ class _EmptyFolder extends StatelessWidget {
   }
 }
 
-class _NewUserEmptyRootFolder extends StatelessWidget {
+/// A new user's first drive, empty: one place to drop files or choose them,
+/// and a note that small files upload free.
+class _NewUserEmptyRootFolder extends StatefulWidget {
   final String driveId;
   final String parentFolderId;
+  final bool isPrivate;
 
   const _NewUserEmptyRootFolder({
     required this.driveId,
     required this.parentFolderId,
+    required this.isPrivate,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  State<_NewUserEmptyRootFolder> createState() =>
+      _NewUserEmptyRootFolderState();
+}
 
-    final String headerText =
-        appLocalizationsOf(context).newUserEmptyDriveTitle;
-    final String descriptionText = appLocalizationsOf(context)
-        .newUserEmptyDriveDescription(_freeUploadLimit(context));
+class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
+  bool _noteDismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    // Phone and tablet, as the page lays them out: there, files are chosen
+    // rather than dragged in.
+    final phone =
+        getDeviceType(MediaQuery.sizeOf(context)) != DeviceScreenType.desktop;
+    final light = ArDriveTheme.of(context).themeData.name == 'light';
+    final whoSees = widget.isPrivate ? s.firstDriveOnlyYou : s.firstDriveAnyone;
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.newUserDriveEmptyPage,
-      child: ScreenTypeLayout.builder(
-        mobile: (context) => SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeaderText(
-                context: context,
-                text: headerText,
-                style: typography.heading4(fontWeight: ArFontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: ArDriveEmptyState(
+              key: const Key('firstDriveDropArea'),
+              framed: true,
+              icon: SvgPicture.asset(
+                Resources.images.login.bentoBox
+                    .featureArt('upload_cloud', light: light),
+                width: 120,
               ),
-              const SizedBox(height: 10),
-              _buildDescriptionText(
-                context: context,
-                text: descriptionText,
-                style: typography.paragraphLarge(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold),
-              ),
-              const SizedBox(height: 20),
-              _ActionCard.uploadFile(
-                context,
-                driveId: driveId,
-                parentFolderId: parentFolderId,
-                page: PlausiblePageView.newUserDriveEmptyPage,
-                variant: ButtonVariant.primary,
-                compact: true,
-              ),
-              const SizedBox(height: 12),
-              _ActionCard.createFolder(
-                context,
-                driveId: driveId,
-                parentFolderId: parentFolderId,
-                page: PlausiblePageView.newUserDriveEmptyPage,
-                variant: ButtonVariant.primary,
-                compact: true,
-              ),
-            ],
-          ),
-        ),
-        desktop: (context) => Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 66),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Column(
-                        children: [
-                          _buildHeaderText(
-                            context: context,
-                            text: headerText,
-                            style: typography.display(
-                                fontWeight: ArFontWeight.bold),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildDescriptionText(
-                            context: context,
-                            text: descriptionText,
-                            style:
-                                typography.heading5(color: colorTokens.textLow),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
-                ],
-              ),
+              title: phone ? s.firstDriveChooseTitle : s.firstDriveDropTitle,
+              message:
+                  '${phone ? s.firstDriveChooseMessage : s.firstDriveDropMessage} $whoSees',
+              actionLabel: s.firstDriveUpload,
+              onAction: () {
+                PlausibleEventTracker.trackClickUploadFileEmptyState(
+                    PlausiblePageView.newUserDriveEmptyPage);
+                promptToUpload(
+                  context,
+                  driveId: widget.driveId,
+                  parentFolderId: widget.parentFolderId,
+                  isFolderUpload: false,
+                );
+              },
+              secondaryActionLabel: s.newFolder,
+              onSecondaryAction: () {
+                PlausibleEventTracker.trackClickCreateFolderEmptyState(
+                    PlausiblePageView.newUserDriveEmptyPage);
+                promptToCreateFolder(
+                  context,
+                  driveId: widget.driveId,
+                  parentFolderId: widget.parentFolderId,
+                );
+              },
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _ActionCard.uploadFile(context,
-                    driveId: driveId,
-                    parentFolderId: parentFolderId,
-                    page: PlausiblePageView.newUserDriveEmptyPage,
-                    variant: ButtonVariant.primary),
-                _ActionCard.createFolder(context,
-                    driveId: driveId,
-                    parentFolderId: parentFolderId,
-                    page: PlausiblePageView.newUserDriveEmptyPage,
-                    variant: ButtonVariant.primary),
-              ],
-            )
+          ),
+          if (!_noteDismissed && _offersFreeUploads(context)) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArDriveNotice(
+              type: ArDriveNoticeType.info,
+              message: s.firstDriveFreeNote,
+              onDismiss: () => setState(() => _noteDismissed = true),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildHeaderText({
-    required BuildContext context,
-    required String text,
-    required TextStyle style,
-  }) {
-    return Text(
-      text,
-      style: style,
-    );
-  }
+/// Whether small files upload free here: Turbo has said it gives some free.
+/// Its configured fallback isn't enough; Turbo may be away or have no free
+/// tier.
+bool _offersFreeUploads(BuildContext context) {
+  final reported =
+      context.read<TurboUploadService>().reportedMaxFreeItemSizeBytes;
 
-  Widget _buildDescriptionText({
-    required BuildContext context,
-    required String text,
-    required TextStyle style,
-  }) {
-    return Text(
-      text,
-      style: style,
-      textAlign: TextAlign.center,
-    );
-  }
+  return reported != null && reported > 0;
 }
 
 class _ExistingUserEmptyRootFolder extends StatelessWidget {

@@ -1,8 +1,12 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 
 /// What a page, list or panel shows when it has nothing in it: an icon, a
 /// heading, a line of text and an optional button, centred.
+///
+/// [framed] draws a dashed frame that fills the space it is given, for an
+/// empty place files can be dropped onto.
 class ArDriveEmptyState extends StatelessWidget {
   const ArDriveEmptyState({
     super.key,
@@ -13,6 +17,7 @@ class ArDriveEmptyState extends StatelessWidget {
     this.onAction,
     this.secondaryActionLabel,
     this.onSecondaryAction,
+    this.framed = false,
   });
 
   /// Drawn at 32 px in iconLow when it is an [ArDriveIcon] without its own
@@ -29,12 +34,14 @@ class ArDriveEmptyState extends StatelessWidget {
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
 
+  final bool framed;
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    return Center(
+    final content = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(
@@ -97,6 +104,33 @@ class ArDriveEmptyState extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+
+    if (!framed) return content;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => DottedBorder(
+        borderType: BorderType.RRect,
+        radius: const Radius.circular(12),
+        color: colorTokens.strokeHigh,
+        strokeWidth: 2,
+        dashPattern: const [8, 6],
+        padding: EdgeInsets.zero,
+        child: SizedBox(
+          width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+          height: constraints.hasBoundedHeight ? constraints.maxHeight : null,
+          // Scrolls rather than overflows when the frame is short.
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight:
+                    constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+              ),
+              child: content,
+            ),
           ),
         ),
       ),

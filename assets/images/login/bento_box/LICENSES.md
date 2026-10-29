@@ -1,8 +1,8 @@
 # Third-party art
 
 The feature art on the sign-in page (`encrypted_key`, `cant_be_changed`,
-`proof_of_time`, `share_link`, `open_source`, each with a `_light` variant)
-draws its central shapes from [Phosphor Icons](https://phosphoricons.com),
+`proof_of_time`, `share_link`, `open_source`) and on a new user's empty first
+drive (`upload_cloud`), each with a `_light` variant, draws its central shapes from [Phosphor Icons](https://phosphoricons.com),
 recoloured with ArDrive's gradient and set in ArDrive's own sparkle frame.
 
 Phosphor Icons is used under the MIT License:

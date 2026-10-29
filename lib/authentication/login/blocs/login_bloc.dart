@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/ethereum_signer.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
@@ -50,6 +51,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ProfileCubit _profileCubit;
   final ConfigService _configService;
   final WalletFromMnemonic _walletFromMnemonic;
+  final FirstDrive _firstDrive;
+
+  /// The wallet Sign up made in this session, which gets its first drive
+  /// once its owner reaches the app.
+  String? _signUpWalletAddress;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -84,6 +90,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ProfileCubit profileCubit,
     required ConfigService configService,
     WalletFromMnemonic? walletFromMnemonic,
+    FirstDrive? firstDrive,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
@@ -94,6 +101,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _profileCubit = profileCubit,
         _configService = configService,
         _walletFromMnemonic = walletFromMnemonic ?? generateWalletFromMnemonic,
+        _firstDrive = firstDrive ?? FirstDrive(),
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -732,6 +740,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleFinishOnboardingEvent(
       FinishOnboarding event, Emitter<LoginState> emit) async {
     if (await _arDriveAuth.isUserLoggedIn()) {
+      final address = await event.wallet.getAddress();
+      if (address == _signUpWalletAddress) {
+        try {
+          await _firstDrive.request(address);
+        } catch (e, stackTrace) {
+          // Without it the new user lands on Getting started instead.
+          logger.e('Could not ask for the first drive', e, stackTrace);
+        }
+      }
+
       emit(LoginSuccess(_arDriveAuth.currentUser));
     } else {
       // should not happen as user should be logged in by this point
@@ -887,6 +905,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     try {
       final wallet = await _walletFromMnemonic(mnemonic);
+      _signUpWalletAddress = await wallet.getAddress();
 
       emit(CreateNewPassword(
           wallet: wallet,

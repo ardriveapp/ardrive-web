@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -1185,5 +1186,70 @@ void main() {
       ],
       verify: (bloc) => expect(bloc.hasSignUpToRetry, isFalse),
     );
+
+    group('first drive', () {
+      late _MockFirstDrive firstDrive;
+
+      LoginBloc signUpBloc() => LoginBloc(
+            arDriveAuth: mockArDriveAuth,
+            arConnectService: mockArConnectService,
+            ethereumProviderService: mockEthereumProviderService,
+            solanaProviderService: mockSolanaProviderService,
+            turboUploadService: mockTurboUploadService,
+            arweaveService: mockArweaveService,
+            downloadService: mockDownloadService,
+            userRepository: mockUserRepository,
+            profileCubit: mockProfileCubit,
+            configService: mockConfigService,
+            walletFromMnemonic: (_) async => wallet,
+            firstDrive: firstDrive,
+          );
+
+      setUp(() {
+        firstDrive = _MockFirstDrive();
+        when(() => firstDrive.request(any())).thenAnswer((_) async {});
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((_) async => true);
+        when(() => mockArDriveAuth.currentUser).thenAnswer(
+          (_) => User(
+            password: 'password',
+            wallet: wallet,
+            walletAddress: 'walletAddress',
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey([]),
+            profileType: ProfileType.json,
+            errorFetchingIOTokens: false,
+          ),
+        );
+      });
+
+      blocTest<LoginBloc, LoginState>(
+        'is asked for when a new account reaches the app',
+        build: signUpBloc,
+        act: (bloc) async {
+          bloc.add(const CreateNewWallet());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(FinishOnboarding(wallet: wallet));
+        },
+        skip: 2,
+        expect: () => [isA<LoginSuccess>()],
+        verify: (_) async {
+          final address = await wallet.getAddress();
+          verify(() => firstDrive.request(address)).called(1);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'is not asked for a wallet the user brought',
+        build: signUpBloc,
+        act: (bloc) => bloc.add(FinishOnboarding(wallet: wallet)),
+        expect: () => [isA<LoginSuccess>()],
+        verify: (_) => verifyNever(() => firstDrive.request(any())),
+      );
+    });
   });
 }
+
+class _MockFirstDrive extends Mock implements FirstDrive {}

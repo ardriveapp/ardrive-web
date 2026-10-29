@@ -48,6 +48,7 @@ import 'package:ardrive/pages/drive_detail/components/document_preview_widget.da
 import 'package:ardrive/pages/drive_detail/components/email_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/pdf_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/pages/no_drives/first_drive_page.dart';
 import 'package:ardrive/pages/no_drives/no_drives_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
@@ -238,9 +239,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   },
                   builder: (context, driveDetailState) {
                     if (driveDetailState is DriveDetailLoadEmpty) {
-                      return NoDrivesPage(
-                        anonymouslyShowDriveDetail:
-                            widget.anonymouslyShowDriveDetail,
+                      if (widget.anonymouslyShowDriveDetail) {
+                        return NoDrivesPage(anonymouslyShowDriveDetail: true);
+                      }
+                      return FirstDrivePage(
+                        noDrives: (_) =>
+                            NoDrivesPage(anonymouslyShowDriveDetail: false),
                       );
                     } else if (driveDetailState is DriveDetailLoadInProgress) {
                       // Same chrome as before - only the middle of the panel
@@ -1177,6 +1181,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                 promptToAddFiles:
                                                     driveDetailState
                                                         .hasWritePermissions,
+                                                isPrivate: driveDetailState
+                                                    .currentDrive.isPrivate,
                                                 isRootFolder: driveDetailState
                                                         .folderInView
                                                         .folder
@@ -1204,6 +1210,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     driveDetailState.contentsStillArriving,
                                 promptToAddFiles:
                                     driveDetailState.hasWritePermissions,
+                                isPrivate:
+                                    driveDetailState.currentDrive.isPrivate,
                                 isRootFolder: driveDetailState.folderInView
                                             .folder.parentFolderId ==
                                         null &&
@@ -1456,6 +1464,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   ))
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
+                  isPrivate: state.currentDrive.isPrivate,
                   driveId: state.currentDrive.id,
                   parentFolderId: state.folderInView.folder.id,
                   folderName: state.folderInView.folder.name,

@@ -110,7 +110,7 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | A message with a meaning | `ArDriveNotice` | `type`: info, warning, error or success. `layout`: inline box or full-width banner. Optional title, action and close button |
 | A label beside an item's name | `ArDriveTag` | `type`: neutral (default), info or success, and an optional leading `icon`. Caption, semi-bold, on a quiet fill with `ArDriveRadius.sm`. There is no warning or error tag: those are status text |
 | A status in a line of text | `ArDriveStatusText` | `type`: neutral, info, warning, error or success, each with its own icon. Error is red text and icon; warning is neutral text with the warning icon. Use it for "Lease ends in 12 days" or "2 drives could not be read", never a boxed tag |
-| Nothing to show | `ArDriveEmptyState` | Icon, heading, a line of text, and up to two actions |
+| Nothing to show | `ArDriveEmptyState` | Icon, heading, a line of text, and up to two actions; `framed` adds a dashed frame for a place files can be dropped |
 | Loading | `ArDriveSpinner` | `small` (16) in buttons and rows, `large` (32) on its own |
 | Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known. `color` marks progress that has stalled or finished without moving the bar |
 | A value to copy | `ArDriveCopyField` | Read-only field with a Copy link; `isSecret` masks it behind a reveal toggle |

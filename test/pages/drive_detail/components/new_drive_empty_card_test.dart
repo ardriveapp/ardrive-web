@@ -27,22 +27,19 @@ class _MockConfigService extends Mock implements ConfigService {}
 
 class _MockAppConfig extends Mock implements AppConfig {}
 
-Drive _drive(String id) => Drive(
+Drive _drive(String id, {String privacy = 'public'}) => Drive(
       id: id,
       rootFolderId: 'root',
       ownerAddress: 'owner',
       name: 'My Drive',
-      privacy: 'public',
+      privacy: privacy,
       dateCreated: DateTime(2026, 3, 1),
       lastUpdated: DateTime(2026, 3, 1),
       isHidden: false,
     );
 
-/// The page a brand new drive opens on: "Your drive is ready".
-///
-/// It has one job - say well done, then offer the two things worth doing next -
-/// and on a phone it was doing that job below the fold, because both offers
-/// were 283px squares stacked under a heading and a paragraph.
+/// What an empty drive opens on. A new user's only drive opens on one place
+/// to drop or choose files; later drives on the action cards.
 void main() {
   late _MockDrivesCubit drivesCubit;
   late TurboUploadService turboUploadService;
@@ -70,6 +67,7 @@ void main() {
 
     // What Turbo reports today: 105 KiB.
     when(() => turbo.maxFreeItemSizeBytes).thenReturn(107520);
+    when(() => turbo.reportedMaxFreeItemSizeBytes).thenReturn(107520);
 
     final appConfig = _MockAppConfig();
     when(() => appConfig.allowedDataItemSizeForTurbo).thenReturn(100000);
@@ -105,6 +103,7 @@ void main() {
     bool isRootFolder = true,
     bool desktop = false,
     bool contentsStillArriving = false,
+    bool isPrivate = false,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -153,6 +152,7 @@ void main() {
                   promptToAddFiles: canAddFiles,
                   folderName: 'My Drive',
                   isRootFolder: isRootFolder,
+                  isPrivate: isPrivate,
                   contentsStillArriving: contentsStillArriving,
                 ),
               ),
@@ -169,113 +169,135 @@ void main() {
   Future<void> unmount(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox());
 
-  /// The measurement that matters, taken rather than assumed: a scroll view
-  /// whose content is shorter than its viewport has nowhere to scroll to.
-  double scrollableExtent(WidgetTester tester) {
-    final position =
-        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+  List<(String, ButtonVariant)> buttons(WidgetTester tester) => tester
+      .widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+      .map((b) => (b.text, b.variant))
+      .toList();
 
-    return position.maxScrollExtent;
-  }
+  group("a new user's first drive", () {
+    testWidgets('opens on a place to drop files, on a computer',
+        (tester) async {
+      await pumpAt(tester, const Size(1280, 800), desktop: true);
 
-  testWidgets('fits on a phone without scrolling', (tester) async {
-    // A small-but-real phone viewport: iPhone SE is 375x667.
-    await pumpAt(tester, const Size(375, 667));
-
-    expect(find.textContaining('Your drive is ready'), findsOneWidget);
-    expect(
-      scrollableExtent(tester),
-      0,
-      reason: 'the whole page has to be visible at once - both offers included',
-    );
-  });
-
-  testWidgets('both offers are on screen, not below the fold', (tester) async {
-    await pumpAt(tester, const Size(375, 667));
-
-    for (final label in ['Upload', 'Create folder']) {
-      final rect = tester.getRect(find.widgetWithText(ArDriveButtonNew, label));
-      expect(rect.bottom, lessThanOrEqualTo(667),
-          reason: '"$label" is off the bottom of the screen');
-    }
-  });
-
-  /// Grey on grey read as disabled: the secondary token is `solidGrey700` and
-  /// the card it sits on is `solidGrey800`, while the *disabled* token is
-  /// `solidGrey600` - so the button that worked was less prominent than one
-  /// that would not.
-  testWidgets('the two offers are drawn as the actions they are',
-      (tester) async {
-    await pumpAt(tester, const Size(375, 667));
-
-    for (final label in ['Upload', 'Create folder']) {
-      final button = tester.widget<ArDriveButtonNew>(
-        find.widgetWithText(ArDriveButtonNew, label),
+      expect(find.byKey(const Key('firstDriveDropArea')), findsOneWidget);
+      expect(
+          find.text('Drop files here to keep them for good'), findsOneWidget);
+      expect(
+        find.text('Or choose files from your computer. Anyone can see them.'),
+        findsOneWidget,
       );
-      expect(button.variant, ButtonVariant.primary, reason: label);
-    }
-  });
+      expect(buttons(tester), [
+        ('New folder', ButtonVariant.secondary),
+        ('Upload files', ButtonVariant.primary),
+      ]);
+      expect(find.textContaining('Your drive is ready'), findsNothing);
+      expect(find.byType(ArDriveImage), findsNothing, reason: 'no confetti');
+    });
 
-  /// The card is drawn on `containerL2`, and the button colour is picked per
-  /// theme - so "does it fit" has to be asked in both, not just the one the
-  /// tests happened to start in.
-  testWidgets('fits in dark mode too', (tester) async {
-    await pumpAt(tester, const Size(375, 667), dark: true);
+    testWidgets('says only its owner sees a private drive', (tester) async {
+      withDrives([_drive('drive-a', privacy: 'private')]);
 
-    expect(scrollableExtent(tester), 0);
-    for (final label in ['Upload', 'Create folder']) {
-      final button = tester.widget<ArDriveButtonNew>(
-        find.widgetWithText(ArDriveButtonNew, label),
+      await pumpAt(tester, const Size(1280, 800),
+          desktop: true, isPrivate: true);
+
+      expect(
+        find.text('Or choose files from your computer. Only you can see them.'),
+        findsOneWidget,
       );
-      expect(button.variant, ButtonVariant.primary, reason: label);
-    }
-  });
+    });
 
-  /// Text scale is the thing that actually breaks stacked layouts, and this
-  /// repo has shipped two breakpoints chosen by eye that clipped at some band
-  /// of widths nobody had rendered.
-  testWidgets('degrades to a scroll rather than an overflow at large text',
-      (tester) async {
-    await pumpAt(tester, const Size(375, 667), textScale: 1.6);
+    testWidgets('asks a phone to choose files, not drop them', (tester) async {
+      await pumpAt(tester, const Size(375, 667), isPrivate: true);
 
-    // Not asserted to fit: at some scale it cannot, and that is the whole
-    // reason the SingleChildScrollView stays. What must not happen is a
-    // RenderFlex overflow, which `pumpAndSettle` surfaces as an exception.
-    expect(tester.takeException(), isNull);
-
-    // And both offers must still be reachable by scrolling to them.
-    for (final label in ['Upload', 'Create folder']) {
-      await tester.scrollUntilVisible(
-        find.widgetWithText(ArDriveButtonNew, label),
-        100,
+      expect(find.text('Keep your files for good'), findsOneWidget);
+      expect(
+        find.text('Choose photos or files to upload. Only you can see them.'),
+        findsOneWidget,
       );
-      expect(find.widgetWithText(ArDriveButtonNew, label), findsOneWidget);
-    }
+      expect(find.textContaining('Drop files'), findsNothing);
+      expect(tester.takeException(), isNull);
+      for (final label in ['Upload files', 'New folder']) {
+        final rect =
+            tester.getRect(find.widgetWithText(ArDriveButtonNew, label));
+        expect(rect.bottom, lessThanOrEqualTo(667),
+            reason: '"$label" is off the bottom of the screen');
+      }
+    });
+
+    testWidgets('fits in dark mode too', (tester) async {
+      await pumpAt(tester, const Size(375, 667), dark: true);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Keep your files for good'), findsOneWidget);
+    });
+
+    testWidgets('scrolls rather than overflows at large text', (tester) async {
+      await pumpAt(tester, const Size(375, 667), textScale: 1.6);
+
+      expect(tester.takeException(), isNull);
+      for (final label in ['Upload files', 'New folder']) {
+        await tester.scrollUntilVisible(
+          find.widgetWithText(ArDriveButtonNew, label),
+          100,
+        );
+        expect(find.widgetWithText(ArDriveButtonNew, label), findsOneWidget);
+      }
+    });
+
+    testWidgets('notes that small files upload free, until dismissed',
+        (tester) async {
+      await pumpAt(tester, const Size(1280, 800), desktop: true);
+
+      const note =
+          'Small files upload free while your free upload allowance lasts.';
+      expect(find.text(note), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Dismiss'));
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('makes no free promise when Turbo uploads are off',
+        (tester) async {
+      turboUploadService = DontUseUploadService();
+
+      await pumpAt(tester, const Size(1280, 800), desktop: true);
+
+      expect(find.textContaining('upload free'), findsNothing);
+    });
+
+    testWidgets('makes no free promise when Turbo has not answered',
+        (tester) async {
+      when(() => turboUploadService.reportedMaxFreeItemSizeBytes)
+          .thenReturn(null);
+
+      await pumpAt(tester, const Size(1280, 800), desktop: true);
+
+      expect(find.textContaining('upload free'), findsNothing);
+    });
+
+    testWidgets('makes no free promise when nothing is free', (tester) async {
+      when(() => turboUploadService.reportedMaxFreeItemSizeBytes).thenReturn(0);
+
+      await pumpAt(tester, const Size(1280, 800), desktop: true);
+
+      expect(find.textContaining('upload free'), findsNothing);
+    });
   });
 
   /// The page used to say "collectively under 100KB", which is neither check
   /// the uploader makes: each file must be under the limit Turbo reports, and
   /// the upload must fit the wallet's free allowance.
-  group('states the free upload rule the uploader applies', () {
-    testWidgets('on a first drive', (tester) async {
-      await pumpAt(tester, const Size(1280, 800));
-
-      expect(
-        find.textContaining(
-            'Files up to 105 KiB each upload free, while your free allowance '
-            'lasts.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('100KB'), findsNothing);
-    });
-
-    testWidgets('on a later drive', (tester) async {
+  group('a later drive states the free upload rule the uploader applies', () {
+    // At full scale the test font overflows this page's 221px action cards,
+    // so these render smaller: they are about the copy above them.
+    Future<void> pumpLater(WidgetTester tester) async {
       withDrives([_drive('drive-a'), _drive('drive-b')]);
-
-      // At full scale the test font overflows this page's 221px action cards,
-      // on dev's card as much as this one. That is a separate defect; this
-      // test is about the copy above them, so it renders smaller.
       await pumpAt(tester, const Size(375, 667), textScale: 0.5);
+    }
+
+    testWidgets('with the limit Turbo reports', (tester) async {
+      await pumpLater(tester);
 
       expect(find.textContaining('Your drive is ready'), findsNothing);
       expect(
@@ -289,11 +311,11 @@ void main() {
       }
     });
 
-    testWidgets('with the limit Turbo reports, not a fixed one',
+    testWidgets('with a different limit when Turbo reports one',
         (tester) async {
       when(() => turboUploadService.maxFreeItemSizeBytes).thenReturn(204800);
 
-      await pumpAt(tester, const Size(1280, 800));
+      await pumpLater(tester);
 
       expect(find.textContaining('Files up to 200 KiB each'), findsOneWidget);
     });
@@ -304,7 +326,7 @@ void main() {
         (tester) async {
       turboUploadService = DontUseUploadService();
 
-      await pumpAt(tester, const Size(1280, 800));
+      await pumpLater(tester);
 
       expect(find.textContaining('Files up to 97.66 KiB each'), findsOneWidget);
     });

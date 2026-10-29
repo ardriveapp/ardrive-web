@@ -4269,6 +4269,42 @@
   "@createPin": {
     "description": "Button that creates a file pin"
   },
+  "firstDriveSettingUp": "Setting up My files",
+  "@firstDriveSettingUp": {
+    "description": "Shown while a new account's first drive, My files, is made"
+  },
+  "firstDriveDropTitle": "Drop files here to keep them for good",
+  "@firstDriveDropTitle": {
+    "description": "Heading on a new user's empty first drive, on a computer"
+  },
+  "firstDriveDropMessage": "Or choose files from your computer.",
+  "@firstDriveDropMessage": {
+    "description": "Under the heading on a new user's empty first drive, on a computer"
+  },
+  "firstDriveChooseTitle": "Keep your files for good",
+  "@firstDriveChooseTitle": {
+    "description": "Heading on a new user's empty first drive, on a phone"
+  },
+  "firstDriveChooseMessage": "Choose photos or files to upload.",
+  "@firstDriveChooseMessage": {
+    "description": "Under the heading on a new user's empty first drive, on a phone"
+  },
+  "firstDriveOnlyYou": "Only you can see them.",
+  "@firstDriveOnlyYou": {
+    "description": "Follows the line on a new user's empty first drive when the drive is private"
+  },
+  "firstDriveAnyone": "Anyone can see them.",
+  "@firstDriveAnyone": {
+    "description": "Follows the line on a new user's empty first drive when the drive is public"
+  },
+  "firstDriveUpload": "Upload files",
+  "@firstDriveUpload": {
+    "description": "Button on a new user's empty first drive"
+  },
+  "firstDriveFreeNote": "Small files upload free while your free upload allowance lasts.",
+  "@firstDriveFreeNote": {
+    "description": "Note under a new user's empty first drive"
+  },
   "newPasswordBreached": "This password has shown up in a data breach. Choose another.",
   "@newPasswordBreached": {
     "description": "Under a new account's password when Have I Been Pwned lists it"
