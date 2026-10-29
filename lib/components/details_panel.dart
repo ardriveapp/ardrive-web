@@ -1065,11 +1065,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                   child: ArDriveTooltip(
                                     message: file.originalOwner!,
                                     child: ArDriveLink(
-                                      text: truncateString(
-                                        file.originalOwner!,
-                                        offsetStart: 6,
-                                        offsetEnd: 6,
-                                      ),
+                                      text: shortenId(file.originalOwner!),
                                       // An address, so monospace.
                                       style: typography.code(),
                                       color: colorTokens.textHigh,
@@ -1196,12 +1192,6 @@ class _IdValue extends StatelessWidget {
     );
   }
 }
-
-/// An ID short enough for a row of the details: its first six characters and
-/// its last four, enough to tell two apart.
-@visibleForTesting
-String shortenId(String id) =>
-    id.length <= 13 ? id : truncateString(id, offsetStart: 6, offsetEnd: 4);
 
 /// The version number of each revision in a file's history that uploaded
 /// data, by its index in [revisions], which lists the newest first.

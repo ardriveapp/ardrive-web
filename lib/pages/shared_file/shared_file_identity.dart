@@ -3,6 +3,7 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
@@ -257,8 +258,8 @@ class SharedFileIdentity extends StatelessWidget {
             TextSpan(
               children: ArDriveIdText.spansIn(
                 appLocalizationsOf(context)
-                    .sharedFileSharedBy(_shortAddress(ownerAddress)),
-                _shortAddress(ownerAddress),
+                    .sharedFileSharedBy(shortenId(ownerAddress)),
+                shortenId(ownerAddress),
                 idStyle:
                     ArDriveTypographyNew.of(context).code(color: style.color),
               ),
@@ -334,10 +335,6 @@ class SharedFileIdentity extends StatelessWidget {
         ? withoutVendorPrefix.toUpperCase().substring(0, 8)
         : withoutVendorPrefix.toUpperCase();
   }
-
-  String _shortAddress(String address) => address.length <= 13
-      ? address
-      : '${address.substring(0, 6)}...${address.substring(address.length - 5)}';
 }
 
 /// The verification badge that sits beside `Shared by`.
