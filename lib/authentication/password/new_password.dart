@@ -126,6 +126,9 @@ Future<List<String>> loadPassphraseWords(AssetBundle bundle) async =>
         .split('\n')
         .map((w) => w.trim())
         .where((w) => w.isNotEmpty)
+        // A handful of list words ("password", "dragonfly") contain one of
+        // the common passwords, which would make the suggestion weak.
+        .where((w) => !_common.any(w.contains))
         .toList(growable: false);
 
 /// A passphrase of [count] words picked uniformly with the platform's secure
