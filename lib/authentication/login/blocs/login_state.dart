@@ -30,6 +30,10 @@ class LoginLoadingIfUserAlreadyExistsSuccess extends LoginState {}
 
 class LoginShowLoader extends LoginState {}
 
+/// A new account's key is being made on this device, which can take up to a
+/// minute. Shown in the sign-in panel rather than over it.
+class LoginCreatingAccount extends LoginState {}
+
 class LoginShowBlockingDialog extends LoginState {
   const LoginShowBlockingDialog({required this.message});
 

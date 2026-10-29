@@ -1050,8 +1050,7 @@ void main() {
       build: () => createSolanaBloc(),
       setUp: () {
         when(() => mockSolanaProviderService.connect(
-                provider: any(named: 'provider')))
-            .thenAnswer((_) async => null);
+            provider: any(named: 'provider'))).thenAnswer((_) async => null);
       },
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
@@ -1076,6 +1075,64 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [],
+    );
+  });
+
+  group('a new account', () {
+    blocTest<LoginBloc, LoginState>(
+      'shows Creating your account, then asks for a password',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => wallet,
+      ),
+      setUp: () {
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+      },
+      act: (bloc) => bloc.add(const CreateNewWallet()),
+      expect: () => [
+        isA<LoginCreatingAccount>(),
+        isA<CreateNewPassword>()
+            .having((s) => s.isNewUser, 'isNewUser', isTrue)
+            .having((s) => s.showWalletCreated, 'showWalletCreated', isTrue)
+            .having((s) => s.mnemonic?.split(' '), 'mnemonic', hasLength(12)),
+      ],
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'goes back to the landing panel when the key cannot be made',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => throw Exception('no key'),
+      ),
+      setUp: () {
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+      },
+      act: (bloc) => bloc.add(const CreateNewWallet()),
+      expect: () => [
+        isA<LoginCreatingAccount>(),
+        isA<LoginFailure>(),
+        isA<LoginLanding>(),
+      ],
     );
   });
 }

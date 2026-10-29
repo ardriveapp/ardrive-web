@@ -858,12 +858,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
-    emit(LoginShowLoader());
+    emit(LoginCreatingAccount());
 
     try {
-      final wallet = await generateWalletFromMnemonic(mnemonic);
-
-      emit(LoginCloseBlockingDialog());
+      final wallet = await _walletFromMnemonic(mnemonic);
 
       emit(CreateNewPassword(
           wallet: wallet,
@@ -871,8 +869,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           isNewUser: true,
           showWalletCreated: true));
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
+      emit(const LoginLanding());
     }
   }
 

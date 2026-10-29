@@ -34,7 +34,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
+import 'creating_account_view.dart';
 import 'landing_view.dart';
+import 'recovery_phrase_view.dart';
 import 'modals/enter_your_password_modal.dart';
 import 'prompt_wallet_view.dart';
 
@@ -231,7 +233,9 @@ class _LoginPageState extends State<LoginPage> {
         },
         builder: (context, loginState) {
           late Widget view;
-          if (loginState is LoginDownloadGeneratedWallet) {
+          if (loginState is LoginDownloadGeneratedWallet &&
+              loginState.mnemonic == null) {
+            // Rare: no 12 words to save, only a keyfile.
             view = WalletCreatedView(
                 mnemonic: loginState.mnemonic, wallet: loginState.wallet);
           } else {
@@ -542,6 +546,35 @@ class _PhoneView extends StatelessWidget {
   }
 }
 
+/// Whether the sign-in panel redraws for [current]. Dialogs, loaders and
+/// transient states leave the panel as it is.
+@visibleForTesting
+bool loginPanelRebuildsOn(LoginState current) {
+  final isFailure = current is LoginFailure;
+  final isSuccess = current is LoginSuccess;
+  final isLoading = current is LoginLoading ||
+      current is LoginShowLoader ||
+      current is LoginCloseBlockingDialog;
+  final isPasswordChecking =
+      current is LoginCheckingPassword || current is LoginPasswordFailed;
+  // The password dialog opens over whatever the panel shows: for a new
+  // account, "Creating your account".
+  final isChoosingPassword = current is CreateNewPassword;
+  // Follows the recovery phrase step; the phrase must stay on screen.
+  final isPasswordCreated = current is LoginCreatePasswordComplete;
+  final isLoadingIfUserAlreadyExists =
+      current is LoginLoadingIfUserAlreadyExists ||
+          current is LoginLoadingIfUserAlreadyExistsSuccess;
+
+  return !(isFailure ||
+      isSuccess ||
+      isLoading ||
+      isPasswordChecking ||
+      isChoosingPassword ||
+      isPasswordCreated ||
+      isLoadingIfUserAlreadyExists);
+}
+
 Widget _buildContent(
   BuildContext context, {
   required LoginState loginState,
@@ -549,24 +582,7 @@ Widget _buildContent(
 }) {
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
-    buildWhen: (previous, current) {
-      final isFailure = current is LoginFailure;
-      final isSuccess = current is LoginSuccess;
-      final isLoading = current is LoginLoading ||
-          current is LoginShowLoader ||
-          current is LoginCloseBlockingDialog;
-      final isPasswordChecking =
-          current is LoginCheckingPassword || current is LoginPasswordFailed;
-      final isLoadingIfUserAlreadyExists =
-          current is LoginLoadingIfUserAlreadyExists ||
-              current is LoginLoadingIfUserAlreadyExistsSuccess;
-
-      return !(isFailure ||
-          isSuccess ||
-          isLoading ||
-          isPasswordChecking ||
-          isLoadingIfUserAlreadyExists);
-    },
+    buildWhen: (previous, current) => loginPanelRebuildsOn(current),
     builder: (context, loginState) {
       late Widget content;
       final loginBloc = context.read<LoginBloc>();
@@ -579,6 +595,15 @@ Widget _buildContent(
             ),
           ),
         );
+      } else if (loginState is LoginDownloadGeneratedWallet &&
+          loginState.mnemonic != null) {
+        content = RecoveryPhraseView(
+          key: const Key('recoveryPhraseView'),
+          mnemonic: loginState.mnemonic!,
+          wallet: loginState.wallet,
+        );
+      } else if (loginState is LoginCreatingAccount) {
+        content = const CreatingAccountView(key: Key('creatingAccountView'));
       } else if (loginState is LoginLoading || loginState is LoginLanding) {
         content = const LandingView(
           key: Key('landingPageView'),

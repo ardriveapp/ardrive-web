@@ -241,6 +241,7 @@ flutter:
     - assets/images/brand/
     - assets/images/login/
     - assets/images/login/bento_box/
+    - assets/wordlists/eff_large_wordlist.txt
     - assets/images/icons/
     - assets/images/crypto/
     - assets/images/wallets/

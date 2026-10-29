@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
@@ -14,6 +15,7 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SecureYourWalletWidget extends StatefulWidget {
@@ -47,6 +49,36 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   bool _confirmPasswordIsValid = false;
   bool _isProcessing = false;
 
+  /// The passphrase last suggested, while it is what the field holds.
+  String? _suggestion;
+  PasswordStrength? _strength;
+
+  /// New to ArDrive: the password must be strong, and one can be suggested.
+  /// Anyone else keeps whatever password they have.
+  bool get _rulesApply => widget.isNewUser;
+
+  /// An account made here, with nothing to show yet: no wallet card.
+  bool get _isFreshAccount =>
+      widget.isNewUser &&
+      widget.mnemonic != null &&
+      widget.sourceWalletAddress == null;
+
+  Future<void> _suggest() async {
+    final words = await loadPassphraseWords(DefaultAssetBundle.of(context));
+    if (!mounted) return;
+    final phrase = suggestPassphrase(words);
+    _passwordController.text = phrase;
+    _confirmPasswordController.text = phrase;
+    // Filled in, not typed: no field validator runs, and none needs to. A
+    // suggestion is strong and the same in both fields.
+    setState(() {
+      _suggestion = phrase;
+      _strength = PasswordStrength.strong;
+      _isPasswordValid = true;
+      _confirmPasswordIsValid = true;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -78,6 +110,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
         ? (widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana')
         : null;
 
+    if (!isReturning && chainName == null) {
+      return appLocalizationsOf(context).newPasswordBody;
+    }
     if (isReturning && chainName != null) {
       return 'We found your drives! Enter a password to encrypt '
           'your private files. This password can never be changed, '
@@ -127,7 +162,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  widget.isNewUser ? 'Secure your wallet' : 'Welcome back',
+                  widget.isNewUser
+                      ? appLocalizationsOf(context).newPasswordTitle
+                      : 'Welcome back',
                   style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold),
@@ -139,15 +176,35 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 24),
-              BlocBuilder<ProfileNameBloc, ProfileNameState>(
-                builder: (context, state) {
-                  if (state is ProfileNameLoaded) {
+              if (!_isFreshAccount) ...[
+                const SizedBox(height: 24),
+                BlocBuilder<ProfileNameBloc, ProfileNameState>(
+                  builder: (context, state) {
+                    if (state is ProfileNameLoaded) {
+                      return ProfileCardHeader(
+                        walletAddress: state.walletAddress,
+                        onPressed: () {
+                          openWalletExplorer(state.walletAddress,
+                              isArweave: widget.sourceWalletAddress == null);
+                        },
+                        isExpanded: true,
+                        hasLogoutButton: true,
+                        logoutTooltip: 'Forget wallet',
+                        onClickLogout: () {
+                          showArDriveDialog(context,
+                              content: ForgetWalletDialog(
+                                  loginBloc: widget.loginBloc));
+                        },
+                      );
+                    }
+
                     return ProfileCardHeader(
-                      walletAddress: state.walletAddress,
+                      walletAddress: state.walletAddress ?? '',
                       onPressed: () {
-                        openWalletExplorer(state.walletAddress,
-                            isArweave: widget.sourceWalletAddress == null);
+                        if (state.walletAddress != null) {
+                          openWalletExplorer(state.walletAddress!,
+                              isArweave: widget.sourceWalletAddress == null);
+                        }
                       },
                       isExpanded: true,
                       hasLogoutButton: true,
@@ -158,27 +215,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                                 loginBloc: widget.loginBloc));
                       },
                     );
-                  }
-
-                  return ProfileCardHeader(
-                    walletAddress: state.walletAddress ?? '',
-                    onPressed: () {
-                      if (state.walletAddress != null) {
-                        openWalletExplorer(state.walletAddress!,
-                            isArweave: widget.sourceWalletAddress == null);
-                      }
-                    },
-                    isExpanded: true,
-                    hasLogoutButton: true,
-                    logoutTooltip: 'Forget wallet',
-                    onClickLogout: () {
-                      showArDriveDialog(context,
-                          content:
-                              ForgetWalletDialog(loginBloc: widget.loginBloc));
-                    },
-                  );
-                },
-              ),
+                  },
+                ),
+              ],
               const SizedBox(height: 32),
               Text('Password',
                   style: typography.paragraphNormal(
@@ -201,8 +240,26 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   if (value == null || value.isEmpty) {
                     setState(() {
                       _isPasswordValid = false;
+                      _strength = null;
                     });
                     return appLocalizationsOf(context).validationRequired;
+                  }
+
+                  if (_rulesApply) {
+                    final strength = assessNewPassword(value);
+                    final strong = strength == PasswordStrength.strong;
+                    setState(() {
+                      _strength = strength;
+                      _isPasswordValid = strong;
+                      if (value != _suggestion) _suggestion = null;
+                    });
+                    final s = appLocalizationsOf(context);
+                    return switch (strength) {
+                      PasswordStrength.tooShort => s.newPasswordTooShort,
+                      PasswordStrength.weak => s.newPasswordWeak,
+                      PasswordStrength.fair => s.newPasswordFair,
+                      PasswordStrength.strong => null,
+                    };
                   }
 
                   setState(() {
@@ -212,6 +269,31 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   return null;
                 },
               ),
+              if (_rulesApply && _strength != null) ...[
+                const SizedBox(height: 8),
+                _StrengthMeter(strength: _strength!),
+              ],
+              if (_rulesApply) ...[
+                const SizedBox(height: 12),
+                if (_suggestion == null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ArDriveButtonNew(
+                      key: const Key('suggestPasswordButton'),
+                      size: ArDriveButtonSize.compact,
+                      text: appLocalizationsOf(context).newPasswordSuggest,
+                      typography: typography,
+                      variant: ButtonVariant.secondary,
+                      isDisabled: _isProcessing,
+                      onPressed: _suggest,
+                    ),
+                  )
+                else
+                  _SuggestedPassphrase(
+                    phrase: _suggestion!,
+                    onAnother: _isProcessing ? null : _suggest,
+                  ),
+              ],
               const SizedBox(height: 20),
               Text('Confirm password',
                   style: typography.paragraphNormal(
@@ -353,4 +435,111 @@ void showSecureYourPasswordDialog(
               showWalletCreated: showWalletCreated);
         },
       ));
+}
+
+/// Four bars and a word: how strong the new password looks.
+class _StrengthMeter extends StatelessWidget {
+  const _StrengthMeter({required this.strength});
+
+  final PasswordStrength strength;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final s = appLocalizationsOf(context);
+    final (bars, colour, label) = switch (strength) {
+      PasswordStrength.tooShort => (1, colors.statusErrorFg, s.passwordWeak),
+      PasswordStrength.weak => (1, colors.statusErrorFg, s.passwordWeak),
+      PasswordStrength.fair => (2, colors.textMid, s.passwordFair),
+      PasswordStrength.strong => (4, colors.statusSuccessFg, s.passwordStrong),
+    };
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          for (var i = 0; i < 4; i++) ...[
+            if (i > 0) const SizedBox(width: 4),
+            Expanded(
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: i < bars ? colour : colors.strokeMid,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: type.paragraphSmall(
+              color: colour,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The suggested passphrase, readable, with Copy and another suggestion.
+/// It is made on the device and kept nowhere; saving it is up to the user.
+class _SuggestedPassphrase extends StatelessWidget {
+  const _SuggestedPassphrase({required this.phrase, required this.onAnother});
+
+  final String phrase;
+  final VoidCallback? onAnother;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final s = appLocalizationsOf(context);
+    return Container(
+      key: const Key('suggestedPassphrase'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.containerRaised,
+        border: Border.all(color: colors.strokeMid),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SelectableText(
+            phrase,
+            style: type.paragraphLarge(
+              color: colors.textHigh,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.newPasswordSaveIt,
+            style: type.paragraphSmall(color: colors.textMid),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 16,
+            children: [
+              ArDriveLink(
+                text: s.newPasswordCopy,
+                isAction: true,
+                onTap: () => Clipboard.setData(ClipboardData(text: phrase)),
+              ),
+              if (onAnother != null)
+                ArDriveLink(
+                  text: s.newPasswordSuggestAnother,
+                  isAction: true,
+                  onTap: onAnother!,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
