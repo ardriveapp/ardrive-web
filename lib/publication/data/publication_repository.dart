@@ -233,7 +233,7 @@ class PublicationRepository {
       case 'drive':
         scope = const PublicationDriveScope();
       case 'file':
-        final fileId = tags[EntityTag.fileId];
+        final fileId = tags[EntityTag.publicationFileId];
         if (fileId == null) return null;
         scope = PublicationFileScope(fileId);
       default:

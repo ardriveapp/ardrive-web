@@ -25,6 +25,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
+import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
@@ -411,7 +412,11 @@ class PublishDialog extends StatelessWidget {
             return _modal(
               context,
               title: title,
-              content: _Progress(state: state, names: cubit.names),
+              content: _Progress(
+                state: state,
+                names: cubit.names,
+                hasSnapshot: !cubit.isFile,
+              ),
               actions: [
                 ModalAction.dismiss(title: strings.close, action: close)
               ],
@@ -442,9 +447,9 @@ class PublishDialog extends StatelessWidget {
                 children: [
                   PublishedLink(
                     link: state.link!,
-                    isSecret: cubit.isPrivateFile,
+                    isSecret: linkHasKey(state.link!),
                     note: [
-                      if (cubit.isPrivateFile) strings.publishFileKeyInLink,
+                      if (linkHasKey(state.link!)) strings.publishFileKeyInLink,
                       state.method == UploadMethod.ar
                           ? strings.publishDoneArNote
                           : strings.publishDoneNote,
@@ -549,6 +554,7 @@ class _Blocked extends StatelessWidget {
           : strings.publishBlockedPending(state.pendingChanges),
       PublishBlock.hiddenFolder => strings.publishBlockedHiddenFolder,
       PublishBlock.hiddenFile => strings.publishBlockedHiddenFile,
+      PublishBlock.failedUpload => strings.publishBlockedFailedFile,
       PublishBlock.empty => strings.publishBlockedEmpty,
       _ => state.blockedReason,
     };
@@ -774,9 +780,12 @@ class _Review extends StatelessWidget {
 }
 
 class _Progress extends StatelessWidget {
-  const _Progress({required this.state, this.names});
+  const _Progress({required this.state, this.names, this.hasSnapshot = true});
 
   final PublishState state;
+
+  /// False for a file page, which has no snapshot to save.
+  final bool hasSnapshot;
 
   /// The name step, whose wallet prompts show under the naming row.
   final ArNSFlowNameCubit? names;
@@ -788,7 +797,7 @@ class _Progress extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final naming = state.naming;
     final steps = [
-      if (!state.reusesSnapshot)
+      if (hasSnapshot && !state.reusesSnapshot)
         (PublicationStep.snapshot, strings.publishStepSnapshot),
       (PublicationStep.files, strings.publishStepFiles),
       (PublicationStep.publication, strings.publishStepUpload),
@@ -1106,6 +1115,12 @@ class _Itself extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        Text(strings.publishHowItself,
+            style: typography.heading5(fontWeight: ArFontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(file.name,
+            style: typography.paragraphNormal(color: colors.textMid)),
+        const SizedBox(height: 16),
         PublishedLink(link: link, note: strings.publishItselfNote),
         if (names) ...[
           const SizedBox(height: 20),

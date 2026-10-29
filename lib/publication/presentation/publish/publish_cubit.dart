@@ -343,14 +343,18 @@ class PublishCubit extends Cubit<PublishState> {
       );
     }
     final rows = await _deps.driveDao.attachedDatabase.customSelect(
-      'SELECT count(*) AS c FROM network_transactions '
-      "WHERE id IN (?1, ?2) AND status = 'pending'",
+      'SELECT status FROM network_transactions WHERE id IN (?1, ?2)',
       variables: [
         Variable.withString(revision.metadataTxId),
         Variable.withString(revision.dataTxId),
       ],
-    ).getSingle();
-    _pendingChanges = rows.read<int>('c') > 0 ? 1 : 0;
+    ).get();
+    final statuses = {for (final row in rows) row.read<String>('status')};
+    // A page or a link to data that never landed would show nothing.
+    if (statuses.contains(TransactionStatus.failed)) {
+      return (PublishBlock.failedUpload, '');
+    }
+    _pendingChanges = statuses.contains(TransactionStatus.pending) ? 1 : 0;
     if (_pendingChanges > 0) return (PublishBlock.pendingUploads, '');
     return null;
   }

@@ -4959,6 +4959,8 @@
   "@publishFileKeyInLink": {"description": "Under the link of a published private file page."},
   "publishFileOutOfDate": "This page shows an earlier version of the file. Update it to show the current one.",
   "@publishFileOutOfDate": {"description": "In the published view of a file page made from an older version of the file."},
+  "publishBlockedFailedFile": "This file's upload failed, so there's nothing to publish. Upload it again first.",
+  "@publishBlockedFailedFile": {"description": "Why a file whose upload failed can't be published."},
   "publishStepOf": "Step {step} of {total}",
   "@publishStepOf": {"description": "Where the publish dialog is, above each step.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
   "publishDoneArTitle": "Your page is on its way",

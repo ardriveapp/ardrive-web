@@ -173,6 +173,47 @@ void main() {
       await cubit.close();
     });
 
+    PublicationLoaderCubit withFacts(Map<String, String> tags,
+            {String? owner}) =>
+        PublicationLoaderCubit(
+          source: PublicationSource(
+            pageUri: _pageUri,
+            client: _gateway({'publication.json': page()}),
+          ),
+          settingsPath: 'publication.json',
+          driveDao: db.driveDao,
+          importer: DriveStateImporter(db.driveDao),
+          ownerOf: (_) async => fixture.owner,
+          factsOf: (_) async => (owner: owner ?? fixture.owner, tags: tags),
+        );
+    Map<String, String> fileTags({String? fileId, String? driveId}) => {
+          'Entity-Type': 'file',
+          'File-Id': fileId ?? 'f1e2d3c4-0000-4000-8000-000000000001',
+          'Drive-Id': driveId ?? fixture.driveId,
+        };
+
+    test('opens when its metadata is its own file\'s', () async {
+      final cubit = withFacts(fileTags());
+      await cubit.load();
+      expect((cubit.state as PublicationReady).ownerVerified, isTrue);
+      await cubit.close();
+    });
+
+    test('is refused when the owner\'s metadata is another file\'s', () async {
+      for (final tags in [
+        fileTags(fileId: 'aaaaaaaa-0000-4000-8000-00000000000a'),
+        fileTags(driveId: 'another-drive'),
+        {...fileTags(), 'Entity-Type': 'folder'},
+      ]) {
+        final cubit = withFacts(tags);
+        await cubit.load();
+        expect(cubit.state,
+            const PublicationFailed(PublicationFailure.snapshotRejected),
+            reason: '$tags');
+        await cubit.close();
+      }
+    });
+
     test('is refused when someone else signed its file', () async {
       final cubit = loader(
         {'publication.json': page()},

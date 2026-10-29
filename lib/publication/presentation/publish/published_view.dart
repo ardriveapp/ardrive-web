@@ -83,6 +83,10 @@ class _PublishedViewState extends State<PublishedView> {
   /// A file page made from an earlier version of its file.
   bool _outOfDate = false;
 
+  /// Whether a private file page's key has been looked for: its link is not
+  /// shown, or copied, without it.
+  bool _keyChecked = false;
+
   bool get _isPrivateFile => widget.file != null && widget.drive.isPrivate;
 
   @override
@@ -109,6 +113,7 @@ class _PublishedViewState extends State<PublishedView> {
     if (!mounted) return;
     setState(() {
       _fileKey = key;
+      _keyChecked = true;
       _outOfDate = revision != null &&
           published != null &&
           published.metadataTxId != revision.metadataTxId;
@@ -173,14 +178,20 @@ class _PublishedViewState extends State<PublishedView> {
                 style: typography.paragraphNormal(color: colors.textHigh)),
             const SizedBox(height: 12),
           ],
-          PublishedLink(
-            link: _link(latest.txId),
-            isSecret: _isPrivateFile,
-            note: [
-              if (_isPrivateFile) strings.publishFileKeyInLink,
-              strings.publishUpdateNote,
-            ].join(' '),
-          ),
+          if (_isPrivateFile && !_keyChecked)
+            const SizedBox(
+              height: 48,
+              child: Center(child: ArDriveSpinner()),
+            )
+          else
+            PublishedLink(
+              link: _link(latest.txId),
+              isSecret: _fileKey != null,
+              note: [
+                if (_fileKey != null) strings.publishFileKeyInLink,
+                strings.publishUpdateNote,
+              ].join(' '),
+            ),
           if (earlier.isNotEmpty) ...[
             const SizedBox(height: 16),
             InkWell(

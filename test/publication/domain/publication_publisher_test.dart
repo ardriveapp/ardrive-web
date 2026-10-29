@@ -383,7 +383,10 @@ void main() {
 
     final tags = _tags(manifest);
     expect(tags['Publication-Scope'], 'file');
-    expect(tags['File-Id'], _fileId);
+    expect(tags['Publication-File-Id'], _fileId);
+    // File lookups match File-Id and the owner alone: the page would be
+    // found in place of the file.
+    expect(tags.containsKey('File-Id'), isFalse);
     expect(tags['Publication-Version'], '2');
   });
 

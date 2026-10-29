@@ -137,6 +137,14 @@ void main() {
       expect(_restore(router.currentConfiguration), '/?k=$key');
     });
 
+    test('a damaged key is kept as damaged, for the page to say so', () async {
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/?k=not-a-key'));
+
+      expect(router.sharedFileKeyIsDamaged, isTrue);
+      expect(router.sharedFileKey, isNull);
+    });
+
     test('without a key it opens locked, and the address stays the root',
         () async {
       final db = getTestDb();

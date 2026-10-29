@@ -20,6 +20,10 @@ class EntityTag {
   static const driveStateId = 'Drive-State-Id';
   static const publicationId = 'Publication-Id';
   static const publicationScope = 'Publication-Scope';
+
+  /// The file a file page shows. Never `File-Id`: file lookups match that tag
+  /// alone, and would find the page in place of the file.
+  static const publicationFileId = 'Publication-File-Id';
   static const publicationVersion = 'Publication-Version';
 
   static const drivePrivacy = 'Drive-Privacy';

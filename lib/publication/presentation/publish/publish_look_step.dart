@@ -744,8 +744,11 @@ class _CardPreview extends StatelessWidget {
                     painter: PublicationSocialCardPainter(PublicationSocialCard(
                       title: state.title,
                       description: state.description,
-                      fileCount: strings
-                          .publishFileCount(state.summary?.fileCount ?? 0),
+                      // A file page lists no files, and its card says none.
+                      fileCount: context.read<PublishCubit>().isFile
+                          ? ''
+                          : strings
+                              .publishFileCount(state.summary?.fileCount ?? 0),
                       cover: state.cover?.preview,
                       icon: state.icon?.preview,
                       iconTint: state.iconTint,

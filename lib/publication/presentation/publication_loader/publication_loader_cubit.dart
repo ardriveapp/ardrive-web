@@ -7,7 +7,9 @@ import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_stats.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
+import 'package:ardrive/publication/data/publication_owner_lookup.dart';
+import 'package:ardrive_utils/ardrive_utils.dart'
+    show DrivePrivacyTag, EntityTag, EntityTypeTag;
 import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -37,7 +39,9 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     required DriveDao driveDao,
     required DriveStateImporter importer,
     required Future<String?> Function(String txId) ownerOf,
+    Future<PublicationTxFacts?> Function(String txId)? factsOf,
   })  : _source = source,
+        _factsOf = factsOf,
         _settingsPath = settingsPath,
         _driveDao = driveDao,
         _importer = importer,
@@ -52,6 +56,10 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   /// Who signed a transaction, by the serving gateway; null when it does not
   /// know (`PublicationOwnerLookup.ownerOf`).
   final Future<String?> Function(String txId) _ownerOf;
+
+  /// Who signed a transaction and its tags, for a file page's metadata; null
+  /// falls back to [_ownerOf] alone.
+  final Future<PublicationTxFacts?> Function(String txId)? _factsOf;
 
   PublicationConfig? _config;
   SecretKey? _driveKey;
@@ -104,12 +112,33 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
 
   /// Opens a file page once its byline is checked: the file's metadata must
   /// have been signed by the owner the page names, the same rule a drive or
-  /// folder page applies to its snapshot. Only a confirmed mismatch refuses.
+  /// folder page applies to its snapshot, and must be its file's: anyone's
+  /// real metadata for some other file proves nothing about this one. Only a
+  /// confirmed mismatch refuses.
   Future<void> _openFilePage(PublicationConfig config) async {
-    final ownerMatches = await _signedBy(config, config.file!.metadataTxId);
+    final metadataTxId = config.file!.metadataTxId;
+    final bool? ownerMatches;
+    final factsOf = _factsOf;
+    if (factsOf == null) {
+      ownerMatches = await _signedBy(config, metadataTxId);
+    } else {
+      PublicationTxFacts? facts;
+      try {
+        facts = await factsOf(metadataTxId);
+      } catch (e) {
+        logger.w('Publication owner not checked: $e');
+      }
+      final fileId = (config.scope as PublicationFileScope).fileId;
+      ownerMatches = facts == null
+          ? null
+          : facts.owner == config.owner &&
+              facts.tags[EntityTag.entityType] == EntityTypeTag.file &&
+              facts.tags[EntityTag.fileId] == fileId &&
+              facts.tags[EntityTag.driveId] == config.driveId;
+    }
     if (ownerMatches == false) {
       logger.w('Publication refused: its file was signed by someone else '
-          'than the owner it names');
+          'than the owner it names, or is not the file it names');
       emit(_refused);
       return;
     }

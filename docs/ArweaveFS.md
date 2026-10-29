@@ -189,7 +189,7 @@ Drive-Id: <drive uuid>
 Entity-Type: publication
 Publication-Id: <uuid, kept by every version of this publication>
 Publication-Scope: <drive | folder uuid | file>
-File-Id: <file uuid, on a file page only>
+Publication-File-Id: <file uuid, on a file page only; never File-Id, which file lookups match alone>
 Publication-Version: <the publication.json version: 1 for a drive or folder, 2 for a file>
 Content-Type: application/x.arweave-manifest+json
 Unix-Time: <seconds since unix epoch>
@@ -222,7 +222,7 @@ A viewer opening a page cannot take `publication.json`'s `owner` on trust, since
 
 Clients that sync a drive's history skip `publication` entities (and `drive-state` and `snapshot` ones) without fetching their data: they share the drive's `Drive-Id`, and their readers find them by GraphQL.
 
-**Discovery.** A client finds a drive's publications by querying the owner's transactions with `Entity-Type: publication` and the `Drive-Id`, and groups them by `Publication-Id`. `Publication-Scope` says which a version shows: the whole drive, one folder, or (with `File-Id`) one file. A client built before file pages reads `file` as a folder ID it doesn't have, and leaves the page out.
+**Discovery.** A client finds a drive's publications by querying the owner's transactions with `Entity-Type: publication` and the `Drive-Id`, and groups them by `Publication-Id`. `Publication-Scope` says which a version shows: the whole drive, one folder, or (with `Publication-File-Id`) one file. A client built before file pages reads `file` as a folder ID it doesn't have, and leaves the page out.
 
 The design and its reasoning are in `docs/PUBLICATIONS.md`.
 

@@ -18,14 +18,19 @@ class PublicationOwnerLookup {
 
   /// The address that signed [txId], or null when the gateway has not
   /// indexed it (yet). Throws when the gateway cannot be asked.
-  Future<String?> ownerOf(String txId) async {
+  Future<String?> ownerOf(String txId) async => (await factsOf(txId))?.owner;
+
+  /// Who signed [txId] and its tags, or null when the gateway has not
+  /// indexed it (yet). A file page checks both: that its owner signed the
+  /// metadata it names, and that the metadata is its file's.
+  Future<PublicationTxFacts?> factsOf(String txId) async {
     final response = await _client
         .post(
           _gateway.resolve('/graphql'),
           headers: const {'content-type': 'application/json'},
           body: json.encode({
             'query': r'query($id: ID!) { transactions(ids: [$id]) '
-                '{ edges { node { id owner { address } } } } }',
+                '{ edges { node { id owner { address } tags { name value } } } } }',
             'variables': {'id': txId},
           }),
         )
@@ -52,12 +57,24 @@ class PublicationOwnerLookup {
               'owner': {'address': final String address}
             }
           } when id == txId) {
-        return address;
+        final tags = <String, String>{};
+        if (edge['node']['tags'] case final List list) {
+          for (final tag in list) {
+            if (tag
+                case {'name': final String name, 'value': final String value}) {
+              tags[name] = value;
+            }
+          }
+        }
+        return (owner: address, tags: tags);
       }
     }
     return null;
   }
 }
+
+/// A transaction's signer and tags, as GraphQL reports them.
+typedef PublicationTxFacts = ({String owner, Map<String, String> tags});
 
 class PublicationOwnerLookupException implements Exception {
   const PublicationOwnerLookupException(this.message);

@@ -31,11 +31,13 @@ export function publicationEntityTags({ driveId, publicationId, folderId, fileId
     { name: 'Entity-Type', value: 'publication' },
     { name: 'Drive-Id', value: driveId },
     { name: 'Publication-Id', value: publicationId },
-    // A file page names its file: `Publication-Scope: file` and `File-Id`.
+    // A file page names its file: `Publication-Scope: file` and
+    // `Publication-File-Id`. Never `File-Id`: file lookups match that tag
+    // alone, and would find the page in place of the file.
     ...(fileId
       ? [
           { name: 'Publication-Scope', value: 'file' },
-          { name: 'File-Id', value: fileId },
+          { name: 'Publication-File-Id', value: fileId },
         ]
       : [{ name: 'Publication-Scope', value: folderId ?? 'drive' }]),
     {

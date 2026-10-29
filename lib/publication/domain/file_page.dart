@@ -78,3 +78,7 @@ String withFileKey(String page, String? key) {
   final base = page.endsWith('/') ? page : '$page/';
   return '$base#/?${SharedFileLinkParams.key}=$key';
 }
+
+/// Whether [link] carries a file key, as [withFileKey] adds it.
+bool linkHasKey(String link) =>
+    link.contains('#/?${SharedFileLinkParams.key}=');

@@ -578,8 +578,10 @@ file's key in its link.
     transaction's tags already, so not secret) and never the name, size or
     type, which the key in the link decrypts from the metadata.
 - No `snapshot`, `files.html` or `sitemap.xml` in the manifest.
-- Tags as for any publication, with `Publication-Scope: file`, `File-Id` and
-  `Publication-Version: 2`. Drive and folder pages stay version 1, so released
+- Tags as for any publication, with `Publication-Scope: file`,
+  `Publication-File-Id` and `Publication-Version: 2`. Never `File-Id`: the
+  app's file lookups match that tag and the owner alone, so released clients
+  would find the page in place of the file. Drive and folder pages stay version 1, so released
   viewers keep opening them; a released viewer shows a file page as "needs a
   newer ArDrive".
 - `tool/publication/page.mjs` builds the same bytes; the golden files hold
@@ -608,7 +610,7 @@ it can open the file."
 
 The review step says it: the title, description and images are public, anyone
 can see that the page exists, and the key opens every version of the file.
-The page also names its file's ID (`File-Id`, `scope.fileId`) and its
+The page also names its file's ID (`Publication-File-Id`, `scope.fileId`) and its
 transactions, which a share link already did. It never names the file.
 
 ### The release gate

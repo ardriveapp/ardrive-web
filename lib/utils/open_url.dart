@@ -77,7 +77,7 @@ Future<bool> openUrl({
   final uri = parseLaunchableUrl(url);
 
   if (uri == null) {
-    logger.e('Refused to open a URL that is not http(s): $url');
+    logger.e('Refused to open a URL that is not http(s): ${_forLog(url)}');
 
     return false;
   }
@@ -97,10 +97,22 @@ Future<bool> openUrl({
       return true;
     }
 
-    logger.e('Could not launch $url: the platform will not handle it');
+    logger
+        .e('Could not launch ${_forLog(url)}: the platform will not handle it');
   } catch (e, s) {
-    logger.e('Could not launch $url', e, s);
+    logger.e('Could not launch ${_forLog(url)}', e, s);
   }
 
   return false;
+}
+
+/// [url] as it may be logged: without its query or fragment, where a shared
+/// file's or a file page's key travels.
+String _forLog(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return '(a URL that does not parse)';
+  return uri
+      .replace(query: '', fragment: '')
+      .toString()
+      .replaceAll(RegExp(r'[?#]+$'), '');
 }

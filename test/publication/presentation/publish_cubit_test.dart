@@ -1154,6 +1154,15 @@ void main() {
       await inHidden.close();
     });
 
+    test('a failed upload is not published', () async {
+      final c = cubit(
+          fileEntry:
+              await fileNamed('x', 'x.txt', status: TransactionStatus.failed));
+      await c.load();
+      expect(c.state.blocked, PublishBlock.failedUpload);
+      await c.close();
+    });
+
     test('waits for its upload to be confirmed', () async {
       final c = cubit(
           fileEntry:

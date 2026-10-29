@@ -35,6 +35,9 @@ enum PublishBlock {
   pendingUploads,
   hiddenFolder,
   hiddenFile,
+
+  /// A file whose upload failed.
+  failedUpload,
   empty,
 
   /// The release could not be read, or a new snapshot was refused: the

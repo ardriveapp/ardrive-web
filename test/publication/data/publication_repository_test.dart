@@ -75,6 +75,53 @@ void main() {
           gatewayUrl: () => 'https://turbo-gateway.com',
         );
 
+    test('a file page is found by Publication-File-Id, never by File-Id',
+        () async {
+      Map<String, dynamic> node(String id, Map<String, String> extra) => {
+            'cursor': id,
+            'node': {
+              'id': id,
+              'owner': {'address': 'OWNER'},
+              'bundledIn': null,
+              'block': null,
+              'tags': [
+                for (final MapEntry(:key, :value) in {
+                  'Entity-Type': 'publication',
+                  'Drive-Id': 'drive',
+                  'Publication-Id': 'pub-$id',
+                  'Unix-Time': '1792800000',
+                  ...extra,
+                }.entries)
+                  {'name': key, 'value': value},
+              ],
+            },
+          };
+      final found = await repository([
+        {
+          'transactions': {
+            'pageInfo': {'hasNextPage': false},
+            'edges': [
+              node('PAGE', {
+                'Publication-Scope': 'file',
+                'Publication-File-Id': 'file-1',
+              }),
+              // Unreadable as a file page: no Publication-File-Id.
+              node('BAD', {'Publication-Scope': 'file', 'File-Id': 'file-2'}),
+              node('DRIVE', {'Publication-Scope': 'drive'}),
+            ],
+          },
+        },
+      ]).publicationsOfOwner('OWNER');
+
+      final scopes = {
+        for (final p in found['drive']!) p.id: p.scope,
+      };
+      expect(scopes, {
+        'pub-PAGE': const PublicationFileScope('file-1'),
+        'pub-DRIVE': const PublicationDriveScope(),
+      });
+    });
+
     test('reads every page to the end', () async {
       final found = await repository([page(more: true), page(more: false)])
           .publicationsOfOwner('OWNER');

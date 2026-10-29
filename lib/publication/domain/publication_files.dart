@@ -29,7 +29,8 @@ typedef PublicationTag = ({String name, String value});
 /// The tags that make a publication's manifest the ArFS entity
 /// (docs/ArweaveFS.md, "Publication"). The uploader adds Content-Type, the
 /// app tags and Unix-Time. Neither [folderId] nor [fileId] for a whole drive;
-/// a file page names its file with `Publication-Scope: file` and `File-Id`.
+/// a file page names its file with `Publication-Scope: file` and
+/// `Publication-File-Id`: never `File-Id`, which file lookups match alone.
 List<PublicationTag> publicationEntityTags({
   required String driveId,
   required String publicationId,
@@ -43,7 +44,7 @@ List<PublicationTag> publicationEntityTags({
       (name: EntityTag.publicationId, value: publicationId),
       if (fileId != null) ...[
         (name: EntityTag.publicationScope, value: 'file'),
-        (name: EntityTag.fileId, value: fileId),
+        (name: EntityTag.publicationFileId, value: fileId),
       ] else
         (name: EntityTag.publicationScope, value: folderId ?? 'drive'),
       (

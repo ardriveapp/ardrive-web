@@ -6,6 +6,7 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_files.dart';
+import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _driveId = 'c863be1f-a725-4554-9a9e-18268ed8a035';
@@ -175,7 +176,9 @@ void main() {
           driveId: _driveId, publicationId: 'p', fileId: _fileId);
       expect(version(tags), '2');
       expect(scope(tags), 'file');
-      expect(tags.firstWhere((t) => t.name == 'File-Id').value, _fileId);
+      expect(tags.firstWhere((t) => t.name == 'Publication-File-Id').value,
+          _fileId);
+      expect(tags.map((t) => t.name), isNot(contains('File-Id')));
     });
 
     test('the viewer reads every version a page is written at', () {
@@ -189,6 +192,41 @@ void main() {
         jsonDecode(File('web/$publicationCapabilitiesPath').readAsStringSync())
             as Map<String, dynamic>;
     expect(marker['publicationVersion'], PublicationConfig.supportedVersion);
+  });
+
+  group('a drive\'s publications', () {
+    Publication publication(String id, PublicationScope scope) => Publication([
+          PublishedVersion(
+            txId: '$id-tx',
+            publicationId: id,
+            driveId: _driveId,
+            scope: scope,
+            publishedAt: DateTime.utc(2026),
+          ),
+        ]);
+
+    test('a file page is never the drive\'s page, nor a folder\'s', () {
+      final only = DrivePublications(publications: [
+        publication('page', const PublicationFileScope(_fileId)),
+      ]);
+      expect(only.of(null), isNull);
+      expect(only.of(_fileId), isNull);
+      expect(only.ofFile(_fileId)?.id, 'page');
+    });
+
+    test('and the drive\'s page is not a file\'s', () {
+      final both = DrivePublications(publications: [
+        publication('drive', const PublicationDriveScope()),
+        publication('page', const PublicationFileScope(_fileId)),
+      ]);
+      expect(both.of(null)?.id, 'drive');
+      expect(both.ofFile('another')?.id, isNull);
+    });
+  });
+
+  test('linkHasKey tells a key-bearing link', () {
+    expect(linkHasKey(withFileKey('https://ardrive.net/P/', 'KEY')), isTrue);
+    expect(linkHasKey('https://ardrive.net/P/'), isFalse);
   });
 
   group('the owner\'s link to a private file page', () {

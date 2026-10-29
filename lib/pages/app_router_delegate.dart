@@ -387,20 +387,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// the database (docs/PUBLICATIONS.md, "How a page opens").
   Widget _publicationLoader({required Widget child}) {
     return BlocProvider(
-      create: (context) => PublicationLoaderCubit(
-        source: PublicationSource(pageUri: Uri.base),
-        settingsPath: PublicationMode.settingsPath!,
-        driveDao: context.read<DriveDao>(),
-        importer: DriveStateImporter(context.read<DriveDao>()),
+      create: (context) {
         // The gateway it detected, which the host rule allows.
-        ownerOf: PublicationOwnerLookup(
+        final lookup = PublicationOwnerLookup(
           gateway: Uri.parse(context
               .read<ConfigService>()
               .config
               .arweaveGatewayForDataRequest
               .url),
-        ).ownerOf,
-      )..load(),
+        );
+        return PublicationLoaderCubit(
+          source: PublicationSource(pageUri: Uri.base),
+          settingsPath: PublicationMode.settingsPath!,
+          driveDao: context.read<DriveDao>(),
+          importer: DriveStateImporter(context.read<DriveDao>()),
+          ownerOf: lookup.ownerOf,
+          factsOf: lookup.factsOf,
+        )..load();
+      },
       child: BlocListener<PublicationLoaderCubit, PublicationLoaderState>(
         listener: (context, state) {
           if (state is PublicationReady) {
@@ -1306,8 +1310,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       _publicationFolderRequest = configuration.publicationFolderId;
       _publicationFileRequest = configuration.publicationFileId;
       // A file page's key comes only from its link; a route without one
-      // (a reload reports it back) leaves the one the link gave.
-      if (configuration.sharedRawFileKey != null) {
+      // (a reload reports it back) leaves the one the link gave. A damaged
+      // one is kept as damaged, so the page says so.
+      if (configuration.sharedRawFileKey != null ||
+          configuration.sharedFileKeyIsDamaged) {
         sharedFileKey = configuration.sharedFileKey;
         sharedRawFileKey = configuration.sharedRawFileKey;
         sharedFileKeyIsDamaged = configuration.sharedFileKeyIsDamaged;
