@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
+import 'package:ardrive/utils/secret_text_field/secret_text_field.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bip39/bip39.dart' as bip39;
@@ -35,12 +36,50 @@ RecoveryPhraseProblem? checkRecoveryPhrase(String phrase) {
   return null;
 }
 
+/// The recovery phrase field's text: blurred until shown, and only bullets
+/// to a screen reader while it is.
+@visibleForTesting
+class RecoveryPhraseController extends TextEditingController {
+  bool _hidden = true;
+
+  bool get hidden => _hidden;
+  set hidden(bool value) {
+    _hidden = value;
+    notifyListeners();
+  }
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    if (!_hidden) {
+      return super.buildTextSpan(
+          context: context, style: style, withComposing: withComposing);
+    }
+    final color = style?.color ?? Colors.transparent;
+    return TextSpan(
+      text: text,
+      // The words are drawn only as their blurred shadow.
+      style: style?.copyWith(
+        color: color.withOpacity(0),
+        shadows: [Shadow(color: color, blurRadius: 8)],
+      ),
+      // What the field reports to a screen reader, in place of the words.
+      semanticsLabel: '\u2022' * text.length,
+    );
+  }
+}
+
 /// Log in with a recovery phrase, or a keyfile instead, in the sign-in
 /// panel. The password comes next, in its own step.
 ///
-/// The phrase is a secret: the field is a password field, so it is obscured
-/// on screen and to screen readers, never spell-checked, and it is never
-/// logged.
+/// The phrase is a secret, but not a password: a password field would have
+/// the browser offer to save the 12 words in its password manager. So it is
+/// a plain multi-line field with its words blurred until shown, bullets to a
+/// screen reader, and no autocomplete, spell check or suggestions. It is
+/// never logged.
 class EnterRecoveryPhraseView extends StatefulWidget {
   const EnterRecoveryPhraseView({super.key, this.pickKeyfile});
 
@@ -53,7 +92,8 @@ class EnterRecoveryPhraseView extends StatefulWidget {
 }
 
 class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
-  final _phrase = TextEditingController();
+  final _phrase = RecoveryPhraseController();
+  final _focus = FocusNode();
   RecoveryPhraseProblem? _problem;
   bool _keyfileInvalid = false;
 
@@ -63,12 +103,20 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
     PlausibleEventTracker.trackPageview(
       page: PlausiblePageView.importWalletPage,
     );
+    _focus.addListener(_markSecret);
   }
 
   @override
   void dispose() {
     _phrase.dispose();
+    _focus.dispose();
     super.dispose();
+  }
+
+  void _markSecret() {
+    if (!_focus.hasFocus) return;
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => markFocusedFieldSecret());
   }
 
   void _submit() {
@@ -169,18 +217,31 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
             ArDriveTextFieldNew(
               key: const Key('recoveryPhraseField'),
               controller: _phrase,
-              obscureText: true,
-              showObfuscationToggle: true,
+              focusNode: _focus,
               autocorrect: false,
+              enableSuggestions: false,
               autofocus: true,
-              keyboardType: TextInputType.visiblePassword,
+              minLines: 3,
+              maxLines: 3,
+              keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.done,
               errorMessage: problem,
               showErrorMessage: problem != null,
               onChanged: (_) {
+                markFocusedFieldSecret();
                 if (_problem != null) setState(() => _problem = null);
               },
               onFieldSubmitted: (_) => _submit(),
+            ),
+            const SizedBox(height: ArDriveSpacing.xs),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ArDriveLink(
+                key: const Key('phraseShow'),
+                text: _phrase.hidden ? s.recoveryShow : s.recoveryHide,
+                isAction: true,
+                onTap: () => setState(() => _phrase.hidden = !_phrase.hidden),
+              ),
             ),
             const SizedBox(height: ArDriveSpacing.lg),
             ArDriveButtonNew(

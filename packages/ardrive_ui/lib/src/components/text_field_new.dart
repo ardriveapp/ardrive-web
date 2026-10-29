@@ -195,6 +195,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
     this.autovalidateMode = AutovalidateMode.disabled,
     this.successMessage,
     this.autocorrect = true,
+    this.enableSuggestions = true,
     this.autofocus = false,
     this.controller,
     this.initialValue,
@@ -233,6 +234,10 @@ class ArDriveTextFieldNew extends StatefulWidget {
   final AutovalidateMode? autovalidateMode;
   final String? successMessage;
   final bool autocorrect;
+
+  /// Whether the keyboard offers word suggestions. Off for a secret that
+  /// isn't a password, such as a recovery phrase.
+  final bool enableSuggestions;
   final bool autofocus;
   final String? initialValue;
   final TextEditingController? controller;
@@ -343,6 +348,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
             onTapOutside: widget.onTapOutside,
             controller: controller,
             autocorrect: widget.autocorrect,
+            enableSuggestions: widget.enableSuggestions,
             autofocus: widget.autofocus,
             initialValue: widget.initialValue,
             keyboardType: widget.keyboardType,

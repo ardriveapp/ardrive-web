@@ -17,7 +17,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -203,17 +202,35 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('the phrase is obscured, on screen and to screen readers',
-        (tester) async {
+    testWidgets(
+        'the phrase is a secret but not a password: hidden on screen and '
+        'to screen readers, and never suggested or corrected', (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, const EnterRecoveryPhraseView());
-      expect(tester.widget<EditableText>(find.byType(EditableText)).obscureText,
-          isTrue);
-      expect(
-          tester
-              .getSemantics(find.byType(EditableText))
-              .hasFlag(SemanticsFlag.isObscured),
-          isTrue);
+      await tester.enterText(find.byType(EditableText), 'river lantern');
+      await tester.pump();
+
+      final field = tester.widget<EditableText>(find.byType(EditableText));
+      expect(field.obscureText, isFalse,
+          reason: 'a password field has the browser offer to save it');
+      expect(field.maxLines, greaterThan(1));
+      expect(field.autocorrect, isFalse);
+      expect(field.enableSuggestions, isFalse);
+      expect(field.autofillHints, anyOf(isNull, isEmpty));
+
+      String value() => tester.getSemantics(find.byType(EditableText)).value;
+      expect(value(), isNot(contains('river')));
+      expect(value(), '\u2022' * 'river lantern'.length);
+      final span = field.controller.buildTextSpan(
+          context: tester.element(find.byType(EditableText)),
+          style: const TextStyle(color: Color(0xFF000000)),
+          withComposing: false);
+      expect(span.style!.color!.opacity, 0, reason: 'only the blur is drawn');
+
+      await tester.tap(find.byKey(const Key('phraseShow')));
+      await tester.pump();
+      expect(find.text('Hide'), findsOneWidget);
+      expect(value(), 'river lantern');
       handle.dispose();
     });
 
@@ -309,11 +326,10 @@ void main() {
               ),
             ],
             child: ArDriveApp(
-              builder: (context) => MaterialApp(
+              builder: (context) => const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: const LoginPageScaffold(
-                    loginState: LoginEnterRecoveryPhrase()),
+                home: LoginPageScaffold(loginState: LoginEnterRecoveryPhrase()),
               ),
             ),
           ),
