@@ -1180,7 +1180,8 @@ void main() {
         isA<LoginFailure>(),
         isA<CreateNewPassword>()
             .having((s) => s.wallet, 'wallet', wallet)
-            .having((s) => s.mnemonic?.split(' '), 'mnemonic', hasLength(12)),
+            .having((s) => s.mnemonic?.split(' '), 'mnemonic', hasLength(12))
+            .having((s) => s.retrying, 'retrying', isTrue),
       ],
       verify: (bloc) => expect(bloc.hasSignUpToRetry, isFalse),
     );

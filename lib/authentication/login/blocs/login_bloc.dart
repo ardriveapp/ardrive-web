@@ -127,7 +127,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else if (event is RetrySignUpPassword) {
       final retry = _signUpToRetry;
       _signUpToRetry = null;
-      emit(retry ?? const LoginLanding());
+      emit(retry == null
+          ? const LoginLanding()
+          : CreateNewPassword(
+              wallet: retry.wallet,
+              mnemonic: retry.mnemonic,
+              isNewUser: retry.isNewUser,
+              showWalletCreated: retry.showWalletCreated,
+              retrying: true,
+            ));
     } else if (event is UnLockWithBiometrics) {
       await _handleUnlockUserWithBiometricsEvent(event, emit);
     } else if (event is AddWalletFromSeedPhraseLogin) {
