@@ -83,10 +83,6 @@ const _colourExceptions = {
       'PermanenceShareCard, rendered as an image to share',
   'lib/publication/domain/publication_social_card.dart':
       'rendered as an image to share',
-  'lib/authentication/login/views/tutorials_view.dart':
-      'the sign-in illustration\'s texture',
-  'lib/authentication/components/dot_pattern_painter.dart':
-      'the sign-in illustration\'s texture',
   'lib/authentication/login/views/tiles/tiles_view.dart':
       'the sign-in bento\'s illustration: its peach, deep red and photo scrim',
 };
