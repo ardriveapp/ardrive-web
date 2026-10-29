@@ -1,6 +1,4 @@
 export 'styles/colors/colors_new.dart';
-export 'styles/colors/sematic_colors.dart';
-export 'styles/fonts/typography.dart';
 export 'styles/fonts/monospace.dart';
 export 'styles/fonts/typography_new.dart';
 export 'styles/icons/ar_drive_icons_icons.dart';

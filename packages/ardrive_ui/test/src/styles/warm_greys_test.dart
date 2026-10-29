@@ -69,12 +69,6 @@ void main() {
         expect(_isWarm(c), isTrue, reason: '$c');
       }
     });
-
-    test('the old colour set\'s light greys match', () {
-      final colors = ArDriveColors.light();
-      expect(_isWarm(colors.themeBgSubtle), isTrue);
-      expect(_isWarm(colors.themeGbMuted), isTrue);
-    });
   });
 
   test('dark theme greys stay neutral', () {

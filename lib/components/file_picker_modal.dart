@@ -5,8 +5,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-import 'app_dialog.dart';
-
 Future<List<IOFile>> showMultipleFilesFilePickerModal(
   BuildContext context,
 ) {
@@ -256,29 +254,19 @@ Future<void> _showCameraPermissionModal(BuildContext context) async {
   return showDialog(
       context: context,
       builder: (context) {
-        return AppDialog(
+        return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).enableCamera,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(appLocalizationsOf(context).enableCameraAccess),
-              const SizedBox(
-                height: 24,
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  AppSettings.openAppSettings();
-                },
-                child: Text(appLocalizationsOf(context).goToDeviceSettings),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(appLocalizationsOf(context).cancel),
-              )
-            ],
-          ),
+          description: appLocalizationsOf(context).enableCameraAccess,
+          actions: [
+            ModalAction.dismiss(
+              action: () => Navigator.pop(context),
+              title: appLocalizationsOf(context).cancel,
+            ),
+            ModalAction(
+              action: () => AppSettings.openAppSettings(),
+              title: appLocalizationsOf(context).goToDeviceSettings,
+            ),
+          ],
         );
       });
 }

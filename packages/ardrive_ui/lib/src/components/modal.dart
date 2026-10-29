@@ -1,36 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-class ArDriveModal extends StatelessWidget {
-  const ArDriveModal({
-    super.key,
-    required this.content,
-    required this.constraints,
-    this.contentPadding = const EdgeInsets.all(16),
-    this.action,
-    this.backgroundColor,
-  });
-
-  final Widget content;
-  final BoxConstraints constraints;
-  final EdgeInsets contentPadding;
-  final ModalAction? action;
-  final Color? backgroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: constraints,
-      child: ArDriveCard(
-        contentPadding: contentPadding,
-        content: content,
-        boxShadow: BoxShadowCard.shadow80,
-        backgroundColor: backgroundColor,
-      ),
-    );
-  }
-}
-
 class ArDriveModalNew extends StatelessWidget {
   const ArDriveModalNew({
     super.key,
@@ -104,192 +74,6 @@ class ArDriveModalNew extends StatelessWidget {
   }
 }
 
-class ArDriveStandardModal extends StatelessWidget {
-  const ArDriveStandardModal({
-    super.key,
-    this.title,
-    this.description,
-    this.content,
-    this.actions,
-    this.width,
-    this.hasCloseButton = false,
-  });
-
-  final String? title;
-  final String? description;
-  final List<ModalAction>? actions;
-  final Widget? content;
-  final double? width;
-  final bool hasCloseButton;
-
-  @override
-  Widget build(BuildContext context) {
-    late double maxWidth;
-    final deviceWidth = MediaQuery.of(context).size.width;
-
-    if (deviceWidth < modalStandardMaxWidthSize) {
-      maxWidth = deviceWidth;
-    } else {
-      maxWidth = modalStandardMaxWidthSize;
-    }
-
-    return ArDriveModal(
-      constraints: BoxConstraints(
-        minHeight: 100,
-        maxWidth: width ?? maxWidth,
-        minWidth: 250,
-      ),
-      content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (title != null) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      title!,
-                      style: ArDriveTypography.headline.headline5Bold(),
-                    ),
-                  ),
-                  if (hasCloseButton)
-                    ArDriveClickArea(
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Align(
-                          alignment: Alignment.centerRight,
-                          child: ArDriveIcon(
-                            icon: ArDriveIconsData.x,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    )
-                ],
-              ),
-              const SizedBox(
-                height: 24,
-              ),
-            ],
-            if (content != null) ...[
-              content!,
-              const SizedBox(
-                height: 24,
-              ),
-            ],
-            if (content == null) ...[
-              if (description != null) ...[
-                Text(
-                  description!,
-                  style: ArDriveTypography.body.smallRegular(),
-                  textAlign: TextAlign.left,
-                ),
-              ],
-            ],
-            if (actions != null) ...[
-              const SizedBox(
-                height: 24,
-              ),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: _buildActions(
-                  actions!,
-                  context,
-                ),
-              )
-            ]
-          ]),
-    );
-  }
-
-  Widget _buildActions(List<ModalAction> actions, BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.end,
-      runSpacing: 8,
-      children: [
-        if (actions.isNotEmpty)
-          ArDriveButton(
-            maxHeight: buttonActionHeight,
-            style: ArDriveButtonStyle.secondary,
-            maxWidth: actions[0].customWidth,
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            fontStyle: ArDriveTypography.body
-                .buttonNormalBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                )
-                .copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-            text: actions.first.title,
-            onPressed: actions.first.action,
-          ),
-        if (actions.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(left: 16),
-            child: ArDriveButton(
-              style: actions.length > 2
-                  ? ArDriveButtonStyle.secondary
-                  : ArDriveButtonStyle.primary,
-              maxHeight: buttonActionHeight,
-              maxWidth: actions[0].customWidth,
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              fontStyle: ArDriveTypography.body
-                  .buttonNormalRegular(
-                    color: actions.length > 2
-                        ? ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault
-                        : ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeAccentSubtle,
-                  )
-                  .copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-              isDisabled: !actions[1].isEnable,
-              text: actions[1].title,
-              onPressed: actions[1].action,
-            ),
-          ),
-        if (actions.length > 2)
-          Padding(
-            padding: const EdgeInsets.only(left: 16),
-            child: ArDriveButton(
-              style: ArDriveButtonStyle.secondary,
-              maxHeight: buttonActionHeight,
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-              fontStyle: ArDriveTypography.body
-                  .buttonNormalRegular(
-                    color: actions.length > 2
-                        ? ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault
-                        : ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeAccentSubtle,
-                  )
-                  .copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-              isDisabled: !actions[2].isEnable,
-              text: actions[2].title,
-              onPressed: actions[2].action,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class ModalAction {
   ModalAction({
     required this.action,
@@ -331,7 +115,8 @@ Future<void> showAnimatedDialog(
 
   return showGeneralDialog(
     context: context,
-    barrierColor: barrierColor ?? const Color(0x80000000),
+    barrierColor:
+        barrierColor ?? ArDriveTheme.of(context).themeData.colorTokens.scrim,
     transitionDuration: const Duration(milliseconds: 200),
     transitionBuilder: (context, a1, a2, widget) {
       return Transform.scale(
@@ -368,7 +153,8 @@ Future<T?> showAnimatedDialogWithBuilder<T>(
 
   return showGeneralDialog<T>(
     context: context,
-    barrierColor: barrierColor ?? const Color(0x80000000),
+    barrierColor:
+        barrierColor ?? ArDriveTheme.of(context).themeData.colorTokens.scrim,
     transitionDuration: const Duration(milliseconds: 200),
     transitionBuilder: (context, a1, a2, widget) {
       return Transform.scale(

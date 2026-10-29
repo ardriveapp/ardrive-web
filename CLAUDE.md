@@ -150,9 +150,12 @@ localization despite the name — it holds validation message helpers.
 
 Note: The `ario_sdk` package requires separate code generation - `scr setup` handles this automatically.
 
-New UI is built from `ardrive_ui`'s new generation (`ArDriveButtonNew`, `ArDriveStandardModalNew`,
+UI is built from `ardrive_ui` (`ArDriveButtonNew`, `ArDriveStandardModalNew`,
 `ArDriveTypographyNew`, `colorTokens`, plus `ArDriveLink`, `ArDriveNotice`, `ArDriveEmptyState`,
 `ArDriveSpinner`, `ArDriveBottomSheet`, `ArDriveCopyField`, `ArDriveSpacing`/`ArDriveRadius`).
+The `New` suffix is historical: the older components it replaced are deleted.
+`test/design_system_guard_test.dart` fails on a literal or Material colour, or a raw
+spinner or progress bar, outside `ardrive_ui`'s style files, except where its lists give a reason.
 `packages/ardrive_ui/README.md` says which piece to use where, including the three button sizes.
 Don't draw a one-off version of something the design system has; if it falls short, fix it there.
 
@@ -249,7 +252,7 @@ The app supports multiple languages via ARB files in `lib/l10n/`: English, Spani
 ### Design System
 
 UI is built from `packages/ardrive_ui`; its README says which components and
-tokens to use (the `New` generation; the old one is being removed). The
+tokens to use. The
 cross-platform standard behind it, in values, is published at
 `https://ardrive.io/brand-kit/design-system.md` from the public-site repo, with
 a machine summary at `https://ardrive.io/brand-kit/agents.json`. A change to a

@@ -179,6 +179,7 @@ class ArDriveColorTokens {
     required this.containerRed,
     required this.containerRaised,
     required this.shadow,
+    required this.scrim,
     required this.textHigh,
     required this.textMid,
     required this.textLow,
@@ -234,6 +235,7 @@ class ArDriveColorTokens {
       containerRed: primitives.solidRed700,
       containerRaised: containerRaised,
       shadow: const Color(0xe60d0d0d),
+      scrim: const Color(0x80000000),
       textHigh: textHigh,
       textMid: primitives.solidGrey200,
       textLow: primitives.solidGrey300,
@@ -295,6 +297,7 @@ class ArDriveColorTokens {
       containerRed: primitives.solidRed700,
       containerRaised: containerRaised,
       shadow: const Color(0x1a303133),
+      scrim: const Color(0x80000000),
       textHigh: textHigh,
       textMid: primitives.solidGrey700,
       textLow: primitives.solidGrey600,
@@ -357,6 +360,10 @@ class ArDriveColorTokens {
   /// A shadow's colour, and the shade under a card's footer: near-black at
   /// 90% in dark, a grey at 10% in light. The values the old colour set had.
   final Color shadow;
+
+  /// Dims the page behind a dialog or a bottom sheet: black at 50%, in both
+  /// themes.
+  final Color scrim;
   final Color textHigh;
   final Color textMid;
   final Color textLow;
