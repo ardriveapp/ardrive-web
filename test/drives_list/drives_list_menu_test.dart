@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_actions_menu.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
@@ -17,7 +18,7 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../test_utils/mocks.dart';
+import '../test_utils/utils.dart';
 
 /// The per-drive menu, where the drives are listed.
 ///
@@ -27,6 +28,7 @@ import '../test_utils/mocks.dart';
 /// each of them 16px taller would be the most expensive thing on it.
 void main() {
   late MockSyncBloc syncCubit;
+  late MockProfileCubit profileCubit;
   late StreamController<SyncState> syncStates;
 
   setUpAll(() {
@@ -35,6 +37,9 @@ void main() {
 
   setUp(() {
     syncCubit = MockSyncBloc();
+    profileCubit = MockProfileCubit();
+    when(() => profileCubit.state)
+        .thenReturn(ProfileLoggedIn(user: getTestUser(), useTurbo: false));
     syncStates = StreamController<SyncState>.broadcast();
 
     whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
@@ -100,8 +105,13 @@ void main() {
                   .copyWith(textScaler: TextScaler.linear(textScale)),
               child: Portal(
                 child: Scaffold(
-                  body: BlocProvider<SyncCubit>.value(
-                    value: syncCubit,
+                  body: MultiBlocProvider(
+                    providers: [
+                      BlocProvider<SyncCubit>.value(value: syncCubit),
+                      // Detach is for a drive you don't own, when signed in,
+                      // as Your drives always is.
+                      BlocProvider<ProfileCubit>.value(value: profileCubit),
+                    ],
                     child: child,
                   ),
                 ),
@@ -130,6 +140,7 @@ void main() {
         Align(
           alignment: Alignment.topLeft,
           child: DriveActionsMenu(
+            isSynced: true,
             drive: drive(isHidden: isHidden),
             isOwner: isOwner,
           ),
@@ -306,7 +317,8 @@ void main() {
         host(
           Align(
             alignment: Alignment.topLeft,
-            child: DriveActionsMenu(drive: drive(), isOwner: true),
+            child:
+                DriveActionsMenu(isSynced: true, drive: drive(), isOwner: true),
           ),
         ),
       );
@@ -326,7 +338,8 @@ void main() {
         host(
           Align(
             alignment: Alignment.topLeft,
-            child: DriveActionsMenu(drive: drive(), isOwner: true),
+            child:
+                DriveActionsMenu(isSynced: true, drive: drive(), isOwner: true),
           ),
         ),
       );
@@ -366,7 +379,8 @@ void main() {
                 drive: item(),
                 showsColumns: false,
                 onOpen: () {},
-                menu: DriveActionsMenu(drive: drive(), isOwner: true),
+                menu: DriveActionsMenu(
+                    isSynced: true, drive: drive(), isOwner: true),
               ),
             ),
           ),
@@ -419,7 +433,8 @@ void main() {
                   drive: item(),
                   showsColumns: true,
                   onOpen: () {},
-                  menu: DriveActionsMenu(drive: drive(), isOwner: true),
+                  menu: DriveActionsMenu(
+                      isSynced: true, drive: drive(), isOwner: true),
                 ),
               ],
             ),
@@ -456,7 +471,8 @@ void main() {
           host(
             Align(
               alignment: Alignment.topRight,
-              child: DriveActionsMenu(drive: drive(), isOwner: true),
+              child: DriveActionsMenu(
+                  isSynced: true, drive: drive(), isOwner: true),
             ),
             textScale: scale,
           ),

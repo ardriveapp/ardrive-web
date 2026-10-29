@@ -6,25 +6,19 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/components/csv_export_dialog.dart';
-import 'package:ardrive/components/drive_rename_form.dart';
-import 'package:ardrive/components/fs_entry_license_form.dart';
-import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
-import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/pages/drive_detail/components/item_menus.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -509,316 +503,31 @@ class _DriveExplorerItemTileTrailingState
     BuildContext context,
     double height,
   ) {
-    final isOwner = item.isOwner;
+    void moreInfo() => context.read<DriveDetailCubit>().selectDataItem(item);
 
     if (item is FolderDataTableItem) {
-      return [
-        ArDriveDropdownItem(
-          onClick: () {
-            final driveDetail = (context.read<DriveDetailCubit>().state
-                as DriveDetailLoadSuccess);
-
-            final zipName = item.id == driveDetail.currentDrive.rootFolderId
-                ? driveDetail.currentDrive.name
-                : item.name;
-
-            promptToDownloadMultipleFiles(
-              context,
-              selectedItems: [item],
-              zipName: zipName,
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).download,
-            ArDriveIcons.download(
-              size: defaultIconSize,
-            ),
-            height: height,
-          ),
-        ),
-        if (isOwner) ...[
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToMove(
-                context,
-                driveId: item.driveId,
-                selectedItems: [
-                  item,
-                ],
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).move,
-              ArDriveIcons.move(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToRenameModal(
-                context,
-                driveId: item.driveId,
-                folderId: item.id,
-                initialName: item.name,
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).rename,
-              ArDriveIcons.editFilled(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToLicense(
-                context,
-                driveId: item.driveId,
-                selectedItems: [item],
-              );
-            },
-            content: _buildItem(
-              // TODO: Localize
-              // appLocalizationsOf(context).license,
-              'Add license',
-              ArDriveIcons.license(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
-          if (isOwner) hideFileDropdownItem(context, item),
-        ],
-        // On a publication, the publication's own link to the folder.
-        if (PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: () => copyPublicationLink(context, folderId: item.id),
-            content: _buildItem(
-              appLocalizationsOf(context).copyLink,
-              ArDriveIcons.copy(size: defaultIconSize),
-              height: height,
-            ),
-          ),
-        // Not offered for a ghost folder: its metadata was never found, so a
-        // link naming it points the recipient at nothing.
-        if (!item.isGhostFolder && !PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToShareDrive(
-                context: context,
-                drive: widget.drive,
-                folderId: item.id,
-                folderName: item.name,
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).shareFolder,
-              ArDriveIcons.share(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
-        if (!item.isGhostFolder && offersPublishToWeb(context, widget.drive))
-          ArDriveDropdownItem(
-            onClick: () => openPublishToWeb(
-              context,
-              drive: widget.drive,
-              folderId: item.id,
-            ),
-            content: PublishToWebMenuItem(
-              drive: widget.drive,
-              folderId: item.id,
-              iconSize: defaultIconSize,
-              height: height,
-            ),
-          ),
-        ArDriveDropdownItem(
-          onClick: () {
-            final bloc = context.read<DriveDetailCubit>();
-
-            bloc.selectDataItem(item);
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).moreInfo,
-            ArDriveIcons.info(
-              size: defaultIconSize,
-            ),
-            height: height,
-          ),
-        ),
-      ];
+      return folderMenuItems(
+        context,
+        folder: item,
+        drive: widget.drive,
+        zipName: () {
+          final driveDetail =
+              context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess;
+          return item.id == driveDetail.currentDrive.rootFolderId
+              ? driveDetail.currentDrive.name
+              : item.name;
+        },
+        onMoreInfo: moreInfo,
+        height: height,
+      );
     }
-    return [
-      ArDriveDropdownItem(
-        onClick: () {
-          promptToDownloadProfileFile(
-            context: context,
-            file: item as FileDataTableItem,
-          );
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).download,
-          ArDriveIcons.download(
-            size: defaultIconSize,
-          ),
-          height: height,
-        ),
-      ),
-      if (PublicationMode.isOn)
-        ArDriveDropdownItem(
-          onClick: () => copyPublicationLink(
-            context,
-            folderId: (item as FileDataTableItem).parentFolderId,
-            fileId: item.id,
-          ),
-          content: _buildItem(
-            appLocalizationsOf(context).copyLink,
-            ArDriveIcons.copy(size: defaultIconSize),
-            height: height,
-          ),
-        )
-      else
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToShareFile(
-              context: context,
-              driveId: item.driveId,
-              fileId: item.id,
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).shareFile,
-            ArDriveIcons.share(
-              size: defaultIconSize,
-            ),
-            height: height,
-          ),
-        ),
-      if (widget.drive.isPublic)
-        ArDriveDropdownItem(
-          onClick: () {
-            final bloc = context.read<DriveDetailCubit>();
-
-            bloc.launchPreview((item as FileDataTableItem).dataTxId);
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).preview,
-            ArDriveIcons.newWindow(
-              size: defaultIconSize,
-            ),
-            height: height,
-          ),
-        ),
-      if (item.fileStatusFromTransactions == TransactionStatus.pending)
-        checkUploadStatusDropdownItem(context, height: height),
-      if (isOwner) ...[
-        if (item is FileDataTableItem)
-          ArDriveDropdownItem(
-            onClick: () async {
-              final fileItem = item;
-              final isMarkdown = fileItem.contentType == 'text/markdown' ||
-                  fileItem.contentType == 'text/x-markdown';
-
-              if (isMarkdown) {
-                // For markdown files, show edit dialog instead of rename
-                await handleMarkdownFileEdit(context, fileItem);
-              } else {
-                // For other files, show normal rename dialog
-                promptToRenameModal(
-                  context,
-                  driveId: item.driveId,
-                  fileId: item.id,
-                  initialName: item.name,
-                );
-              }
-            },
-            content: _buildItem(
-              item.contentType == 'text/markdown' ||
-                      item.contentType == 'text/x-markdown'
-                  ? appLocalizationsOf(context).editNote
-                  : appLocalizationsOf(context).rename,
-              ArDriveIcons.editFilled(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToMove(
-              context,
-              driveId: item.driveId,
-              selectedItems: [item],
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).move,
-            ArDriveIcons.move(
-              size: defaultIconSize,
-            ),
-            height: height,
-          ),
-        ),
-        if (item is FileDataTableItem && item.pinnedDataOwnerAddress == null)
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToLicense(
-                context,
-                driveId: item.driveId,
-                selectedItems: [item],
-              );
-            },
-            content: _buildItem(
-              item.licenseTxId == null
-                  ?
-                  // TODO: Localize
-                  // appLocalizationsOf(context).addLicense,
-                  'Add license'
-                  :
-                  // TODO: Localize
-                  // appLocalizationsOf(context).updateLicense,
-                  'Update license',
-              ArDriveIcons.license(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
-        ...arnsItemMenuItems(
-          context,
-          item: item,
-          drive: widget.drive,
-          height: height,
-        ),
-        hideFileDropdownItem(context, item),
-      ],
-      ArDriveDropdownItem(
-        onClick: () {
-          final bloc = context.read<DriveDetailCubit>();
-
-          bloc.selectDataItem(item);
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).moreInfo,
-          ArDriveIcons.info(
-            size: defaultIconSize,
-          ),
-          height: height,
-        ),
-      ),
-    ];
-  }
-
-  ArDriveDropdownItemTile _buildItem(
-    String name,
-    ArDriveIcon icon, {
-    double? height,
-  }) {
-    return ArDriveDropdownItemTile(name: name, icon: icon, height: height);
+    return fileMenuItems(
+      context,
+      file: item as FileDataTableItem,
+      drive: widget.drive,
+      onMoreInfo: moreInfo,
+      height: height,
+    );
   }
 }
 
@@ -1022,443 +731,99 @@ class EntityActionsMenu extends StatelessWidget {
     );
   }
 
+  /// Whether the explorer has [driveId] open with its contents: what the
+  /// drive's menu means by synced, read only where an explorer is provided.
+  static bool _explorerShows(BuildContext context, String driveId) {
+    try {
+      final state = context.read<DriveDetailCubit>().state;
+      return state is DriveDetailLoadSuccess &&
+          state.currentDrive.id == driveId;
+    } on ProviderNotFoundException {
+      return false;
+    }
+  }
+
   List<ArDriveDropdownItem> _getItems(
       ArDriveDataTableItem item,
       BuildContext context,
       bool withInfo,
       bool isFileRevision,
       bool isSyncing) {
-    final isOwner = item.isOwner;
+    void moreInfo() => context.read<DriveDetailCubit>().selectDataItem(item);
+    final onMoreInfo = withInfo ? moreInfo : null;
+    final drive = this.drive;
 
     if (item is FolderDataTableItem) {
-      return [
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToDownloadMultipleFiles(
-              context,
-              selectedItems: [item],
-              zipName: item.name,
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).download,
-            ArDriveIcons.download(
-              size: defaultIconSize,
-            ),
-          ),
-        ),
-        if (isOwner) ...[
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToMove(
-                context,
-                driveId: item.driveId,
-                selectedItems: [
-                  item,
-                ],
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).move,
-              ArDriveIcons.move(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToRenameModal(
-                context,
-                driveId: item.driveId,
-                folderId: item.id,
-                initialName: item.name,
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).rename,
-              ArDriveIcons.editFilled(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-          hideFileDropdownItem(context, item),
-        ],
-        // Guarded rather than assumed: this menu is also built in places that
-        // do not know the drive, and a folder link needs it for the key.
-        if (PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: () => copyPublicationLink(context, folderId: item.id),
-            content: _buildItem(
-              appLocalizationsOf(context).copyLink,
-              ArDriveIcons.copy(size: defaultIconSize),
-            ),
-          ),
-        if (drive != null && !item.isGhostFolder && !PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToShareDrive(
-                context: context,
-                drive: drive!,
-                folderId: item.id,
-                folderName: item.name,
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).shareFolder,
-              ArDriveIcons.share(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-        if (!item.isGhostFolder && offersPublishToWeb(context, drive))
-          ArDriveDropdownItem(
-            onClick: () => openPublishToWeb(
-              context,
-              drive: drive!,
-              folderId: item.id,
-            ),
-            content: PublishToWebMenuItem(
-              drive: drive!,
-              folderId: item.id,
-              iconSize: defaultIconSize,
-            ),
-          ),
-        if (withInfo) _buildInfoOption(context),
-      ];
-    } else if (item is DriveDataItem) {
-      return [
-        ArDriveDropdownItem(
-            onClick: () async {
-              promptToDownloadMultipleFiles(context,
-                  selectedItems: [item], zipName: item.name);
-            },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(
-                size: defaultIconSize,
-              ),
-            )),
-        if (isOwner && drive != null)
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToRenameDrive(
-                context,
-                driveId: drive!.id,
-                driveName: drive!.name,
-              );
-            },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).renameDrive,
-              icon: ArDriveIcons.edit(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-        if (isOwner && drive != null)
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToCreateSnapshot(context, drive!);
-            },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).createSnapshot,
-              icon: ArDriveIcons.iconCreateSnapshot(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-        // `SyncCubit` refuses a second sync outright, so these two say so
-        // rather than closing the menu and dropping the request.
-        // A publication is its snapshot and never syncs.
-        if (drive != null && !PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: isSyncing
-                ? null
-                : () {
-                    context.read<SyncCubit>().startSyncForDrive(
-                          driveId: drive!.id,
-                          deepSync: false,
-                        );
-                  },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).syncThisDrive,
-              isDisabled: isSyncing,
-              icon: ArDriveIcons.refresh(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-        if (drive != null && !PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: isSyncing
-                ? null
-                : () async {
-                    final syncCubit = context.read<SyncCubit>();
-                    final driveId = drive!.id;
-                    if (!await confirmFullResync(
-                      context,
-                      FullResyncScope.drive(drive!.name),
-                    )) {
-                      return;
-                    }
-                    syncCubit.startSyncForDrive(
-                      driveId: driveId,
-                      deepSync: true,
-                    );
-                  },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).deepSyncThisDrive,
-              isDisabled: isSyncing,
-              icon: ArDriveIcons.cloudSync(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-        if (isOwner)
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToToggleHideState(
-                context,
-                item: item,
-              );
-            },
-            content: ArDriveDropdownItemTile(
-              name: item.isHidden
-                  ? appLocalizationsOf(context).unhide
-                  : appLocalizationsOf(context).hide,
-              icon: item.isHidden
-                  ? ArDriveIcons.eyeOpen(size: defaultIconSize)
-                  : ArDriveIcons.eyeClosed(size: defaultIconSize),
-            ),
-          ),
-        if (PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: () =>
-                copyPublicationLink(context, folderId: drive!.rootFolderId),
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).copyLink,
-              icon: ArDriveIcons.copy(size: defaultIconSize),
-            ),
-          )
-        else ...[
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToShareDrive(
-                context: context,
-                drive: drive!,
-              );
-            },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).shareDrive,
-              icon: ArDriveIcons.share(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-          if (offersPublishToWeb(context, drive))
-            ArDriveDropdownItem(
-              onClick: () => openPublishToWeb(context, drive: drive!),
-              content: PublishToWebMenuItem(
-                drive: drive!,
-                iconSize: defaultIconSize,
-              ),
-            ),
-          ArDriveDropdownItem(
-            onClick: () {
-              promptToExportCSVData(
-                context: context,
-                driveId: drive!.id,
-              );
-            },
-            content: ArDriveDropdownItemTile(
-              name: appLocalizationsOf(context).exportDriveContents,
-              icon: ArDriveIcons.download(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-        ],
-        // A publication is not its drive: no drive details on a publication.
-        if (!PublicationMode.isOn)
-          ArDriveDropdownItem(
-            onClick: () {
-              final bloc = context.read<DriveDetailCubit>();
-
-              bloc.selectDataItem(
-                DriveDataTableItemMapper.fromDrive(
-                  drive!,
-                  (_) => null,
-                  0,
-                  isOwner,
-                ),
-              );
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).moreInfo,
-              ArDriveIcons.info(
-                size: defaultIconSize,
-              ),
-            ),
-          )
-      ];
+      return folderMenuItems(
+        context,
+        folder: item,
+        drive: drive,
+        zipName: () => item.name,
+        onMoreInfo: onMoreInfo,
+      );
     }
+    if (item is DriveDataItem) {
+      if (drive == null) return const [];
+      return driveMenuItems(
+        context,
+        drive: drive,
+        isOwner: item.isOwner,
+        isSynced: (drive.lastBlockHeight ?? 0) > 0 ||
+            _explorerShows(context, drive.id),
+        isSyncing: isSyncing,
+        onMoreInfo: onMoreInfo,
+      );
+    }
+    if (!isFileRevision) {
+      return fileMenuItems(
+        context,
+        file: item as FileDataTableItem,
+        drive: drive,
+        onMoreInfo: onMoreInfo,
+      );
+    }
+
+    // A past version of a file: what it was, not what can be done to the
+    // file now.
+    final revision = item as FileDataTableItem;
     return [
-      // The same offer the row kebab makes, and it belongs here more: this is
-      // the panel somebody opens to find out why a file is showing an amber
-      // dot. See [checkUploadStatusDropdownItem].
-      if (item.fileStatusFromTransactions == TransactionStatus.pending)
-        checkUploadStatusDropdownItem(context),
       ArDriveDropdownItem(
-        onClick: () {
-          promptToDownloadProfileFile(
-            context: context,
-            file: item as FileDataTableItem,
-          );
-        },
+        onClick: () =>
+            promptToDownloadProfileFile(context: context, file: revision),
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download(
-            size: defaultIconSize,
-          ),
+          ArDriveIcons.download(size: defaultIconSize),
         ),
       ),
-      if (!isFileRevision && PublicationMode.isOn)
+      if (drive?.isPublic ?? false)
         ArDriveDropdownItem(
-          onClick: () => copyPublicationLink(
-            context,
-            folderId: (item as FileDataTableItem).parentFolderId,
-            fileId: item.id,
-          ),
+          onClick: () =>
+              context.read<DriveDetailCubit>().launchPreview(revision.dataTxId),
           content: _buildItem(
-            appLocalizationsOf(context).copyLink,
+            appLocalizationsOf(context).preview,
+            ArDriveIcons.newWindow(size: defaultIconSize),
+          ),
+        ),
+      ArDriveDropdownItem(
+        onClick: () {
+          Clipboard.setData(ClipboardData(text: revision.dataTxId));
+        },
+        content: _buildItem(
+          appLocalizationsOf(context).copyDataTxID,
+          ArDriveIcons.copy(size: defaultIconSize),
+        ),
+      ),
+      if (revision.metadataTx != null)
+        ArDriveDropdownItem(
+          onClick: () {
+            Clipboard.setData(ClipboardData(text: revision.metadataTx!.id));
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).copyMetadataTxID,
             ArDriveIcons.copy(size: defaultIconSize),
           ),
         ),
-      if (!isFileRevision && !PublicationMode.isOn) ...[
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToShareFile(
-              context: context,
-              driveId: item.driveId,
-              fileId: item.id,
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).shareFile,
-            ArDriveIcons.share(
-              size: defaultIconSize,
-            ),
-          ),
-        ),
-      ],
-      // The gateway serves a private file's encrypted bytes, so only a file
-      // of a drive known to be public opens in a new window - as the row menu
-      // already decides. No drive means no proof, so no preview.
-      if (drive?.isPublic ?? false)
-        ArDriveDropdownItem(
-          onClick: () {
-            final bloc = context.read<DriveDetailCubit>();
-
-            bloc.launchPreview((item as FileDataTableItem).dataTxId);
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).preview,
-            ArDriveIcons.newWindow(
-              size: defaultIconSize,
-            ),
-          ),
-        ),
-      if (isOwner && !isFileRevision && item is FileDataTableItem) ...[
-        ArDriveDropdownItem(
-          onClick: () async {
-            final fileItem = item;
-            final isMarkdown = fileItem.contentType == 'text/markdown' ||
-                fileItem.contentType == 'text/x-markdown';
-
-            if (isMarkdown) {
-              // For markdown files, show edit dialog instead of rename
-              await handleMarkdownFileEdit(context, fileItem);
-            } else {
-              // For other files, show normal rename dialog
-              promptToRenameModal(
-                context,
-                driveId: item.driveId,
-                fileId: item.id,
-                initialName: item.name,
-              );
-            }
-          },
-          content: _buildItem(
-            item.contentType == 'text/markdown' ||
-                    item.contentType == 'text/x-markdown'
-                ? appLocalizationsOf(context).editNote
-                : appLocalizationsOf(context).rename,
-            ArDriveIcons.editFilled(
-              size: defaultIconSize,
-            ),
-          ),
-        ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToMove(
-              context,
-              driveId: item.driveId,
-              selectedItems: [item],
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).move,
-            ArDriveIcons.move(
-              size: defaultIconSize,
-            ),
-          ),
-        ),
-        ...arnsItemMenuItems(context, item: item, drive: drive),
-        hideFileDropdownItem(context, item),
-      ],
-      if (withInfo) _buildInfoOption(context),
-      if (isFileRevision) ...[
-        ArDriveDropdownItem(
-          onClick: () {
-            Clipboard.setData(
-                ClipboardData(text: (item as FileDataTableItem).dataTxId));
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).copyDataTxID,
-            ArDriveIcons.copy(
-              size: defaultIconSize,
-            ),
-          ),
-        ),
-        if (item is FileDataTableItem && item.metadataTx != null)
-          ArDriveDropdownItem(
-            onClick: () {
-              Clipboard.setData(ClipboardData(text: (item).metadataTx!.id));
-            },
-            content: _buildItem(
-              appLocalizationsOf(context).copyMetadataTxID,
-              ArDriveIcons.copy(
-                size: defaultIconSize,
-              ),
-            ),
-          ),
-      ],
     ];
-  }
-
-  _buildInfoOption(BuildContext context) {
-    return ArDriveDropdownItem(
-      onClick: () {
-        final bloc = context.read<DriveDetailCubit>();
-
-        bloc.selectDataItem(item);
-      },
-      content: _buildItem(
-        appLocalizationsOf(context).moreInfo,
-        ArDriveIcons.info(
-          size: defaultIconSize,
-        ),
-      ),
-    );
   }
 
   ArDriveDropdownItemTile _buildItem(
@@ -1517,8 +882,9 @@ ArDriveDropdownItem checkUploadStatusDropdownItem(
 
 ArDriveDropdownItem hideFileDropdownItem(
   BuildContext context,
-  ArDriveDataTableItem item,
-) {
+  ArDriveDataTableItem item, {
+  double? height,
+}) {
   return ArDriveDropdownItem(
     onClick: () {
       promptToToggleHideState(
@@ -1533,6 +899,7 @@ ArDriveDropdownItem hideFileDropdownItem(
       icon: item.isHidden
           ? ArDriveIcons.eyeOpen(size: defaultIconSize)
           : ArDriveIcons.eyeClosed(size: defaultIconSize),
+      height: height,
     ),
   );
 }

@@ -141,10 +141,12 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
   Widget build(BuildContext context) {
     // The rows grow with the reader's text scale (see ArDriveDropdownItemTile),
     // so the box that holds them has to as well or it clips them.
+    final dividers = widget.items.where((item) => item.isDivider).length;
     dropdownHeight = widget.maxHeight ??
-        widget.items.length *
-            widget.height *
-            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+        (widget.items.length - dividers) *
+                widget.height *
+                MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0) +
+            dividers * ArDriveDropdownItem.dividerHeight;
 
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
 
@@ -189,6 +191,9 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                     if (widget.header != null) widget.header!,
                     Column(
                       children: List.generate(widget.items.length, (index) {
+                        if (widget.items[index].isDivider) {
+                          return const _DropdownDivider();
+                        }
                         // A button of its own, named by its text, and
                         // disabled when it has nothing to do: without the
                         // flag the web gave it no role and no name.
@@ -626,10 +631,21 @@ class ArDriveDropdownItem extends StatefulWidget {
     super.key,
     required this.content,
     this.onClick,
-  });
+  }) : isDivider = false;
+
+  /// A line between two groups of items. Not a button: it takes no tap, no
+  /// hover and no focus, and a screen reader skips it.
+  const ArDriveDropdownItem.divider({super.key})
+      : content = const SizedBox.shrink(),
+        onClick = null,
+        isDivider = true;
 
   final Widget content;
   final Function()? onClick;
+  final bool isDivider;
+
+  /// A divider's height: its line and the space either side.
+  static const double dividerHeight = 1 + 2 * ArDriveSpacing.xxs;
 
   @override
   State<ArDriveDropdownItem> createState() => _ArDriveDropdownItemState();
@@ -687,6 +703,24 @@ class _ArDriveHoverWidgetState extends State<ArDriveHoverWidget> {
       child: Container(
         color: hovering ? widget.hoverColor : widget.defaultColor,
         child: widget.child,
+      ),
+    );
+  }
+}
+
+/// The line [ArDriveDropdownItem.divider] draws between two groups.
+class _DropdownDivider extends StatelessWidget {
+  const _DropdownDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xxs),
+        child: Container(
+          height: 1,
+          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+        ),
       ),
     );
   }
