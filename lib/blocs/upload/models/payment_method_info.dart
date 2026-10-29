@@ -33,6 +33,18 @@ class UploadPaymentMethodInfo extends Equatable {
   /// somebody with. See [SourceWalletCredits].
   final SourceWalletCredits? sourceWalletCredits;
 
+  /// The Turbo Credits this wallet can spend, in winston credits, when known.
+  /// [turboCredits] is the same amount as text. See [turboBalance].
+  final BigInt? turboBalanceWinc;
+
+  /// [turboBalanceWinc], or zero.
+  BigInt get turboBalance => turboBalanceWinc ?? BigInt.zero;
+
+  /// Turbo's price for this upload, or the balance, could not be read, so
+  /// [costEstimateTurbo] and [turboBalance] are placeholders that must not be
+  /// shown or compared. See [UploadPaymentInfo.turboUnreachable].
+  final bool turboUnreachable;
+
   const UploadPaymentMethodInfo({
     required this.uploadMethod,
     required this.costEstimateTurbo,
@@ -49,6 +61,8 @@ class UploadPaymentMethodInfo extends Equatable {
     required this.totalSize,
     this.paidBy,
     this.sourceWalletCredits,
+    this.turboBalanceWinc,
+    this.turboUnreachable = false,
   });
 
   bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
@@ -76,6 +90,8 @@ class UploadPaymentMethodInfo extends Equatable {
     int? totalSize,
     List<String>? paidBy,
     SourceWalletCredits? sourceWalletCredits,
+    BigInt? turboBalanceWinc,
+    bool? turboUnreachable,
   }) {
     return UploadPaymentMethodInfo(
       totalSize: totalSize ?? this.totalSize,
@@ -95,6 +111,8 @@ class UploadPaymentMethodInfo extends Equatable {
       freeStatus: freeStatus ?? this.freeStatus,
       paidBy: paidBy ?? this.paidBy,
       sourceWalletCredits: sourceWalletCredits ?? this.sourceWalletCredits,
+      turboBalanceWinc: turboBalanceWinc ?? this.turboBalanceWinc,
+      turboUnreachable: turboUnreachable ?? this.turboUnreachable,
     );
   }
 
@@ -112,5 +130,7 @@ class UploadPaymentMethodInfo extends Equatable {
         freeStatus,
         paidBy,
         sourceWalletCredits,
+        turboBalanceWinc,
+        turboUnreachable,
       ];
 }

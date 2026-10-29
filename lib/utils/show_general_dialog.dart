@@ -9,6 +9,7 @@ Future<void> showArDriveDialog(
   bool useRootNavigator = true,
   required Widget content,
   Color? barrierColor,
+  EdgeInsets? insetPadding,
 }) async {
   final activityTracker = context.read<ActivityTracker>();
   activityTracker.setShowingAnyDialog(true);
@@ -16,6 +17,7 @@ Future<void> showArDriveDialog(
     context,
     content: content,
     barrierColor: barrierColor,
+    insetPadding: insetPadding,
     barrierDismissible: barrierDismissible,
     useRootNavigator: useRootNavigator,
   ).whenComplete(() => activityTracker.setShowingAnyDialog(false));

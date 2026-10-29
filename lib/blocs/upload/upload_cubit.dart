@@ -258,12 +258,12 @@ class UploadCubit extends Cubit<UploadState> {
       ));
     }
 
-    emit(UploadComplete());
+    emit(UploadComplete(numberOfFiles: _files.length));
   }
 
   void cancelManifestsUpload() {
     _isManifestsUploadCancelled = true;
-    emit(UploadComplete());
+    emit(UploadComplete(numberOfFiles: _files.length));
   }
 
   /// License forms
@@ -1137,7 +1137,7 @@ class UploadCubit extends Cubit<UploadState> {
           await prepareManifestUpload();
         }
 
-        emit(UploadComplete());
+        emit(UploadComplete(numberOfFiles: _files.length));
 
         unawaited(_profileCubit.refreshBalance());
       },
@@ -1203,11 +1203,16 @@ class UploadCubit extends Cubit<UploadState> {
           await prepareManifestUpload();
         }
 
-        emit(UploadComplete(dataTxIds: [
+        final uploaded = [
           for (final task in tasks)
             for (final item in task.content ?? const [])
-              if (item is ARFSFileUploadMetadata) item.dataTxId!,
-        ]));
+              if (item is ARFSFileUploadMetadata) item,
+        ];
+        emit(UploadComplete(
+          dataTxIds: [for (final item in uploaded) item.dataTxId!],
+          fileIds: [for (final item in uploaded) item.id],
+          numberOfFiles: _files.length,
+        ));
 
         PlausibleEventTracker.trackUploadSuccess();
       },
@@ -1281,9 +1286,16 @@ class UploadCubit extends Cubit<UploadState> {
   /// transaction before sending its data, and only this tab holds what is
   /// needed to send the data, so closing it then leaves a paid transaction
   /// with nothing in it.
+  /// The upload as it was last reviewed, for asking for Turbo Credits after
+  /// Turbo refused it: the files, and what they cost.
+  UploadReady? get lastReadyState => _lastReadyState;
+  UploadReady? _lastReadyState;
+
   @override
   void onChange(Change<UploadState> change) {
     super.onChange(change);
+    final next = change.nextState;
+    if (next is UploadReady) _lastReadyState = next;
     if (isWalletPaidUploadAtRisk(change.nextState)) {
       holdLeavePageGuard(this);
     } else {

@@ -430,6 +430,15 @@ class UploadPaymentEvaluator {
 
     TurboBalanceInterface turboBalance;
 
+    // Each preparation asks again. This used to stay false for the rest of the
+    // session after one failed price or balance request, so trying again
+    // could never bring Turbo back.
+    _isTurboAvailableToUploadAllFiles = true;
+
+    // Whether Turbo's price or the balance could not be read, for this
+    // preparation only: preparations can overlap, so it is not a field.
+    var turboUnreachable = false;
+
     // Only needs the wallet, so start it now and let it run concurrently with
     // the balance, size and cost round-trips below — it is awaited where the
     // free status is computed. getFreeAllowance never throws (see its
@@ -441,7 +450,10 @@ class UploadPaymentEvaluator {
     // independent operations (1 network call + 2 local computations). If the
     // balance call fails turbo is marked unavailable inside _getTurboBalance.
     final parallelResults = await Future.wait([
-      _getTurboBalance(canUseTurbo: _canUseTurbo),
+      _getTurboBalance(
+        canUseTurbo: _canUseTurbo,
+        onFailure: () => turboUnreachable = true,
+      ),
       sizeUtils.getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles),
       sizeUtils.getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles),
     ]);
@@ -479,7 +491,9 @@ class UploadPaymentEvaluator {
             totalSize: turboBundleSizes,
           );
         } catch (e) {
+          logger.w('Could not get the Turbo price for this upload: $e');
           _isTurboAvailableToUploadAllFiles = false;
+          turboUnreachable = true;
           return UploadCostEstimate.zero();
         }
       }();
@@ -513,6 +527,10 @@ class UploadPaymentEvaluator {
         ),
         byteCount: turboBundleSizes,
         allowance: freeAllowance,
+        // An allowance that could not be read is not a promise: the upload
+        // review shows the price instead, and never starts an upload that
+        // is neither free nor paid for.
+        unknownIsFree: false,
       );
     }
 
@@ -531,6 +549,7 @@ class UploadPaymentEvaluator {
             _maxFreeItemBytes,
             _isTurboAvailableToUploadAllFiles,
             freeAllowance,
+            unknownAllowanceIsFree: false,
           );
 
     if (uploadMethod == UploadMethod.turbo) {
@@ -550,6 +569,7 @@ class UploadPaymentEvaluator {
       freeStatus: freeStatus,
       totalSize: totalSize,
       turboBalance: turboBalance,
+      turboUnreachable: isUploadEligibleToTurbo && turboUnreachable,
     );
   }
 
@@ -573,6 +593,7 @@ class UploadPaymentEvaluator {
 
   Future<TurboBalanceInterface> _getTurboBalance({
     required bool canUseTurbo,
+    void Function()? onFailure,
   }) async {
     if (!canUseTurbo) {
       _isTurboAvailableToUploadAllFiles = false;
@@ -592,6 +613,7 @@ class UploadPaymentEvaluator {
         stacktrace,
       );
       _isTurboAvailableToUploadAllFiles = false;
+      onFailure?.call();
       return TurboBalanceInterface(
         balance: BigInt.zero,
         paidBy: [],
@@ -604,10 +626,12 @@ class UploadPaymentEvaluator {
     int turboBundleSizes,
     int allowedSizeForTurbo,
     bool isTurboAvailableToUploadAllFiles,
-    TurboFreeAllowance freeAllowance,
-  ) async {
+    TurboFreeAllowance freeAllowance, {
+    bool unknownAllowanceIsFree = true,
+  }) async {
     bool isFreeUploadPossibleUsingTurbo =
         turboBundleSizes <= allowedSizeForTurbo &&
+            (freeAllowance.isKnown || unknownAllowanceIsFree) &&
             freeAllowance.covers(turboBundleSizes);
 
     if (isFreeUploadPossibleUsingTurbo) {
@@ -657,6 +681,11 @@ class UploadPaymentInfo {
   /// for the booleans below, which cannot therefore contradict each other.
   final FreeUploadStatus freeStatus;
 
+  /// Turbo's price for this upload, or the wallet's balance, could not be
+  /// read. [turboCostEstimate] is then a zero placeholder and
+  /// [turboBalance] may be one too, so neither may be shown or compared.
+  final bool turboUnreachable;
+
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
     required this.isUploadEligibleToTurbo,
@@ -666,6 +695,7 @@ class UploadPaymentInfo {
     required this.totalSize,
     required this.isTurboAvailable,
     required this.turboBalance,
+    this.turboUnreachable = false,
   });
 
   bool get isFreeUploadPossibleUsingTurbo =>

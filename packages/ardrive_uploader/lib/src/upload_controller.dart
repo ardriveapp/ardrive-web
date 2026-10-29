@@ -91,11 +91,14 @@ class _UploadController implements UploadController {
 
   final UploadProgress _uploadProgress = UploadProgress.notStarted();
 
+  /// The listener [init] put on the current progress stream.
+  StreamSubscription? _progressSubscription;
+
   void init() {
     _isCanceled = false;
     late StreamSubscription subscription;
 
-    subscription =
+    subscription = _progressSubscription =
         _progressStream.stream.debounceTime(Duration(milliseconds: 100)).listen(
       (event) async {
         if (_isCanceled) {
@@ -271,6 +274,11 @@ class _UploadController implements UploadController {
   /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
   @override
   Future<void> retryFailedTasks(Wallet wallet) async {
+    // Stop listening to the last attempt before closing its stream. A stream
+    // that was still open, as it is after Turbo refuses payment, would
+    // otherwise report done once the retried tasks are in place, and the
+    // retry would be reported finished before it had sent anything.
+    await _progressSubscription?.cancel();
     _progressStream.close();
     _progressStream = StreamController.broadcast();
 

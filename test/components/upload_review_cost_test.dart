@@ -56,22 +56,29 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('a Turbo upload shows its cost in credits', (tester) async {
+  testWidgets('a Turbo upload shows its cost in US dollars', (tester) async {
     await pump(tester, info());
 
-    expect(find.text('Cost: 0.0078 credits'), findsOneWidget);
+    expect(find.text('\$1.00 USD', findRichText: true), findsOneWidget);
+    expect(
+        find.text(
+            'Paid once with Turbo Credits. Saved for good, no subscription.'),
+        findsOneWidget);
   });
 
   testWidgets('a wallet upload shows its cost in AR', (tester) async {
     await pump(tester, info(method: UploadMethod.ar));
 
-    expect(find.text('Cost: 0.0079 AR'), findsOneWidget);
+    expect(find.text('0.0079 AR', findRichText: true), findsOneWidget);
   });
 
-  testWidgets('a free upload shows the free message', (tester) async {
+  testWidgets('a free upload says Free, and why', (tester) async {
     await pump(tester, info(freeStatus: FreeUploadStatus.free));
 
-    expect(find.textContaining('Cost: 0 credits'), findsOneWidget);
-    expect(find.textContaining('are free with Turbo'), findsOneWidget);
+    expect(find.text('Free', findRichText: true), findsOneWidget);
+    expect(
+        find.text(
+            'Covered by your free upload allowance. Saved for good, paid once.'),
+        findsOneWidget);
   });
 }

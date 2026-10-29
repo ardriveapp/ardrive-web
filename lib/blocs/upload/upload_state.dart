@@ -274,10 +274,20 @@ class UploadFailure extends UploadState {
 }
 
 class UploadComplete extends UploadState {
-  UploadComplete({this.dataTxIds = const []});
+  UploadComplete({
+    this.dataTxIds = const [],
+    this.fileIds = const [],
+    this.numberOfFiles = 0,
+  });
 
   /// The data transactions of the files uploaded, for a name to point at.
   final List<String> dataTxIds;
+
+  /// The ids of the files uploaded, for sharing one.
+  final List<String> fileIds;
+
+  /// How many files were uploaded, for saying so. Zero when unknown.
+  final int numberOfFiles;
 }
 
 class UploadingManifests extends UploadState {

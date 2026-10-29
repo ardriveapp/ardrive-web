@@ -15,6 +15,7 @@ class UploadPaymentMethodView extends StatefulWidget {
     required this.onError,
     this.onTurboTopupSucess,
     this.loadingIndicator,
+    this.showBalanceMessages = true,
   });
 
   final Function(UploadMethod, UploadPaymentMethodInfo, bool)
@@ -22,6 +23,9 @@ class UploadPaymentMethodView extends StatefulWidget {
   final Function() onError;
   final Function()? onTurboTopupSucess;
   final Widget? loadingIndicator;
+
+  /// See [PaymentMethodSelector.showBalanceMessages].
+  final bool showBalanceMessages;
 
   @override
   State<UploadPaymentMethodView> createState() =>
@@ -90,6 +94,7 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
           return PaymentMethodSelector(
             uploadMethodInfo: state.paymentMethodInfo,
             showCongestionWarning: _showCongestionWarning,
+            showBalanceMessages: widget.showBalanceMessages,
             onArSelect: () {
               context.read<UploadPaymentMethodBloc>().add(
                     const ChangeUploadPaymentMethod(

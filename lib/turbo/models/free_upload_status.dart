@@ -24,6 +24,12 @@ enum FreeUploadStatus {
   /// Too large for the free tier (or Turbo is unavailable). The remedy is a
   /// smaller item, not more allowance.
   notEligible,
+
+  /// Small enough to qualify, but the wallet's allowance could not be read, and
+  /// the caller asked for that to count as not free (see
+  /// [freeUploadStatusFor]'s `unknownIsFree`). The upload review does: it shows
+  /// the price rather than promise free on a guess.
+  unknown,
 }
 
 /// Derives the free-tier status for an upload of [byteCount] bytes.
@@ -42,16 +48,20 @@ enum FreeUploadStatus {
 /// us the upload exceeds what is free — never the exact split. The 402 on
 /// upload remains the authority on what is actually charged.
 ///
-/// An unknown allowance yields [FreeUploadStatus.free] rather than a paid
-/// status, because [TurboFreeAllowance.covers] fails open: if we could not
-/// check, we fall back to the size-only behaviour instead of telling a user
-/// with allowance left that they must pay.
+/// An unknown allowance yields [FreeUploadStatus.free] by default, because
+/// [TurboFreeAllowance.covers] fails open: if we could not check, we fall back
+/// to the size-only behaviour instead of telling a user with allowance left
+/// that they must pay. With [unknownIsFree] false it yields
+/// [FreeUploadStatus.unknown] instead, for a caller that would rather show a
+/// price than promise free without knowing.
 FreeUploadStatus freeUploadStatusFor({
   required bool isSizeEligible,
   required int byteCount,
   required TurboFreeAllowance allowance,
+  bool unknownIsFree = true,
 }) {
   if (!isSizeEligible) return FreeUploadStatus.notEligible;
+  if (!allowance.isKnown && !unknownIsFree) return FreeUploadStatus.unknown;
   if (!allowance.isExhaustedFor(byteCount)) return FreeUploadStatus.free;
 
   // Known not to cover the upload. If a positive allowance remains, the upload

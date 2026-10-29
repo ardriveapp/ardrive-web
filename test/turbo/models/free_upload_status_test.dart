@@ -16,6 +16,28 @@ void main() {
       );
     });
 
+    test('is unknown, not free, for an unreadable allowance when asked', () {
+      expect(
+        freeUploadStatusFor(
+          isSizeEligible: true,
+          byteCount: 100,
+          allowance: const TurboFreeAllowance.unknown(),
+          unknownIsFree: false,
+        ),
+        FreeUploadStatus.unknown,
+      );
+      // Size still decides first.
+      expect(
+        freeUploadStatusFor(
+          isSizeEligible: false,
+          byteCount: 100,
+          allowance: const TurboFreeAllowance.unknown(),
+          unknownIsFree: false,
+        ),
+        FreeUploadStatus.notEligible,
+      );
+    });
+
     test('is free when the allowance covers the upload', () {
       expect(
         freeUploadStatusFor(

@@ -104,12 +104,15 @@ class ModalAction {
   final ButtonVariant? variant;
 }
 
+/// [insetPadding] is the least space around the dialog, Flutter's 40 by 24
+/// when not given. A dialog drawn to fill a phone less a 16 margin passes 16.
 Future<void> showAnimatedDialog(
   BuildContext context, {
   bool barrierDismissible = true,
   bool useRootNavigator = true,
   required Widget content,
   Color? barrierColor,
+  EdgeInsets? insetPadding,
 }) {
   final lowScreenWarning = MediaQuery.of(context).size.height < 600;
 
@@ -134,7 +137,7 @@ Future<void> showAnimatedDialog(
       return Dialog(
         insetPadding: lowScreenWarning
             ? const EdgeInsets.symmetric(horizontal: 0, vertical: 8)
-            : null,
+            : insetPadding,
         elevation: 0,
         backgroundColor: Colors.transparent,
         child: content,
