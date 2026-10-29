@@ -70,6 +70,10 @@
       }
     }
   },
+  "whatsNew": "What's new",
+  "@whatsNew": {
+    "description": "Help's link to the release notes for the version beside it"
+  },
   "arBalance": "Balance",
   "@arBalance": {
     "description": "Balance in AR"

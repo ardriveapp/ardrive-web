@@ -32,6 +32,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 /// The nav's way back to the drives list.
@@ -209,12 +210,9 @@ class _AppSideBarState extends State<AppSideBar> {
                   height: 16,
                 ),
               ],
-              const Padding(
-                padding: EdgeInsets.only(left: 20.0),
-                child: AppVersionWidget(),
-              ),
+              // The version is in Help.
               const SizedBox(
-                height: 32,
+                height: 16,
               ),
             ],
           ),
@@ -464,18 +462,9 @@ class _AppSideBarState extends State<AppSideBar> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 8,
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(left: 5.0),
-                          child: AppVersionWidget(),
-                        ),
-                      ],
-                    ),
+                    // Where the version was: it is in Help now, and the
+                    // collapse button keeps its place on the right.
+                    const SizedBox.shrink(),
                     AnimatedScale(
                       duration: const Duration(milliseconds: 200),
                       scale: _isExpanded ? 1 : 0,
@@ -504,13 +493,6 @@ class _AppSideBarState extends State<AppSideBar> {
                     _isExpanded = !_isExpanded;
                   });
                 },
-              ),
-              const SizedBox(
-                height: 32,
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: AppVersionWidget(),
               ),
               const SizedBox(
                 height: 32,
@@ -904,12 +886,18 @@ Future<void> showSupportModal({
                 ),
               ),
             ),
+            const SizedBox(height: 24),
+            const AppVersionHelpLine(),
           ],
         ),
       ),
       actions: [
         ModalAction(
           action: () async {
+            // The logs say which version wrote them: support asks first.
+            final flavor = appFlavorOf(context);
+            final info = await PackageInfo.fromPlatform();
+            logger.i('ArDrive ${appVersionText(info)} (${flavor.name})');
             await logger.exportLogs(info: logExportInfo);
             if (context.mounted) {
               showArDriveDialog(

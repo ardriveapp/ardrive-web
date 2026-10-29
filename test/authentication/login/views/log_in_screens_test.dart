@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/authentication/login/views/enter_recovery_phrase_view.dart';
+import 'package:ardrive/authentication/login/views/landing_view.dart';
 import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
@@ -109,6 +110,14 @@ void main() {
 
   List<LoginEvent> added() =>
       verify(() => loginBloc.add(captureAny())).captured.cast<LoginEvent>();
+
+  /// The version is in Help, not under "Open a drive without logging in".
+  testWidgets('the landing says no version', (tester) async {
+    await pump(tester, const LandingView());
+
+    expect(find.byKey(const Key('openDriveLandingLink')), findsOneWidget);
+    expect(find.textContaining('Version'), findsNothing);
+  });
 
   group('which panel', () {
     test('the account on this device is unlocked in the panel', () {
