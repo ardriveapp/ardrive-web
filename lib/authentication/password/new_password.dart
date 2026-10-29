@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// How strong a new account's password looks, from its length and the kinds
@@ -114,6 +115,20 @@ bool _isRepetitive(String password) {
 /// Words from the EFF long list (7,776 words, CC BY 3.0, see
 /// `assets/wordlists/LICENSES.md`).
 const effWordlistAsset = 'assets/wordlists/eff_large_wordlist.txt';
+
+/// The word list's licence and credit, shipped beside it.
+const effWordlistLicenseAsset = 'assets/wordlists/LICENSES.md';
+
+/// Credits the word list in the app's licences, read from the file shipped
+/// beside it.
+void registerWordlistLicense() {
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(
+      const ['EFF long word list'],
+      await rootBundle.loadString(effWordlistLicenseAsset),
+    );
+  });
+}
 
 /// Six words is about 77 bits: out of reach even if the method and the list
 /// are known.

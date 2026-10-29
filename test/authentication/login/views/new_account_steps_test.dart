@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/creating_account_view.dart';
+import 'package:ardrive/authentication/password/breached_password.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/recovery_phrase_view.dart';
@@ -31,6 +32,11 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const CleanProfileName());
     registerFallbackValue(const CreateNewWallet());
+    registerFallbackValue(CreatePassword(
+        password: 'p',
+        wallet: getTestWallet(),
+        isNewUser: true,
+        showWalletCreated: true));
   });
 
   setUp(() {
@@ -86,15 +92,58 @@ void main() {
   });
 
   group('choose a password, new account', () {
-    Widget dialog({bool isNewUser = true, bool retrying = false}) =>
+    Widget dialog({
+      bool isNewUser = true,
+      bool retrying = false,
+      String? mnemonic = _mnemonic,
+      bool? breached = false,
+    }) =>
         SecureYourWalletWidget(
           loginBloc: loginBloc,
           wallet: getTestWallet(),
-          mnemonic: _mnemonic,
+          mnemonic: mnemonic,
           isNewUser: isNewUser,
           showWalletCreated: true,
           retrying: retrying,
+          breachCheck: _FakeBreachCheck(breached),
         );
+
+    Future<void> submit(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Continue'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('a password in a known breach is refused', (tester) async {
+      await pump(tester, dialog(breached: true));
+      await enterBoth(tester, 'my cat likes tuna fish');
+      await submit(tester);
+
+      expect(
+          find.text('This password has shown up in a data breach. '
+              'Choose another.'),
+          findsOneWidget);
+      verifyNever(() => loginBloc.add(any(that: isA<CreatePassword>())));
+    });
+
+    testWidgets('goes ahead when the breach check cannot answer',
+        (tester) async {
+      await pump(tester, dialog(breached: null));
+      await enterBoth(tester, 'my cat likes tuna fish');
+      await submit(tester);
+
+      verify(() => loginBloc.add(any(that: isA<CreatePassword>()))).called(1);
+    });
+
+    testWidgets('a returning wallet with no drives keeps any password',
+        (tester) async {
+      // A keyfile, browser wallet or Solana sign-in to a wallet with no
+      // drives yet: new to drives, not a new account.
+      await pump(tester, dialog(mnemonic: null));
+      await enterBoth(tester, 'abc');
+      expect(find.byKey(const Key('suggestPasswordButton')), findsNothing);
+      expect(continueEnabled(tester), isTrue);
+    });
 
     testWidgets('says why it is asking again after a failed try',
         (tester) async {
@@ -194,4 +243,16 @@ void main() {
       verify(() => loginBloc.add(any(that: isA<FinishOnboarding>()))).called(1);
     });
   });
+}
+
+class _FakeBreachCheck implements BreachedPasswordCheck {
+  _FakeBreachCheck(this.answer);
+
+  final bool? answer;
+
+  @override
+  Duration get timeout => Duration.zero;
+
+  @override
+  Future<bool?> isBreached(String password) async => answer;
 }

@@ -242,6 +242,7 @@ flutter:
     - assets/images/login/
     - assets/images/login/bento_box/
     - assets/wordlists/eff_large_wordlist.txt
+    - assets/wordlists/LICENSES.md
     - assets/images/icons/
     - assets/images/crypto/
     - assets/images/wallets/

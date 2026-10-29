@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/authentication/password/breached_password.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -28,7 +29,8 @@ class SecureYourWalletWidget extends StatefulWidget {
       this.mnemonic,
       required this.isNewUser,
       required this.showWalletCreated,
-      this.retrying = false});
+      this.retrying = false,
+      this.breachCheck});
 
   final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;
@@ -40,6 +42,9 @@ class SecureYourWalletWidget extends StatefulWidget {
 
   /// The last try to finish with this password could not; says so.
   final bool retrying;
+
+  /// Asks whether a typed password is in a known breach. Replaced in tests.
+  final BreachedPasswordCheck? breachCheck;
 
   @override
   State<SecureYourWalletWidget> createState() => _SecureYourWalletWidgetState();
@@ -57,9 +62,17 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   String? _suggestion;
   PasswordStrength? _strength;
 
-  /// New to ArDrive: the password must be strong, and one can be suggested.
-  /// Anyone else keeps whatever password they have.
-  bool get _rulesApply => widget.isNewUser;
+  /// An account being made now, whose password locks everything it will
+  /// keep: one from Sign up, or a new MetaMask account, whose wallet is
+  /// derived from it. It must be strong and not in a known breach, and one
+  /// can be suggested. Anyone else, including a returning wallet that has no
+  /// drives yet, keeps whatever password they have.
+  bool get _rulesApply =>
+      widget.isNewUser &&
+      (widget.mnemonic != null || widget.derivedEthWallet != null);
+
+  /// A password the breach check found, so the field says so until changed.
+  String? _breachedPassword;
 
   /// An account made here, with nothing to show yet: no wallet card.
   bool get _isFreshAccount =>
@@ -263,6 +276,10 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       if (value != _suggestion) _suggestion = null;
                     });
                     final s = appLocalizationsOf(context);
+                    if (strong && value == _breachedPassword) {
+                      setState(() => _isPasswordValid = false);
+                      return s.newPasswordBreached;
+                    }
                     return switch (strength) {
                       PasswordStrength.tooShort => s.newPasswordTooShort,
                       PasswordStrength.weak => s.newPasswordWeak,
@@ -363,7 +380,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     );
   }
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
     final isValid = _formKey.currentState!.validateSync();
 
     if (!isValid) {
@@ -382,13 +399,29 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
       return;
     }
 
-    PlausibleEventTracker.trackPageview(
-      page: PlausiblePageView.createdAndConfirmedPassword,
-    );
-
     setState(() {
       _isProcessing = true;
     });
+
+    // A suggestion is random and never in a breach; one typed may be.
+    final password = _passwordController.text;
+    if (_rulesApply && password != _suggestion) {
+      final breached = await (widget.breachCheck ?? BreachedPasswordCheck())
+          .isBreached(password);
+      if (!mounted) return;
+      if (breached == true) {
+        setState(() {
+          _isProcessing = false;
+          _breachedPassword = password;
+        });
+        _formKey.currentState!.validateSync();
+        return;
+      }
+    }
+
+    PlausibleEventTracker.trackPageview(
+      page: PlausiblePageView.createdAndConfirmedPassword,
+    );
 
     if (widget.wallet is EthereumProviderWallet) {
       Navigator.of(context).pop();
