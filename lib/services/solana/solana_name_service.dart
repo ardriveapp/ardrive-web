@@ -66,8 +66,7 @@ class SolanaNameService {
             .timeout(const Duration(seconds: 5));
 
         if (picResponse.statusCode == 200) {
-          final picData =
-              jsonDecode(picResponse.body) as Map<String, dynamic>;
+          final picData = jsonDecode(picResponse.body) as Map<String, dynamic>;
           if (picData['s'] == 'ok' && picData['result'] is String) {
             final base64Value =
                 (picData['result'] as String).replaceAll('\x00', '');

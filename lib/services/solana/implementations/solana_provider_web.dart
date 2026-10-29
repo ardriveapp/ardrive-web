@@ -108,10 +108,13 @@ Future<Uint8List> signMessage(String message) async {
   }
 }
 
-Future<void> disconnect() async {
+Future<void> disconnect({String? provider}) async {
   try {
-    await _callBridgeAsync('disconnectSolanaWallet', [_activeProvider]);
-    _activeProvider = null;
+    await _callBridgeAsync(
+        'disconnectSolanaWallet', [provider ?? _activeProvider]);
+    if (provider == null || provider == _activeProvider) {
+      _activeProvider = null;
+    }
   } catch (e) {
     logger.w('Error disconnecting Solana wallet: $e');
   }

@@ -35,10 +35,13 @@ import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
 import 'creating_account_view.dart';
+import 'enter_recovery_phrase_view.dart';
 import 'landing_view.dart';
+import 'log_in_view.dart';
 import 'recovery_phrase_view.dart';
 import 'modals/enter_your_password_modal.dart';
-import 'prompt_wallet_view.dart';
+import 'wallet_wait_view.dart';
+import 'welcome_back_view.dart';
 
 class LoginPage extends StatefulWidget {
   final bool gettingStarted;
@@ -102,140 +105,7 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
 
-          if (loginState is LoginLoadingIfUserAlreadyExists) {
-            showArDriveDialog(
-              context,
-              barrierDismissible: false,
-              content: ProgressDialog(
-                title: 'Loading wallet details...',
-                progressDescription: Text(
-                  'This may take a moment.',
-                  style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color:
-                        ArDriveTheme.of(context).themeData.colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ),
-            );
-
-            return;
-          }
-
-          if (loginState is LoginLoadingIfUserAlreadyExistsSuccess) {
-            Navigator.of(context).pop();
-            return;
-          }
-
-          if (loginState is LoginSuccess) {
-            logger.setContext(logger.context
-                .copyWith(userAddress: loginState.user.walletAddress));
-            context.read<ProfileNameBloc>().add(LoadProfileName());
-          }
-
-          if (loginState is PromptPassword) {
-            showEnterYourPasswordDialog(
-              context: context,
-              loginBloc: context.read<LoginBloc>(),
-              wallet: loginState.wallet,
-              derivedEthWallet: loginState.derivedEthWallet,
-              alreadyLoggedIn: loginState.alreadyLoggedIn,
-              isPasswordInvalid: loginState.isPasswordInvalid,
-              sourceWalletAddress: loginState.sourceWalletAddress,
-            );
-            return;
-          } else if (loginState is CreateNewPassword) {
-            showSecureYourPasswordDialog(
-                context: context,
-                loginBloc: context.read<LoginBloc>(),
-                wallet: loginState.wallet,
-                mnemonic: loginState.mnemonic,
-                isNewUser: loginState.isNewUser,
-                showWalletCreated: loginState.showWalletCreated,
-                retrying: loginState.retrying,
-                derivedEthWallet: loginState.derivedEthWallet,
-                sourceWalletAddress: loginState.sourceWalletAddress);
-            return;
-          } else if (loginState is LoginShowLoader) {
-            showLoaderDialog(context: context);
-            return;
-          } else if (loginState is LoginShowBlockingDialog) {
-            showBlockingMessageDialog(
-                context: context, message: loginState.message);
-            return;
-          } else if (loginState is LoginCloseBlockingDialog) {
-            Navigator.of(context).pop();
-          } else if (loginState is LoginFailure) {
-            // TODO: Verify if the error is `NoConnectionException` and show an
-            /// appropriate message after validating with UI/UX
-            if (loginState.error is WalletMismatchException) {
-              showErrorDialog(
-                context: context,
-                title: appLocalizationsOf(context).loginFailed,
-                message: appLocalizationsOf(context)
-                    .arConnectWalletDoestNotMatchArDriveWallet,
-              );
-              return;
-            } else if (loginState.error is BiometricException) {
-              showBiometricExceptionDialogForException(
-                  context, loginState.error as BiometricException, () {});
-              return;
-            } else if (loginState.error
-                is ArConnectVersionNotSupportedException) {
-              showErrorDialog(
-                context: context,
-                title: appLocalizationsOf(context).loginFailed,
-                message:
-                    'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
-              );
-              return;
-            }
-
-            // A new account goes straight back to its password step, for
-            // the same wallet, which says what happened. An error dialog
-            // here would be closed at once by the password dialog closing.
-            final loginBloc = context.read<LoginBloc>();
-            if (loginBloc.hasSignUpToRetry) {
-              loginBloc.add(const RetrySignUpPassword());
-              return;
-            }
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              message: appLocalizationsOf(context).pleaseTryAgain,
-            );
-          } else if (loginState is LoginUnknownFailure) {
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              showShareLogsButton: true,
-              message:
-                  'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
-            );
-          } else if (loginState is LoginSuccess) {
-            final profileType = loginState.user.profileType;
-            logger.d('Login Success, unlocking default profile');
-
-            context.read<ProfileCubit>().unlockDefaultProfile(
-                  loginState.user,
-                  profileType,
-                );
-          } else if (loginState is GatewayLoginFailure) {
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              message:
-                  'Unable to connect to the server. Please check your connection and try again.',
-            );
-          } else if (loginState
-              is LoginPasswordFailedWithPrivateDriveNotFound) {
-            showErrorDialog(
-              context: context,
-              title: appLocalizationsOf(context).loginFailed,
-              message:
-                  'Your drive is still being confirmed. Please wait a few minutes and try again.',
-            );
-          }
+          handleLoginState(context, loginState);
         },
         buildWhen: (previous, current) {
           return current is! LoginCreatePasswordComplete;
@@ -504,47 +374,75 @@ class _PhoneView extends StatelessWidget {
                   child: SizedBox(
                     width: constraints.maxWidth,
                     height: math.max(520, constraints.maxHeight - 16),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: _buildContent(
-                            context,
-                            loginState: loginState,
-                            globalKey: globalKey,
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SettingsSubmenu(
-                                child: ArDriveClickArea(
-                                  tooltip: 'Advanced settings',
-                                  child: Icon(
-                                    Icons.settings,
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colorTokens
-                                        .iconLow,
+                    // The panel's own inset, so a step's fields and buttons
+                    // don't run into its border.
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Stack(
+                        children: [
+                          // Scrolls when a step is taller than the panel,
+                          // as on a narrow phone with the keyboard up, and
+                          // keeps clear of the buttons in the corner.
+                          Positioned.fill(
+                            child: LayoutBuilder(
+                              builder: (context, box) => SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 40),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: math.max(0, box.maxHeight - 80),
+                                  ),
+                                  child: Center(
+                                    child: _buildContent(
+                                      context,
+                                      loginState: loginState,
+                                      globalKey: globalKey,
+                                    ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              const IconThemeSwitcher(),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SettingsSubmenu(
+                                  child: ArDriveClickArea(
+                                    tooltip: 'Advanced settings',
+                                    child: Icon(
+                                      Icons.settings,
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .iconLow,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const IconThemeSwitcher(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 // The whole bento, after the panel: on a phone the way in
-                // comes first.
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: TilesView(),
+                // comes first. A step past the first panel takes the whole
+                // screen, so the bento is for the first panel only.
+                BlocBuilder<LoginBloc, LoginState>(
+                  buildWhen: (_, current) => loginPanelRebuildsOn(current),
+                  builder: (context, state) =>
+                      state is LoginLanding || state is LoginLoading
+                          ? const Padding(
+                              padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                              child: TilesView(),
+                            )
+                          : const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -555,15 +453,163 @@ class _PhoneView extends StatelessWidget {
   }
 }
 
+/// What the login page does for [loginState] besides drawing the panel:
+/// dialogs, errors and the profile.
+@visibleForTesting
+void handleLoginState(BuildContext context, LoginState loginState) {
+  if (loginState is LoginLoadingIfUserAlreadyExists) {
+    showArDriveDialog(
+      context,
+      barrierDismissible: false,
+      content: ProgressDialog(
+        title: 'Loading wallet details...',
+        progressDescription: Text(
+          'This may take a moment.',
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+        ),
+      ),
+    );
+
+    return;
+  }
+
+  if (loginState is LoginLoadingIfUserAlreadyExistsSuccess) {
+    Navigator.of(context).pop();
+    return;
+  }
+
+  if (loginState is LoginSuccess) {
+    logger.setContext(
+        logger.context.copyWith(userAddress: loginState.user.walletAddress));
+    context.read<ProfileNameBloc>().add(LoadProfileName());
+  }
+
+  if (loginState is PromptPassword) {
+    // The account already on this device is unlocked in the panel,
+    // Welcome back; a dialog would cover it.
+    final wallet = loginState.wallet;
+    if (loginState.alreadyLoggedIn || wallet == null) return;
+    showEnterYourPasswordDialog(
+      context: context,
+      loginBloc: context.read<LoginBloc>(),
+      wallet: wallet,
+      derivedEthWallet: loginState.derivedEthWallet,
+      isPasswordInvalid: loginState.isPasswordInvalid,
+      sourceWalletAddress: loginState.sourceWalletAddress,
+    );
+    return;
+  } else if (loginState is CreateNewPassword) {
+    showSecureYourPasswordDialog(
+        context: context,
+        loginBloc: context.read<LoginBloc>(),
+        wallet: loginState.wallet,
+        mnemonic: loginState.mnemonic,
+        isNewUser: loginState.isNewUser,
+        showWalletCreated: loginState.showWalletCreated,
+        retrying: loginState.retrying,
+        derivedEthWallet: loginState.derivedEthWallet,
+        sourceWalletAddress: loginState.sourceWalletAddress);
+    return;
+  } else if (loginState is LoginShowLoader) {
+    showLoaderDialog(context: context);
+    return;
+  } else if (loginState is LoginShowBlockingDialog) {
+    showBlockingMessageDialog(context: context, message: loginState.message);
+    return;
+  } else if (loginState is LoginCloseBlockingDialog) {
+    Navigator.of(context).pop();
+  } else if (loginState is LoginFailure) {
+    // TODO: Verify if the error is `NoConnectionException` and show an
+    /// appropriate message after validating with UI/UX
+    if (loginState.error is WalletMismatchException) {
+      showErrorDialog(
+        context: context,
+        title: appLocalizationsOf(context).loginFailed,
+        message: appLocalizationsOf(context)
+            .arConnectWalletDoestNotMatchArDriveWallet,
+      );
+      return;
+    } else if (loginState.error is BiometricException) {
+      showBiometricExceptionDialogForException(
+          context, loginState.error as BiometricException, () {});
+      return;
+    } else if (loginState.error is ArConnectVersionNotSupportedException) {
+      showErrorDialog(
+        context: context,
+        title: appLocalizationsOf(context).loginFailed,
+        message:
+            'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
+      );
+      return;
+    }
+
+    // A new account goes straight back to its password step, for
+    // the same wallet, which says what happened. An error dialog
+    // here would be closed at once by the password dialog closing.
+    final loginBloc = context.read<LoginBloc>();
+    if (loginBloc.hasSignUpToRetry) {
+      loginBloc.add(const RetrySignUpPassword());
+      return;
+    }
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      message: appLocalizationsOf(context).pleaseTryAgain,
+    );
+  } else if (loginState is LoginUnknownFailure) {
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      showShareLogsButton: true,
+      message:
+          'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
+    );
+  } else if (loginState is LoginSuccess) {
+    final profileType = loginState.user.profileType;
+    logger.d('Login Success, unlocking default profile');
+
+    context.read<ProfileCubit>().unlockDefaultProfile(
+          loginState.user,
+          profileType,
+        );
+  } else if (loginState is GatewayLoginFailure) {
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      message:
+          'Unable to connect to the server. Please check your connection and try again.',
+    );
+  } else if (loginState is LoginPasswordFailedWithPrivateDriveNotFound) {
+    showErrorDialog(
+      context: context,
+      title: appLocalizationsOf(context).loginFailed,
+      message:
+          'Your drive is still being confirmed. Please wait a few minutes and try again.',
+    );
+  }
+}
+
 /// Whether the sign-in panel redraws for [current]. Dialogs, loaders and
 /// transient states leave the panel as it is.
 @visibleForTesting
 bool loginPanelRebuildsOn(LoginState current) {
-  final isFailure = current is LoginFailure;
+  final isFailure = current is LoginFailure ||
+      current is LoginUnknownFailure ||
+      current is GatewayLoginFailure ||
+      current is LoginPasswordFailedWithPrivateDriveNotFound;
   final isSuccess = current is LoginSuccess;
   final isLoading = current is LoginLoading ||
       current is LoginShowLoader ||
+      current is LoginShowBlockingDialog ||
       current is LoginCloseBlockingDialog;
+  // A password for a wallet just chosen is asked in a dialog over the panel
+  // it was chosen on. Only the account already on this device is unlocked
+  // in the panel itself.
+  final isPasswordDialog =
+      current is PromptPassword && !current.alreadyLoggedIn;
   final isPasswordChecking =
       current is LoginCheckingPassword || current is LoginPasswordFailed;
   // The password dialog opens over whatever the panel shows: for a new
@@ -578,6 +624,7 @@ bool loginPanelRebuildsOn(LoginState current) {
   return !(isFailure ||
       isSuccess ||
       isLoading ||
+      isPasswordDialog ||
       isPasswordChecking ||
       isChoosingPassword ||
       isPasswordCreated ||
@@ -592,44 +639,59 @@ Widget _buildContent(
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
     buildWhen: (previous, current) => loginPanelRebuildsOn(current),
-    builder: (context, loginState) {
-      late Widget content;
-      final loginBloc = context.read<LoginBloc>();
-
-      if (loginState is LoginSuccess) {
-        content = const MaxDeviceSizesConstrainedBox(
-          child: LoginCard(
-            content: Center(
-              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
-            ),
-          ),
-        );
-      } else if (loginState is LoginDownloadGeneratedWallet &&
-          loginState.mnemonic != null) {
-        content = RecoveryPhraseView(
-          key: const Key('recoveryPhraseView'),
-          mnemonic: loginState.mnemonic!,
-          wallet: loginState.wallet,
-        );
-      } else if (loginState is LoginCreatingAccount) {
-        content = const CreatingAccountView(key: Key('creatingAccountView'));
-      } else if (loginState is LoginLoading || loginState is LoginLanding) {
-        content = const LandingView(
-          key: Key('landingPageView'),
-        );
-      } else {
-        content = PromptWalletView(
-          key: const Key('promptWalletView'),
-          isArConnectAvailable: loginBloc.isArConnectAvailable,
-          isMetamaskAvailable: loginBloc.isMetamaskAvailable,
-          isSolanaAvailable: loginBloc.isSolanaAvailable,
-          existingUserFlow: loginBloc.existingUserFlow,
-        );
-      }
-
-      return content;
-    },
+    builder: (context, loginState) =>
+        loginPanelFor(loginState, context.read<LoginBloc>()),
   );
+}
+
+/// The sign-in panel for [loginState].
+@visibleForTesting
+Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
+  late Widget content;
+
+  if (loginState is PromptPassword && loginState.alreadyLoggedIn) {
+    content = const WelcomeBackView(key: Key('welcomeBackView'));
+  } else if (loginState is LoginEnterRecoveryPhrase) {
+    content = const EnterRecoveryPhraseView(
+      key: Key('enterRecoveryPhraseView'),
+    );
+  } else if (loginState is LoginWaitingOnWallet) {
+    content = WalletWaitView(
+      key: const Key('walletWaitView'),
+      wallet: loginState.wallet,
+      request: loginState.request,
+    );
+  } else if (loginState is LoginSuccess) {
+    content = const MaxDeviceSizesConstrainedBox(
+      child: LoginCard(
+        content: Center(
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+        ),
+      ),
+    );
+  } else if (loginState is LoginDownloadGeneratedWallet &&
+      loginState.mnemonic != null) {
+    content = RecoveryPhraseView(
+      key: const Key('recoveryPhraseView'),
+      mnemonic: loginState.mnemonic!,
+      wallet: loginState.wallet,
+    );
+  } else if (loginState is LoginCreatingAccount) {
+    content = const CreatingAccountView(key: Key('creatingAccountView'));
+  } else if (loginState is LoginLoading || loginState is LoginLanding) {
+    content = const LandingView(
+      key: Key('landingPageView'),
+    );
+  } else {
+    content = LogInView(
+      key: const Key('logInView'),
+      isArConnectAvailable: loginBloc.isArConnectAvailable,
+      isMetamaskAvailable: loginBloc.isMetamaskAvailable,
+      isSolanaAvailable: loginBloc.isSolanaAvailable,
+    );
+  }
+
+  return content;
 }
 
 Widget _roundedBorderContainer({

@@ -8,6 +8,7 @@ import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +24,8 @@ class _MockLoginBloc extends MockBloc<LoginEvent, LoginState>
 
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
+
+class _MockWallet extends Mock implements Wallet {}
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
@@ -43,6 +46,7 @@ void main() {
   late _MockUserPreferencesRepository userPreferences;
   late MockArDriveAuth auth;
   late MockBiometricAuthentication biometrics;
+  late _MockWallet wallet;
 
   // The event type is sealed, so a real one stands in for `captureAny`.
   setUpAll(() => registerFallbackValue(const CleanProfileName()));
@@ -58,6 +62,8 @@ void main() {
         .thenAnswer((_) => const Stream<UserPreferences>.empty());
     when(() => userPreferences.currentPreferences).thenReturn(null);
 
+    wallet = _MockWallet();
+    when(() => wallet.getAddress()).thenAnswer((_) async => 'the-address');
     auth = MockArDriveAuth();
     when(() => auth.getWalletAddress()).thenAnswer((_) async => null);
     biometrics = MockBiometricAuthentication();
@@ -112,7 +118,7 @@ void main() {
                   ? EnterYourPasswordWidget(
                       loginBloc: loginBloc,
                       showWalletCreated: false,
-                      alreadyLoggedIn: true,
+                      wallet: wallet,
                       checkingPassword: checkingPassword,
                       passwordFailed: false,
                     )
@@ -156,7 +162,7 @@ void main() {
               body: EnterYourPasswordWidget(
                 loginBloc: loginBloc,
                 showWalletCreated: false,
-                alreadyLoggedIn: true,
+                wallet: wallet,
                 checkingPassword: checkingPassword,
                 passwordFailed: false,
               ),
@@ -200,8 +206,8 @@ void main() {
   group('the profile name the modal asks for', () {
     testWidgets('still loads, without an error, when the modal is gone first',
         (tester) async {
-      final address = Completer<String?>();
-      when(() => auth.getWalletAddress()).thenAnswer((_) => address.future);
+      final address = Completer<String>();
+      when(() => wallet.getAddress()).thenAnswer((_) => address.future);
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -236,7 +242,7 @@ void main() {
       await tester.pumpWidget(passwordScreen(checkingPassword: false));
       await tester.pump();
 
-      verify(() => auth.getWalletAddress()).called(1);
+      verify(() => wallet.getAddress()).called(1);
     });
   });
 }

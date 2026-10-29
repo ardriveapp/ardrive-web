@@ -114,8 +114,20 @@ class UnLockWithBiometrics extends LoginEvent {
   const UnLockWithBiometrics();
 }
 
+/// Opens the recovery phrase panel, which also takes a keyfile.
 class EnterSeedPhrase extends LoginEvent {
   const EnterSeedPhrase();
+}
+
+/// Back to the first panel, Log in and Sign up.
+class ShowLanding extends LoginEvent {
+  const ShowLanding();
+}
+
+/// Stops waiting on a browser wallet and goes back to Log in. Whatever the
+/// wallet answers afterwards is ignored.
+class CancelWalletLogin extends LoginEvent {
+  const CancelWalletLogin();
 }
 
 class AddWalletFromSeedPhraseLogin extends LoginEvent {

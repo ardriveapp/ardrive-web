@@ -24,6 +24,32 @@ class LoginInitial extends LoginState {
 
 class LoginLoading extends LoginState {}
 
+/// The sign-in panel asks for a recovery phrase, or a keyfile instead.
+class LoginEnterRecoveryPhrase extends LoginState {
+  const LoginEnterRecoveryPhrase();
+}
+
+/// The browser wallets the Log in panel offers.
+enum BrowserWallet { wander, metamask, phantom, solflare, otherSolana }
+
+/// What a browser wallet has been asked for.
+enum BrowserWalletRequest { connect, signIn }
+
+/// A browser wallet has been asked to connect or sign, and its answer is
+/// awaited. The sign-in panel says where to approve it and offers Cancel.
+class LoginWaitingOnWallet extends LoginState {
+  const LoginWaitingOnWallet({
+    required this.wallet,
+    this.request = BrowserWalletRequest.connect,
+  });
+
+  final BrowserWallet wallet;
+  final BrowserWalletRequest request;
+
+  @override
+  List<Object?> get props => [wallet, request];
+}
+
 class LoginLoadingIfUserAlreadyExists extends LoginState {}
 
 class LoginLoadingIfUserAlreadyExistsSuccess extends LoginState {}

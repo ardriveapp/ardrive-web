@@ -61,6 +61,8 @@ class _LandingViewState extends State<LandingView> {
                   maxWidth: double.maxFinite,
                   onPressed: () {
                     PlausibleEventTracker.trackClickLogin();
+                    PlausibleEventTracker.trackPageview(
+                        page: PlausiblePageView.loginPage);
 
                     context
                         .read<LoginBloc>()

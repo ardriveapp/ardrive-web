@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -670,6 +673,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+        const TypeMatcher<LoginInitial>(),
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         const TypeMatcher<PromptPassword>()
@@ -698,6 +703,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+        const TypeMatcher<LoginInitial>(),
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
@@ -730,6 +737,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+        const TypeMatcher<LoginInitial>(),
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
@@ -755,8 +764,11 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      // User rejected — silent return, no error dialog
-      expect: () => [],
+      // User rejected: back to Log in, no error dialog
+      expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+        const TypeMatcher<LoginInitial>(),
+      ],
     );
   });
 
@@ -967,6 +979,12 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
+        const LoginWaitingOnWallet(
+          wallet: BrowserWallet.otherSolana,
+          request: BrowserWalletRequest.signIn,
+        ),
+        const TypeMatcher<LoginInitial>(),
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         const TypeMatcher<PromptPassword>(),
@@ -994,6 +1012,12 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
+        const LoginWaitingOnWallet(
+          wallet: BrowserWallet.otherSolana,
+          request: BrowserWalletRequest.signIn,
+        ),
+        const TypeMatcher<LoginInitial>(),
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
@@ -1023,6 +1047,12 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
+        const LoginWaitingOnWallet(
+          wallet: BrowserWallet.otherSolana,
+          request: BrowserWalletRequest.signIn,
+        ),
+        const TypeMatcher<LoginInitial>(),
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
@@ -1056,7 +1086,10 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      expect: () => [],
+      expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
+        const TypeMatcher<LoginInitial>(),
+      ],
     );
 
     blocTest(
@@ -1075,7 +1108,14 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      expect: () => [],
+      expect: () => [
+        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
+        const LoginWaitingOnWallet(
+          wallet: BrowserWallet.otherSolana,
+          request: BrowserWalletRequest.signIn,
+        ),
+        const TypeMatcher<LoginInitial>(),
+      ],
     );
   });
 
@@ -1250,6 +1290,385 @@ void main() {
       );
     });
   });
+
+  group('the log in screens', () {
+    LoginBloc logInBloc() => LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          solanaProviderService: mockSolanaProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
+          userRepository: mockUserRepository,
+          profileCubit: mockProfileCubit,
+          configService: mockConfigService,
+          walletFromMnemonic: (_) async => wallet,
+        );
+
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent()).thenReturn(false);
+      when(() => mockConfigService.config).thenReturn(AppConfig(
+        allowedDataItemSizeForTurbo: 0,
+        stripePublishableKey: '',
+      ));
+    });
+
+    blocTest<LoginBloc, LoginState>(
+      'Recovery phrase or keyfile opens the phrase panel, and Back the first',
+      build: logInBloc,
+      act: (bloc) async {
+        bloc.add(const EnterSeedPhrase());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const SelectLoginFlow(existingUser: true));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const ShowLanding());
+      },
+      expect: () => [
+        const LoginEnterRecoveryPhrase(),
+        const TypeMatcher<LoginInitial>(),
+        const LoginLanding(),
+      ],
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'a phrase with the gateway down says so, so it can be tried again',
+      build: logInBloc,
+      setUp: () => when(() => mockArDriveAuth.userHasPassword(any()))
+          .thenThrow(const AuthenticationGatewayException()),
+      act: (bloc) => bloc.add(const AddWalletFromSeedPhraseLogin('words')),
+      expect: () => [
+        LoginShowLoader(),
+        LoginCloseBlockingDialog(),
+        const TypeMatcher<GatewayLoginFailure>(),
+      ],
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'Cancel with nothing asked does nothing',
+      build: logInBloc,
+      act: (bloc) => bloc.add(const CancelWalletLogin()),
+      expect: () => [],
+    );
+
+    group('Cancel while a wallet never answers', () {
+      blocTest<LoginBloc, LoginState>(
+        'Wander: back to Log in, and a late approval is ignored',
+        build: logInBloc,
+        setUp: () {
+          final connect = Completer<void>();
+          var asked = 0;
+          when(() => mockArConnectService.isWalletVersionSupported())
+              .thenAnswer((_) async => true);
+          // No permission until the connect request, which hangs.
+          when(() => mockArConnectService.checkPermissions())
+              .thenAnswer((_) async => asked++ > 0);
+          when(() => mockArConnectService.disconnect())
+              .thenAnswer((_) async {});
+          when(() => mockArConnectService.connect()).thenAnswer((_) {
+            Future<void>.delayed(const Duration(milliseconds: 20))
+                .then((_) => connect.complete());
+            return connect.future;
+          });
+          when(() => mockArConnectService.getWalletAddress())
+              .thenAnswer((_) async => 'walletAddress');
+        },
+        act: (bloc) async {
+          bloc.add(const AddWalletFromArConnect());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CancelWalletLogin());
+          // The extension approves after Cancel.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (bloc) {
+          verifyNever(() => mockArDriveAuth.userHasPassword(any()));
+          expect(bloc.ignoreNextWaletSwitch, isFalse);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask: back to Log in',
+        build: logInBloc,
+        setUp: () {
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) => Completer<EthereumWallet?>().future);
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithMetamask());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CancelWalletLogin());
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const TypeMatcher<LoginInitial>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Phantom: back to Log in, and the connection is dropped',
+        build: logInBloc,
+        setUp: () {
+          when(() => mockSolanaProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockSolanaProviderService.disconnect(
+              provider: any(named: 'provider'))).thenAnswer((_) async {});
+          when(() => mockSolanaProviderService.connect(
+                  provider: any(named: 'provider')))
+              .thenAnswer((_) => Completer<SolanaConnection?>().future);
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithSolana(provider: 'phantom'));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CancelWalletLogin());
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) => verify(
+                () => mockSolanaProviderService.disconnect(provider: 'phantom'))
+            .called(1),
+      );
+    });
+
+    group('a late answer after Cancel goes no further', () {
+      // Cancel goes back to Log in by itself, so these check what matters:
+      // the wallet's late answer must not carry the log in on.
+      void solana({
+        required Future<SolanaConnection?> Function() connect,
+        Future<Uint8List> Function()? sign,
+      }) {
+        when(() => mockSolanaProviderService.isExtensionPresent())
+            .thenReturn(true);
+        when(() => mockSolanaProviderService.disconnect(
+            provider: any(named: 'provider'))).thenAnswer((_) async {});
+        when(() => mockSolanaProviderService.disconnect())
+            .thenAnswer((_) async {});
+        when(() => mockSolanaProviderService.connect(
+            provider: any(named: 'provider'))).thenAnswer((_) => connect());
+        if (sign != null) {
+          when(() => mockSolanaProviderService.signMessage(any()))
+              .thenAnswer((_) => sign());
+        }
+      }
+
+      Future<T> late<T>(T value) =>
+          Future<T>.delayed(const Duration(milliseconds: 20), () => value);
+
+      Future<void> cancelThenWait(LoginBloc bloc, LoginEvent login) async {
+        bloc.add(login);
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const CancelWalletLogin());
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      }
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask approving the connection',
+        build: logInBloc,
+        setUp: () {
+          final ethWallet = _MockEthereumWallet();
+          when(() => ethWallet.getAddress()).thenAnswer((_) async => '0xabc');
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) => late<EthereumWallet?>(ethWallet));
+        },
+        act: (bloc) => cancelThenWait(bloc, const LoginWithMetamask()),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) =>
+            verifyNever(() => mockArweaveService.getFirstTxForWallet(any())),
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask signing',
+        build: logInBloc,
+        setUp: () {
+          final ethWallet = _MockEthereumWallet();
+          when(() => ethWallet.getAddress()).thenAnswer((_) async => '0xabc');
+          when(() => ethWallet.sign(any()))
+              .thenAnswer((_) => late(Uint8List(65)));
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) async => ethWallet);
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithMetamask());
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const CancelWalletLogin());
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const LoginWaitingOnWallet(
+            wallet: BrowserWallet.metamask,
+            request: BrowserWalletRequest.signIn,
+          ),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) =>
+            verifyNever(() => mockArweaveService.getFirstTxForWallet(any())),
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Phantom approving the connection: it is disconnected again',
+        build: logInBloc,
+        setUp: () => solana(
+          connect: () => late<SolanaConnection?>(const SolanaConnection(
+              address: 'SoLAddr123', providerType: 'phantom')),
+          sign: () async => Uint8List(64),
+        ),
+        act: (bloc) =>
+            cancelThenWait(bloc, const LoginWithSolana(provider: 'phantom')),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) {
+          verifyNever(() => mockSolanaProviderService.signMessage(any()));
+          verifyNever(() => mockArDriveAuth.userHasPassword(any()));
+          // Once on Cancel, once when the late approval lands.
+          verify(() =>
+                  mockSolanaProviderService.disconnect(provider: 'phantom'))
+              .called(2);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a late Phantom approval leaves a newer Phantom attempt connected',
+        build: logInBloc,
+        setUp: () {
+          var connects = 0;
+          solana(
+            connect: () => connects++ == 0
+                // The first popup is approved only after the second try.
+                ? Future<SolanaConnection?>.delayed(
+                    const Duration(milliseconds: 40),
+                    () => const SolanaConnection(
+                        address: 'SoLAddr123', providerType: 'phantom'))
+                : Future<SolanaConnection?>.value(const SolanaConnection(
+                    address: 'SoLAddr123', providerType: 'phantom')),
+            sign: () => Completer<Uint8List>().future,
+          );
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithSolana(provider: 'phantom'));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CancelWalletLogin());
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const LoginWithSolana(provider: 'phantom'));
+          await Future<void>.delayed(const Duration(milliseconds: 80));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const TypeMatcher<LoginInitial>(),
+          const LoginWaitingOnWallet(wallet: BrowserWallet.phantom),
+          const LoginWaitingOnWallet(
+            wallet: BrowserWallet.phantom,
+            request: BrowserWalletRequest.signIn,
+          ),
+        ],
+        verify: (_) {
+          // Only Cancel's: the late approval must not drop the new attempt.
+          verify(() =>
+                  mockSolanaProviderService.disconnect(provider: 'phantom'))
+              .called(1);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Solflare signing: only Solflare is disconnected',
+        build: logInBloc,
+        setUp: () => solana(
+          connect: () async => const SolanaConnection(
+              address: 'SoLAddr123', providerType: 'solflare'),
+          sign: () => late(Uint8List(64)),
+        ),
+        act: (bloc) async {
+          bloc.add(const LoginWithSolana(provider: 'solflare'));
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const CancelWalletLogin());
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+        },
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.solflare),
+          const LoginWaitingOnWallet(
+            wallet: BrowserWallet.solflare,
+            request: BrowserWalletRequest.signIn,
+          ),
+          const TypeMatcher<LoginInitial>(),
+        ],
+        verify: (_) {
+          verifyNever(() => mockArDriveAuth.userHasPassword(any()));
+          verify(() =>
+                  mockSolanaProviderService.disconnect(provider: 'solflare'))
+              .called(1);
+          verifyNever(() => mockSolanaProviderService.disconnect());
+        },
+      );
+    });
+
+    group('an extension that throws goes back to Log in and says so', () {
+      blocTest<LoginBloc, LoginState>(
+        'Wander',
+        build: logInBloc,
+        setUp: () {
+          when(() => mockArConnectService.isWalletVersionSupported())
+              .thenAnswer((_) async => true);
+          when(() => mockArConnectService.checkPermissions())
+              .thenThrow(Exception('extension crashed'));
+        },
+        act: (bloc) => bloc.add(const AddWalletFromArConnect()),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
+          const TypeMatcher<LoginInitial>(),
+          const TypeMatcher<LoginFailure>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'MetaMask',
+        build: logInBloc,
+        setUp: () {
+          final ethWallet = _MockEthereumWallet();
+          when(() => ethWallet.getAddress())
+              .thenThrow(Exception('extension crashed'));
+          when(() => mockEthereumProviderService.isExtensionPresent())
+              .thenReturn(true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) async => ethWallet);
+        },
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        expect: () => [
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          const TypeMatcher<LoginInitial>(),
+          const TypeMatcher<LoginFailure>(),
+        ],
+      );
+    });
+
+    test('a file that is not a keyfile is refused', () async {
+      final bloc = logInBloc();
+      addTearDown(bloc.close);
+      final file = await IOFile.fromData(
+        Uint8List.fromList('not a keyfile'.codeUnits),
+        name: 'notes.txt',
+        lastModifiedDate: DateTime.now(),
+      );
+      expect(await bloc.validateAndReturnWalletFile(file), isNull);
+    });
+  });
 }
 
 class _MockFirstDrive extends Mock implements FirstDrive {}
+
+class _MockEthereumWallet extends Mock implements EthereumWallet {}

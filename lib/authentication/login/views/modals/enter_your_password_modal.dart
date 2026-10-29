@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -20,21 +19,21 @@ class EnterYourPasswordWidget extends StatefulWidget {
   const EnterYourPasswordWidget({
     super.key,
     required this.loginBloc,
-    this.wallet,
+    required this.wallet,
     this.derivedEthWallet,
     this.sourceWalletAddress,
     required this.showWalletCreated,
-    required this.alreadyLoggedIn,
     required this.checkingPassword,
     required this.passwordFailed,
   });
 
-  final Wallet? wallet;
+  /// The wallet just chosen. The account already on this device is
+  /// unlocked in the sign-in panel instead, Welcome back.
+  final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;
   final String? sourceWalletAddress;
   final LoginBloc loginBloc;
   final bool showWalletCreated;
-  final bool alreadyLoggedIn;
   final bool checkingPassword;
   final bool passwordFailed;
 
@@ -58,13 +57,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     );
   }
 
-  PlausiblePageView _getPlausiblePageView() {
-    if (widget.alreadyLoggedIn) {
-      return PlausiblePageView.returnUserPage;
-    } else {
-      return PlausiblePageView.enterPasswordPage;
-    }
-  }
+  PlausiblePageView _getPlausiblePageView() =>
+      PlausiblePageView.enterPasswordPage;
 
   @override
   void didUpdateWidget(EnterYourPasswordWidget oldWidget) {
@@ -97,22 +91,14 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final showDerivedWalletAlreadyCreated =
-        widget.derivedEthWallet != null && !widget.loginBloc.existingUserFlow;
-
     return SingleChildScrollView(
-      child: _buildContent(
-        width: 450,
-        context: context,
-        showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-      ),
+      child: _buildContent(width: 450, context: context),
     );
   }
 
   Widget _buildContent({
     required double width,
     required BuildContext context,
-    required bool showDerivedWalletAlreadyCreated,
   }) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
@@ -121,15 +107,13 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
       width: width,
       hasSettingsButton: true,
       hasCloseButton: false,
-      onClose: !widget.alreadyLoggedIn
-          ? () {
-              PlausibleEventTracker.trackClickDismissLoginModalIcon(
-                _getPlausiblePageView(),
-              );
-              Navigator.of(context).pop();
-              widget.loginBloc.add(const ForgetWallet());
-            }
-          : null,
+      onClose: () {
+        PlausibleEventTracker.trackClickDismissLoginModalIcon(
+          _getPlausiblePageView(),
+        );
+        Navigator.of(context).pop();
+        widget.loginBloc.add(const ForgetWallet());
+      },
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -194,15 +178,6 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               );
             },
           ),
-          showDerivedWalletAlreadyCreated
-              ? Text(
-                  'An existing account was found. Please enter your password to continue.',
-                  textAlign: TextAlign.center,
-                  style: typography.paragraphNormal(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold),
-                )
-              : const SizedBox(),
           const SizedBox(height: 40),
           Text('Password',
               style: typography.paragraphNormal(
@@ -307,11 +282,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               isDisabled: !_isPasswordValid || widget.checkingPassword,
               onPressed: () {
                 if (_isPasswordValid) {
-                  if (widget.alreadyLoggedIn) {
-                    PlausibleEventTracker.trackClickContinueReturnUserButton();
-                  } else {
-                    PlausibleEventTracker.trackClickContinueLoginButton();
-                  }
+                  PlausibleEventTracker.trackClickContinueLoginButton();
 
                   _onSubmit();
                 }
@@ -321,39 +292,25 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     );
   }
 
-  Future<String?> _getWalletAddress() async {
-    if (widget.sourceWalletAddress != null) {
-      return widget.sourceWalletAddress;
-    }
-    if (widget.wallet == null) {
-      return context.read<ArDriveAuth>().getWalletAddress();
-    }
-    return widget.wallet!.getAddress();
-  }
+  Future<String?> _getWalletAddress() async =>
+      widget.sourceWalletAddress ?? await widget.wallet.getAddress();
 
   void _onSubmit() {
-    if (widget.wallet == null) {
-      widget.loginBloc.add(UnlockUserWithPassword(
-        password: _passwordController.text,
-      ));
-    } else {
-      if (widget.wallet is EthereumProviderWallet) {
-        Navigator.of(context).pop();
-      }
-      widget.loginBloc.add(LoginWithPassword(
-          password: _passwordController.text,
-          wallet: widget.wallet!,
-          derivedEthWallet: widget.derivedEthWallet,
-          showWalletCreated: widget.showWalletCreated));
+    if (widget.wallet is EthereumProviderWallet) {
+      Navigator.of(context).pop();
     }
+    widget.loginBloc.add(LoginWithPassword(
+        password: _passwordController.text,
+        wallet: widget.wallet,
+        derivedEthWallet: widget.derivedEthWallet,
+        showWalletCreated: widget.showWalletCreated));
   }
 }
 
 void showEnterYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
-    required bool alreadyLoggedIn,
-    Wallet? wallet,
+    required Wallet wallet,
     EthereumProviderWallet? derivedEthWallet,
     String? sourceWalletAddress,
     bool showWalletCreated = false,
@@ -386,7 +343,6 @@ void showEnterYourPasswordDialog(
             derivedEthWallet: derivedEthWallet,
             sourceWalletAddress: sourceWalletAddress,
             showWalletCreated: showWalletCreated,
-            alreadyLoggedIn: alreadyLoggedIn,
             checkingPassword: checkingPassword,
             passwordFailed: passwordFailed,
           );
@@ -395,9 +351,17 @@ void showEnterYourPasswordDialog(
 }
 
 class ForgetWalletDialog extends StatelessWidget {
-  const ForgetWalletDialog({super.key, required this.loginBloc});
+  const ForgetWalletDialog({
+    super.key,
+    required this.loginBloc,
+    this.closesDialogBelow = true,
+  });
 
   final LoginBloc loginBloc;
+
+  /// Whether Confirm also closes the dialog this one opened over. False when
+  /// it opened over the sign-in panel itself.
+  final bool closesDialogBelow;
 
   @override
   Widget build(BuildContext context) {
@@ -415,7 +379,7 @@ class ForgetWalletDialog extends StatelessWidget {
           title: 'Confirm',
           action: () {
             Navigator.of(context).pop();
-            Navigator.of(context).pop();
+            if (closesDialogBelow) Navigator.of(context).pop();
             loginBloc.add(const ForgetWallet());
             context.read<ProfileNameBloc>().add(const CleanProfileName());
             PlausibleEventTracker.trackClickForgetWalletTextButton();

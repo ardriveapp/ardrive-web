@@ -21,8 +21,10 @@ class SolanaProviderService {
     return implementation.signMessage(message);
   }
 
-  Future<void> disconnect() {
-    return implementation.disconnect();
+  /// Drops the connection. [provider] ('phantom' or 'solflare') names the
+  /// wallet to drop; without it, the one last connected.
+  Future<void> disconnect({String? provider}) {
+    return implementation.disconnect(provider: provider);
   }
 
   /// Returns which Solana wallet providers are available.
