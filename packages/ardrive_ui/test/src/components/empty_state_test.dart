@@ -46,4 +46,16 @@ void main() {
     expect(find.text('Nothing here'), findsOneWidget);
     expect(find.byType(ArDriveButtonNew), findsNothing);
   });
+
+  testWidgets('a framed state fills its space inside a dashed frame',
+      (tester) async {
+    await tester.pumpWidget(wrap(const Column(children: [
+      Expanded(child: ArDriveEmptyState(title: 'Drop files', framed: true)),
+    ])));
+
+    expect(find.text('Drop files'), findsOneWidget);
+    final size = tester.getSize(find.byType(ArDriveEmptyState));
+    expect(size.height,
+        tester.view.physicalSize.height / tester.view.devicePixelRatio);
+  });
 }

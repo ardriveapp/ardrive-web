@@ -317,7 +317,7 @@ ArDriveLoginModal _privateDrivesCard({
         ),
         const SizedBox(height: 12),
         Text(
-          'Private Drives offer state-of-the-art security, so you can control who can access the content.',
+          'Encrypted. Only you and the people you share it with can see what is in it.',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textLow,
@@ -365,7 +365,7 @@ ArDriveLoginModal _publicDrivesCard({
         ),
         const SizedBox(height: 12),
         Text(
-          'Public Drives are discoverable, meaning that others can find and view the contents.',
+          'Anyone can find it and see what is in it.',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textLow,

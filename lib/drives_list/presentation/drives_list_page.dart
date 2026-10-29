@@ -1,3 +1,4 @@
+import 'package:ardrive/pages/no_drives/first_drive_page.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
@@ -222,6 +223,10 @@ class _DrivesListChrome extends StatelessWidget {
               onSyncChanged: cubit.syncDrivesWithUnreadChanges,
               buildMenu: (drive) => _menuFor(drivesState, drive),
               syncMenu: const DrivesSyncMenu(),
+              // A new account gets My files made before it would see this.
+              buildEmpty: (_) => FirstDrivePage(
+                noDrives: (_) => const _DrivesListEmpty(),
+              ),
             );
 
         final body = bodyWith();
@@ -310,7 +315,11 @@ class DrivesListBody extends StatelessWidget {
     this.syncMenu,
     this.chosenDriveId,
     this.onChoose,
+    this.buildEmpty,
   });
+
+  /// What an account with no drives sees, in place of Getting started.
+  final WidgetBuilder? buildEmpty;
 
   /// The drive whose details are open beside the list, if any.
   final String? chosenDriveId;
@@ -359,7 +368,7 @@ class DrivesListBody extends StatelessWidget {
     }
 
     if (state is DrivesListEmpty) {
-      return const _DrivesListEmpty();
+      return buildEmpty?.call(context) ?? const _DrivesListEmpty();
     }
 
     // A scope that filters to nothing is not an empty account: the wallet has
