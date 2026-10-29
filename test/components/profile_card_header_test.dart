@@ -1,6 +1,7 @@
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -57,4 +58,20 @@ void main() {
     expect(paragraph.didExceedMaxLines, isFalse);
     expect(tester.takeException(), isNull);
   });
+  // With a name, the button took its width from the name alone, so a short
+  // name squeezed the six-and-four address under it to about 6 px.
+  for (final name in ['ab', 'phil', 'arweave', 'a-much-longer-primary-name']) {
+    testWidgets('a name of ${name.length} keeps the address at full size',
+        (tester) async {
+      when(() => profileNameBloc.state).thenReturn(
+          ProfileNameLoaded(PrimaryNameDetails(primaryName: name), address));
+      await pumpHeader(tester);
+
+      const short = 'iKryOe...oRjA';
+      final width = ArDriveMonospace.widthOf(short, 12);
+      expect(tester.getRect(find.text(short)).width, closeTo(width, 0.5),
+          reason: 'scaled down to fit the button');
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
