@@ -76,7 +76,7 @@ class CreatePassword extends LoginEvent {
   final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;
   final String? mnemonic;
-  final bool showTutorials;
+  final bool isNewUser;
   final bool showWalletCreated;
 
   const CreatePassword(
@@ -84,16 +84,21 @@ class CreatePassword extends LoginEvent {
       required this.wallet,
       this.derivedEthWallet,
       this.mnemonic,
-      required this.showTutorials,
+      required this.isNewUser,
       required this.showWalletCreated});
 
   @override
-  List<Object> get props =>
-      [password, wallet, showTutorials, showWalletCreated];
+  List<Object> get props => [password, wallet, isNewUser, showWalletCreated];
 }
 
 class ForgetWallet extends LoginEvent {
   const ForgetWallet();
+}
+
+/// Asks again for the password of a new account whose password step failed,
+/// for the same wallet: making another would take a minute.
+class RetrySignUpPassword extends LoginEvent {
+  const RetrySignUpPassword();
 }
 
 class FinishOnboarding extends LoginEvent {

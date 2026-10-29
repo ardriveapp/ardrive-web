@@ -40,20 +40,3 @@ void preCacheLoginAssets(BuildContext context) {
     }
   }
 }
-
-void preCacheOnBoardingAssets(BuildContext context) {
-  List<String> assetPaths = [
-    Resources.images.login.ardriveLogoOnboarding,
-    Resources.images.login.arrowRed,
-    Resources.images.login.confetti,
-    Resources.images.login.confettiLeft,
-    Resources.images.login.confettiRight,
-  ];
-
-  for (String assetPath in assetPaths) {
-    precacheImage(
-      AssetImage(assetPath),
-      context,
-    );
-  }
-}

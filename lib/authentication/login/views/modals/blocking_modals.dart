@@ -33,8 +33,7 @@ void showLoaderDialog({required BuildContext context}) {
           Text(
             'Setting up your account.\nThis may take a moment.',
             style: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold),
+                color: colorTokens.textLow, fontWeight: ArFontWeight.semiBold),
           ),
         ],
       ),

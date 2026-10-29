@@ -30,6 +30,10 @@ class LoginLoadingIfUserAlreadyExistsSuccess extends LoginState {}
 
 class LoginShowLoader extends LoginState {}
 
+/// A new account's key is being made on this device, which can take up to a
+/// minute. Shown in the sign-in panel rather than over it.
+class LoginCreatingAccount extends LoginState {}
+
 class LoginShowBlockingDialog extends LoginState {
   const LoginShowBlockingDialog({required this.message});
 
@@ -37,15 +41,6 @@ class LoginShowBlockingDialog extends LoginState {
 }
 
 class LoginCloseBlockingDialog extends LoginState {}
-
-class LoginTutorials extends LoginState {
-  const LoginTutorials(
-      {required this.wallet, this.mnemonic, required this.showWalletCreated});
-
-  final Wallet wallet;
-  final String? mnemonic;
-  final bool showWalletCreated;
-}
 
 class PromptPassword extends LoginState {
   const PromptPassword({
@@ -88,23 +83,27 @@ class CreateNewPassword extends LoginState {
       this.derivedEthWallet,
       this.sourceWalletAddress,
       this.mnemonic,
-      required this.showTutorials,
-      required this.showWalletCreated});
+      required this.isNewUser,
+      required this.showWalletCreated,
+      this.retrying = false});
 
   final String? mnemonic;
   final Wallet wallet;
+
+  /// Asked again because the last try could not finish.
+  final bool retrying;
   final EthereumProviderWallet? derivedEthWallet;
 
   /// The source wallet address (Solana/Ethereum) for display purposes.
   final String? sourceWalletAddress;
 
   /// Used to determine next screens to show on password success
-  final bool showTutorials;
+  final bool isNewUser;
   final bool showWalletCreated;
 
   @override
   List<Object?> get props =>
-      [mnemonic, wallet, showTutorials, showWalletCreated];
+      [mnemonic, wallet, isNewUser, showWalletCreated, retrying];
 }
 
 class LoginFailure extends LoginState {

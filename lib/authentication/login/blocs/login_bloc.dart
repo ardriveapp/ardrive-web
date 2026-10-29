@@ -64,6 +64,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ProfileType? profileType;
 
   bool usingSeedphrase = false;
+
+  /// A new account's password step that failed, kept to be asked again.
+  CreateNewPassword? _signUpToRetry;
+
+  /// Whether a new account's password step failed and can be asked again.
+  bool get hasSignUpToRetry => _signUpToRetry != null;
   bool existingUserFlow = true;
 
   LoginBloc({
@@ -118,6 +124,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleForgetWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
       await _handleFinishOnboardingEvent(event, emit);
+    } else if (event is RetrySignUpPassword) {
+      final retry = _signUpToRetry;
+      _signUpToRetry = null;
+      emit(retry == null
+          ? const LoginLanding()
+          : CreateNewPassword(
+              wallet: retry.wallet,
+              mnemonic: retry.mnemonic,
+              isNewUser: retry.isNewUser,
+              showWalletCreated: retry.showWalletCreated,
+              retrying: true,
+            ));
     } else if (event is UnLockWithBiometrics) {
       await _handleUnlockUserWithBiometricsEvent(event, emit);
     } else if (event is AddWalletFromSeedPhraseLogin) {
@@ -200,9 +218,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
         emit(LoginLoadingIfUserAlreadyExistsSuccess());
         emit(CreateNewPassword(
-            wallet: wallet,
-            showTutorials: !hasDrives,
-            showWalletCreated: false));
+            wallet: wallet, isNewUser: !hasDrives, showWalletCreated: false));
       }
     } catch (e) {
       usingSeedphrase = false;
@@ -290,8 +306,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
-        message:
-            'Please approve the request in your Ethereum wallet.'));
+        message: 'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     try {
@@ -347,7 +362,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       previousState: previousState,
       profileType: profileType!,
       mnemonic: mnemonic,
-      showTutorials: false,
+      isNewUser: false,
       showWalletCreated: false,
     );
   }
@@ -417,7 +432,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit: emit,
       previousState: previousState,
       profileType: profileType!,
-      showTutorials: false,
+      isNewUser: false,
       showWalletCreated: event.showWalletCreated,
     );
   }
@@ -515,6 +530,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       usingSeedphrase = false;
       // Close any open dialogs (loader, blocking message)
       emit(LoginCloseBlockingDialog());
+      // A new account's wallet took a minute to make. Kept, so once the
+      // error is read the same password step opens again for it.
+      if (previousState is CreateNewPassword &&
+          previousState.mnemonic != null) {
+        _signUpToRetry = previousState;
+      }
       emit(LoginFailure(e));
     }
   }
@@ -536,8 +557,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
-        message:
-            'Please approve the request in your Ethereum wallet.'));
+        message: 'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     logger.d('[ETH-CREATE] Step 1: Requesting MetaMask signature...');
@@ -594,7 +614,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         previousState: previousState,
         profileType: profileType!,
         mnemonic: mnemonic,
-        showTutorials: event.showTutorials,
+        isNewUser: event.isNewUser,
         showWalletCreated: event.showWalletCreated);
   }
 
@@ -610,7 +630,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         previousState: previousState,
         profileType: profileType!,
         mnemonic: event.mnemonic,
-        showTutorials: event.showTutorials,
+        isNewUser: event.isNewUser,
         showWalletCreated: event.showWalletCreated);
   }
 
@@ -676,7 +696,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(
           CreateNewPassword(
             wallet: wallet,
-            showTutorials: !hasDrives,
+            isNewUser: !hasDrives,
             showWalletCreated: false,
           ),
         );
@@ -703,6 +723,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     usingSeedphrase = false;
     _sourceWalletAddress = null;
+    _signUpToRetry = null;
     await _solanaProviderService.disconnect();
 
     emit(const LoginLanding());
@@ -729,7 +750,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       required LoginState previousState,
       required Emitter<LoginState> emit,
       String? mnemonic,
-      required bool showTutorials,
+      required bool isNewUser,
       required bool showWalletCreated}) async {
     if (_isArConnectWallet()) {
       final isArConnectAddressValid = await _verifyArConnectWalletAddress();
@@ -750,12 +771,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       sourceWalletAddress: _sourceWalletAddress,
     );
 
-    if (showTutorials) {
-      emit(LoginTutorials(
-          wallet: wallet,
-          mnemonic: mnemonic,
-          showWalletCreated: showWalletCreated));
-    } else if (showWalletCreated) {
+    if (showWalletCreated) {
       emit(LoginDownloadGeneratedWallet(wallet: wallet, mnemonic: mnemonic));
     } else {
       emit(LoginSuccess(user));
@@ -824,9 +840,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
         emit(CreateNewPassword(
-            wallet: wallet,
-            showTutorials: !hasDrives,
-            showWalletCreated: true));
+            wallet: wallet, isNewUser: !hasDrives, showWalletCreated: true));
       }
     } catch (e) {
       emit(LoginCloseBlockingDialog());
@@ -869,21 +883,19 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
-    emit(LoginShowLoader());
+    emit(LoginCreatingAccount());
 
     try {
-      final wallet = await generateWalletFromMnemonic(mnemonic);
-
-      emit(LoginCloseBlockingDialog());
+      final wallet = await _walletFromMnemonic(mnemonic);
 
       emit(CreateNewPassword(
-        wallet: wallet,
-        mnemonic: mnemonic,
-        showTutorials: true,
-        showWalletCreated: true));
+          wallet: wallet,
+          mnemonic: mnemonic,
+          isNewUser: true,
+          showWalletCreated: true));
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
+      emit(const LoginLanding());
     }
   }
 
@@ -977,7 +989,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           wallet: ethWallet,
           derivedEthWallet: derivedEthWallet,
           sourceWalletAddress: _sourceWalletAddress,
-          showTutorials: true,
+          isNewUser: true,
           showWalletCreated: false));
     }
   }
@@ -1007,8 +1019,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // 2. Sign identity message (wallet extension shows its own popup)
       final Uint8List signature;
       try {
-        signature = await _solanaProviderService
-            .signMessage(solanaIdentityMessage);
+        signature =
+            await _solanaProviderService.signMessage(solanaIdentityMessage);
       } catch (e) {
         await _solanaProviderService.disconnect();
         _sourceWalletAddress = null;
@@ -1038,7 +1050,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit(LoginCloseBlockingDialog());
         emit(CreateNewPassword(
           wallet: wallet,
-          showTutorials: !hasDrives,
+          isNewUser: !hasDrives,
           showWalletCreated: false,
           sourceWalletAddress: _sourceWalletAddress,
         ));

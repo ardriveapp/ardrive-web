@@ -141,7 +141,7 @@ void main() {
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
-              cnp.showTutorials == true;
+              cnp.isNewUser == true;
         })
       ],
     );
@@ -179,7 +179,7 @@ void main() {
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<CreateNewPassword>((cnp) {
-          return cnp.showTutorials == false &&
+          return cnp.isNewUser == false &&
               cnp.showWalletCreated == false &&
               cnp.mnemonic == null;
         })
@@ -529,7 +529,7 @@ void main() {
         bloc.add(CreatePassword(
             wallet: wallet,
             password: 'password',
-            showTutorials: false,
+            isNewUser: false,
             showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
@@ -560,7 +560,7 @@ void main() {
         bloc.add(CreatePassword(
             wallet: wallet,
             password: 'password',
-            showTutorials: false,
+            isNewUser: false,
             showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
@@ -593,7 +593,7 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
-          showTutorials: false,
+          isNewUser: false,
           showWalletCreated: false,
         ));
       },
@@ -629,7 +629,7 @@ void main() {
           wallet: wallet,
           password: 'password',
           showWalletCreated: false,
-          showTutorials: false,
+          isNewUser: false,
         ));
         bloc.profileType = ProfileType.json;
       },
@@ -702,7 +702,7 @@ void main() {
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
-              cnp.showTutorials == false;
+              cnp.isNewUser == false;
         })
       ],
     );
@@ -734,7 +734,7 @@ void main() {
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
-              cnp.showTutorials == true;
+              cnp.isNewUser == true;
         })
       ],
     );
@@ -996,7 +996,7 @@ void main() {
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
-          return cnp.showTutorials == true && cnp.showWalletCreated == false;
+          return cnp.isNewUser == true && cnp.showWalletCreated == false;
         }),
       ],
     );
@@ -1025,7 +1025,7 @@ void main() {
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
-          return cnp.showTutorials == false && cnp.showWalletCreated == false;
+          return cnp.isNewUser == false && cnp.showWalletCreated == false;
         }),
       ],
     );
@@ -1050,8 +1050,7 @@ void main() {
       build: () => createSolanaBloc(),
       setUp: () {
         when(() => mockSolanaProviderService.connect(
-                provider: any(named: 'provider')))
-            .thenAnswer((_) async => null);
+            provider: any(named: 'provider'))).thenAnswer((_) async => null);
       },
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
@@ -1076,6 +1075,115 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [],
+    );
+  });
+
+  group('a new account', () {
+    blocTest<LoginBloc, LoginState>(
+      'shows Creating your account, then asks for a password',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => wallet,
+      ),
+      setUp: () {
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+      },
+      act: (bloc) => bloc.add(const CreateNewWallet()),
+      expect: () => [
+        isA<LoginCreatingAccount>(),
+        isA<CreateNewPassword>()
+            .having((s) => s.isNewUser, 'isNewUser', isTrue)
+            .having((s) => s.showWalletCreated, 'showWalletCreated', isTrue)
+            .having((s) => s.mnemonic?.split(' '), 'mnemonic', hasLength(12)),
+      ],
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'goes back to the landing panel when the key cannot be made',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => throw Exception('no key'),
+      ),
+      setUp: () {
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+      },
+      act: (bloc) => bloc.add(const CreateNewWallet()),
+      expect: () => [
+        isA<LoginCreatingAccount>(),
+        isA<LoginFailure>(),
+        isA<LoginLanding>(),
+      ],
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'asks again for the same wallet when the password step fails',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => wallet,
+      ),
+      setUp: () {
+        when(() => mockArConnectService.isExtensionPresent())
+            .thenAnswer((_) => false);
+        when(() => mockArDriveAuth.login(any(), any(), ProfileType.json,
+                sourceWalletAddress: any(named: 'sourceWalletAddress')))
+            .thenThrow(Exception('the gateway went away'));
+      },
+      act: (bloc) async {
+        bloc.add(const CreateNewWallet());
+        await Future<void>.delayed(Duration.zero);
+        final created = bloc.state as CreateNewPassword;
+        bloc.add(CreatePassword(
+          password: 'river-lantern-orbit-maple-quiet-harbor',
+          wallet: created.wallet,
+          mnemonic: created.mnemonic,
+          isNewUser: true,
+          showWalletCreated: true,
+        ));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.hasSignUpToRetry, isTrue);
+        // The page does this once the error has been read.
+        bloc.add(const RetrySignUpPassword());
+      },
+      skip: 2,
+      expect: () => [
+        isA<LoginLoading>(),
+        isA<LoginCloseBlockingDialog>(),
+        isA<LoginFailure>(),
+        isA<CreateNewPassword>()
+            .having((s) => s.wallet, 'wallet', wallet)
+            .having((s) => s.mnemonic?.split(' '), 'mnemonic', hasLength(12))
+            .having((s) => s.retrying, 'retrying', isTrue),
+      ],
+      verify: (bloc) => expect(bloc.hasSignUpToRetry, isFalse),
     );
   });
 }

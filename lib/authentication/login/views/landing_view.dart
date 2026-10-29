@@ -76,9 +76,9 @@ class _LandingViewState extends State<LandingView> {
                   onPressed: () {
                     PlausibleEventTracker.trackClickSignUp();
 
-                    context
-                        .read<LoginBloc>()
-                        .add(const SelectLoginFlow(existingUser: false));
+                    // Straight to making the account: no "you need a
+                    // wallet" step for someone who has none.
+                    context.read<LoginBloc>().add(const CreateNewWallet());
                   }),
               const SizedBox(height: 40),
               const LinedTextDivider(),

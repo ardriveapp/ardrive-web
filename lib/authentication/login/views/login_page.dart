@@ -7,7 +7,6 @@ import 'package:ardrive/authentication/login/views/modals/blocking_modals.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
-import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
@@ -28,7 +27,6 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,7 +34,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
+import 'creating_account_view.dart';
 import 'landing_view.dart';
+import 'recovery_phrase_view.dart';
 import 'modals/enter_your_password_modal.dart';
 import 'prompt_wallet_view.dart';
 
@@ -150,8 +150,9 @@ class _LoginPageState extends State<LoginPage> {
                 loginBloc: context.read<LoginBloc>(),
                 wallet: loginState.wallet,
                 mnemonic: loginState.mnemonic,
-                showTutorials: loginState.showTutorials,
+                isNewUser: loginState.isNewUser,
                 showWalletCreated: loginState.showWalletCreated,
+                retrying: loginState.retrying,
                 derivedEthWallet: loginState.derivedEthWallet,
                 sourceWalletAddress: loginState.sourceWalletAddress);
             return;
@@ -164,8 +165,6 @@ class _LoginPageState extends State<LoginPage> {
             return;
           } else if (loginState is LoginCloseBlockingDialog) {
             Navigator.of(context).pop();
-          } else if (loginState is LoginTutorials) {
-            preCacheOnBoardingAssets(context);
           } else if (loginState is LoginFailure) {
             // TODO: Verify if the error is `NoConnectionException` and show an
             /// appropriate message after validating with UI/UX
@@ -192,6 +191,14 @@ class _LoginPageState extends State<LoginPage> {
               return;
             }
 
+            // A new account goes straight back to its password step, for
+            // the same wallet, which says what happened. An error dialog
+            // here would be closed at once by the password dialog closing.
+            final loginBloc = context.read<LoginBloc>();
+            if (loginBloc.hasSignUpToRetry) {
+              loginBloc.add(const RetrySignUpPassword());
+              return;
+            }
             showErrorDialog(
               context: context,
               title: appLocalizationsOf(context).loginFailed,
@@ -235,12 +242,9 @@ class _LoginPageState extends State<LoginPage> {
         },
         builder: (context, loginState) {
           late Widget view;
-          if (loginState is LoginTutorials) {
-            view = TutorialsView(
-                wallet: loginState.wallet,
-                mnemonic: loginState.mnemonic,
-                showWalletCreated: loginState.showWalletCreated);
-          } else if (loginState is LoginDownloadGeneratedWallet) {
+          if (loginState is LoginDownloadGeneratedWallet &&
+              loginState.mnemonic == null) {
+            // Rare: no 12 words to save, only a keyfile.
             view = WalletCreatedView(
                 mnemonic: loginState.mnemonic, wallet: loginState.wallet);
           } else {
@@ -551,6 +555,35 @@ class _PhoneView extends StatelessWidget {
   }
 }
 
+/// Whether the sign-in panel redraws for [current]. Dialogs, loaders and
+/// transient states leave the panel as it is.
+@visibleForTesting
+bool loginPanelRebuildsOn(LoginState current) {
+  final isFailure = current is LoginFailure;
+  final isSuccess = current is LoginSuccess;
+  final isLoading = current is LoginLoading ||
+      current is LoginShowLoader ||
+      current is LoginCloseBlockingDialog;
+  final isPasswordChecking =
+      current is LoginCheckingPassword || current is LoginPasswordFailed;
+  // The password dialog opens over whatever the panel shows: for a new
+  // account, "Creating your account".
+  final isChoosingPassword = current is CreateNewPassword;
+  // Follows the recovery phrase step; the phrase must stay on screen.
+  final isPasswordCreated = current is LoginCreatePasswordComplete;
+  final isLoadingIfUserAlreadyExists =
+      current is LoginLoadingIfUserAlreadyExists ||
+          current is LoginLoadingIfUserAlreadyExistsSuccess;
+
+  return !(isFailure ||
+      isSuccess ||
+      isLoading ||
+      isPasswordChecking ||
+      isChoosingPassword ||
+      isPasswordCreated ||
+      isLoadingIfUserAlreadyExists);
+}
+
 Widget _buildContent(
   BuildContext context, {
   required LoginState loginState,
@@ -558,26 +591,7 @@ Widget _buildContent(
 }) {
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
-    buildWhen: (previous, current) {
-      final isFailure = current is LoginFailure;
-      final isSuccess = current is LoginSuccess;
-      final isOnBoarding = current is LoginTutorials;
-      final isLoading = current is LoginLoading ||
-          current is LoginShowLoader ||
-          current is LoginCloseBlockingDialog;
-      final isPasswordChecking =
-          current is LoginCheckingPassword || current is LoginPasswordFailed;
-      final isLoadingIfUserAlreadyExists =
-          current is LoginLoadingIfUserAlreadyExists ||
-              current is LoginLoadingIfUserAlreadyExistsSuccess;
-
-      return !(isFailure ||
-          isSuccess ||
-          isOnBoarding ||
-          isLoading ||
-          isPasswordChecking ||
-          isLoadingIfUserAlreadyExists);
-    },
+    buildWhen: (previous, current) => loginPanelRebuildsOn(current),
     builder: (context, loginState) {
       late Widget content;
       final loginBloc = context.read<LoginBloc>();
@@ -590,6 +604,15 @@ Widget _buildContent(
             ),
           ),
         );
+      } else if (loginState is LoginDownloadGeneratedWallet &&
+          loginState.mnemonic != null) {
+        content = RecoveryPhraseView(
+          key: const Key('recoveryPhraseView'),
+          mnemonic: loginState.mnemonic!,
+          wallet: loginState.wallet,
+        );
+      } else if (loginState is LoginCreatingAccount) {
+        content = const CreatingAccountView(key: Key('creatingAccountView'));
       } else if (loginState is LoginLoading || loginState is LoginLanding) {
         content = const LandingView(
           key: Key('landingPageView'),
