@@ -20,6 +20,10 @@ class TabVisibilitySingleton {
 
   StreamSubscription onTabGetsFocused(Function onFocus) =>
       implementation.onTabGetsFocused(onFocus);
+
+  /// Fires each time the tab gets focus back or becomes visible again, as
+  /// when a browser extension's window closes. Never fires off the web.
+  Stream<void> onTabRegainsFocus() => implementation.onTabRegainsFocus();
 }
 
 // TODO: Move this code to the arconnect package.

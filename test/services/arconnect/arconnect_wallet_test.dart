@@ -38,7 +38,7 @@ void main() {
         when(() => wander.getSignature(any()))
             .thenAnswer((_) => Completer<Uint8List>().future);
         final prompts = <ArConnectUnavailableReason>[];
-        ArConnectPrompt.registerRetryPrompt((reason) async {
+        ArConnectPrompt.registerRetryPrompt((reason, _) async {
           prompts.add(reason);
           return false;
         });
@@ -63,7 +63,7 @@ void main() {
         when(() => wander.getSignature(any())).thenAnswer((_) => calls++ == 0
             ? Completer<Uint8List>().future
             : Future.value(Uint8List.fromList([1, 2, 3])));
-        ArConnectPrompt.registerRetryPrompt((_) async => true);
+        ArConnectPrompt.registerRetryPrompt((_, __) async => true);
 
         Uint8List? signature;
         ArConnectWallet(wander, publicKey: 'key')

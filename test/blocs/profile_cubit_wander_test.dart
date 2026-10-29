@@ -141,7 +141,7 @@ void main() {
     setUp(() async {
       await saveWanderProfile();
       prompts = [];
-      ArConnectPrompt.registerRetryPrompt((reason) async {
+      ArConnectPrompt.registerRetryPrompt((reason, _) async {
         prompts.add(reason);
         return false;
       });
@@ -170,7 +170,7 @@ void main() {
       buildCubit();
       await pumpEventQueue();
 
-      ArConnectPrompt.registerRetryPrompt((reason) async {
+      ArConnectPrompt.registerRetryPrompt((reason, _) async {
         prompts.add(reason);
         // Unlocked while the prompt was up.
         wanderAnswers();
@@ -231,7 +231,7 @@ void main() {
     setUp(() async {
       await saveWanderProfile();
       prompts = [];
-      ArConnectPrompt.registerRetryPrompt((reason) async {
+      ArConnectPrompt.registerRetryPrompt((reason, _) async {
         prompts.add(reason);
         return false;
       });

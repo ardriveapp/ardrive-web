@@ -57,8 +57,13 @@ class AppShellState extends State<AppShell> {
     // Where a write, or a private drive key, says Wander couldn't be reached
     // and offers Try again. Writes only happen inside the shell.
     _forgetWanderPrompt = ArConnectPrompt.registerRetryPrompt(
-      (reason) async => mounted && await askToRetryWander(context, reason),
+      (reason, answered) async =>
+          mounted &&
+          await askToRetryWander(context, reason, answered: answered),
     );
+    // Back from Wander's window with a request still waiting: say so now
+    // rather than at the deadline.
+    ArConnectPrompt.focusRegained = TabVisibilitySingleton().onTabRegainsFocus;
 
     onArConnectWalletSwitch(() {
       logger.d('Wallet switch detected');

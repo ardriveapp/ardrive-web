@@ -26,6 +26,25 @@ StreamSubscription<Event> onTabGetsFocused(Function onFocus) {
   return subscription;
 }
 
+Stream<void> onTabRegainsFocus() {
+  StreamSubscription? focus;
+  StreamSubscription? visibility;
+  late final StreamController<void> controller;
+  controller = StreamController<void>(
+    onListen: () {
+      focus = window.onFocus.listen((_) => controller.add(null));
+      visibility = document.onVisibilityChange.listen((_) {
+        if (document.visibilityState == 'visible') controller.add(null);
+      });
+    },
+    onCancel: () async {
+      await focus?.cancel();
+      await visibility?.cancel();
+    },
+  );
+  return controller.stream;
+}
+
 Function() onWalletSwitch(Function callback) {
   listener(event) => callback();
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/components/wander_unavailable_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
@@ -11,7 +13,10 @@ void main() {
   bool? answer;
 
   Future<void> open(
-      WidgetTester tester, ArConnectUnavailableReason reason) async {
+    WidgetTester tester,
+    ArConnectUnavailableReason reason, {
+    Future<void>? answered,
+  }) async {
     answer = null;
     await tester.pumpWidget(
       ArDriveTheme(
@@ -24,8 +29,11 @@ void main() {
             child: Builder(
               builder: (context) => Scaffold(
                 body: TextButton(
-                  onPressed: () async =>
-                      answer = await askToRetryWander(context, reason),
+                  onPressed: () async => answer = await askToRetryWander(
+                    context,
+                    reason,
+                    answered: answered,
+                  ),
                   child: const Text('write'),
                 ),
               ),
@@ -65,5 +73,21 @@ void main() {
 
     expect(find.text("Wander isn't available"), findsOneWidget);
     expect(find.textContaining('Install or turn on Wander'), findsOneWidget);
+  });
+
+  testWidgets('closes itself when Wander answers after all', (tester) async {
+    final answered = Completer<void>();
+    await open(
+      tester,
+      ArConnectUnavailableReason.noAnswer,
+      answered: answered.future,
+    );
+    expect(find.text("Wander didn't answer"), findsOneWidget);
+
+    answered.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text("Wander didn't answer"), findsNothing);
+    expect(answer, isTrue);
   });
 }
