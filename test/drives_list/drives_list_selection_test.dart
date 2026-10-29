@@ -89,50 +89,73 @@ void main() {
   );
 
   group('choosing drives', () {
-    // The explorer's rule (ArDriveMultiSelect): the checkboxes show only
-    // while the reader is choosing several drives - once one is ticked, while
-    // the multi-select key is held, or after a long press. Cmd is that key
-    // here: the test platform is not Windows.
-    testWidgets('no checkboxes until the reader is choosing several',
+    // The file-manager pattern (ArDriveMultiSelect), shared with the
+    // explorer: a row's box shows while the pointer is on it or it has
+    // focus; every box and select-all show while choosing several - once one
+    // is ticked, while the multi-select key is held, or after a long press.
+    // Cmd is that key here: the test platform is not Windows. The column is
+    // always reserved, so nothing moves when a box shows.
+    List<bool> shown(WidgetTester tester) => tester
+        .widgetList<ArDriveMultiSelectBox>(find.byType(ArDriveMultiSelectBox))
+        .map((b) => b.visible)
+        .toList();
+
+    Future<TestGesture> mouse(WidgetTester tester) async {
+      final g = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await g.addPointer(location: const Offset(1, 1));
+      addTearDown(g.removePointer);
+      return g;
+    }
+
+    testWidgets('no box shows until a row is pointed at or chosen',
         (tester) async {
       await pump(tester, twoDrives);
 
-      expect(find.byType(ArDriveCheckBox), findsNothing);
-      expect(find.text('Name'), findsOneWidget,
-          reason: 'the headings stay, aligned over the rows');
+      // Select-all, then one per row: all there, none shown.
+      expect(shown(tester), [false, false, false]);
+      expect(find.text('Name'), findsOneWidget);
     });
 
-    testWidgets('holding the multi-select key shows them, select-all too',
-        (tester) async {
+    testWidgets("hover shows that row's box only", (tester) async {
       await pump(tester, twoDrives);
+      final pointer = await mouse(tester);
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await pointer.moveTo(tester.getCenter(find.text('b')));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ArDriveCheckBox), findsNWidgets(3),
-          reason: 'one per row, plus the header select-all');
-
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ArDriveCheckBox), findsNothing,
-          reason: 'released with nothing ticked, they go again');
+      expect(shown(tester), [false, false, true]);
     });
 
-    testWidgets('a box ticked with the key held picks that drive to sync',
-        (tester) async {
+    testWidgets('and a box shown on hover ticks that drive', (tester) async {
       await pump(tester, twoDrives);
+      final pointer = await mouse(tester);
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await pointer.moveTo(tester.getCenter(find.text('b')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('select-b-false')));
+      final box =
+          tester.getCenter(find.byKey(const ValueKey('select-b-false')));
+      await pointer.moveTo(box);
+      await pointer.down(box);
+      await pointer.up();
       await tester.pump();
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
 
       expect(toggled, ['b']);
     });
 
-    testWidgets('once one is ticked they stay, with select-all',
+    testWidgets("focus shows that row's box", (tester) async {
+      await pump(tester, twoDrives);
+      final pointer = await mouse(tester);
+
+      await pointer.down(tester.getCenter(find.text('a')));
+      await pointer.up();
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      await pointer.moveTo(const Offset(1, 1));
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [false, true, false]);
+    });
+
+    testWidgets('a tick shows every box and select-all; clearing hides them',
         (tester) async {
       await pump(
         tester,
@@ -142,9 +165,29 @@ void main() {
           selected: const {'a'},
         ),
       );
-
-      expect(find.byType(ArDriveCheckBox), findsNWidgets(3));
+      expect(shown(tester), [true, true, true]);
       expect(find.byKey(const ValueKey('select-all-false')), findsOneWidget);
+
+      await pump(tester, twoDrives);
+
+      expect(shown(tester), [false, false, false]);
+    });
+
+    testWidgets('holding the multi-select key shows them all', (tester) async {
+      await pump(tester, twoDrives);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pumpAndSettle();
+      expect(shown(tester), [true, true, true]);
+
+      await tester.tap(find.byKey(const ValueKey('select-b-false')));
+      await tester.pump();
+      expect(toggled, ['b']);
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pumpAndSettle();
+      expect(shown(tester), [false, false, false],
+          reason: 'released with nothing ticked, they go again');
     });
 
     testWidgets('a long press shows them on a touch screen', (tester) async {
@@ -153,13 +196,13 @@ void main() {
       await tester.longPress(find.text('a'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ArDriveCheckBox), findsNWidgets(3));
+      expect(shown(tester), [true, true, true]);
       expect(toggled, isEmpty, reason: 'a long press ticks nothing itself');
 
       await tester.longPress(find.text('a'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ArDriveCheckBox), findsNothing,
+      expect(shown(tester), [false, false, false],
           reason: 'a second long press closes them, as in the explorer');
     });
 
@@ -176,6 +219,27 @@ void main() {
 
       expect(toggled, isEmpty,
           reason: 'ticking is only the box: it picks what Sync acts on');
+    });
+
+    testWidgets('names and headings do not move when the boxes show',
+        (tester) async {
+      await pump(tester, twoDrives);
+      final before = [
+        tester.getTopLeft(find.text('a')),
+        tester.getTopLeft(find.text('Name')),
+      ];
+
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [drive('a'), drive('b')],
+          scope: DriveScope.all,
+          selected: const {'a'},
+        ),
+      );
+
+      expect(tester.getTopLeft(find.text('a')), before[0]);
+      expect(tester.getTopLeft(find.text('Name')), before[1]);
     });
 
     testWidgets('nothing is selected, so the heading is the page\'s title',
@@ -340,9 +404,7 @@ void main() {
       await pump(tester, oneTicked);
       final after = tester.getTopLeft(find.text('Name'));
 
-      // Down, not across: the checkbox column opening moves the headings
-      // right, as it does in the explorer.
-      expect(after.dy, before.dy,
+      expect(after, before,
           reason: 'the heading becomes the selection in place; a row of its '
               'own pushed the list down under the pointer');
     });
@@ -367,7 +429,7 @@ void main() {
       // The card stays: it is words now, and withdrawing it on the first
       // tick was the same jump.
       expect(find.text('Nothing has been synced yet'), findsOneWidget);
-      expect(tester.getTopLeft(find.text('Name')).dy, before.dy);
+      expect(tester.getTopLeft(find.text('Name')), before);
     });
 
     testWidgets('and the title comes back when nothing is ticked',

@@ -2,26 +2,85 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// When a list shows its checkboxes.
+/// When a list shows its checkboxes: the file-manager pattern, as Google
+/// Drive, Dropbox and OneDrive have it.
 ///
-/// Only while the reader is choosing several rows: once a row is ticked,
-/// while the multi-select key is held, or after a long press on a touch
-/// screen. The rest of the time the checkboxes are hidden and a click on a row
-/// only chooses it. The explorer's table ([ArDriveDataTable]) and the drives
-/// list both go by this, so the two lists agree on when ticking is on offer.
+/// - A row's box shows while the pointer is on that row, or while the row has
+///   keyboard focus.
+/// - Once any box is ticked, every row's box shows, and select-all in the
+///   header, until the selection is cleared.
+/// - On a touch screen, a long press starts selecting.
+/// - Holding the multi-select key (Ctrl on Windows, Cmd elsewhere) shows them
+///   all too, as a shortcut.
+///
+/// The column the boxes sit in is always reserved and a box fades in place,
+/// so a row's content never moves when its box appears. Ticking is the box's
+/// alone: what a click on the row itself does is the list's business.
+///
+/// The explorer's table ([ArDriveDataTable]) and the drives list both go by
+/// this, so the two lists agree.
 abstract final class ArDriveMultiSelect {
   /// Whether the multi-select key is held: Ctrl on Windows, Cmd elsewhere.
   static bool get keyPressed => AppPlatform.isWindows()
       ? HardwareKeyboard.instance.isControlPressed
       : HardwareKeyboard.instance.isMetaPressed;
 
-  /// Whether a list shows its checkboxes.
-  static bool showsCheckboxes({
+  /// Whether the reader is choosing several rows, which shows every row's box
+  /// and the header's select-all.
+  static bool isSelecting({
     required bool anyTicked,
     required bool keyHeld,
     bool longPressed = false,
   }) =>
       longPressed || anyTicked || keyHeld;
+
+  /// Whether one row's box shows: while selecting, or while the pointer is on
+  /// the row or the row has keyboard focus.
+  static bool showsRowCheckbox({
+    required bool selecting,
+    bool hovered = false,
+    bool focused = false,
+  }) =>
+      selecting || hovered || focused;
+
+  /// How long a box takes to fade in or out.
+  static const fade = Duration(milliseconds: 150);
+}
+
+/// A row's checkbox, or the header's select-all, in a column of [width]
+/// that is reserved whether or not the box shows.
+///
+/// Hidden, it is transparent and takes no pointer, so a click there lands on
+/// the row; it stays in the focus order, and focus on it shows it.
+class ArDriveMultiSelectBox extends StatelessWidget {
+  const ArDriveMultiSelectBox({
+    super.key,
+    required this.visible,
+    required this.width,
+    required this.child,
+  });
+
+  final bool visible;
+  final double width;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: IgnorePointer(
+          ignoring: !visible,
+          child: AnimatedOpacity(
+            opacity: visible ? 1 : 0,
+            duration: ArDriveMultiSelect.fade,
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Builds [builder] with whether the multi-select key is held, and builds it

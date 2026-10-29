@@ -237,7 +237,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
   final _focusNode = FocusNode(debugLabel: 'ArDriveDataTable');
   int? _shiftSelectionStartIndex;
 
-  bool get _isMultiSelecting => ArDriveMultiSelect.showsCheckboxes(
+  bool get _isMultiSelecting => ArDriveMultiSelect.isSelecting(
         longPressed: _isMultiSelectingWithLongPress,
         anyTicked: _multiSelectBoxes
             .any((element) => element.selectedItems.isNotEmpty),
@@ -781,6 +781,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
     return Focus(
         focusNode: _focusNode,
         onKeyEvent: _onKey,
+        // The selected row shows its checkbox while the table has focus:
+        // the row's keyboard focus, see [_multiSelectColumn].
+        onFocusChange: (_) => setState(() {}),
         child: ArDriveCard(
           backgroundColor:
               ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
@@ -967,9 +970,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
     final isMasterCheckBoxChecked = multiselectPage.page == _selectedPage &&
         multiselectPage.selectedItems.length == _currentPage.length;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: _isMultiSelecting ? checkboxSize + 14 : 0,
+    // Reserved whether or not it shows, so the headings never move.
+    return ArDriveMultiSelectBox(
+      visible: _isMultiSelecting,
+      width: checkboxSize + 14,
       child: ArDriveCheckBox(
         key: ValueKey(
           isMasterCheckBoxChecked.toString() +
@@ -1003,21 +1007,30 @@ class _ArDriveDataTableState<T extends IndexedItem>
       (element) => element.index == row.index,
     );
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: _isMultiSelecting ? checkboxSize + 14 : 0,
-      child: ArDriveCheckBox(
-        key: ValueKey(
-          index.toString() + isSelected.toString(),
+    // The row's own hover, so a Builder: this method's context is the
+    // table's. Reserved whether or not it shows, so the row's content never
+    // moves under the pointer.
+    return Builder(
+      builder: (context) => ArDriveMultiSelectBox(
+        visible: ArDriveMultiSelect.showsRowCheckbox(
+          selecting: _isMultiSelecting,
+          hovered: _RowHover.of(context),
+          focused: _focusNode.hasFocus && _selectedItem == row,
         ),
-        checked: isSelected,
-        onChange: (value) {
-          _onChangeItemCheck(
-            row: row,
-            index: index,
-            value: value,
-          );
-        },
+        width: checkboxSize + 14,
+        child: ArDriveCheckBox(
+          key: ValueKey(
+            index.toString() + isSelected.toString(),
+          ),
+          checked: isSelected,
+          onChange: (value) {
+            _onChangeItemCheck(
+              row: row,
+              index: index,
+              value: value,
+            );
+          },
+        ),
       ),
     );
   }

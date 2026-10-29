@@ -408,8 +408,7 @@ class DrivesListBody extends StatelessWidget {
         onClear: onClearSelection,
         child: _ChoosingSeveral(
           anyTicked: state.selected.isNotEmpty,
-          builder: (context, showsCheckboxes, onLongPress) =>
-              _DrivesListLoadedView(
+          builder: (context, selecting, onLongPress) => _DrivesListLoadedView(
             state: state,
             onOpenDrive: onOpenDrive,
             buildMenu: buildMenu,
@@ -422,7 +421,7 @@ class DrivesListBody extends StatelessWidget {
             onSyncChanged: onSyncChanged,
             chosenDriveId: chosenDriveId,
             onChoose: onChoose,
-            showsCheckboxes: showsCheckboxes,
+            selecting: selecting,
             onLongPress: onLongPress,
           ),
         ),
@@ -631,16 +630,16 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.onSyncChanged,
     this.chosenDriveId,
     this.onChoose,
-    this.showsCheckboxes = true,
+    this.selecting = false,
     this.onLongPress,
   });
 
   final String? chosenDriveId;
   final void Function(String driveId)? onChoose;
 
-  /// Whether the rows' checkboxes and the select-all box are drawn - see
-  /// [_ChoosingSeveral].
-  final bool showsCheckboxes;
+  /// Whether the reader is choosing several drives, which shows every row's
+  /// box and select-all - see [_ChoosingSeveral].
+  final bool selecting;
 
   /// A long press on a row - see [_ChoosingSeveral].
   final VoidCallback? onLongPress;
@@ -789,7 +788,7 @@ class _DrivesListLoadedView extends StatelessWidget {
                             state.drives.every(
                                 (drive) => state.selected.contains(drive.id)),
                     onToggleSelectAll: onToggleSelectAll,
-                    showsCheckbox: showsCheckboxes,
+                    selecting: selecting,
                     showsAllColumns: showsAllColumns,
                   ),
                   rows: _rows(state, showsColumns, showsAllColumns),
@@ -833,7 +832,7 @@ class _DrivesListLoadedView extends StatelessWidget {
                 ? null
                 : state.selected.contains(drive.id),
             onSelectedChanged: onToggleSelected,
-            showsCheckbox: showsCheckboxes,
+            selecting: selecting,
             onLongPress: onLongPress,
           );
         },
@@ -1032,20 +1031,21 @@ class _SelectionShortcuts extends StatelessWidget {
   }
 }
 
-/// Whether the reader is choosing several drives, which is when the list
-/// shows its checkboxes: the explorer's rule, [ArDriveMultiSelect].
+/// Whether the reader is choosing several drives, which shows every row's
+/// checkbox and select-all: the explorer's rule, [ArDriveMultiSelect].
 ///
 /// Once a drive is ticked, while the multi-select key is held (Ctrl on
-/// Windows, Cmd elsewhere), or after a long press on a touch screen. Ticking
-/// still means only one thing here: the drives Sync selected acts on. A
-/// click on a row only chooses it, in or out of this mode.
+/// Windows, Cmd elsewhere), or after a long press on a touch screen. Outside
+/// it, a row's box shows while the pointer is on the row or it has focus.
+/// Ticking still means only one thing here: the drives Sync selected acts
+/// on. A click on a row only chooses it; only a click on the box ticks.
 class _ChoosingSeveral extends StatefulWidget {
   const _ChoosingSeveral({required this.anyTicked, required this.builder});
 
   final bool anyTicked;
   final Widget Function(
     BuildContext context,
-    bool showsCheckboxes,
+    bool selecting,
     VoidCallback onLongPress,
   ) builder;
 
@@ -1073,7 +1073,7 @@ class _ChoosingSeveralState extends State<_ChoosingSeveral> {
     return ArDriveMultiSelectKey(
       builder: (context, keyHeld) => widget.builder(
         context,
-        ArDriveMultiSelect.showsCheckboxes(
+        ArDriveMultiSelect.isSelecting(
           anyTicked: widget.anyTicked,
           keyHeld: keyHeld,
           longPressed: _longPressed,

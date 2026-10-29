@@ -157,12 +157,13 @@ class DriveListHeader extends StatelessWidget {
     this.onSort,
     this.allSelected,
     this.onToggleSelectAll,
-    this.showsCheckbox = true,
+    this.selecting = false,
     this.showsAllColumns = true,
   });
 
-  /// Whether the select-all box is drawn - see [ListTableHeader.showsCheckbox].
-  final bool showsCheckbox;
+  /// Whether the reader is choosing several drives: select-all shows only
+  /// then - see [ListHeaderSelection].
+  final bool selecting;
 
   /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
@@ -193,9 +194,13 @@ class DriveListHeader extends StatelessWidget {
       sort: sort,
       sortAscending: sortAscending,
       onSort: onSort,
-      allSelected: allSelected,
-      onToggleSelectAll: onToggleSelectAll,
-      showsCheckbox: showsCheckbox,
+      selection: allSelected == null
+          ? null
+          : ListHeaderSelection(
+              allTicked: allSelected!,
+              onToggleAll: () => onToggleSelectAll?.call(),
+              selecting: selecting,
+            ),
       columns: [
         ListColumn(strings.name, _nameFlex, sortKey: DriveListSort.name),
         ListColumn(strings.lastSynced, _syncFlex,
@@ -223,16 +228,18 @@ class DriveListRow extends StatelessWidget {
     this.menu,
     this.selected,
     this.onSelectedChanged,
-    this.showsCheckbox = true,
+    this.selecting = false,
     this.onLongPress,
     this.chosen,
     this.onChoose,
   });
 
-  /// Whether the checkbox is drawn - see [ListTableRow.showsCheckbox].
-  final bool showsCheckbox;
+  /// Whether the reader is choosing several drives, which shows every row's
+  /// box - see [ListRowSelection.selecting]. Otherwise a row's box shows
+  /// while the pointer is on it or it has focus.
+  final bool selecting;
 
-  /// See [ListTableRow.onLongPress].
+  /// See [ListRowSelection.onLongPress].
   final VoidCallback? onLongPress;
 
   /// False for the three columns drawn wherever five do not fit - see
@@ -289,11 +296,15 @@ class DriveListRow extends StatelessWidget {
       onOpen: onOpen,
       showsColumns: showsColumns,
       menu: menu,
-      selected: selected,
-      checkboxKey: ValueKey('select-${drive.id}-$selected'),
-      onSelectedChanged: () => onSelectedChanged?.call(drive.id),
-      showsCheckbox: showsCheckbox,
-      onLongPress: onLongPress,
+      selection: selected == null
+          ? null
+          : ListRowSelection(
+              ticked: selected!,
+              onTickChanged: () => onSelectedChanged?.call(drive.id),
+              selecting: selecting,
+              onLongPress: onLongPress,
+              checkboxKey: ValueKey('select-${drive.id}-$selected'),
+            ),
       chosen: chosen,
       onChoose: onChoose,
       child: showsColumns ? _columns(context) : _stacked(context),
