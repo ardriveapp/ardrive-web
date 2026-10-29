@@ -594,17 +594,9 @@
   "@uploadAsManifest": {
     "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
-  "syncThisDriveDescription": "获取此网盘的最新文件和文件夹。",
-  "@syncThisDriveDescription": {
-    "description": "Description for the sync drive action card"
-  },
   "syncAllDrives": "同步所有网盘",
   "@syncAllDrives": {
     "description": "Button and title text for syncing all drives"
-  },
-  "syncAllDrivesDescription": "一次同步所有网盘，确保所有内容都是最新的。",
-  "@syncAllDrivesDescription": {
-    "description": "Description for the sync all drives action card"
   },
   "driveID": "网盘ID",
   "@driveID": {

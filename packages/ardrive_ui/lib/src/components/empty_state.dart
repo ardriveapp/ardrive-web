@@ -26,11 +26,13 @@ class ArDriveEmptyState extends StatelessWidget {
   final String title;
   final String? message;
 
-  /// The main thing to do next, as a primary button.
+  /// The main thing to do next, as a primary button. A label with a null
+  /// [onAction] draws the button as unavailable.
   final String? actionLabel;
   final VoidCallback? onAction;
 
-  /// A second, less important action, as a secondary button.
+  /// A second, less important action, as a secondary button. Unavailable,
+  /// like the main one, when [onSecondaryAction] is null.
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
 
@@ -91,6 +93,10 @@ class ArDriveEmptyState extends StatelessWidget {
                       ArDriveButtonNew(
                         text: secondaryActionLabel!,
                         typography: typography,
+                        // ArDriveButtonNew colours itself off the flag alone,
+                        // so a null callback without it looks live and does
+                        // nothing.
+                        isDisabled: onSecondaryAction == null,
                         onPressed: onSecondaryAction,
                       ),
                     if (actionLabel != null)
@@ -98,6 +104,7 @@ class ArDriveEmptyState extends StatelessWidget {
                         text: actionLabel!,
                         typography: typography,
                         variant: ButtonVariant.primary,
+                        isDisabled: onAction == null,
                         onPressed: onAction,
                       ),
                   ],

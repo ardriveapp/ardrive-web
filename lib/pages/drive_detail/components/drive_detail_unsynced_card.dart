@@ -202,40 +202,22 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
   }
 }
 
-/// How wide an action tile is allowed to be.
+/// What a drive that has not been synced on this device shows in place of its
+/// contents: the explorer's empty state, with the two ways to sync.
 ///
-/// A ceiling rather than a width. The tile used to be a fixed 283x283 box, and
-/// a fixed box is a phone at 280 logical pixels with a tile hanging over the
-/// edge of it.
-const double _actionCardMaxWidth = 283;
-
-/// The height an action tile has when its content is smaller than it.
-///
-/// The old fixed height, kept as a floor so the two tiles still match at
-/// ordinary text sizes - and only as a floor. [ArDriveCard] clips
-/// (`Clip.antiAlias`), so a fixed height plus a column of text that grows with
-/// the reader's text scale did not overflow visibly: from about 1.3x the
-/// buttons were simply laid out past the clip boundary, drawn nowhere and hit
-/// by nothing. At 2.0 a press on "Sync Now" reached no callback at all.
-///
-/// 283 less the 31 of padding either side, so the tile's outside height is
-/// unchanged where nothing has grown.
-const double _actionCardMinContentHeight = _actionCardMaxWidth - 31 * 2;
-
-/// Content card shown for drives that haven't been synced yet.
-/// Matches the sleek design of DriveDetailFolderEmptyCard.
+/// Opening a drive never syncs it on its own; this is where the user decides
+/// to.
 class DriveDetailUnsyncedCard extends StatelessWidget {
   final Drive drive;
 
   /// Whether a sync has already run against this drive and come back with
   /// nothing.
   ///
-  /// The card is the same card either way - same frame, same two actions - but
-  /// it does not repeat itself. Before a sync it says the drive needs one;
-  /// after one that found no root metadata it says the sync ran and what it
-  /// found, and the primary action stops being the button that was already
-  /// pressed. Rendering the identical card twice reads as a Sync Now that did
-  /// nothing.
+  /// The same state either way, but it does not repeat itself. Before a sync
+  /// it says the drive needs one; after one that found no root metadata it
+  /// says so, and the main action becomes "Check again" rather than the
+  /// button that was already pressed. Showing the identical state twice reads
+  /// as a sync that did nothing.
   final bool syncFoundNothing;
 
   const DriveDetailUnsyncedCard({
@@ -244,313 +226,79 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
     this.syncFoundNothing = false,
   });
 
-  /// What this drive's situation is, in a headline.
-  String _title(BuildContext context) => syncFoundNothing
-      ? appLocalizationsOf(context).driveSyncFoundNothing
-      : appLocalizationsOf(context).driveNotSynced;
-
-  /// And what to do about it.
-  String _description(BuildContext context) => syncFoundNothing
-      ? appLocalizationsOf(context).driveSyncFoundNothingDescription
-      : appLocalizationsOf(context).driveNotSyncedDescription;
-
-  /// What the app did about this drive when the answer is "nothing", and why.
+  /// The line under the title.
   ///
-  /// One sync runs at a time and nothing queues behind it, so opening a drive
-  /// nothing has walked while another drive is syncing starts no request at
-  /// all. Left unsaid, that lands the user on a card with two unavailable
-  /// buttons, nothing in flight, and no way to tell that apart from an app
-  /// that has quietly stopped - the strip above the page says a sync is
-  /// running, and the obvious reading is that it is this one.
-  ///
-  /// It says which of the two it is. It promises nothing and queues nothing:
-  /// the user is told, and the decision to sync stays theirs.
-  Widget _syncNotice(BuildContext context) {
-    // Watched, not read: this appears and goes when a sync starts and stops.
-    final syncCubit = context.watch<SyncCubit>();
+  /// While a sync runs, the line says which sync it is instead. One sync runs
+  /// at a time and nothing queues behind it, so opening a drive nothing has
+  /// walked while another drive is syncing starts no request at all. Left
+  /// unsaid, that is two unavailable buttons and nothing in flight, which
+  /// looks like an app that has quietly stopped: the strip above the page
+  /// says a sync is running, and the obvious reading is that it is this one.
+  /// It promises nothing and queues nothing; the decision to sync stays the
+  /// user's.
+  String _message(BuildContext context, SyncCubit syncCubit) {
+    final s = appLocalizationsOf(context);
 
-    if (syncCubit.state is! SyncInProgress) {
-      return const SizedBox.shrink();
+    if (syncCubit.state is SyncInProgress) {
+      // A null drive id is a sync of every drive, which covers this one.
+      final syncingDriveId = syncCubit.syncingDriveId;
+      final coversThisDrive =
+          syncingDriveId == null || syncingDriveId == drive.id;
+
+      return coversThisDrive
+          ? s.driveSyncAlreadyRunningForThisDrive
+          : s.driveSyncNotStartedAnotherDriveIsSyncing;
     }
 
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    // A null drive id is a sync of every drive, which covers this one.
-    final syncingDriveId = syncCubit.syncingDriveId;
-    final coversThisDrive =
-        syncingDriveId == null || syncingDriveId == drive.id;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        coversThisDrive
-            ? appLocalizationsOf(context).driveSyncAlreadyRunningForThisDrive
-            : appLocalizationsOf(context)
-                .driveSyncNotStartedAnotherDriveIsSyncing,
-        style: typography.paragraphNormal(
-          color: colorTokens.textMid,
-          fontWeight: ArFontWeight.semiBold,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
+    return syncFoundNothing
+        ? s.driveSyncFoundNothingDescription
+        : s.driveNotSyncedDescription;
   }
 
   @override
   Widget build(BuildContext context) {
-    return ScreenTypeLayout.builder(
-      mobile: (context) => _buildMobileContent(context),
-      desktop: (context) => _buildDesktopContent(context),
-    );
-  }
+    final s = appLocalizationsOf(context);
+    // Watched, not read: the line changes and the actions are drawn as
+    // unavailable while a sync runs, so this has to be rebuilt when one
+    // starts and stops.
+    final syncCubit = context.watch<SyncCubit>();
+    // One sync at a time: the cubit refuses a second one, and
+    // `syncCurrentDrive` reads the result of the sync it thought it started,
+    // so a press that was refused would come back and report that the sync
+    // found nothing. A null callback draws the button as unavailable.
+    final isSyncing = syncCubit.state is SyncInProgress;
 
-  Widget _buildMobileContent(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Text(
-            _title(context),
-            style: typography.heading4(fontWeight: ArFontWeight.bold),
-            textAlign: TextAlign.center,
+    // Centred where there is room, scrolled where there is not: a short
+    // window or a large text scale.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
           ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                Text(
-                  _description(context),
-                  style: typography.paragraphLarge(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                _syncNotice(context),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildSyncThisDriveCard(context),
-          const SizedBox(height: 20),
-          _buildSyncAllDrivesCard(context),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopContent(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.8,
-        child: ArDriveCard(
-          width: double.infinity,
-          backgroundColor: colorTokens.containerL1,
-          // Centred where the frame has room for it, scrolled where it has
-          // not - which is what a large text scale, a short window or both
-          // make of the same content. The frame's own height is unchanged;
-          // what changes is that its content is no longer required to fit it.
-          content: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 66),
-                      child: Column(
-                        children: [
-                          Text(
-                            _title(context),
-                            style: typography.display(
-                              fontWeight: ArFontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            _description(context),
-                            style: typography.heading5(
-                              color: colorTokens.textLow,
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          _syncNotice(context),
-                        ],
-                      ),
-                    ),
-                    // A Wrap, not a Row: two tiles side by side need 566px
-                    // plus their gap, and a narrow desktop window or a large
-                    // text scale is exactly where the second one used to be
-                    // pushed off the card. Below that they stack, which is
-                    // the phone layout's answer to the same problem.
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 40,
-                        runSpacing: 20,
-                        children: [
-                          _buildSyncThisDriveCard(context),
-                          _buildSyncAllDrivesCard(context),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          child: ArDriveEmptyState(
+            icon: ArDriveIcons.cloudSync(),
+            title:
+                syncFoundNothing ? s.driveSyncFoundNothing : s.driveNotSynced,
+            message: _message(context, syncCubit),
+            // Not "Sync this drive" a second time: that button has been
+            // pressed, and offering it again unchanged is what made the
+            // screen read as a loop. Checking again is worth doing, since a
+            // drive created moments ago does turn up, so the action stays
+            // under its real name.
+            actionLabel: syncFoundNothing ? s.checkAgain : s.syncThisDrive,
+            onAction: isSyncing
+                ? null
+                : () => context.read<DriveDetailCubit>().syncCurrentDrive(),
+            secondaryActionLabel: s.syncAllDrives,
+            onSecondaryAction: isSyncing
+                ? null
+                : () => context
+                    .read<DriveDetailCubit>()
+                    .syncAllAndRefreshCurrentDrive(),
           ),
         ),
       ),
-    );
-  }
-
-  /// The frame both action tiles share.
-  ///
-  /// One builder rather than two copies of the same box: the fixed height that
-  /// clipped the buttons away was written twice, and a fix applied to one copy
-  /// is not a fix.
-  Widget _actionCard(BuildContext context, {required List<Widget> children}) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: _actionCardMaxWidth),
-      child: ArDriveCard(
-        width: double.infinity,
-        backgroundColor: colorTokens.containerL2,
-        contentPadding: const EdgeInsets.all(31),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: _actionCardMinContentHeight,
-          ),
-          // Shrink-wrapped, so the tile grows with its text instead of
-          // clipping it. `spaceEvenly` still spreads the content when the
-          // floor above leaves room to spread.
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: children,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the "Sync this drive" action card.
-  Widget _buildSyncThisDriveCard(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    // Watched, not read: this card's action is drawn as unavailable while a
-    // sync runs, so it has to be rebuilt when one starts and stops.
-    final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
-
-    return _actionCard(
-      context,
-      children: [
-        ArDriveIcons.refresh(size: 25),
-        Text(
-          appLocalizationsOf(context).syncThisDrive,
-          style: typography.paragraphXLarge(fontWeight: ArFontWeight.semiBold),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          syncFoundNothing
-              ? appLocalizationsOf(context).syncThisDriveCheckAgainDescription
-              : appLocalizationsOf(context).syncThisDriveDescription,
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
-        ArDriveButtonNew(
-          size: ArDriveButtonSize.large,
-          maxWidth: double.infinity,
-          // Not "Sync this drive" a second time: that button has been
-          // pressed, and offering it again unchanged is what made the screen
-          // read as a loop. Checking again is worth doing - a drive created
-          // moments ago does turn up - so the action stays, under its real
-          // name.
-          text: syncFoundNothing
-              ? appLocalizationsOf(context).checkAgain
-              : appLocalizationsOf(context).syncThisDrive,
-          typography: typography,
-          // One sync at a time: the cubit refuses a second one, and
-          // `syncCurrentDrive` reads the result of the sync it thought it
-          // started - so a press that was refused would come back and report
-          // that the sync found nothing. `isDisabled` as well as a null
-          // callback, because [ArDriveButtonNew] picks its colours off the
-          // flag alone.
-          isDisabled: isSyncing,
-          onPressed: isSyncing
-              ? null
-              : () {
-                  context.read<DriveDetailCubit>().syncCurrentDrive();
-                },
-          variant: ButtonVariant.primary,
-        ),
-      ],
-    );
-  }
-
-  /// Builds the "Sync all drives" action card.
-  Widget _buildSyncAllDrivesCard(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    // Watched, not read: this card's action is drawn as unavailable while a
-    // sync runs, so it has to be rebuilt when one starts and stops.
-    final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
-
-    return _actionCard(
-      context,
-      children: [
-        ArDriveIcons.cloudSync(size: 25),
-        Text(
-          appLocalizationsOf(context).syncAllDrives,
-          style: typography.paragraphXLarge(fontWeight: ArFontWeight.semiBold),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          appLocalizationsOf(context).syncAllDrivesDescription,
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
-        ArDriveButtonNew(
-          size: ArDriveButtonSize.large,
-          maxWidth: double.infinity,
-          text: appLocalizationsOf(context).syncAllDrives,
-          typography: typography,
-          // `SyncCubit.startSync` has always refused while a sync runs; this
-          // is what says so.
-          isDisabled: isSyncing,
-          onPressed: isSyncing
-              ? null
-              : () {
-                  context
-                      .read<DriveDetailCubit>()
-                      .syncAllAndRefreshCurrentDrive();
-                },
-          variant: ButtonVariant.secondary,
-        ),
-      ],
     );
   }
 }

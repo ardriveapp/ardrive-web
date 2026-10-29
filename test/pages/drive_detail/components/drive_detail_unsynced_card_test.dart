@@ -20,7 +20,11 @@ import '../../../test_utils/mocks.dart';
 class _MockDriveDetailCubit extends MockCubit<DriveDetailState>
     implements DriveDetailCubit {}
 
-/// The card a never-synced drive opens on, and its two Sync buttons.
+/// What a drive that has not been synced on this device shows, and its two
+/// Sync buttons.
+///
+/// It is the explorer's empty state ([ArDriveEmptyState]): a title, one line
+/// and two actions. Opening the drive syncs nothing; the user decides here.
 ///
 /// `SyncCubit` refuses a second sync outright now - one at a time, no queue -
 /// and `syncCurrentDrive` reads the result of the sync it thought it started,
@@ -137,6 +141,84 @@ void main() {
       tester.widget<ArDriveButtonNew>(
         find.widgetWithText(ArDriveButtonNew, name),
       );
+
+  group('it is the explorer\'s empty state', () {
+    testWidgets('before a sync: says the drive is not synced here',
+        (tester) async {
+      await pumpCard(tester, isSyncing: false);
+
+      expect(find.byType(ArDriveEmptyState), findsOneWidget);
+      expect(
+          find.text("This drive isn't synced on this device"), findsOneWidget);
+      expect(
+          find.text('Sync it to see its files and folders.'), findsOneWidget);
+
+      // Sync all drives is the secondary action, Sync this drive the main
+      // one, in the empty state's order.
+      final buttons =
+          tester.widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+      expect(
+          buttons.map((b) => b.text), ['Sync all drives', 'Sync this drive']);
+      expect(buttons.map((b) => b.variant),
+          [ButtonVariant.secondary, ButtonVariant.primary]);
+
+      // The old card's big title and its two tile descriptions are gone.
+      expect(find.text('Drive not synced'), findsNothing);
+      expect(find.text('Fetch the latest files and folders from this drive.'),
+          findsNothing);
+    });
+
+    testWidgets('after a sync found nothing: says so and offers Check again',
+        (tester) async {
+      await pumpCard(tester, isSyncing: false, syncFoundNothing: true);
+
+      expect(find.text('Nothing found yet'), findsOneWidget);
+      expect(
+          find.text('A new drive can take a few minutes to appear on Arweave.'),
+          findsOneWidget);
+      expect(find.text("This drive isn't synced on this device"), findsNothing);
+
+      // Not the button that was just pressed, offered again unchanged.
+      expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
+          findsNothing);
+      expect(buttonNamed(tester, 'Check again').variant, ButtonVariant.primary);
+      expect(buttonNamed(tester, 'Sync all drives').variant,
+          ButtonVariant.secondary);
+    });
+
+    testWidgets('Sync this drive syncs this drive and nothing else',
+        (tester) async {
+      await pumpCard(tester, isSyncing: false, surface: const Size(1440, 900));
+
+      await tester
+          .tap(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'));
+      await tester.pump();
+
+      verify(() => driveDetailCubit.syncCurrentDrive()).called(1);
+      verifyNever(() => driveDetailCubit.syncAllAndRefreshCurrentDrive());
+    });
+
+    testWidgets('Sync all drives syncs every drive and nothing else',
+        (tester) async {
+      await pumpCard(tester, isSyncing: false, surface: const Size(1440, 900));
+
+      await tester
+          .tap(find.widgetWithText(ArDriveButtonNew, 'Sync all drives'));
+      await tester.pump();
+
+      verify(() => driveDetailCubit.syncAllAndRefreshCurrentDrive()).called(1);
+      verifyNever(() => driveDetailCubit.syncCurrentDrive());
+    });
+
+    testWidgets('showing it starts no sync', (tester) async {
+      // Opening a drive never syncs it on its own.
+      await pumpCard(tester, isSyncing: false);
+      await pumpCard(tester, isSyncing: false, syncFoundNothing: true);
+
+      verifyNever(() => driveDetailCubit.syncCurrentDrive());
+      verifyNever(() => driveDetailCubit.syncAllAndRefreshCurrentDrive());
+    });
+  });
 
   testWidgets('both offers are live when nothing is running', (tester) async {
     await pumpCard(tester, isSyncing: false);
@@ -280,6 +362,8 @@ void main() {
 
       expect(find.text(notStarted), findsOneWidget);
       expect(find.text(alreadyRunning), findsNothing);
+      // In place of the usual line, not under it: one line of text.
+      expect(find.text('Sync it to see its files and folders.'), findsNothing);
     });
 
     testWidgets("this drive's own sync is not called someone else's",
@@ -301,15 +385,10 @@ void main() {
   });
 
   group('the offers survive the reader\'s text scale', () {
-    // The tiles were `ArDriveCard(width: 283, height: 283)` with 31px of
-    // padding around a column of text that grows with the text scale, and
-    // `ArDriveCard` clips. Nothing overflowed *visibly*: from about 1.3x the
-    // buttons were simply laid out below the clip boundary, so they were
-    // painted nowhere and hit by nothing. At 2.0 a press on "Sync Now" reached
-    // no callback at all - a button that is present, correctly labelled,
-    // correctly coloured and inert.
-    //
-    // The test presses them, rather than looking at them, for that reason.
+    // The old card's fixed 283x283 tiles clipped their own buttons away from
+    // about 1.3x: present, labelled, coloured and inert. The empty state
+    // scrolls where it does not fit, and these press the buttons rather than
+    // look at them so that a button laid out where nothing can hit it fails.
     for (final scale in [1.0, 1.3, 1.6, 2.0]) {
       for (final layout in {
         'a phone': const Size(390, 1600),
@@ -369,7 +448,7 @@ void main() {
 
     testWidgets('and the card that says a sync already looked does too',
         (tester) async {
-      // The same tiles, with the longer "Check again" copy in them.
+      // The same state, with "Check again" as its main action.
       await pumpCard(
         tester,
         isSyncing: false,

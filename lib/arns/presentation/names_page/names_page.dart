@@ -423,10 +423,6 @@ class ArNSNameRow extends StatelessWidget {
       icon: Icon(arnsNameIcon,
           size: ListNameCell.iconSize, color: colors.textMid),
       title: name.name,
-      marks: [
-        if (name.role == ArNSRole.controller)
-          ArDriveTag(text: strings.arnsManagedForOwner),
-      ],
     );
     final undernames = ListTextCell(
         strings.arnsUndernamesOf(name.undernamesUsed, name.undernameLimit));
@@ -535,10 +531,6 @@ class ArNSNameDetailsPanel extends StatelessWidget {
       onClose: onClose,
       icon: Icon(arnsNameIcon, size: 24, color: colors.textMid),
       title: host,
-      marks: [
-        if (name.role == ArNSRole.controller)
-          ArDriveTag(text: strings.arnsManagedForOwner),
-      ],
       toolbarActions: [
         ArDriveIconButton(
           tooltip: strings.listOpen,
@@ -547,6 +539,17 @@ class ArNSNameDetailsPanel extends StatelessWidget {
         ),
       ],
       details: [
+        // Said once, here, rather than as a tag on every row: a controller
+        // signs its own changes and pays for them in SOL, so it is worth
+        // knowing, but not worth repeating down the list.
+        if (name.role == ArNSRole.controller)
+          DetailsPanelItem(
+            itemTitle: strings.arnsRoleHeading,
+            leading: Text(
+              strings.arnsController,
+              style: typography.paragraphNormal(color: colors.textMid),
+            ),
+          ),
         DetailsPanelItem(
           itemTitle: strings.arnsLeaseEndsHeading,
           leading: ArNSLeaseCell(name: name, now: now),
@@ -624,7 +627,7 @@ class _NameTitle extends StatelessWidget {
       children: [
         ListPageTitleRow.text(context, arnsHostFor(name.name)),
         if (name.role == ArNSRole.controller)
-          ArDriveTag(text: strings.arnsManagedForOwner),
+          ArDriveTag(text: strings.arnsController),
         if (lease != null) lease,
       ],
     );

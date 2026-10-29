@@ -39,6 +39,37 @@ void main() {
     expect(imported, isTrue);
   });
 
+  testWidgets('an action without a callback is drawn as unavailable',
+      (tester) async {
+    // ArDriveButtonNew colours itself off `isDisabled` alone, so a null
+    // callback on its own would leave a button that looks live and does
+    // nothing.
+    await tester.pumpWidget(wrap(const ArDriveEmptyState(
+      title: 'Busy',
+      actionLabel: 'Sync',
+      secondaryActionLabel: 'Sync all',
+    )));
+
+    final buttons =
+        tester.widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+    expect(buttons.map((b) => b.isDisabled), [true, true]);
+    expect(buttons.map((b) => b.onPressed), [null, null]);
+  });
+
+  testWidgets('an action with a callback is live', (tester) async {
+    await tester.pumpWidget(wrap(ArDriveEmptyState(
+      title: 'Idle',
+      actionLabel: 'Sync',
+      onAction: () {},
+      secondaryActionLabel: 'Sync all',
+      onSecondaryAction: () {},
+    )));
+
+    final buttons =
+        tester.widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+    expect(buttons.map((b) => b.isDisabled), [false, false]);
+  });
+
   testWidgets('needs only a title', (tester) async {
     await tester
         .pumpWidget(wrap(const ArDriveEmptyState(title: 'Nothing here')));
