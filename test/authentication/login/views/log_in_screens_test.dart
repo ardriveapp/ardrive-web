@@ -3,7 +3,9 @@ import 'dart:typed_data';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/authentication/login/views/creating_account_view.dart';
 import 'package:ardrive/authentication/login/views/enter_recovery_phrase_view.dart';
+import 'package:ardrive/authentication/login/views/landing_view.dart';
 import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
@@ -237,6 +239,94 @@ void main() {
       expect(events[3], isA<ShowLanding>());
       expect(events[4], isA<CreateNewWallet>());
     });
+  });
+
+  group('Sign up with a wallet in the browser', () {
+    Widget signUp({bool ar = false, bool eth = false, bool sol = false}) =>
+        LogInView(
+          signUp: true,
+          isArConnectAvailable: ar,
+          isMetamaskAvailable: eth,
+          isSolanaAvailable: sol,
+        );
+
+    testWidgets('offers a new account first, then the wallets found',
+        (tester) async {
+      await pump(tester, signUp(ar: true, sol: true));
+      expect(find.text('Create your account'), findsOneWidget);
+      expect(find.text('Create an account'), findsOneWidget);
+      expect(find.text('or use a wallet you already have'), findsOneWidget);
+      expect(find.text('Wander'), findsOneWidget);
+      expect(find.text('Phantom or Solflare'), findsOneWidget);
+      expect(find.text('MetaMask'), findsNothing);
+      expect(find.text('Recovery phrase or keyfile'), findsNothing);
+      expect(
+          find.textContaining('Already have an account?', findRichText: true),
+          findsOneWidget);
+      expect(find.byKey(const Key('signUpLogIn')), findsOneWidget);
+      expect(
+          tester.widget<ArDriveLink>(find.byKey(const Key('signUpLogIn'))).text,
+          'Log in');
+    });
+
+    testWidgets('each row and link does what it says', (tester) async {
+      await pump(tester, signUp(ar: true, eth: true));
+      await tester.tap(find.text('Create an account'));
+      await tester.tap(find.text('Wander'));
+      await tester.tap(find.text('MetaMask'));
+      await tester.tap(find.byKey(const Key('logInBack')));
+      await tester.tap(find.byKey(const Key('signUpLogIn')));
+      final events = added();
+      expect(events[0], isA<CreateNewWallet>());
+      expect(events[1], isA<AddWalletFromArConnect>());
+      expect(events[2], isA<LoginWithMetamask>());
+      expect(events[3], isA<ShowLanding>());
+      expect(events[4], const SelectLoginFlow(existingUser: true));
+    });
+
+    test('the panel follows the flow', () {
+      when(() => loginBloc.isArConnectAvailable).thenReturn(true);
+      when(() => loginBloc.isMetamaskAvailable).thenReturn(false);
+      when(() => loginBloc.isSolanaAvailable).thenReturn(false);
+      final choice = loginPanelFor(
+          const LoginInitial(
+              isArConnectAvailable: true, existingUserFlow: false),
+          loginBloc) as LogInView;
+      expect(choice.signUp, isTrue);
+      final logIn = loginPanelFor(
+          const LoginInitial(
+              isArConnectAvailable: true, existingUserFlow: true),
+          loginBloc) as LogInView;
+      expect(logIn.signUp, isFalse);
+      expect(
+          (loginPanelFor(const LoginCreatingAccount(noWalletFound: true),
+                  loginBloc) as CreatingAccountView)
+              .noWalletFound,
+          isTrue);
+    });
+  });
+
+  group('Creating your account', () {
+    const line =
+        "No wallet found in this browser, so we're making one for you.";
+
+    testWidgets('says why when no wallet was found', (tester) async {
+      await pump(tester, const CreatingAccountView(noWalletFound: true));
+      expect(find.text(line), findsOneWidget);
+    });
+
+    testWidgets('says nothing of wallets when a new account was chosen',
+        (tester) async {
+      await pump(tester, const CreatingAccountView());
+      expect(find.text(line), findsNothing);
+    });
+  });
+
+  testWidgets('Sign up on the first panel starts sign-up', (tester) async {
+    when(() => loginBloc.anyWalletDetected).thenReturn(false);
+    await pump(tester, const LandingView());
+    await tester.tap(find.text('Sign up'));
+    expect(added().single, isA<StartSignUp>());
   });
 
   group('Enter your recovery phrase', () {

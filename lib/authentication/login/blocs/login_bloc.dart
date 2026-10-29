@@ -162,6 +162,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleAddWalletFromCompleterEvent(event, emit);
     } else if (event is CreateNewWallet) {
       await _handleCreateNewWalletEvent(event, emit);
+    } else if (event is StartSignUp) {
+      await _handleStartSignUpEvent(emit);
     } else if (event is CompleteWalletGeneration) {
       await _handleCompleteWalletGenerationEvent(event, emit);
     } else if (event is LoginWithMetamask) {
@@ -177,11 +179,27 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
-  /// The Log in panel.
+  /// The panel a browser wallet was chosen on: Log in, or Sign up's choice.
   LoginState get _logInPanel => LoginInitial(
         isArConnectAvailable: _arConnectService.isExtensionPresent(),
-        existingUserFlow: true,
+        existingUserFlow: existingUserFlow,
       );
+
+  /// Whether any browser wallet that can log in is in this browser.
+  bool get anyWalletDetected =>
+      _arConnectService.isExtensionPresent() ||
+      _ethereumProviderService.isExtensionPresent() ||
+      _solanaProviderService.isExtensionPresent();
+
+  Future<void> _handleStartSignUpEvent(Emitter<LoginState> emit) async {
+    if (anyWalletDetected) {
+      existingUserFlow = false;
+      emit(_logInPanel);
+    } else {
+      await _handleCreateNewWalletEvent(
+          const CreateNewWallet(noWalletFound: true), emit);
+    }
+  }
 
   /// Shows the panel that waits on [wallet] and returns what Cancel
   /// completes.
@@ -571,7 +589,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     if (event.gettingStarted) {
-      _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
+      _handleCreateNewWalletEvent(
+          CreateNewWallet(noWalletFound: !anyWalletDetected), emit);
     } else {
       emit(const LoginLanding());
     }
@@ -1028,7 +1047,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
-    emit(LoginCreatingAccount());
+    emit(LoginCreatingAccount(noWalletFound: event.noWalletFound));
 
     try {
       final wallet = await _walletFromMnemonic(mnemonic);

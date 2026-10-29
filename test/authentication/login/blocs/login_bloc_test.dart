@@ -1314,6 +1314,97 @@ void main() {
       ));
     });
 
+    group('Sign up', () {
+      void wallets({bool ar = false, bool eth = false, bool sol = false}) {
+        when(() => mockArConnectService.isExtensionPresent()).thenReturn(ar);
+        when(() => mockEthereumProviderService.isExtensionPresent())
+            .thenReturn(eth);
+        when(() => mockSolanaProviderService.isExtensionPresent())
+            .thenReturn(sol);
+      }
+
+      for (final (name, ar, eth, sol) in [
+        ('Wander', true, false, false),
+        ('MetaMask', false, true, false),
+        ('Phantom or Solflare', false, false, true),
+      ]) {
+        blocTest<LoginBloc, LoginState>(
+          'with $name in the browser offers it before making an account',
+          build: logInBloc,
+          setUp: () => wallets(ar: ar, eth: eth, sol: sol),
+          act: (bloc) => bloc.add(const StartSignUp()),
+          expect: () => [
+            predicate<LoginInitial>((s) => !s.existingUserFlow),
+          ],
+          verify: (bloc) => expect(bloc.existingUserFlow, isFalse),
+        );
+      }
+
+      blocTest<LoginBloc, LoginState>(
+        'with no wallet goes straight to making one, and says why',
+        build: logInBloc,
+        setUp: wallets,
+        act: (bloc) => bloc.add(const StartSignUp()),
+        expect: () => [
+          const LoginCreatingAccount(noWalletFound: true),
+          const TypeMatcher<CreateNewPassword>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Create an account from the choice makes one without that line',
+        build: logInBloc,
+        setUp: () => wallets(ar: true),
+        act: (bloc) async {
+          bloc.add(const StartSignUp());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CreateNewWallet());
+        },
+        expect: () => [
+          predicate<LoginInitial>((s) => !s.existingUserFlow),
+          const LoginCreatingAccount(),
+          const TypeMatcher<CreateNewPassword>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a wallet cancelled from the choice goes back to the choice',
+        build: logInBloc,
+        setUp: () {
+          wallets(eth: true);
+          when(() => mockEthereumProviderService.connect())
+              .thenAnswer((_) => Completer<EthereumWallet?>().future);
+        },
+        act: (bloc) async {
+          bloc.add(const StartSignUp());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const LoginWithMetamask());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const CancelWalletLogin());
+        },
+        expect: () => [
+          predicate<LoginInitial>((s) => !s.existingUserFlow),
+          const LoginWaitingOnWallet(wallet: BrowserWallet.metamask),
+          predicate<LoginInitial>((s) => !s.existingUserFlow),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'Log in from the choice is Log in again',
+        build: logInBloc,
+        setUp: () => wallets(ar: true),
+        act: (bloc) async {
+          bloc.add(const StartSignUp());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const SelectLoginFlow(existingUser: true));
+        },
+        expect: () => [
+          predicate<LoginInitial>((s) => !s.existingUserFlow),
+          predicate<LoginInitial>((s) => s.existingUserFlow),
+        ],
+      );
+    });
+
     blocTest<LoginBloc, LoginState>(
       'Recovery phrase or keyfile opens the phrase panel, and Back the first',
       build: logInBloc,

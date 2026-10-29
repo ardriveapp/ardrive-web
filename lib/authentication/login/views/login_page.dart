@@ -677,7 +677,10 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
       wallet: loginState.wallet,
     );
   } else if (loginState is LoginCreatingAccount) {
-    content = const CreatingAccountView(key: Key('creatingAccountView'));
+    content = CreatingAccountView(
+      key: const Key('creatingAccountView'),
+      noWalletFound: loginState.noWalletFound,
+    );
   } else if (loginState is LoginLoading || loginState is LoginLanding) {
     content = const LandingView(
       key: Key('landingPageView'),
@@ -685,6 +688,11 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
   } else {
     content = LogInView(
       key: const Key('logInView'),
+      // Sign up's choice, or Log in. Other states that land here keep the
+      // flow the bloc is in.
+      signUp: loginState is LoginInitial
+          ? !loginState.existingUserFlow
+          : !loginBloc.existingUserFlow,
       isArConnectAvailable: loginBloc.isArConnectAvailable,
       isMetamaskAvailable: loginBloc.isMetamaskAvailable,
       isSolanaAvailable: loginBloc.isSolanaAvailable,
