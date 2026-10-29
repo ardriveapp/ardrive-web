@@ -21,10 +21,14 @@ class RecoveryPhraseView extends StatefulWidget {
     super.key,
     required this.mnemonic,
     required this.wallet,
+    this.saveKeyfile,
   });
 
   final String mnemonic;
   final Wallet wallet;
+
+  /// Saves the keyfile and says whether it was saved. Replaced in tests.
+  final Future<bool> Function(Wallet wallet)? saveKeyfile;
 
   @override
   State<RecoveryPhraseView> createState() => _RecoveryPhraseViewState();
@@ -33,6 +37,11 @@ class RecoveryPhraseView extends StatefulWidget {
 class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
   bool _shown = false;
   bool _saved = false;
+
+  /// A keyfile was downloaded: the other way to keep the account, so it
+  /// also lets them continue. Separate from [_saved], which is about the
+  /// phrase.
+  bool _keyfileSaved = false;
 
   @override
   void initState() {
@@ -44,9 +53,11 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
 
   Future<void> _downloadKeyfile() async {
     PlausibleEventTracker.trackClickDownloadKeyfileButton();
-    final success =
-        await ArDriveIOUtils().downloadWalletAsJsonFile(wallet: widget.wallet);
-    if (!success || !AppPlatform.isAndroid || !mounted) return;
+    final success = await (widget.saveKeyfile?.call(widget.wallet) ??
+        ArDriveIOUtils().downloadWalletAsJsonFile(wallet: widget.wallet));
+    if (!success || !mounted) return;
+    setState(() => _keyfileSaved = true);
+    if (!AppPlatform.isAndroid) return;
     final s = appLocalizationsOf(context);
     showArDriveDialog(
       context,
@@ -184,7 +195,7 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
               maxWidth: double.infinity,
               typography: type,
               text: s.recoveryContinue,
-              isDisabled: !_saved,
+              isDisabled: !_saved && !_keyfileSaved,
               variant: ButtonVariant.primary,
               onPressed: () {
                 PlausibleEventTracker.trackClickGoToAppButton();
