@@ -155,6 +155,29 @@ class UploadReviewSummary extends Equatable {
     );
   }
 
+  /// The review after Turbo refused the upload as not paid for, with the
+  /// balance read again since: [creditsBalance], or [balanceUnreadable].
+  ///
+  /// The price is the one from the review. Whether the balance could be read
+  /// then says nothing now: a free upload may have gone ahead without it.
+  /// What counts is whether there is a price, and a zero estimate is the
+  /// placeholder for none, so it gives no price and no Upload either way.
+  factory UploadReviewSummary.afterRefusal(
+    UploadPaymentMethodInfo reviewed, {
+    BigInt? creditsBalance,
+    bool balanceUnreadable = false,
+  }) =>
+      UploadReviewSummary.fromPaymentInfo(
+        reviewed.copyWith(
+          // The refused files go to Turbo again; the wallet can't take them.
+          sufficientArBalance: false,
+          uploadMethod: UploadMethod.turbo,
+          turboUnreachable: balanceUnreadable,
+        ),
+        refusedByTurbo: true,
+        creditsBalance: creditsBalance,
+      );
+
   @override
   List<Object?> get props => [
         method,

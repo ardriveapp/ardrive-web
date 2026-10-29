@@ -4349,6 +4349,8 @@
   "@continueToPayment": {"description": "Button that goes on to paying by card"},
   "addingYourCredits": "Adding your credits",
   "@addingYourCredits": {"description": "While a card payment's credits reach the account"},
+  "uploadLastTryStillFinishing": "The last try is still finishing. Try again in a moment.",
+  "@uploadLastTryStillFinishing": {"description": "On the upload review after Upload was pressed while the refused try was still sending; nothing was sent"},
   "creditsAddedLeft": "{added} credits added. You'll have {left} credits left after this upload.",
   "@creditsAddedLeft": {"description": "After a card payment, on the upload review", "placeholders": {"added": {"type": "String"}, "left": {"type": "String"}}},
   "filesSavedForGood": "{count, plural, =1{1 file saved for good} other{{count} files saved for good}}",

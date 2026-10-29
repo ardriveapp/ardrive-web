@@ -202,4 +202,53 @@ void main() {
     expect(s.isCovered, isFalse);
     expect(s.needsCredits, isFalse);
   });
+
+  group('after Turbo refused the upload', () {
+    test(
+        'a free upload whose balance went unread at review is not stuck on '
+        'no price: the fresh balance decides', () {
+      final s = UploadReviewSummary.afterRefusal(
+        info(freeStatus: FreeUploadStatus.free, turboUnreachable: true),
+        creditsBalance: BigInt.zero,
+      );
+
+      expect(s.priceUnavailable, isFalse);
+      expect(s.needsCredits, isTrue);
+    });
+
+    test('a balance that can not be read now is no price, and a retry', () {
+      final s = UploadReviewSummary.afterRefusal(
+        info(freeStatus: FreeUploadStatus.free),
+        balanceUnreadable: true,
+      );
+
+      expect(s.priceUnavailable, isTrue);
+      expect(s.isCovered, isFalse);
+    });
+
+    test('a zero price from the review is still no price', () {
+      final s = UploadReviewSummary.afterRefusal(
+        info(freeStatus: FreeUploadStatus.free, turboCost: 0),
+        creditsBalance: BigInt.from(10000),
+      );
+
+      expect(s.priceUnavailable, isTrue);
+      expect(s.isCovered, isFalse);
+    });
+
+    test('credits that cover it offer Upload; the wallet never takes over', () {
+      final s = UploadReviewSummary.afterRefusal(
+        info(
+          freeStatus: FreeUploadStatus.free,
+          sufficientAr: true,
+          method: UploadMethod.ar,
+          arChosen: true,
+        ),
+        creditsBalance: BigInt.from(5875),
+      );
+
+      expect(s.method, UploadMethod.turbo);
+      expect(s.isCovered, isTrue);
+    });
+  });
 }

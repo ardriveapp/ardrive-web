@@ -335,13 +335,46 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(funding.refreshed, 1);
 
-    // Read again, still short: still the wait, with Check again.
+    // Read again: they are in.
     await tester.pumpWidget(host(null));
     await tester.pump();
-    await tester.pumpWidget(host(summary()));
+    await tester.pumpWidget(host(summary(balance: 9.1388)));
     await tester.pump();
-    expect(find.text('Check again'), findsOneWidget);
-    expect(find.text('Add credits'), findsNothing);
+    expect(find.text('Check again'), findsNothing);
+    expect(find.textContaining('credits added'), findsOneWidget);
+    expect(enabled(tester, 'Upload'), isTrue);
+  });
+
+  testWidgets(
+      'credits that arrive but still fall short end the wait, and say what '
+      'is short', (tester) async {
+    await pump(tester, summary());
+    await tester.tap(button('Add credits'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('\$10'));
+    await tester.pump();
+    await tester.tap(button('Continue to payment'));
+    await tester.pump();
+    funding.payment.complete(credits(1.8277));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(funding.refreshed, 1);
+
+    await tester.pumpWidget(host(null));
+    await tester.pump();
+    await tester.pumpWidget(host(summary(balance: 1.8277)));
+    await tester.pump();
+
+    expect(find.text('Adding your credits'), findsNothing);
+    expect(find.text('Check again'), findsNothing);
+    expect(
+      find.text('This upload is over your free upload allowance. You have '
+          '1.8277 credits, and it needs 5.8750. Add Turbo Credits to upload '
+          'it.'),
+      findsOneWidget,
+    );
+    expect(button('Add credits'), findsOneWidget);
+    expect(find.textContaining('credits added'), findsNothing);
   });
 
   testWidgets(

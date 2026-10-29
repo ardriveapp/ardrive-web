@@ -1058,6 +1058,15 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadPreparationInProgress());
     try {
       await controller.retryFailedTasks(_auth.currentUser.wallet);
+    } on PreviousAttemptStillRunning {
+      // Nothing was sent. Back to where the person pressed Upload, with Upload
+      // still there and a word on why nothing happened.
+      emit(UploadFailure(
+        error: current.error,
+        failedTasks: current.failedTasks,
+        controller: controller,
+        lastTryStillFinishing: true,
+      ));
     } finally {
       _retrying = false;
     }

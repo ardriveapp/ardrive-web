@@ -2440,7 +2440,10 @@ class _UploadFailureWidget extends StatelessWidget {
         reviewed != null) {
       // Turbo refused it: the review again, with Add credits, and Upload
       // sends the files that were refused.
-      return _UploadPaymentRequiredWidget(reviewed: reviewed);
+      return _UploadPaymentRequiredWidget(
+        reviewed: reviewed,
+        lastTryStillFinishing: state.lastTryStillFinishing,
+      );
     }
 
     if (state.error == UploadErrors.turboPaymentRequired) {
@@ -3260,9 +3263,16 @@ class UploadFormCreditsFunding implements UploadCreditsFunding {
 /// After Turbo refused an upload as not paid for: the review again, with the
 /// balance read fresh, Add credits, and Upload sending the refused files.
 class _UploadPaymentRequiredWidget extends StatefulWidget {
-  const _UploadPaymentRequiredWidget({required this.reviewed});
+  const _UploadPaymentRequiredWidget({
+    required this.reviewed,
+    this.lastTryStillFinishing = false,
+  });
 
   final UploadReady reviewed;
+
+  /// Upload was pressed while the refused try was still finishing, and
+  /// nothing was sent.
+  final bool lastTryStillFinishing;
 
   @override
   State<_UploadPaymentRequiredWidget> createState() =>
@@ -3301,15 +3311,6 @@ class _UploadPaymentRequiredWidgetState
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
     final reviewed = widget.reviewed;
-    final info = reviewed.paymentInfo.copyWith(
-      // The refused files go to Turbo again; the wallet can't take them over.
-      sufficientArBalance: false,
-      uploadMethod: UploadMethod.turbo,
-      // Either could not be read: the price at review, or the balance now.
-      // Replacing the first with the second turned an unread price into a
-      // zero one that any balance covered.
-      turboUnreachable: _unreachable || reviewed.paymentInfo.turboUnreachable,
-    );
     final folderName = reviewed.params.targetFolder.name;
     final balance = _balance;
 
@@ -3321,13 +3322,23 @@ class _UploadPaymentRequiredWidgetState
       files: uploadReviewFiles(reviewed.paymentInfo),
       summary: balance == null && !_unreachable
           ? null
-          : UploadReviewSummary.fromPaymentInfo(
-              info,
-              refusedByTurbo: true,
+          : UploadReviewSummary.afterRefusal(
+              reviewed.paymentInfo,
               creditsBalance: balance,
+              balanceUnreadable: _unreachable,
             ),
       primaryLabel: l10n.upload,
       onUpload: (_) => context.read<UploadCubit>().retryUploads(),
+      extras: [
+        if (widget.lastTryStillFinishing)
+          SizedBox(
+            width: double.infinity,
+            child: ArDriveNotice(
+              type: ArDriveNoticeType.info,
+              message: l10n.uploadLastTryStillFinishing,
+            ),
+          ),
+      ],
       onCancel: () => Navigator.of(context).pop(false),
       funding: UploadFormCreditsFunding(context, onRefresh: _readBalance),
     );
@@ -3400,16 +3411,16 @@ void showUploadSavedToast(
 /// What Share offers after an upload.
 enum UploadSavedShare { file, folder, drive, none }
 
-/// One file shares the file. Several share the folder they went into. Several
-/// in a drive's root share the drive only when it is public: a private
-/// drive's share carries its key, which opens everything in it, far more than
-/// the files just saved.
+/// One file shares the file. Several files share where they went only in a
+/// public drive: the folder, or the drive from its root. In a private drive
+/// both of those shares carry the drive's key, which opens everything in it,
+/// far more than the files just saved, so several files offer no Share there.
 UploadSavedShare uploadSavedShare({
   required List<String> fileIds,
   required bool inDriveRoot,
   required bool drivePublic,
 }) {
   if (fileIds.length == 1) return UploadSavedShare.file;
-  if (!inDriveRoot) return UploadSavedShare.folder;
-  return drivePublic ? UploadSavedShare.drive : UploadSavedShare.none;
+  if (!drivePublic) return UploadSavedShare.none;
+  return inDriveRoot ? UploadSavedShare.drive : UploadSavedShare.folder;
 }

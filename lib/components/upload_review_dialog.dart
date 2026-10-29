@@ -107,7 +107,8 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   var _adding = false;
 
   /// The credits have not arrived in the time it waited: it offers to check
-  /// again rather than going back to Add credits.
+  /// again rather than going back to Add credits. Once they arrive, the wait
+  /// ends with the fresh read, whatever it says.
   var _slow = false;
 
   /// A read of the price and balance is under way, and has not yet started
@@ -134,17 +135,14 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
       return;
     }
     if (!_sawLoading) return;
-    // The fresh read is in.
+    // The fresh read is in. It is only asked for once the credits have
+    // arrived, so the wait is over either way: covered, it offers Upload;
+    // still short, as when the amount bought was too small, it says so, and
+    // offers Add credits again. Waiting on would wait for ever.
     _refreshing = false;
     _sawLoading = false;
-    if (_adding) {
-      if (summary.isFree || summary.isCovered) {
-        _adding = false;
-        _slow = false;
-      } else {
-        _slow = true;
-      }
-    }
+    _adding = false;
+    _slow = false;
   }
 
   void _refresh() {

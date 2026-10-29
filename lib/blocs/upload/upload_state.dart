@@ -267,10 +267,19 @@ class UploadFailure extends UploadState {
   final UploadErrors error;
   final UploadController? controller;
 
-  UploadFailure({this.failedTasks, required this.error, this.controller});
+  /// A retry was refused because the try before it had not stopped yet.
+  /// Nothing was sent, and trying again in a moment will work.
+  final bool lastTryStillFinishing;
+
+  UploadFailure({
+    this.failedTasks,
+    required this.error,
+    this.controller,
+    this.lastTryStillFinishing = false,
+  });
 
   @override
-  List<Object?> get props => [error, failedTasks];
+  List<Object?> get props => [error, failedTasks, lastTryStillFinishing];
 }
 
 class UploadComplete extends UploadState {
