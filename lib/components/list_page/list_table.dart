@@ -409,7 +409,10 @@ class ListTableRow extends StatelessWidget {
     final hasCheckbox = selected != null && showsColumns;
 
     return ListRowHighlight(
-      colour: colorTokens.containerL1,
+      // The table's hover, as the explorer's rows have it. containerL1 is
+      // darker than the table in the dark theme, so a hovered row there all
+      // but vanished.
+      colour: ArDriveTheme.of(context).themeData.tableTheme.hoverItemColor,
       // The explorer's own colour for a chosen row.
       selectedColour:
           ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
