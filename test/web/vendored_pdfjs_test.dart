@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// The vendored PDF.js build carries a patch, and a patch on a minified
+/// The vendored PDF.js build carries two patches, and a patch on a minified
 /// third-party file is exactly the kind of thing a future re-vendor drops
 /// silently. This is the executable half of the note in `pdfjs_config.js`.
 void main() {
@@ -41,6 +41,25 @@ void main() {
             'false. If this is a new pdf.js version, confirm it is >= 4.2.67 '
             'and update this test rather than deleting it.',
       );
+    });
+
+    test('skips an unsupported shading instead of painting it hotpink', () {
+      final source = pdfJs.readAsStringSync();
+
+      // 2.12.313 has no function-based shading (ShadingType 1), which is how
+      // Chrome prints a CSS repeating gradient. Upstream paints any shading it
+      // cannot parse hotpink, which turned whole page backgrounds solid pink
+      // (#2369). The patch makes it transparent, so the page shows through.
+      // test/web/vendored_pdfjs_render_test.dart renders such a PDF in a
+      // browser (tool/browser_tests.sh).
+      expect(
+        source,
+        isNot(contains('getPattern(){return"hotpink"}')),
+        reason: 'the unsupported-shading patch is missing from the vendored '
+            'build. Re-apply it: DummyShadingPattern.getPattern must return '
+            '"transparent".',
+      );
+      expect(source, contains('getPattern(){return"transparent"}'));
     });
 
     test('is not fetched from a CDN', () {
