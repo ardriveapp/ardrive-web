@@ -487,7 +487,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
     _turboCredits = convertWinstonToLiteralString(turboBalance);
-    _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
+    // As in _computeIsSufficientBalance: a zero estimate is no price.
+    _sufficentCreditsBalance = _costEstimateTurbo.totalCost > BigInt.zero &&
+        _costEstimateTurbo.totalCost <= _turboBalance;
     _computeIsTurboEnabled();
     _computeIsButtonEnabled();
 
