@@ -6,6 +6,7 @@ import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/upload_options.dart';
 import 'package:ardrive/components/upload_review_cost.dart';
+import 'package:ardrive/components/turbo_credits_funding.dart';
 import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -1964,7 +1965,7 @@ class _UploadReadyWidget extends StatelessWidget {
               dragNDrop: state.isDragNDrop,
             ),
             onCancel: () => Navigator.of(context).pop(false),
-            funding: UploadFormCreditsFunding(
+            funding: TurboCreditsFunding(
               context,
               onRefresh: () => paymentBloc
                   .add(PrepareUploadPaymentMethod(params: state.params)),
@@ -3212,56 +3213,6 @@ List<UploadReviewFile> uploadReviewFiles(UploadPaymentMethodInfo info) {
   ];
 }
 
-/// Buys Turbo Credits for the upload review: Turbo's quote for an amount,
-/// the app's card payment, and the balance until the credits arrive.
-class UploadFormCreditsFunding implements UploadCreditsFunding {
-  UploadFormCreditsFunding(this.context, {required this.onRefresh});
-
-  final BuildContext context;
-  final VoidCallback onRefresh;
-
-  /// How often, and how many times, to look for credits after a payment.
-  static const _pollEvery = Duration(seconds: 2);
-  static const _pollTimes = 20;
-
-  PaymentService get _payments => context.read<PaymentService>();
-
-  @override
-  Future<BigInt> creditsFor(int amountUsd) async {
-    final price = await _payments.getPriceForFiat(
-      wallet: context.read<ArDriveAuth>().currentUser.wallet,
-      amount: amountUsd * 100,
-      currency: 'usd',
-    );
-    return price.winstonCredits;
-  }
-
-  @override
-  Future<BigInt?> payByCard(int amountUsd) =>
-      showTurboCardPayment(context, amountUsd: amountUsd);
-
-  @override
-  Future<bool> awaitCredits({required BigInt above}) async {
-    final wallet = context.read<ArDriveAuth>().currentUser.wallet;
-    final payments = _payments;
-    // Turbo adds the credits when Stripe tells it the payment went through,
-    // which can take a few seconds after the card is charged.
-    for (var i = 0; i < _pollTimes; i++) {
-      try {
-        if (await payments.getBalance(wallet: wallet) > above) return true;
-      } catch (e) {
-        // A new account is unknown to Turbo until its credits land.
-        logger.d('Waiting for credits: $e');
-      }
-      await Future.delayed(_pollEvery);
-    }
-    return false;
-  }
-
-  @override
-  void refresh() => onRefresh();
-}
-
 /// After Turbo refused an upload as not paid for: the review again, with the
 /// balance read fresh, Add credits, and Upload sending the refused files.
 class _UploadPaymentRequiredWidget extends StatefulWidget {
@@ -3342,7 +3293,7 @@ class _UploadPaymentRequiredWidgetState
           ),
       ],
       onCancel: () => Navigator.of(context).pop(false),
-      funding: UploadFormCreditsFunding(context, onRefresh: _read),
+      funding: TurboCreditsFunding(context, onRefresh: _read),
     );
   }
 }
