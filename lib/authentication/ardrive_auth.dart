@@ -316,6 +316,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
     }
   }
 
+  /// How long signing out waits for each of Wander's answers: a short wait,
+  /// since nothing here needs one.
+  @visibleForTesting
+  static Duration wanderLogoutWait = const Duration(seconds: 3);
+
   /// Best effort, and never waits on Wander: signing out must finish, and
   /// clear this device, even when Wander is locked or its prompt was closed.
   Future<void> _disconnectFromArConnect() async {
@@ -325,12 +330,14 @@ class ArDriveAuthImpl implements ArDriveAuth {
       final hasArConnectPermissions = await ArConnectPrompt.ask(
         _arConnectService,
         _arConnectService.checkPermissions,
+        within: wanderLogoutWait,
         askPerson: false,
       );
       if (hasArConnectPermissions) {
         await ArConnectPrompt.ask(
           _arConnectService,
           _arConnectService.disconnect,
+          within: wanderLogoutWait,
           askPerson: false,
         );
       }
