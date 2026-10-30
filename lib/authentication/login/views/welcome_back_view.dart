@@ -10,6 +10,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart' show triggerHTMLPageReload;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,7 +23,8 @@ bool welcomeBackHears(LoginState state) =>
     state is GatewayLoginFailure ||
     state is LoginUnknownFailure ||
     state is LoginFailure ||
-    state is PromptPassword;
+    state is PromptPassword ||
+    state is LoginProfileFromNewerVersion;
 
 /// The sign-in panel after a reload, for the account already on this
 /// device: its password unlocks it. Another account means forgetting this
@@ -45,6 +47,10 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
 
   /// The last try was the wrong password, and nothing has been typed since.
   bool _wrong = false;
+
+  /// The account was saved by a newer ArDrive: only a reload helps, and
+  /// nothing here may forget it.
+  bool _savedByNewer = false;
 
   /// The account on this device, once read from it.
   String? _address;
@@ -106,10 +112,16 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
       child: LoginCard(
         content: BlocConsumer<LoginBloc, LoginState>(
           listenWhen: (_, current) => welcomeBackHears(current),
-          listener: (context, state) =>
-              setState(() => _wrong = state is LoginPasswordFailed),
+          listener: (context, state) => setState(() {
+            _wrong = state is LoginPasswordFailed;
+            _savedByNewer =
+                _savedByNewer || state is LoginProfileFromNewerVersion;
+          }),
           buildWhen: (_, current) => welcomeBackHears(current),
           builder: (context, state) {
+            if (_savedByNewer || state is LoginProfileFromNewerVersion) {
+              return _SavedByNewerVersion(address: _address);
+            }
             final checking = state is LoginCheckingPassword;
             final wrong = _wrong && !checking;
             return Column(
@@ -233,6 +245,64 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// The account on this device was saved by a newer ArDrive than this tab
+/// runs: say so, and offer only a reload. No sign-in, and no way to forget
+/// the account, which this build can't read but a newer one can.
+class _SavedByNewerVersion extends StatelessWidget {
+  const _SavedByNewerVersion({required this.address});
+
+  final String? address;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    return Column(
+      key: const Key('welcomeBackSavedByNewer'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: ArDriveImage(
+            image: AssetImage(Resources.images.brand.logo1),
+            height: 50,
+          ),
+        ),
+        const SizedBox(height: ArDriveSpacing.lg),
+        Text(
+          s.welcomeBackTitle,
+          textAlign: TextAlign.center,
+          style: type.heading1(
+            color: colors.textHigh,
+            fontWeight: ArFontWeight.bold,
+          ),
+        ),
+        if (address != null) ...[
+          const SizedBox(height: ArDriveSpacing.xs),
+          _Account(address: address!),
+        ],
+        const SizedBox(height: ArDriveSpacing.xs),
+        Text(
+          s.savedByNewerVersion,
+          textAlign: TextAlign.center,
+          style: type.paragraphLarge(color: colors.textMid),
+        ),
+        const SizedBox(height: ArDriveSpacing.lg),
+        ArDriveButtonNew(
+          key: const Key('welcomeBackReload'),
+          size: ArDriveButtonSize.large,
+          maxWidth: double.infinity,
+          typography: type,
+          text: s.reloadPage,
+          variant: ButtonVariant.primary,
+          onPressed: triggerHTMLPageReload,
+        ),
+      ],
     );
   }
 }

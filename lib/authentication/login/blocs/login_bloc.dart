@@ -14,6 +14,8 @@ import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/models/daos/profile_dao.dart'
+    show ProfileFormatTooNewException;
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
@@ -413,6 +415,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     } catch (e) {
       logger.e('Failed to unlock user with biometrics.', e);
+
+      if (e is ProfileFormatTooNewException) {
+        emit(const LoginProfileFromNewerVersion());
+        return;
+      }
 
       usingSeedphrase = false;
       emit(LoginFailure(e));
@@ -829,6 +836,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       if (e is WrongPasswordException) {
         emit(LoginPasswordFailed());
+        return;
+      }
+
+      if (e is ProfileFormatTooNewException) {
+        emit(const LoginProfileFromNewerVersion());
         return;
       }
 

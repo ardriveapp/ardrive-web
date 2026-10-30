@@ -131,8 +131,22 @@ and hands them to the worker. The worker refuses anything that is not a SQLite
 file or fails `PRAGMA quick_check` (the checks #2197 already has), writes the
 bytes to `database`, flushes, then marks `meta`. A failure before the mark
 leaves OPFS empty and the old store untouched, so the next start tries again.
-The old stores are left in place, so a rollback build still finds them;
-deleting them is a later release's job.
+The old stores were left in place so that a rollback build would still find
+them. **That safety net is given up, for security.** Every older store holds
+the profile in format 1, which encrypts the wallet and its public key under
+one key with one nonce while also storing the public key in plain text: XOR
+recovers the first bytes of the wallet's JSON, the private exponent among
+them, without the password. So once the profile is in format 2, the tab
+that owns the database deletes the older stores and every
+`ardrive-reset-<time>` copy, then runs `VACUUM`, once per profile
+(`DatabaseHelpers.clearOlderCopies`, marked on the profile as
+`olderCopiesCleared`). Sign-out does the same (§11). A failure leaves the
+mark unset, and the next session tries again.
+
+A build before 3.0 can't read a format 2 profile either, so 3.0 can't be
+rolled back: fix forward. A profile in a format newer than the running build
+knows is never read: the sign-in panel says it was saved by a newer version
+and offers only Reload, never a way to forget the account.
 
 ## 5. Artifacts
 
@@ -244,3 +258,88 @@ this machine lacks.
   start" with Try again, Help center and Share logs instead of the splash.
   Nothing there deletes data: no reset is offered, and the older stores stay
   as §4 keeps them.
+
+## 11. Signing out
+
+Sign-out deleted every table and left the wallet's encrypted copies
+elsewhere: in the older stores, in any `ardrive-reset-<time>` copy of the
+OPFS file the database error screen's reset made while it existed on
+staging, and in the free pages of the database file itself, since SQLite
+leaves deleted rows there. Each copy is encrypted under the device password,
+so a copy taken from the browser after sign-out could still be attacked
+offline. Sign-out now leaves none:
+
+1. **`PRAGMA secure_delete = ON`** on every connection (drift's
+   `beforeOpen`), so a deleted row is overwritten with zeros, not left in a
+   free page. For the whole database rather than for two tables: SQLite sets
+   it per connection, and the drive rows (which hold the remembered drive
+   keys) and their decrypted names are worth the same care as the profile.
+2. **Every table is deleted**, as before.
+3. **`VACUUM`** once the tables are empty, which rebuilds the file without
+   free pages, including those an earlier build filled before `secure_delete`
+   was on. On an empty database it takes milliseconds.
+4. **The older stores go** (`deleteLegacyLocalStores` in `web.dart`): the
+   sql.js store (IndexedDB `moor_databases`), #2197's store (IndexedDB
+   `ardrive_sqlite3`) when the database is on OPFS (on the IndexedDB path it
+   is the database, just emptied), and every `ardrive-reset-<time>` file in
+   OPFS `ardrive-db/`. Only the tab holding the `ardrive-database` Web Lock
+   does this, and only after the user is signed out: another tab may be
+   starting and reading one of them.
+
+Steps 3 and 4 never fail a sign-out; a failure is logged.
+
+What `secure_delete` costs, measured on native SQLite with 41,767 file rows
+(`test/models/database/secure_delete_cost_test.dart`, three runs):
+
+| Step | Off | On |
+|---|---|---|
+| Delete 10% of the rows | 200-340 ms | 160-230 ms |
+| Delete every row (a whole drive, or sign-out) | 35-50 ms | 140-240 ms |
+| `VACUUM` afterwards | 15-30 ms | 9-30 ms |
+
+Scattered deletes cost the same, since their pages are rewritten either
+way. Emptying a table costs a few hundred milliseconds more, because the
+freed pages are zeroed rather than only unlinked. Only detaching a drive and
+sign-out do that, and sync rarely deletes rows.
+
+What this does not reach: a browser's own copies (a disk backup, the OS swap
+file) and the rollback journal's freed blocks on the storage below OPFS.
+Everything in the database that is secret is encrypted, so those hold
+ciphertext only.
+
+## 12. Tabs, the device key and remembered drive keys
+
+The local profile (format 2, `ProfileDao`) keeps a random device salt; the
+**device key** is derived from it and the session's unlock secret (the
+device password today; a wallet signature for passwordless accounts). Each
+kind of value has its own subkey of it (HKDF, `info`
+`ArDrive-Device-Key-V1/<purpose>`: `wallet`, `public-key`, `key-check`,
+`drive-key`). Remembered drive keys live where drive keys always lived, on
+the drive's row (`encryptedKey`), wrapped with the drive-key subkey, their
+own random nonce, and `drive-key/<driveId>` as AAD, so a wrap opens only on
+its own drive's row. A drive unlocked with
+"Remember on this device" off, or forgotten, has no key on its row: its key
+is in memory for the session, and `forgotten_drives` records the choice so
+the next session starts with it locked and never opens it on its own.
+
+With several tabs:
+
+- **The owner tab** (the Web Lock) writes the database that lasts. Remember,
+  Forget and sign-out there are permanent.
+- **A second tab** works on a session copy taken when it opened, and asks
+  for the device password like any new session; the copy holds the same
+  profile, so the same password gives the same device key and the same
+  remembered drives open. Drives it unlocks with Remember on are remembered
+  in its copy only and are lost when it closes, like every other write there.
+- **Sign-out and Forget cross tabs** (`DeviceTabs`, a `BroadcastChannel`
+  called `ardrive-device`): a tab that signs out tells the others, and every
+  tab signs out, so the owner tab clears the database that lasts even when
+  the user signed out in a second tab. Forget sends the drive IDs, and the
+  owner tab deletes those stored keys too. Messages carry drive IDs only,
+  never a key.
+- **Device unlock by wallet** (Wander, Phantom, MetaMask, once those accounts
+  sign in without a password): each tab is its own session and asks the
+  wallet once. Handing the device key to another tab over the channel would
+  save that one approval but would put a key on a channel any script on the
+  origin can read, so it is not done.
+

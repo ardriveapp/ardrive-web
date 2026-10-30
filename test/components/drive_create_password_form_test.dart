@@ -143,4 +143,14 @@ void main() {
 
     expect(find.byKey(const Key('drivePassword')), findsNothing);
   });
+
+  testWidgets('the drive password field asks the browser for the saved one',
+      (tester) async {
+    await pump(tester);
+
+    final textField = tester.widget<TextField>(find.descendant(
+        of: find.byKey(const Key('drivePassword')),
+        matching: find.byType(TextField)));
+    expect(textField.autofillHints, [AutofillHints.password]);
+  });
 }

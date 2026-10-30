@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:async';
 
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
@@ -84,6 +85,8 @@ class _KeptValues implements KeyValueStore {
 
 class MockDriveUnlocker extends Mock implements DriveUnlocker {}
 
+class MockDeviceTabs extends Mock implements DeviceTabs {}
+
 void main() {
   late ArDriveAuthImpl arDriveAuth;
   late MockArweaveService mockArweaveService;
@@ -93,6 +96,8 @@ void main() {
   late MockSecureKeyValueStore mockSecureKeyValueStore;
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
+  late MockDeviceTabs mockDeviceTabs;
+  late MockDriveDao mockDriveDao;
   late MockDriveUnlocker mockDriveUnlocker;
   late MemoryKeyValueStore deviceStore;
   late SignInPasswordProofStore proofStore;
@@ -142,6 +147,19 @@ void main() {
       await newMemoryCacheStore(),
     );
 
+    mockDeviceTabs = MockDeviceTabs();
+    mockDriveDao = MockDriveDao();
+    when(() => mockDatabaseHelpers.driveDao).thenReturn(mockDriveDao);
+    when(() => mockDriveDao.detachForgottenDrives())
+        .thenAnswer((_) async => []);
+    when(() => mockDatabaseHelpers.wipeAfterSignOut())
+        .thenAnswer((_) async => []);
+    when(() => mockDatabaseHelpers.clearOlderCopies())
+        .thenAnswer((_) async => false);
+    // A profile is saved unless a test says otherwise: logout does nothing
+    // without one.
+    when(() => mockUserRepository.hasUser()).thenAnswer((_) async => true);
+
     arDriveAuth = ArDriveAuthImpl(
       arweave: mockArweaveService,
       userRepository: mockUserRepository,
@@ -152,6 +170,7 @@ void main() {
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
       driveUnlocker: mockDriveUnlocker,
+      deviceTabs: mockDeviceTabs,
       signInPasswordProofStore: proofStore,
     );
 
@@ -652,6 +671,20 @@ void main() {
         expect(user.profileType, unlockedUser.profileType);
       });
 
+      test('starts the session with the drives not remembered here locked',
+          () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
+        await arDriveAuth.unlockUser(password: 'password');
+
+        verify(() => mockDriveDao.detachForgottenDrives()).called(1);
+      });
+
       test(
           'Welcome back and biometrics: a sign-in password this device left '
           'unproven is unproven in the new session too', () async {
@@ -735,6 +768,81 @@ void main() {
         // What was read out of the tables goes with them: drive keys and
         // previewed bytes live in memory, not in a table.
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+      });
+
+      test(
+          'clears the device after the tables: storage is wiped and the '
+          'other tabs are told', () async {
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.logout();
+
+        verifyInOrder([
+          () => mockDatabaseHelpers.deleteAllTables(),
+          () => mockDatabaseHelpers.clearSessionMemory(),
+          () => mockDeviceTabs.announceSignedOut(),
+          () => mockDatabaseHelpers.wipeAfterSignOut(),
+        ]);
+      });
+
+      test(
+          'with no account saved and nobody signed in, signing out does '
+          'nothing: no tables, no wipe, no other tab told', () async {
+        when(() => mockUserRepository.hasUser()).thenAnswer((_) async => false);
+
+        await arDriveAuth.logout();
+
+        verifyNever(() => mockUserRepository.deleteUser());
+        verifyNever(() => mockDatabaseHelpers.deleteAllTables());
+        verifyNever(() => mockDatabaseHelpers.wipeAfterSignOut());
+        verifyNever(() => mockDeviceTabs.announceSignedOut());
+      });
+
+      test('a sign-out that fails wipes nothing and tells no other tab',
+          () async {
+        when(() => mockUserRepository.deleteUser())
+            .thenThrow(StateError('the profile would not delete'));
+
+        await expectLater(
+          arDriveAuth.logout(),
+          throwsA(isA<AuthenticationUnknownException>()),
+        );
+
+        verifyNever(() => mockDatabaseHelpers.wipeAfterSignOut());
+        verifyNever(() => mockDeviceTabs.announceSignedOut());
+      });
+
+      test(
+          'unlocking clears the older copies of the profile, in the '
+          'background', () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
+        await arDriveAuth.unlockUser(password: 'password');
+
+        verify(() => mockDatabaseHelpers.clearOlderCopies()).called(1);
+      });
+
+      test('a sign-out that came from another tab is not announced back',
+          () async {
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.logout(fromAnotherTab: true);
+
+        verifyNever(() => mockDeviceTabs.announceSignedOut());
+        verify(() => mockDatabaseHelpers.wipeAfterSignOut()).called(1);
       });
 
       test('signing out forgets that the sign-in password was unproven',
@@ -906,8 +1014,9 @@ void main() {
 
       test('says it failed when drive keys could not be cleared from memory',
           () async {
+        // A saved account, not unlocked: there is something to sign out.
         when(() => mockUserRepository.hasUser())
-            .thenAnswer((invocation) => Future.value(false));
+            .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
         when(() => mockDatabaseHelpers.deleteAllTables())
@@ -928,8 +1037,9 @@ void main() {
       test(
           'should delete the current user and delete it when user is not logged',
           () async {
+        // As the comment above says: an account is saved, nobody unlocked it.
         when(() => mockUserRepository.hasUser())
-            .thenAnswer((invocation) => Future.value(false));
+            .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
         when(() => mockDatabaseHelpers.clearSessionMemory())

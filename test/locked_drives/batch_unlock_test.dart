@@ -446,6 +446,61 @@ void main() {
     });
   });
 
+  group('forgotten on this device', () {
+    test('discovery never signs for a forgotten drive', () async {
+      final drives = await drivesWith(['pw', 'pw', 'pw']);
+      await db.driveDao.forgetStoredDriveKeyUnread(drives[0].driveId);
+
+      final outcome = await unlocker.signForDiscovery(
+          wallet: wander.wallet, drives: metadataOf(drives));
+
+      expect(outcome, DriveSignatureBatch.signed);
+      expect(wander.lastBatchSize, 2);
+      expect(session.holdsSignatureFor(owner, drives[0].driveId), isFalse);
+    });
+
+    test(
+        'trying the others leaves a forgotten drive out of the batch and '
+        'locked, and does not remember it again', () async {
+      final drives = await drivesWith(['pw', 'pw', 'pw']);
+      session
+          .setLockedDrives(owner, [for (final d in drives) locked(d.driveId)]);
+      await db.driveDao.forgetStoredDriveKeyUnread(drives[2].driveId);
+
+      final result = await unlocker.unlock(
+        wallet: wander.wallet,
+        profileKey: profileKey,
+        driveId: drives[0].driveId,
+        password: 'pw',
+      );
+
+      expect(result.openedDriveIds, [drives[0].driveId, drives[1].driveId]);
+      expect(wander.lastBatchSize, 2);
+      expect(session.holdsSignatureFor(owner, drives[2].driveId), isFalse);
+      expect(session.isLocked(drives[2].driveId), isTrue);
+      expect(await db.driveDao.forgottenDriveIds(), {drives[2].driveId});
+    });
+
+    test('unlocked directly, a forgotten drive opens and is remembered again',
+        () async {
+      final drives = await drivesWith(['pw', 'pw']);
+      session
+          .setLockedDrives(owner, [for (final d in drives) locked(d.driveId)]);
+      await db.driveDao.forgetStoredDriveKeyUnread(drives[0].driveId);
+
+      final result = await unlocker.unlock(
+        wallet: wander.wallet,
+        profileKey: profileKey,
+        driveId: drives[0].driveId,
+        password: 'pw',
+        tryOthers: false,
+      );
+
+      expect(result.openedDriveIds, [drives[0].driveId]);
+      expect(await db.driveDao.forgottenDriveIds(), isEmpty);
+    });
+  });
+
   group('signForDiscovery', () {
     test(
         'only drives that would ask the wallet are signed: not ones with a '

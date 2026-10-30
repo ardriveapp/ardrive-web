@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
@@ -54,7 +55,11 @@ abstract class ArDriveAuth {
   });
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
-  Future<void> logout();
+
+  /// Signs out and clears this device of the account: the profile, every
+  /// remembered drive key, and the copies older builds left. Unless
+  /// [fromAnotherTab], the other ArDrive tabs are told to sign out too.
+  Future<void> logout({bool fromAnotherTab = false});
   User get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
@@ -74,9 +79,11 @@ abstract class ArDriveAuth {
     ArNSWalletStore? arnsWalletStore,
     ArNSPendingActionStore? arnsPendingActionStore,
     DriveUnlocker? driveUnlocker,
+    DeviceTabs? deviceTabs,
     SignInPasswordProofStore? signInPasswordProofStore,
   }) =>
       ArDriveAuthImpl(
+        deviceTabs: deviceTabs,
         driveUnlocker: driveUnlocker,
         signInPasswordProofStore: signInPasswordProofStore,
         arweave: arweave,
@@ -106,8 +113,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
     ArNSWalletStore? arnsWalletStore,
     ArNSPendingActionStore? arnsPendingActionStore,
     DriveUnlocker? driveUnlocker,
+    DeviceTabs? deviceTabs,
     SignInPasswordProofStore? signInPasswordProofStore,
   })  : _arweave = arweave,
+        _deviceTabs = deviceTabs ?? DeviceTabs.instance,
         _injectedDriveUnlocker = driveUnlocker,
         _proofStore = signInPasswordProofStore ?? SignInPasswordProofStore(),
         _crypto = crypto,
@@ -124,6 +133,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
+
+  /// The other ArDrive tabs, told when this one signs out.
+  final DeviceTabs _deviceTabs;
 
   final DriveUnlocker? _injectedDriveUnlocker;
 
@@ -252,6 +264,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
         sourceWalletAddress: sourceWalletAddress,
       );
 
+      // A new profile on a device an older build used: its copies go too.
+      _clearOlderCopiesInBackground();
+
       _userStreamController.add(_currentUser);
 
       return currentUser;
@@ -271,6 +286,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
+      await _startSession();
       // Welcome back and biometrics unlock the profile without trying any
       // drive. If the password was left unproven on an earlier visit, the
       // session must know before the drive list is read: discovery spends no
@@ -340,8 +356,45 @@ class ArDriveAuthImpl implements ArDriveAuth {
     throw WrongPasswordException('Biometric authentication failed');
   }
 
+  /// Drives an earlier session kept for itself only ("Remember on this
+  /// device" off, or forgotten) still have a row with no key. They go, so
+  /// they show as locked. Never stops a sign-in.
+  Future<void> _startSession() async {
+    _clearOlderCopiesInBackground();
+    try {
+      final detached = await _databaseHelpers.driveDao.detachForgottenDrives();
+      if (detached.isNotEmpty) {
+        logger.i('${detached.length} drives not remembered on this device '
+            'start locked');
+      }
+    } catch (e, stackTrace) {
+      logger.e('Could not clear drives not remembered here', e, stackTrace);
+    }
+  }
+
+  /// Every copy of the profile in the format before 3.0 goes, once: see
+  /// [DatabaseHelpers.clearOlderCopies]. Not awaited: the `VACUUM` it ends
+  /// with can take a moment on a large database, and signing in need not
+  /// wait for it.
+  void _clearOlderCopiesInBackground() {
+    try {
+      unawaited(_databaseHelpers.clearOlderCopies());
+    } catch (e) {
+      logger.w('Could not start clearing older copies: ${e.runtimeType}');
+    }
+  }
+
   @override
-  Future<void> logout() async {
+  Future<void> logout({bool fromAnotherTab = false}) async {
+    // Nobody signed in and no account saved: nothing to sign out, and
+    // nothing for the wipe or the other tabs to hear about. A Wander switch
+    // during a sign-in that saved nothing lands here, as can a second
+    // sign-out racing the first.
+    if (_currentUser == null && !await _hasSavedAccount()) {
+      logger.i('No account to sign out');
+      return;
+    }
+
     logger.i('Logging out user');
 
     try {
@@ -368,6 +421,33 @@ class ArDriveAuthImpl implements ArDriveAuth {
     } catch (e, stacktrace) {
       logger.e('Failed to logout user', e, stacktrace);
       throw AuthenticationUnknownException('Failed to logout user');
+    }
+
+    // Signed out: the rest only makes sure storage keeps nothing of it, and
+    // that a tab working on a session copy reaches the database that lasts.
+    if (!fromAnotherTab) _deviceTabs.announceSignedOut();
+    await _databaseHelpers.wipeAfterSignOut();
+  }
+
+  /// The drives this device was told not to keep a key for; none if that
+  /// can't be read.
+  Future<Set<String>> _forgottenDriveIds() async {
+    try {
+      return await _databaseHelpers.driveDao.forgottenDriveIds();
+    } catch (e) {
+      logger.w('Could not read the drives forgotten here: $e');
+      return const {};
+    }
+  }
+
+  /// Whether an account is saved on this device. One that can't be told is
+  /// taken as saved, so a sign-out still runs.
+  Future<bool> _hasSavedAccount() async {
+    try {
+      return await _userRepository.hasUser();
+    } catch (e) {
+      logger.w('Could not tell whether an account is saved: $e');
+      return true;
     }
   }
 
@@ -488,8 +568,18 @@ class ArDriveAuthImpl implements ArDriveAuth {
     int likeliestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
         compareForPasswordTries(a, b, created);
 
-    final heldTxs = privateDriveTxs.where(held).toList()..sort(likeliestFirst);
-    final rest = privateDriveTxs.where((tx) => !held(tx)).toList()
+    // A drive forgotten on this device is opened only by the person: it is
+    // neither tried nor signed for here, in a batch or alone.
+    final forgotten = await _forgottenDriveIds();
+    bool notForgotten(TransactionCommonMixin tx) =>
+        !forgotten.contains(tx.getTag(EntityTag.driveId));
+
+    final heldTxs = privateDriveTxs.where(held).where(notForgotten).toList()
+      ..sort(likeliestFirst);
+    final rest = privateDriveTxs
+        .where((tx) => !held(tx))
+        .where(notForgotten)
+        .toList()
       ..sort(likeliestFirst);
     final prompts = wallet is ArConnectWallet;
     final promptBudget =
@@ -598,6 +688,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
           await _markSignInPassword(address, proven: true);
           return;
         case DriveUnlockFailure.wrongPassword:
+        case DriveUnlockFailure.notTried:
           continue;
         case DriveUnlockFailure.walletDeclined when outOfPrompts:
           // Not the user: the budget (a v1 drive whose own signature isn't

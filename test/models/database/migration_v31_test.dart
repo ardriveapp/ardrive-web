@@ -74,7 +74,7 @@ void main() {
           .data
           .values
           .single,
-      31,
+      upgraded.schemaVersion,
     );
   });
 }

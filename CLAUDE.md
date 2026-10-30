@@ -348,6 +348,11 @@ ArNS names (naming deployments, public files and publications; the Names page; r
   `master` get no CI (`pr.yaml` ignores `master`), so `dev` is where a change is validated.
 - Merge release PRs (`dev` → `master`) with a merge commit, never a squash: squashing
   breaks the shared history and makes the next release PR conflict.
+- **No rollback below 3.0.** From 3.0 the local profile is in format 2, and the older
+  database stores a rollback build would fall back to are deleted (`docs/WEB_DATABASE.md`
+  §4). A build before 3.0 can't read a format 2 profile: it reports a wrong password, and
+  its *Use a different account* deletes the wallet saved on the device. Fix forward instead.
+  A newer format than a build knows shows "saved by a newer version", with Reload only.
 - `dev`'s `pubspec.yaml` version is not bumped after releases, so staging reports an
   older version than production.
 - Production also puts the build on Arweave **gzipped** (`--compress gzip`: each file is

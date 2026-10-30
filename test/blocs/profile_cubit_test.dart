@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -28,7 +29,7 @@ class _MockArioSDK extends Mock implements ArioSDK {}
 /// A [ProfileCubit] whose startup check finds no stored profile, so it rests
 /// on [ProfilePromptAdd] until a test logs in.
 ProfileCubit _buildProfileCubit(ArDriveAuth auth,
-    {MockProfileDao? profileDao}) {
+    {MockProfileDao? profileDao, Database? db, DeviceTabs? deviceTabs}) {
   final dao = profileDao ?? MockProfileDao();
   final noStoredProfile = _MockSelectable<Profile>();
   when(() => noStoredProfile.getSingleOrNull()).thenAnswer((_) async => null);
@@ -40,11 +41,14 @@ ProfileCubit _buildProfileCubit(ArDriveAuth auth,
   return ProfileCubit(
     turboUploadService: turboUploadService,
     profileDao: dao,
-    db: _MockDatabase(),
+    db: db ?? _MockDatabase(),
     tabVisibilitySingleton: TabVisibilitySingleton(),
     arDriveAuth: auth,
+    deviceTabs: deviceTabs,
   );
 }
+
+class _MockDeviceTabs extends Mock implements DeviceTabs {}
 
 User _user({String walletAddress = 'wallet-address', required int balance}) =>
     User(
@@ -159,6 +163,8 @@ void main() {
       profileDao = MockProfileDao();
 
       final storedProfile = Profile(
+        formatVersion: 1,
+        olderCopiesCleared: false,
         id: 'id',
         username: '',
         encryptedWallet: Uint8List(0),
@@ -283,6 +289,107 @@ void main() {
       await cubit.refreshBalance();
 
       expect(_shownBalance(cubit), BigInt.two);
+    });
+  });
+
+  group('another tab', () {
+    late MockArDriveAuth auth;
+    late StreamController<DeviceTabsMessage> messages;
+    late MockDriveDao driveDao;
+    late ProfileCubit cubit;
+
+    setUp(() async {
+      auth = MockArDriveAuth();
+      when(() => auth.onAuthStateChanged())
+          .thenAnswer((_) => const Stream.empty());
+      when(() => auth.currentUser)
+          .thenThrow(const AuthenticationUserIsNotLoggedInException());
+      when(() => auth.logout(fromAnotherTab: any(named: 'fromAnotherTab')))
+          .thenAnswer((_) async {});
+      messages = StreamController<DeviceTabsMessage>.broadcast();
+      final tabs = _MockDeviceTabs();
+      when(() => tabs.messages).thenAnswer((_) => messages.stream);
+      driveDao = MockDriveDao();
+      when(() => driveDao.forgetDriveKey(any(), any()))
+          .thenAnswer((_) async => true);
+      when(() => driveDao.forgetStoredDriveKeyUnread(any()))
+          .thenAnswer((_) async {});
+      final db = _MockDatabase();
+      when(() => db.driveDao).thenReturn(driveDao);
+
+      cubit = _buildProfileCubit(auth, db: db, deviceTabs: tabs);
+      await pumpEventQueue();
+    });
+
+    setUpAll(() => registerFallbackValue(SecretKey([0])));
+
+    tearDown(() async {
+      await cubit.close();
+      await messages.close();
+    });
+
+    test('signing out there signs out here, without announcing it back',
+        () async {
+      await cubit.unlockDefaultProfile(_user(balance: 1), ProfileType.json);
+
+      messages.add(const SignedOutInAnotherTab());
+      await pumpEventQueue();
+
+      verify(() => auth.logout(fromAnotherTab: true)).called(1);
+      expect(cubit.state, isA<ProfileLoggingOut>());
+    });
+
+    test(
+        'while this tab signs out for a Wander switch, the other tabs are not '
+        'followed', () async {
+      final user = _user(balance: 1);
+      await cubit.unlockDefaultProfile(user, ProfileType.json);
+      final switchedOut = Completer<void>();
+      when(() => auth.logout()).thenAnswer((_) => switchedOut.future);
+
+      final signingOut = cubit.signOutForOtherWallet();
+      await pumpEventQueue();
+      messages.add(const SignedOutInAnotherTab());
+      messages.add(const ForgottenInAnotherTab(['drive-a']));
+      await pumpEventQueue();
+
+      verifyNever(() => auth.logout(fromAnotherTab: true));
+      verifyNever(() => driveDao.forgetDriveKey(any(), any()));
+      verifyNever(() => driveDao.forgetStoredDriveKeyUnread(any()));
+
+      switchedOut.complete();
+      await signingOut;
+    });
+
+    test('nobody signed in here: nothing to sign out', () async {
+      messages.add(const SignedOutInAnotherTab());
+      await pumpEventQueue();
+
+      verifyNever(
+          () => auth.logout(fromAnotherTab: any(named: 'fromAnotherTab')));
+    });
+
+    test('a drive forgotten there is forgotten here with the session key',
+        () async {
+      final user = _user(balance: 1);
+      await cubit.unlockDefaultProfile(user, ProfileType.json);
+
+      messages.add(const ForgottenInAnotherTab(['drive-a', 'drive-b']));
+      await pumpEventQueue();
+
+      verify(() => driveDao.forgetDriveKey('drive-a', user.cipherKey))
+          .called(1);
+      verify(() => driveDao.forgetDriveKey('drive-b', user.cipherKey))
+          .called(1);
+    });
+
+    test('signed out here, a forgotten drive\'s stored key goes unread',
+        () async {
+      messages.add(const ForgottenInAnotherTab(['drive-a']));
+      await pumpEventQueue();
+
+      verify(() => driveDao.forgetStoredDriveKeyUnread('drive-a')).called(1);
+      verifyNever(() => driveDao.forgetDriveKey(any(), any()));
     });
   });
 }

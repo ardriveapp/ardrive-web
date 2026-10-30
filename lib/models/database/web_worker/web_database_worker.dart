@@ -253,6 +253,64 @@ Future<Uint8List?> readOpfsCopy(String name) async {
   }
 }
 
+/// Whether this browser has an IndexedDB database called [name]. Browsers
+/// without `indexedDB.databases()` answer true, so a delete is tried.
+Future<bool> indexedDbExists(String name) async {
+  final factory = js_util.getProperty<Object?>(html.window, 'indexedDB');
+  if (factory == null) return false;
+  if (!js_util.hasProperty(factory, 'databases')) return true;
+  try {
+    final list = await js_util.promiseToFuture<List<Object?>>(
+        js_util.callMethod(factory, 'databases', []));
+    return list.any(
+        (db) => db != null && js_util.getProperty<Object?>(db, 'name') == name);
+  } catch (_) {
+    return true;
+  }
+}
+
+/// Removes the `<name>-reset-<time>` copies the database error screen's reset
+/// kept beside the OPFS database, and returns their names. Never throws.
+Future<List<String>> removeOpfsResetCopies(String name) async {
+  final removed = <String>[];
+  final navigator = js_util.getProperty<Object?>(html.window, 'navigator');
+  final storage = js_util.getProperty<Object?>(navigator!, 'storage');
+  if (storage == null || !js_util.hasProperty(storage, 'getDirectory')) {
+    return removed;
+  }
+  final Object parent;
+  try {
+    final root = await js_util.promiseToFuture<Object>(
+        js_util.callMethod(storage, 'getDirectory', []));
+    parent = await js_util.promiseToFuture<Object>(
+        js_util.callMethod(root, 'getDirectoryHandle', ['ardrive-db']));
+  } catch (_) {
+    return removed; // OPFS never held a database here.
+  }
+  final prefix = '$name-reset-';
+  final names = <String>[];
+  try {
+    final iterator = js_util.callMethod<Object>(parent, 'keys', []);
+    while (true) {
+      final step = await js_util
+          .promiseToFuture<Object>(js_util.callMethod(iterator, 'next', []));
+      if (js_util.getProperty<bool>(step, 'done')) break;
+      final entry = js_util.getProperty<Object?>(step, 'value');
+      if (entry is String && entry.startsWith(prefix)) names.add(entry);
+    }
+  } catch (_) {
+    return removed;
+  }
+  for (final entry in names) {
+    try {
+      await js_util.promiseToFuture<Object?>(
+          js_util.callMethod(parent, 'removeEntry', [entry]));
+      removed.add(entry);
+    } catch (_) {}
+  }
+  return removed;
+}
+
 /// How long a tab holding the writer lock waits, between attempts, for files
 /// a departed worker still holds. About five seconds in all.
 const _releaseWaits = [

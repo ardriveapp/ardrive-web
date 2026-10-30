@@ -381,6 +381,24 @@ It needs its own wallet, so it runs in its own profile and credentials:
    locked drives* opens the drives that share it. Screenshots are
    `$E2E_DIR/shots/locked-*.png`, at desktop and phone width.
 
+   Then "Remember on this device" (R1-R6 of the 3.0 password design), with
+   every drive open:
+   - *Forget on this device* in a drive's details says *Not remembered*,
+     and the drive stays open.
+   - After a reload and the device password, the remembered drives open
+     with no prompt (R1), and the forgotten one is locked (R3).
+   - Unlocked with *Remember on this device* unticked, a drive is locked
+     again after the next reload (R2).
+   - With an sql.js store and a reset copy planted, *Log out* deletes both,
+     and signing in again shows every other drive locked (R4).
+   - With the site's storage cleared, the drives are locked and their
+     passwords still open them (R5).
+   - *Forget all on this device* in the profile menu locks every private
+     drive, the sign-in password's included, at the next sign-in.
+
+   `SKIP_REMEMBER=1` stops after the P1 checks. The reloads and sign-ins go
+   through `login.js`, so the run takes about ten minutes.
+
 A drive unlocked this way is remembered on this profile, so a second run
 needs a fresh `E2E_DIR`.
 

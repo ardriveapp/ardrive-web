@@ -1,0 +1,7 @@
+-- Drives whose key this device must not keep: "Remember on this device"
+-- was off when they were unlocked, or "Forget on this device" was used.
+-- Not secret. Their key lives in memory for the session, and the next
+-- session starts with them locked. Sign-out deletes this with every table.
+CREATE TABLE forgotten_drives (
+    driveId TEXT NOT NULL PRIMARY KEY
+);

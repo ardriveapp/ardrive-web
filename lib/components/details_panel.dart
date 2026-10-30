@@ -10,6 +10,7 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/components/remembered_on_this_device.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -527,8 +528,20 @@ class _DetailsPanelState extends State<DetailsPanel> {
           // TODO: Localize
           itemTitle: 'Signature type',
         ),
+        if (_ownsSignedIn(state.drive.ownerAddress)) ...[
+          sizedBoxHeight16px,
+          RememberedOnThisDevice(driveId: state.drive.id),
+        ],
       ],
     ];
+  }
+
+  /// Whether the signed-in wallet owns the drive: "Forget on this device" is
+  /// for the account's own drives, which come back as locked drives after
+  /// it. A drive attached from someone else would not come back at all.
+  bool _ownsSignedIn(String ownerAddress) {
+    if (context.read<ProfileCubit>().state is! ProfileLoggedIn) return false;
+    return isDriveOwner(context.read<ArDriveAuth>(), ownerAddress);
   }
 
   /// A drive known only from the drive list: everything that is known, and

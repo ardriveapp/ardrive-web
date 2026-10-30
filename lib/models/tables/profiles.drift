@@ -8,5 +8,19 @@ CREATE TABLE profiles (
     walletPublicKey TEXT NOT NULL,
     encryptedPublicKey BLOB NOT NULL,
     profileType INTEGER NOT NULL,
-    sourceWalletAddress TEXT
+    sourceWalletAddress TEXT,
+
+    -- 1: the wallet and public key are encrypted under the password's key
+    -- with keySalt as the nonce, the format before 3.0. 2: each is sealed
+    -- with its own random nonce under the device key. See ProfileDao.
+    formatVersion INTEGER NOT NULL DEFAULT 1,
+    -- Format 2: random bytes that, with the unlock secret, derive the
+    -- device key (DeviceUnlockMethod).
+    deviceSalt BLOB,
+    unlockMethod TEXT,
+    -- Format 2: a known plaintext sealed under the device key.
+    keyCheck BLOB,
+    -- Whether the copies of the format 1 profile this device may still hold
+    -- (older database stores, reset copies, free pages) were cleared.
+    olderCopiesCleared BOOLEAN NOT NULL DEFAULT FALSE
 );

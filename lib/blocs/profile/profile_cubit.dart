@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -30,6 +31,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ProfilePresenceHint? _presenceHint;
   final ProfilePresence _presenceAtStart;
   StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<DeviceTabsMessage>? _tabsSubscription;
 
   /// Stops listening for Wander's account switches; see [_onWanderSwitch].
   Function()? _forgetWanderSwitch;
@@ -53,6 +55,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     required TabVisibilitySingleton tabVisibilitySingleton,
     required ArDriveAuth arDriveAuth,
     ArConnectService? arConnectService,
+    DeviceTabs? deviceTabs,
     ProfilePresenceHint? presenceHint,
   })  : _turboUploadService = turboUploadService,
         _profileDao = profileDao,
@@ -71,6 +74,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     // something called [refreshBalance].
     _authSubscription =
         _arDriveAuth.onAuthStateChanged().listen(_followAuthUser);
+    _tabsSubscription =
+        (deviceTabs ?? DeviceTabs.instance).messages.listen(_onOtherTab);
     // The one place that answers a Wander account switch, for as long as the
     // app runs: in the drives, on Welcome back, anywhere.
     _forgetWanderSwitch = onArConnectWalletSwitchTo(onWanderSwitch);
@@ -411,8 +416,45 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoggingOut());
   }
 
+  /// What another ArDrive tab in this browser did. See [DeviceTabs].
+  ///
+  /// - Signed out: this tab signs out too, and if it owns the database, that
+  ///   clears the copy that lasts.
+  /// - Forgot drives: their stored keys go here as well. The tab that owns
+  ///   the database is the one that matters; a tab on a session copy keeps
+  ///   its copy consistent.
+  Future<void> _onOtherTab(DeviceTabsMessage message) async {
+    // This tab is already signing out for a Wander switch, which clears the
+    // device and tells the other tabs: a message now would only race it.
+    if (_signingOutForOtherWallet != null) return;
+    try {
+      switch (message) {
+        case SignedOutInAnotherTab():
+          if (state is! ProfileLoggedIn && state is! ProfilePromptLogIn) {
+            return;
+          }
+          logger.i('Signed out in another tab; signing out here too');
+          await _arDriveAuth.logout(fromAnotherTab: true);
+          await logoutProfile();
+        case ForgottenInAnotherTab(:final driveIds):
+          final current = state;
+          for (final driveId in driveIds) {
+            if (current is ProfileLoggedIn) {
+              await _db.driveDao
+                  .forgetDriveKey(driveId, current.user.cipherKey);
+            } else {
+              await _db.driveDao.forgetStoredDriveKeyUnread(driveId);
+            }
+          }
+      }
+    } catch (e, stackTrace) {
+      logger.e('Could not follow another tab', e, stackTrace);
+    }
+  }
+
   @override
   Future<void> close() async {
+    await _tabsSubscription?.cancel();
     await _authSubscription?.cancel();
     _forgetWanderSwitch?.call();
     _forgetOtherWalletHandler?.call();

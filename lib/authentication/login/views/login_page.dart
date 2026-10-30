@@ -665,6 +665,8 @@ bool gettingStartedReady(LoginState state) => state is! LoginLoading;
 bool loginPanelRebuildsOn(LoginState current) {
   final isFailure = current is LoginFailure ||
       current is LoginUnknownFailure ||
+      // Welcome back says this itself, and keeps its place.
+      current is LoginProfileFromNewerVersion ||
       current is GatewayLoginFailure ||
       current is LoginPasswordFailedWithPrivateDriveNotFound;
   final isSuccess = current is LoginSuccess;

@@ -21,6 +21,7 @@ part 'database.g.dart';
     '../tables/licenses.drift',
     '../tables/network_transactions.drift',
     '../tables/profiles.drift',
+    '../tables/forgotten_drives.drift',
     '../tables/arns_records.drift',
     '../tables/ant_records.drift',
   },
@@ -28,6 +29,14 @@ part 'database.g.dart';
 )
 class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
+
+  /// Deletes the copies of the database that older builds left in this
+  /// browser. Web only, and only from the tab that owns the database; see
+  /// `deleteLegacyLocalStores` in web.dart. Returns what it deleted.
+  static Future<List<String>> deleteLegacyStores() => deleteLegacyLocalStores();
+
+  /// Whether this tab owns the database (web), or always (elsewhere).
+  static bool get ownsDatabase => webDatabaseIsWriter;
 
   /// A publication's database: in memory, kept nowhere (`PublicationMode`).
   Database.forPublication() : this(openPublicationConnection());
@@ -44,7 +53,7 @@ class Database extends _$Database {
   }
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         // Both run in one transaction, which also stamps the new version, so
@@ -244,6 +253,23 @@ class Database extends _$Database {
               await m.createTable(antRecords);
             }
 
+            if (from < 32) {
+              logger.d('Migrating schema from v31 to v32');
+
+              // The 3.0 local profile format (ProfileDao): the columns only.
+              // Each profile is rewritten in the new format on its next
+              // unlock, when the password that opens it is at hand.
+              await _addColumn(m, profiles, profiles.formatVersion);
+              await _addColumn(m, profiles, profiles.deviceSalt);
+              await _addColumn(m, profiles, profiles.unlockMethod);
+              await _addColumn(m, profiles, profiles.keyCheck);
+              await _addColumn(m, profiles, profiles.olderCopiesCleared);
+              await customStatement(
+                'CREATE TABLE IF NOT EXISTS forgotten_drives '
+                '(driveId TEXT NOT NULL PRIMARY KEY)',
+              );
+            }
+
             await _stampSchemaVersion();
           } catch (e, stacktrace) {
             logger.e(
@@ -254,7 +280,21 @@ class Database extends _$Database {
             rethrow;
           }
         }),
+        beforeOpen: (_) => enableSecureDelete(),
       );
+
+  /// Deleted rows are overwritten with zeros rather than left in free pages
+  /// of the file. The profile (the stored wallet) and the drive keys are
+  /// encrypted, but a copy of the file taken after sign-out could still be
+  /// attacked offline through the password. Per connection, so it runs on
+  /// every open. docs/WEB_DATABASE.md, "Signing out".
+  Future<void> enableSecureDelete() =>
+      customStatement('PRAGMA secure_delete = ON');
+
+  /// Rebuilds the file without its free pages: what was deleted before
+  /// [enableSecureDelete] existed is in them. Sign-out runs it once the
+  /// tables are empty, when it is quick. Never inside a transaction.
+  Future<void> vacuum() => customStatement('VACUUM');
 
   /// Adds [column] to [table] unless it is already there.
   ///

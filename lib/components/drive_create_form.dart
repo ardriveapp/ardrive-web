@@ -1,3 +1,4 @@
+import 'package:ardrive/components/password_autofill.dart';
 import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
@@ -99,6 +100,22 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
     super.dispose();
   }
 
+  /// The drive password, with the wallet address as the username, so a
+  /// browser offers to save it for this account and fill it next time.
+  Widget _withAutofill(BuildContext context, Widget field) {
+    final ProfileState profile;
+    try {
+      profile = context.read<ProfileCubit>().state;
+    } on ProviderNotFoundException {
+      return field;
+    }
+    if (profile is! ProfileLoggedIn) return field;
+    return PasswordAutofillGroup(
+      username: profile.user.walletAddress,
+      child: field,
+    );
+  }
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<DriveCreateCubit, DriveCreateState>(
@@ -118,6 +135,8 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
               title: appLocalizationsOf(context).creatingDriveEmphasized,
             );
           } else if (state is DriveCreateSuccess) {
+            // The drive password worked: the browser may save it.
+            if (_drivePassword.text.isNotEmpty) PasswordAutofillGroup.save();
             Navigator.pop(context);
             Navigator.pop(context);
             PlausibleEventTracker.trackDriveCreation(
@@ -233,24 +252,27 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                       ),
                       if (needsPassword) ...[
                         const SizedBox(height: 16),
-                        ArDriveTextFieldNew(
-                          key: const Key('drivePassword'),
-                          controller: _drivePassword,
-                          focusNode: _drivePasswordFocus,
-                          label: appLocalizationsOf(context)
-                              .enterYourDrivePassword,
-                          obscureText: true,
-                          showObfuscationToggle: true,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          autofillHints: const [AutofillHints.password],
-                          isEnabled: !_checking,
-                          errorMessage: _drivePasswordError(context, state),
-                          showErrorMessage:
-                              _drivePasswordError(context, state) != null,
-                          onChanged: (_) => setState(() {
-                            _rejectionSeen = true;
-                          }),
+                        _withAutofill(
+                          context,
+                          ArDriveTextFieldNew(
+                            key: const Key('drivePassword'),
+                            controller: _drivePassword,
+                            focusNode: _drivePasswordFocus,
+                            label: appLocalizationsOf(context)
+                                .enterYourDrivePassword,
+                            obscureText: true,
+                            showObfuscationToggle: true,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            autofillHints: const [AutofillHints.password],
+                            isEnabled: !_checking,
+                            errorMessage: _drivePasswordError(context, state),
+                            showErrorMessage:
+                                _drivePasswordError(context, state) != null,
+                            onChanged: (_) => setState(() {
+                              _rejectionSeen = true;
+                            }),
+                          ),
                         ),
                       ],
                       const SizedBox(height: 32),

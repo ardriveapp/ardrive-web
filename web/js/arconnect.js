@@ -55,7 +55,7 @@ async function getSignature(message) {
       name: 'RSA-PSS',
       saltLength: 0,
     });
-    console.log('[ArConnect] signature() returned:', typeof response, response);
+    // Never log the signature: a drive key is derived from it.
     var array = Uint8Array.from(Object.values(response));
     console.log('[ArConnect] getSignature successful, returning', array.length, 'bytes');
     return array;
@@ -85,7 +85,7 @@ async function signDataItem(data, tags, owner, target, anchor) {
     };
     console.log('[ArConnect] Calling arweaveWallet.signDataItem()...');
     var signed = await window.arweaveWallet.signDataItem(jsDataItem, { saltLength: 0});
-    console.log('[ArConnect] signDataItem() returned:', typeof signed, signed?.length || signed);
+    console.log('[ArConnect] signDataItem() returned', signed?.length, 'bytes');
 
     // Signature stored after first two bytes, and arweave sig length is 512
     var signature = signed.slice(2, 514);

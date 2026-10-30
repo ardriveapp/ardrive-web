@@ -231,12 +231,17 @@ void main() {
             driveId: any(named: 'driveId'),
             password: any(named: 'password'),
             tryOthers: any(named: 'tryOthers'),
+            remember: any(named: 'remember'),
           )).thenAnswer((_) async => result);
     }
 
     /// The dialog in a route of its own, as the app shows it, so closing it
     /// can be seen.
-    Future<void> open(WidgetTester tester, {bool othersLocked = true}) async {
+    Future<void> open(
+      WidgetTester tester, {
+      bool othersLocked = true,
+      String? walletAddress,
+    }) async {
       session.setLockedDrives('owner', [
         for (final id in [_driveId, if (othersLocked) _otherId])
           LockedDrive(
@@ -261,7 +266,10 @@ void main() {
                   syncDrives: (ids) async => synced.add(ids),
                 ),
                 child: Dialog(
-                  child: UnlockDriveDialog(onUnlocked: announced.add),
+                  child: UnlockDriveDialog(
+                    onUnlocked: announced.add,
+                    walletAddress: walletAddress,
+                  ),
                 ),
               ),
             ),
@@ -298,6 +306,7 @@ void main() {
             driveId: _driveId,
             password: 'secret',
             tryOthers: true,
+            remember: true,
           )).called(1);
       expect(find.text('Unlock drive'), findsNothing);
       expect(synced, [
@@ -322,7 +331,64 @@ void main() {
             driveId: _driveId,
             password: 'secret',
             tryOthers: false,
+            remember: true,
           )).called(1);
+    });
+
+    testWidgets(
+        '"Remember on this device" is on by default; unticked, the drive is '
+        'kept for this session only', (tester) async {
+      answers(const DriveUnlockResult.opened([_driveId]));
+      await open(tester);
+
+      final box = find.byKey(const Key('unlockDriveRemember'));
+      expect(box, findsOneWidget);
+      expect(find.text('Remember on this device'), findsOneWidget);
+
+      await tester.tap(find.text('Remember on this device'));
+      await tester.pump();
+      await typeAndPressEnter(tester, 'secret');
+
+      verify(() => unlocker.unlock(
+            wallet: any(named: 'wallet'),
+            profileKey: any(named: 'profileKey'),
+            driveId: _driveId,
+            password: 'secret',
+            tryOthers: true,
+            remember: false,
+          )).called(1);
+    });
+
+    testWidgets('the box is there with no other locked drive too',
+        (tester) async {
+      await open(tester, othersLocked: false);
+
+      expect(find.text('Remember on this device'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the password field asks the browser for the saved drive password, '
+        'beside the account\'s address', (tester) async {
+      await open(tester, walletAddress: 'the-wallet-address');
+
+      // The TextField is the autofill client; EditableText only draws.
+      final password = tester.widget<TextField>(find.descendant(
+          of: find.byKey(const Key('unlockDrivePassword')),
+          matching: find.byType(TextField)));
+      expect(password.autofillHints, [AutofillHints.password]);
+      final username = tester.widget<TextField>(find
+          .byKey(const Key('passwordAutofillUsername'), skipOffstage: false));
+      expect(username.controller!.text, 'the-wallet-address');
+      expect(username.autofillHints, [AutofillHints.username]);
+      // One group: the browser sees the address and the password together.
+      final passwordElement = tester.element(find.descendant(
+          of: find.byKey(const Key('unlockDrivePassword')),
+          matching: find.byType(TextField)));
+      final usernameElement = tester.element(find.byKey(
+          const Key('passwordAutofillUsername'),
+          skipOffstage: false));
+      expect(AutofillGroup.of(passwordElement),
+          same(AutofillGroup.of(usernameElement)));
     });
 
     testWidgets('with no other locked drive, there is no box to tick',
@@ -415,6 +481,7 @@ void main() {
             driveId: any(named: 'driveId'),
             password: any(named: 'password'),
             tryOthers: any(named: 'tryOthers'),
+            remember: any(named: 'remember'),
           ));
     });
   });

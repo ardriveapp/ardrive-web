@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/models/daos/daos.dart';
@@ -484,6 +485,12 @@ class _ProfileCardState extends State<ProfileCard> {
             // whose slot the way home now holds: that slot is the only one
             // present on both breakpoints, and the drives list had no door at
             // all on a phone once the sidebar entry came out.
+            _ForgetAllOnThisDeviceRow(
+              onDone: () {
+                _showProfileCard = false;
+                setState(() {});
+              },
+            ),
             const Divider(height: 1, indent: 16, endIndent: 16),
             _ProfileMenuRow(
               label: appLocalizationsOf(context).help,
@@ -1237,6 +1244,7 @@ class _ProfileCardState extends State<ProfileCard> {
 /// like a different kind of thing.
 class _ProfileMenuRow extends StatefulWidget {
   const _ProfileMenuRow({
+    super.key,
     required this.label,
     required this.icon,
     required this.onTap,
@@ -1831,4 +1839,90 @@ class _AccountStats {
     this.driveIds = const [],
     this.isStillLanding = false,
   });
+}
+
+/// "Forget all on this device": every drive key this device remembers is
+/// deleted. The drives stay open for this session (their keys move to
+/// memory) and are locked the next time. Shown only while something is
+/// remembered.
+class _ForgetAllOnThisDeviceRow extends StatelessWidget {
+  const _ForgetAllOnThisDeviceRow({required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final driveDao = context.read<DriveDao>();
+    final auth = context.read<ArDriveAuth>();
+    final String owner;
+    try {
+      owner = auth.currentUser.walletAddress;
+    } on AuthenticationUserIsNotLoggedInException {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<int>(
+      stream: driveDao.watchRememberedDriveKeyCount(ownerAddress: owner),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            _ProfileMenuRow(
+              key: const Key('forgetAllOnThisDevice'),
+              label: appLocalizationsOf(context).forgetAllOnThisDevice,
+              icon: ArDriveIcons.lock(size: 21),
+              onTap: () async {
+                final confirmed = await showArDriveDialogWithBuilder<bool>(
+                  context,
+                  builder: (dialogContext) =>
+                      ForgetAllOnThisDeviceDialog(count: count),
+                );
+                onDone();
+                if (confirmed != true) return;
+                final user = auth.currentUser;
+                final ids = await driveDao.rememberedDriveIds(
+                    ownerAddress: user.walletAddress);
+                await driveDao.forgetAllDriveKeys(
+                  user.cipherKey,
+                  ownerAddress: user.walletAddress,
+                );
+                DeviceTabs.instance.announceForgotten(ids);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// "Forget N drives on this device?": Forget pops true, Cancel false.
+@visibleForTesting
+class ForgetAllOnThisDeviceDialog extends StatelessWidget {
+  const ForgetAllOnThisDeviceDialog({super.key, required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    return ArDriveStandardModalNew(
+      key: const Key('forgetAllOnThisDeviceDialog'),
+      title: strings.forgetDrivesConfirmTitle(count),
+      description: strings.forgetDrivesConfirmBody,
+      actions: [
+        ModalAction.dismiss(
+          action: () => Navigator.of(context).pop(false),
+          title: strings.cancelEmphasized,
+        ),
+        ModalAction(
+          action: () => Navigator.of(context).pop(true),
+          title: strings.forget,
+        ),
+      ],
+    );
+  }
 }
