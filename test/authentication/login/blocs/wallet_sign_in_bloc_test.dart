@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/device_unlock/domain/device_key.dart';
 import 'package:ardrive/device_unlock/domain/device_secret_source.dart';
 import 'package:ardrive/device_unlock/domain/device_unlocker.dart';
@@ -17,6 +18,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:webthree/credentials.dart';
 
+import '../../../test_utils/locked_drive_fixtures.dart'
+    show MemoryKeyValueStore;
 import '../../../test_utils/utils.dart';
 
 class _FakeSource extends Fake implements DeviceSecretSource {}
@@ -418,6 +421,60 @@ void main() {
         const PromptWalletUnlock(wallet: BrowserWallet.wander),
       ],
       verify: (_) => verifyNever(() => auth.logout()),
+    );
+  });
+
+  group('My files', () {
+    late MemoryKeyValueStore store;
+
+    LoginBloc withFirstDrive() => LoginBloc(
+          arDriveAuth: auth,
+          arConnectService: arconnect,
+          ethereumProviderService: ethereum,
+          solanaProviderService: solana,
+          turboUploadService: MockTurboUploadService(),
+          arweaveService: arweave,
+          downloadService: MockDownloadService(),
+          userRepository: MockUserRepository(),
+          profileCubit: MockProfileCubit(),
+          configService: MockConfigService(),
+          walletFromMnemonic: (_) async => wallet,
+          firstDrive: FirstDrive(openStore: () async => store),
+        );
+
+    setUp(() {
+      store = MemoryKeyValueStore();
+      when(() => auth.isUserLoggedIn()).thenAnswer((_) async => true);
+      when(() => auth.currentUser).thenReturn(user);
+    });
+
+    blocTest<LoginBloc, LoginState>(
+      'an account ArDrive made gets My files at sign-up, as before',
+      build: withFirstDrive,
+      act: (bloc) async {
+        bloc.add(const CreateNewWallet());
+        await bloc.stream.firstWhere((s) => s is CreateNewPassword);
+        bloc.add(FinishOnboarding(wallet: wallet));
+        await bloc.stream.firstWhere((s) => s is LoginSuccess);
+      },
+      verify: (_) async => expect(
+          await FirstDrive(openStore: () async => store)
+              .claim(user.walletAddress),
+          isTrue),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'a browser wallet sign-up gets none: My files waits for the first '
+      'upload',
+      build: withFirstDrive,
+      act: (bloc) async {
+        bloc.add(const AddWalletFromArConnect());
+        await bloc.stream.firstWhere((s) => s is LoginSuccess);
+      },
+      verify: (_) async => expect(
+          await FirstDrive(openStore: () async => store)
+              .claim(user.walletAddress),
+          isFalse),
     );
   });
 }

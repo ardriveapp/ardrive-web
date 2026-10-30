@@ -10,6 +10,7 @@ import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
+import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
@@ -165,6 +166,52 @@ void main() {
       expect(find.byType(EnterYourPasswordWidget), findsOneWidget);
     });
 
+    testWidgets(
+        'a wallet chosen from Sign up gets the new-account password step '
+        '(fromSignUp reaches the dialog)', (tester) async {
+      when(() => profileNameBloc.state)
+          .thenReturn(const ProfileNameInitial(null));
+      await pump(
+        tester,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => handleLoginState(
+              context,
+              CreateNewPassword(
+                wallet: getTestWallet(),
+                isNewUser: false,
+                showWalletCreated: false,
+                fromSignUp: true,
+              ),
+            ),
+            child: const Text('sign up'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('sign up'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final dialog = tester
+          .widget<SecureYourWalletWidget>(find.byType(SecureYourWalletWidget));
+      expect(dialog.fromSignUp, isTrue);
+      // A new account here, so its title says so, not "Welcome back".
+      expect(find.text('Choose a password'), findsOneWidget);
+      expect(find.text('Welcome back'), findsNothing);
+    });
+
+    test('an account a browser wallet opens is opened in the panel too', () {
+      expect(
+          loginPanelFor(
+              const PromptWalletUnlock(wallet: BrowserWallet.wander),
+              loginBloc),
+          isA<WelcomeBackView>());
+      expect(
+          loginPanelRebuildsOn(
+              const PromptWalletUnlock(wallet: BrowserWallet.wander)),
+          isTrue);
+    });
+
     test('a password for a wallet just chosen leaves the panel as it was', () {
       expect(loginPanelRebuildsOn(const PromptPassword()), isFalse);
     });
@@ -203,6 +250,64 @@ void main() {
               const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
               loginBloc),
           isA<WalletWaitView>());
+    });
+  });
+
+  group('Welcome back with a wallet', () {
+    Future<void> show(WidgetTester tester, PromptWalletUnlock state) async {
+      whenListen(loginBloc, const Stream<LoginState>.empty(),
+          initialState: state);
+      when(() => profileNameBloc.state)
+          .thenReturn(const ProfileNameInitial(null));
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+    }
+
+    testWidgets('asks for one approval, with no password field',
+        (tester) async {
+      await show(tester, const PromptWalletUnlock(wallet: BrowserWallet.wander));
+
+      expect(find.text('Continue with Wander'), findsOneWidget);
+      expect(find.byKey(const Key('welcomeBackPassword')), findsNothing);
+      await tester.tap(find.text('Continue with Wander'));
+      expect(added(), contains(const UnlockWithWallet()));
+    });
+
+    testWidgets('says the drives lock again for a profile from before 3.0',
+        (tester) async {
+      await show(
+          tester,
+          const PromptWalletUnlock(
+              wallet: BrowserWallet.wander, relocks: true));
+
+      expect(find.byKey(const Key('welcomeBackRelocks')), findsOneWidget);
+    });
+
+    testWidgets('says why the last try opened nothing', (tester) async {
+      await show(
+          tester,
+          const PromptWalletUnlock(
+            wallet: BrowserWallet.metamask,
+            problem: WalletUnlockProblem.otherAccount,
+          ));
+
+      expect(find.text('Continue with MetaMask'), findsOneWidget);
+      expect(
+          find.text('Your wallet is on another account. Switch to this one, '
+              'or use a different account.'),
+          findsOneWidget);
+    });
+
+    testWidgets('the wait says what the approval opens', (tester) async {
+      await pump(
+        tester,
+        const WalletWaitView(
+          wallet: BrowserWallet.wander,
+          request: BrowserWalletRequest.openDrives,
+        ),
+      );
+
+      expect(find.text('Approve in Wander to open your drives'), findsOneWidget);
     });
   });
 

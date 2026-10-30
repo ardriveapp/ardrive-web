@@ -402,6 +402,49 @@ It needs its own wallet, so it runs in its own profile and credentials:
 A drive unlocked this way is remembered on this profile, so a second run
 needs a fresh `E2E_DIR`.
 
+**Signing in without a password (browser wallets).** Wander, Phantom,
+Solflare and new MetaMask accounts sign in with a wallet approval and no
+ArDrive password (the 3.0 password design, P3). `login.js` signs in with a
+keyfile, so these flows run against the real Wander extension through the
+Wander harness (`~/work/wander-e2e`, see its README), not through
+`launch.js`. Give each run its own `APP_PORT`, `CDP_PORT`, `PROBE_PORT`,
+`WANDER_E2E_DIR` and `WANDER_PW_DIR`, and connect with *Always ask* so every
+approval opens a window you can count. Count signatures too:
+`grep -cE "Calling arweaveWallet.(signDataItem|batchSignDataItem|signature)" $WANDER_E2E_DIR/console.log`.
+
+With the locked-drives wallet imported into Wander:
+
+1. **Fresh sign-in** (S1). Log in, then Wander: Wander's connect window, then
+   one `signDataItem` for this device's key. No password step and no
+   "This password didn't open your private drives". Public drives are open;
+   every private drive is listed as locked.
+2. **First Unlock** (S4). Unlock *E2E Locked Login* with the login password,
+   *Try on my other locked drives* ticked: one `batchSignDataItem` window
+   opens it and every drive that shares the password. *Remember on this
+   device* is on.
+3. **Reload.** Welcome back shows *Continue with Wander* and no password
+   field. Continue: one `signDataItem` ("Approve in Wander to open your
+   drives"), and the drives unlocked in step 2 open with no other prompt.
+   Cancel on that wait goes back to Welcome back.
+4. **A profile from before 3.0.** Sign in with a build before P3 (password
+   profile), unlock a drive, then load the P3 build: Welcome back offers
+   Wander only and says the private drives lock again. After Continue, the
+   drive is locked until its first Unlock.
+5. **First private drive** (S5). On an account with no private drive, New
+   private drive (or Getting started's *Upload your first files*) asks
+   *Keep your files private*: the new-account rules, *Suggest*, and "We
+   can't recover this password". Cancel creates nothing. Setting it makes the
+   drive (for Upload, a private *My files*), and the upload dialog opens on
+   it. A second private drive in the same session asks nothing.
+
+MetaMask and Phantom can't be driven here; their sign-in, Welcome back and
+the MetaMask existing-or-new detection are covered by unit tests with fakes
+(`test/authentication/login/blocs/wallet_sign_in_bloc_test.dart`,
+`test/authentication/wallet_sign_in_test.dart`). Check them by hand with the
+real extensions before a release: a new MetaMask account shows the
+*ArDrive account* message once, and no password; an existing one asks its
+password once on a device, then only approvals.
+
 ## What to test
 
 Don't try to test everything. There are three kinds of run:
