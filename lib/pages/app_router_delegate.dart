@@ -327,6 +327,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// down again on a reload of a drive.
   bool _routeKnown = false;
 
+  /// The profile the app is built with, for [setNewRoutePath] to read the
+  /// state when the address changes. Null until the first build.
+  @visibleForTesting
+  ProfileCubit? profileCubit;
+
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
@@ -574,6 +579,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               }
             },
             builder: (context, state) {
+              profileCubit = context.read<ProfileCubit>();
+
               Widget? shell;
 
               // What the page below is keyed by. A constant key meant the
@@ -1402,6 +1409,25 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionId = configuration.rawTransactionId;
     rawTransactionName = configuration.rawTransactionName;
     rawTransactionContentType = configuration.rawTransactionContentType;
+
+    // A visitor who goes somewhere only an account can see, in the same tab
+    // (`#/` after a share page, say), changes no profile state, so the
+    // listener in [build] that sends visitors to sign in never runs. No branch
+    // of the builder had anything to draw and the splash stayed up. The same
+    // rule is applied here. Not while the check for an account or a login is
+    // under way: those end in a profile change, which the listener handles.
+    final profileState = profileCubit?.state;
+    if (profileState != null &&
+        profileState is! ProfileLoggedIn &&
+        profileState is! ProfileCheckingAvailability &&
+        profileState is! ProfileLoggingIn &&
+        !signingIn &&
+        !gettingStarted &&
+        !canAnonymouslyShowDriveDetail(profileState) &&
+        !isViewingSharedFile &&
+        !isViewingRawTransaction) {
+      signingIn = true;
+    }
   }
 
   /// Brings the explorer to the drive and folder the address bar named.
