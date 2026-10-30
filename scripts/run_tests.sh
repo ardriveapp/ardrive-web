@@ -11,13 +11,8 @@
 # already runs its suites concurrently, so it uses the cores it is given;
 # putting it in the pool adds contention without adding parallelism.
 #
-# Note that the app suite has at least one pre-existing flaky test that does not
-# depend on this script: prompt_to_snapshot_bloc_test.dart waits 250ms for a
-# 200ms debounce, and loses the race under load. Keeping the suite out of the
-# pool does not fix it.
-#
 # `TEST_JOBS` sets the width of the pool. `TEST_JOBS=1` restores the old
-# strictly-sequential behaviour.
+# strictly-sequential behaviour. `SKIP_APP=1` runs the packages only.
 
 set -euo pipefail
 
@@ -51,8 +46,12 @@ for dir in "${packages[@]}"; do
   (cd "$dir" && flutter pub get >/dev/null)
 done
 
-echo "===== app ====="
-flutter test
+# CI runs the app's suite in shards of its own (tool/ci_test_shard.sh) and
+# sets SKIP_APP=1 here, so this runs only the packages.
+if [ "${SKIP_APP:-0}" != 1 ]; then
+  echo "===== app ====="
+  flutter test
+fi
 
 LOG_DIR="$(mktemp -d)"
 trap 'rm -rf "$LOG_DIR"' EXIT

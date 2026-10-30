@@ -1,0 +1,51 @@
+name: 'PR preview cleanup'
+
+# Deletes a pull request's Firebase preview channel when it is closed or
+# merged. Previews otherwise lived until they expired, and with several pull
+# requests a day the site ran out of channels ("channel quota reached"), so new
+# previews failed to deploy.
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The deploy action names a channel `pr<number>-<branch>`; matching on the
+      # number alone also finds one whose branch name it shortened or changed.
+      - name: Delete the preview channel
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          credentials="$RUNNER_TEMP/firebase-sa.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$credentials"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials"
+          channels=$(npx --yes firebase-tools@13.29.1 hosting:channel:list \
+              --project ardrive-web --site ardrive-web --json \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+                const r=JSON.parse(s).result||{};
+                for (const c of r.channels||[]) {
+                  const id=c.name.split("/").pop();
+                  if (id.startsWith(`pr${process.env.PR_NUMBER}-`)) console.log(id);
+                }})')
+          if [ -z "$channels" ]; then
+            echo "No preview channel for PR #$PR_NUMBER"
+            exit 0
+          fi
+          for channel in $channels; do
+            echo "Deleting $channel"
+            npx --yes firebase-tools@13.29.1 hosting:channel:delete "$channel" \
+              --project ardrive-web --site ardrive-web --force
+          done
