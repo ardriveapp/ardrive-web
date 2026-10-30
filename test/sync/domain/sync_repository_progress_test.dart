@@ -141,6 +141,7 @@ void main() {
           ownerAddress: any(named: 'ownerAddress'),
           currentBlockHeight: any(named: 'currentBlockHeight'),
           onEntityFetched: any(named: 'onEntityFetched'),
+          cancellationToken: any(named: 'cancellationToken'),
         )).thenAnswer((_) async {
       final block = BlockEntities(10)..entities = [...entities];
       return DriveEntityHistory(10, [block]);

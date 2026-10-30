@@ -247,8 +247,14 @@ class DataGatewayFallback {
     String txId,
     Arweave primaryClient, {
     bool largeBody = false,
+
+    /// Read before the retry. A dead transaction holds its slot for a whole
+    /// attempt and then the retry; once the sync is stopped the retry is not
+    /// worth making, and the read fails at once instead.
+    bool Function()? isCancelled,
   }) async {
-    return _syncFetch(txId, primaryClient, largeBody: largeBody)
+    return _syncFetch(txId, primaryClient,
+            largeBody: largeBody, isCancelled: isCancelled)
         .timeout(largeBody ? largeBodyTotalTimeout : _syncTotalFetchTimeout,
             onTimeout: () {
       logger.w('Total sync fetch timeout exceeded for tx $txId');
@@ -260,12 +266,16 @@ class DataGatewayFallback {
     String txId,
     Arweave primaryClient, {
     bool largeBody = false,
+    bool Function()? isCancelled,
   }) async {
     final gatewayName = primaryClient.api.gatewayUrl.host;
 
     var allAttempts404 = true;
 
     for (var attempt = 1; attempt <= syncMaxAttempts; attempt++) {
+      if (attempt > 1 && (isCancelled?.call() ?? false)) {
+        throw Exception('Sync stopped before the retry for tx $txId');
+      }
       try {
         return await _tryGateway(
           primaryClient,

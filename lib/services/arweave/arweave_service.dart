@@ -19,6 +19,7 @@ import 'package:ardrive/services/arweave/fragment_free_graphql.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
+import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
@@ -564,6 +565,8 @@ class ArweaveService {
     required List<String> driveIds,
     required int minBlockHeight,
     required String ownerAddress,
+    Map<String, int>? readUpTo,
+    Future<Set<String>> Function(List<String> txIds)? knownTxIds,
   }) async {
     final query = await graphQLRetry.execute(
       DriveActivityProbeQuery(
@@ -580,13 +583,38 @@ class ArweaveService {
       return (activeDriveIds: <String>{}, isComplete: false);
     }
 
+    final edges = query.data!.transactions.edges;
+
+    // What this device holds already: read by a sync, or written here and
+    // not yet read back. Neither is a change nobody has seen.
+    final known = knownTxIds == null
+        ? const <String>{}
+        : await knownTxIds([for (final edge in edges) edge.node.id]);
+
     final activeDriveIds = <String>{};
-    for (final edge in query.data!.transactions.edges) {
-      for (final tag in edge.node.tags) {
-        if (tag.name == 'Drive-Id') {
-          activeDriveIds.add(tag.value);
+    for (final edge in edges) {
+      if (known.contains(edge.node.id)) continue;
+      final height = edge.node.block?.height;
+      final tags = {for (final tag in edge.node.tags) tag.name: tag.value};
+      final driveId = tags['Drive-Id'];
+      if (driveId == null) continue;
+
+      // One query covers drives read up to different heights, from below
+      // the lowest of them. Past a drive's own height anything new counts;
+      // at or below it, only drive, folder and file metadata this device
+      // doesn't hold, which a gateway indexed after the drive was read.
+      // Other entities there (snapshots, drive signatures) are never kept
+      // as rows, so they would count again after every reload.
+      final readTo = readUpTo?[driveId];
+      if (readTo != null && height != null && height <= readTo) {
+        final entityType = tags['Entity-Type'];
+        if (entityType != 'drive' &&
+            entityType != 'folder' &&
+            entityType != 'file') {
+          continue;
         }
       }
+      activeDriveIds.add(driveId);
     }
 
     final isComplete = !query.data!.transactions.pageInfo.hasNextPage;
@@ -773,6 +801,12 @@ class ArweaveService {
     required int itemCount,
     required Future<void> Function(int index) task,
     void Function()? onItemDone,
+
+    /// Read before each item is claimed. Once it says stop, no worker starts
+    /// another item; those already running finish. A request in flight cannot
+    /// be aborted (the http client can't), so this is as soon as the pool can
+    /// stop.
+    bool Function()? shouldStop,
   }) async {
     if (itemCount <= 0) return;
 
@@ -786,6 +820,7 @@ class ArweaveService {
 
     Future<void> worker() async {
       while (true) {
+        if (shouldStop?.call() ?? false) return;
         final i = nextIndex;
         if (i >= itemCount) return;
         nextIndex++;
@@ -817,6 +852,12 @@ class ArweaveService {
     required DriveID driveId,
     int? currentBlockHeight,
     void Function()? onEntityFetched,
+
+    /// The sync this batch belongs to. Once it is cancelled no further
+    /// metadata is fetched, and the batch throws [SyncCancelledException]
+    /// rather than hand back a history with holes in it: a batch either
+    /// arrives whole or not at all.
+    SyncCancellationToken? cancellationToken,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
     //
@@ -844,6 +885,7 @@ class ArweaveService {
       // has to land. Without that the count would stop short of the total on
       // any batch holding a snapshot or a broken private entity.
       onItemDone: onEntityFetched,
+      shouldStop: () => cancellationToken?.isCancelled ?? false,
       task: (i) async {
         final entity = entityTxs[i].transactionCommonMixin;
         final tags = HashMap.fromIterable(
@@ -864,6 +906,7 @@ class ArweaveService {
           entityId: entity.id,
           driveId: driveId,
           isPrivate: driveKey != null,
+          isCancelled: () => cancellationToken?.isCancelled ?? false,
         );
 
         if (data == null) {
@@ -876,6 +919,10 @@ class ArweaveService {
         entityDatas[i] = data;
       },
     );
+
+    // Entities the pool never reached are still empty here, and parsing them
+    // would record them as skipped. Nothing of a stopped batch is used.
+    cancellationToken?.checkCancellation();
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
@@ -1013,6 +1060,7 @@ class ArweaveService {
     required String entityId,
     required String driveId,
     required bool isPrivate,
+    bool Function()? isCancelled,
   }) async {
     final txId = entityId;
 
@@ -1035,7 +1083,7 @@ class ArweaveService {
     // line each would be the slowest part of the sync.
     snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
 
-    return getEntityDataFromNetwork(txId: txId)
+    return getEntityDataFromNetwork(txId: txId, isCancelled: isCancelled)
         .then<Uint8List?>((d) => d)
         .catchError((e) {
       logger.e('Failed to get entity data from network for tx $txId', e);
@@ -1082,11 +1130,15 @@ class ArweaveService {
   Future<Uint8List> getEntityDataFromNetwork({
     required String txId,
     bool largeBody = false,
+
+    /// See [DataGatewayFallback.fetchDataForSync].
+    bool Function()? isCancelled,
   }) async {
     final Response data = await _gatewayFallback.fetchDataForSync(
       txId,
       client,
       largeBody: largeBody,
+      isCancelled: isCancelled,
     );
     return data.bodyBytes;
   }

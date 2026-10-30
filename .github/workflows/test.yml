@@ -24,19 +24,12 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      # build_runner's own cache, so a run regenerates only what changed. A
-      # stale entry only costs time: build_runner checks every input itself.
-      - uses: actions/cache@v4
-        with:
-          path: |
-            .dart_tool/build
-            packages/ario_sdk/.dart_tool/build
-          key: build-runner-${{ hashFiles('pubspec.lock', 'packages/ario_sdk/pubspec.lock', 'build.yaml') }}-${{ github.sha }}
-          restore-keys: |
-            build-runner-${{ hashFiles('pubspec.lock', 'packages/ario_sdk/pubspec.lock', 'build.yaml') }}-
+      # No build_runner cache: a restored .dart_tool/build from another run makes
+      # drift_dev fail on every file ("type 'Null' is not a subtype of type
+      # 'InterfaceElement'"), so generation starts clean each time.
 
-      # `scr setup` without its `flutter clean`, which on a fresh checkout only
-      # threw away the cache restored above.
+      # `scr setup` without its `flutter clean`, which a fresh checkout doesn't
+      # need.
       - name: Generate code
         run: |
           flutter pub get

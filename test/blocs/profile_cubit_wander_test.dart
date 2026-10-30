@@ -7,9 +7,11 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/utils.dart' show ownerToAddress;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../test_utils/fake_user.dart';
 import '../test_utils/utils.dart';
 
 /// A saved Wander (ArConnect) account: unlocking it is a local password
@@ -72,6 +74,8 @@ void main() {
   void wanderAnswers({String publicKey = savedPublicKey, bool allowed = true}) {
     when(() => wander.checkPermissions()).thenAnswer((_) async => allowed);
     when(() => wander.getPublicKey()).thenAnswer((_) async => publicKey);
+    when(() => wander.getWalletAddress())
+        .thenAnswer((_) async => ownerToAddress(publicKey));
   }
 
   setUp(() {
@@ -84,6 +88,7 @@ void main() {
     auth = MockArDriveAuth();
     authUsers = StreamController<User?>.broadcast();
     when(() => auth.onAuthStateChanged()).thenAnswer((_) => authUsers.stream);
+    when(() => auth.logout()).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -115,7 +120,7 @@ void main() {
     });
 
     test('keeps every drive when Wander is now on another wallet', () async {
-      wanderAnswers(publicKey: 'another-wallet');
+      wanderAnswers(publicKey: 'other-public-key');
 
       buildCubit();
       await pumpEventQueue();
@@ -206,22 +211,138 @@ void main() {
 
     test('a Wander now on another wallet signs out at the first write',
         () async {
-      wanderAnswers(publicKey: 'another-wallet');
+      wanderAnswers(publicKey: 'other-public-key');
       buildCubit();
       await pumpEventQueue();
 
       expect(await cubit!.logoutIfWalletMismatch(), isTrue);
-      expect(cubit!.state, isA<ProfileLoggingOut>());
+      // All the way, so no Welcome back is left for the old wallet.
+      verify(() => auth.logout()).called(1);
+      expect(cubit!.state, isA<ProfileSignedOutForOtherWallet>());
+      expect(cubit!.takeOtherWalletNotice(), isTrue);
+      expect(cubit!.takeOtherWalletNotice(), isFalse);
     });
 
-    test('a Wander that no longer lets ArDrive in signs out at the first write',
-        () async {
-      wanderAnswers(allowed: false);
+    group('a Wander that no longer lets ArDrive in', () {
+      test('offers Reconnect, and carries on once it reconnected', () async {
+        wanderAnswers(allowed: false);
+        when(() => wander.connect()).thenAnswer((_) async {
+          // Connecting gives the permissions back.
+          wanderAnswers();
+        });
+        ArConnectPrompt.registerRetryPrompt((reason, _) async {
+          prompts.add(reason);
+          return true;
+        });
+        buildCubit();
+        await pumpEventQueue();
+
+        expect(await cubit!.logoutIfWalletMismatch(), isFalse);
+        expect(prompts, [ArConnectUnavailableReason.noPermission]);
+        verify(() => wander.connect()).called(1);
+        verifyNever(() => auth.logout());
+        expect(cubit!.state, isA<ProfilePromptLogIn>());
+      });
+
+      test('is not a switch: Cancel signs nobody out', () async {
+        wanderAnswers(allowed: false);
+        buildCubit();
+        await pumpEventQueue();
+
+        await expectLater(
+          cubit!.logoutIfWalletMismatch(),
+          throwsA(isA<ArConnectUnavailableException>().having((e) => e.reason,
+              'reason', ArConnectUnavailableReason.noPermission)),
+        );
+        expect(prompts, [ArConnectUnavailableReason.noPermission]);
+        verifyNever(() => wander.connect());
+        verifyNever(() => auth.logout());
+        expect(cubit!.state, isNot(isA<ProfileLoggingOut>()));
+      });
+
+      test('reconnected on another wallet signs out', () async {
+        wanderAnswers(allowed: false);
+        when(() => wander.connect()).thenAnswer((_) async {
+          wanderAnswers(publicKey: 'other-public-key');
+        });
+        ArConnectPrompt.registerRetryPrompt((reason, _) async => true);
+        buildCubit();
+        await pumpEventQueue();
+
+        expect(await cubit!.logoutIfWalletMismatch(), isTrue);
+        verify(() => auth.logout()).called(1);
+        expect(cubit!.state, isA<ProfileSignedOutForOtherWallet>());
+      });
+    });
+  });
+
+  group('Wander switching account', () {
+    setUp(saveWanderProfile);
+
+    test('to another wallet signs out once, and says so once', () async {
+      buildCubit();
+      await pumpEventQueue();
+      final logouts = Completer<void>();
+      when(() => auth.logout()).thenAnswer((_) => logouts.future);
+
+      // Wander sends one event per tab and listener; all at once.
+      final first = cubit!.onWanderSwitch('another-address');
+      final second = cubit!.onWanderSwitch('another-address');
+      await pumpEventQueue();
+      logouts.complete();
+      await Future.wait([first, second]);
+
+      verify(() => auth.logout()).called(1);
+      expect(cubit!.state, isA<ProfileSignedOutForOtherWallet>());
+      expect(cubit!.takeOtherWalletNotice(), isTrue);
+      expect(cubit!.takeOtherWalletNotice(), isFalse);
+      verifyNever(() => wander.getWalletAddress());
+    });
+
+    test(
+        'nothing more is asked of Wander for the saved account until the '
+        'next sign-in', () async {
       buildCubit();
       await pumpEventQueue();
 
-      expect(await cubit!.logoutIfWalletMismatch(), isTrue);
-      expect(cubit!.state, isA<ProfileLoggingOut>());
+      await cubit!.onWanderSwitch('another-address');
+
+      // A drive unlock pass still running when the switch landed.
+      var signed = 0;
+      await expectLater(
+        ArConnectPrompt.ask(wander, () async => signed++,
+            savedPublicKey: savedPublicKey),
+        throwsA(isA<ArConnectWalletMismatchException>()),
+      );
+      expect(signed, 0);
+
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      await cubit!.unlockDefaultProfile(fakeUserJson, ProfileType.arConnect);
+      expect(
+        await ArConnectPrompt.ask(wander, () async => 'signed',
+            savedPublicKey: savedPublicKey),
+        'signed',
+      );
+    });
+
+    test('back to the saved wallet changes nothing', () async {
+      buildCubit();
+      await pumpEventQueue();
+
+      await cubit!.onWanderSwitch(await ownerToAddress(savedPublicKey));
+
+      verifyNever(() => auth.logout());
+      expect(cubit!.state, isA<ProfilePromptLogIn>());
+    });
+
+    test('with no address, as when ArDrive disconnects, changes nothing',
+        () async {
+      buildCubit();
+      await pumpEventQueue();
+
+      await cubit!.onWanderSwitch(null);
+
+      verifyNever(() => auth.logout());
     });
   });
 
@@ -239,7 +360,7 @@ void main() {
 
     test('does not ask Wander before Wander has answered in this session',
         () async {
-      wanderAnswers(publicKey: 'another-wallet');
+      wanderAnswers(publicKey: 'other-public-key');
       buildCubit();
       await pumpEventQueue();
 
@@ -254,9 +375,21 @@ void main() {
       await pumpEventQueue();
       expect(await cubit!.checkIfWalletMismatch(), isFalse);
 
-      wanderAnswers(publicKey: 'another-wallet');
+      wanderAnswers(publicKey: 'other-public-key');
       expect(await cubit!.logoutIfWalletMismatchInBackground(), isTrue);
       expect(cubit!.state, isA<ProfileLoggingOut>());
+    });
+
+    // Wander decrypts the wallet for its public key, which opens its unlock
+    // window when it has locked since; its address it reads from storage.
+    test('asks only what Wander answers without its password', () async {
+      wanderAnswers();
+      buildCubit();
+      await pumpEventQueue();
+      expect(await cubit!.checkIfWalletMismatch(), isFalse);
+
+      expect(await cubit!.logoutIfWalletMismatchInBackground(), isFalse);
+      verifyNever(() => wander.getPublicKey());
     });
 
     test('takes no answer as no mismatch and asks nobody', () async {

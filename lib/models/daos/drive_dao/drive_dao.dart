@@ -75,6 +75,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
   }
 
+  /// Which of [txIds] this device holds as a transaction already: read by a
+  /// sync, or written here and not yet read back.
+  Future<Set<String>> knownTransactionIds(List<String> txIds) async {
+    if (txIds.isEmpty) return const {};
+    final rows = await (select(networkTransactions)
+          ..where((tx) => tx.id.isIn(txIds)))
+        .get();
+    return {for (final row in rows) row.id};
+  }
+
   Future<void> detachDrive(String driveId) async {
     try {
       return db.transaction(() async {

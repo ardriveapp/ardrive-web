@@ -13,7 +13,13 @@ import '../../components/login_card.dart';
 class LandingView extends StatefulWidget {
   const LandingView({
     super.key,
+    this.ready = true,
   });
+
+  /// False while the app is still checking for an account on this device
+  /// (`ProfileCubit.presence`): the landing is drawn, and its buttons wait
+  /// for the check, which could still find an account.
+  final bool ready;
 
   @override
   State<LandingView> createState() => _LandingViewState();
@@ -58,6 +64,7 @@ class _LandingViewState extends State<LandingView> {
                   text: appLocalizationsOf(context).logIn,
                   typography: typography,
                   maxWidth: double.maxFinite,
+                  isDisabled: !widget.ready,
                   onPressed: () {
                     PlausibleEventTracker.trackClickLogin();
                     PlausibleEventTracker.trackPageview(
@@ -74,6 +81,7 @@ class _LandingViewState extends State<LandingView> {
                   typography: typography,
                   maxWidth: double.maxFinite,
                   variant: ButtonVariant.primary,
+                  isDisabled: !widget.ready,
                   onPressed: () {
                     PlausibleEventTracker.trackClickSignUp();
 
@@ -94,10 +102,12 @@ class _LandingViewState extends State<LandingView> {
                   key: const Key('openDriveLandingLink'),
                   text: appLocalizationsOf(context).openDriveLandingAction,
                   isAction: true,
-                  onTap: () {
-                    PlausibleEventTracker.trackClickOpenDriveAsVisitor();
-                    showOpenDriveDialog(context);
-                  },
+                  onTap: widget.ready
+                      ? () {
+                          PlausibleEventTracker.trackClickOpenDriveAsVisitor();
+                          showOpenDriveDialog(context);
+                        }
+                      : null,
                 ),
               ),
               // The version is in Help.

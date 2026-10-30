@@ -438,14 +438,29 @@ class DriveUnlocker {
       }
 
       try {
-        signature =
-            await _crypto.walletSignatureForDrive(wallet, driveId, signingType);
+        // A pass over several drives stays quiet after the person cancelled
+        // "Wander needs your permission again"; see
+        // [ArConnectPrompt.quietAfterCancel].
+        final Uint8List signed = promptBudget != null
+            ? await ArConnectPrompt.quietAfterCancel(() =>
+                _crypto.walletSignatureForDrive(wallet, driveId, signingType))
+            : await _crypto.walletSignatureForDrive(
+                wallet, driveId, signingType);
+        signature = signed;
       } catch (e) {
         logger.w('The wallet did not sign for $driveId: $e');
         // Either way a background pass does not ask again this session.
         _session.markWalletDeclined(owner, driveId);
+        // Cancel on ArDrive's own "Wander didn't answer" prompt: the person
+        // gave up on Wander for now, so the rest of this pass asks it nothing
+        // either, rather than a Cancel per drive.
+        // A Wander reconnected on another wallet ends the pass the same way:
+        // nothing more may be signed with it.
+        final gaveUp = e is ArConnectUnavailableException ||
+            e is ArConnectWalletMismatchException;
+        if (gaveUp) promptBudget?.remaining = 0;
         return DriveKeyAttempt.failed(
-          isWalletCancellation(e)
+          gaveUp || isWalletCancellation(e)
               ? DriveUnlockFailure.walletDeclined
               : DriveUnlockFailure.walletFailed,
         );

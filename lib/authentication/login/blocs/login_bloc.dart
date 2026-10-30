@@ -31,6 +31,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -59,6 +60,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   String? _signUpWalletAddress;
 
   bool ignoreNextWaletSwitch = false;
+
+  /// Stops listening for Wander's account switches when this bloc closes.
+  Function()? _forgetWalletSwitch;
 
   @visibleForTesting
   String? lastKnownWalletAddress;
@@ -280,9 +284,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// Whether a wallet extension is in this browser, looking again for up to
   /// [_walletInjectionWait] when there is none yet.
   Future<bool> _walletDetectedSoon() async {
-    final until = DateTime.now().add(_walletInjectionWait);
+    final until = clock.now().add(_walletInjectionWait);
     while (!anyWalletDetected) {
-      if (!DateTime.now().isBefore(until)) return false;
+      if (!clock.now().isBefore(until)) return false;
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
     return true;
@@ -425,7 +429,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// pages through every drive transaction the wallet has, and a real wallet
   /// took 30 pages and 18.5 s on a fast link. A wallet that big on a slow
   /// phone still logs in; a gateway that stops answering still fails here.
-  static const defaultWalletLookupTimeout = Duration(seconds: 45);
+  ///
+  /// Longer than a stalled page's first two GraphQL attempts (20 s, then
+  /// 40 s, see [GraphQLRetry.attemptTimeoutFor]) and the pause between them,
+  /// so a page that times out once is retried before the dialog gives up.
+  static const defaultWalletLookupTimeout = Duration(seconds: 65);
 
   final Duration _keyfileReadTimeout;
   final Duration _walletLookupTimeout;
@@ -1159,6 +1167,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
+  @override
+  Future<void> close() {
+    _forgetWalletSwitch?.call();
+    return super.close();
+  }
+
   bool _isArConnectWallet() {
     return profileType == ProfileType.arConnect;
   }
@@ -1168,16 +1182,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    onArConnectWalletSwitch(() async {
+    _forgetWalletSwitch = onArConnectWalletSwitch(() async {
+      if (isClosed) return;
       logger.d('Wallet switch detected on LoginBloc');
-      final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
-      if (isUserLoggedIng && !_isArConnectWallet()) {
-        logger.d(
-          'Wallet switch detected for non-arconnect wallet'
-          ' ($profileType) - ignoring',
-        );
-        return;
-      }
+      // A saved account is ProfileCubit's to sign out (see
+      // ProfileCubit.signOutForOtherWallet); this only covers a Wander
+      // sign-in that has not saved one yet.
+      if (await _arDriveAuth.isUserLoggedIn()) return;
 
       if (ignoreNextWaletSwitch) {
         ignoreNextWaletSwitch = false;

@@ -571,6 +571,7 @@ void main() {
           ownerAddress: any(named: 'ownerAddress'),
           currentBlockHeight: any(named: 'currentBlockHeight'),
           onEntityFetched: any(named: 'onEntityFetched'),
+          cancellationToken: any(named: 'cancellationToken'),
         )).thenAnswer((invocation) async {
       final txs = invocation.positionalArguments[0]
           as List<DriveEntityHistoryTransactionModel>;

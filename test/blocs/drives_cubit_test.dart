@@ -130,6 +130,26 @@ void main() {
     await cubit.close();
   });
 
+  // Signing out empties every table, which fires the drive list, and closes
+  // the cubit while that firing is still reading.
+  test('closed while a firing is still reading, it emits nothing', () async {
+    await insertDrive('drive-a');
+    final preferences = Completer<UserPreferences>();
+    when(() => userPreferencesRepository.load())
+        .thenAnswer((_) => preferences.future);
+
+    final cubit = buildCubit();
+    await pumpEventQueue();
+    await cubit.close();
+
+    preferences.complete(const UserPreferences(
+      currentTheme: ArDriveThemes.dark,
+      lastSelectedDriveId: null,
+    ));
+    // An emit after close would throw here, out of the listener.
+    await pumpEventQueue();
+  });
+
   group('an empty table before the drive list has been looked at', () {
     /// The bug, stated as a test: on a login with an empty local database the
     /// cubit announced "no drives" as a fact, and the sidebar, the router and

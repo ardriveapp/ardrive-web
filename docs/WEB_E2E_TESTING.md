@@ -99,7 +99,7 @@ Build a production release, the same as users get:
 
 ```bash
 flutter build web --release --dart-define=environment=production \
-  --pwa-strategy=none --no-web-resources-cdn --dart2js-optimization=O1
+  --pwa-strategy=none --no-web-resources-cdn --dart2js-optimization=O2
 ```
 
 Copy `build/web` somewhere stable first, so a later build or branch switch
@@ -275,6 +275,24 @@ the submenu closes again within a second. Uploading into a folder that has one
 opens the *Update deployments* panel beside the dialog. It closes with "Close «"
 in the header, and Options → Update deployments opens it again. The phone
 layout has no panel.
+
+**The landing on a phone.** Phones get Flutter's HTML renderer, which draws
+much of a page as DOM elements. `bento_dom.js` loads the signed-out landing
+as a Pixel 7 on that renderer, scrolls to the cost tile and measures the DOM.
+It needs no wallet and no `launch.js`:
+
+```bash
+APP_URL=https://staging.ardrive.io/ node bento_dom.js
+```
+
+It passes when no leader dot is a `<draw-circle>` element and an animation
+frame adds at most 200 nodes. A fixed build adds about 20 nodes per frame.
+The build that made phones reload the tab at the cost tile added about 1,200
+nodes per frame, with 158 dots as DOM elements. Run it after any change to
+the bento (`lib/authentication/login/views/tiles/`): anything that animates
+there needs a `RepaintBoundary`, and custom painting must not share a
+picture with text. It exits 2 when it can't check, for example when the cost
+tile isn't on screen.
 
 **Payment choice on a preview.** Testnet Turbo makes files up to 5 MiB free,
 so the payment cards, and with them wallet-paid upload, only appear for
