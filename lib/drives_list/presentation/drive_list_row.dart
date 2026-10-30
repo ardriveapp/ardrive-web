@@ -472,6 +472,27 @@ class DriveListRow extends StatelessWidget {
       );
     }
 
+    // Changed since it was read: news, not a failure, so the strongest text
+    // and the sync mark rather than red. This is where the page says it now;
+    // there is no banner above the table.
+    if (drive.hasUnreadChanges) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIcons.cloudSync(size: 14, color: colorTokens.iconHigh),
+          const SizedBox(width: ArDriveSpacing.xxs),
+          Flexible(
+            child: Text(
+              formatDriveSyncState(context, drive),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(color: colorTokens.textHigh),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Text(
       formatDriveSyncState(context, drive),
       maxLines: 1,
@@ -617,6 +638,13 @@ String formatDriveSyncState(
   // failed is the least useful true thing this row could say.
   if (drive.lastSyncFailed) {
     return appLocalizationsOf(context).driveSyncFailed;
+  }
+
+  // Ahead of the timestamp for the same reason: the time it last synced is
+  // true, but the figures beside it are now out of date, which is what the
+  // reader needs to know.
+  if (drive.hasUnreadChanges) {
+    return appLocalizationsOf(context).driveChangedSinceSync;
   }
 
   final lastSyncedAt = drive.lastSyncedAt;

@@ -75,7 +75,10 @@ class DriveActionsMenu extends StatelessWidget {
     // `isDisabled` as well as a null callback: [ArDriveDropdownItemTile] picks
     // its colours off the flag alone, and an item that looks live and does
     // nothing is the present-and-inert failure this series keeps removing.
-    final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
+    //
+    // Unavailable while the drive list refreshes too, as the page's own Sync
+    // is, so the page gives one answer to "can I sync now?".
+    final isSyncing = driveSyncUnavailable(context.watch<SyncCubit>().state);
 
     return ArDriveDropdown(
       // Without this the menu only ever opens downward, so on a phone the

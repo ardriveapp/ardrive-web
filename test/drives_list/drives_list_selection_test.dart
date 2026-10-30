@@ -41,14 +41,12 @@ void main() {
   var chosen = <String>[];
   var opened = <String>[];
   var cleared = 0;
-  var retried = 0;
 
   setUp(() {
     toggled = <String>[];
     chosen = <String>[];
     opened = <String>[];
     cleared = 0;
-    retried = 0;
   });
 
   Future<void> pump(
@@ -78,7 +76,6 @@ void main() {
               onToggleSelected: toggled.add,
               onToggleSelectAll: () {},
               onClearSelection: () => cleared++,
-              onRetryFailed: () => retried++,
               onChoose: chosen.add,
             ),
           ),
@@ -471,62 +468,6 @@ void main() {
     });
   });
 
-  group('a sync that read some drives and not others', () {
-    final partlyFailed = DrivesListLoaded(
-      drives: [drive('a'), drive('b', lastSyncFailed: true)],
-      scope: DriveScope.all,
-    );
-
-    testWidgets('adds up what failed and offers exactly that retry',
-        (tester) async {
-      await pump(tester, partlyFailed);
-
-      expect(find.text('1 of 2 drives could not be read'), findsOneWidget);
-
-      await tester.tap(find.text('Sync that drive'));
-      await tester.pump();
-
-      expect(retried, 1);
-    });
-
-    testWidgets('says nothing was lost, because nothing was', (tester) async {
-      await pump(tester, partlyFailed);
-
-      expect(
-        find.textContaining('keeps whatever was read last time'),
-        findsOneWidget,
-        reason: 'a reader looking at red needs telling what is still true',
-      );
-    });
-
-    testWidgets('and holds its tongue while a sync is running', (tester) async {
-      await pump(
-        tester,
-        DrivesListLoaded(
-          drives: [
-            drive('a', isSyncing: true),
-            drive('b', lastSyncFailed: true, isSyncing: true),
-          ],
-          scope: DriveScope.all,
-        ),
-      );
-
-      expect(
-        find.textContaining('could not be read'),
-        findsNothing,
-        reason: 'the run under way may well fix it; reporting the last one as '
-            'though it were the current answer is the error this whole series '
-            'exists to remove',
-      );
-    });
-
-    testWidgets('nothing is said when every drive was read', (tester) async {
-      await pump(tester, twoDrives);
-
-      expect(find.textContaining('could not be read'), findsNothing);
-    });
-  });
-
   /// The two things the first version of this got wrong, both visible in a
   /// screenshot: the column headings vanished, and two red buttons offering
   /// different scopes sat a hundred pixels apart. And the one the strip that
@@ -578,13 +519,11 @@ void main() {
 
       await pump(tester, neverSynced());
       final before = tester.getTopLeft(find.text('Name'));
-      expect(find.text('Nothing has been synced yet'), findsOneWidget);
+      // No card above the table: the rows say "Not synced on this device".
+      expect(find.text('Not synced on this device'), findsNWidgets(2));
 
       await pump(tester, neverSynced(selected: const {'a'}));
 
-      // The card stays: it is words now, and withdrawing it on the first
-      // tick was the same jump.
-      expect(find.text('Nothing has been synced yet'), findsOneWidget);
       expect(tester.getTopLeft(find.text('Name')), before);
     });
 

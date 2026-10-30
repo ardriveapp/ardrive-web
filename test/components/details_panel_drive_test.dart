@@ -8,6 +8,7 @@ import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -279,28 +280,45 @@ void main() {
     }
   });
 
-  /// Offered, never done for the reader: opening a drive's details is not
-  /// asking for it to sync.
-  testWidgets('offers the drive its own sync', (tester) async {
+  /// A drive has one menu, the same wherever it opens. Its details carry it
+  /// in their header on desktop, so Sync is reached the way it is from the
+  /// drive's row, not from a button of the panel's own. Offered, never done
+  /// for the reader: opening a drive's details is not asking for it to sync.
+  testWidgets('offers the drive its own sync, in the drive\'s menu',
+      (tester) async {
     await pumpPanel(tester);
 
-    expect(synced, 0, reason: 'showing the details syncs nothing');
+    try {
+      expect(synced, 0, reason: 'showing the details syncs nothing');
+      expect(find.text('Sync this drive'), findsNothing,
+          reason: 'no sync button of the panel\'s own');
+      expect(find.byType(EntityActionsMenu), findsOneWidget);
 
-    await tester.tap(find.text('Sync this drive'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byType(EntityActionsMenu));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    expect(synced, 1);
+      // Its action, as the sync menu's tests take theirs: the menu opens in
+      // a portal the test's taps don't reach here.
+      final item = tester.widget<ArDriveDropdownItem>(find.ancestor(
+        of: find.text('Sync this drive'),
+        matching: find.byType(ArDriveDropdownItem),
+      ));
+      item.onClick!();
+      await tester.pump();
 
-    await takeDown(tester);
+      expect(synced, 1, reason: 'the surface\'s own sync, as it was given');
+    } finally {
+      await takeDown(tester);
+    }
   });
 
-  testWidgets('and only says so where there is no sync to offer',
-      (tester) async {
+  testWidgets('and still says why its contents are not known', (tester) async {
     await pumpPanel(tester, withSync: false);
 
     expect(find.text('Not synced on this device'), findsOneWidget);
     expect(find.text('Sync this drive'), findsNothing);
+    expect(find.byType(ArDriveButtonNew), findsNothing);
 
     await takeDown(tester);
   });
@@ -386,12 +404,8 @@ void main() {
         );
         expect(find.text('No activity recorded yet.'), findsNothing);
 
-        // The same offer as the details tab, and it is the drive's own sync.
-        final syncs = find.text('Sync this drive');
-        expect(syncs, findsOneWidget);
-        await tester.tap(syncs);
-        await tester.pump();
-        expect(synced, 1);
+        // Sync is in the drive's menu in the header, not a button here.
+        expect(find.text('Sync this drive'), findsNothing);
       });
     });
 

@@ -979,6 +979,10 @@
   "@driveActivityNeedsSync": {
     "description": "The activity tab of a drive not synced on this device, when its history could not be read from the network either. A Sync this drive button follows it"
   },
+  "driveChangedSinceSync": "Changed since last sync",
+  "@driveChangedSinceSync": {
+    "description": "Sync state of a drive the network says has changed since this device last synced it"
+  },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
     "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from driveNeverSynced, which means nobody has looked yet."
@@ -1066,22 +1070,6 @@
   "notKnownUntilSynced": "Not known until this drive has been synced",
   "@notKnownUntilSynced": {
     "description": "Explains the dash standing in for a drive's item count and size. A number is being withheld, not a zero reported"
-  },
-  "nothingSyncedYetTitle": "Nothing has been synced yet",
-  "@nothingSyncedYetTitle": {
-    "description": "Shown above the drives list when no drive on this device has ever been walked"
-  },
-  "nothingSyncedYetSyncingTitle": "Fetching your drives",
-  "@nothingSyncedYetSyncingTitle": {
-    "description": "Replaces nothingSyncedYetTitle while a sync is actually running, so the card does not offer work that is already under way beside a strip reporting it"
-  },
-  "nothingSyncedYetSyncingDescription": "Large drives can take a few minutes.",
-  "@nothingSyncedYetSyncingDescription": {
-    "description": "Replaces nothingSyncedYetDescription while a sync is running. It also explains the disabled button beside it. Sets the expectation rather than narrating the interface: it read 'Each row will say what it holds as it arrives', which told the reader to go and watch something instead of saying the one thing the screen could not - how long this takes"
-  },
-  "nothingSyncedYetDescription": "Sync your drives to see their files and folders.",
-  "@nothingSyncedYetDescription": {
-    "description": "Says what the drives list can and cannot show before anything has been synced, and offers the two ways out. Names the drives itself: it read 'Their contents have not been fetched yet.', and the title above it never says whose"
   },
   "syncAllDrives": "Sync all drives",
   "driveID": "Drive ID",
@@ -1900,6 +1888,23 @@
     "description": "The action of logging in. Imperative form"
   },
   "loginCheckingPassword": "Checking your password...",
+  "driveListSyncSelected": "Sync selected",
+  "@driveListSyncSelected": {
+    "description": "The drives page's sync button while drives are ticked. The title row says how many."
+  },
+  "driveListDeepResyncSelected": "Full resync selected",
+  "@driveListDeepResyncSelected": {
+    "description": "The sync menu's full resync while drives are ticked."
+  },
+  "driveListSyncChanged": "{count, plural, =1{Sync the changed drive} other{Sync {count} changed drives}}",
+  "@driveListSyncChanged": {
+    "description": "Sync menu item that syncs only the drives the network says have changed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driveListSelectedCount": "{count, plural, =1{1 drive selected} other{{count} drives selected}}",
   "@driveListSelectedCount": {
     "description": "How many drives the reader has ticked on the drives list",
@@ -1921,38 +1926,6 @@
   },
   "@syncStopRunning": {
     "description": "Menu item that stops the sync currently running"
-  },
-  "driveListSyncSelectedCount": "Sync {count} selected",
-  "@driveListSyncSelectedCount": {
-    "description": "Menu item that syncs only the ticked drives",
-    "placeholders": { "count": { "type": "num", "format": "compact" } }
-  },
-  "driveListDeepResyncSelectedCount": "Full resync {count} selected",
-  "@driveListDeepResyncSelectedCount": {
-    "description": "Menu item that deep-resyncs only the ticked drives",
-    "placeholders": { "count": { "type": "num", "format": "compact" } }
-  },
-  "driveListSomeCouldNotBeRead": "{failed} of {total} drives could not be read",
-  "@driveListSomeCouldNotBeRead": {
-    "description": "Summary on the drives list after a sync that failed on some drives but not others",
-    "placeholders": {
-      "failed": { "type": "num", "format": "compact" },
-      "total": { "type": "num", "format": "compact" }
-    }
-  },
-  "driveListSomeCouldNotBeReadDetail": "The rest are up to date. A drive that could not be reached keeps whatever was read last time.",
-  "@driveListSomeCouldNotBeReadDetail": {
-    "description": "Reassurance under the partial-failure summary"
-  },
-  "driveListSyncThoseThatFailed": "{count, plural, =1{Sync that drive} other{Sync those {count}}}",
-  "@driveListSyncThoseThatFailed": {
-    "description": "Button that re-syncs only the drives that failed",
-    "placeholders": { "count": { "type": "num", "format": "compact" } }
-  },
-  "driveListDrivesHaveChanges": "{count, plural, =1{1 drive has changed since it was last read} other{{count} drives have changed since they were last read}}",
-  "@driveListDrivesHaveChanges": {
-    "description": "Heading of the notice offering to sync drives the network has activity for",
-    "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
   "fileStatusPendingTooltip": "Waiting to be mined on Arweave. This is checked for you until it is.",
   "@fileStatusPendingTooltip": {
@@ -2082,15 +2055,6 @@
   "searchResultCount": "{count, plural, =0{No results} =1{1 result} other{{count} results}}",
   "@searchResultCount": {
     "description": "Read aloud by screen readers when search results change",
-    "placeholders": { "count": { "type": "num", "format": "compact" } }
-  },
-  "driveListDrivesHaveChangesDetail": "The files and sizes below were read earlier. Syncing brings them up to date.",
-  "@driveListDrivesHaveChangesDetail": {
-    "description": "Explains that the figures on screen are still the last ones read"
-  },
-  "driveListSyncThoseWithChanges": "{count, plural, =1{Sync that drive} other{Sync those {count}}}",
-  "@driveListSyncThoseWithChanges": {
-    "description": "Button that syncs only the drives that have changed",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
   "@driveListClearSelection": {

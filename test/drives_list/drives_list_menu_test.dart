@@ -186,6 +186,18 @@ void main() {
       expect(entryNamed(tester, 'Sync this drive').onClick, isNull);
     });
 
+    testWidgets(
+        'is unavailable while the drive list refreshes, as the page\'s '
+        'Sync is', (tester) async {
+      // A refresh of the drive list is not a sync, but the page's own Sync is
+      // unavailable during it, and the page gives one answer.
+      when(() => syncCubit.state).thenReturn(SyncLoadingDrives());
+      await openMenu(tester, isOwner: true);
+
+      expect(itemNamed(tester, 'Sync this drive').isDisabled, isTrue);
+      expect(entryNamed(tester, 'Sync this drive').onClick, isNull);
+    });
+
     testWidgets('and the other actions are untouched', (tester) async {
       // A running sync has nothing to do with renaming or sharing a drive.
       await openMenu(tester, isOwner: true, isSyncing: true);

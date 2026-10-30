@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/pages/drive_detail/components/item_menus.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/sync/presentation/sync_history_panel.dart';
@@ -43,8 +44,7 @@ class DrivesSyncMenu extends StatelessWidget {
 
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {
-        final isSyncing =
-            syncState is SyncInProgress || syncState is SyncLoadingDrives;
+        final isSyncing = driveSyncUnavailable(syncState);
         final errors = syncState is SyncCompleteWithErrors ? syncState : null;
 
         // How many drives are ticked, so both actions can say which set they
@@ -58,8 +58,13 @@ class DrivesSyncMenu extends StatelessWidget {
         final drivesList = context.watch<DrivesListCubit?>();
         final selection = drivesList?.selectionCount ?? 0;
         final listState = drivesList?.state;
-        final nothingSynced =
-            listState is DrivesListLoaded && listState.nothingHasEverBeenSynced;
+
+        // The drives the network has moved on without. Each one says so in
+        // its row; this is where they can be synced on their own.
+        final changed = listState is DrivesListLoaded
+            ? listState.drivesWithUnreadChanges.length
+            : 0;
+        final offersChanged = drivesList != null && changed > 0;
 
         // Stopping only while there is a run that stopping can stop:
         // `cancelSync` cancels the token a running sync holds, and the
@@ -83,32 +88,31 @@ class DrivesSyncMenu extends StatelessWidget {
               16,
         );
 
+        // Named for what it does. With nothing ticked it syncs every drive,
+        // so it says so, before the first sync and after it alike. With
+        // drives ticked it syncs those; the title row says how many, so this
+        // does not say it again. While the drive list refreshes it keeps its
+        // label and is unavailable, so it neither changes width nor offers a
+        // sync that would be refused.
+        final syncLabel = selection > 0
+            ? appLocalizationsOf(context).driveListSyncSelected
+            : appLocalizationsOf(context).syncAllDrives;
         final String primaryLabel;
         final VoidCallback? onPrimary;
         if (canStop) {
           primaryLabel = appLocalizationsOf(context).syncStopRunning;
           onPrimary = () => context.read<SyncCubit>().cancelSync();
-        } else if (isSyncing) {
-          primaryLabel = appLocalizationsOf(context).sync;
-          onPrimary = null;
-        } else if (selection > 0) {
-          primaryLabel =
-              appLocalizationsOf(context).driveListSyncSelectedCount(selection);
-          onPrimary = () => _sync(context, drivesList);
-        } else if (nothingSynced) {
-          primaryLabel = appLocalizationsOf(context).syncAllDrives;
-          onPrimary = () => _sync(context, drivesList);
         } else {
-          primaryLabel = appLocalizationsOf(context).sync;
-          onPrimary = () => _sync(context, drivesList);
+          primaryLabel = syncLabel;
+          onPrimary = isSyncing ? null : () => _sync(context, drivesList);
         }
 
         Widget buildMenu(Widget chevron) => ArDriveDropdown(
               // The two sync items carry a line saying what they do, so they are
               // taller than the rest, and the menu, which sizes itself from a
               // single item height, is told the total instead.
-              maxHeight: (2 * describedDropdownItemHeight +
-                      (offersRetry ? 2 : 1) * 48) *
+              maxHeight: ((offersRetry ? 3 : 2) * describedDropdownItemHeight +
+                      (offersChanged ? 2 : 1) * 48) *
                   MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
               anchor: const Aligned(
                 follower: Alignment.topRight,
@@ -124,10 +128,7 @@ class DrivesSyncMenu extends StatelessWidget {
                   content: ArDriveDropdownItemTile(
                     // One name for syncing everything, wherever it is offered, and
                     // whether or not anything has synced before.
-                    name: selection > 0
-                        ? appLocalizationsOf(context)
-                            .driveListSyncSelectedCount(selection)
-                        : appLocalizationsOf(context).syncAllDrives,
+                    name: syncLabel,
                     description:
                         appLocalizationsOf(context).syncMenuSyncDescription,
                     height: describedDropdownItemHeight,
@@ -161,7 +162,7 @@ class DrivesSyncMenu extends StatelessWidget {
                   content: ArDriveDropdownItemTile(
                     name: selection > 0
                         ? appLocalizationsOf(context)
-                            .driveListDeepResyncSelectedCount(selection)
+                            .driveListDeepResyncSelected
                         : appLocalizationsOf(context).deepResync,
                     description: appLocalizationsOf(context)
                         .syncMenuFullResyncDescription,
@@ -170,6 +171,24 @@ class DrivesSyncMenu extends StatelessWidget {
                     isDisabled: isSyncing,
                   ),
                 ),
+                if (offersChanged)
+                  ArDriveDropdownItem(
+                    onClick: isSyncing
+                        ? null
+                        : () {
+                            drivesList.syncDrivesWithUnreadChanges();
+                            PlausibleEventTracker.trackResync(
+                                type: ResyncType.resync);
+                          },
+                    content: ArDriveDropdownItemTile(
+                      name: appLocalizationsOf(context)
+                          .driveListSyncChanged(changed),
+                      icon: ArDriveIcons.refresh(color: iconColor),
+                      isDisabled: isSyncing,
+                    ),
+                  ),
+                // A failed run, in the top bar's words: its count is of the
+                // drives that run covered, and its retry is Try again.
                 if (offersRetry)
                   ArDriveDropdownItem(
                     onClick: isSyncing
@@ -180,7 +199,10 @@ class DrivesSyncMenu extends StatelessWidget {
                             cubit.retryFailedDrives(errors.failedDriveIds);
                           },
                     content: ArDriveDropdownItemTile(
-                      name: appLocalizationsOf(context).retryFailedDrives,
+                      name: appLocalizationsOf(context).tryAgain,
+                      description: appLocalizationsOf(context).syncDrivesFailed(
+                          errors.failedDrives, errors.totalDrives),
+                      height: describedDropdownItemHeight,
                       icon: ArDriveIcons.triangle(color: iconColor),
                       isDisabled: isSyncing,
                     ),

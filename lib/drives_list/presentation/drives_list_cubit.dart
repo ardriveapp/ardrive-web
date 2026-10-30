@@ -498,16 +498,11 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     ));
   }
 
-  /// Re-reads only the drives the last sync could not read.
+  /// Syncs only the drives the probe found had changed, from the sync menu.
   ///
-  /// The same one-run subset walk a selection uses. Offered on the page rather
-  /// than only inside a menu because a partial failure is the moment a reader
-  /// most needs one button that fixes exactly the thing that broke.
-  /// Syncs only the drives the probe found had changed.
-  ///
-  /// A subset, not everything: the reader was told a number and pressed a
-  /// button naming it, so syncing more than that would be doing something they
-  /// did not ask for and were not warned about.
+  /// A subset, not everything: the menu item names how many, so syncing more
+  /// than that would be doing something the reader did not ask for and was
+  /// not warned about.
   void syncDrivesWithUnreadChanges() {
     final current = state;
 
@@ -522,24 +517,6 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     }
 
     unawaited(_syncCubit.syncDrives(changed));
-  }
-
-  void retryFailedDrives() {
-    final current = state;
-
-    if (current is! DrivesListLoaded) {
-      return;
-    }
-
-    final failed = current.failedDriveIds;
-
-    if (failed.isEmpty) {
-      return;
-    }
-
-    // The top bar's Try again makes the same call: these drives again, and a
-    // cancelled wallet prompt back for these drives only.
-    unawaited(_syncCubit.retryFailedDrives(failed));
   }
 
   /// Syncs the ticked drives in one run, then drops the selection.

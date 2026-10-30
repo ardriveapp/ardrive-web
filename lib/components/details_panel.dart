@@ -27,7 +27,6 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
@@ -82,10 +81,10 @@ class DetailsPanel extends StatefulWidget {
   /// to share and rename the wrong drive.
   final VoidCallback? onClose;
 
-  /// Syncs a drive this device has never synced, offered where its size and
-  /// contents would be. Each place the panel lives has its own way to sync -
-  /// the explorer's unsynced card, the drives list's menu - and the panel
-  /// takes whichever it is given. Without one, the panel only says so.
+  /// The drive menu's Sync, where the surface has its own way to sync the
+  /// drive: the explorer's unsynced drive syncs through its own cubit, which
+  /// opens the drive once it lands. Without one, Sync syncs the drive through
+  /// the sync cubit, as its row's menu does.
   final VoidCallback? onSync;
 
   @override
@@ -331,17 +330,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ],
                   if (widget.currentDrive != null)
                     ScreenTypeLayout.builder(
-                      desktop: (context) => const SizedBox.shrink(),
-                      mobile: (context) => EntityActionsMenu(
-                        drive: widget.currentDrive,
-                        withInfo: false,
-                        item: widget.item,
-                        alignment: const Aligned(
-                          follower: Alignment.topRight,
-                          target: Alignment.bottomRight,
-                          offset: Offset(24, 32),
-                        ),
-                      ),
+                      // A drive has one menu, the same wherever it opens, and
+                      // its details are one of those places: Sync and Full
+                      // resync live there rather than in a button of the
+                      // panel's own. A file's or folder's actions are in the
+                      // toolbar on desktop.
+                      desktop: (context) => widget.item is DriveDataItem
+                          ? _entityMenu()
+                          : const SizedBox.shrink(),
+                      mobile: (context) => _entityMenu(),
                     ),
                 ],
               ),
@@ -371,6 +368,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
     ];
   }
+
+  Widget _entityMenu() => EntityActionsMenu(
+        drive: widget.currentDrive,
+        withInfo: false,
+        item: widget.item,
+        onSync: widget.onSync,
+        alignment: const Aligned(
+          follower: Alignment.topRight,
+          target: Alignment.bottomRight,
+          offset: Offset(24, 32),
+        ),
+      );
 
   Widget _buildPreview(
     FsEntryPreviewState previewState, {
@@ -549,7 +558,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
   List<Widget> _unsyncedDriveDetails(FsEntryUnsyncedDriveInfo state) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final onSync = widget.onSync;
 
     return [
       DetailsPanelItem(
@@ -594,14 +602,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
       ],
       const SizedBox(height: 24),
+      // Sync is in the drive's menu in the panel's header.
       Text(
         appLocalizationsOf(context).driveInfoNeverSyncedDetail,
         style: typography.paragraphNormal(color: colorTokens.textMid),
       ),
-      if (onSync != null && !PublicationMode.isOn) ...[
-        const SizedBox(height: 16),
-        _syncThisDriveButton(onSync),
-      ],
     ];
   }
 
@@ -847,10 +852,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
               color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
             ),
           ),
-          if (widget.onSync != null && !PublicationMode.isOn) ...[
-            const SizedBox(height: 16),
-            _syncThisDriveButton(widget.onSync!),
-          ],
         ],
       );
     }
@@ -903,29 +904,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
       itemSubtitle: formatDateTime(date),
       itemTitle: title,
       expandLeading: false,
-    );
-  }
-
-  /// Offered, never done for the reader: opening a drive's details is not
-  /// asking for it to sync. One sync at a time, so it waits out a running
-  /// one - the same rule as the drive's own card.
-  Widget _syncThisDriveButton(VoidCallback onSync) {
-    return Builder(
-      builder: (context) {
-        final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
-
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: ArDriveButtonNew(
-            text: appLocalizationsOf(context).syncThisDrive,
-            typography: ArDriveTypographyNew.of(context),
-            variant: ButtonVariant.primary,
-            maxWidth: 160,
-            isDisabled: isSyncing,
-            onPressed: isSyncing ? null : onSync,
-          ),
-        );
-      },
     );
   }
 

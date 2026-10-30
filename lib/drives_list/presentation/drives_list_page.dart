@@ -32,7 +32,6 @@ import 'package:ardrive/utils/user_utils.dart';
 import 'package:flutter/services.dart';
 
 // The list pages' shared measures (lib/components/list_page/).
-const double _pagePadding = listPagePadding;
 const double _sectionGap = listPageSectionGap;
 const double _blockGap = listPageBlockGap;
 
@@ -236,8 +235,6 @@ class _DrivesListChrome extends StatelessWidget {
               onToggleSelected: cubit.toggleSelected,
               onToggleSelectAll: cubit.toggleSelectAll,
               onClearSelection: cubit.clearSelection,
-              onRetryFailed: cubit.retryFailedDrives,
-              onSyncChanged: cubit.syncDrivesWithUnreadChanges,
               buildMenu: (drive) => _menuFor(drivesState, drive),
               syncMenu: const DrivesSyncMenu(),
               // A new account gets My files made before it would see this.
@@ -302,11 +299,9 @@ Widget? _drivePanel(
         ),
         currentDrive: drive,
         canNavigateThroughImages: false,
+        // The panel's header carries the drive's own menu, so Sync and Full
+        // resync are reached the same way as from the drive's row.
         onClose: close,
-        // What the drive's own menu on this page does: somebody pressed it,
-        // so it is theirs.
-        onSync: () =>
-            context.read<SyncCubit>().startSyncForDrive(driveId: drive.id),
       );
     }
   }
@@ -330,8 +325,6 @@ class DrivesListBody extends StatelessWidget {
     this.onToggleSelected,
     this.onToggleSelectAll,
     this.onClearSelection,
-    this.onRetryFailed,
-    this.onSyncChanged,
     this.buildMenu,
     this.syncMenu,
     this.chosenDriveId,
@@ -372,8 +365,6 @@ class DrivesListBody extends StatelessWidget {
   final void Function(String driveId)? onToggleSelected;
   final VoidCallback? onToggleSelectAll;
   final VoidCallback? onClearSelection;
-  final VoidCallback? onRetryFailed;
-  final VoidCallback? onSyncChanged;
 
   /// Builds the actions menu for one row, or returns null for a row that has
   /// none.
@@ -444,8 +435,6 @@ class DrivesListBody extends StatelessWidget {
           onToggleSelected: onToggleSelected,
           onToggleSelectAll: onToggleSelectAll,
           onClearSelection: onClearSelection,
-          onRetryFailed: onRetryFailed,
-          onSyncChanged: onSyncChanged,
           chosenDriveId: chosenDriveId,
           onChoose: onChoose,
           selecting: selecting,
@@ -659,8 +648,6 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.onToggleSelected,
     this.onToggleSelectAll,
     this.onClearSelection,
-    this.onRetryFailed,
-    this.onSyncChanged,
     this.chosenDriveId,
     this.onChoose,
     this.selecting = false,
@@ -683,8 +670,6 @@ class _DrivesListLoadedView extends StatelessWidget {
   final void Function(String driveId)? onToggleSelected;
   final VoidCallback? onToggleSelectAll;
   final VoidCallback? onClearSelection;
-  final VoidCallback? onRetryFailed;
-  final VoidCallback? onSyncChanged;
   final Widget? Function(DriveListItem drive)? buildMenu;
 
   /// The drive-wide sync actions, passed in rather than reached for.
@@ -735,62 +720,12 @@ class _DrivesListLoadedView extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(child: _heading(context)),
-              // Kept while drives are ticked. It used to be withdrawn then,
-              // because it carried a red button of its own and two offers
-              // of different scopes is the reader having to work out which
-              // they meant. It is words now, and taking it away on the
-              // first tick moved the whole list up under the pointer.
-              if (state.nothingHasEverBeenSynced)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: _blockGap),
-                    child: _SyncEverythingPrompt(
-                      isSyncing: state.isSyncing,
-                    ),
-                  ),
-                ),
+              // Nothing between the title and the table: each drive's status
+              // is in its row and the one sync control is in the title row.
+              // The cards and banners that used to sit here came and went
+              // with the first tick or a sync, and moved every row under
+              // the pointer when they did.
               const SliverToBoxAdapter(child: SizedBox(height: _blockGap)),
-              // What the network says changed while the reader was away.
-              //
-              // Below the never-synced prompt and above the failure banner
-              // because it sits between them in urgency: a wallet that has
-              // never synced is not owed this news, and a drive that could
-              // not be read at all is worse than one that is merely behind.
-              //
-              // Withdrawn during a sync and while a selection exists, on
-              // the same argument as the prompt above: it offers a scope,
-              // and two offers of different scopes on one screen is the
-              // reader having to work out which one they meant.
-              if (state.drivesWithUnreadChanges.isNotEmpty &&
-                  !state.isSyncing &&
-                  state.selected.isEmpty &&
-                  onSyncChanged != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: _blockGap),
-                    child: _UnreadChangesBanner(
-                      changed: state.drivesWithUnreadChanges.length,
-                      onSync: onSyncChanged!,
-                    ),
-                  ),
-                ),
-              // A partial failure, said once and fixable in one press.
-              // Above the selection bar because it is the more urgent of
-              // the two, and below the sync prompt because a wallet that
-              // has never synced has no failures to report yet.
-              if (state.failedDriveIds.isNotEmpty &&
-                  !state.isSyncing &&
-                  onRetryFailed != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: _blockGap),
-                    child: _PartialFailureBanner(
-                      failed: state.failedDriveIds.length,
-                      total: state.drives.length,
-                      onRetry: onRetryFailed!,
-                    ),
-                  ),
-                ),
               // The panel every other table in the app sits in.
               //
               // `ArDriveDataTable` wraps its header and rows in an
@@ -982,74 +917,6 @@ class _SelectionHeading extends StatelessWidget {
   }
 }
 
-/// What a first login is owed: the list is every drive, and nothing about any
-/// of them is known yet.
-///
-/// With sync-on-login off, a first login lists every drive and can say nothing
-/// about any of them. That is the thing the old automatic sync did - so it is
-/// said here, once, rather than assumed.
-///
-/// Words only. It carried a red "Sync all drives" of its own, a hundred pixels
-/// below the page's sync button saying much the same - and while drives were
-/// ticked, a third red button in the selection bar. The page's sync button now
-/// turns red and reads "Sync all drives" for as long as this card is shown, so
-/// the card says why and the button, right above it, is how.
-///
-/// While a sync is actually running it stops being an offer and becomes a
-/// report. The words change with it: a card still saying "Sync your drives"
-/// beside a strip counting what that very sync has found is two surfaces on
-/// one screen with one of them wrong.
-class _SyncEverythingPrompt extends StatelessWidget {
-  const _SyncEverythingPrompt({required this.isSyncing});
-
-  final bool isSyncing;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    final title = isSyncing
-        ? appLocalizationsOf(context).nothingSyncedYetSyncingTitle
-        : appLocalizationsOf(context).nothingSyncedYetTitle;
-    final description = isSyncing
-        ? appLocalizationsOf(context).nothingSyncedYetSyncingDescription
-        : appLocalizationsOf(context).nothingSyncedYetDescription;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: colorTokens.containerL2,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(_pagePadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: typography.paragraphNormal(
-                color: colorTokens.textHigh,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: typography.paragraphSmall(
-                color: colorTokens.textLow,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Esc ends a selection, as in every list with checkboxes.
 ///
 /// Bound only while there is a selection, so otherwise Esc reaches whatever is
@@ -1157,198 +1024,6 @@ class _ChoosingSeveralState extends State<_ChoosingSeveral> {
             longPressed: _longPressed,
           ),
           _onLongPress,
-        ),
-      ),
-    );
-  }
-}
-
-/// A sync that read some drives and not others, and the one press that fixes
-/// it.
-///
-/// The failure was already on each row and in the sync menu; what was missing
-/// was the sentence that adds them up and the button that acts on exactly that
-/// set. A reader should not have to count red triangles to find out how bad it
-/// was, nor open a menu to retry what broke.
-/// Tells a returning reader that the drives on screen have moved on.
-///
-/// The whole point of this page is that its figures come from the local
-/// database and nothing else, which is what makes it instant - and also what
-/// makes it silently old. A reader who closed the tab on Tuesday and came back
-/// on Friday sees Tuesday's file counts rendered with exactly the confidence of
-/// current ones, and the only cue is a `Last synced` cell they have to read and
-/// do arithmetic on.
-///
-/// So this says the one thing the table cannot: not that the numbers are old -
-/// they always are - but that they are *wrong*, because the drives themselves
-/// have changed. That is a fact worth interrupting for, and it is only ever
-/// shown when the network has confirmed it. Nothing changed means nothing said.
-///
-/// Deliberately quieter than [_PartialFailureBanner]: nothing here has gone
-/// wrong, and neutral is what separates news from an alarm.
-class _UnreadChangesBanner extends StatelessWidget {
-  const _UnreadChangesBanner({
-    required this.changed,
-    required this.onSync,
-  });
-
-  final int changed;
-  final VoidCallback onSync;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
-          border: Border.all(color: colorTokens.strokeLow),
-        ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          alignment: WrapAlignment.spaceBetween,
-          spacing: 16,
-          runSpacing: 12,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ArDriveIcons.cloudSync(
-                        size: 16,
-                        color: colorTokens.iconHigh,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          appLocalizationsOf(context)
-                              .driveListDrivesHaveChanges(changed),
-                          style: typography.paragraphNormal(
-                            color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Says what the figures below still are, rather than leaving
-                  // a reader to wonder whether they are looking at nothing.
-                  Text(
-                    appLocalizationsOf(context)
-                        .driveListDrivesHaveChangesDetail,
-                    style: typography.paragraphSmall(
-                      color: colorTokens.textLow,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ArDriveButtonNew(
-              text: appLocalizationsOf(context)
-                  .driveListSyncThoseWithChanges(changed),
-              typography: typography,
-              variant: ButtonVariant.primary,
-              size: ArDriveButtonSize.compact,
-              onPressed: onSync,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PartialFailureBanner extends StatelessWidget {
-  const _PartialFailureBanner({
-    required this.failed,
-    required this.total,
-    required this.onRetry,
-  });
-
-  final int failed;
-  final int total;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
-          border: Border.all(color: colorTokens.strokeRed),
-        ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          alignment: WrapAlignment.spaceBetween,
-          spacing: 16,
-          runSpacing: 12,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ArDriveIcons.triangle(
-                        size: 16,
-                        color: colorTokens.statusErrorFg,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          appLocalizationsOf(context)
-                              .driveListSomeCouldNotBeRead(failed, total),
-                          style: typography.paragraphNormal(
-                            color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Says what is still true as well as what went wrong: a
-                  // drive that could not be reached is not a drive that lost
-                  // anything, and a reader looking at red needs telling.
-                  Text(
-                    appLocalizationsOf(context)
-                        .driveListSomeCouldNotBeReadDetail,
-                    style: typography.paragraphSmall(
-                      color: colorTokens.textLow,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ArDriveButtonNew(
-              text: appLocalizationsOf(context)
-                  .driveListSyncThoseThatFailed(failed),
-              typography: typography,
-              variant: ButtonVariant.primary,
-              size: ArDriveButtonSize.compact,
-              onPressed: onRetry,
-            ),
-          ],
         ),
       ),
     );

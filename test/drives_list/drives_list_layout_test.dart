@@ -2,6 +2,7 @@ import 'package:ardrive/components/list_page/list_page_layout.dart';
 import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
+import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
@@ -295,6 +296,33 @@ void main() {
       expect(
         tester.getSize(find.byType(ListTableRow)).height,
         listMenuTapTarget,
+      );
+    });
+  });
+
+  // Kept from the never-synced card's tests when the card went: it is about
+  // the rows, not the card.
+  group('the reader\'s text scale', () {
+    testWidgets('takes the drives list off columns before it clips them',
+        (tester) async {
+      // The breakpoint used to be pure pixels, so at a large text scale the
+      // page kept five columns and ellipsized the values inside them - and a
+      // count cut mid-digit still reads as a count.
+      const widest = 1200.0;
+
+      expect(driveListShowsColumns(widest, textScale: 1.0), isTrue,
+          reason: 'precondition: the widest list draws columns at 1.0');
+      expect(
+        driveListShowsColumns(widest, textScale: 2.0),
+        isFalse,
+        reason: 'at 2.0 five columns of text do not fit any width this page '
+            'allows, so the rows have to stack rather than truncate',
+      );
+      expect(
+        driveListShowsColumns(600, textScale: 1.0),
+        driveListShowsColumns(600 * 2, textScale: 2.0),
+        reason: 'the breakpoint is a measurement of text, so twice the text '
+            'in twice the width is the same decision',
       );
     });
   });

@@ -291,8 +291,8 @@ void main() {
     });
 
     testWidgets(
-        'says nothing has been synced yet, and leaves the offer to the '
-        'page\'s sync button', (tester) async {
+        'before anything has synced, the rows say so and no card sits above '
+        'the table', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(
@@ -303,31 +303,13 @@ void main() {
         ),
       );
 
-      expect(find.text('Nothing has been synced yet'), findsOneWidget);
-      // The page's split button, above it, is the one place sync lives; the
-      // card used to carry a second red button saying the same.
-      expect(find.text('Sync all drives'), findsNothing);
+      expect(find.text('Not synced on this device'), findsNWidgets(2));
+      expect(find.text('Nothing has been synced yet'), findsNothing);
+      // The page's split button is the one place sync lives.
       expect(find.byType(ArDriveButtonNew), findsNothing);
     });
 
-    testWidgets('and stops offering it once one drive has been synced',
-        (tester) async {
-      await pumpBody(
-        tester,
-        DrivesListLoaded(
-          drives: [
-            drive(id: 'a', name: 'Photos', hasBeenWalked: true),
-            drive(id: 'b', name: 'Work', hasBeenWalked: false),
-          ],
-        ),
-      );
-
-      // The per-drive answer is on the row by then; a banner over the top of
-      // it would be a nag, not information.
-      expect(find.text('Nothing has been synced yet'), findsNothing);
-    });
-
-    testWidgets('the never-synced card fits a 320px screen', (tester) async {
+    testWidgets('a never-synced list fits a 320px screen', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(
@@ -336,7 +318,7 @@ void main() {
         width: 320,
       );
 
-      expect(find.text('Nothing has been synced yet'), findsOneWidget);
+      expect(find.text('Not synced on this device'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -500,23 +482,6 @@ void main() {
           'network.',
         ),
         findsNothing,
-      );
-    });
-
-    testWidgets('the offer says what each of its two ways out does',
-        (tester) async {
-      await pumpBody(
-        tester,
-        DrivesListLoaded(
-          drives: [drive(id: 'a', name: 'Photos', hasBeenWalked: false)],
-        ),
-      );
-
-      expect(
-        find.text(
-          'Sync your drives to see their files and folders.',
-        ),
-        findsOneWidget,
       );
     });
   });
