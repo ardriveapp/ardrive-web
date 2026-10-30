@@ -1197,19 +1197,26 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
         // padding and only draws about 20 - so at the same nominal size the
         // ring reads visibly larger than the way home beside it. The box stays
         // 24 either way, so nothing moves in the row.
-        Padding(
-          padding: const EdgeInsets.all(_syncRingInset),
-          child: RotationTransition(
-            key: syncIndicatorMotionKey,
-            turns: _rotation,
-            // A progress ring around the refresh glyph, not a loading
-            // spinner, so it is drawn here rather than with ArDriveSpinner.
-            child: CircularProgressIndicator(
-              value: progress != null && progress > 0 ? progress : null,
-              strokeWidth: 2,
-              backgroundColor: colorTokens.strokeHigh,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                colorTokens.buttonPrimaryDefault,
+        //
+        // The ring turns on every frame of a sync: its own layer, so a frame
+        // repaints the ring and not the top bar around it. On the HTML
+        // renderer, which phones get, a repaint rebuilds the DOM of
+        // everything it covers.
+        RepaintBoundary(
+          child: Padding(
+            padding: const EdgeInsets.all(_syncRingInset),
+            child: RotationTransition(
+              key: syncIndicatorMotionKey,
+              turns: _rotation,
+              // A progress ring around the refresh glyph, not a loading
+              // spinner, so it is drawn here rather than with ArDriveSpinner.
+              child: CircularProgressIndicator(
+                value: progress != null && progress > 0 ? progress : null,
+                strokeWidth: 2,
+                backgroundColor: colorTokens.strokeHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  colorTokens.buttonPrimaryDefault,
+                ),
               ),
             ),
           ),

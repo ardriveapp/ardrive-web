@@ -294,6 +294,43 @@ void main() {
     expect(turns(), isNot(before));
   });
 
+  // On the HTML renderer, which phones get, a repaint rebuilds the DOM of
+  // everything it covers, so the ring that turns on every frame of a sync
+  // repaints alone, and not the top bar around it.
+  testWidgets('the turning ring repaints nothing but itself', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+    await startSyncing(
+      tester,
+      reporting: SyncProgress.initial().copyWith(progress: 0.5),
+    );
+
+    final glyph = <RenderObject>{};
+    void collect(RenderObject o) {
+      glyph.add(o);
+      o.visitChildren(collect);
+    }
+
+    collect(tester.renderObject(find.byType(ArDriveIcon)));
+    final painted = <RenderObject>{};
+    debugOnProfilePaint = painted.add;
+    try {
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    } finally {
+      debugOnProfilePaint = null;
+    }
+    expect(
+      painted,
+      contains(tester.renderObject(find.byKey(syncIndicatorMotionKey))),
+      reason: 'the ring turns',
+    );
+    // The glyph inside the ring stands still, and so does the bar.
+    expect(painted.intersection(glyph), isEmpty);
+    expect(painted.whereType<RenderParagraph>(), isEmpty);
+  });
+
   testWidgets('hovering the running indicator names the phase', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show PointMode;
 
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -433,16 +434,21 @@ void main() {
           painted.add(o);
         };
         try {
-          // Six seconds of frames: the drift and the filling dots on every
-          // one, the name typing every 120 ms, the caret blinking every
-          // 500 ms, and the slides moving on at five seconds.
-          for (var i = 0; i < 360; i++) {
+          // Ten and a half seconds of frames: the drift and the filling dots
+          // on every one, the name typing every 120 ms, the caret blinking
+          // every 500 ms, the slides moving on at five and ten seconds, and
+          // the people cross-fading to the next group at ten.
+          for (var i = 0; i < 660; i++) {
             await tester.pump(const Duration(milliseconds: 16));
           }
         } finally {
           debugOnProfilePaint = null;
         }
         expect(paints, greaterThan(0), reason: 'the animations paint');
+        expect(find.byKey(const ValueKey('bentoPeople-1')), findsOneWidget,
+            reason: 'the people moved on to the next group');
+        expect(find.byKey(const ValueKey('bentoPeople-0')), findsNothing,
+            reason: 'the cross-fade finished');
         expect(painted.intersection(bill), isEmpty);
         await done(tester);
       });
@@ -472,5 +478,68 @@ void main() {
       }
       await done(tester);
     });
+
+    // On the HTML renderer the typed name's ShaderMask is an SVG filter over
+    // an image of the gradient, made again whenever the mask's shader or
+    // bounds change. Flutter 3.19 draws that image on a shared canvas that
+    // keeps its width while the height stays the same, so a mask that grew
+    // with the name cut the name off at its first width. Typing changes
+    // neither now.
+    testWidgets('typing leaves the name\'s gradient as it is', (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final mask = tester.renderObject(find.byType(ShaderMask));
+      final typed = <String>{};
+      final shaders = <Shader>{};
+      final rects = <Rect>{};
+      // Long enough to type a whole name, hold it and delete it.
+      for (var i = 0; i < 300; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        typed.add(
+            tester.widget<Text>(find.byKey(const Key('bentoTypedName'))).data!);
+        final layer = mask.debugLayer! as ShaderMaskLayer;
+        shaders.add(layer.shader!);
+        rects.add(layer.maskRect!);
+      }
+      expect(typed.length, greaterThan(4), reason: 'the name typed');
+      expect(rects, hasLength(1));
+      expect(shaders, hasLength(1));
+      await done(tester);
+    });
+
+    // The HTML renderer reads the first point of any drawPoints call, so a
+    // leader squeezed too narrow for a dot, by a long label or a large text
+    // size, threw there if it drew an empty list.
+    testWidgets('a leader too narrow for a dot draws nothing', (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final painter = tester
+          .widget<CustomPaint>(find
+              .byWidgetPredicate((w) =>
+                  w is CustomPaint &&
+                  w.painter.runtimeType.toString() == '_LeaderPainter')
+              .first)
+          .painter!;
+      for (final width in [0.0, 0.5, 1.0]) {
+        final canvas = _HtmlPointsCanvas();
+        painter.paint(canvas, Size(width, 20));
+        expect(canvas.points, isEmpty, reason: '$width px');
+      }
+      // Wide enough for dots, the same canvas gets them.
+      final canvas = _HtmlPointsCanvas();
+      painter.paint(canvas, const Size(30, 20));
+      expect(canvas.points, hasLength(10));
+      await done(tester);
+    });
   });
+}
+
+/// Draws points the way the HTML renderer's recording canvas does: it reads
+/// the first one to start the paint bounds.
+class _HtmlPointsCanvas extends Fake implements Canvas {
+  final points = <Offset>[];
+
+  @override
+  void drawPoints(PointMode pointMode, List<Offset> points, Paint paint) {
+    points[0];
+    this.points.addAll(points);
+  }
 }
