@@ -34,3 +34,19 @@ final class PrivateDriveMigrationFailed extends PrivateDriveMigrationState {
   @override
   List<Object> get props => [error];
 }
+
+/// The sign-in password doesn't make this drive's key: its own password is
+/// asked for. [wrongPassword] after one that didn't either.
+final class PrivateDriveMigrationNeedsPassword
+    extends PrivateDriveMigrationState {
+  const PrivateDriveMigrationNeedsPassword({
+    required this.drive,
+    this.wrongPassword = false,
+  });
+
+  final Drive drive;
+  final bool wrongPassword;
+
+  @override
+  List<Object> get props => [drive, wrongPassword];
+}

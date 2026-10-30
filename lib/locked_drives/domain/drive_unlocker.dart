@@ -89,14 +89,15 @@ class DriveUnreadableException implements Exception {
 
 /// Whether [error], thrown by a wallet asked to sign, means the user said no.
 ///
-/// Wallets report a cancelled prompt as an error with no shared type: Wander
-/// says "User cancelled the auth", others "User rejected the request" or
-/// "denied". A heuristic, so anything it doesn't recognise is reported as a
-/// wallet that couldn't sign, which at worst shows a message for a cancel.
-bool isWalletCancellation(Object error) => RegExp(
-      r'cancel|reject|denied|declin|closed|dismiss|abort',
-      caseSensitive: false,
-    ).hasMatch(error.toString());
+/// Wallets report a cancelled prompt as an error with no shared type. Wander
+/// throws "User cancelled the AuthRequest" when its popup is cancelled and
+/// "User rejected the signature request" when a signature is refused
+/// (`src/utils/auth/auth.constants.ts`, `signature.background.ts`); other
+/// wallets say "User rejected the request" or "canceled". Only those words
+/// count: a real failure such as "message port closed" or an aborted request
+/// is reported as a wallet that couldn't sign, so the user is told.
+bool isWalletCancellation(Object error) =>
+    RegExp(r'cancel|reject', caseSensitive: false).hasMatch(error.toString());
 
 /// How many new wallet prompts one pass over several drives may cost.
 ///

@@ -1,3 +1,5 @@
+import 'package:ardrive/components/fingerprint_font_support_stub.dart'
+    if (dart.library.html) 'package:ardrive/components/fingerprint_font_support_web.dart';
 import 'package:ardrive/locked_drives/domain/drive_fingerprint.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -30,7 +32,16 @@ class DriveFingerprint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    FingerprintEmojiFont.ensureLoaded();
+    final bundled = usesBundledEmojiFont(
+      isWeb: kIsWeb,
+      webKit: browserIsWebKit,
+      canvasKit: rendererIsCanvasKit,
+      platform: defaultTargetPlatform,
+    );
+
+    if (bundled) {
+      FingerprintEmojiFont.ensureLoaded();
+    }
 
     return ArDriveTooltip(
       message: strings.driveFingerprintTooltip,
@@ -44,7 +55,7 @@ class DriveFingerprint extends StatelessWidget {
           softWrap: false,
           // No colour is set, so none overrides the emoji's own.
           style: TextStyle(
-            fontFamily: FingerprintEmojiFont.family,
+            fontFamily: bundled ? FingerprintEmojiFont.family : null,
             fontFamilyFallback: FingerprintEmojiFont.fallback,
             fontSize: size,
             height: 1.2,
@@ -53,6 +64,34 @@ class DriveFingerprint extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Whether a fingerprint is drawn in [FingerprintEmojiFont] here, rather
+/// than in the platform's own colour emoji.
+///
+/// The bundled face is colour bitmaps (CBDT), which Skia draws - CanvasKit on
+/// the web, and the engine natively - and Apple's text engine does not. So it
+/// is skipped where Apple's engine draws the text:
+///
+/// - the HTML renderer in a WebKit browser: Safari, and every browser on iOS,
+///   which is what phones get in Flutter 3.19's auto mode. With a cmap that
+///   claims the emoji, Safari would pick the face and draw blanks;
+/// - the iOS app.
+///
+/// There the text falls back to Apple Color Emoji. CanvasKit, even in Safari,
+/// keeps the bundled face: CanvasKit can't reach system fonts.
+@visibleForTesting
+bool usesBundledEmojiFont({
+  required bool isWeb,
+  required bool webKit,
+  required bool canvasKit,
+  required TargetPlatform platform,
+}) {
+  if (isWeb) {
+    return canvasKit || !webKit;
+  }
+
+  return platform != TargetPlatform.iOS && platform != TargetPlatform.macOS;
 }
 
 /// The 64 fingerprint emoji from Noto Color Emoji (SIL Open Font License,

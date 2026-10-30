@@ -5721,5 +5721,7 @@
   "passwordOpensNoDrivesTitle": "This password didn't open your private drives",
   "@passwordOpensNoDrivesTitle": {"description": "Sign-in: the password was tried on the wallet's private drives and opened none."},
   "passwordOpensNoDrivesBody": "Check it and try again, or continue. Drives it doesn't open stay locked until you unlock them.",
-  "@passwordOpensNoDrivesBody": {"description": "Under the title. Continue signs in with those drives locked."}
+  "@passwordOpensNoDrivesBody": {"description": "Under the title. Continue signs in with those drives locked."},
+  "migrationDrivePasswordPrompt": "{name} has its own password. Enter it to update this drive.",
+  "@migrationDrivePasswordPrompt": {"description": "Drive update banner: the sign-in password doesn't open this drive.", "placeholders": {"name": {"type": "String"}}}
 }

@@ -35,6 +35,16 @@ import 'package:collection/collection.dart';
 ///    for a reader's own fresh signature.
 ///
 /// Any check that fails, or throws, returns null, and nothing is posted.
+/// Why [DriveSignatureRecordBuilder.build] last built nothing.
+enum DriveSignatureRecordRefusal {
+  /// None of the passwords given makes the drive's key. The drive's own
+  /// password, asked for, may.
+  unknownPassword,
+
+  /// Anything else: nothing a password can change.
+  other,
+}
+
 class DriveSignatureRecordBuilder {
   DriveSignatureRecordBuilder({
     required ArDriveCrypto crypto,
@@ -48,6 +58,9 @@ class DriveSignatureRecordBuilder {
   final ArweaveService _arweave;
   final DriveUnlocker _unlocker;
 
+  /// Why the last [build] returned null, or null when it built a record.
+  DriveSignatureRecordRefusal? lastRefusal;
+
   /// The record for [driveId], or null when it can't be proven.
   ///
   /// [passwordInfos] are the candidate password bytes, most likely first: the
@@ -58,15 +71,21 @@ class DriveSignatureRecordBuilder {
     required DriveKey currentKey,
     required List<List<int>> passwordInfos,
   }) async {
+    lastRefusal = DriveSignatureRecordRefusal.other;
     try {
-      return await _build(
+      final record = await _build(
         wallet: wallet,
         driveId: driveId,
         currentKey: currentKey,
         passwordInfos: passwordInfos,
       );
+      if (record != null) {
+        lastRefusal = null;
+      }
+      return record;
     } catch (e) {
       logger.w('Not migrating $driveId: a check could not be completed: $e');
+      lastRefusal = DriveSignatureRecordRefusal.other;
       return null;
     }
   }
@@ -102,9 +121,15 @@ class DriveSignatureRecordBuilder {
       return null;
     }
 
-    // 2. Which password made that key.
-    final v1Signature = await _crypto.walletSignatureForDrive(
-        wallet, driveId, DriveSignatureType.v1);
+    // 2. Which password made that key. The v1 signature is kept for the
+    //    session, so asking for the drive's password and trying again does
+    //    not ask the wallet again.
+    final v1Signature =
+        _unlocker.session.signature(owner, driveId, DriveSignatureType.v1) ??
+            await _crypto.walletSignatureForDrive(
+                wallet, driveId, DriveSignatureType.v1);
+    _unlocker.session
+        .rememberSignature(owner, driveId, DriveSignatureType.v1, v1Signature);
 
     List<int>? info;
 
@@ -120,6 +145,7 @@ class DriveSignatureRecordBuilder {
 
     if (info == null) {
       logger.w('Not migrating $driveId: no known password makes its key');
+      lastRefusal = DriveSignatureRecordRefusal.unknownPassword;
       return null;
     }
 

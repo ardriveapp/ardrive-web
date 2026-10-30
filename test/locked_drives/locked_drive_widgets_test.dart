@@ -477,4 +477,57 @@ void main() {
     final text = tester.widget<Text>(find.byType(Text).first);
     expect(text.style?.fontFamily, FingerprintEmojiFont.family);
   });
+
+  group('which face draws the fingerprint', () {
+    test('CanvasKit, any browser: the bundled colour face', () {
+      for (final webKit in [true, false]) {
+        expect(
+            usesBundledEmojiFont(
+                isWeb: true,
+                webKit: webKit,
+                canvasKit: true,
+                platform: TargetPlatform.macOS),
+            isTrue);
+      }
+    });
+
+    test(
+        'the HTML renderer in Safari or any iOS browser: the system\'s Apple '
+        'Color Emoji, which WebKit can draw', () {
+      expect(
+          usesBundledEmojiFont(
+              isWeb: true,
+              webKit: true,
+              canvasKit: false,
+              platform: TargetPlatform.iOS),
+          isFalse);
+    });
+
+    test('the HTML renderer in Chrome on Android: the bundled face', () {
+      expect(
+          usesBundledEmojiFont(
+              isWeb: true,
+              webKit: false,
+              canvasKit: false,
+              platform: TargetPlatform.android),
+          isTrue);
+    });
+
+    test('the iOS app: the system face; Android: the bundled one', () {
+      expect(
+          usesBundledEmojiFont(
+              isWeb: false,
+              webKit: false,
+              canvasKit: false,
+              platform: TargetPlatform.iOS),
+          isFalse);
+      expect(
+          usesBundledEmojiFont(
+              isWeb: false,
+              webKit: false,
+              canvasKit: false,
+              platform: TargetPlatform.android),
+          isTrue);
+    });
+  });
 }

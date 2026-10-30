@@ -92,6 +92,12 @@ class PrivateDriveMigrationBloc
     on<PrivateDriveMigrationCheck>(_checkDrivesForMigration);
 
     on<PrivateDriveMigrationStartEvent>(_performDriveMigration);
+
+    on<PrivateDriveMigrationPasswordEntered>((event, emit) {
+      final reply = _passwordReply;
+      _passwordReply = null;
+      reply?.complete(event.password);
+    });
     // do initial check on startup
     add(const PrivateDriveMigrationCheck());
   }
@@ -121,7 +127,13 @@ class PrivateDriveMigrationBloc
   /// decides which drives are on the list.
   Future<void>? _lastCheck;
 
+  /// Which check is the newest. Two can overlap - the drive list refreshes
+  /// while one runs - and the older one finishing last must not overwrite
+  /// the newer's answer.
+  int _checkGeneration = 0;
+
   Future<void> _check(Emitter<PrivateDriveMigrationState> emit) async {
+    final generation = ++_checkGeneration;
     if (drivesCubit.state is DrivesLoadSuccess) {
       final drives = (drivesCubit.state as DrivesLoadSuccess).userDrives;
       final candidates = drives
@@ -133,9 +145,13 @@ class PrivateDriveMigrationBloc
 
       final provable = <Drive>[];
       for (final drive in candidates) {
-        if (await _passwordIsProvenFor(drive)) {
+        if (await _offers(drive)) {
           provable.add(drive);
         }
+      }
+
+      if (generation != _checkGeneration) {
+        return;
       }
 
       drivesRequiringMigration = provable;
@@ -149,7 +165,14 @@ class PrivateDriveMigrationBloc
     }
   }
 
-  Future<bool> _passwordIsProvenFor(Drive drive) async {
+  /// Whether [drive] goes on the banner.
+  ///
+  /// A wallet that signs without asking proves the sign-in password here,
+  /// silently. Wander would have to be asked, so it is not: every candidate
+  /// drive it can open is offered, and its password is proven when the user
+  /// presses Update - the drive's own password asked for if the sign-in one
+  /// doesn't make its key, and the drive dropped if neither does.
+  Future<bool> _offers(Drive drive) async {
     final session = driveUnlocker.session;
 
     if (session.isLocked(drive.id)) {
@@ -171,15 +194,15 @@ class PrivateDriveMigrationBloc
 
       final user = ardriveAuth.currentUser;
 
-      if (_isPromptingWallet(user.wallet)) {
-        return false;
-      }
-
       final currentKey = await driveDao.getDriveKeyFromMemory(drive.id) ??
           await driveDao.getStoredDriveKey(drive.id, user.cipherKey);
 
       if (currentKey == null) {
         return false;
+      }
+
+      if (_isPromptingWallet(user.wallet)) {
+        return true;
       }
 
       final keyBytes = await currentKey.key.extractBytes();
@@ -234,7 +257,29 @@ class PrivateDriveMigrationBloc
           inProgressDrive: drive,
         ));
 
-        final record = await _provenRecord(drive, user.cipherKey, user);
+        var record = await _provenRecord(drive, user.cipherKey, user);
+
+        // The sign-in password doesn't make this drive's key: ask for the
+        // drive's own, until one does or the user skips it.
+        var wrong = false;
+        while (record == null &&
+            recordBuilder.lastRefusal ==
+                DriveSignatureRecordRefusal.unknownPassword) {
+          final reply = Completer<String?>();
+          _passwordReply = reply;
+          emit(PrivateDriveMigrationNeedsPassword(
+              drive: drive, wrongPassword: wrong));
+          final password = await reply.future;
+
+          if (password == null || password.isEmpty) {
+            break;
+          }
+
+          emit(PrivateDriveMigrationInProgress(inProgressDrive: drive));
+          record = await _provenRecord(drive, user.cipherKey, user,
+              password: password);
+          wrong = true;
+        }
 
         if (record == null) {
           notMigrated++;
@@ -287,11 +332,15 @@ class PrivateDriveMigrationBloc
   /// Never a locked drive, never one without a key on this device, and never
   /// with a password that isn't proven to make that drive's key. The record
   /// itself is proven by [DriveSignatureRecordBuilder].
+  /// Answers the [PrivateDriveMigrationNeedsPassword] in progress.
+  Completer<String?>? _passwordReply;
+
   Future<DriveSignatureEntity?> _provenRecord(
     Drive drive,
     SecretKey profileKey,
-    User user,
-  ) async {
+    User user, {
+    String? password,
+  }) async {
     if (driveUnlocker.session.isLocked(drive.id)) {
       return null;
     }
@@ -309,10 +358,12 @@ class PrivateDriveMigrationBloc
       wallet: user.wallet,
       driveId: drive.id,
       currentKey: currentKey,
-      passwordInfos: [
-        if (proven != null) proven,
-        ...drivePasswordInfos(user.password),
-      ],
+      passwordInfos: password != null
+          ? drivePasswordInfos(password)
+          : [
+              if (proven != null) proven,
+              ...drivePasswordInfos(user.password),
+            ],
     );
   }
 
@@ -343,6 +394,8 @@ class PrivateDriveMigrationBloc
 
   @override
   Future<void> close() {
+    _passwordReply?.complete(null);
+    _passwordReply = null;
     _drivesSubscription?.cancel();
     return super.close();
   }

@@ -324,4 +324,21 @@ void main() {
     await discoverWith(askWalletAgain: true);
     expect(wander.prompts, 6, reason: 'a sync the user started may ask');
   });
+
+  test('syncing one drive asks again for that drive and no other', () async {
+    session
+      ..markWalletDeclined(owner, _opens)
+      ..markWalletDeclined(owner, _locked);
+
+    await syncRepository.updateUserDrives(
+      wallet: wallet,
+      password: 'login',
+      cipherKey: profileKey,
+      askWalletAgainFor: [_opens],
+    );
+
+    expect(session.walletDeclined(owner, _opens), isFalse);
+    expect(session.isLocked(_opens), isFalse);
+    expect(session.walletDeclined(owner, _locked), isTrue);
+  });
 }
