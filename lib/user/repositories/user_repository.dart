@@ -1,10 +1,13 @@
+import 'package:ardrive/device_unlock/domain/device_unlocker.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/models/database/database.dart' show Profile;
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 
 abstract class UserRepository {
   Future<bool> hasUser();
@@ -16,6 +19,29 @@ abstract class UserRepository {
     String? sourceWalletAddress,
   });
   Future<void> deleteUser();
+
+  /// Saves [wallet]'s profile under a device key from its wallet, with no
+  /// password: see [ProfileDao.addProfileWithDeviceKey].
+  Future<void> saveUserWithDeviceKey({
+    required Wallet wallet,
+    required ProfileType profileType,
+    required DeviceRecord record,
+    required SecretKey deviceKey,
+    String? sourceWalletAddress,
+  });
+
+  /// The saved profile opened with [deviceKey]. [password] is the session's
+  /// drive password when one was typed at sign-in (an existing MetaMask
+  /// account), and empty otherwise. Throws [DeviceKeyMismatchException] for a
+  /// key that doesn't open it.
+  Future<User> getUserWithDeviceKey(SecretKey deviceKey, {String password});
+
+  /// The profile saved on this device, unopened, or null.
+  Future<Profile?> getSavedProfile();
+
+  /// What the saved profile keeps about its device key, or null for a
+  /// profile in the format before 3.0.
+  Future<DeviceRecord?> getDeviceRecord();
   Future<String?> getOwnerOfDefaultProfile();
   Future<BigInt> getBalance(Wallet wallet);
   Future<String?> getARIOTokens(Wallet wallet);
@@ -114,6 +140,49 @@ class _UserRepository implements UserRepository {
       sourceWalletAddress: sourceWalletAddress,
     );
   }
+
+  @override
+  Future<void> saveUserWithDeviceKey({
+    required Wallet wallet,
+    required ProfileType profileType,
+    required DeviceRecord record,
+    required SecretKey deviceKey,
+    String? sourceWalletAddress,
+  }) =>
+      _profileDao.addProfileWithDeviceKey(
+        wallet: wallet,
+        profileType: profileType,
+        record: record,
+        deviceKey: deviceKey,
+        sourceWalletAddress: sourceWalletAddress,
+      );
+
+  @override
+  Future<User> getUserWithDeviceKey(
+    SecretKey deviceKey, {
+    String password = '',
+  }) async {
+    final profileDetails =
+        await _profileDao.loadDefaultProfileWithDeviceKey(deviceKey);
+    final walletAddress = await profileDetails.wallet.getAddress();
+
+    return User(
+      profileType: ProfileType.values[profileDetails.details.profileType],
+      wallet: profileDetails.wallet,
+      cipherKey: profileDetails.key,
+      password: password,
+      walletAddress: walletAddress,
+      walletBalance: await _getLoginWalletBalance(walletAddress),
+      errorFetchingIOTokens: false,
+      sourceWalletAddress: profileDetails.details.sourceWalletAddress,
+    );
+  }
+
+  @override
+  Future<Profile?> getSavedProfile() => _profileDao.getDefaultProfile();
+
+  @override
+  Future<DeviceRecord?> getDeviceRecord() => _profileDao.deviceRecord();
 
   @override
   Future<void> deleteUser() async {

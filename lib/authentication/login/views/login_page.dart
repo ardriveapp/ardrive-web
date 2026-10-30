@@ -756,6 +756,8 @@ Widget loginPanelFor(
           key: Key('checkingForAccountPanel'),
         ),
     };
+  } else if (loginState is PromptWalletUnlock) {
+    content = const WelcomeBackView(key: Key('welcomeBackView'));
   } else if (loginState is PromptPassword && loginState.alreadyLoggedIn) {
     content = const WelcomeBackView(key: Key('welcomeBackView'));
   } else if (loginState is LoginEnterRecoveryPhrase) {

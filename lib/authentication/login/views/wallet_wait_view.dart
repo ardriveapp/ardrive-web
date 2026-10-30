@@ -53,15 +53,16 @@ class WalletWaitView extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final type = ArDriveTypographyNew.of(context);
     final name = nameOf(wallet);
-    final signIn = request == BrowserWalletRequest.signIn;
-
     final title =
         name == null ? s.walletWaitTitleGeneric : s.walletWaitTitle(name);
-    final body = switch ((name, signIn)) {
-      (null, false) => s.walletWaitConnectGeneric,
-      (null, true) => s.walletWaitSignInGeneric,
-      (final String n, false) => s.walletWaitConnect(n),
-      (final String n, true) => s.walletWaitSignIn(n),
+    final body = switch ((name, request)) {
+      (null, BrowserWalletRequest.connect) => s.walletWaitConnectGeneric,
+      (null, BrowserWalletRequest.signIn) => s.walletWaitSignInGeneric,
+      (null, BrowserWalletRequest.openDrives) => s.approveToOpenDrivesGeneric,
+      (final String n, BrowserWalletRequest.connect) => s.walletWaitConnect(n),
+      (final String n, BrowserWalletRequest.signIn) => s.walletWaitSignIn(n),
+      (final String n, BrowserWalletRequest.openDrives) =>
+        s.approveToOpenDrives(n),
     };
     final progress =
         name == null ? s.walletWaitProgressGeneric : s.walletWaitProgress(name);

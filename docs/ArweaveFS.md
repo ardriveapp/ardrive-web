@@ -279,6 +279,38 @@ Drives that have been updated many times can have a long entity timeline which c
 
 Clients that want to provide users with a quick view of a single folder can simply query for an entity timeline for a particular folder by its id. Clients with multi-owner permissions will additionally have to query for the folder's parent drive entity for permission based filtering of the timeline.
 
+### Browser wallet identities
+
+ArDrive web signs Ethereum and Solana wallet users in with an Arweave wallet derived from a signature, so the same browser wallet always gets the same Arweave wallet. Each derivation is fixed forever: changing one byte of a message gives every account made with it another wallet. Drive keys are then derived from that Arweave wallet exactly as for any other wallet.
+
+All three turn a signature into a 12-word BIP-39 phrase the same way: the first 16 bytes of the signature's SHA-256 are the entropy. The phrase becomes an RSA wallet the way a recovery phrase does.
+
+**Solana (Phantom, Solflare).** The wallet signs this message as UTF-8, and its Ed25519 signature (deterministic, RFC 8032) gives the phrase:
+
+```
+ArDrive wants to access your account. Only approve this on a gateway you trust (e.g. app.ardrive.io). ArDrive Identity v1
+```
+
+**Ethereum, accounts made before ArDrive 3.0 (version 1, with a password).** The password picks the wallet: another password gives another wallet.
+
+1. The wallet signs `Sign message to verify wallet address.` with `personal_sign`. SHA-256 of that signature is the private key of the account's *auth* Ethereum key.
+2. The wallet signs, with `personal_sign`, the UTF-8 bytes of the lowercase hex of SHA-256(`1:<address>:<password>`), where `1` is the chain ID and `<address>` is as the wallet reports it. That signature gives the phrase.
+3. At sign-up the Arweave wallet signs the SHA-256 of the step 2 signature, and that signature is posted twice, from the Arweave wallet and from the auth key, as each one's first transaction. Sign-in compares both with a fresh one to tell a right password from a wrong one.
+
+**Ethereum, accounts made from ArDrive 3.0 (version 2, no password).** The wallet signs, with `personal_sign`, the UTF-8 bytes of this message, with the address in lowercase. That signature gives the phrase. Nothing is posted.
+
+```
+ArDrive account
+Signing this opens your ArDrive account. Only sign it in ArDrive.
+It is free and sends no transaction.
+Account: 0x<address in lowercase>
+Version: 2
+```
+
+**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and looks for a transaction from the auth key's Arweave address. If there is one, the account is version 1 and its password is asked; if there is none, it is version 2. Every version 1 account has that record, because its sign-up posted it.
+
+`personal_sign` from an ordinary Ethereum account is deterministic (RFC 6979). Smart-contract and MPC wallets may not be, under either version.
+
 ## Future Work
 
 ### GraphQL

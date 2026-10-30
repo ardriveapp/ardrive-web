@@ -1,0 +1,143 @@
+import 'package:ardrive/authentication/password/breached_password.dart';
+import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/locked_drives/presentation/set_drive_password_dialog.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _Breaches extends Fake implements BreachedPasswordCheck {
+  final breached = <String>{};
+  var asked = 0;
+
+  @override
+  Future<bool?> isBreached(String password) async {
+    asked++;
+    return breached.contains(password);
+  }
+}
+
+class _MockActivityTracker extends Mock implements ActivityTracker {}
+
+const _strong = 'Velvet harbour 47 lanterns drift';
+
+/// "Keep your files private": the drive password a browser wallet account
+/// sets before its first private drive.
+void main() {
+  late _Breaches breaches;
+  late _MockActivityTracker tracker;
+
+  setUp(() {
+    breaches = _Breaches();
+    tracker = _MockActivityTracker();
+  });
+
+  Future<Future<String?>> open(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 1100));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    late Future<String?> result;
+    await tester.pumpWidget(RepositoryProvider<ActivityTracker>.value(
+      value: tracker,
+      child: ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en', '')],
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => result = showSetDrivePasswordDialog(
+                  context,
+                  walletAddress: 'wallet-address',
+                  breachCheck: breaches,
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    return Future.value(result);
+  }
+
+  Finder field(String key) => find.descendant(
+      of: find.byKey(Key(key)), matching: find.byType(EditableText));
+
+  Finder setButton() => find.text('Set password');
+
+  testWidgets('says it cannot be recovered, and offers the browser a new '
+      'password for this account', (tester) async {
+    await open(tester);
+
+    expect(find.text('Keep your files private'), findsOneWidget);
+    expect(find.textContaining("We can't recover this password"),
+        findsOneWidget);
+    final password =
+        tester.widget<EditableText>(field('newPassword')).autofillHints;
+    expect(password, [AutofillHints.newPassword]);
+    expect(
+        tester.widget<EditableText>(field('confirmNewPassword')).autofillHints,
+        [AutofillHints.newPassword]);
+    expect(find.byKey(const Key('passwordAutofillUsername')), findsOneWidget);
+  });
+
+  testWidgets('follows the new-account rules before it returns the password',
+      (tester) async {
+    final result = await open(tester);
+
+    await tester.enterText(field('newPassword'), 'short');
+    await tester.pump();
+    expect(find.text('Use at least 12 characters.'), findsOneWidget);
+
+    await tester.enterText(field('newPassword'), _strong);
+    await tester.enterText(field('confirmNewPassword'), 'something else');
+    await tester.pump();
+    await tester.tap(setButton());
+    await tester.pumpAndSettle();
+    expect(breaches.asked, 0, reason: 'not usable yet, so nothing is checked');
+
+    breaches.breached.add(_strong);
+    await tester.enterText(field('confirmNewPassword'), _strong);
+    await tester.pump();
+    await tester.tap(setButton());
+    await tester.pumpAndSettle();
+    expect(
+        find.text(
+            'This password has shown up in a data breach. Choose another.'),
+        findsOneWidget);
+    expect(find.byKey(const Key('setDrivePasswordDialog')), findsOneWidget);
+
+    const other = 'Copper meadow 92 kites unfold';
+    await tester.enterText(field('newPassword'), other);
+    await tester.enterText(field('confirmNewPassword'), other);
+    await tester.pump();
+    await tester.tap(setButton());
+    await tester.pumpAndSettle();
+
+    expect(await result, other);
+  });
+
+  testWidgets('Cancel returns nothing', (tester) async {
+    final result = await open(tester);
+
+    await tester.enterText(field('newPassword'), _strong);
+    await tester.enterText(field('confirmNewPassword'), _strong);
+    await tester.pump();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(await result, isNull);
+    expect(breaches.asked, 0);
+  });
+}

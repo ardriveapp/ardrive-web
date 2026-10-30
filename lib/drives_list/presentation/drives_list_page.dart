@@ -599,14 +599,16 @@ class _DrivesListEmpty extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           Text(
-            'Create a new drive to start uploading your files.',
+            appLocalizationsOf(context).gettingStartedBody,
             style: typography.paragraphLarge(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textLow,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
+          const UploadFirstFilesButton(),
+          const SizedBox(height: 32),
           const GettingStartedCards(),
         ],
       ),

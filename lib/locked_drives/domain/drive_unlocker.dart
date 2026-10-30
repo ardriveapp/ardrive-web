@@ -458,6 +458,14 @@ class DriveUnlocker {
     bool mayAskWallet = true,
     WalletPromptBudget? promptBudget,
   }) async {
+    // No password, as for someone who signed in with a browser wallet and
+    // hasn't given one this session: nothing to try, and the wallet is not
+    // asked for a signature that could open nothing. No drive is made with
+    // an empty password.
+    if (password.isEmpty) {
+      return const DriveKeyAttempt.failed(DriveUnlockFailure.wrongPassword);
+    }
+
     final driveId = driveTx.getTag(EntityTag.driveId)!;
     final signatureType = DriveSignatureType.fromString(
         driveTx.getTag(EntityTag.signatureType) ?? '1');

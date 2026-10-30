@@ -151,39 +151,3 @@ class _DestinationRow extends StatelessWidget {
     );
   }
 }
-
-/// What Upload says to somebody with no drive to upload to.
-///
-/// Explains the one thing they need to know, that files live in drives, and
-/// offers the step that fixes it. The upload carries on once the drive exists.
-class UploadNeedsDriveDialog extends StatelessWidget {
-  const UploadNeedsDriveDialog({super.key, required this.onCreateDrive});
-
-  /// Called after this dialog has closed.
-  final VoidCallback onCreateDrive;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = appLocalizationsOf(context);
-
-    return ArDriveStandardModalNew(
-      title: l10n.uploadNeedsDriveTitle,
-      description: l10n.uploadNeedsDriveDescription,
-      scrollableContent: true,
-      actions: [
-        ModalAction(
-          action: () => Navigator.of(context).pop(),
-          title: l10n.cancel,
-        ),
-        ModalAction(
-          action: () {
-            Navigator.of(context).pop();
-            onCreateDrive();
-          },
-          title: l10n.newDrive,
-          customWidth: 120,
-        ),
-      ],
-    );
-  }
-}

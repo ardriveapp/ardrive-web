@@ -346,6 +346,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return detached;
   }
 
+  /// Drops every drive key stored on this device, with the drives they
+  /// open, rows and contents: for keys wrapped by a device key nothing can
+  /// make any more (a profile before 3.0 that a browser wallet now signs in
+  /// to without its password). Those drives show as locked until unlocked
+  /// again. Returns how many.
+  Future<int> discardStoredDriveKeys() async {
+    final stored =
+        await (select(drives)..where((d) => d.encryptedKey.isNotNull())).get();
+    for (final drive in stored) {
+      await detachDrive(drive.id);
+    }
+    return stored.length;
+  }
+
   /// How many of [ownerAddress]'s drive keys this device remembers, for
   /// "Forget all on this device".
   Stream<int> watchRememberedDriveKeyCount({required String ownerAddress}) {

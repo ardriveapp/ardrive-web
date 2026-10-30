@@ -4230,14 +4230,6 @@
   "@uploadWhichDrive": {
     "description": "Title of the list of drives an upload started away from any drive can go to"
   },
-  "uploadNeedsDriveTitle": "Create a drive first",
-  "@uploadNeedsDriveTitle": {
-    "description": "Title shown when Upload is pressed by somebody with no drive to upload to"
-  },
-  "uploadNeedsDriveDescription": "Your files are kept in drives. Create one to start uploading.",
-  "@uploadNeedsDriveDescription": {
-    "description": "Explains that uploads go into a drive, for somebody who has none yet"
-  },
   "uploadingManifestEmphasized": "Uploading deployment...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
@@ -5562,7 +5554,7 @@
   "@creatingAccountKeepOpen": {"description": "Note under the progress bar while the account is made."},
   "newPasswordTitle": "Choose a password",
   "@newPasswordTitle": {"description": "Title of the password step for a new account."},
-  "newPasswordBody": "It locks your private files. No one can reset it, so make it strong and keep it somewhere safe.",
+  "newPasswordBody": "It locks your private files. We can't recover this password, so make it strong and keep it somewhere safe.",
   "@newPasswordBody": {"description": "Under the title of the password step for a new account."},
   "newPasswordTooShort": "Use at least 12 characters.",
   "@newPasswordTooShort": {"description": "A new account's password is too short."},
@@ -5740,8 +5732,10 @@
   "@notRememberedOnThisDevice": {"description": "Drive details: this device keeps no key for the drive; it will be locked next time."},
   "forgetAllOnThisDevice": "Forget all on this device",
   "@forgetAllOnThisDevice": {"description": "Profile menu: delete every remembered drive key. Drives stay open now and are locked next time."},
-  "approveInWanderToOpenDrives": "Approve in Wander to open your drives",
-  "@approveInWanderToOpenDrives": {"description": "Beside the waiting state while Wander is asked for the one approval that opens the drives remembered on this device."},
+  "approveToOpenDrives": "Approve in {wallet} to open your drives",
+  "@approveToOpenDrives": {"description": "Welcome back, while the browser wallet is asked for the one approval that opens the account and the drives remembered on this device.", "placeholders": {"wallet": {"type": "String"}}},
+  "approveToOpenDrivesGeneric": "Approve in your wallet to open your drives",
+  "@approveToOpenDrivesGeneric": {"description": "approveToOpenDrives for a Solana wallet other than Phantom or Solflare."},
   "savedByNewerVersion": "This account was saved by a newer version of ArDrive. Reload to open it.",
   "@savedByNewerVersion": {"description": "Welcome back, when the account on this device was saved by a newer ArDrive than the page that is open. Only Reload is offered."},
   "reloadPage": "Reload",
@@ -5757,5 +5751,39 @@
   "drivePasswordOpensNoDrives": "That password didn't open your private drives. Try again.",
   "@drivePasswordOpensNoDrives": {"description": "Create drive: the drive password typed opened none of the user's private drives, so nothing was created."},
   "walletCantCreatePrivateDrives": "This wallet can't create private drives. Use a software wallet.",
-  "@walletCantCreatePrivateDrives": {"description": "Create drive: the browser wallet's signature can't make a drive key that would open again (a hardware wallet such as Keystone), so no private drive was created."}
+  "@walletCantCreatePrivateDrives": {"description": "Create drive: the browser wallet's signature can't make a drive key that would open again (a hardware wallet such as Keystone), so no private drive was created."},
+  "newPasswordRecoveryNote": "Your recovery phrase restores your wallet. Your private files also need this password.",
+  "@newPasswordRecoveryNote": {"description": "On a new account's password step, under the body, when ArDrive made the wallet: the phrase alone doesn't open private files."},
+  "newPasswordHint": "Enter a password",
+  "@newPasswordHint": {"description": "Hint in the field that sets a new password."},
+  "confirmPasswordHint": "Re-enter your password",
+  "@confirmPasswordHint": {"description": "Hint in the field that confirms a new password."},
+  "setDrivePasswordTitle": "Keep your files private",
+  "@setDrivePasswordTitle": {"description": "Title of the dialog where someone who signed in with a browser wallet sets their drive password, before their first private drive."},
+  "setDrivePasswordBody": "Set a drive password. It protects all your private drives. We can't recover this password.",
+  "@setDrivePasswordBody": {"description": "Under the title. One drive password for all private drives; it can't be reset."},
+  "setDrivePasswordAction": "Set password",
+  "@setDrivePasswordAction": {"description": "Button that sets the drive password and goes on."},
+  "gettingStartedBody": "Upload files to start. They go into a private drive, My files.",
+  "@gettingStartedBody": {"description": "Getting started, for an account with no drives, under the title."},
+  "uploadFirstFiles": "Upload your first files",
+  "@uploadFirstFiles": {"description": "Getting started's main button: makes a private My files and uploads into it."},
+  "firstDriveFailed": "We couldn't set up My files. Try again.",
+  "@firstDriveFailed": {"description": "The private My files for a first upload could not be made. Nothing was uploaded."},
+  "welcomeBackContinueWith": "Continue with {wallet}",
+  "@welcomeBackContinueWith": {"description": "Welcome back's button for an account a browser wallet opens.", "placeholders": {"wallet": {"type": "String"}}},
+  "welcomeBackContinueGeneric": "Continue with your wallet",
+  "@welcomeBackContinueGeneric": {"description": "welcomeBackContinueWith for a Solana wallet other than Phantom or Solflare."},
+  "welcomeBackWalletBody": "Approve in your wallet to open your drives.",
+  "@welcomeBackWalletBody": {"description": "Welcome back, for an account a browser wallet opens, under the account."},
+  "welcomeBackRelocks": "Private drives on this device lock again. Unlock them once to remember them.",
+  "@welcomeBackRelocks": {"description": "Welcome back, for a browser wallet account saved before 3.0 under its old sign-in password: the remembered drive keys can't move to the wallet."},
+  "welcomeBackDeclined": "It wasn't approved. Try again.",
+  "@welcomeBackDeclined": {"description": "Welcome back: the wallet prompt was refused or not answered."},
+  "welcomeBackMismatch": "Your wallet signed differently than before. Use a different account, then sign in again.",
+  "@welcomeBackMismatch": {"description": "Welcome back: the wallet's signature doesn't open what this device saved (some hardware or smart-contract wallets)."},
+  "welcomeBackOtherAccount": "Your wallet is on another account. Switch to this one, or use a different account.",
+  "@welcomeBackOtherAccount": {"description": "Welcome back: the browser wallet's active account isn't the one saved here."},
+  "welcomeBackFailed": "We couldn't reach your wallet. Try again.",
+  "@welcomeBackFailed": {"description": "Welcome back: the wallet failed for another reason."}
 }

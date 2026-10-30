@@ -7,6 +7,7 @@ import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/upload_entry/presentation/start_upload.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -117,7 +118,8 @@ class NoDrivesPage extends StatelessWidget {
                                     anonymouslyShowDriveDetail
                                         ? appLocalizationsOf(context)
                                             .openDriveEmptyDescription
-                                        : 'Create a new drive to start uploading your files.',
+                                        : appLocalizationsOf(context)
+                                            .gettingStartedBody,
                                     style: typography.paragraphLarge(
                                       fontWeight: ArFontWeight.semiBold,
                                       color: colorTokens.textLow,
@@ -130,6 +132,8 @@ class NoDrivesPage extends StatelessWidget {
                         ),
                       );
                     }),
+                    if (!anonymouslyShowDriveDetail)
+                      const UploadFirstFilesButton(),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: anonymouslyShowDriveDetail
@@ -207,7 +211,7 @@ class NoDrivesPage extends StatelessWidget {
                   Text(
                     anonymouslyShowDriveDetail
                         ? appLocalizationsOf(context).openDriveEmptyDescription
-                        : 'Create a new drive to start uploading your files.',
+                        : appLocalizationsOf(context).gettingStartedBody,
                     style: typography.paragraphLarge(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textLow,
@@ -217,6 +221,8 @@ class NoDrivesPage extends StatelessWidget {
                   if (anonymouslyShowDriveDetail)
                     _openDriveCard(context: context)
                   else ...[
+                    const UploadFirstFilesButton(),
+                    const SizedBox(height: 32),
                     _publicDrivesCard(context: context),
                     const SizedBox(height: 20),
                     Container(
@@ -330,7 +336,7 @@ ArDriveLoginModal _privateDrivesCard({
           maxWidth: double.infinity,
           text: 'Create new private drive',
           typography: typography,
-          variant: ButtonVariant.primary,
+          variant: ButtonVariant.secondary,
           onPressed: () {
             PlausibleEventTracker.trackClickCreatePrivateDriveButton(
               PlausiblePageView.fileExplorerNewUserEmpty,
@@ -378,7 +384,7 @@ ArDriveLoginModal _publicDrivesCard({
           maxWidth: double.infinity,
           text: 'Create new public drive',
           typography: typography,
-          variant: ButtonVariant.primary,
+          variant: ButtonVariant.secondary,
           onPressed: () {
             PlausibleEventTracker.trackClickCreatePublicDriveButton(
               PlausiblePageView.fileExplorerNewUserEmpty,
@@ -458,6 +464,28 @@ class GettingStartedCards extends StatelessWidget {
           ]..removeLast(),
         );
       },
+    );
+  }
+}
+
+/// Getting started's one primary action. The files go into a private "My
+/// files", made for them first: see `startUpload`.
+class UploadFirstFilesButton extends StatelessWidget {
+  const UploadFirstFilesButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ArDriveButtonNew(
+        key: const Key('uploadFirstFiles'),
+        size: ArDriveButtonSize.large,
+        text: appLocalizationsOf(context).uploadFirstFiles,
+        typography: typography,
+        variant: ButtonVariant.primary,
+        onPressed: () => startUpload(context, isFolderUpload: false),
+      ),
     );
   }
 }

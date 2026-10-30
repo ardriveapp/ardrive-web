@@ -232,3 +232,9 @@ class LoginWithSolana extends LoginEvent {
   @override
   List<Object> get props => [provider ?? ''];
 }
+
+/// Continue on Welcome back for an account a browser wallet opens: one
+/// approval in that wallet.
+class UnlockWithWallet extends LoginEvent {
+  const UnlockWithWallet();
+}

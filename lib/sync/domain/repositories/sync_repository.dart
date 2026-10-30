@@ -2182,7 +2182,13 @@ class _SyncRepository implements SyncRepository {
     final address = await wallet.getAddress();
     // While the sign-in password is unproven, a password that opened one of
     // the user's drives this session (Create drive, Unlock) is tried instead.
-    final signInUnproven =
+    //
+    // Someone who signed in with a browser wallet has no sign-in password at
+    // all (an empty one): only a password that opened one of their drives
+    // this session is tried, and with none, nothing is, and the wallet is
+    // never asked. Their drives open from the keys this device remembers, or
+    // with Unlock.
+    final signInUnproven = password.isEmpty ||
         _driveUnlocker.session.signInPasswordProven(address) == false;
     final checkedDrivePassword = signInUnproven
         ? _driveUnlocker.session.provenDrivePassword(address)
