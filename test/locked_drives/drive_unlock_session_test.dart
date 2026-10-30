@@ -73,10 +73,12 @@ void main() {
         ..rememberSignature(
             'me', 'a', DriveSignatureType.v2, Uint8List.fromList([1]))
         ..markWalletDeclined('me', 'b')
-        ..rememberProvenPasswordInfo('a', [1, 2]);
+        ..rememberProvenPasswordInfo('a', [1, 2])
+        ..setSignInPasswordProven('me', false);
 
       session.clear();
 
+      expect(session.signInPasswordProven('me'), isNull);
       expect(session.currentLockedDrives, isEmpty);
       expect(session.signature('me', 'a', DriveSignatureType.v2), isNull);
       expect(session.walletDeclined('me', 'b'), isFalse);

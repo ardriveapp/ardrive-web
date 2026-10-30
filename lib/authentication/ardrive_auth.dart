@@ -438,7 +438,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
             tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private)
         .toList();
 
+    final session = _driveUnlocker.session;
+
     if (privateDriveTxs.isEmpty) {
+      session.setSignInPasswordProven(address, true);
       return;
     }
 
@@ -457,7 +460,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
     }
 
-    final session = _driveUnlocker.session;
     bool held(TransactionCommonMixin tx) =>
         session.holdsSignatureFor(address, tx.getTag(EntityTag.driveId)!);
     int oldestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
@@ -521,12 +523,14 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       switch (attempt.failure) {
         case null:
+          session.setSignInPasswordProven(address, true);
           return;
         case DriveUnlockFailure.wrongPassword:
           continue;
         case DriveUnlockFailure.walletDeclined:
         case DriveUnlockFailure.walletFailed:
           // The user said no to their wallet: stop asking it.
+          session.setSignInPasswordProven(address, false);
           throw const PasswordOpensNoDriveException();
         case DriveUnlockFailure.unavailable:
           unreadable ??= const AuthenticationGatewayException();
@@ -542,6 +546,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       throw const AuthenticationGatewayException();
     }
 
+    session.setSignInPasswordProven(address, false);
     throw const PasswordOpensNoDriveException();
   }
 

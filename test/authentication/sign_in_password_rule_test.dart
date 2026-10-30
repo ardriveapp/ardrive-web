@@ -26,6 +26,7 @@ void main() {
   late Wallet wallet;
   late MockArweaveService arweave;
   late ArDriveAuthImpl auth;
+  late DriveUnlockSession session;
 
   void onChain(List<PrivateDriveFixture> drives) {
     when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
@@ -60,7 +61,7 @@ void main() {
         crypto: ArDriveCrypto(),
         arweave: arweave,
         driveDao: MockDriveDao(),
-        session: DriveUnlockSession(),
+        session: session = DriveUnlockSession(),
       ),
     );
   });
@@ -296,5 +297,26 @@ void main() {
     expect(signer.signatures, asked, reason: 'continuing tried a drive again');
     verify(() => userRepository.saveUser('typo', ProfileType.json, wallet,
         sourceWalletAddress: any(named: 'sourceWalletAddress'))).called(1);
+  });
+
+  test(
+      'the session remembers whether the sign-in password was proven: '
+      'opened a drive, opened none, or had none to open', () async {
+    final address = await wallet.getAddress();
+    onChain([
+      await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
+    ]);
+
+    await expectLater(auth.validateUser(wallet, 'typo'),
+        throwsA(isA<PasswordOpensNoDriveException>()));
+    expect(session.signInPasswordProven(address), isFalse);
+
+    await auth.validateUser(wallet, 'a');
+    expect(session.signInPasswordProven(address), isTrue);
+
+    onChain([]);
+    session.setSignInPasswordProven(address, false);
+    await auth.validateUser(wallet, 'anything');
+    expect(session.signInPasswordProven(address), isTrue);
   });
 }

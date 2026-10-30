@@ -2139,8 +2139,16 @@ class _SyncRepository implements SyncRepository {
     // wallet that prompts gets the same small budget as at sign-in: drives
     // whose signature is held cost nothing, and past the budget the rest stay
     // locked for their own Unlock. No popup storm after a sign-in.
+    //
+    // And none at all while that password is unproven: it opened none of the
+    // wallet's drives at sign-in and the user continued, so it is probably a
+    // typo, and asking the wallet to try it again - even in a sync the user
+    // started - would only cost prompts. The drives open with Unlock.
+    final unproven = _driveUnlocker.session
+            .signInPasswordProven(await wallet.getAddress()) ==
+        false;
     final promptBudget = wallet is ArConnectWallet
-        ? WalletPromptBudget(WalletPromptBudget.perPass)
+        ? WalletPromptBudget(unproven ? 0 : WalletPromptBudget.perPass)
         : null;
 
     final discovery = await _arweave.getUniqueUserDriveEntities(
