@@ -395,4 +395,82 @@ void main() {
     expect(tester.takeException(), isNull);
     await done(tester);
   });
+
+  // The bento animates all the time: the drifting backdrop, the filling dots,
+  // the typed name and its caret. Each runs in a layer of its own, so a frame
+  // repaints the animation and not the tiles around it. On the HTML renderer,
+  // which phones get, a repaint rebuilds the DOM of everything it covers; the
+  // whole bento repainting on every frame stalled phones until the browser
+  // reloaded the tab.
+  group('repaints', () {
+    /// The bill's leaders, as render objects.
+    List<RenderObject> leaders(WidgetTester tester) => tester
+        .renderObjectList(find.byWidgetPredicate((w) =>
+            w is CustomPaint &&
+            w.painter.runtimeType.toString() == '_LeaderPainter'))
+        .toList();
+
+    for (final (name, size, scrolling) in const [
+      ('a phone', Size(390, 844), true),
+      ('two columns', Size(496, 816), false),
+      ('three columns', Size(696, 868), false),
+    ]) {
+      testWidgets('$name: the animations leave the bill unpainted',
+          (tester) async {
+        await pumpBento(tester, size: size, scrolling: scrolling);
+        await tester.pump(const Duration(seconds: 1));
+        final bill = <RenderObject>{
+          tester.renderObject(find.text('Subscription')),
+          tester.renderObject(find.text('What it costs')),
+          ...leaders(tester),
+        };
+        expect(bill, hasLength(5));
+
+        final painted = <RenderObject>{};
+        var paints = 0;
+        debugOnProfilePaint = (o) {
+          paints++;
+          painted.add(o);
+        };
+        try {
+          // Six seconds of frames: the drift and the filling dots on every
+          // one, the name typing every 120 ms, the caret blinking every
+          // 500 ms, and the slides moving on at five seconds.
+          for (var i = 0; i < 360; i++) {
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+        } finally {
+          debugOnProfilePaint = null;
+        }
+        expect(paints, greaterThan(0), reason: 'the animations paint');
+        expect(painted.intersection(bill), isEmpty);
+        await done(tester);
+      });
+    }
+
+    // On the HTML renderer, a circle drawn into a picture that also holds
+    // text becomes a DOM element of its own, wrapped in the tile's SVG clip:
+    // over a thousand nodes for three leaders. In a layer of their own the
+    // dots go to one canvas.
+    testWidgets('a leader shares its picture with no text', (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final found = leaders(tester);
+      expect(found, hasLength(3));
+      for (final leader in found) {
+        var boundary = leader;
+        while (!boundary.isRepaintBoundary) {
+          boundary = boundary.parent!;
+        }
+        final text = <RenderObject>[];
+        void visit(RenderObject o) {
+          if (o is RenderParagraph) text.add(o);
+          if (!o.isRepaintBoundary) o.visitChildren(visit);
+        }
+
+        boundary.visitChildren(visit);
+        expect(text, isEmpty);
+      }
+      await done(tester);
+    });
+  });
 }
