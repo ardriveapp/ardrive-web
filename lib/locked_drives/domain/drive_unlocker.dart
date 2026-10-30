@@ -203,10 +203,16 @@ class DriveUnlocker {
   /// like any other. If any fails (a Wander build that ignores `saltLength`,
   /// items out of order, a hardware wallet), the batch is not tried again
   /// this session and the drives whose signature failed go one by one.
+  ///
+  /// With [quiet] (a pass nobody asked for drive by drive: discovery), the
+  /// batch stays quiet after the person cancelled "Wander needs your
+  /// permission again"; see [ArConnectPrompt.quietAfterCancel]. A batch that
+  /// carries a drive the person asked for, or the sign-in check, is not.
   Future<DriveSignatureBatch> signInOneApproval({
     required Wallet wallet,
     required List<String> driveIds,
     WalletPromptBudget? promptBudget,
+    bool quiet = false,
   }) async {
     if (wallet is! ArConnectWallet || !wallet.canBatchSign) {
       return DriveSignatureBatch.notAsked;
@@ -235,7 +241,10 @@ class DriveUnlocker {
 
     final List<Uint8List> signatures;
     try {
-      signatures = await _crypto.batchWalletSignaturesForDrives(wallet, needed);
+      Future<List<Uint8List>> sign() =>
+          _crypto.batchWalletSignaturesForDrives(wallet, needed);
+      signatures =
+          quiet ? await ArConnectPrompt.quietAfterCancel(sign) : await sign();
     } catch (e) {
       if (_personDeclined(e)) {
         logger.i('The batch of drive signatures was declined: $e');
@@ -324,6 +333,7 @@ class DriveUnlocker {
         for (final drive in pending) drive.tx.getTag(EntityTag.driveId)!,
       ],
       promptBudget: promptBudget,
+      quiet: true,
     );
   }
 

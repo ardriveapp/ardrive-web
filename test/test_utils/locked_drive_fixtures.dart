@@ -264,9 +264,6 @@ class FakeWander extends Fake implements ArConnectService {
   }
 
   @override
-  bool isExtensionPresent() => true;
-
-  @override
   bool isBatchSignSupported() => batch;
 
   @override
@@ -278,6 +275,10 @@ class FakeWander extends Fake implements ArConnectService {
     prompts++;
     if (cancel || cancelBatch) {
       throw Exception('User cancelled the AuthRequest');
+    }
+    if (missingPermission) {
+      throw Exception(
+          'Missing permission(s) for "batchSignDataItem": SIGN_TRANSACTION');
     }
     if (refuseBatch) {
       throw Exception(

@@ -512,6 +512,53 @@ void main() {
     });
   });
 
+  test(
+      'after Cancel on "Wander needs your permission again", a discovery '
+      'batch is quiet, and an Unlock\'s own drive still prompts', () async {
+    final shown = <ArConnectUnavailableReason>[];
+    ArConnectPrompt.registerRetryPrompt((reason, _) async {
+      shown.add(reason);
+      return false;
+    });
+    final drives = await drivesWith(['pw', 'pw', 'pw']);
+    wander.missingPermission = true;
+    final saved = await wander.savedWallet();
+
+    // The person cancels the prompt once (a write, say).
+    await expectLater(
+      ArConnectPrompt.ask<String>(
+          wander,
+          () async => throw Exception(
+              'Missing permission(s) for "signature": SIGNATURE')),
+      throwsA(isA<ArConnectUnavailableException>()),
+    );
+    expect(shown, hasLength(1));
+
+    // Discovery's batch: quiet, and its drives are left for Unlock.
+    expect(
+      await unlocker.signForDiscovery(
+        wallet: saved,
+        drives: metadataOf(drives),
+        promptBudget: WalletPromptBudget(WalletPromptBudget.perPass),
+      ),
+      DriveSignatureBatch.declined,
+    );
+    expect(shown, hasLength(1));
+
+    // Unlock, with the others: the drive asked for is in this batch, so the
+    // person is offered Reconnect again.
+    session.setLockedDrives(owner, [for (final d in drives) locked(d.driveId)]);
+    final result = await unlocker.unlock(
+      wallet: saved,
+      profileKey: profileKey,
+      driveId: drives[0].driveId,
+      password: 'pw',
+    );
+    expect(shown, hasLength(2));
+    expect(shown.last, ArConnectUnavailableReason.noPermission);
+    expect(result.failure, DriveUnlockFailure.walletDeclined);
+  });
+
   group('checking a drive signature', () {
     test(
         'the deterministic signature passes; another drive\'s or random '
