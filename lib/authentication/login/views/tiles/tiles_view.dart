@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show PointMode;
 
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -332,50 +333,59 @@ class _ProgressDotsState extends State<_ProgressDots>
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    return Semantics(
-      label: widget.groupLabel,
-      container: true,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          for (var i = 0; i < widget.count; i++)
-            Semantics(
-              button: true,
-              selected: i == widget.index,
-              label: widget.labels[i],
-              excludeSemantics: true,
-              child: InkWell(
-                key: ValueKey('bentoDot-${widget.groupLabel}-$i'),
-                onTap: () => widget.onPick(i),
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox.square(
-                  dimension: 24,
-                  child: Center(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: i == widget.index ? 28 : 8,
-                      height: 8,
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        color: colors.strokeHigh,
-                        borderRadius: BorderRadius.circular(4),
+    // The bar fills on every frame: its own layer, so only the dots repaint.
+    // At the row's own fixed size, so a dot that grows or shrinks lays out
+    // only the dots and not the tile around them.
+    return SizedBox(
+      width: double.infinity,
+      height: 24,
+      child: RepaintBoundary(
+        child: Semantics(
+          label: widget.groupLabel,
+          container: true,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < widget.count; i++)
+                Semantics(
+                  button: true,
+                  selected: i == widget.index,
+                  label: widget.labels[i],
+                  excludeSemantics: true,
+                  child: InkWell(
+                    key: ValueKey('bentoDot-${widget.groupLabel}-$i'),
+                    onTap: () => widget.onPick(i),
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox.square(
+                      dimension: 24,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: i == widget.index ? 28 : 8,
+                          height: 8,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: colors.strokeHigh,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: i == widget.index
+                              ? AnimatedBuilder(
+                                  animation: _fill,
+                                  builder: (context, _) => FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: _fill.value,
+                                    child: ColoredBox(color: colors.iconMid),
+                                  ),
+                                )
+                              : null,
+                        ),
                       ),
-                      child: i == widget.index
-                          ? AnimatedBuilder(
-                              animation: _fill,
-                              builder: (context, _) => FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: _fill.value,
-                                child: ColoredBox(color: colors.iconMid),
-                              ),
-                            )
-                          : null,
                     ),
                   ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -509,28 +519,32 @@ class _PeopleTileState extends State<_PeopleTile> with _Stepper {
             const SizedBox(height: 16),
             _FlexIfBounded(
               bounded: constraints.hasBoundedHeight,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                child: Row(
-                  key: ValueKey('bentoPeople-$index'),
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final (i, person) in groups[index].indexed) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      Expanded(
-                        child: _PersonPicture(
-                          person: person,
-                          onHover: (on) {
-                            if (!mounted) return;
-                            setState(() {
-                              _hovered = on ? person : null;
-                              held = on;
-                            });
-                          },
+              // Its own layer, so the cross-fade between groups repaints the
+              // pictures alone.
+              child: RepaintBoundary(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  child: Row(
+                    key: ValueKey('bentoPeople-$index'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final (i, person) in groups[index].indexed) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        Expanded(
+                          child: _PersonPicture(
+                            person: person,
+                            onHover: (on) {
+                              if (!mounted) return;
+                              setState(() {
+                                _hovered = on ? person : null;
+                                held = on;
+                              });
+                            },
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -716,64 +730,73 @@ class _OnlineTileState extends State<_OnlineTile> {
                 style: type.paragraphNormal(color: colors.textMid),
               ),
               Expanded(
-                child: Center(
-                  // Shrinks rather than overflows, for a narrow tile or a
-                  // longer translation of the label.
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Semantics(
-                          label: '${_names[_example]}.ar.io',
-                          excludeSemantics: true,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ShaderMask(
-                                blendMode: BlendMode.srcIn,
-                                shaderCallback: (bounds) => LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [_brandPeach, _brandRed(context)],
-                                  stops: const [0, 0.45],
-                                ).createShader(bounds),
-                                child: Text(
-                                  _names[_example].substring(0, _chars),
-                                  key: const Key('bentoTypedName'),
-                                  style: address,
-                                ),
+                // The name types, the caret blinks and the label changes all
+                // the time: their own layer, so the rest of the bento doesn't
+                // repaint with them. At a fixed size, so a name that grows or
+                // shrinks lays out only itself.
+                child: SizedBox.expand(
+                  child: RepaintBoundary(
+                    child: Center(
+                      // Shrinks rather than overflows, for a narrow tile or a
+                      // longer translation of the label.
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Semantics(
+                              label: '${_names[_example]}.ar.io',
+                              excludeSemantics: true,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ShaderMask(
+                                    blendMode: BlendMode.srcIn,
+                                    shaderCallback: (bounds) => LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [_brandPeach, _brandRed(context)],
+                                      stops: const [0, 0.45],
+                                    ).createShader(bounds),
+                                    child: Text(
+                                      _names[_example].substring(0, _chars),
+                                      key: const Key('bentoTypedName'),
+                                      style: address,
+                                    ),
+                                  ),
+                                  Opacity(
+                                    opacity: !still && _caretOn ? 1 : 0,
+                                    child: Container(
+                                      width: 2,
+                                      height: 24,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 1),
+                                      color: _brandRed(context),
+                                    ),
+                                  ),
+                                  Text(
+                                    '.ar.io',
+                                    style:
+                                        address.copyWith(color: colors.textLow),
+                                  ),
+                                ],
                               ),
-                              Opacity(
-                                opacity: !still && _caretOn ? 1 : 0,
-                                child: Container(
-                                  width: 2,
-                                  height: 24,
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 1),
-                                  color: _brandRed(context),
-                                ),
-                              ),
-                              Text(
-                                '.ar.io',
-                                style: address.copyWith(color: colors.textLow),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 350),
-                          child: Text(
-                            labels[_example],
-                            key: ValueKey(_example),
-                            style: type.paragraphSmall(
-                              color: colors.textLow,
-                              fontWeight: ArFontWeight.semiBold,
                             ),
-                          ),
+                            const SizedBox(height: 4),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 350),
+                              child: Text(
+                                labels[_example],
+                                key: ValueKey(_example),
+                                style: type.paragraphSmall(
+                                  color: colors.textLow,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -890,21 +913,28 @@ class _HeroTileState extends State<_HeroTile>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ExcludeSemantics(
-            child: AnimatedBuilder(
-              animation: _drift,
-              builder: (context, child) {
-                final t = _drift.value * 2 * math.pi;
-                return Transform.translate(
-                  offset: Offset(math.sin(t) * 10, math.cos(t) * 6),
-                  child: Transform.scale(scale: 1.08, child: child),
-                );
-              },
-              child: Opacity(
-                opacity: _isLight(context) ? 0.35 : 0.55,
-                child: Image.asset(
-                  Resources.images.login.bentoBox.particleSpace,
-                  fit: BoxFit.cover,
+          // The backdrop drifts on every frame. In a layer of its own, and
+          // the picture in another, each frame moves the picture rather than
+          // repainting the bento around it.
+          RepaintBoundary(
+            child: ExcludeSemantics(
+              child: AnimatedBuilder(
+                animation: _drift,
+                builder: (context, child) {
+                  final t = _drift.value * 2 * math.pi;
+                  return Transform.translate(
+                    offset: Offset(math.sin(t) * 10, math.cos(t) * 6),
+                    child: Transform.scale(scale: 1.08, child: child),
+                  );
+                },
+                child: RepaintBoundary(
+                  child: Opacity(
+                    opacity: _isLight(context) ? 0.35 : 0.55,
+                    child: Image.asset(
+                      Resources.images.login.bentoBox.particleSpace,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -993,27 +1023,34 @@ class _FeatureSlidesState extends State<_FeatureSlides> with _Stepper {
         child: Column(
           children: [
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                child: Column(
-                  key: ValueKey(index),
-                  children: [
-                    Text(
-                      slide.title,
-                      key: const Key('bentoSlideTitle'),
-                      textAlign: TextAlign.center,
-                      style: type.heading6(
-                        color: colors.textHigh,
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
+              // Its own layer, at a fixed size, so changing slides lays out
+              // and repaints the slide alone.
+              child: SizedBox.expand(
+                child: RepaintBoundary(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    child: Column(
+                      key: ValueKey(index),
+                      children: [
+                        Text(
+                          slide.title,
+                          key: const Key('bentoSlideTitle'),
+                          textAlign: TextAlign.center,
+                          style: type.heading6(
+                            color: colors.textHigh,
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: ExcludeSemantics(
+                            child: SvgPicture.asset(slide.art,
+                                fit: BoxFit.contain),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ExcludeSemantics(
-                        child: SvgPicture.asset(slide.art, fit: BoxFit.contain),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1285,9 +1322,16 @@ class _Leader extends StatelessWidget {
       child: Stack(
         children: [
           Text(' ', style: style),
+          // Its own layer. On the HTML renderer, dots drawn into the
+          // bill's picture, which holds text, became a DOM element each,
+          // wrapped in the tile's SVG clip: about 1,100 nodes for three lines,
+          // rebuilt on every frame the bento repainted, which stalled phones
+          // until the browser reloaded the tab. Alone, they go to one canvas.
           Positioned.fill(
-            child: CustomPaint(
-              painter: _LeaderPainter(color: color, y: baseline - 4),
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: _LeaderPainter(color: color, y: baseline - 4),
+              ),
             ),
           ),
         ],
@@ -1304,11 +1348,17 @@ class _LeaderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final dot = Paint()..color = color;
-    // 1.5 px dots, 1.5 px apart.
-    for (var x = 0.75; x <= size.width - 0.75; x += 3) {
-      canvas.drawCircle(Offset(x, y), 0.75, dot);
-    }
+    // 1.5 px dots, 1.5 px apart, in one call rather than one per dot.
+    final dot = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPoints(
+        PointMode.points,
+        [
+          for (var x = 0.75; x <= size.width - 0.75; x += 3) Offset(x, y),
+        ],
+        dot);
   }
 
   @override
