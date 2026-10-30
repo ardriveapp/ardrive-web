@@ -273,7 +273,7 @@ void main() {
         'a record lookup that fails is never taken for a new account',
         build: bloc,
         setUp: () => when(() => arweave.findEthereumAccountRecord(any()))
-            .thenThrow(Exception('gateway unreachable')),
+            .thenAnswer((_) async => throw Exception('gateway unreachable')),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 200),
         verify: (bloc) {
