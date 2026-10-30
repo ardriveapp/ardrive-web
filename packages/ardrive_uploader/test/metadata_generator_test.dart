@@ -49,6 +49,8 @@ void main() {
 
     // Mocking the appInfoServices response
     when(() => mockAppInfoServices.appInfo).thenReturn(appInfo);
+    when(() => mockAppInfoServices.loadAppInfo()).thenAnswer((_) async {});
+    when(() => mockARFSTagsGenerator.loadAppInfo()).thenAnswer((_) async {});
   });
 
   group('ARFSUploadMetadataGenerator', () {
@@ -329,6 +331,34 @@ void main() {
         verify(() => mockARFSTagsGenerator.generateTags(argsForTurboPrivate));
       });
     });
+  });
+
+  // The start does not wait for the version, and a failed read there used to
+  // leave every upload throwing a StateError until a reload. The generator
+  // loads it first.
+  test('metadata is generated when the start could not read the version',
+      () async {
+    final generator = ARFSUploadMetadataGenerator(
+      tagsGenerator: ARFSTagsGenerator(appInfoServices: _NotYetLoadedAppInfo()),
+    );
+
+    final metadata = await generator.generateMetadata(
+      DumbIOFile(),
+      arguments: ARFSUploadMetadataArgs(
+        isPrivate: false,
+        type: UploadType.turbo,
+        entityId: 'entity123',
+        driveId: 'driveId',
+        parentFolderId: 'parentFolderId',
+      ),
+    );
+
+    expect(
+      metadata.getEntityMetadataTags(),
+      contains(isA<Tag>()
+          .having((t) => t.name, 'name', EntityTag.appVersion)
+          .having((t) => t.value, 'value', '2.90.0')),
+    );
   });
 
   group('ARFSTagsGenerator', () {
@@ -722,5 +752,31 @@ class DumbIOFile implements IOFile {
   @override
   Future<String> readAsString() {
     return Future.value('readAsString');
+  }
+}
+
+/// [AppInfoServices] as it is after the start failed to read version.json:
+/// nothing loaded, and the next load works.
+class _NotYetLoadedAppInfo extends Fake implements AppInfoServices {
+  AppInfo? _info;
+
+  @override
+  AppInfo get appInfo =>
+      _info ?? (throw StateError('AppInfoServices has not been initialized'));
+
+  @override
+  Future<void> loadAppInfo() async {
+    _info = AppInfo(
+      version: '2.90.0',
+      appName: 'ArDrive-App',
+      platform: 'Web',
+      arfsVersion: '0.15',
+    );
+  }
+
+  @override
+  Future<AppInfo> getAppInfo() async {
+    await loadAppInfo();
+    return appInfo;
   }
 }

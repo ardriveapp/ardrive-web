@@ -287,7 +287,7 @@ class PrivateDriveMigrationBloc
         }
 
         final owner = await wallet.getOwner();
-        final appInfo = AppInfoServices().appInfo;
+        final appInfo = await AppInfoServices().getAppInfo();
         final driveSignatureDataItem =
             await record.asPreparedDataItem(owner: owner, appInfo: appInfo);
 

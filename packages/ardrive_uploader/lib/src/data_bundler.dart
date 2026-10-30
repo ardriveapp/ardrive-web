@@ -89,6 +89,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
 
     onStartBundleCreation?.call();
 
+    await AppInfoServices().loadAppInfo();
+
     final transactionResult = await createDataBundleTransaction(
       dataItemFiles: dataItemFilesToUse,
       wallet: wallet,
@@ -146,6 +148,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
         signedFolderDataItems.add(folderItemResult.signedDataItemResult);
       }
     }
+
+    await AppInfoServices().loadAppInfo();
 
     final bundleTags = getBundleTags(
       AppInfoServices(),
@@ -310,6 +314,8 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
 
     onStartBundleCreation?.call();
 
+    await AppInfoServices().loadAppInfo();
+
     final bundleTags = getBundleTags(
       AppInfoServices(),
       customBundleTags,
@@ -379,6 +385,8 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
         signedFolderDataItems.add(folderItemResult.signedDataItemResult);
       }
     }
+
+    await AppInfoServices().loadAppInfo();
 
     final bundleTags = getBundleTags(
       AppInfoServices(),

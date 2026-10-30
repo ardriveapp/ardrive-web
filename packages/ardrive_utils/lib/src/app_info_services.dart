@@ -24,12 +24,25 @@ class AppInfoServices {
 
   AppInfoServices._internal();
 
+  /// The app's version and platform, once [loadAppInfo] has finished.
+  ///
+  /// Throws a [StateError] before then. Anything that runs well after the
+  /// start awaits [loadAppInfo] (or reads [getAppInfo]) first: the start does
+  /// not wait for it, and if version.json could not be read then, only a later
+  /// load gets the version for the rest of the session.
   AppInfo get appInfo {
     if (_appInfo == null) {
       throw StateError('AppInfoServices has not been initialized');
     }
 
     return _appInfo!;
+  }
+
+  /// [appInfo], loading it first if it is not loaded yet, or trying again if
+  /// the last load failed.
+  Future<AppInfo> getAppInfo() async {
+    await loadAppInfo();
+    return appInfo;
   }
 
   AppInfo? _appInfo;
