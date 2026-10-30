@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -967,23 +966,29 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
+    // Taken before anything is awaited, so a second press while the first is
+    // still reading the manifest finds it taken. Every way out below that
+    // sends nothing gives it back.
+    _uploadIsInProgress = true;
+
     if (_uploadFileAsCustomManifest) {
-      final Uint8List bytes;
+      final IOFile fileWithCustomContentType;
       try {
-        bytes = await _files.first.ioFile.readAsBytes();
+        final bytes = await _files.first.ioFile.readAsBytes();
+        fileWithCustomContentType = await IOFile.fromData(
+          bytes,
+          name: _files.first.ioFile.name,
+          lastModifiedDate: _files.first.ioFile.lastModifiedDate,
+          contentType: ContentType.manifest,
+        );
       } catch (e) {
         // The file can't be read any more, such as when it changed after it
         // was chosen. Nothing was sent: a failure the form can close.
         logger.e('Could not read the file to upload as a manifest', e);
+        _uploadIsInProgress = false;
         emit(UploadFailure(error: UploadErrors.unknown));
         return;
       }
-      final fileWithCustomContentType = await IOFile.fromData(
-        bytes,
-        name: _files.first.ioFile.name,
-        lastModifiedDate: _files.first.ioFile.lastModifiedDate,
-        contentType: ContentType.manifest,
-      );
 
       _files.first = UploadFile(
         ioFile: fileWithCustomContentType,
@@ -991,8 +996,6 @@ class UploadCubit extends Cubit<UploadState> {
         relativeTo: _files.first.relativeTo,
       );
     }
-
-    _uploadIsInProgress = true;
 
     UploadPlan uploadPlan;
 
