@@ -148,9 +148,32 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     { stdio: ['ignore', 'inherit', 'inherit'], env: process.env });
   // A reload is a new session: Welcome back, the device password, then the
   // drive list as discovery leaves it.
-  const reloadAndUnlock = async () => {
+  // A start whose OPFS open timed out falls back to an empty IndexedDB
+  // database and shows the landing page, though the profile is still in
+  // OPFS: seen on a loaded machine, and not what is under test here. Said,
+  // and reloaded once more.
+  const consoleLog = path.join(E2E_DIR, 'console.log');
+  const reloadOnce = async () => {
+    const from = fs.existsSync(consoleLog) ? fs.statSync(consoleLog).size : 0;
     await page.reload();
-    await wait(4000);
+    for (let t = 0; t < 60; t++) {
+      await wait(1000);
+      const fresh = fs.existsSync(consoleLog)
+        ? fs.readFileSync(consoleLog, 'utf8').slice(from) : '';
+      if (/\[web-db\] the database is on OPFS/.test(fresh)) return true;
+      if (/\[web-db\] the OPFS database did not open/.test(fresh)) return false;
+    }
+    return true;
+  };
+  const reload = async () => {
+    if (!(await reloadOnce())) {
+      console.log('NOTE the OPFS open timed out on this start; reloading again');
+      await reloadOnce();
+    }
+    await wait(3000);
+  };
+  const reloadAndUnlock = async () => {
+    await reload();
     run(['unlock']);
     await enableTree();
     await until(() => has(loginDrive.name), 90000);
@@ -247,18 +270,11 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     const before = await storageReport();
     await check('(the older stores are planted)',
       before.names.includes('moor_databases') && before.resets.length > 0);
-    await page.reload();
-    await wait(4000);
-    run(['unlock']);
-    await enableTree();
-    await until(() => has(loginDrive.name), 90000);
-    if (!(await activate('Log out'))) {
-      // The profile menu closed: open it from its button first.
-      const opener = (await labels()).find((n) => /profile|account|wallet/i.test(n.label) && n.y < 80);
-      if (opener) await page.mouse.click(opener.x, opener.y);
-      await wait(1000);
-      await activate('Log out');
-    }
+    await openProfileMenu();
+    await check('the profile menu offers "Forget all on this device"',
+      await until(() => has('Forget all on this device'), 10000));
+    await shot('r4-profile-menu');
+    await activate('Log out');
     await check('signed out', await until(() => has('Log in'), 30000));
     await wait(3000);
     const after = await storageReport();
@@ -294,7 +310,43 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await check('R5: and their passwords still open them',
       await until(async () => await lockedCount() < drives.length - 1, 30000));
     await shot('r5-cleared');
+
+    // Forget all on this device: every drive, the sign-in password's own
+    // included, is locked next session.
+    await openProfileMenu();
+    await until(() => has('Forget all on this device'), 10000);
+    await activate('Forget all on this device');
+    await check('Forget all says how many it forgot', await until(() => has('Forgot '), 10000));
+    await reload();
+    run(['unlock']);
+    await enableTree();
+    await check('after Forget all, every private drive is locked',
+      await until(async () => await lockedCount() === drives.length, 90000));
+    await shot('r6-forget-all');
   }
+
+  // The profile menu opens from the wallet button at the top right, found
+  // by where it is: its label is the wallet's short address.
+  const openProfileMenu = async () => {
+    const opened = await page.evaluate(() => {
+      const all = [];
+      const walk = (root) => root.querySelectorAll('*').forEach((e) => {
+        if (e.tagName === 'FLT-SEMANTICS') all.push(e);
+        if (e.shadowRoot) walk(e.shadowRoot);
+      });
+      walk(document);
+      const hit = all.filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.x + r.width / 2 > 1150 && r.y + r.height / 2 < 90
+          && /\.\.\./.test(e.getAttribute('aria-label') || e.innerText || '');
+      }).sort((a, b) => b.getBoundingClientRect().x - a.getBoundingClientRect().x)[0];
+      if (!hit) return false;
+      hit.click();
+      return true;
+    });
+    if (!opened) await page.mouse.click(1320, 57);
+    await wait(1000);
+  };
 
   await page.setViewportSize({ width: 1440, height: 900 });
   // The placeholder sits in a shadow root.
