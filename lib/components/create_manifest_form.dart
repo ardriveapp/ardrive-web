@@ -925,6 +925,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ArDriveTextFieldNew(
                 hintText: 'Transaction ID',
+                textStyle: ArDriveTypographyNew.of(context).code(),
                 onChanged: (value) {
                   cubit.setFallbackTxId(value);
                 },

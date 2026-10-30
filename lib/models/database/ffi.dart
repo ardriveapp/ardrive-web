@@ -18,3 +18,14 @@ LazyDatabase openConnection() {
 LazyDatabase openPublicationConnection() {
   return LazyDatabase(() async => NativeDatabase.memory());
 }
+
+/// Deletes the database file, for a start that cannot open it.
+Future<bool> deleteLocalDatabase() async {
+  final dbFolder = await getApplicationDocumentsDirectory();
+  final file = File(join(dbFolder.path, 'db.sqlite'));
+  for (final path in [file.path, '${file.path}-journal']) {
+    final f = File(path);
+    if (await f.exists()) await f.delete();
+  }
+  return true;
+}

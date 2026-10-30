@@ -118,16 +118,16 @@ void main() {
           (tester) async {
         await pumpList(tester, width: width);
 
-        // Holding the multi-select key shows them, as in the explorer: Cmd
-        // here (the test platform is not Windows).
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+        // Holding the multi-select key shows them all, as in the explorer:
+        // Ctrl here (the test platform is not macOS or iOS).
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
         await tester.pumpAndSettle();
 
         await tester.tap(find.byType(ArDriveCheckBox).at(1));
         await tester.pump();
         expect(ticked, ['a']);
 
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
         await tester.pumpAndSettle();
 
         // The list as it is once two are ticked. Syncing them is the page's

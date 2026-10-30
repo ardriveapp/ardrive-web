@@ -86,5 +86,6 @@ void main() {
 
     verifyNever(() => profileCubit.isCurrentProfileArConnect());
     verifyNever(() => profileCubit.logoutIfWalletMismatch());
+    verifyNever(() => profileCubit.logoutIfWalletMismatchInBackground());
   });
 }

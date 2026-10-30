@@ -74,7 +74,9 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       case ProfileType.arConnect:
         return ProfileLoadDetails(
           details: profile,
-          wallet: ArConnectWallet(ArConnectService()),
+          // Knows its address from the key the password just unlocked, so
+          // unlocking never asks Wander, which may be locked.
+          wallet: ArConnectWallet(ArConnectService(), publicKey: publicKey),
           key: profileKdRes.key,
           walletPublicKey: publicKey,
         );

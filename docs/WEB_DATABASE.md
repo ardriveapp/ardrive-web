@@ -227,3 +227,17 @@ this machine lacks.
   network sets them; the data survived the reload; the second tab got a
   session copy. Without the worker script the app opened on IndexedDB within
   two seconds.
+- **A first start cut short left a database no later start could open.**
+  drift runs `onCreate` while `user_version` is 0, runs each statement on its
+  own, and writes the version only after the callback returns. A reload
+  during the first start kept the tables and indexes made so far, and every
+  later start failed on `CREATE INDEX idx_network_transactions_status`
+  (already exists), behind the splash, until site data was cleared. An
+  upgrade cut short had the same shape (a re-run `ADD COLUMN` fails). Both
+  now run in one transaction that also writes the version, so a cut start
+  leaves the database as it was; `onCreate` first clears what an earlier
+  build left half made, if no table holds rows. If the database still will
+  not open or migrate, the app shows "ArDrive could not start" with Try again
+  and Reset local data instead of the splash; the reset removes the OPFS,
+  #2197 IndexedDB and sql.js stores and keeps the OPFS file beside the new
+  one as `ardrive-reset-<time>`.

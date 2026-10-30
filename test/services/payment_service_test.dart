@@ -181,6 +181,34 @@ void main() async {
       });
     });
 
+    group('getUsdPerGiB method', () {
+      test('reads fiat.usd from the rates', () async {
+        when(() => httpClient.get(url: '$fakeUrl/v1/rates')).thenAnswer(
+          (_) async => ArDriveHTTPResponse(
+            statusCode: HttpStatus.ok,
+            // The shape payment.ardrive.io and payment.services.ar-io.dev
+            // both answer with.
+            data: '{"winc":"15383152772872","fiat":{"eur":68.31,'
+                '"usd":76.032565734816},"adjustments":[],'
+                '"perDataItemFeeWinc":"6225330"}',
+            retryAttempts: 0,
+          ),
+        );
+        expect(await paymentService.getUsdPerGiB(), 76.032565734816);
+      });
+
+      test('throws when the status code is not 200', () async {
+        when(() => httpClient.get(url: '$fakeUrl/v1/rates')).thenAnswer(
+          (_) async => ArDriveHTTPResponse(
+            statusCode: HttpStatus.badGateway,
+            data: '',
+            retryAttempts: 0,
+          ),
+        );
+        expect(paymentService.getUsdPerGiB(), throwsException);
+      });
+    });
+
     group('getPriceForFiat method', () {
       test('should return a PriceForFiat object', () async {
         final result = await paymentService.getPriceForFiat(

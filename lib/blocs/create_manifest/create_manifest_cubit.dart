@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/manifest/domain/exceptions.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -323,9 +324,16 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   Future<void> uploadManifest({UploadMethod? method}) async {
     logger.i('Starting manifest upload process');
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      logger.i('Wallet mismatch detected, canceling upload');
-      emit(CreateManifestWalletMismatch());
+    try {
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        logger.i('Wallet mismatch detected, canceling upload');
+        emit(CreateManifestWalletMismatch());
+        return;
+      }
+    } on ArConnectUnavailableException catch (e) {
+      // Wander couldn't be reached and the person chose Cancel. Nothing was
+      // sent: the review stays, to try again or close.
+      logger.w('Could not check the wallet before a manifest upload: $e');
       return;
     }
 

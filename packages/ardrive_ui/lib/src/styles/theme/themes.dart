@@ -222,10 +222,13 @@ ThemeData lightMaterialTheme(ArDriveColorTokens colorTokens) {
       onSurface: colorTokens.containerRaised,
     ),
     useMaterial3: false,
-    textTheme: theme.textTheme.apply(
+    textTheme: _bookByDefault(theme.textTheme.apply(
       fontFamily: _fontFamily,
       bodyColor: colorTokens.textHigh,
-    ),
+    )),
+    primaryTextTheme: _bookByDefault(theme.primaryTextTheme.apply(
+      fontFamily: _fontFamily,
+    )),
   );
 }
 
@@ -348,14 +351,49 @@ ThemeData darkMaterialTheme(ArDriveColorTokens colorTokens) {
       onSurface: colorTokens.containerRaised,
     ),
     useMaterial3: false,
-    textTheme: theme.textTheme.apply(
+    textTheme: _bookByDefault(theme.textTheme.apply(
       fontFamily: _fontFamily,
       bodyColor: colorTokens.textHigh,
-    ),
+    )),
+    primaryTextTheme: _bookByDefault(theme.primaryTextTheme.apply(
+      fontFamily: _fontFamily,
+    )),
   );
 }
 
 const _fontFamily = 'packages/ardrive_ui/Wavehaus';
+
+/// [textTheme] with nothing lighter than Book. Material's defaults are 400
+/// (300 for its display styles), and Wavehaus declares Light as 400, so text
+/// that names no weight (a plain `Text`, a tooltip, a field's label) was drawn in
+/// Light, which is for large figures only (README, "Tokens").
+TextTheme _bookByDefault(TextTheme textTheme) {
+  TextStyle? book(TextStyle? style) {
+    if (style == null) return null;
+    final weight = style.fontWeight ?? FontWeight.w400;
+    return weight.index < FontWeight.w500.index
+        ? style.copyWith(fontWeight: FontWeight.w500)
+        : style;
+  }
+
+  return textTheme.copyWith(
+    displayLarge: book(textTheme.displayLarge),
+    displayMedium: book(textTheme.displayMedium),
+    displaySmall: book(textTheme.displaySmall),
+    headlineLarge: book(textTheme.headlineLarge),
+    headlineMedium: book(textTheme.headlineMedium),
+    headlineSmall: book(textTheme.headlineSmall),
+    titleLarge: book(textTheme.titleLarge),
+    titleMedium: book(textTheme.titleMedium),
+    titleSmall: book(textTheme.titleSmall),
+    bodyLarge: book(textTheme.bodyLarge),
+    bodyMedium: book(textTheme.bodyMedium),
+    bodySmall: book(textTheme.bodySmall),
+    labelLarge: book(textTheme.labelLarge),
+    labelMedium: book(textTheme.labelMedium),
+    labelSmall: book(textTheme.labelSmall),
+  );
+}
 
 const _lightTheme = 'light';
 const _darkTheme = 'dark';

@@ -30,6 +30,23 @@ int signedDataItemSize(DataItem item) => estimateDataItemSize(
 int bundleSize(List<int> itemSizes) =>
     32 + 64 * itemSizes.length + itemSizes.fold<int>(0, (a, b) => a + b);
 
+/// What a metadata write costs, and who pays for it.
+class MetadataWriteCost {
+  const MetadataWriteCost(this.summary, {this.paidBy = const []});
+
+  /// The cost, the way the upload review states it.
+  final UploadReviewSummary summary;
+
+  /// The wallets whose shared Turbo Credits are in the balance [summary]
+  /// counted. The write names them to Turbo (`x-paid-by`), as an upload
+  /// does, or Turbo charges the signer's own credits alone.
+  final List<String> paidBy;
+
+  /// The headers a write posted to Turbo sends.
+  Map<String, String> get headers =>
+      paidBy.isEmpty ? const {} : {'x-paid-by': paidBy.join(', ')};
+}
+
 /// What a metadata write costs: a license, a rename, a move. Small data
 /// items, posted to Turbo one by one, or as one AR transaction when Turbo
 /// uploads are off.
@@ -68,17 +85,17 @@ class MetadataWriteCostReader {
   ///
   /// [refusedByTurbo] is for after Turbo answered 402 to the write: whatever
   /// the allowance says, it is not free.
-  Future<UploadReviewSummary> read({
+  Future<MetadataWriteCost> read({
     required List<int> itemSizes,
     required Wallet wallet,
     required BigInt walletBalance,
     bool refusedByTurbo = false,
-  }) =>
+  }) async =>
       usesTurbo
-          ? _readTurbo(itemSizes, wallet, refusedByTurbo)
-          : _readAr(itemSizes, walletBalance);
+          ? await _readTurbo(itemSizes, wallet, refusedByTurbo)
+          : MetadataWriteCost(await _readAr(itemSizes, walletBalance));
 
-  Future<UploadReviewSummary> _readTurbo(
+  Future<MetadataWriteCost> _readTurbo(
     List<int> itemSizes,
     Wallet wallet,
     bool refusedByTurbo,
@@ -87,11 +104,13 @@ class MetadataWriteCostReader {
 
     // All three at once; none depends on another.
     final allowanceRead = _balances.getFreeAllowance(wallet);
-    final balanceRead = _orNull(() => _balances.getBalance(wallet), 'balance');
+    final balanceRead =
+        _orNull(() => _balances.getBalanceAndPaidBy(wallet), 'balance');
     final priceRead = _orNull(() => _price(itemSizes), 'price');
 
     final allowance = await allowanceRead;
-    final balance = await balanceRead;
+    final balanceAndPaidBy = await balanceRead;
+    final balance = balanceAndPaidBy?.balance;
     final price = await priceRead;
 
     final freeStatus = freeUploadStatusFor(
@@ -119,9 +138,12 @@ class MetadataWriteCostReader {
       turboUnreachable: price == null || balance == null || !allowance.isKnown,
     );
 
-    return UploadReviewSummary.fromPaymentInfo(
-      info,
-      refusedByTurbo: refusedByTurbo,
+    return MetadataWriteCost(
+      UploadReviewSummary.fromPaymentInfo(
+        info,
+        refusedByTurbo: refusedByTurbo,
+      ),
+      paidBy: balanceAndPaidBy?.paidBy ?? const [],
     );
   }
 

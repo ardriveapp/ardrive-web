@@ -16,6 +16,7 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
@@ -602,6 +603,42 @@ void main() {
     final next = cubit();
     await next.load();
     expect(next.state.ownerName, 'Phil');
+  });
+
+  group('the wallet check before publishing', () {
+    test('on another wallet, publishes nothing', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) async => true);
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.publish();
+
+      expect(c.state.stage, PublishStage.review);
+      verifyNever(
+          () => publisher.publish(any(), any(), onStep: any(named: 'onStep')));
+    });
+
+    test(
+        'Wander unavailable, then Cancel: publishes nothing, the review '
+        'stays', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => profile.logoutIfWalletMismatch()).thenThrow(
+        const ArConnectUnavailableException(
+          ArConnectUnavailableReason.noAnswer,
+        ),
+      );
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.publish();
+
+      expect(c.state.stage, PublishStage.review);
+      expect(c.state.canPublish, isTrue);
+      verifyNever(
+          () => publisher.publish(any(), any(), onStep: any(named: 'onStep')));
+    });
   });
 
   test('a failed publish says why and can be tried again', () async {

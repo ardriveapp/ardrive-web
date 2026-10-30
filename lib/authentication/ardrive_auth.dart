@@ -10,6 +10,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -336,18 +337,33 @@ class ArDriveAuthImpl implements ArDriveAuth {
     }
   }
 
+  /// How long signing out waits for each of Wander's answers: a short wait,
+  /// since nothing here needs one.
+  @visibleForTesting
+  static Duration wanderLogoutWait = const Duration(seconds: 3);
+
+  /// Best effort, and never waits on Wander: signing out must finish, and
+  /// clear this device, even when Wander is locked or its prompt was closed.
   Future<void> _disconnectFromArConnect() async {
-    final isExtensionAvailable = _arConnectService.isExtensionPresent();
-    if (isExtensionAvailable) {
-      final hasArConnectPermissions =
-          await _arConnectService.checkPermissions();
+    try {
+      if (!_arConnectService.isExtensionPresent()) return;
+
+      final hasArConnectPermissions = await ArConnectPrompt.ask(
+        _arConnectService,
+        _arConnectService.checkPermissions,
+        within: wanderLogoutWait,
+        askPerson: false,
+      );
       if (hasArConnectPermissions) {
-        try {
-          await _arConnectService.disconnect();
-        } catch (e, stacktrace) {
-          logger.e('Failed to disconnect from ArConnect', e, stacktrace);
-        }
+        await ArConnectPrompt.ask(
+          _arConnectService,
+          _arConnectService.disconnect,
+          within: wanderLogoutWait,
+          askPerson: false,
+        );
       }
+    } catch (e, stacktrace) {
+      logger.e('Failed to disconnect from ArConnect', e, stacktrace);
     }
   }
 

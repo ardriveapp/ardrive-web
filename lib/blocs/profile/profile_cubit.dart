@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/user.dart';
@@ -23,6 +24,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibilitySingleton;
   final ArDriveAuth _arDriveAuth;
+  final ArConnectService _arConnect;
   StreamSubscription<User?>? _authSubscription;
 
   ProfileCubit({
@@ -31,11 +33,13 @@ class ProfileCubit extends Cubit<ProfileState> {
     required Database db,
     required TabVisibilitySingleton tabVisibilitySingleton,
     required ArDriveAuth arDriveAuth,
+    ArConnectService? arConnectService,
   })  : _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
         _tabVisibilitySingleton = tabVisibilitySingleton,
         _arDriveAuth = arDriveAuth,
+        _arConnect = arConnectService ?? ArConnectService(),
         super(ProfileCheckingAvailability()) {
     // ArDriveAuth publishes the user again whenever it changes, notably when
     // the background balance refresh after login lands. Without following it,
@@ -55,9 +59,17 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  /// Where the app starts for the account saved on this device, if any.
+  ///
+  /// Never asks a browser wallet. A saved account unlocks with its password,
+  /// checked on this device (see [ProfileDao.loadDefaultProfile]), whatever
+  /// kind it is. Wander is asked only when a write or a private drive key
+  /// needs it, where [checkIfWalletMismatch] catches a Wander that is now on
+  /// another wallet. Asking it here kept the app on its logo while Wander was
+  /// locked, for good once its unlock prompt was closed, and a Wander on
+  /// another wallet deleted every drive on this device.
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
     // Profile unavailable - route to new profile screen
     if (profile == null) {
       // A publication has no account, and its in-memory database holds only
@@ -66,28 +78,8 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfilePromptAdd());
       return;
     }
-    // json wallet present - route to login screen
-    if (profile.profileType != ProfileType.arConnect.index) {
-      emit(ProfilePromptLogIn());
-      return;
-    }
 
-    // ArConnect extension missing - route to profile screen
-    if (!(arconnect.isExtensionPresent())) {
-      emit(ProfilePromptAdd());
-      return;
-    }
-
-    // ArConnect connected to expected wallet - route to login screen
-    if (await arconnect.checkPermissions() &&
-        profile.walletPublicKey == await arconnect.getPublicKey()) {
-      emit(ProfilePromptLogIn());
-      return;
-    }
-
-    // Unexpected ArConnect state - clean up and route to profile screen
-    await _deleteAllTables();
-    emit(ProfilePromptAdd());
+    emit(ProfilePromptLogIn());
   }
 
   /// With no profile, whatever the database holds was written by a visitor in
@@ -112,45 +104,57 @@ class ProfileCubit extends Cubit<ProfileState> {
         }
       });
 
-  /// Returns true if detected wallet or permissions change
-  Future<bool> checkIfWalletMismatch() async {
-    final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
+  /// Returns true if Wander is now on another wallet than the saved account,
+  /// or no longer lets ArDrive in. For any other account, false.
+  ///
+  /// Asked before a write. Wander is asked through [ArConnectPrompt], so a
+  /// locked Wander, or one whose prompt was closed, ends in Try again rather
+  /// than a wait; Cancel throws [ArConnectUnavailableException].
+  Future<bool> checkIfWalletMismatch() =>
+      _checkIfWalletMismatch(askPerson: true);
 
-    if (profile == null) {
+  Future<bool> _checkIfWalletMismatch({required bool askPerson}) async {
+    final profile = await _profileDao.defaultProfile().getSingleOrNull();
+
+    if (profile == null || profile.profileType != ProfileType.arConnect.index) {
       return false;
     }
 
-    if (profile.profileType == ProfileType.arConnect.index) {
-      try {
-        if (!(await arconnect.checkPermissions())) {
-          logger.w('ArConnect permissions changed');
-          throw Exception('ArConnect permissions changed');
-        }
-
-        final currentPublicKey = await arconnect.getPublicKey();
-        final savedPublicKey = profile.walletPublicKey;
-        if (currentPublicKey != savedPublicKey) {
-          return true;
-        }
-      } catch (e) {
-        if (_tabVisibilitySingleton.isTabFocused()) {
-          return false;
-        }
-
-        logger.e('Error checking ArConnect permissions', e);
-
-        bool isWalletMismatch = false;
-
-        await _tabVisibilitySingleton.onTabGetsFocusedFuture(() async {
-          isWalletMismatch = await checkIfWalletMismatch();
-        });
-
-        return isWalletMismatch;
+    try {
+      return await ArConnectPrompt.ask(
+        _arConnect,
+        () => _wanderIsElsewhere(profile.walletPublicKey),
+        askPerson: askPerson,
+      );
+    } on ArConnectUnavailableException {
+      rethrow;
+    } catch (e) {
+      if (_tabVisibilitySingleton.isTabFocused()) {
+        return false;
       }
+
+      logger.e('Error checking ArConnect permissions', e);
+
+      bool isWalletMismatch = false;
+
+      await _tabVisibilitySingleton.onTabGetsFocusedFuture(() async {
+        isWalletMismatch = await _checkIfWalletMismatch(askPerson: askPerson);
+      });
+
+      return isWalletMismatch;
+    }
+  }
+
+  /// Whether Wander is on a wallet other than [savedPublicKey]'s, or has
+  /// taken back ArDrive's permissions. Either way the account here can't
+  /// write through it, so both are handled as a switch.
+  Future<bool> _wanderIsElsewhere(String savedPublicKey) async {
+    if (!await _arConnect.checkPermissions()) {
+      logger.w('ArConnect permissions changed');
+      return true;
     }
 
-    return false;
+    return await _arConnect.getPublicKey() != savedPublicKey;
   }
 
   /// Returns true if a logout flow is initiated as a result of a detected wallet or permissions change
@@ -160,6 +164,26 @@ class ProfileCubit extends Cubit<ProfileState> {
       await logoutProfile();
     }
     return isMismatch;
+  }
+
+  /// [logoutIfWalletMismatch] for the check a sync runs in the background.
+  ///
+  /// Quiet: it asks Wander only once Wander has answered in this session,
+  /// so it never brings up Wander's unlock prompt on its own; it asks the
+  /// person nothing; and no answer counts as no mismatch. A switch while the
+  /// app is open is also caught by Wander's walletSwitch event, and anything
+  /// else at the next write.
+  Future<bool> logoutIfWalletMismatchInBackground() async {
+    if (!ArConnectPrompt.hasAnswered) return false;
+
+    try {
+      final isMismatch = await _checkIfWalletMismatch(askPerson: false);
+      if (isMismatch) await logoutProfile();
+      return isMismatch;
+    } on ArConnectUnavailableException catch (e) {
+      logger.i('Wander did not answer the background wallet check: $e');
+      return false;
+    }
   }
 
   Future<void> unlockDefaultProfile(

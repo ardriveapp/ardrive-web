@@ -32,15 +32,36 @@ class Database extends _$Database {
   /// A publication's database: in memory, kept nowhere (`PublicationMode`).
   Database.forPublication() : this(openPublicationConnection());
 
+  /// Deletes this device's database, for a start that cannot open it. The
+  /// next start creates a new one. Returns false if any of it would not go.
+  static Future<bool> deleteLocalData() => deleteLocalDatabase();
+
+  /// Opens the database, running any migration, and returns why it failed,
+  /// or null once it is open.
+  Future<Object?> openFailure() async {
+    try {
+      await customSelect('SELECT 1').get();
+      return null;
+    } catch (e) {
+      return e;
+    }
+  }
+
   @override
   int get schemaVersion => 31;
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator m) {
+        // Both run in one transaction, which also stamps the new version, so
+        // a start cut short (a reload, a closed tab) leaves the database as it
+        // was rather than half migrated: drift itself runs each statement on
+        // its own and writes `user_version` only after the callback returns.
+        onCreate: (Migrator m) => transaction(() async {
           logger.d('Creating database schema...');
-          return m.createAll();
-        },
-        onUpgrade: (Migrator m, int from, int to) async {
+          await _clearUnfinishedSchema();
+          await m.createAll();
+          await _stampSchemaVersion();
+        }),
+        onUpgrade: (Migrator m, int from, int to) => transaction(() async {
           try {
             logger.d('Migrating schemas from $from thru $to');
 
@@ -221,6 +242,8 @@ class Database extends _$Database {
               await m.createTable(arnsRecords);
               await m.createTable(antRecords);
             }
+
+            await _stampSchemaVersion();
           } catch (e, stacktrace) {
             logger.e(
               'CRITICAL! Failed to migrate database from $from to $to',
@@ -229,6 +252,59 @@ class Database extends _$Database {
             );
             rethrow;
           }
-        },
+        }),
       );
+
+  /// Writes [schemaVersion] inside the migration's transaction, so the schema
+  /// and the version that describes it commit together. drift writes it again
+  /// once the migration returns, to the same value.
+  Future<void> _stampSchemaVersion() =>
+      customStatement('PRAGMA user_version = $schemaVersion');
+
+  /// Clears what an earlier build's first start left when it was cut short.
+  ///
+  /// drift runs `onCreate` whenever `user_version` is 0. Builds before the
+  /// transaction above created the schema one statement at a time, so a
+  /// reload during the first start kept the tables and indexes made so far
+  /// with the version still 0, and every later start failed on the first
+  /// `CREATE INDEX` that already existed. Nothing can have been written to
+  /// such a database (no query runs until the schema is made), so what is
+  /// there goes, and the schema is made again in full, in its current shape.
+  ///
+  /// A database at version 0 that holds rows is not an unfinished first start,
+  /// and is refused rather than cleared.
+  Future<void> _clearUnfinishedSchema() async {
+    final leftovers = await customSelect(
+      "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite\\_%' "
+      "ESCAPE '\\' AND type IN ('table', 'view', 'trigger')",
+    ).get();
+    if (leftovers.isEmpty) return;
+
+    final tables = [
+      for (final row in leftovers)
+        if (row.read<String>('type') == 'table') row.read<String>('name'),
+    ];
+    for (final table in tables) {
+      final quoted = '"${table.replaceAll('"', '""')}"';
+      final hasRows = await customSelect(
+        'SELECT EXISTS (SELECT 1 FROM $quoted) AS has_rows',
+      ).getSingle();
+      if (hasRows.read<bool>('has_rows')) {
+        throw StateError(
+          'the database has no schema version but $table holds rows; '
+          'not clearing it',
+        );
+      }
+    }
+
+    logger.w('Clearing an unfinished schema: ${leftovers.length} objects');
+    // Views and triggers first, then tables, whose indexes go with them.
+    for (final type in ['view', 'trigger', 'table']) {
+      for (final row in leftovers) {
+        if (row.read<String>('type') != type) continue;
+        final name = row.read<String>('name').replaceAll('"', '""');
+        await customStatement('DROP ${type.toUpperCase()} IF EXISTS "$name"');
+      }
+    }
+  }
 }

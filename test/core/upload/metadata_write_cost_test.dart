@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -58,21 +59,29 @@ void main() {
           actualPaymentAmount: 100,
           quotedPaymentAmount: 100,
         ));
-    when(() => payments.getBalance(wallet: any(named: 'wallet')))
-        .thenAnswer((_) async => _credit);
+    when(() => payments.getBalanceAndPaidBy(wallet: any(named: 'wallet')))
+        .thenAnswer((_) async =>
+            TurboBalanceInterface(balance: _credit, paidBy: const []));
   });
+
+  void balance(BigInt winc, {List<String> paidBy = const []}) =>
+      when(() => payments.getBalanceAndPaidBy(wallet: any(named: 'wallet')))
+          .thenAnswer((_) async =>
+              TurboBalanceInterface(balance: winc, paidBy: paidBy));
 
   void allowance(TurboFreeAllowance allowance) =>
       when(() => payments.getFreeAllowance(wallet: any(named: 'wallet')))
           .thenAnswer((_) async => allowance);
 
-  Future read({bool refused = false, List<int> sizes = const [1800, 2100]}) =>
-      reader.read(
+  Future<UploadReviewSummary> read(
+          {bool refused = false, List<int> sizes = const [1800, 2100]}) async =>
+      (await reader.read(
         itemSizes: sizes,
         wallet: wallet,
         walletBalance: BigInt.zero,
         refusedByTurbo: refused,
-      );
+      ))
+          .summary;
 
   group('with Turbo uploads on', () {
     test('free when the free upload allowance covers every item', () async {
@@ -123,8 +132,7 @@ void main() {
 
     test('not covered when the credits are short: Add credits', () async {
       allowance(const TurboFreeAllowance.disabled());
-      when(() => payments.getBalance(wallet: any(named: 'wallet')))
-          .thenAnswer((_) async => perItem);
+      balance(perItem);
 
       final summary = await read();
 
@@ -136,7 +144,7 @@ void main() {
 
     test('an account Turbo does not know yet has no credits', () async {
       allowance(const TurboFreeAllowance.disabled());
-      when(() => payments.getBalance(wallet: any(named: 'wallet')))
+      when(() => payments.getBalanceAndPaidBy(wallet: any(named: 'wallet')))
           .thenThrow(TurboUserNotFound());
 
       final summary = await read();
@@ -170,7 +178,7 @@ void main() {
 
     test('no price when the balance cannot be read', () async {
       allowance(const TurboFreeAllowance.disabled());
-      when(() => payments.getBalance(wallet: any(named: 'wallet')))
+      when(() => payments.getBalanceAndPaidBy(wallet: any(named: 'wallet')))
           .thenThrow(Exception('blocked'));
 
       final summary = await read();
@@ -213,16 +221,43 @@ void main() {
       expect(summary.overFreeAllowance, isTrue);
     });
 
+    test('names the wallets whose shared credits it counted', () async {
+      allowance(const TurboFreeAllowance.disabled());
+      balance(_credit, paidBy: ['sharer-a', 'sharer-b']);
+
+      final cost = await reader.read(
+        itemSizes: const [2000],
+        wallet: wallet,
+        walletBalance: BigInt.zero,
+      );
+
+      expect(cost.summary.isCovered, isTrue);
+      expect(cost.paidBy, ['sharer-a', 'sharer-b']);
+      expect(cost.headers, {'x-paid-by': 'sharer-a, sharer-b'});
+    });
+
+    test('no shared credits, no header', () async {
+      allowance(const TurboFreeAllowance.disabled());
+
+      final cost = await reader.read(
+        itemSizes: const [2000],
+        wallet: wallet,
+        walletBalance: BigInt.zero,
+      );
+
+      expect(cost.headers, isEmpty);
+    });
+
     test('never the wallet', () async {
       allowance(const TurboFreeAllowance.disabled());
-      when(() => payments.getBalance(wallet: any(named: 'wallet')))
-          .thenAnswer((_) async => BigInt.zero);
+      balance(BigInt.zero);
 
-      final summary = await reader.read(
+      final summary = (await reader.read(
         itemSizes: const [2000],
         wallet: wallet,
         walletBalance: BigInt.from(10).pow(15),
-      );
+      ))
+          .summary;
 
       expect(summary.method, UploadMethod.turbo);
       expect(summary.offersPaymentChoice, isFalse);
@@ -238,11 +273,12 @@ void main() {
       when(() => arweave.getPrice(byteSize: any(named: 'byteSize')))
           .thenAnswer((_) async => BigInt.from(1000));
 
-      final summary = await reader.read(
+      final summary = (await reader.read(
         itemSizes: const [1800, 2100],
         wallet: wallet,
         walletBalance: BigInt.from(1000),
-      );
+      ))
+          .summary;
 
       verify(() => arweave.getPrice(byteSize: 32 + 64 * 2 + 3900)).called(1);
       expect(summary.method, UploadMethod.ar);
@@ -256,11 +292,12 @@ void main() {
       when(() => arweave.getPrice(byteSize: any(named: 'byteSize')))
           .thenAnswer((_) async => BigInt.from(1000));
 
-      final summary = await reader.read(
+      final summary = (await reader.read(
         itemSizes: const [1800],
         wallet: wallet,
         walletBalance: BigInt.from(999),
-      );
+      ))
+          .summary;
 
       expect(summary.isCovered, isFalse);
       expect(summary.needsCredits, isFalse);
@@ -270,11 +307,12 @@ void main() {
       when(() => arweave.getPrice(byteSize: any(named: 'byteSize')))
           .thenThrow(Exception('down'));
 
-      final summary = await reader.read(
+      final summary = (await reader.read(
         itemSizes: const [1800],
         wallet: wallet,
         walletBalance: BigInt.from(10).pow(15),
-      );
+      ))
+          .summary;
 
       expect(summary.priceUnavailable, isTrue);
       expect(summary.isCovered, isFalse);

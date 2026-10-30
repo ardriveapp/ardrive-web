@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
@@ -22,8 +23,6 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/core/upload/cost_calculator.dart';
-import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/publication/data/download_helper.dart';
@@ -32,6 +31,7 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
+import 'package:ardrive/pages/database_unavailable/database_unavailable_app.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -44,7 +44,6 @@ import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -61,7 +60,6 @@ import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
-import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -131,6 +129,37 @@ void main() async {
 
 Future<void> _startApp() async {
   runApp(const App());
+  if (kIsWeb && !PublicationMode.isOn) unawaited(_replaceAppIfDatabaseFails());
+}
+
+/// Shows [DatabaseUnavailableApp] in place of the app if the database will
+/// not open or migrate.
+///
+/// The app opens its database on the first read, which the first screen
+/// makes while the splash is up, and no screen after it can show without
+/// one. Started alongside the app rather than awaited before it, so a sound
+/// database opens no later than it did. Web only: the way out reloads the
+/// page.
+Future<void> _replaceAppIfDatabaseFails() async {
+  final failure = await db.openFailure();
+  if (failure == null) return;
+  logger.e('The database did not open', failure);
+  // The theme the app would have shown, read as UserPreferencesRepository
+  // reads it: that repository is part of what could not start.
+  final theme = localKeyValueStore.getString('currentTheme') ??
+      ThemeDetector().getOSDefaultTheme().name;
+  runApp(DatabaseUnavailableApp(
+    dark: theme == ArDriveThemes.dark.name,
+    onTryAgain: triggerHTMLPageReload,
+    onReset: () async {
+      try {
+        await db.close().timeout(const Duration(seconds: 5));
+      } catch (_) {}
+      final deleted = await Database.deleteLocalData();
+      if (deleted) triggerHTMLPageReload();
+      return deleted;
+    },
+  ));
 }
 
 Future<void> _initializeServices() async {
@@ -378,43 +407,10 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => HideBloc(
-            auth: context.read<ArDriveAuth>(),
-            uploadPreparationManager: ArDriveUploadPreparationManager(
-              uploadPreparePaymentOptions: UploadPaymentEvaluator(
-                appConfig: context.read<ConfigService>().config,
-                auth: context.read<ArDriveAuth>(),
-                turboBalanceRetriever: TurboBalanceRetriever(
-                  paymentService: context.read<PaymentService>(),
-                ),
-                turboUploadCostCalculator: TurboUploadCostCalculator(
-                  priceEstimator: TurboPriceEstimator(
-                    wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                    costCalculator: TurboCostCalculator(
-                      paymentService: context.read<PaymentService>(),
-                    ),
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  turboCostCalculator: TurboCostCalculator(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                ),
-                uploadCostEstimateCalculatorForAR:
-                    UploadCostEstimateCalculatorForAR(
-                  arweaveService: context.read<ArweaveService>(),
-                  pstService: context.read<PstService>(),
-                  arCostToUsd: ConvertArToUSD(
-                    arweave: context.read<ArweaveService>(),
-                  ),
-                ),
-              ),
-              uploadPreparer: UploadPreparer(
-                uploadPlanUtils: UploadPlanUtils(
-                  crypto: ArDriveCrypto(),
-                  arweave: context.read<ArweaveService>(),
-                  turboUploadService: context.read<TurboUploadService>(),
-                  driveDao: context.read<DriveDao>(),
-                ),
-              ),
+            costReader: MetadataWriteCostReader(
+              payments: context.read<PaymentService>(),
+              turbo: context.read<TurboUploadService>(),
+              arweave: context.read<ArweaveService>(),
             ),
             arweaveService: context.read<ArweaveService>(),
             crypto: ArDriveCrypto(),
