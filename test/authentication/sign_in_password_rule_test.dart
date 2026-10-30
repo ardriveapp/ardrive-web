@@ -310,6 +310,26 @@ void main() {
         expect(wander.prompts, 1);
       });
 
+      test('only v1 drives without a stored signature: no batch', () async {
+        onChain([
+          for (var i = 0; i < 3; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: 'right',
+              signatureType: DriveSignatureType.v1,
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+        when(() => arweave.getDriveSignatureForDrive(any(), any()))
+            .thenAnswer((_) async => null);
+
+        await auth.validateUser(wander.wallet, 'right');
+
+        expect(wander.batches, 0);
+        expect(wander.prompts, 1, reason: 'the oldest drive\'s own signature');
+      });
+
       test(
           'the gateway is down: no approval is asked for, and the error says '
           'so', () async {

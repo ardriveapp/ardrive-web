@@ -534,7 +534,18 @@ class ArDriveAuthImpl implements ArDriveAuth {
     if (batches && data.any((d) => d != null)) {
       final batch = await _driveUnlocker.signInOneApproval(
         wallet: wallet,
-        driveIds: [for (final tx in rest) tx.getTag(EntityTag.driveId)!],
+        driveIds: [
+          for (final tx in rest)
+            // A v1 drive without a stored signature needs its own v1
+            // signature: it is left to its own attempt.
+            if (await _driveUnlocker.opensWithV2Signature(
+              wallet: wallet,
+              driveId: tx.getTag(EntityTag.driveId)!,
+              signatureType: DriveSignatureType.fromString(
+                  tx.getTag(EntityTag.signatureType) ?? '1'),
+            ))
+              tx.getTag(EntityTag.driveId)!,
+        ],
         promptBudget: promptBudget,
       );
 

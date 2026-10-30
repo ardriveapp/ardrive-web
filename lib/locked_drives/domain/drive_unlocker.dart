@@ -282,6 +282,33 @@ class DriveUnlocker {
     return DriveSignatureBatch.signed;
   }
 
+  /// Whether [driveId]'s key comes from its v2 signature: a v2 drive, or a
+  /// v1 drive with a stored drive-signature record (encrypted under its v2
+  /// key). Only those belong in a batch: a v1 drive without a record needs
+  /// its own v1 signature, which a batch can't give.
+  ///
+  /// The record lookup is the one [tryPassword] makes for a v1 drive anyway,
+  /// and is cached for the session, so asking here first adds no request.
+  /// A lookup that fails leaves the drive out; its own attempt reports it.
+  Future<bool> opensWithV2Signature({
+    required Wallet wallet,
+    required String driveId,
+    required DriveSignatureType signatureType,
+    bool forSync = false,
+  }) async {
+    if (signatureType != DriveSignatureType.v1) return true;
+
+    try {
+      final record = forSync
+          ? await _arweave.getDriveSignatureForDriveOnSync(wallet, driveId)
+          : await _arweave.getDriveSignatureForDrive(wallet, driveId);
+      return record != null;
+    } catch (e) {
+      logger.w('Could not read the drive signature for $driveId: $e');
+      return false;
+    }
+  }
+
   /// Drive discovery's one approval, before it tries a password on
   /// [drives] one by one: [signInOneApproval] for the drives that would
   /// otherwise ask the wallet. Those are the ones with no key in memory or
@@ -317,6 +344,15 @@ class DriveUnlocker {
         }
       }
 
+      if (!await opensWithV2Signature(
+        wallet: wallet,
+        driveId: driveId,
+        signatureType: _signatureTypeOf(drive.tx),
+        forSync: true,
+      )) {
+        continue;
+      }
+
       pending.add(drive);
     }
 
@@ -336,6 +372,9 @@ class DriveUnlocker {
       quiet: true,
     );
   }
+
+  static DriveSignatureType _signatureTypeOf(TransactionCommonMixin tx) =>
+      DriveSignatureType.fromString(tx.getTag(EntityTag.signatureType) ?? '1');
 
   static DateTime _commitTime(TransactionCommonMixin tx) {
     try {
@@ -653,9 +692,22 @@ class DriveUnlocker {
         return const DriveUnlockResult.failed(DriveUnlockFailure.unavailable);
       }
 
+      final lockedTypes = {
+        for (final drive in _session.currentLockedDrives)
+          drive.driveId: drive.signatureType,
+      };
       final batch = await signInOneApproval(
         wallet: wallet,
-        driveIds: [driveId, ...others],
+        driveIds: [
+          for (final (id, type) in [
+            (driveId, _signatureTypeOf(metadata.tx)),
+            for (final other in others)
+              (other, lockedTypes[other] ?? DriveSignatureType.v1),
+          ])
+            if (await opensWithV2Signature(
+                wallet: wallet, driveId: id, signatureType: type))
+              id,
+        ],
       );
 
       if (batch == DriveSignatureBatch.declined) {

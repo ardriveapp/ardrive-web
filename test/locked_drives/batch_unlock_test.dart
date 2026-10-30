@@ -559,6 +559,137 @@ void main() {
     expect(result.failure, DriveUnlockFailure.walletDeclined);
   });
 
+  group('v1 drives in a batch', () {
+    /// A v1 drive with a stored signature record (no `Signature-Type` tag,
+    /// as the migration leaves it), a v2 drive, a v1 drive without a record,
+    /// and the same without its `Signature-Type` tag. All open with 'pw'.
+    Future<List<PrivateDriveFixture>> mixed() async {
+      final withRecord = await makeWebPrivateDrive(
+          wallet: jwk,
+          driveId: _id(0),
+          password: 'pw',
+          signatureType: DriveSignatureType.v1,
+          withRecord: true,
+          unixTime: 1700000000);
+      final v2 = await makeWebPrivateDrive(
+          wallet: jwk, driveId: _id(1), password: 'pw', unixTime: 1700000001);
+      final noRecord = await makeWebPrivateDrive(
+          wallet: jwk,
+          driveId: _id(2),
+          password: 'pw',
+          signatureType: DriveSignatureType.v1,
+          unixTime: 1700000002);
+      final untagged = await makeWebPrivateDrive(
+          wallet: jwk,
+          driveId: _id(3),
+          password: 'pw',
+          signatureType: DriveSignatureType.v1,
+          unixTime: 1700000003);
+      final untaggedTx = FakeDriveTx(
+        id: untagged.tx.id,
+        ownerAddress: owner,
+        tags: {
+          for (final tag in untagged.tx.tags)
+            if (tag.name != 'Signature-Type') tag.name: tag.value,
+        },
+      );
+      final drives = [
+        withRecord,
+        v2,
+        noRecord,
+        PrivateDriveFixture(
+          driveId: untagged.driveId,
+          tx: untaggedTx,
+          data: untagged.data,
+          key: untagged.key,
+        ),
+      ];
+      onChain(drives);
+      return drives;
+    }
+
+    test(
+        'discovery: v1 with a record and v2 are in the batch; v1 without one '
+        '(tagged or not) is left out and signs on its own', () async {
+      final drives = await mixed();
+      // The v2 signature the migration's record is encrypted under, and the
+      // v1 signatures, are separate prompts.
+      final budget = WalletPromptBudget(WalletPromptBudget.perPass);
+
+      expect(
+        await unlocker.signForDiscovery(
+            wallet: wander.wallet,
+            drives: metadataOf(drives),
+            promptBudget: budget),
+        DriveSignatureBatch.signed,
+      );
+      expect(wander.lastBatchSize, 2);
+      expect(session.holdsSignatureFor(owner, _id(0)), isTrue);
+      expect(session.holdsSignatureFor(owner, _id(1)), isTrue);
+      expect(session.holdsSignatureFor(owner, _id(2)), isFalse);
+      expect(session.holdsSignatureFor(owner, _id(3)), isFalse);
+
+      final opened = [
+        for (final drive in drives)
+          (await unlocker.resolveForDiscovery(
+            wallet: wander.wallet,
+            driveTx: drive.tx,
+            data: drive.data,
+            password: 'pw',
+            mayAskWallet: false,
+            promptBudget: budget,
+          ))
+              .opened,
+      ];
+      expect(opened, [true, true, true, true]);
+      // The batch, then one v1 signature for each drive without a record.
+      expect(wander.prompts, 3);
+    });
+
+    test('discovery: only v1 drives without a record means no batch', () async {
+      final drives = (await mixed()).sublist(2);
+
+      expect(
+        await unlocker.signForDiscovery(
+            wallet: wander.wallet, drives: metadataOf(drives)),
+        DriveSignatureBatch.notAsked,
+      );
+      expect(wander.batches, 0);
+      expect(wander.prompts, 0);
+    });
+
+    test(
+        'unlock with the others: the batch leaves out the v1 drive without a '
+        'record, which is asked for on its own', () async {
+      final drives = (await mixed()).sublist(0, 3);
+      final types = [
+        DriveSignatureType.v1,
+        DriveSignatureType.v2,
+        DriveSignatureType.v1,
+      ];
+      session.setLockedDrives(owner, [
+        for (var i = 0; i < drives.length; i++)
+          LockedDrive(
+            driveId: drives[i].driveId,
+            ownerAddress: owner,
+            signatureType: types[i],
+            lastUpdated: DateTime(2025),
+          ),
+      ]);
+
+      final result = await unlocker.unlock(
+        wallet: wander.wallet,
+        profileKey: profileKey,
+        driveId: _id(1),
+        password: 'pw',
+      );
+
+      expect(wander.lastBatchSize, 2);
+      expect(result.openedDriveIds, hasLength(3));
+      expect(wander.prompts, 2, reason: 'the batch, then the v1 signature');
+    });
+  });
+
   group('checking a drive signature', () {
     test(
         'the deterministic signature passes; another drive\'s or random '
