@@ -182,6 +182,62 @@ void main() {
     });
 
     test(
+        'a drive someone else owns, opened here by its share link, keeps its '
+        'rows; only its dead key goes', () async {
+      await db.profileDao.addProfile(
+          'user.username', 'old password', wallet, ProfileType.arConnect);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'shared',
+            rootFolderId: 'rootX',
+            ownerAddress: 'someone-else',
+            name: 'Shared with me',
+            privacy: 'private',
+            encryptedKey: Value(Uint8List(48)),
+            keyEncryptionIv: Value(Uint8List(12)),
+          ));
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'own',
+            rootFolderId: 'root',
+            ownerAddress: address,
+            name: 'Mine',
+            privacy: 'private',
+            encryptedKey: Value(Uint8List(48)),
+            keyEncryptionIv: Value(Uint8List(12)),
+          ));
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.arConnect, _wallet(DeviceUnlockMethod.wander));
+
+      final rows = await db.select(db.drives).get();
+      expect(rows.map((d) => d.id), ['shared']);
+      expect(rows.single.encryptedKey, isNull);
+    });
+
+    test(
+        'a refusal on a profile from before 3.0 keeps the profile and the '
+        'drive keys it remembered', () async {
+      await db.profileDao.addProfile(
+          'user.username', 'old password', wallet, ProfileType.arConnect);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'remembered',
+            rootFolderId: 'root',
+            ownerAddress: address,
+            name: 'Remembered',
+            privacy: 'private',
+            encryptedKey: Value(Uint8List(48)),
+            keyEncryptionIv: Value(Uint8List(12)),
+          ));
+
+      await expectLater(
+          auth.loginWithWallet(wallet, ProfileType.arConnect, _Refusing()),
+          throwsA(isA<DeviceUnlockRefusedException>()));
+
+      expect((await profile()).unlockMethod, DeviceUnlockMethod.password.value);
+      final rows = await db.select(db.drives).get();
+      expect(rows.single.encryptedKey, isNotNull);
+    });
+
+    test(
         'an existing MetaMask account\'s typed password is tried on its '
         'drives and kept for the session only', () async {
       when(() => arweave.getUniqueUserDriveEntityTxs(any(),

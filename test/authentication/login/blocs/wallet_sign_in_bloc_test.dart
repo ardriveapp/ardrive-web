@@ -205,6 +205,23 @@ void main() {
       );
 
       blocTest<LoginBloc, LoginState>(
+        'a record lookup that fails is never taken for a new account',
+        build: bloc,
+        setUp: () => when(() => arweave.getFirstTxForWallet(any()))
+            .thenThrow(Exception('gateway unreachable')),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 200),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginFailure>());
+          expect(derivedFrom, isNull);
+          verifyNever(() => auth.loginWithWallet(any(), any(), any(),
+              sourceWalletAddress: any(named: 'sourceWalletAddress'),
+              password: any(named: 'password'),
+              skipDriveCheck: any(named: 'skipDriveCheck')));
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
         'a verification record: an existing account, whose password is asked',
         build: bloc,
         setUp: () => when(() => arweave.getFirstTxForWallet(any()))
@@ -377,6 +394,60 @@ void main() {
         expect(capturedSource().method, DeviceUnlockMethod.wander);
         verifyNever(() => auth.unlockWithWallet(any()));
       },
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'Continue on a Phantom profile from before 3.0 whose wallet derives '
+      'another account: refused, and the saved profile is kept',
+      build: bloc,
+      setUp: () {
+        when(() => auth.isUserLoggedIn()).thenAnswer((_) async => true);
+        when(() => auth.savedAccount())
+            .thenAnswer((_) async => const SavedAccount(
+                  address: 'not-the-derived-account',
+                  profileType: ProfileType.json,
+                  unlockMethod: DeviceUnlockMethod.password,
+                  sourceWalletAddress: 'So1Addr',
+                  publicKey: 'public-key',
+                ));
+        when(() => solana.connect(provider: any(named: 'provider'))).thenAnswer(
+            (_) async => const SolanaConnection(
+                address: 'So1Addr', providerType: 'phantom'));
+        when(() => solana.signMessage(any()))
+            .thenAnswer((_) async => Uint8List.fromList(List.filled(64, 3)));
+      },
+      act: (bloc) => bloc.add(const UnlockWithWallet()),
+      wait: const Duration(milliseconds: 300),
+      expect: () => [
+        isA<LoginWaitingOnWallet>(),
+        isA<PromptWalletUnlock>().having(
+            (s) => s.problem, 'problem', WalletUnlockProblem.notThisAccount),
+      ],
+      verify: (_) {
+        verifyNever(() => auth.loginWithWallet(any(), any(), any(),
+            sourceWalletAddress: any(named: 'sourceWalletAddress'),
+            password: any(named: 'password'),
+            skipDriveCheck: any(named: 'skipDriveCheck')));
+        verifyNever(() => auth.logout());
+      },
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'Continue: saying no to connecting Phantom is a refusal, not another '
+      'account',
+      build: bloc,
+      setUp: () {
+        saved(account(DeviceUnlockMethod.solana,
+            type: ProfileType.json, source: 'So1Addr'));
+        when(() => solana.connect(provider: any(named: 'provider')))
+            .thenAnswer((_) async => null);
+      },
+      act: (bloc) => bloc.add(const UnlockWithWallet()),
+      expect: () => [
+        isA<LoginWaitingOnWallet>(),
+        isA<PromptWalletUnlock>()
+            .having((s) => s.problem, 'problem', WalletUnlockProblem.declined),
+      ],
     );
 
     blocTest<LoginBloc, LoginState>(

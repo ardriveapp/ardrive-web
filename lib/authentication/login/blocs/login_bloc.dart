@@ -1758,8 +1758,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           };
           final connection = await _walletAnswer(
               cancel, _solanaProviderService.connect(provider: provider));
-          if (connection == null ||
-              connection.address != account.sourceWalletAddress) {
+          if (connection == null) {
+            // Said no to connecting.
+            problem(WalletUnlockProblem.declined);
+            return;
+          }
+          if (connection.address != account.sourceWalletAddress) {
             problem(WalletUnlockProblem.otherAccount);
             return;
           }
@@ -1773,6 +1777,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
               deriveMnemonicFromSolanaSignature(signature)
                   .then(_walletFromMnemonic),
             );
+            // The profile from before 3.0 is replaced only by the account it
+            // holds: another one (a wallet that signs differently, say)
+            // would delete what may be its only copy.
+            if (await wallet.getAddress() != account.address) {
+              problem(WalletUnlockProblem.notThisAccount);
+              return;
+            }
             user = await _arDriveAuth.loginWithWallet(
               wallet,
               ProfileType.json,

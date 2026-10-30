@@ -441,10 +441,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
     final saved = await _userRepository.getSavedProfile();
     if (saved == null) return;
     if (saved.id == address) {
-      final dropped = await _databaseHelpers.driveDao.discardStoredDriveKeys();
-      if (dropped > 0) {
-        logger.i('Dropped $dropped drive keys remembered under the old '
-            'password; those drives start locked');
+      final dropped = await _databaseHelpers.driveDao
+          .discardStoredDriveKeys(ownerAddress: address);
+      if (dropped.own + dropped.shared > 0) {
+        logger.i('Dropped drive keys remembered under the old password: '
+            '${dropped.own} own drives start locked, ${dropped.shared} '
+            'shared drives need their link again');
       }
     }
     await _userRepository.deleteUser();

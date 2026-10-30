@@ -65,6 +65,19 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
   bool _rejectionSeen = false;
 
   Future<void> _create(DriveCreateCubit cubit) async {
+    // Arweave is asked before a drive password is set: the list here may
+    // not show drives the user has. If it finds one, the field to enter the
+    // drive password appears instead.
+    if (cubit.drivePasswordAsk == DrivePasswordAsk.set) {
+      setState(() => _checking = true);
+      try {
+        await cubit.confirmDrivePasswordAsk();
+      } finally {
+        if (mounted) setState(() => _checking = false);
+      }
+      if (!mounted) return;
+      if (cubit.drivePasswordAsk == DrivePasswordAsk.enter) return;
+    }
     switch (cubit.drivePasswordAsk) {
       case null:
         await cubit.submit(_driveNameController.text);

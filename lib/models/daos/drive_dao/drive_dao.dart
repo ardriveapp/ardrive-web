@@ -346,18 +346,39 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return detached;
   }
 
-  /// Drops every drive key stored on this device, with the drives they
-  /// open, rows and contents: for keys wrapped by a device key nothing can
-  /// make any more (a profile before 3.0 that a browser wallet now signs in
-  /// to without its password). Those drives show as locked until unlocked
-  /// again. Returns how many.
-  Future<int> discardStoredDriveKeys() async {
+  /// Drops the drive keys stored on this device under a device key nothing
+  /// can make any more (a profile from before 3.0 that a browser wallet now
+  /// signs in to without its password).
+  ///
+  /// - [ownerAddress]'s own drives go, rows and contents: they show as
+  ///   locked, and their password opens them again.
+  /// - A drive someone else owns, opened here by its share link, keeps its
+  ///   rows; only the dead key goes. Detaching it would lose it for good, as
+  ///   nothing lists it but this device. Its share link opens it again.
+  ///
+  /// Returns how many of each.
+  Future<({int own, int shared})> discardStoredDriveKeys({
+    required String ownerAddress,
+  }) async {
     final stored =
         await (select(drives)..where((d) => d.encryptedKey.isNotNull())).get();
+    var own = 0;
+    var shared = 0;
     for (final drive in stored) {
-      await detachDrive(drive.id);
+      if (drive.ownerAddress == ownerAddress) {
+        await detachDrive(drive.id);
+        own++;
+      } else {
+        await (update(drives)..where((d) => d.id.equals(drive.id))).write(
+          const DrivesCompanion(
+            encryptedKey: Value(null),
+            keyEncryptionIv: Value(null),
+          ),
+        );
+        shared++;
+      }
     }
-    return stored.length;
+    return (own: own, shared: shared);
   }
 
   /// How many of [ownerAddress]'s drive keys this device remembers, for

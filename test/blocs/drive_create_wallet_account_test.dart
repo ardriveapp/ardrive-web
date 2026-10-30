@@ -7,6 +7,7 @@ import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/models.dart' show Drive;
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/upload_entry/presentation/first_upload.dart';
 import 'package:ardrive/user/user.dart';
@@ -18,6 +19,8 @@ import 'package:mocktail/mocktail.dart';
 import '../test_utils/utils.dart';
 
 class _MockDriveUnlocker extends Mock implements DriveUnlocker {}
+
+class _FakeDriveTx extends Fake implements TransactionCommonMixin {}
 
 const _strong = 'Velvet harbour 47 lanterns drift';
 
@@ -32,6 +35,7 @@ void main() {
   late DriveUnlockSession session;
   late _MockDriveUnlocker unlocker;
   late String address;
+  late MockArweaveService arweave;
 
   setUpAll(() {
     registerFallbackValue(getTestWallet());
@@ -68,6 +72,10 @@ void main() {
     drivesCubit = MockDrivesCubit();
     session = DriveUnlockSession();
     unlocker = _MockDriveUnlocker();
+    arweave = MockArweaveService();
+    // Arweave has no private drive of theirs unless a test says so.
+    when(() => arweave.getFirstPrivateDriveTx(any(),
+        maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => null);
     when(() => unlocker.session).thenReturn(session);
     when(() => profileCubit.logoutIfWalletMismatch())
         .thenAnswer((_) async => false);
@@ -86,7 +94,7 @@ void main() {
 
   DriveCreateCubit cubit({DrivePrivacy privacy = DrivePrivacy.private}) =>
       DriveCreateCubit(
-        arweave: MockArweaveService(),
+        arweave: arweave,
         turboUploadService: DontUseUploadService(),
         driveDao: driveDao,
         profileCubit: profileCubit,
@@ -132,6 +140,7 @@ void main() {
         'private drive uses it', () async {
       final first = cubit();
       expect(first.drivePasswordAsk, DrivePasswordAsk.set);
+      expect(await first.confirmDrivePasswordAsk(), DrivePasswordAsk.set);
 
       await first.submit('Photos', newDrivePassword: _strong);
       expect(session.newDrivePassword(address), _strong);
@@ -148,6 +157,7 @@ void main() {
         'a drive password that breaks the new-account rules is refused, '
         'and nothing is made', () async {
       final create = cubit();
+      await create.confirmDrivePasswordAsk();
 
       await expectLater(create.submit('Photos', newDrivePassword: 'short'),
           throwsArgumentError);
@@ -155,6 +165,40 @@ void main() {
 
       neverCreated();
       expect(session.newDrivePassword(address), isNull);
+    });
+
+    test(
+        'a private drive the local list doesn\'t show yet, found on Arweave: '
+        'the drive password is entered, never set', () async {
+      when(() => arweave.getFirstPrivateDriveTx(any(),
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => _FakeDriveTx());
+      final create = cubit();
+      expect(create.drivePasswordAsk, DrivePasswordAsk.set);
+
+      expect(await create.confirmDrivePasswordAsk(), DrivePasswordAsk.enter);
+      expect(create.drivePasswordAsk, DrivePasswordAsk.enter);
+      await expectLater(create.submit('Photos', newDrivePassword: _strong),
+          throwsArgumentError);
+      neverCreated();
+    });
+
+    test('Arweave not answering counts as having drives: entered, not set',
+        () async {
+      when(() => arweave.getFirstPrivateDriveTx(any(),
+              maxRetries: any(named: 'maxRetries')))
+          .thenThrow(Exception('gateway down'));
+      final create = cubit();
+
+      expect(await create.confirmDrivePasswordAsk(), DrivePasswordAsk.enter);
+    });
+
+    test('a password is never set before Arweave is asked', () async {
+      final create = cubit();
+
+      await expectLater(
+          create.submit('Photos', newDrivePassword: _strong), throwsStateError);
+      neverCreated();
     });
 
     test('with a private drive enters the drive password, checked on it',
@@ -210,6 +254,42 @@ void main() {
   });
 
   group('the first upload', () {
+    test('makes a private drive, never a public one', () {
+      final create = firstDriveCubit(
+        arweave: arweave,
+        turboUploadService: DontUseUploadService(),
+        driveDao: driveDao,
+        profileCubit: profileCubit,
+        drivesCubit: drivesCubit,
+        driveUnlocker: unlocker,
+      );
+
+      expect(create.privacy, DrivePrivacy.private);
+      expect(create.state.privacy, DrivePrivacy.private);
+      expect(create.form.control('privacy').value, DrivePrivacy.private.name);
+    });
+
+    test(
+        'a private drive found on Arweave: no password is set, Create '
+        'drive checks it', () async {
+      when(() => arweave.getFirstPrivateDriveTx(any(),
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => _FakeDriveTx());
+      var asked = 0;
+
+      final outcome = await makeFirstPrivateDrive(
+        cubit: cubit(),
+        askNewDrivePassword: () async {
+          asked++;
+          return _strong;
+        },
+      );
+
+      expect(outcome, FirstUploadDrive.needsDrivePasswordChecked);
+      expect(asked, 0);
+      neverCreated();
+    });
+
     test(
         'a browser wallet account sets the drive password, then a private '
         'My files is made with it', () async {

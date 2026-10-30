@@ -412,6 +412,7 @@ class _WalletUnlock extends StatelessWidget {
       WalletUnlockProblem.declined => s.welcomeBackDeclined,
       WalletUnlockProblem.mismatch => s.welcomeBackMismatch,
       WalletUnlockProblem.otherAccount => s.welcomeBackOtherAccount,
+      WalletUnlockProblem.notThisAccount => s.welcomeBackNotThisAccount,
       WalletUnlockProblem.failed => s.welcomeBackFailed,
     };
 

@@ -307,7 +307,7 @@ Account: 0x<address in lowercase>
 Version: 2
 ```
 
-**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and looks for a transaction from the auth key's Arweave address. If there is one, the account is version 1 and its password is asked; if there is none, it is version 2. Every version 1 account has that record, because its sign-up posted it.
+**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and looks for a transaction from the auth key's Arweave address. If there is one, the account is version 1 and its password is asked; if there is none, it is version 2. A lookup that fails is an error, never "none". Version 1 sign-up posted that record, so a version 1 account normally has it; one whose sign-up stopped before the record was posted, or whose record a gateway can't find, would be taken for version 2 and get another wallet.
 
 `personal_sign` from an ordinary Ethereum account is deterministic (RFC 6979). Smart-contract and MPC wallets may not be, under either version.
 

@@ -119,10 +119,12 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   /// [drivePasswordAsk].
   bool get needsDrivePassword => drivePasswordAsk != null;
 
-  /// Whether [address] has a private drive: one listed, or one locked. A
-  /// drive list that hasn't loaded counts as having one, so a password is
-  /// checked rather than set over drives not seen yet.
+  /// Whether [address] has a private drive: one listed, or one locked, or
+  /// one the network check found ([confirmDrivePasswordAsk]). A drive list
+  /// that hasn't loaded counts as having one, so a password is checked rather
+  /// than set over drives not seen yet.
   bool _hasPrivateDrives(String address) {
+    if (_privateDrivesOnChain == true) return true;
     final drives = _drivesCubit.state;
     if (drives is! DrivesLoadSuccess) return true;
     return drives.userDrives.any((d) => d.isPrivate) ||
@@ -130,6 +132,35 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         (_driveUnlocker?.session.currentLockedDrives
                 .any((drive) => drive.ownerAddress == address) ??
             false);
+  }
+
+  /// What Arweave said about the user's private drives: true when it has
+  /// one, false when it has none, null until asked or when it couldn't
+  /// answer.
+  bool? _privateDrivesOnChain;
+
+  /// [drivePasswordAsk], checked against Arweave before a drive password is
+  /// *set*: a local list can be empty because the drives haven't synced or
+  /// discovery failed, and a password set then would split the user's
+  /// drives across two passwords. Arweave having a private drive of theirs,
+  /// or not answering, makes it [DrivePasswordAsk.enter].
+  Future<DrivePasswordAsk?> confirmDrivePasswordAsk() async {
+    final ask = drivePasswordAsk;
+    if (ask != DrivePasswordAsk.set) return ask;
+
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    try {
+      final first = await _arweave.getFirstPrivateDriveTx(
+        profile.user.wallet,
+        maxRetries: unlockMaxRetries,
+      );
+      _privateDrivesOnChain = first != null;
+    } catch (e) {
+      logger.w('Could not check for private drives on Arweave: $e');
+      // Unknown: never set a password over drives that may exist.
+      _privateDrivesOnChain = true;
+    }
+    return drivePasswordAsk;
   }
 
   /// The password a new private drive's key is made from: the drive password
@@ -182,6 +213,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     final ask = drivePasswordAsk;
 
     if (ask == DrivePasswordAsk.set) {
+      if (_privateDrivesOnChain != false) {
+        throw StateError('Check for private drives on Arweave first: '
+            'confirmDrivePasswordAsk');
+      }
       if (newDrivePassword == null ||
           assessNewPassword(newDrivePassword) != PasswordStrength.strong) {
         throw ArgumentError(

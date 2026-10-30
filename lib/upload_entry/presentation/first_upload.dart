@@ -53,7 +53,9 @@ Future<FirstUploadDrive> makeFirstPrivateDrive({
 }) async {
   try {
     String? newDrivePassword;
-    switch (cubit.drivePasswordAsk) {
+    // Checked on Arweave first: a password is never set over private
+    // drives the local list doesn't show yet.
+    switch (await cubit.confirmDrivePasswordAsk()) {
       case DrivePasswordAsk.set:
         newDrivePassword = await askNewDrivePassword();
         if (newDrivePassword == null) return FirstUploadDrive.cancelled;
@@ -76,6 +78,26 @@ Future<FirstUploadDrive> makeFirstPrivateDrive({
   }
 }
 
+/// The cubit that makes the first upload's drive: always private, never a
+/// public drive by default (Arweave is permanent).
+DriveCreateCubit firstDriveCubit({
+  required ArweaveService arweave,
+  required TurboUploadService turboUploadService,
+  required DriveDao driveDao,
+  required ProfileCubit profileCubit,
+  required DrivesCubit drivesCubit,
+  required DriveUnlocker driveUnlocker,
+}) =>
+    DriveCreateCubit(
+      privacy: DrivePrivacy.private,
+      arweave: arweave,
+      turboUploadService: turboUploadService,
+      driveDao: driveDao,
+      profileCubit: profileCubit,
+      drivesCubit: drivesCubit,
+      driveUnlocker: driveUnlocker,
+    );
+
 /// Upload pressed with no drive at all (Getting started's "Upload your first
 /// files", or Upload anywhere else): makes "My files" and carries the upload
 /// into it, through the same waiting upload a drive chosen from a list uses.
@@ -94,8 +116,7 @@ Future<void> uploadIntoFirstDrive(
   if (profile is! ProfileLoggedIn) return;
 
   final cubit = newCubit?.call() ??
-      DriveCreateCubit(
-        privacy: DrivePrivacy.private,
+      firstDriveCubit(
         arweave: context.read<ArweaveService>(),
         turboUploadService: context.read<TurboUploadService>(),
         driveDao: context.read<DriveDao>(),

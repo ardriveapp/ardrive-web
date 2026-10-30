@@ -224,6 +224,10 @@ enum WalletUnlockProblem {
   /// The wallet is on another account than the one saved here.
   otherAccount,
 
+  /// The wallet derives another ArDrive account than the one saved here
+  /// (a profile from before 3.0). Nothing was changed.
+  notThisAccount,
+
   /// Anything else.
   failed,
 }
