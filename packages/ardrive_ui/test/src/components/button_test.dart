@@ -248,4 +248,47 @@ void main() {
     );
     expect(tester.getSize(find.byType(ArDriveButtonNew)).height, 40);
   });
+
+  testWidgets(
+      'an external button ends its label with the new-window icon and '
+      'makes room for it', (tester) async {
+    Future<Size> pump({required bool external}) async {
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: ArDriveButtonNew(
+                  text: 'Get a name',
+                  typography: ArDriveTypographyNew.of(context),
+                  variant: ButtonVariant.primary,
+                  external: external,
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.getSize(find.byType(ArDriveButtonNew));
+    }
+
+    final plain = await pump(external: false);
+    expect(find.byIcon(ArDriveIcons.newWindow().icon), findsNothing);
+
+    final external = await pump(external: true);
+    final icon = find.byIcon(ArDriveIcons.newWindow().icon);
+    expect(icon, findsOneWidget);
+    // After the label, in the label's colour.
+    expect(tester.getRect(icon).left,
+        greaterThan(tester.getRect(find.text('Get a name')).right));
+    expect(tester.widget<Icon>(icon).color,
+        ArDriveColorTokens.darkMode().textOnPrimary);
+    expect(external.width, greaterThan(plain.width));
+    // Read as the label alone: the icon is decoration.
+    final semantics = tester.ensureSemantics();
+    await tester.pump();
+    expect(find.bySemanticsLabel('Get a name'), findsOneWidget);
+    semantics.dispose();
+  });
 }

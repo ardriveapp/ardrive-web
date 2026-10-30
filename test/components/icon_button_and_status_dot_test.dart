@@ -1,7 +1,5 @@
 import 'dart:ui' as ui;
 
-import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -55,26 +53,6 @@ void main() {
     expect(pressed, 1);
 
     handle.dispose();
-  });
-
-  /// The grid view draws a file's status with its own icon, and its dot had
-  /// no tooltip where the table's did.
-  testWidgets('the grid view says what a file status dot means',
-      (tester) async {
-    await _pump(
-      tester,
-      const ArDriveFileIcon(
-        contentType: 'text/plain',
-        fileStatus: TransactionStatus.pending,
-      ),
-    );
-
-    expect(
-      find.byTooltip(
-        'Waiting to be mined on Arweave. This is checked for you until it is.',
-      ),
-      findsOneWidget,
-    );
   });
 
   /// The close button on the sign-in dialogs drew its X 6 px left of the

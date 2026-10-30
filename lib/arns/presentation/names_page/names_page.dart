@@ -1185,6 +1185,7 @@ Future<void> showArNSWalletDialog(
         value: walletCubit,
         child: Builder(
           builder: (sheetContext) => ArDriveBottomSheet(
+            closeLabel: strings.close,
             title: changing
                 ? strings.arnsChangeArNSWallet
                 : strings.arnsLinkSolanaWallet,

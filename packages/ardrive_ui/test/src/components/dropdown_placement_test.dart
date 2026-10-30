@@ -127,4 +127,33 @@ void main() {
 
     expect(menuRect(tester).bottom, lessThanOrEqualTo(600));
   });
+
+  // A menu hanging from its button's bottom (the drives list's and the
+  // revision menu's) that opened up kept the bottom edge as its anchor: its
+  // lower edge sat on the button's and covered it and the Sync button next to
+  // it. Opening up it takes the button's top.
+  const hangsBelow = Aligned(
+    follower: Alignment.topRight,
+    target: Alignment.bottomRight,
+    offset: Offset(0, 4),
+  );
+
+  testWidgets('a menu hanging below its button opens up clear of the button',
+      (tester) async {
+    await openMenuAt(tester, top: 700, items: 3, anchor: hangsBelow);
+
+    final button = tester.getRect(find.text('menu'));
+    final rect = menuRect(tester);
+    expect(rect.bottom, lessThanOrEqualTo(button.top),
+        reason: 'it must not cover its own button');
+    expect(rect.top, greaterThanOrEqualTo(0));
+  });
+
+  testWidgets('a menu hanging below its button still opens below it',
+      (tester) async {
+    await openMenuAt(tester, top: 100, items: 3, anchor: hangsBelow);
+
+    final button = tester.getRect(find.text('menu'));
+    expect(menuRect(tester).top, greaterThanOrEqualTo(button.bottom));
+  });
 }

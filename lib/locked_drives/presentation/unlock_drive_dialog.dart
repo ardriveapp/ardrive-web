@@ -74,18 +74,11 @@ void _sayHowManyOpened(ScaffoldMessengerState? messenger, int count) {
   }
 
   final context = messenger.context;
-  final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text(
-        appLocalizationsOf(context).unlockedDrives(count),
-        style: ArDriveTypographyNew.of(context)
-            .paragraphNormal(color: colors.textHigh),
-      ),
-      backgroundColor: colors.containerL3,
-      duration: const Duration(seconds: 4),
-    ),
+  showArDriveToast(
+    messenger,
+    text: appLocalizationsOf(context).unlockedDrives(count),
+    type: ArDriveStatusType.success,
   );
 }
 
@@ -182,6 +175,9 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
         return ArDriveStandardModalNew(
           key: const Key('unlockDriveDialog'),
           title: strings.unlockDriveTitle,
+          // Leaves like Cancel, which works while an unlock runs too.
+          hasCloseButton: true,
+          closeLabel: strings.close,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(

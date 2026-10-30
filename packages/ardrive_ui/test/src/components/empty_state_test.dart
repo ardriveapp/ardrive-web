@@ -89,4 +89,14 @@ void main() {
     expect(size.height,
         tester.view.physicalSize.height / tester.view.devicePixelRatio);
   });
+
+  testWidgets('an external action carries the new-window icon', (tester) async {
+    await tester.pumpWidget(wrap(ArDriveEmptyState(
+      title: 'No names yet',
+      actionLabel: 'Get a name',
+      onAction: () {},
+      actionIsExternal: true,
+    )));
+    expect(find.byIcon(ArDriveIcons.newWindow().icon), findsOneWidget);
+  });
 }

@@ -234,30 +234,14 @@ void showPublishSettledNotice(
   AppLocalizations strings,
   String? link,
 ) {
-  final colors = ArDriveTheme.of(messenger.context).themeData.colorTokens;
-  messenger.showSnackBar(
-    SnackBar(
-      // Typography reads the screen width, known where the snackbar shows.
-      content: Builder(
-        builder: (context) => Text(
-          link != null
-              ? strings.publishDoneTitle
-              : strings.publishStoppedNotice,
-          style: ArDriveTypographyNew.of(context)
-              .paragraphNormal(color: colors.textHigh),
-        ),
-      ),
-      backgroundColor: colors.containerL3,
-      duration: const Duration(seconds: 10),
-      action: link == null
-          ? null
-          : SnackBarAction(
-              label: strings.publishOpen,
-              backgroundColor: colors.containerL3,
-              textColor: colors.textHigh,
-              onPressed: () => openUrl(url: link),
-            ),
-    ),
+  showArDriveToast(
+    messenger,
+    text:
+        link != null ? strings.publishDoneTitle : strings.publishStoppedNotice,
+    type: link != null ? ArDriveStatusType.success : ArDriveStatusType.warning,
+    duration: const Duration(seconds: 10),
+    actionLabel: link == null ? null : strings.publishOpen,
+    onAction: link == null ? null : () => openUrl(url: link),
   );
 }
 

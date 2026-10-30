@@ -69,17 +69,11 @@ Future<void> copyPublicationLink(
 
 /// The app's own "Copied!" snackbar, as a failed sync shows its message.
 void _sayCopied(BuildContext context) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colors = ArDriveTheme.of(context).themeData.colorTokens;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        appLocalizationsOf(context).copied,
-        style: typography.paragraphNormal(color: colors.textHigh),
-      ),
-      backgroundColor: colors.containerL3,
-      duration: const Duration(seconds: 2),
-    ),
+  showArDriveToast(
+    ScaffoldMessenger.of(context),
+    text: appLocalizationsOf(context).copied,
+    type: ArDriveStatusType.success,
+    duration: const Duration(seconds: 2),
   );
 }
 
@@ -152,10 +146,15 @@ class MadeWithArDrive extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               strings.publicationMadeWithArDrive,
-              style: typography.paragraphSmall(
+              style: typography.paragraphNormal(
                 color: colors.textMid,
                 fontWeight: ArFontWeight.semiBold,
               ),
+            ),
+            // It leaves the publication for ardrive.io, in a new window.
+            const SizedBox(width: ArDriveSpacing.xxs),
+            ExcludeSemantics(
+              child: ArDriveIcons.newWindow(size: 16, color: colors.textMid),
             ),
           ],
         ),

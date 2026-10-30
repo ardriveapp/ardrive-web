@@ -18,6 +18,7 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 import '../models/models.dart';
 
@@ -39,11 +40,12 @@ Future<void> showSearchModalBottomSheet({
     context,
     builder: (_) => ArDriveBottomSheet(
       title: _searchTitle(context),
+      closeLabel: appLocalizationsOf(context).close,
       fillsHeight: true,
       content: BlocProvider.value(
-        value: context.read<DriveDetailCubit>(),
+        value: driveDetailCubit,
         child: FileSearchModal(
-          driveDetailCubit: context.read<DriveDetailCubit>(),
+          driveDetailCubit: driveDetailCubit,
           drivesCubit: drivesCubit,
           onNavigateToFolder: onNavigateToFolder,
           inSheet: true,
@@ -70,16 +72,15 @@ Future<void> showSearchModalDesktop({
 }) {
   PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
 
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
   return showArDriveDialog(
     context,
     content: FileSearchModal(
-      driveDetailCubit: context.read<DriveDetailCubit>(),
+      driveDetailCubit: driveDetailCubit,
       drivesCubit: drivesCubit,
       onNavigateToFolder: onNavigateToFolder,
     ),
-    barrierColor: colorTokens.containerL1.withOpacity(0.8),
+    // The standard scrim: a light wash lit the page up behind the dialog
+    // instead of dimming it.
   );
 }
 
@@ -93,9 +94,9 @@ class FileSearchModal extends StatefulWidget {
   });
 
   /// Whether a bottom sheet holds it, which gives the title. Otherwise it is
-  /// the standard dialog. Set by how it was opened rather than read from the
-  /// screen's width, so a window resized while it is open can't leave it
-  /// without a surface.
+  /// the standard dialog. Set by how it was opened; when the window is
+  /// resized across the phone layout's breakpoint it reopens in the other
+  /// form (see [_FileSearchModalState.didChangeDependencies]).
   final bool inSheet;
 
   final DriveDetailCubit driveDetailCubit;
@@ -111,6 +112,46 @@ class FileSearchModal extends StatefulWidget {
 
 class _FileSearchModalState extends State<FileSearchModal> {
   late final SearchSession _session;
+  bool _reopening = false;
+
+  /// The form the app's layout shows search in at this width: the sheet with
+  /// the phone layout's search icon, the dialog with the desktop search box.
+  bool _wantsSheet() =>
+      getDeviceType(MediaQuery.sizeOf(context)) != DeviceScreenType.desktop;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Resized across the breakpoint: a dialog on a phone layout, or a sheet
+    // on a desktop one, is the wrong surface. Reopen in the right one; the
+    // session keeps the query, so nothing typed is lost. Only while search is
+    // the top route: a dialog it opened (a download) may sit on it, and pop
+    // would close that instead. Reading the route's status here makes this
+    // run again when that dialog closes.
+    final onTop = ModalRoute.of(context)?.isCurrent ?? false;
+    if (!_reopening && onTop && _wantsSheet() != widget.inSheet) {
+      _reopening = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reopen());
+    }
+  }
+
+  void _reopen() {
+    if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) {
+      _reopening = false;
+      return;
+    }
+    final navigator = Navigator.of(context);
+    final host = navigator.context;
+    final reopen =
+        widget.inSheet ? showSearchModalDesktop : showSearchModalBottomSheet;
+    navigator.pop();
+    reopen(
+      context: host,
+      driveDetailCubit: widget.driveDetailCubit,
+      drivesCubit: widget.drivesCubit,
+      onNavigateToFolder: widget.onNavigateToFolder,
+    );
+  }
 
   @override
   void initState() {

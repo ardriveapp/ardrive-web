@@ -339,12 +339,10 @@ class _RawTransactionReadyViewState extends State<RawTransactionReadyView> {
       logger.e('Could not save transaction ${state.txId}', e);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              appLocalizationsOf(context).rawTransactionDownloadFailed,
-            ),
-          ),
+        showArDriveToast(
+          ScaffoldMessenger.of(context),
+          text: appLocalizationsOf(context).rawTransactionDownloadFailed,
+          type: ArDriveStatusType.error,
         );
       }
     } finally {

@@ -373,6 +373,10 @@ ArDriveIcon getIconForContentType(
     return ArDriveIcons.music(
       size: size,
     );
+  } else if (FileTypeHelper.isJson(contentType)) {
+    return ArDriveIcons.json(
+      size: size,
+    );
   } else if (FileTypeHelper.isDoc(contentType)) {
     return ArDriveIcons.fileOutlined(
       size: size,
@@ -893,7 +897,7 @@ ArDriveDropdownItem checkUploadStatusDropdownItem(
         return;
       }
 
-      messenger.showSnackBar(SnackBar(content: Text(checked)));
+      showArDriveToast(messenger, text: checked);
     },
     content: ArDriveDropdownItemTile(
       name: appLocalizationsOf(context).checkUploadStatus,

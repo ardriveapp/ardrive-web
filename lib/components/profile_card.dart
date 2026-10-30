@@ -204,6 +204,11 @@ class _ProfileCardState extends State<ProfileCard> {
         }
       },
       visible: _showProfileCard,
+      // On a phone the card is a full-height sheet over the page, so the page
+      // dims behind it as behind any sheet.
+      barrierColor: isMobile
+          ? ArDriveTheme.of(context).themeData.colorTokens.scrim
+          : null,
       anchor: Aligned(
         follower: Alignment.topRight,
         target: isMobile ? Alignment.bottomRight : Alignment.topRight,

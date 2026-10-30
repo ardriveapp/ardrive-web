@@ -75,11 +75,6 @@ class ListPageChrome extends StatelessWidget {
   Widget build(BuildContext context) {
     return ScreenTypeLayout.builder(
       mobile: (context) => Scaffold(
-        drawerScrimColor: ArDriveTheme.of(context)
-            .themeData
-            .colorTokens
-            .containerRaised
-            .withOpacity(0.5),
         drawer: const AppSideBar(),
         appBar: MobileAppBar(
           showSearch: true,

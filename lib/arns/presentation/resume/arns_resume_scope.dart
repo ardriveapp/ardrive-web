@@ -53,8 +53,6 @@ class ArNSResumeScope extends StatelessWidget {
 /// The notice for [notice].
 void showArNSResumeNotice(BuildContext context, ArNSResumeNotice notice) {
   final strings = appLocalizationsOf(context);
-  final typography = ArDriveTypographyNew.of(context);
-  final colors = ArDriveTheme.of(context).themeData.colorTokens;
   final host = arnsHostFor(notice.name);
   final message = switch (notice.outcome) {
     ArNSResumeOutcome.saved => strings.arnsResumeSaved(host),
@@ -62,14 +60,14 @@ void showArNSResumeNotice(BuildContext context, ArNSResumeNotice notice) {
     ArNSResumeOutcome.expired => strings.arnsResumeExpired(host),
   };
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: typography.paragraphNormal(color: colors.textHigh),
-      ),
-      backgroundColor: colors.containerL3,
-      duration: const Duration(seconds: 8),
-    ),
+  showArDriveToast(
+    ScaffoldMessenger.of(context),
+    text: message,
+    type: switch (notice.outcome) {
+      ArNSResumeOutcome.saved => ArDriveStatusType.success,
+      ArNSResumeOutcome.refunding => ArDriveStatusType.info,
+      ArNSResumeOutcome.expired => ArDriveStatusType.warning,
+    },
+    duration: const Duration(seconds: 8),
   );
 }

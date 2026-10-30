@@ -486,6 +486,8 @@ class _ImageField extends StatelessWidget {
     final repository = context.read<PublicationRepository>();
     final file = await showDialog<FileEntry>(
       context: context,
+      // The standard scrim, not Material's black54.
+      barrierColor: ArDriveTheme.of(context).themeData.colorTokens.scrim,
       builder: (_) => _ChooseImage(
         driveId: cubit.drive.id,
         driveDao: context.read<DriveDao>(),

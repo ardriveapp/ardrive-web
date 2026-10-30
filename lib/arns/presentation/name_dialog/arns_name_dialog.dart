@@ -321,6 +321,8 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
         title: title,
         content: content,
         actions: actions,
+        // Shown not dismissible: a change in flight must not be left.
+        hasCloseButton: false,
       );
     }
     return ArDriveStandardModalNew(

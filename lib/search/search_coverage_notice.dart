@@ -71,18 +71,20 @@ class SearchCoverageNotice extends StatelessWidget {
         void sync() =>
             context.read<SearchBloc>().add(const SearchSyncRequested());
 
+        // 16, the spinner's size in a row (README, Loaders), and the icons
+        // match it so the line doesn't shift as the state changes.
         final icon = syncing
             ? SizedBox.square(
-                dimension: compact ? 14 : 16,
+                dimension: 16,
                 child: ArDriveSpinner(color: colorTokens.iconHigh),
               )
             : failed
                 ? ArDriveIcons.triangle(
-                    size: compact ? 14 : 16,
+                    size: 16,
                     color: colorTokens.statusErrorFg,
                   )
                 : ArDriveIcons.cloudSync(
-                    size: compact ? 14 : 16,
+                    size: 16,
                     color: colorTokens.iconHigh,
                   );
 

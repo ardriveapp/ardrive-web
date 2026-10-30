@@ -96,4 +96,55 @@ void main() {
     expect(find.text('Row 0'), findsOneWidget);
     expect(find.text('Row 99'), findsNothing);
   });
+
+  testWidgets('a titled sheet has a named close button that closes it',
+      (tester) async {
+    await openSheet(
+      tester,
+      (context) => const ArDriveBottomSheet(
+        title: 'Search',
+        closeLabel: 'Close',
+        content: Text('results'),
+      ),
+    );
+    final semantics = tester.ensureSemantics();
+    await tester.pump();
+    expect(find.bySemanticsLabel('Close'), findsOneWidget);
+    expect(find.bySemanticsLabel('Search'), findsOneWidget,
+        reason: 'the title keeps its own name');
+    semantics.dispose();
+
+    await tester.tap(find.byWidgetPredicate(
+        (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x));
+    await tester.pumpAndSettle();
+    expect(find.byType(ArDriveBottomSheet), findsNothing);
+  });
+
+  testWidgets('a sheet that must not be left has no close button',
+      (tester) async {
+    await openSheet(
+      tester,
+      (context) => const ArDriveBottomSheet(
+        title: 'Saving the name',
+        hasCloseButton: false,
+        content: Text('working'),
+      ),
+    );
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+        findsNothing);
+  });
+
+  testWidgets('the sheet dims the page with the standard scrim',
+      (tester) async {
+    await openSheet(
+        tester,
+        (context) => const ArDriveBottomSheet(
+              content: Text('menu'),
+            ));
+    final barrier =
+        tester.widgetList<ModalBarrier>(find.byType(ModalBarrier)).last;
+    expect(barrier.color, ArDriveColorTokens.darkMode().scrim);
+  });
 }

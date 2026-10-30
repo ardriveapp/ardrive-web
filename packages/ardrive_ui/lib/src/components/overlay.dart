@@ -101,8 +101,14 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     final anchorY = base is Aligned
         ? top + renderBox.size.height * (base.target.y + 1) / 2 + base.offset.dy
         : top + renderBox.size.height;
+    // A menu hanging from its button's bottom that opens up hangs from the
+    // button's top instead (below), so it has the room above the button.
+    final hangsBelow = base is! Aligned || base.target.y > 0;
     final roomBelow = screenHeight - anchorY - _screenMargin;
-    final roomAbove = anchorY - _screenMargin;
+    // Flipped, the offset is mirrored too: hanging 32 below becomes 32 above.
+    final flippedTop =
+        top - (base is Aligned && hangsBelow ? base.offset.dy : 0);
+    final roomAbove = (hangsBelow ? flippedTop : anchorY) - _screenMargin;
     final menuHeight = dropdownHeight;
 
     final opensUp = top > screenHeight / 2 ||
@@ -118,11 +124,19 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     // back inside the screen, got neither - it was re-anchored to
     // bottom-left with no shifting, and on a 320px phone it opened 51px
     // off the left edge with every item's icon outside the viewport.
+    //
+    // Opening up from a button's bottom, it takes the button's top edge (and
+    // the mirrored offset): left on the bottom, the menu's lower edge sat on
+    // the button's and covered it and whatever was beside it, such as the
+    // Sync button under a drive's menu near the foot of the list.
+    final flip = opensUp && hangsBelow;
     _anchor = base is Aligned
         ? Aligned(
             follower: alignment,
-            target: base.target,
-            offset: base.offset,
+            target:
+                flip ? Alignment(base.target.x, -base.target.y) : base.target,
+            offset:
+                flip ? Offset(base.offset.dx, -base.offset.dy) : base.offset,
             widthFactor: base.widthFactor,
             heightFactor: base.heightFactor,
             shiftToWithinBound: base.shiftToWithinBound,
@@ -130,7 +144,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
           )
         : Aligned(
             follower: alignment,
-            target: Alignment.bottomLeft,
+            target: opensUp ? Alignment.topLeft : Alignment.bottomLeft,
           );
   }
 
@@ -355,6 +369,7 @@ class ArDriveOverlay extends StatefulWidget {
     this.onVisibleChange,
     this.closeOnBarrierTap = true,
     this.closeOnEscape,
+    this.barrierColor,
   });
 
   final Widget child;
@@ -371,6 +386,11 @@ class ArDriveOverlay extends StatefulWidget {
 
   /// Whether Escape closes it. Follows [closeOnBarrierTap] when not given.
   final bool? closeOnEscape;
+
+  /// Fills the barrier behind the content: the scrim, for content that is a
+  /// sheet over the page rather than a menu beside its button. Menus leave
+  /// it clear.
+  final Color? barrierColor;
 
   @override
   State<ArDriveOverlay> createState() => _ArDriveOverlayState();
@@ -504,6 +524,9 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _close,
+                child: widget.barrierColor == null
+                    ? null
+                    : ColoredBox(color: widget.barrierColor!),
               ),
             ),
           ),

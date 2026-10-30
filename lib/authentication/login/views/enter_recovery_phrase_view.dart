@@ -279,7 +279,8 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
               typography: type,
               text: s.phraseChooseKeyfile,
               variant: ButtonVariant.outline,
-              icon: ArDriveIcons.file(size: 18, color: colors.iconMid),
+              // A keyfile is a JSON file.
+              icon: ArDriveIcons.json(size: 18, color: colors.iconMid),
               onPressed: _chooseKeyfile,
             ),
             if (_keyfileInvalid) ...[
