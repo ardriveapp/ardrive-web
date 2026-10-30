@@ -95,6 +95,8 @@ void main() {
     when(() => cubit.state).thenReturn(state);
     when(() => cubit.scopeName).thenReturn('Artists');
     when(() => cubit.folder).thenReturn(null);
+    when(() => cubit.isFile).thenReturn(false);
+    when(() => cubit.isPrivateFile).thenReturn(false);
     when(() => cubit.canSyncDrive).thenReturn(canSync);
     if (nameStep != null) {
       final names = _MockNameCubit();

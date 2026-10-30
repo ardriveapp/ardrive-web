@@ -36,6 +36,8 @@ void main() {
     ui.Canvas(recorder);
     final mark = await recorder.endRecording().toImage(4, 4);
     when(() => cubit.mark()).thenAnswer((_) async => mark);
+    when(() => cubit.isPrivateFile).thenReturn(false);
+    when(() => cubit.isFile).thenReturn(false);
   });
 
   Future<void> pump(WidgetTester tester, Size size) async {
@@ -96,4 +98,30 @@ void main() {
       expect(order(tester, labels), labels);
     });
   }
+
+  group('a file page', () {
+    setUp(() {
+      when(() => cubit.isFile).thenReturn(true);
+      when(() => cubit.scopeName).thenReturn('Lake.jpg');
+    });
+
+    testWidgets('the page preview shows its file under the header',
+        (tester) async {
+      await pump(tester, const Size(1400, 1000));
+
+      expect(find.text('Lake.jpg', skipOffstage: false), findsOneWidget);
+      expect(find.text('Download', skipOffstage: false), findsOneWidget);
+      expect(find.textContaining('files', skipOffstage: false), findsNothing);
+    });
+
+    testWidgets("a private file's name stays out of the preview",
+        (tester) async {
+      when(() => cubit.isPrivateFile).thenReturn(true);
+      await pump(tester, const Size(1400, 1000));
+
+      expect(find.text('Lake.jpg', skipOffstage: false), findsNothing);
+      expect(find.text('Encrypted file', skipOffstage: false), findsOneWidget);
+      expect(find.text('From this drive', skipOffstage: false), findsNothing);
+    });
+  });
 }

@@ -1,4 +1,5 @@
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -132,7 +133,11 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
         ),
         const SizedBox(height: 6),
         Text(
-          appLocalizationsOf(context).sharedFileAccessKeySentSeparately,
+          // A published file page was not sent to anyone: its key comes in
+          // the link the owner gives out.
+          publicationConfigOf(context) != null
+              ? appLocalizationsOf(context).publicationFileLocked
+              : appLocalizationsOf(context).sharedFileAccessKeySentSeparately,
           style: ArDriveTypographyNew.of(context).paragraphNormal(
             color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
           ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
@@ -26,6 +27,7 @@ Publication _publication(
   String id, {
   required String driveId,
   String? folderId,
+  String? fileId,
   required DateTime at,
 }) =>
     Publication([
@@ -33,7 +35,11 @@ Publication _publication(
         txId: '$id-tx',
         publicationId: id,
         driveId: driveId,
-        folderId: folderId,
+        scope: fileId != null
+            ? PublicationFileScope(fileId)
+            : folderId == null
+                ? const PublicationDriveScope()
+                : PublicationFolderScope(folderId),
         publishedAt: at,
       ),
     ]);
@@ -182,6 +188,55 @@ void main() {
     addTearDown(cubit.close);
 
     expect((await loaded(cubit)).pages.map((p) => p.id), ['shown']);
+  });
+
+  test('file pages, a private file\'s among them; a hidden file\'s left out',
+      () async {
+    await drive('site');
+    await drive('secret', public: false);
+    await folder('docs', 'site', 'Docs');
+    await file('lake', 'site',
+        parent: 'docs', manifest: false, at: DateTime(2026, 1));
+    await file('plans', 'secret', manifest: false, at: DateTime(2026, 1));
+    await file('gone', 'site',
+        manifest: false, hidden: true, at: DateTime(2026, 1));
+    whenListen(
+      publications,
+      const Stream<PublicationsState>.empty(),
+      initialState: PublicationsState({
+        'site': DrivePublications(publications: [
+          _publication('p-lake',
+              driveId: 'site', fileId: 'lake', at: DateTime(2026, 3)),
+          _publication('p-gone',
+              driveId: 'site', fileId: 'gone', at: DateTime(2026, 4)),
+        ]),
+        'secret': DrivePublications(publications: [
+          _publication('p-plans',
+              driveId: 'secret', fileId: 'plans', at: DateTime(2026, 2)),
+          // A private drive has no drive page; one claiming to is not listed.
+          _publication('p-secret', driveId: 'secret', at: DateTime(2026, 5)),
+        ]),
+      }),
+    );
+
+    final cubit = WebPagesCubit(
+      driveDao: db.driveDao,
+      publicationsCubit: publications,
+      profileCubit: profileCubit,
+    );
+    addTearDown(cubit.close);
+    final pages = (await loaded(cubit)).pages;
+
+    expect(pages.map((p) => p.id), ['p-lake', 'p-plans']);
+    final lake = pages[0];
+    expect(lake.kind, WebPageKind.filePage);
+    expect(lake.title, 'lake name');
+    expect(lake.folderName, 'Docs');
+    expect(lake.openFolderId, 'docs');
+    expect(lake.dataTxId, 'p-lake-tx');
+    expect(lake.isPrivate, isFalse);
+    expect(pages[1].isPrivate, isTrue);
+    expect(pages[1].folderName, isNull);
   });
 
   test('waits for publications before it says what is published', () async {
@@ -334,7 +389,7 @@ void main() {
             target: ArNSPublicationItem(
               publicationId: 'pub',
               driveId: 'd',
-              folderId: null,
+              scope: PublicationDriveScope(),
               isLatestVersion: true,
             ),
           ),

@@ -61,6 +61,10 @@ costs nothing. Publish writes permanent objects to Arweave.
     drive state is: owner only, never encrypted, never a file in the drive,
     found by GraphQL. Called "publication" because "page" collides with
     deploy, which can make any page, site or app; users see "Publish to web".
+13. **A file publishes too** (2026-10-27, built 2026-10-29): its share page as
+    a page of its own (a file page, version 2, private files included), or the
+    file itself under a name. See [File pages](#file-pages). Decision 9 still
+    holds inside a drive or folder page.
 
 ## Measured facts this design rests on (2026-10-21)
 
@@ -384,7 +388,9 @@ page on desktop and phone, and the drives list), a folder row's menus, and
 the details panel's toolbar for a drive or folder. Offered on the web, in the
 app (never in a publication), to the owner of a public drive, where snapshots
 can be published (`enableDriveStatePublishing`). Hidden on private drives
-until phase 3.
+until phase 3. A file's menu has it too, in place of Add name, for the owner
+of a public or a private drive, when the file's data is theirs (not pinned):
+see [File pages](#file-pages).
 
 Once published it reads **Published to web** and opens the published view.
 The same icon ("Published to web" on hover) marks published drives in the drives list
@@ -541,6 +547,86 @@ publication must not hand out the key to everything else in the drive. The
 design has to solve that first (a key scoped to the folder, or a snapshot
 encrypted under a key of its own), or private publications ship for whole
 drives only.
+
+## File pages
+
+A file gets **Publish to web** too, from its menu, where it replaces Add name:
+the name now lives inside it. The dialog's first step, **How to publish**,
+offers two things:
+
+- **File page**: the file's share page, published as a page of its own, with
+  the title, description and images the owner picks, under a byline. It shows
+  the version of the file it was published with; Update publishes the current
+  one, and the published view says when the page is out of date (its
+  `metadataTxId` is not the file's latest).
+- **The file itself**: the file's own data at its permanent gateway link, and
+  a name pointed at that data (the name dialog, `ArNSNameDialogMode.nameItem`).
+  Nothing is uploaded. Public files only; the default for an `.html` file and a
+  manifest. It never waits on the release check below.
+
+A file page works for a file in a **private** drive, which drive and folder
+pages still don't: only the file page is offered, and it opens only with the
+file's key in its link.
+
+### What a file page is
+
+- `publication.json` **version 2**, `scope: {"type": "file", "fileId": ...}`,
+  no `snapshot`, no `fileCount`, and a `file` block:
+  - always `dataTxId` and `metadataTxId`, the version it shows;
+  - public files: `name`, `size`, `contentType`;
+  - private files: the data's `cipher` and `cipherIv` (on its data
+    transaction's tags already, so not secret) and never the name, size or
+    type, which the key in the link decrypts from the metadata.
+- No `snapshot`, `files.html` or `sitemap.xml` in the manifest.
+- Tags as for any publication, with `Publication-Scope: file`,
+  `Publication-File-Id` and `Publication-Version: 2`. Never `File-Id`: the
+  app's file lookups match that tag and the owner alone, so released clients
+  would find the page in place of the file. Drive and folder pages stay version 1, so released
+  viewers keep opening them; a released viewer shows a file page as "needs a
+  newer ArDrive".
+- `tool/publication/page.mjs` builds the same bytes; the golden files hold
+  both to it (`file-page.*.golden`).
+
+### How a file page opens
+
+The loader reads `publication.json`, checks that the file's metadata
+transaction was signed by the owner it names (the snapshot rule, applied to
+`file.metadataTxId`; only a confirmed mismatch refuses), and is ready without
+importing anything. The router then shows the share page for that file,
+pinned to the published version (`filePagePayload`), headed by the page's
+cover, title, byline and description in place of the ArDrive wordmark.
+
+A private file page's key travels as `#/?k=<file key>`: in the hash route, so
+it never reaches a server. The router keeps it in the address through its
+first report, so a reload still opens the page. Without it the share page is
+locked; a wrong key gets its key-invalid view.
+
+The owner's own copies of the link (Done, the published view, Web pages)
+carry the key, derived from the drive key they hold, behind the same reveal
+control as a share link's, with "This link holds the file's key. Anyone with
+it can open the file."
+
+### What a private file page makes public
+
+The review step says it: the title, description and images are public, anyone
+can see that the page exists, and the key opens every version of the file.
+The page also names its file's ID (`Publication-File-Id`, `scope.fileId`) and its
+transactions, which a share link already did. It never names the file.
+
+### The release gate
+
+A file page runs the release `publicationViewer` names, which may be older
+than the app publishing it. Each release carries
+`publication-capabilities.json` (`{"publicationVersion": 2}`, held equal to
+`PublicationConfig.supportedVersion` by a test), and File page is offered only
+when the release lists version 2 or later; otherwise it reads "Available after
+the next ArDrive release". Delivery: once a production release carries the
+marker, bump `staging.json`'s pinned viewer and its `configVersion`.
+
+### Not built
+
+Unpublish (as for drives and folders), and per-file pages inside a folder
+page (decision 9).
 
 ## Phases
 

@@ -331,22 +331,37 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 /// `file`, and everything else is the publication's root. Sign-in, the drives
 /// list, other drives, shared files and `/view/` are not places a publication
 /// page goes, so their links open the publication instead of failing.
+///
+/// A private file page's key rides in the route's query, `/?k=<key>`. The app
+/// routes on the hash, so that query is after the `#` and never reaches a
+/// server. It is resolved exactly as a share link's key is.
 @visibleForTesting
 AppRoutePath parsePublicationRoute(Uri uri) {
+  final fileKey = SharedFileLinkKey.resolve(uri);
   final segments = uri.pathSegments;
   if (segments.length == 2 && segments.first == 'folders') {
     final file = uri.queryParameters['file'];
     return AppRoutePath.publication(
       folderId: segments[1],
       fileId: file == null || file.isEmpty ? null : file,
+      fileKey: fileKey,
     );
   }
-  return AppRoutePath.publication();
+  return AppRoutePath.publication(fileKey: fileKey);
 }
 
 @visibleForTesting
 RouteInformation restorePublicationRoute(AppRoutePath configuration) {
   final folderId = configuration.publicationFolderId;
+  // A file page keeps the key its link carried, so a reload still opens it.
+  // Only a key from the link is ever here: one typed into the page stays in
+  // the page.
+  final rawKey = configuration.sharedRawFileKey;
+  if (folderId == null && rawKey != null && rawKey.isNotEmpty) {
+    return RouteInformation(
+      uri: Uri(path: '/', queryParameters: {SharedFileLinkParams.key: rawKey}),
+    );
+  }
   if (folderId == null) return RouteInformation(uri: Uri.parse('/'));
   final fileId = configuration.publicationFileId;
   return RouteInformation(

@@ -27,7 +27,8 @@ class PublicationConfig extends Equatable {
     required this.privacy,
     required this.owner,
     this.ownerName,
-    required this.snapshot,
+    this.snapshot,
+    this.file,
     required this.title,
     required this.description,
     this.fileCount,
@@ -40,7 +41,12 @@ class PublicationConfig extends Equatable {
 
   /// The newest `publication.json` version this build reads. A page written for a
   /// newer one shows "This page needs a newer ArDrive".
-  static const supportedVersion = 1;
+  static const supportedVersion = 2;
+
+  /// The version a file page is written as. Drive and folder pages stay at 1,
+  /// so the viewers already published can still open new ones; a file page
+  /// needs a viewer that knows the file scope, and version 2 says so.
+  static const fileScopeVersion = 2;
 
   final int version;
   final String driveId;
@@ -57,7 +63,13 @@ class PublicationConfig extends Equatable {
   /// The name the owner chose to be shown by, if any. Typed, like the title,
   /// so it is a claim and not a proof: the page shows [owner] beside it.
   final String? ownerName;
-  final PublicationSnapshot snapshot;
+
+  /// The drive state the page is built from. A drive or folder page always
+  /// has one; a file page never does.
+  final PublicationSnapshot? snapshot;
+
+  /// The one file a file page shows; null for a drive or folder page.
+  final PublicationFile? file;
   final String title;
   final String description;
 
@@ -82,6 +94,7 @@ class PublicationConfig extends Equatable {
   String get scopeRootFolderId => switch (scope) {
         PublicationDriveScope() => rootFolderId,
         PublicationFolderScope(:final folderId) => folderId,
+        PublicationFileScope() => rootFolderId,
       };
 
   /// Parses `publication.json`'s text. Throws [PublicationConfigException].
@@ -119,18 +132,34 @@ class PublicationConfig extends Equatable {
           'privacy must be "public" or "private"');
     }
 
-    final snapshot = PublicationSnapshot._fromJson(_map(json, 'snapshot'));
-    final sealed = snapshot.tags.containsKey(EntityTag.cipher) &&
-        snapshot.tags.containsKey(EntityTag.cipherIv);
-    final anyCipherTag = snapshot.tags.containsKey(EntityTag.cipher) ||
-        snapshot.tags.containsKey(EntityTag.cipherIv);
-    if (privacy == DrivePrivacyTag.private && !sealed) {
-      throw PublicationConfigException.invalid(
-          'a private publication needs the snapshot\'s Cipher and Cipher-IV tags');
-    }
-    if (privacy == DrivePrivacyTag.public && anyCipherTag) {
-      throw PublicationConfigException.invalid(
-          'a public publication\'s snapshot cannot carry cipher tags');
+    final scope = PublicationScope._fromJson(_map(json, 'scope'));
+    PublicationSnapshot? snapshot;
+    PublicationFile? file;
+    if (scope is PublicationFileScope) {
+      // A file page shows one file, read from its own transactions: there is
+      // no drive state to import, so a snapshot here is a page built wrong.
+      if (version < fileScopeVersion) {
+        throw PublicationConfigException.invalid(
+            'a file page is version $fileScopeVersion or later');
+      }
+      if (json['snapshot'] != null) {
+        throw PublicationConfigException.invalid('a file page has no snapshot');
+      }
+      file = PublicationFile._fromJson(_map(json, 'file'), privacy: privacy);
+    } else {
+      snapshot = PublicationSnapshot._fromJson(_map(json, 'snapshot'));
+      final sealed = snapshot.tags.containsKey(EntityTag.cipher) &&
+          snapshot.tags.containsKey(EntityTag.cipherIv);
+      final anyCipherTag = snapshot.tags.containsKey(EntityTag.cipher) ||
+          snapshot.tags.containsKey(EntityTag.cipherIv);
+      if (privacy == DrivePrivacyTag.private && !sealed) {
+        throw PublicationConfigException.invalid(
+            'a private publication needs the snapshot\'s Cipher and Cipher-IV tags');
+      }
+      if (privacy == DrivePrivacyTag.public && anyCipherTag) {
+        throw PublicationConfigException.invalid(
+            'a public publication\'s snapshot cannot carry cipher tags');
+      }
     }
 
     final title = _string(json, 'title').trim();
@@ -142,11 +171,12 @@ class PublicationConfig extends Equatable {
       version: version,
       driveId: _id(json, 'driveId'),
       rootFolderId: _id(json, 'rootFolderId'),
-      scope: PublicationScope._fromJson(_map(json, 'scope')),
+      scope: scope,
       privacy: privacy,
       owner: _address(json, 'owner'),
       ownerName: _nonEmpty(_optionalString(json, 'ownerName')),
       snapshot: snapshot,
+      file: file,
       title: title,
       description: _optionalString(json, 'description') ?? '',
       fileCount: switch (json['fileCount']) {
@@ -177,6 +207,7 @@ class PublicationConfig extends Equatable {
         owner,
         ownerName,
         snapshot,
+        file,
         title,
         description,
         fileCount,
@@ -188,10 +219,23 @@ class PublicationConfig extends Equatable {
       ];
 }
 
-/// What a publication shows: a whole drive, or one folder and what is under it.
+/// What a publication shows: a whole drive, one folder and what is under it,
+/// or one file.
 @immutable
 sealed class PublicationScope extends Equatable {
   const PublicationScope();
+
+  /// The folder a folder page shows; null for the others.
+  String? get folderIdOrNull => switch (this) {
+        PublicationFolderScope(:final folderId) => folderId,
+        _ => null,
+      };
+
+  /// The file a file page shows; null for the others.
+  String? get fileIdOrNull => switch (this) {
+        PublicationFileScope(:final fileId) => fileId,
+        _ => null,
+      };
 
   static PublicationScope _fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
@@ -199,9 +243,11 @@ sealed class PublicationScope extends Equatable {
         return const PublicationDriveScope();
       case 'folder':
         return PublicationFolderScope(_id(json, 'folderId', where: 'scope'));
+      case 'file':
+        return PublicationFileScope(_id(json, 'fileId', where: 'scope'));
       default:
         throw PublicationConfigException.invalid(
-            'scope.type must be "drive" or "folder"');
+            'scope.type must be "drive", "folder" or "file"');
     }
   }
 }
@@ -220,6 +266,83 @@ class PublicationFolderScope extends PublicationScope {
 
   @override
   List<Object?> get props => [folderId];
+}
+
+/// One file, shown as its share page shows it.
+class PublicationFileScope extends PublicationScope {
+  const PublicationFileScope(this.fileId);
+
+  final String fileId;
+
+  @override
+  List<Object?> get props => [fileId];
+}
+
+/// The file a file page shows, at the version it was published with.
+///
+/// Only what is already public goes here. Its transactions and owner are tags
+/// anyone can read. A public file's name, size and type are in its metadata in
+/// the clear; a private file's are encrypted there, and are never written
+/// here: the page reads them by decrypting the metadata with the key in its
+/// link. A private file carries the cipher of its data instead, which is not
+/// secret.
+@immutable
+class PublicationFile extends Equatable {
+  const PublicationFile({
+    required this.dataTxId,
+    required this.metadataTxId,
+    this.name,
+    this.size,
+    this.contentType,
+    this.cipher,
+    this.cipherIv,
+  });
+
+  final String dataTxId;
+  final String metadataTxId;
+  final String? name;
+  final int? size;
+  final String? contentType;
+  final String? cipher;
+  final String? cipherIv;
+
+  factory PublicationFile._fromJson(
+    Map<String, dynamic> json, {
+    required String privacy,
+  }) {
+    final file = PublicationFile(
+      dataTxId: _address(json, 'dataTxId', where: 'file'),
+      metadataTxId: _address(json, 'metadataTxId', where: 'file'),
+      name: _optionalString(json, 'name'),
+      size: switch (json['size']) {
+        null => null,
+        final int size when size >= 0 => size,
+        _ => throw PublicationConfigException.invalid(
+            'file.size must be a non-negative integer'),
+      },
+      contentType: _optionalString(json, 'contentType'),
+      cipher: _optionalString(json, 'cipher'),
+      cipherIv: _optionalString(json, 'cipherIv'),
+    );
+    if (privacy == DrivePrivacyTag.private) {
+      if (file.cipher == null || file.cipherIv == null) {
+        throw PublicationConfigException.invalid(
+            'a private file page needs the file\'s cipher and cipherIv');
+      }
+      if (file.name != null || file.size != null || file.contentType != null) {
+        throw PublicationConfigException.invalid(
+            'a private file page cannot carry the file\'s name, size or type');
+      }
+    } else if (file.cipher != null || file.cipherIv != null) {
+      throw PublicationConfigException.invalid(
+          'a public file page cannot carry cipher fields');
+    }
+    return file;
+  }
+
+  @override
+  List<Object?> get props =>
+      [dataTxId, metadataTxId, name, size, contentType, cipher, cipherIv];
 }
 
 /// The drive state artifact a publication is built from, and the tags the

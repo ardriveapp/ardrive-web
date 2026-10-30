@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -74,7 +75,12 @@ class SharedFileFrame extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildTrustStrip(context),
+                        // A file page is the owner's: their title and
+                        // byline head it, and ArDrive is the link below.
+                        if (publicationConfigOf(context) case final page?)
+                          PublicationFileHead(config: page)
+                        else
+                          _buildTrustStrip(context),
                         const SizedBox(height: 24),
                         ArDriveCard(
                           backgroundColor: theme.colorTokens.containerRaised,

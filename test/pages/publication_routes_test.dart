@@ -84,6 +84,81 @@ void main() {
     });
   });
 
+  group('a file page', () {
+    // Canonical base64url: the last character's spare bits are zero.
+    final key = '${'K' * 42}A';
+    const fileId = 'f1e2d3c4-0000-4000-8000-000000000001';
+
+    PublicationConfig filePage() => const PublicationConfig(
+          version: 2,
+          driveId: _drive,
+          rootFolderId: _root,
+          scope: PublicationFileScope(fileId),
+          privacy: 'private',
+          owner: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
+          snapshot: null,
+          file: PublicationFile(
+            dataTxId: 'FILEdata00000000000000000000000000000000000',
+            metadataTxId: 'FILEmeta00000000000000000000000000000000000',
+            cipher: 'AES256-GCM',
+            cipherIv: 'aXZpdml2aXZpdml2',
+          ),
+          title: 'Plans',
+          description: '',
+          images: PublicationImages(),
+          publishedAt: null,
+          viewer: null,
+        );
+
+    test('reads the key from the hash route', () async {
+      final path = await _parse('/?k=$key');
+
+      expect(path.sharedRawFileKey, key);
+      expect(path.sharedFileKey, isNotNull);
+      expect(path.publicationFolderId, isNull);
+    });
+
+    test('keeps the key in the address through the first report, and after',
+        () async {
+      final db = getTestDb();
+      addTearDown(db.close);
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/?k=$key'));
+
+      expect(_restore(router.currentConfiguration), '/?k=$key');
+
+      await router.openPublication(filePage(), db.driveDao);
+
+      expect(router.sharedFileId, fileId);
+      expect(router.sharedFileKey, isNotNull);
+      expect(router.sharedFileLinkPayload?.cipher, 'AES256-GCM');
+      expect(router.sharedFileLinkPayload?.isPinned, isTrue);
+      expect(router.driveId, isNull);
+      expect(_restore(router.currentConfiguration), '/?k=$key');
+    });
+
+    test('a damaged key is kept as damaged, for the page to say so', () async {
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/?k=not-a-key'));
+
+      expect(router.sharedFileKeyIsDamaged, isTrue);
+      expect(router.sharedFileKey, isNull);
+    });
+
+    test('without a key it opens locked, and the address stays the root',
+        () async {
+      final db = getTestDb();
+      addTearDown(db.close);
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/'));
+      await router.openPublication(filePage(), db.driveDao);
+
+      expect(router.sharedFileId, fileId);
+      expect(router.sharedFileKey, isNull);
+      expect(_restore(router.currentConfiguration), '/');
+    });
+  });
+
   group('opening a publication', () {
     late Database db;
     late AppRouterDelegate router;

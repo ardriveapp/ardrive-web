@@ -18,7 +18,7 @@ class PublishedVersion extends Equatable {
     required this.txId,
     required this.publicationId,
     required this.driveId,
-    required this.folderId,
+    required this.scope,
     required this.publishedAt,
     this.minedAtHeight,
   });
@@ -27,8 +27,9 @@ class PublishedVersion extends Equatable {
   final String publicationId;
   final String driveId;
 
-  /// The folder it shows, or null for the whole drive.
-  final String? folderId;
+  /// What it shows: the whole drive, one folder or one file. Never read as
+  /// "no folder means the drive": a file page has no folder either.
+  final PublicationScope scope;
 
   /// Its `Unix-Time`.
   final DateTime publishedAt;
@@ -38,7 +39,7 @@ class PublishedVersion extends Equatable {
 
   @override
   List<Object?> get props =>
-      [txId, publicationId, driveId, folderId, publishedAt, minedAtHeight];
+      [txId, publicationId, driveId, scope, publishedAt, minedAtHeight];
 }
 
 /// A publication and its versions, newest first.
@@ -49,7 +50,7 @@ class Publication extends Equatable {
 
   PublishedVersion get latest => versions.first;
   String get id => latest.publicationId;
-  String? get folderId => latest.folderId;
+  PublicationScope get scope => latest.scope;
   List<PublishedVersion> get earlier => versions.sublist(1);
 
   @override
@@ -80,18 +81,30 @@ class PublishedContent {
 
 /// The ArDrive release a publication runs: its manifest, `index.html` and
 /// version.
+/// Where a release says which publications it opens.
+const publicationCapabilitiesPath = 'publication-capabilities.json';
+
 class PublicationRelease {
   const PublicationRelease({
     required this.manifestId,
     required this.manifest,
     required this.indexHtml,
     required this.version,
+    this.publicationVersion = 1,
   });
 
   final String manifestId;
   final Map<String, dynamic> manifest;
   final String indexHtml;
   final String? version;
+
+  /// The newest `publication.json` version the release opens, from its
+  /// `publication-capabilities.json`; 1 for a release built before it.
+  final int publicationVersion;
+
+  /// Whether the release opens file pages.
+  bool get opensFilePages =>
+      publicationVersion >= PublicationConfig.fileScopeVersion;
 }
 
 class PublicationReadException implements Exception {
@@ -210,16 +223,27 @@ class PublicationRepository {
       return null;
     }
     final publicationId = tags[EntityTag.publicationId];
-    final scope = tags[EntityTag.publicationScope];
+    final scopeTag = tags[EntityTag.publicationScope];
     final unixTime = int.tryParse(tags[EntityTag.unixTime] ?? '');
-    if (publicationId == null || scope == null || unixTime == null) {
+    if (publicationId == null || scopeTag == null || unixTime == null) {
       return null;
+    }
+    final PublicationScope scope;
+    switch (scopeTag) {
+      case 'drive':
+        scope = const PublicationDriveScope();
+      case 'file':
+        final fileId = tags[EntityTag.publicationFileId];
+        if (fileId == null) return null;
+        scope = PublicationFileScope(fileId);
+      default:
+        scope = PublicationFolderScope(scopeTag);
     }
     return PublishedVersion(
       txId: node.id,
       publicationId: publicationId,
       driveId: driveId,
-      folderId: scope == 'drive' ? null : scope,
+      scope: scope,
       publishedAt: DateTime.fromMillisecondsSinceEpoch(unixTime * 1000),
       minedAtHeight: node.block?.height,
     );
@@ -288,11 +312,24 @@ class PublicationRepository {
         logger.w('[publication] the release has an unreadable version.json');
       }
     }
+    var publicationVersion = 1;
+    final capabilitiesId =
+        (paths[publicationCapabilitiesPath] as Map?)?['id'] as String?;
+    if (capabilitiesId != null) {
+      try {
+        final declared =
+            (await _readJson(capabilitiesId))['publicationVersion'];
+        if (declared is int && declared > 1) publicationVersion = declared;
+      } catch (e) {
+        logger.w('[publication] the release has unreadable capabilities');
+      }
+    }
     return PublicationRelease(
       manifestId: manifestId,
       manifest: manifest,
       indexHtml: utf8.decode(await _read(indexId)),
       version: version,
+      publicationVersion: publicationVersion,
     );
   }
 
@@ -386,6 +423,6 @@ List<PublishedVersion> _sameScope(List<PublishedVersion> newestFirst) {
   final first = newestFirst.last;
   return [
     for (final v in newestFirst)
-      if (v.folderId == first.folderId) v,
+      if (v.scope == first.scope) v,
   ];
 }

@@ -15,27 +15,43 @@ import 'dart:convert';
 import 'package:ardrive_utils/ardrive_utils.dart'
     show EntityTag, EntityTypeTag, arfsVersion;
 
-/// The publication.json version this build writes.
+/// The publication.json version this build writes for a drive or folder page.
+/// It stays at 1 so the viewers already published can open new ones.
 const publicationVersion = 1;
+
+/// The version a file page is written as: only a viewer that knows the file
+/// scope can open one, and version 2 says so.
+const filePublicationVersion = 2;
 
 /// A transaction tag, as the publisher writes it.
 typedef PublicationTag = ({String name, String value});
 
 /// The tags that make a publication's manifest the ArFS entity
 /// (docs/ArweaveFS.md, "Publication"). The uploader adds Content-Type, the
-/// app tags and Unix-Time. [folderId] is null for a whole drive.
+/// app tags and Unix-Time. Neither [folderId] nor [fileId] for a whole drive;
+/// a file page names its file with `Publication-Scope: file` and
+/// `Publication-File-Id`: never `File-Id`, which file lookups match alone.
 List<PublicationTag> publicationEntityTags({
   required String driveId,
   required String publicationId,
   String? folderId,
+  String? fileId,
 }) =>
     [
       (name: EntityTag.arFs, value: arfsVersion),
       (name: EntityTag.entityType, value: EntityTypeTag.publication),
       (name: EntityTag.driveId, value: driveId),
       (name: EntityTag.publicationId, value: publicationId),
-      (name: EntityTag.publicationScope, value: folderId ?? 'drive'),
-      (name: EntityTag.publicationVersion, value: '$publicationVersion'),
+      if (fileId != null) ...[
+        (name: EntityTag.publicationScope, value: 'file'),
+        (name: EntityTag.publicationFileId, value: fileId),
+      ] else
+        (name: EntityTag.publicationScope, value: folderId ?? 'drive'),
+      (
+        name: EntityTag.publicationVersion,
+        value:
+            '${fileId != null ? filePublicationVersion : publicationVersion}',
+      ),
     ];
 
 /// The tags of every other file a publication adds: none is an entity.
@@ -56,15 +72,21 @@ Map<String, T> _sorted<T>(Map<String, T> map) => Map.fromEntries(
 /// (what the publication lists, for its owner), [keywords] and [license] are
 /// written only when set. [generatedCard] marks `social.jpg` as the card
 /// ArDrive drew, which an update redraws; an owner's own card is kept.
+///
+/// A file page ([fileId] and [file] set) has no snapshot: [file] is the
+/// `file` block, which for a private file holds only what is already public
+/// (its transactions and its data's cipher), never its name, size or type.
 String buildPublicationJson({
   required String driveId,
   required String rootFolderId,
   String? folderId,
+  String? fileId,
+  Map<String, Object>? file,
   required String privacy,
   required String owner,
   String? ownerName,
-  required String snapshotTxId,
-  required Map<String, String> snapshotTags,
+  String? snapshotTxId,
+  Map<String, String>? snapshotTags,
   required String title,
   required String description,
   int? fileCount,
@@ -77,20 +99,24 @@ String buildPublicationJson({
   List<String> names = const [],
 }) {
   return _json({
-    'version': publicationVersion,
+    'version': fileId != null ? filePublicationVersion : publicationVersion,
     'driveId': driveId,
     'rootFolderId': rootFolderId,
-    'scope': folderId != null
-        ? {'type': 'folder', 'folderId': folderId}
-        : {'type': 'drive'},
+    'scope': fileId != null
+        ? {'type': 'file', 'fileId': fileId}
+        : folderId != null
+            ? {'type': 'folder', 'folderId': folderId}
+            : {'type': 'drive'},
     'privacy': privacy,
     'owner': owner,
     if (ownerName != null && ownerName.isNotEmpty) 'ownerName': ownerName,
-    'snapshot': {
-      'path': 'snapshot',
-      'txId': snapshotTxId,
-      'tags': _sorted(snapshotTags),
-    },
+    if (fileId == null)
+      'snapshot': {
+        'path': 'snapshot',
+        'txId': snapshotTxId,
+        'tags': _sorted(snapshotTags ?? const {}),
+      },
+    if (file != null) 'file': _sorted(file),
     'title': title,
     'description': description,
     if (fileCount != null) 'fileCount': fileCount,

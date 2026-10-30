@@ -14,6 +14,9 @@ import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/entities/constants.dart' show ContentType;
+import 'package:ardrive/publication/domain/file_page.dart';
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
@@ -55,6 +58,7 @@ class PublishDependencies {
     required this.cardMark,
     required this.fileCountLabel,
     this.syncDrive,
+    this.cipherOf = _noCipher,
   });
 
   final DriveDao driveDao;
@@ -83,6 +87,16 @@ class PublishDependencies {
   /// one stopped and would only clear the record of the gap. [isCancelled]
   /// says the dialog has closed, so a sync not yet started never starts.
   /// Null hides the button.
+  ///
+  /// [cipherOf] reads a private file's data cipher and IV from its data
+  /// transaction's tags, for its page; null when they cannot be read.
+  final Future<({String cipher, String cipherIv})?> Function(String dataTxId)
+      cipherOf;
+
+  static Future<({String cipher, String cipherIv})?> _noCipher(
+          String _) async =>
+      null;
+
   final Future<bool> Function(
     String driveId, {
     required bool deep,
@@ -96,6 +110,7 @@ class PublishCubit extends Cubit<PublishState> {
   PublishCubit({
     required this.drive,
     required this.folder,
+    this.file,
     required PublishDependencies dependencies,
     this.previous,
     this.names,
@@ -114,6 +129,18 @@ class PublishCubit extends Cubit<PublishState> {
 
   /// The folder being published; null for the whole drive.
   final FolderEntry? folder;
+
+  /// The file being published, instead of a folder or the drive.
+  final FileEntry? file;
+
+  bool get isFile => file != null;
+
+  /// A file in a private drive: only its page can be published, and it
+  /// opens with the file's key in its link.
+  bool get isPrivateFile => isFile && drive.isPrivate;
+
+  /// The file's link: its own data, on the gateway publications are on.
+  String get fileLink => '${_deps.publisher.gatewayUrl}/${file!.dataTxId}';
 
   /// The publication this updates, if any.
   final Publication? previous;
@@ -151,10 +178,11 @@ class PublishCubit extends Cubit<PublishState> {
 
   String get _scopeRootFolderId => folder?.id ?? drive.rootFolderId;
 
-  String get scopeName => folder?.name ?? drive.name;
+  String get scopeName => file?.name ?? folder?.name ?? drive.name;
 
   Future<void> load() async {
     emit(const PublishState(stage: PublishStage.loading));
+    if (isFile) return _loadFile();
     try {
       final block = await _checkBlocks();
       if (isClosed) return;
@@ -198,6 +226,214 @@ class PublishCubit extends Cubit<PublishState> {
                 'gateway. Try again in a minute.',
       ));
     }
+  }
+
+  // A file (docs/PUBLICATIONS.md, "File pages").
+
+  /// The file's revision a page is made from, read when the dialog opens.
+  FileRevision? _revision;
+
+  Future<void> _loadFile() async {
+    final block = await _checkFileBlocks();
+    if (isClosed) return;
+    if (block != null) {
+      emit(PublishState(
+        stage: PublishStage.blocked,
+        blocked: block.$1,
+        blockedReason: block.$2,
+        pendingChanges: _pendingChanges,
+      ));
+      return;
+    }
+    final f = file!;
+    // A page is the only choice for a private file; the file itself is the
+    // natural one for a web page or an app.
+    final opensItself = !isPrivateFile &&
+        (f.dataContentType == ContentType.manifest ||
+            f.dataContentType == 'text/html' ||
+            f.name.toLowerCase().endsWith('.html'));
+    var next = PublishState(
+      stage: PublishStage.how,
+      how: opensItself ? FilePublishHow.itself : FilePublishHow.page,
+      // A private file's name is not written into its page, so it is not
+      // offered as the page's title either.
+      title: isPrivateFile ? '' : _clip(f.name, publicationTitleMax),
+      ownerName: await _rememberedOwnerName() ?? '',
+      isUpdate: previous != null,
+    );
+    if (previous != null) {
+      try {
+        next = await _prefillFrom(previous!, next);
+      } on PublicationReadException catch (e) {
+        logger.e('[publication] reading the file page failed', e);
+        if (isClosed) return;
+        emit(const PublishState(
+          stage: PublishStage.blocked,
+          blocked: PublishBlock.other,
+          blockedReason: 'The published page could not be read back from the '
+              'gateway. Try again in a minute.',
+        ));
+        return;
+      }
+    }
+    if (isClosed) return;
+    emit(next);
+    // The file itself never waits on the release: only a page runs it.
+    unawaited(_checkFilePages());
+  }
+
+  /// Whether the release new pages run opens file pages. An update goes
+  /// straight to the look once it does.
+  Future<void> _checkFilePages() async {
+    FilePageAvailability availability;
+    try {
+      _release ??= await _deps.repository.readRelease(_deps.viewer);
+      availability = _release!.opensFilePages
+          ? FilePageAvailability.available
+          : FilePageAvailability.needsRelease;
+    } catch (e) {
+      logger.w('[publication] the release could not be read: $e');
+      availability = FilePageAvailability.unknown;
+    }
+    if (isClosed) return;
+    // A page the release can't open yet is no choice: a public file goes
+    // to the file itself rather than sitting on a disabled Next.
+    final moveToItself = availability == FilePageAvailability.needsRelease &&
+        !isPrivateFile &&
+        state.stage == PublishStage.how &&
+        state.how == FilePublishHow.page;
+    emit(state.copyWith(
+      filePages: availability,
+      how: moveToItself ? FilePublishHow.itself : null,
+    ));
+    if (previous != null &&
+        state.stage == PublishStage.how &&
+        availability == FilePageAvailability.available) {
+      emit(state.copyWith(stage: PublishStage.look, how: FilePublishHow.page));
+    }
+  }
+
+  /// Reads the release again after it could not be read.
+  Future<void> retryFilePages() async {
+    if (state.filePages != FilePageAvailability.unknown) return;
+    emit(state.copyWith(filePages: FilePageAvailability.checking));
+    await _checkFilePages();
+  }
+
+  void setHow(FilePublishHow how) {
+    if (state.stage != PublishStage.how) return;
+    if (how == FilePublishHow.itself && isPrivateFile) return;
+    emit(state.copyWith(how: how));
+  }
+
+  /// What stops a file being published: the file hidden or under a hidden
+  /// folder, or its upload not confirmed yet. No drive-wide sync check: a
+  /// file page publishes no snapshot, only the one revision of its file that
+  /// this device holds, so the rest of the drive doesn't matter.
+  Future<(PublishBlock, String)?> _checkFileBlocks() async {
+    final f = file!;
+    if (f.isHidden) return (PublishBlock.hiddenFile, '');
+    final parent = await _deps.driveDao
+        .folderById(folderId: f.parentFolderId)
+        .getSingleOrNull();
+    if (parent != null && await _isHiddenOrUnderHidden(parent)) {
+      return (PublishBlock.hiddenFile, '');
+    }
+
+    _revision = await _deps.driveDao
+        .latestFileRevisionByFileId(driveId: drive.id, fileId: f.id)
+        .getSingleOrNull();
+    final revision = _revision;
+    if (revision == null) {
+      return (
+        PublishBlock.other,
+        "This file's details aren't on this device yet. Sync the drive and "
+            'try again.',
+      );
+    }
+    final rows = await _deps.driveDao.attachedDatabase.customSelect(
+      'SELECT status FROM network_transactions WHERE id IN (?1, ?2)',
+      variables: [
+        Variable.withString(revision.metadataTxId),
+        Variable.withString(revision.dataTxId),
+      ],
+    ).get();
+    final statuses = {for (final row in rows) row.read<String>('status')};
+    // A page or a link to data that never landed would show nothing.
+    if (statuses.contains(TransactionStatus.failed)) {
+      return (PublishBlock.failedUpload, '');
+    }
+    _pendingChanges = statuses.contains(TransactionStatus.pending) ? 1 : 0;
+    if (_pendingChanges > 0) return (PublishBlock.pendingUploads, '');
+    return null;
+  }
+
+  Future<PublicationJob> _buildFileJob(ProfileLoggedIn profile) async {
+    final revision = _revision!;
+    final keepCard = state.social == null &&
+        _previousCard != null &&
+        _cardKey(state) == _previousCardKey;
+    final social = state.social?.image ??
+        (keepCard
+            ? _previousCard!
+            : NewPublicationImage({
+                'social.jpg': await PublicationSocialCard(
+                  title: state.title.trim(),
+                  description: state.description.trim(),
+                  // A file page lists no files.
+                  fileCount: '',
+                  cover: state.cover?.preview,
+                  icon: state.icon?.preview,
+                  iconTint: state.iconTint,
+                  mark: await mark(),
+                ).render(),
+              }));
+    final ({String cipher, String cipherIv})? cipher;
+    if (isPrivateFile) {
+      cipher = await _deps.cipherOf(revision.dataTxId);
+      if (cipher == null) throw const _CipherUnknown();
+    } else {
+      cipher = null;
+    }
+    return PublicationJob(
+      publicationId: previous?.id ?? (_publicationId ??= const Uuid().v4()),
+      driveId: drive.id,
+      rootFolderId: drive.rootFolderId,
+      scope: PublicationFileScope(file!.id),
+      privacy: drive.privacy,
+      file: buildFilePageBlock(revision: revision, cipher: cipher),
+      owner: profile.user.walletAddress,
+      ownerName: _nonEmpty(state.ownerName.trim()),
+      title: state.title.trim(),
+      description: state.description.trim(),
+      keywords: state.keywords,
+      license: state.licence?.toJson(),
+      icon: state.icon?.image,
+      cover: state.cover?.image,
+      social: social,
+      snapshot: const NoSnapshot(),
+      release: _release!,
+      files: const [],
+      fileCount: 0,
+      generatedCard: state.social == null,
+      labels: _deps.labels,
+      method: state.method,
+    );
+  }
+
+  /// [page] with a private file's key after it, for the owner's copy of the
+  /// link: the key stays in the fragment, which never leaves the browser.
+  Future<String> _withFileKey(String page) async {
+    if (!isPrivateFile) return page;
+    return withFileKey(
+      page,
+      await fileKeyForLink(
+        _deps.driveDao,
+        _deps.profileCubit.state,
+        driveId: drive.id,
+        fileId: file!.id,
+      ),
+    );
   }
 
   /// Whether a dialog blocked by sync can sync the drive itself.
@@ -404,6 +640,13 @@ class PublishCubit extends Cubit<PublishState> {
 
   void next() {
     switch (state.stage) {
+      case PublishStage.how:
+        if (!state.howIsReady) return;
+        emit(state.copyWith(
+          stage: state.how == FilePublishHow.page
+              ? PublishStage.look
+              : PublishStage.itself,
+        ));
       case PublishStage.included:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
@@ -414,8 +657,11 @@ class PublishCubit extends Cubit<PublishState> {
 
   void back() {
     switch (state.stage) {
+      case PublishStage.itself:
+        emit(state.copyWith(stage: PublishStage.how));
       case PublishStage.look:
-        emit(state.copyWith(stage: PublishStage.included));
+        emit(state.copyWith(
+            stage: isFile ? PublishStage.how : PublishStage.included));
       case PublishStage.review:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.failed:
@@ -528,7 +774,8 @@ class PublishCubit extends Cubit<PublishState> {
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return;
     try {
-      _snapshotPlan ??= await _planSnapshot(profile);
+      _snapshotPlan ??=
+          isFile ? const NoSnapshot() : await _planSnapshot(profile);
       final plan = _snapshotPlan;
       if (plan == null) return;
       final key = _jobKey(state);
@@ -557,8 +804,11 @@ class PublishCubit extends Cubit<PublishState> {
       if (isClosed) return;
       emit(state.copyWith(
         stage: PublishStage.failed,
-        failure: 'The cost of publishing could not be worked out. Nothing '
-            'was uploaded. Try again in a moment.',
+        failure: e is _CipherUnknown
+            ? "ArDrive couldn't read this file's encryption details from the "
+                'gateway. Nothing was uploaded. Try again in a moment.'
+            : 'The cost of publishing could not be worked out. Nothing '
+                'was uploaded. Try again in a moment.',
         paidTxId: () => null,
       ));
     }
@@ -647,6 +897,7 @@ class PublishCubit extends Cubit<PublishState> {
   }
 
   Future<PublicationJob> _buildJob(ProfileLoggedIn profile) async {
+    if (isFile) return _buildFileJob(profile);
     final summary = _contents!.summarize();
     final keepCard = state.social == null &&
         _previousCard != null &&
@@ -669,7 +920,9 @@ class PublishCubit extends Cubit<PublishState> {
       publicationId: previous?.id ?? (_publicationId ??= const Uuid().v4()),
       driveId: drive.id,
       rootFolderId: drive.rootFolderId,
-      folderId: folder?.id,
+      scope: folder == null
+          ? const PublicationDriveScope()
+          : PublicationFolderScope(folder!.id),
       owner: profile.user.walletAddress,
       ownerName: _nonEmpty(state.ownerName.trim()),
       title: state.title.trim(),
@@ -763,16 +1016,17 @@ class PublishCubit extends Cubit<PublishState> {
           publication: ArNSPublicationItem(
             publicationId: version.publicationId,
             driveId: version.driveId,
-            folderId: version.folderId,
+            scope: version.scope,
             isLatestVersion: true,
           ),
         );
       }
       final live = outcome?.live ?? const <String>[];
       // The page and its link use the name when there is one.
-      final link = live.isNotEmpty
+      final page = live.isNotEmpty
           ? arnsUrlFor(live.last)
           : '${_deps.publisher.gatewayUrl}/${version.txId}/';
+      final link = await _withFileKey(page);
       if (isClosed) {
         onSettledAfterClose?.call(link);
         return;
@@ -880,6 +1134,12 @@ class PublishCubit extends Cubit<PublishState> {
       }
     } catch (_) {}
   }
+}
+
+/// A private file's data cipher could not be read, so its page cannot say
+/// how to decrypt it.
+class _CipherUnknown implements Exception {
+  const _CipherUnknown();
 }
 
 String _clip(String text, int max) =>

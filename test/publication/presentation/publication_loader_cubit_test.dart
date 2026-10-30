@@ -121,6 +121,120 @@ void main() {
         ownerOf: ownerOf ?? (_) async => fixture.owner,
       );
 
+  group('a file page', () {
+    const metadataTx = 'FILEmeta00000000000000000000000000000000000';
+    String page() => json.encode({
+          'version': 2,
+          'driveId': fixture.driveId,
+          'rootFolderId': fixtureRootFolderId,
+          'scope': {
+            'type': 'file',
+            'fileId': 'f1e2d3c4-0000-4000-8000-000000000001',
+          },
+          'privacy': 'public',
+          'owner': fixture.owner,
+          'file': {
+            'dataTxId': 'FILEdata00000000000000000000000000000000000',
+            'metadataTxId': metadataTx,
+            'name': 'Lake.jpg',
+          },
+          'title': 'A lake',
+        });
+
+    test('opens once its file is signed by its owner, with nothing to import',
+        () async {
+      final asked = <String>[];
+      final importer = _MockImporter();
+      final requests = <Uri>[];
+      final cubit = loader(
+        {'publication.json': page()},
+        importer: importer,
+        requests: requests,
+        ownerOf: (txId) async {
+          asked.add(txId);
+          return fixture.owner;
+        },
+      );
+      await cubit.load();
+      final state = cubit.state;
+      expect(state, isA<PublicationReady>());
+      expect((state as PublicationReady).ownerVerified, isTrue);
+      expect(state.stats, isNull);
+      expect(asked, [metadataTx]);
+      expect(
+          requests.map((u) => u.path), isNot(contains(endsWith('/snapshot'))));
+      verifyNever(() => importer.import(
+            candidate: any(named: 'candidate'),
+            body: any(named: 'body'),
+            protection: any(named: 'protection'),
+            expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
+          ));
+      expect(PublicationContents.open, isNull);
+      await cubit.close();
+    });
+
+    PublicationLoaderCubit withFacts(Map<String, String> tags,
+            {String? owner}) =>
+        PublicationLoaderCubit(
+          source: PublicationSource(
+            pageUri: _pageUri,
+            client: _gateway({'publication.json': page()}),
+          ),
+          settingsPath: 'publication.json',
+          driveDao: db.driveDao,
+          importer: DriveStateImporter(db.driveDao),
+          ownerOf: (_) async => fixture.owner,
+          factsOf: (_) async => (owner: owner ?? fixture.owner, tags: tags),
+        );
+    Map<String, String> fileTags({String? fileId, String? driveId}) => {
+          'Entity-Type': 'file',
+          'File-Id': fileId ?? 'f1e2d3c4-0000-4000-8000-000000000001',
+          'Drive-Id': driveId ?? fixture.driveId,
+        };
+
+    test('opens when its metadata is its own file\'s', () async {
+      final cubit = withFacts(fileTags());
+      await cubit.load();
+      expect((cubit.state as PublicationReady).ownerVerified, isTrue);
+      await cubit.close();
+    });
+
+    test('is refused when the owner\'s metadata is another file\'s', () async {
+      for (final tags in [
+        fileTags(fileId: 'aaaaaaaa-0000-4000-8000-00000000000a'),
+        fileTags(driveId: 'another-drive'),
+        {...fileTags(), 'Entity-Type': 'folder'},
+      ]) {
+        final cubit = withFacts(tags);
+        await cubit.load();
+        expect(cubit.state,
+            const PublicationFailed(PublicationFailure.snapshotRejected),
+            reason: '$tags');
+        await cubit.close();
+      }
+    });
+
+    test('is refused when someone else signed its file', () async {
+      final cubit = loader(
+        {'publication.json': page()},
+        ownerOf: (_) async => 'someoneElse0000000000000000000000000000000',
+      );
+      await cubit.load();
+      expect(cubit.state,
+          const PublicationFailed(PublicationFailure.snapshotRejected));
+      await cubit.close();
+    });
+
+    test('opens as declared when the gateway cannot say who signed it',
+        () async {
+      final cubit =
+          loader({'publication.json': page()}, ownerOf: (_) async => null);
+      await cubit.load();
+      expect((cubit.state as PublicationReady).ownerVerified, isFalse);
+      await cubit.close();
+    });
+  });
+
   group('settings', () {
     blocTest<PublicationLoaderCubit, PublicationLoaderState>(
       'a missing publication.json cannot be opened',
@@ -144,7 +258,7 @@ void main() {
 
     blocTest<PublicationLoaderCubit, PublicationLoaderState>(
       'a newer publication.json needs a newer viewer',
-      build: () => loader({'publication.json': '{"version": 2}'}),
+      build: () => loader({'publication.json': '{"version": 3}'}),
       act: (cubit) => cubit.load(),
       expect: () => [
         const PublicationLoadingSettings(),

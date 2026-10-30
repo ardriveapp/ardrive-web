@@ -18,19 +18,32 @@ export const ARFS_VERSION = '0.15';
 
 /** The publication.json version this tool writes. */
 export const PUBLICATION_VERSION = 1;
+/** A file page's publication.json version: only a viewer that knows the file scope opens it. */
+export const FILE_PUBLICATION_VERSION = 2;
 
 /**
  * The tags that make a publication's manifest the entity. The uploader adds
  * Content-Type, the app tags and Unix-Time.
  */
-export function publicationEntityTags({ driveId, publicationId, folderId }) {
+export function publicationEntityTags({ driveId, publicationId, folderId, fileId }) {
   return [
     { name: 'ArFS', value: ARFS_VERSION },
     { name: 'Entity-Type', value: 'publication' },
     { name: 'Drive-Id', value: driveId },
     { name: 'Publication-Id', value: publicationId },
-    { name: 'Publication-Scope', value: folderId ?? 'drive' },
-    { name: 'Publication-Version', value: String(PUBLICATION_VERSION) },
+    // A file page names its file: `Publication-Scope: file` and
+    // `Publication-File-Id`. Never `File-Id`: file lookups match that tag
+    // alone, and would find the page in place of the file.
+    ...(fileId
+      ? [
+          { name: 'Publication-Scope', value: 'file' },
+          { name: 'Publication-File-Id', value: fileId },
+        ]
+      : [{ name: 'Publication-Scope', value: folderId ?? 'drive' }]),
+    {
+      name: 'Publication-Version',
+      value: String(fileId ? FILE_PUBLICATION_VERSION : PUBLICATION_VERSION),
+    },
   ];
 }
 
@@ -57,6 +70,8 @@ export function buildPublicationJson({
   driveId,
   rootFolderId,
   folderId,
+  fileId,
+  file,
   privacy,
   owner,
   ownerName,
@@ -72,15 +87,24 @@ export function buildPublicationJson({
   publishedAt,
   viewer,
 }) {
+  // A file page has no snapshot; its `file` block holds, for a private
+  // file, only what is already public (transactions, the data's cipher).
   const config = {
-    version: PUBLICATION_VERSION,
+    version: fileId ? FILE_PUBLICATION_VERSION : PUBLICATION_VERSION,
     driveId,
     rootFolderId,
-    scope: folderId ? { type: 'folder', folderId } : { type: 'drive' },
+    scope: fileId
+      ? { type: 'file', fileId }
+      : folderId
+        ? { type: 'folder', folderId }
+        : { type: 'drive' },
     privacy,
     owner,
     ...(ownerName ? { ownerName } : {}),
-    snapshot: { path: 'snapshot', txId: snapshotTxId, tags: sorted(snapshotTags) },
+    ...(fileId
+      ? {}
+      : { snapshot: { path: 'snapshot', txId: snapshotTxId, tags: sorted(snapshotTags ?? {}) } }),
+    ...(file ? { file: sorted(file) } : {}),
     title,
     description,
   };

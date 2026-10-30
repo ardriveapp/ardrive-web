@@ -1,3 +1,4 @@
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/arns/domain/undername_validation.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
@@ -56,18 +57,17 @@ class ArNSPublicationItem extends ArNSTarget {
   const ArNSPublicationItem({
     required this.publicationId,
     required super.driveId,
-    required this.folderId,
+    required this.scope,
     required super.isLatestVersion,
   });
 
   final String publicationId;
 
-  /// The folder it shows, or null for the whole drive.
-  final String? folderId;
+  /// What it shows: the whole drive, a folder or one file.
+  final PublicationScope scope;
 
   @override
-  List<Object?> get props =>
-      [publicationId, driveId, folderId, isLatestVersion];
+  List<Object?> get props => [publicationId, driveId, scope, isLatestVersion];
 }
 
 /// One record of a name: the name itself (`@`) or an undername.

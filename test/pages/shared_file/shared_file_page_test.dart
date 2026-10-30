@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
@@ -70,6 +72,9 @@ final fileRevisionFallback = FileRevision(
 
 /// The row height `shared_file_ready_view.dart` lays its lists out on.
 const double _rowHeight = 44;
+
+class _MockPublicationLoaderCubit extends MockCubit<PublicationLoaderState>
+    implements PublicationLoaderCubit {}
 
 void main() {
   const fileId = 'file-id';
@@ -225,6 +230,8 @@ void main() {
     WidgetTester tester,
     SharedFileState initialState, {
     SharedFileKeySession? keySession,
+    // A published file page's loader, which puts the page's head on top.
+    PublicationLoaderCubit? publication,
     // Tall enough that the whole card is laid out and tappable, and narrower
     // than the 950px the desktop fork needs, so every test that is not about
     // the layout gets the phone column.
@@ -236,12 +243,18 @@ void main() {
 
     whenListen(cubit, states.stream, initialState: initialState);
 
+    final page = BlocProvider<SharedFileCubit>.value(
+      value: cubit,
+      child: SharedFilePage(keySession: keySession),
+    );
     await tester.pumpWidget(
       wrap(
-        BlocProvider<SharedFileCubit>.value(
-          value: cubit,
-          child: SharedFilePage(keySession: keySession),
-        ),
+        publication == null
+            ? page
+            : BlocProvider<PublicationLoaderCubit>.value(
+                value: publication,
+                child: page,
+              ),
       ),
     );
     await tester.pump();
@@ -286,6 +299,41 @@ void main() {
   });
 
   group('LOCKED', () {
+    testWidgets(
+        'a published file page is headed by its page, and says how '
+        'its key comes', (tester) async {
+      final loader = _MockPublicationLoaderCubit();
+      when(() => loader.state).thenReturn(const PublicationReady(
+        PublicationConfig(
+          version: 2,
+          driveId: 'c863be1f-a725-4554-9a9e-18268ed8a035',
+          rootFolderId: '41520b33-28c1-4892-886b-b845a5709085',
+          scope: PublicationFileScope(fileId),
+          privacy: 'private',
+          owner: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
+          snapshot: null,
+          file: PublicationFile(
+            dataTxId: 'FILEdata00000000000000000000000000000000000',
+            metadataTxId: 'FILEmeta00000000000000000000000000000000000',
+            cipher: 'AES256-GCM',
+            cipherIv: 'aXZpdml2aXZpdml2',
+          ),
+          title: 'Plans for the lake',
+          description: 'Opens with the key in its link.',
+          images: PublicationImages(),
+          publishedAt: null,
+          viewer: null,
+        ),
+        ownerVerified: true,
+      ));
+      await pumpPage(tester, locked(), publication: loader);
+
+      expect(find.text('Plans for the lake'), findsOneWidget);
+      expect(find.text('Opens with the key in its link.'), findsOneWidget);
+      expect(find.textContaining('link that includes its key'), findsOneWidget);
+      expect(find.textContaining('sent you the key separately'), findsNothing);
+    });
+
     testWidgets('shows what the link says is behind the key', (tester) async {
       await pumpPage(
         tester,

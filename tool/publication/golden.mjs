@@ -41,6 +41,11 @@ export function goldenFiles() {
       entity: publicationEntityTags({ ...publication, publicationId: input.publicationId }),
       part: publicationPartTags(input.publicationId),
     }, null, 2)}\n`,
+    // A private file's page: version 2, no snapshot, a `file` block.
+    'file-page.publication.json': buildPublicationJson(input.filePage),
+    'file-page.tags.json': `${JSON.stringify({
+      entity: publicationEntityTags({ ...input.filePage, publicationId: input.publicationId }),
+    }, null, 2)}\n`,
     'manifest.json': buildManifest(
       input.releaseManifest,
       Object.fromEntries(Object.entries(input.pagePaths).map(([name, id]) => [name, { id }])),

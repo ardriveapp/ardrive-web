@@ -1,3 +1,4 @@
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:artemis/schema/graphql_query.dart';
@@ -11,7 +12,9 @@ PublishedVersion _v(String tx, String id,
       txId: tx,
       publicationId: id,
       driveId: 'd',
-      folderId: folder,
+      scope: folder == null
+          ? const PublicationDriveScope()
+          : PublicationFolderScope(folder),
       publishedAt: DateTime.fromMillisecondsSinceEpoch(time * 1000),
       minedAtHeight: height,
     );
@@ -27,7 +30,7 @@ void main() {
     expect(publications.map((p) => p.id), ['A', 'B']);
     expect(publications.first.versions.map((v) => v.txId), ['a3', 'a2', 'a1']);
     expect(publications.first.earlier.map((v) => v.txId), ['a2', 'a1']);
-    expect(publications.last.folderId, 'f');
+    expect(publications.last.scope, const PublicationFolderScope('f'));
   });
 
   test('a tie in a block goes to the later Unix-Time', () {
@@ -71,6 +74,53 @@ void main() {
           graphQLRetry: _Pages(pages),
           gatewayUrl: () => 'https://turbo-gateway.com',
         );
+
+    test('a file page is found by Publication-File-Id, never by File-Id',
+        () async {
+      Map<String, dynamic> node(String id, Map<String, String> extra) => {
+            'cursor': id,
+            'node': {
+              'id': id,
+              'owner': {'address': 'OWNER'},
+              'bundledIn': null,
+              'block': null,
+              'tags': [
+                for (final MapEntry(:key, :value) in {
+                  'Entity-Type': 'publication',
+                  'Drive-Id': 'drive',
+                  'Publication-Id': 'pub-$id',
+                  'Unix-Time': '1792800000',
+                  ...extra,
+                }.entries)
+                  {'name': key, 'value': value},
+              ],
+            },
+          };
+      final found = await repository([
+        {
+          'transactions': {
+            'pageInfo': {'hasNextPage': false},
+            'edges': [
+              node('PAGE', {
+                'Publication-Scope': 'file',
+                'Publication-File-Id': 'file-1',
+              }),
+              // Unreadable as a file page: no Publication-File-Id.
+              node('BAD', {'Publication-Scope': 'file', 'File-Id': 'file-2'}),
+              node('DRIVE', {'Publication-Scope': 'drive'}),
+            ],
+          },
+        },
+      ]).publicationsOfOwner('OWNER');
+
+      final scopes = {
+        for (final p in found['drive']!) p.id: p.scope,
+      };
+      expect(scopes, {
+        'pub-PAGE': const PublicationFileScope('file-1'),
+        'pub-DRIVE': const PublicationDriveScope(),
+      });
+    });
 
     test('reads every page to the end', () async {
       final found = await repository([page(more: true), page(more: false)])

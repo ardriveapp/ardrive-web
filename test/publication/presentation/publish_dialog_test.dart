@@ -6,6 +6,7 @@ import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart'
     show PublicationStep;
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
@@ -55,7 +56,10 @@ void main() {
     cubit = _MockPublishCubit();
     when(() => cubit.scopeName).thenReturn('Archive');
     when(() => cubit.folder).thenReturn(null);
+    when(() => cubit.isFile).thenReturn(false);
+    when(() => cubit.isPrivateFile).thenReturn(false);
     when(() => cubit.canSyncDrive).thenReturn(false);
+    when(() => cubit.names).thenReturn(null);
   });
 
   Widget app(Widget home) => ArDriveTheme(
@@ -80,7 +84,11 @@ void main() {
           barrierDismissible: false,
           builder: (_) => BlocProvider<PublishCubit>.value(
             value: cubit,
-            child: const PublishDialog(),
+            // The link field is a TextField, which needs a Material.
+            child: const Material(
+              type: MaterialType.transparency,
+              child: PublishDialog(),
+            ),
           ),
         ),
         child: const Text('Publish to web'),
@@ -317,6 +325,112 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(SnackBarAction), findsNothing);
+    });
+  });
+
+  group('a file', () {
+    setUpAll(() => registerFallbackValue(FilePublishHow.page));
+
+    setUp(() {
+      when(() => cubit.isFile).thenReturn(true);
+      when(() => cubit.scopeName).thenReturn('Lake.jpg');
+    });
+
+    testWidgets('How offers its page and the file itself', (tester) async {
+      await open(
+        tester,
+        const PublishState(
+          stage: PublishStage.how,
+          filePages: FilePageAvailability.available,
+        ),
+      );
+
+      expect(find.text('How to publish'), findsOneWidget);
+      expect(find.text('File page'), findsOneWidget);
+      expect(find.text('The file itself'), findsOneWidget);
+      await tester.tap(find.text('The file itself'));
+      verify(() => cubit.setHow(FilePublishHow.itself)).called(1);
+    });
+
+    testWidgets('a release that cannot open file pages says so',
+        (tester) async {
+      await open(
+        tester,
+        const PublishState(
+          stage: PublishStage.how,
+          filePages: FilePageAvailability.needsRelease,
+        ),
+      );
+
+      expect(find.text('Available after the next ArDrive release.'),
+          findsOneWidget);
+    });
+
+    testWidgets('a private file\'s page is the only choice', (tester) async {
+      when(() => cubit.isPrivateFile).thenReturn(true);
+      await open(
+        tester,
+        const PublishState(
+          stage: PublishStage.how,
+          filePages: FilePageAvailability.available,
+        ),
+      );
+
+      expect(find.text('Only for files in public drives.'), findsOneWidget);
+      await tester.tap(find.text('The file itself'));
+      verifyNever(() => cubit.setHow(any()));
+    });
+
+    testWidgets('the file itself shows its link', (tester) async {
+      when(() => cubit.fileLink).thenReturn('https://ardrive.net/DATA');
+      when(() => cubit.file).thenReturn(FileEntry(
+        id: 'lake',
+        driveId: 'drive',
+        name: 'Lake.jpg',
+        parentFolderId: 'root',
+        path: '',
+        size: 1,
+        lastModifiedDate: DateTime.utc(2026),
+        dataTxId: 'DATA',
+        isHidden: false,
+        dateCreated: DateTime.utc(2026),
+        lastUpdated: DateTime.utc(2026),
+      ));
+      await open(tester, const PublishState(stage: PublishStage.itself));
+
+      expect(find.text('The file itself'), findsOneWidget);
+      expect(
+          find.byWidgetPredicate((w) =>
+              w is TextField &&
+              w.controller?.text == 'https://ardrive.net/DATA'),
+          findsOneWidget);
+      expect(find.text('This link always opens this version of the file.'),
+          findsOneWidget);
+    });
+
+    testWidgets('a private page\'s link holds the key, and says so',
+        (tester) async {
+      when(() => cubit.isPrivateFile).thenReturn(true);
+      await open(
+        tester,
+        PublishState(
+          stage: PublishStage.done,
+          link: 'https://ardrive.net/PAGE/#/?k=${'A' * 43}',
+        ),
+      );
+
+      expect(find.textContaining("This link holds the file's key."),
+          findsOneWidget);
+      // Behind the reveal control, as a share link's key is.
+      expect(find.byWidgetPredicate((w) => w is TextField && w.obscureText),
+          findsOneWidget);
+    });
+
+    testWidgets('a progress has no snapshot step', (tester) async {
+      await open(tester, const PublishState(stage: PublishStage.publishing));
+
+      expect(find.text('Saving a snapshot of the drive'), findsNothing);
+      expect(find.text("Signing the page's files"), findsOneWidget);
     });
   });
 }

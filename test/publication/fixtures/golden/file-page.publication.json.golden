@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "driveId": "c863be1f-a725-4554-9a9e-18268ed8a035",
+  "rootFolderId": "41520b33-28c1-4892-886b-b845a5709085",
+  "scope": {
+    "type": "file",
+    "fileId": "f1e2d3c4-5b6a-4789-8abc-def012345678"
+  },
+  "privacy": "private",
+  "owner": "iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA",
+  "file": {
+    "cipher": "AES256-GCM",
+    "cipherIv": "aXZpdml2aXZpdml2",
+    "dataTxId": "3l3i5yV0Hj4aupT1g2Y5etEuzeASu1uPcmE0-LD3IGE",
+    "metadataTxId": "kQJt49W-uYw_E7YSqQqkUARNZPg4H38hFnOMP4hf9MA"
+  },
+  "title": "Plans for 2027 é 🎉",
+  "description": "",
+  "images": {
+    "social": "social.jpg"
+  },
+  "generatedSocialCard": true,
+  "publishedAt": "2026-10-29T12:00:00Z",
+  "viewer": {
+    "release": "2.92.0",
+    "manifest": "kQJt49W-uYw_E7YSqQqkUARNZPg4H38hFnOMP4hf9MA"
+  }
+}

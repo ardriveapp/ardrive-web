@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
@@ -89,17 +90,27 @@ class WebPagesCubit extends Cubit<WebPagesState> {
     List<Drive> allDrives,
     List<FileEntry> deployments,
   ) async {
+    // Every drive the owner holds: a private one can have file pages.
+    // `composeWebPages` keeps drive and folder pages to public drives.
     final drives = {
       for (final d in allDrives)
-        if (d.ownerAddress == owner && d.isPublic) d.id: d,
+        if (d.ownerAddress == owner) d.id: d,
     };
     final all = [
       for (final p in publications.byDrive.values) ...p.publications,
     ];
+    final files = <String, FileEntry>{};
+    for (final p in all) {
+      if (p.scope case PublicationFileScope(:final fileId)) {
+        final file = await _driveDao.fileById(fileId: fileId).getSingleOrNull();
+        if (file != null) files[fileId] = file;
+      }
+    }
     final folderIds = {
       for (final p in all)
-        if (p.folderId != null) p.folderId!,
+        if (p.scope.folderIdOrNull case final folderId?) folderId,
       for (final f in deployments) f.parentFolderId,
+      for (final f in files.values) f.parentFolderId,
     };
     final folders = folderIds.isEmpty
         ? const <FolderEntry>[]
@@ -113,6 +124,7 @@ class WebPagesCubit extends Cubit<WebPagesState> {
         deployments: deployments,
         drives: drives,
         folders: {for (final f in folders) f.id: f},
+        files: files,
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'package:ardrive/publication/domain/file_page.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
@@ -16,6 +18,7 @@ Future<void> showPublishedView(
   BuildContext context, {
   required Drive drive,
   FolderEntry? folder,
+  FileEntry? file,
   required Publication publication,
 }) =>
     showArDriveDialog(
@@ -23,6 +26,7 @@ Future<void> showPublishedView(
       content: PublishedView(
         drive: drive,
         folder: folder,
+        file: file,
         publication: publication,
         // From the caller's context: the view's own is gone once it closes.
         onUpdate: () {
@@ -33,6 +37,7 @@ Future<void> showPublishedView(
             context,
             drive: drive,
             folder: folder,
+            file: file,
             previous: publication,
           );
         },
@@ -44,12 +49,16 @@ class PublishedView extends StatefulWidget {
     super.key,
     required this.drive,
     required this.folder,
+    this.file,
     required this.publication,
     required this.onUpdate,
   });
 
   final Drive drive;
   final FolderEntry? folder;
+
+  /// The file a file page shows.
+  final FileEntry? file;
   final Publication publication;
 
   /// Opens the publish dialog as an update, on the look: one way in, where
@@ -68,8 +77,52 @@ class _PublishedViewState extends State<PublishedView> {
       .catchError((_) => null);
   bool _showEarlier = false;
 
-  String _link(String txId) =>
-      '${context.read<ConfigService>().config.publicationGatewayUrl}/$txId/';
+  /// A private file page's links carry the file's key, for the owner.
+  String? _fileKey;
+
+  /// A file page made from an earlier version of its file.
+  bool _outOfDate = false;
+
+  /// Whether a private file page's key has been looked for: its link is not
+  /// shown, or copied, without it.
+  bool _keyChecked = false;
+
+  bool get _isPrivateFile => widget.file != null && widget.drive.isPrivate;
+
+  @override
+  void initState() {
+    super.initState();
+    final file = widget.file;
+    if (file == null) return;
+    _checkFile(file);
+  }
+
+  Future<void> _checkFile(FileEntry file) async {
+    final driveDao = context.read<DriveDao>();
+    final profile = context.read<ProfileCubit>().state;
+    final key = _isPrivateFile
+        ? await fileKeyForLink(driveDao, profile,
+            driveId: file.driveId, fileId: file.id)
+        : null;
+    // Out of date by the share page's own rule: the metadata it was made
+    // from is not the file's latest.
+    final revision = await driveDao
+        .latestFileRevisionByFileId(driveId: file.driveId, fileId: file.id)
+        .getSingleOrNull();
+    final published = (await _content)?.config.file;
+    if (!mounted) return;
+    setState(() {
+      _fileKey = key;
+      _keyChecked = true;
+      _outOfDate = revision != null &&
+          published != null &&
+          published.metadataTxId != revision.metadataTxId;
+    });
+  }
+
+  String _link(String txId) => withFileKey(
+      '${context.read<ConfigService>().config.publicationGatewayUrl}/$txId/',
+      _fileKey);
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +155,10 @@ class _PublishedViewState extends State<PublishedView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    config?.title ?? widget.folder?.name ?? widget.drive.name,
+                    config?.title ??
+                        widget.file?.name ??
+                        widget.folder?.name ??
+                        widget.drive.name,
                     style: typography.heading5(fontWeight: ArFontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -117,10 +173,25 @@ class _PublishedViewState extends State<PublishedView> {
             },
           ),
           const SizedBox(height: 16),
-          PublishedLink(
-            link: _link(latest.txId),
-            note: strings.publishUpdateNote,
-          ),
+          if (_outOfDate) ...[
+            Text(strings.publishFileOutOfDate,
+                style: typography.paragraphNormal(color: colors.textHigh)),
+            const SizedBox(height: 12),
+          ],
+          if (_isPrivateFile && !_keyChecked)
+            const SizedBox(
+              height: 48,
+              child: Center(child: ArDriveSpinner()),
+            )
+          else
+            PublishedLink(
+              link: _link(latest.txId),
+              isSecret: _fileKey != null,
+              note: [
+                if (_fileKey != null) strings.publishFileKeyInLink,
+                strings.publishUpdateNote,
+              ].join(' '),
+            ),
           if (earlier.isNotEmpty) ...[
             const SizedBox(height: 16),
             InkWell(
