@@ -23,9 +23,11 @@ class GraphQLRetry {
     required InternetChecker internetChecker,
     String? fallbackGraphqlUrl,
     Duration attemptTimeout = defaultAttemptTimeout,
+    Duration maxAttemptTimeout = defaultMaxAttemptTimeout,
   })  : _internetChecker = internetChecker,
         _fallbackGraphqlUrl = fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl,
-        _attemptTimeout = attemptTimeout;
+        _attemptTimeout = attemptTimeout,
+        _maxAttemptTimeout = maxAttemptTimeout;
 
   /// Where a query goes when the primary endpoint will not serve it.
   ///
@@ -45,9 +47,11 @@ class GraphQLRetry {
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
   final Duration _attemptTimeout;
+  final Duration _maxAttemptTimeout;
 
-  /// How long one attempt may take before it counts as failed, and is
-  /// retried or sent to the fallback like any other failure.
+  /// How long the first attempt may take before it counts as failed, and is
+  /// retried or sent to the fallback like any other failure. Each retry gets
+  /// longer, see [attemptTimeoutFor].
   ///
   /// Without it a request the gateway accepted and never answered waited for
   /// ever: nothing below this sets a deadline, so no retry or fallback ever
@@ -58,6 +62,26 @@ class GraphQLRetry {
   /// is twice the slow case, and short enough that a stall is retried while
   /// the person is still waiting.
   static const defaultAttemptTimeout = Duration(seconds: 20);
+
+  /// The longest any one attempt may take: 60 seconds.
+  ///
+  /// A page of 100 transactions is about 85 KB uncompressed, which takes 15
+  /// to 25 seconds on a poor mobile link. An attempt that timed out isn't
+  /// aborted (the http client can't), so it keeps using the link while the
+  /// retry runs, and each retry is slower than the one before.
+  static const defaultMaxAttemptTimeout = Duration(seconds: 60);
+
+  /// How long attempt [attempt] (1 for the first) may take: [first] times
+  /// [attempt], up to [max]. 20, 40, then 60 seconds by default.
+  @visibleForTesting
+  static Duration attemptTimeoutFor(
+    int attempt, {
+    Duration first = defaultAttemptTimeout,
+    Duration max = defaultMaxAttemptTimeout,
+  }) {
+    final grown = first * attempt;
+    return grown > max ? max : grown;
+  }
 
   /// Attempts against the *primary* endpoint before falling back.
   ///
@@ -192,9 +216,14 @@ class GraphQLRetry {
     Function(Exception e)? onRetry,
     int maxAttempts = defaultMaxAttempts,
   }) {
+    var attempt = 0;
     return retry(
       () async {
-        final response = await client.execute(query).timeout(_attemptTimeout);
+        attempt++;
+        final response = await client.execute(query).timeout(attemptTimeoutFor(
+            attempt,
+            first: _attemptTimeout,
+            max: _maxAttemptTimeout));
         if (response.errors != null && response.errors!.isNotEmpty) {
           throw GraphQLException(response.errors);
         }

@@ -27,6 +27,7 @@
 // screen instead, which this does not handle.
 const { chromium } = require('playwright-core');
 const fs = require('fs');
+const path = require('path');
 const { E2E_DIR, CDP_PORT, ensureDirs, mainPage, credentials } = require('./config');
 
 const LOG_IN = 'Log in';
@@ -119,13 +120,23 @@ async function waitFor(check, ms, page) {
   return false;
 }
 
-(async () => {
-  const mode = process.argv[2] || 'fresh';
-  if (!['fresh', 'unlock'].includes(mode)) {
-    console.error('usage: node login.js [unlock]');
-    process.exit(2);
-  }
-  const { keyfile, password } = credentials();
+const MARKER = `${E2E_DIR}/login-chooser`;
+const QUEUE = `${E2E_DIR}/nextfiles.json`;
+
+// Takes the keyfile back: no marker, and no keyfile left in the chooser
+// queue. Otherwise a login that missed its chooser would leave both set, and
+// the next chooser, an upload's, would be handed the keyfile. Safe to call
+// more than once.
+function withdrawKeyfile(keyfile) {
+  try { fs.rmSync(MARKER, { force: true }); } catch (e) {}
+  try {
+    const real = (p) => { try { return fs.realpathSync(p); } catch (e) { return path.resolve(p); } };
+    const queued = JSON.parse(fs.readFileSync(QUEUE, 'utf8'));
+    if (queued.some((p) => real(p) === real(keyfile))) fs.writeFileSync(QUEUE, '[]');
+  } catch (e) {}
+}
+
+async function logIn(mode, keyfile, password) {
   ensureDirs();
   const browser = await chromium.connectOverCDP(`http://127.0.0.1:${CDP_PORT}`);
   const page = await mainPage(browser);
@@ -149,27 +160,30 @@ async function waitFor(check, ms, page) {
     if (!atKeyfile) {
       await shot('2-no-keyfile-panel');
       console.log('FAILED: the keyfile panel never opened');
-      process.exit(1);
+      return 1;
     }
     await wait(1000);
     await shot('2-import');
     // launch.js answers the chooser with this queue, and hands the keyfile
-    // over only while the marker says the chooser is this login's.
-    fs.writeFileSync(`${E2E_DIR}/login-chooser`, '');
-    fs.writeFileSync(`${E2E_DIR}/nextfiles.json`, JSON.stringify([keyfile]));
+    // over only while the marker, written just now, says the chooser is this
+    // login's. Both are taken back however this ends.
+    fs.writeFileSync(MARKER, '');
+    fs.writeFileSync(QUEUE, JSON.stringify([keyfile]));
     const chosen = Date.now();
     await page.mouse.click(places.chooseKeyfile.x, places.chooseKeyfile.y);
     // "Loading wallet details...", then the password.
-    if (!(await waitFor(() => passwordFocused(page), 90000, page))) {
+    const asked = await waitFor(() => passwordFocused(page), 90000, page);
+    withdrawKeyfile(keyfile);
+    if (!asked) {
       await shot('3-no-password');
       console.log('FAILED: no password field 90 s after the keyfile was chosen');
-      process.exit(1);
+      return 1;
     }
     console.log(`password asked ${((Date.now() - chosen) / 1000).toFixed(1)} s after the keyfile was chosen`);
   } else if (!(await waitFor(() => passwordFocused(page), 30000, page))) {
     await shot('3-no-password');
     console.log('FAILED: no password field');
-    process.exit(1);
+    return 1;
   }
   await shot('3-password');
   await page.keyboard.type(password, { delay: 20 });
@@ -178,5 +192,26 @@ async function waitFor(check, ms, page) {
   // The first sync of the drive list takes a while on a new profile.
   await wait(mode === 'fresh' ? 60000 : 30000);
   await shot('4-done');
-  process.exit(0);
+  return 0;
+}
+
+(async () => {
+  const mode = process.argv[2] || 'fresh';
+  if (!['fresh', 'unlock'].includes(mode)) {
+    console.error('usage: node login.js [unlock]');
+    process.exit(2);
+  }
+  const { keyfile, password } = credentials();
+  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+    process.on(signal, () => { withdrawKeyfile(keyfile); process.exit(1); });
+  }
+  let code = 1;
+  try {
+    code = await logIn(mode, keyfile, password);
+  } catch (e) {
+    console.log('FAILED:', e.message.split('\n')[0]);
+  } finally {
+    withdrawKeyfile(keyfile);
+  }
+  process.exit(code);
 })();

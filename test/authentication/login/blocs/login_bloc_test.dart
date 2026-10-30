@@ -66,10 +66,18 @@ void main() {
   });
 
   group('AddWalletFile', () {
+    /// Pages of the wallet's drives, as the lookup receives them.
+    late StreamController<String> pages;
+
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+      pages = StreamController<String>.broadcast(sync: true);
+      when(() => mockArweaveService.userDriveTxPageReceived)
+          .thenAnswer((_) => pages.stream);
     });
+
+    tearDown(() => pages.close());
 
     blocTest(
       'should emit the event to prompt password when user is an existing one',
@@ -184,7 +192,7 @@ void main() {
             userRepository: mockUserRepository,
             profileCubit: mockProfileCubit,
             configService: mockConfigService,
-            walletLookupTimeout: const Duration(milliseconds: 50),
+            walletLookupTimeout: const Duration(milliseconds: 100),
           );
 
       setUp(() {
@@ -203,7 +211,7 @@ void main() {
               .thenAnswer((_) => Completer<bool>().future);
         },
         act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 200),
+        wait: const Duration(milliseconds: 300),
         expect: () => [
           LoginLoadingIfUserAlreadyExists(),
           LoginLoadingIfUserAlreadyExistsSuccess(),
@@ -222,7 +230,80 @@ void main() {
               .thenAnswer((_) => Completer<bool>().future);
         },
         act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 200),
+        wait: const Duration(milliseconds: 300),
+        expect: () => [
+          LoginLoadingIfUserAlreadyExists(),
+          LoginLoadingIfUserAlreadyExistsSuccess(),
+          isA<GatewayLoginFailure>(),
+          isA<LoginLoading>(),
+        ],
+      );
+
+      // A wallet with many drives takes many pages. The bound counts from
+      // the last one, so a lookup longer than the bound still logs in.
+      blocTest<LoginBloc, LoginState>(
+        'a lookup that keeps receiving pages is not cut off',
+        build: quickBloc,
+        setUp: () {
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async {
+            final address = await wallet.getAddress();
+            for (var page = 0; page < 8; page++) {
+              await Future<void>.delayed(const Duration(milliseconds: 25));
+              pages.add(address);
+            }
+            return true;
+          });
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        wait: const Duration(milliseconds: 400),
+        expect: () => [
+          LoginLoadingIfUserAlreadyExists(),
+          LoginLoadingIfUserAlreadyExistsSuccess(),
+          isA<PromptPassword>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a lookup that stops receiving pages fails',
+        build: quickBloc,
+        setUp: () {
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async {
+            final address = await wallet.getAddress();
+            for (var page = 0; page < 3; page++) {
+              await Future<void>.delayed(const Duration(milliseconds: 25));
+              pages.add(address);
+            }
+            return Completer<bool>().future;
+          });
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        wait: const Duration(milliseconds: 400),
+        expect: () => [
+          LoginLoadingIfUserAlreadyExists(),
+          LoginLoadingIfUserAlreadyExistsSuccess(),
+          isA<GatewayLoginFailure>(),
+          isA<LoginLoading>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        "another wallet's pages don't keep a stalled lookup going",
+        build: quickBloc,
+        setUp: () {
+          // Pages for another wallet keep arriving past the test's wait.
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async {
+            for (var page = 0; page < 24; page++) {
+              await Future<void>.delayed(const Duration(milliseconds: 25));
+              if (!pages.isClosed) pages.add('another wallet');
+            }
+            return Completer<bool>().future;
+          });
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           LoginLoadingIfUserAlreadyExists(),
           LoginLoadingIfUserAlreadyExistsSuccess(),

@@ -216,6 +216,14 @@ class ArweaveService {
   final Map<String, int> snapshotMetadataHits = {};
   final Map<String, int> snapshotMetadataMisses = {};
 
+  final _userDriveTxPages = StreamController<String>.broadcast(sync: true);
+
+  /// The wallet address of each page [getUniqueUserDriveEntityTxs] receives,
+  /// as it arrives. A wallet with many drives takes many pages: a caller with
+  /// a deadline uses this to tell one that is still arriving from a gateway
+  /// that stopped answering.
+  Stream<String> get userDriveTxPageReceived => _userDriveTxPages.stream;
+
   /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
   /// Call after creating/updating a drive or after a full sync completes.
   void clearUserDriveTxsCache() {
@@ -1248,6 +1256,7 @@ class ArweaveService {
         ),
         maxAttempts: maxRetries,
       );
+      _userDriveTxPages.add(userAddress);
 
       final queryEdges = userDriveEntitiesQuery.data!.transactions.edges;
       final filteredEdges = queryEdges.where(

@@ -29,6 +29,23 @@ class _StallingClient extends Fake implements ArtemisClient {
   }
 }
 
+/// Answers every request, each after [delay]: a slow link.
+class _SlowClient extends Fake implements ArtemisClient {
+  _SlowClient(this.delay);
+
+  final Duration delay;
+  int requests = 0;
+
+  @override
+  Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
+    GraphQLQuery<T, U> query, {
+    Context context = const Context(),
+  }) {
+    requests++;
+    return Future.delayed(delay, () => GraphQLResponse<T>());
+  }
+}
+
 /// A request the gateway accepted and never answered used to wait for ever:
 /// nothing set a deadline, so neither a retry nor the fallback ever ran. It
 /// held keyfile log in on "Loading wallet details..." indefinitely.
@@ -68,6 +85,39 @@ void main() {
       throwsA(isNot(isA<TimeoutException>())),
     );
     expect(client.requests, 2);
+  });
+
+  test('each retry gets longer: 20, 40, then 60 seconds at most', () {
+    expect(
+      [
+        for (var attempt = 1; attempt <= 5; attempt++)
+          GraphQLRetry.attemptTimeoutFor(attempt),
+      ],
+      const [
+        Duration(seconds: 20),
+        Duration(seconds: 40),
+        Duration(seconds: 60),
+        Duration(seconds: 60),
+        Duration(seconds: 60),
+      ],
+    );
+  });
+
+  // A page that always takes longer than the first attempt's timeout, as on
+  // a poor mobile link, is answered once an attempt has time enough.
+  test('a slow endpoint gets more time on each retry', () async {
+    final client = _SlowClient(const Duration(milliseconds: 150));
+    final retry = GraphQLRetry(
+      client,
+      internetChecker: _MockInternetChecker(),
+      attemptTimeout: const Duration(milliseconds: 60),
+      maxAttemptTimeout: const Duration(milliseconds: 300),
+    );
+
+    await retry.execute(query).timeout(const Duration(seconds: 10));
+
+    // 60 ms and 120 ms time out; 180 ms is enough.
+    expect(client.requests, 3);
   });
 
   test('a stalled endpoint is one another endpoint might not be', () {

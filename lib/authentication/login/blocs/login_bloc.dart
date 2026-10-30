@@ -349,9 +349,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// reads at once; a read still going after this is stuck.
   static const defaultKeyfileReadTimeout = Duration(seconds: 15);
 
-  /// How long the lookups for a chosen wallet (its password, its drives)
-  /// may take before the dialog closes with an error. GraphQL retries each
-  /// stalled attempt, so this bounds the whole step, not one request.
+  /// How long the lookups for a chosen wallet (its password, its drives) may
+  /// go without receiving anything before the dialog closes with an error.
+  ///
+  /// Counted from the last page received, not from the start: the lookup
+  /// pages through every drive transaction the wallet has, and a real wallet
+  /// took 30 pages and 18.5 s on a fast link. A wallet that big on a slow
+  /// phone still logs in; a gateway that stops answering still fails here.
   static const defaultWalletLookupTimeout = Duration(seconds: 45);
 
   final Duration _keyfileReadTimeout;
@@ -398,14 +402,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final wallet = event.wallet;
 
       // Both lookups ask the gateway. A stalled one closes the dialog with
-      // an error instead of spinning for ever.
-      final (hasPassword, hasDrives) = await () async {
-        if (await _arDriveAuth.userHasPassword(wallet)) {
-          return (true, true);
-        }
-        return (false, await _arDriveAuth.isExistingUser(wallet));
-      }()
-          .timeout(_walletLookupTimeout);
+      // an error instead of spinning for ever. The address first: the
+      // lookups start as soon as their future is made.
+      final address = await wallet.getAddress();
+      final (hasPassword, hasDrives) = await _untilIdle(
+        () async {
+          if (await _arDriveAuth.userHasPassword(wallet)) {
+            return (true, true);
+          }
+          return (false, await _arDriveAuth.isExistingUser(wallet));
+        }(),
+        address: address,
+      );
 
       emit(LoginLoadingIfUserAlreadyExistsSuccess());
       if (hasPassword) {
@@ -427,6 +435,36 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
       emit(previousState);
     }
+  }
+
+  /// [work], or a [TimeoutException] once the wallet lookup timeout passes
+  /// with no page of [address]'s drives received. Each page restarts it.
+  Future<T> _untilIdle<T>(Future<T> work, {required String address}) {
+    final done = Completer<T>();
+    Timer? deadline;
+    void restart() {
+      deadline?.cancel();
+      deadline = Timer(_walletLookupTimeout, () {
+        if (!done.isCompleted) {
+          done.completeError(TimeoutException(
+              'Nothing received for the wallet', _walletLookupTimeout));
+        }
+      });
+    }
+
+    final pages = _arweaveService.userDriveTxPageReceived
+        .where((page) => page == address)
+        .listen((_) => restart());
+    restart();
+    work.then((value) {
+      if (!done.isCompleted) done.complete(value);
+    }, onError: (Object e, StackTrace s) {
+      if (!done.isCompleted) done.completeError(e, s);
+    });
+    return done.future.whenComplete(() {
+      deadline?.cancel();
+      pages.cancel();
+    });
   }
 
   /// @thiagocarvalhodev it's handling the login and gateway issues
