@@ -254,8 +254,15 @@ class DriveUnlocker {
       }
 
       try {
-        signature =
-            await _crypto.walletSignatureForDrive(wallet, driveId, signingType);
+        // A pass over several drives stays quiet after the person cancelled
+        // "Wander needs your permission again"; see
+        // [ArConnectPrompt.quietAfterCancel].
+        final Uint8List signed = promptBudget != null
+            ? await ArConnectPrompt.quietAfterCancel(() =>
+                _crypto.walletSignatureForDrive(wallet, driveId, signingType))
+            : await _crypto.walletSignatureForDrive(
+                wallet, driveId, signingType);
+        signature = signed;
       } catch (e) {
         logger.w('The wallet did not sign for $driveId: $e');
         // Either way a background pass does not ask again this session.

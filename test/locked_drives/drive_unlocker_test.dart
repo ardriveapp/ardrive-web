@@ -6,6 +6,7 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
@@ -390,6 +391,51 @@ void main() {
     expect(next.failure, DriveUnlockFailure.walletDeclined);
     expect(wander.prompts, 1);
     expect(session.holdsSignatureFor(owner, _driveA), isFalse);
+  });
+
+  test(
+      'after Cancel on "Wander needs your permission again", a pass over '
+      'several drives is quiet, and one drive the person asked for is not',
+      () async {
+    ArConnectPrompt.reset();
+    addTearDown(ArConnectPrompt.reset);
+    final shown = <ArConnectUnavailableReason>[];
+    ArConnectPrompt.registerRetryPrompt((reason, _) async {
+      shown.add(reason);
+      return false;
+    });
+    final wander = FakeWander(wallet)..missingPermission = true;
+    final saved = await wander.savedWallet();
+    final drive = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveA, password: 'pw');
+    final other = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveB, password: 'pw');
+
+    // The person cancels the prompt once (a write, say).
+    await expectLater(
+      ArConnectPrompt.ask<String>(
+          wander,
+          () async => throw Exception(
+              'Missing permission(s) for "signature": SIGNATURE')),
+      throwsA(isA<ArConnectUnavailableException>()),
+    );
+    expect(shown, hasLength(1));
+
+    // Discovery: quiet.
+    final pass = await unlocker.tryPassword(
+        wallet: saved,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw',
+        promptBudget: WalletPromptBudget(WalletPromptBudget.perPass));
+    expect(pass.failure, DriveUnlockFailure.walletDeclined);
+    expect(shown, hasLength(1));
+
+    // One drive, asked for: offered Reconnect.
+    final asked = await unlocker.tryPassword(
+        wallet: saved, driveTx: other.tx, data: other.data, password: 'pw');
+    expect(asked.failure, DriveUnlockFailure.walletDeclined);
+    expect(shown, hasLength(2));
   });
 
   test('isWalletCancellation: Wander\'s cancels, and nothing else', () {

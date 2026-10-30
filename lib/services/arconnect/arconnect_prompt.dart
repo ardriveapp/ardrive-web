@@ -152,10 +152,22 @@ class ArConnectPrompt {
   static String? _elsewhereFor;
 
   /// Whether the person chose Cancel on "Wander needs your permission
-  /// again". Until they act again ([personActed]), a missing permission
-  /// ends a request without asking, so a pass, or the next one, doesn't
-  /// bring the prompt back for each drive.
+  /// again". Until they act again ([personActed]), a missing permission in
+  /// a drive unlock pass ([quietAfterCancel]) ends the request without
+  /// asking, so a pass, or the next one, doesn't bring the prompt back for
+  /// each drive. Anything else the person does, a write above all, is
+  /// always offered Reconnect.
   static bool _permissionDeclined = false;
+
+  /// Marks the zone of a request made by a drive unlock pass.
+  static final Object _passZoneKey = Object();
+
+  /// Runs [request], made by a drive unlock pass that nobody asked for one
+  /// drive at a time (discovery, or the other drives tried with an Unlock),
+  /// so that after a Cancel on "Wander needs your permission again" it ends
+  /// quietly instead of asking again.
+  static Future<T> quietAfterCancel<T>(Future<T> Function() request) =>
+      runZoned(request, zoneValues: {_passZoneKey: true});
 
   /// The person did something that needs Wander: Unlock, a sync they
   /// started, a write. A missing permission may ask them again.
@@ -271,7 +283,9 @@ class ArConnectPrompt {
           continue;
         }
 
-        if (_permissionDeclined) throw ArConnectUnavailableException(reason);
+        if (_permissionDeclined && Zone.current[_passZoneKey] == true) {
+          throw ArConnectUnavailableException(reason);
+        }
 
         // Nothing is waiting on Wander here, so only the person closes this.
         if (!await _show(prompt, reason, null)) {

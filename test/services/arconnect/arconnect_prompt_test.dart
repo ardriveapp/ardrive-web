@@ -457,26 +457,40 @@ void main() {
       );
     });
 
-    test('after Cancel, a missing permission asks nobody until they act',
-        () async {
+    test(
+        'after Cancel, an unlock pass asks nobody until the person acts, '
+        'and a write is still offered Reconnect', () async {
       pick = () => false;
       await expectLater(
         ArConnectPrompt.ask<String>(wander, () async => throw missing()),
         throwsA(isA<ArConnectUnavailableException>()),
       );
+      expect(shown, hasLength(1));
+
+      // A drive unlock pass: quiet.
       await expectLater(
-        ArConnectPrompt.ask<String>(wander, () async => throw missing()),
+        ArConnectPrompt.quietAfterCancel(() =>
+            ArConnectPrompt.ask<String>(wander, () async => throw missing())),
         throwsA(isA<ArConnectUnavailableException>().having((e) => e.reason,
             'reason', ArConnectUnavailableReason.noPermission)),
       );
-      expect(shown, [ArConnectUnavailableReason.noPermission]);
+      expect(shown, hasLength(1));
 
-      ArConnectPrompt.personActed();
+      // A write, such as Hide, that signs straight through Wander: asked.
       await expectLater(
         ArConnectPrompt.ask<String>(wander, () async => throw missing()),
         throwsA(isA<ArConnectUnavailableException>()),
       );
       expect(shown, hasLength(2));
+
+      // Once the person acts, a pass may ask again.
+      ArConnectPrompt.personActed();
+      await expectLater(
+        ArConnectPrompt.quietAfterCancel(() =>
+            ArConnectPrompt.ask<String>(wander, () async => throw missing())),
+        throwsA(isA<ArConnectUnavailableException>()),
+      );
+      expect(shown, hasLength(3));
     });
 
     test('a failure while a reconnect runs waits for it, with no new prompt',

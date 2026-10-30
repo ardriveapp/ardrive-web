@@ -197,6 +197,16 @@ class FakeWander extends Fake implements ArConnectService {
   /// Throws what a reconnect onto another wallet ends in.
   bool otherWallet = false;
 
+  /// Throws what Wander throws once ArDrive has lost its permissions.
+  bool missingPermission = false;
+
+  /// The saved account's wallet, which asks through [ArConnectPrompt].
+  Future<ArConnectWallet> savedWallet() async =>
+      ArConnectWallet(this, publicKey: await inner.getOwner());
+
+  @override
+  bool isExtensionPresent() => true;
+
   /// Answers every v2 (data item) signature with fresh random bytes.
   bool varyV2 = false;
 
@@ -205,6 +215,10 @@ class FakeWander extends Fake implements ArConnectService {
     if (cancel) throw Exception('User cancelled the auth');
     if (fail) throw Exception('Wallet is locked');
     if (otherWallet) throw const ArConnectWalletMismatchException();
+    if (missingPermission) {
+      throw Exception(
+          'Missing permission(s) for "signDataItem": SIGN_TRANSACTION');
+    }
     if (gaveUp) {
       throw const ArConnectUnavailableException(
           ArConnectUnavailableReason.noAnswer);
