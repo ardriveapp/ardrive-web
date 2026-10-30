@@ -66,8 +66,11 @@ void openWebPageFolder(BuildContext context, WebPage page) {
   final router = context.read<AppRouterDelegate>();
   final drives = context.read<DrivesCubit>();
   final drivesState = drives.state;
-  final itemId =
-      page.isDeployment ? page.id : page.publication?.scope.fileIdOrNull;
+  final itemId = page.isDeployment
+      ? page.id
+      : page.isFilePage
+          ? page.publication?.scope.fileIdOrNull
+          : null;
   final inExplorer = !router.showingDrivesList &&
       !router.showingNames &&
       !router.showingWebPages;
@@ -435,8 +438,10 @@ class _WebPageActions {
   /// The link to open or copy: a private file page's carries the file's
   /// key, for its owner.
   Future<String> _url() async {
+    // Only a private file page's link carries a key.
+    if (!page.isPrivate) return link.url;
     final fileId = page.publication?.scope.fileIdOrNull;
-    if (!page.isPrivate || fileId == null) return link.url;
+    if (fileId == null) return link.url;
     return withFileKey(
       link.url,
       await fileKeyForLink(
