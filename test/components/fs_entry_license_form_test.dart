@@ -191,6 +191,47 @@ void main() {
       verify(() => bloc.add(const FsEntryLicenseCostRefresh())).called(1);
     });
 
+    testWidgets('no price for another reason: does not blame the connection',
+        (tester) async {
+      await pump(
+          tester,
+          FsEntryLicenseReviewing(
+            summary: summary(priceUnavailable: true),
+            pricingFailed: true,
+          ));
+
+      expect(find.text("Couldn't get a price. Try again."), findsOneWidget);
+      expect(find.textContaining('connection'), findsNothing);
+      expect(find.text('Confirm'), findsNothing);
+    });
+
+    testWidgets('paid from a wallet that is short: says so', (tester) async {
+      await pump(
+        tester,
+        FsEntryLicenseReviewing(
+          summary: UploadReviewSummary(
+            method: UploadMethod.ar,
+            isFree: false,
+            priceUnavailable: false,
+            isCovered: false,
+            overFreeAllowance: false,
+            offersPaymentChoice: false,
+            usesLegacySelector: true,
+            creditsCost: BigInt.zero,
+            creditsBalance: BigInt.zero,
+            usdCost: null,
+            arCost: BigInt.from(1000000000),
+          ),
+        ),
+      );
+
+      expect(find.text("Your wallet doesn't have enough AR for this change."),
+          findsOneWidget);
+      final confirm = tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Confirm'));
+      expect(confirm.isDisabled, isTrue);
+    });
+
     testWidgets('Back goes to the step before', (tester) async {
       await pump(
           tester,

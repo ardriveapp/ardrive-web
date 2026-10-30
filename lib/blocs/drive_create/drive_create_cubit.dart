@@ -5,6 +5,7 @@ import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -57,8 +58,15 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     String driveName,
   ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(DriveCreateWalletMismatch(privacy: state.privacy));
+    try {
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        emit(DriveCreateWalletMismatch(privacy: state.privacy));
+        return;
+      }
+    } on ArConnectUnavailableException catch (e) {
+      // Wander couldn't be reached and the person chose Cancel. Nothing was
+      // written: the form stays, to try again or close.
+      logger.w('Could not check the wallet before creating a drive: $e');
       return;
     }
 
@@ -179,7 +187,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(DriveCreateFailure(privacy: state.privacy, isPaymentError: isTurboPaymentError(error)));
+    emit(DriveCreateFailure(
+        privacy: state.privacy, isPaymentError: isTurboPaymentError(error)));
     super.onError(error, stackTrace);
 
     logger.e('Failed to create drive', error, stackTrace);

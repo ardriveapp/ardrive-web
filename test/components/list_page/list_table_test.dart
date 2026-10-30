@@ -10,8 +10,10 @@ void main() {
   late List<String> sorted;
   late List<String> opened;
   late List<String> chosen;
+  late List<String> ticked;
 
   setUp(() {
+    ticked = [];
     sorted = [];
     opened = [];
     chosen = [];
@@ -26,8 +28,8 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     bool showsColumns = true,
-    bool? selected,
-    bool showsCheckbox = true,
+    bool bulkActions = false,
+    bool selecting = false,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1000, 600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -43,8 +45,13 @@ void main() {
                   sort: 'updated',
                   sortAscending: false,
                   onSort: sorted.add,
-                  allSelected: selected,
-                  showsCheckbox: showsCheckbox,
+                  selection: bulkActions
+                      ? ListHeaderSelection(
+                          allTicked: false,
+                          onToggleAll: () {},
+                          selecting: selecting,
+                        )
+                      : null,
                 ),
                 for (final row in ['one', 'two'])
                   ListTableRow(
@@ -53,8 +60,13 @@ void main() {
                     onOpen: () => opened.add(row),
                     onChoose: () => chosen.add(row),
                     chosen: false,
-                    selected: selected,
-                    showsCheckbox: showsCheckbox,
+                    selection: bulkActions
+                        ? ListRowSelection(
+                            ticked: false,
+                            onTickChanged: () => ticked.add(row),
+                            selecting: selecting,
+                          )
+                        : null,
                     menu: const SizedBox(width: 48, height: 48),
                     child: ListColumnsRow(
                       flexes: const [6, 5, 3],
@@ -158,40 +170,89 @@ void main() {
     );
   });
 
-  group('a list that hides its checkboxes until the reader chooses several',
-      () {
-    testWidgets('draws none, and the headings stay over their columns',
+  group('checkboxes, the file-manager pattern', () {
+    List<bool> shown(WidgetTester tester) => tester
+        .widgetList<ArDriveMultiSelectBox>(find.byType(ArDriveMultiSelectBox))
+        .map((b) => b.visible)
+        .toList();
+
+    testWidgets('a list without bulk actions draws none at all',
         (tester) async {
-      await pump(tester, selected: false, showsCheckbox: false);
+      await pump(tester);
+      await tester.longPress(find.text('one'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.byType(ArDriveCheckBox), findsNothing);
+      expect(find.byType(ArDriveMultiSelectBox), findsNothing);
+    });
+
+    testWidgets("hover shows that row's box only", (tester) async {
+      await pump(tester, bulkActions: true);
+      await tester.pumpAndSettle();
+      // Select-all, then one per row.
+      expect(shown(tester), [false, false, false]);
+
+      final pointer = await mouse(tester);
+      await pointer.moveTo(tester.getCenter(find.text('two')));
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [false, false, true]);
+    });
+
+    testWidgets("focus shows that row's box", (tester) async {
+      await pump(tester, bulkActions: true);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'one');
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      await pointer.moveTo(Offset.zero);
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [false, true, false]);
+    });
+
+    testWidgets('only the box ticks; a click on the row does not',
+        (tester) async {
+      await pump(tester, bulkActions: true);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'one');
+      await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+      expect(ticked, isEmpty);
+
+      await pointer.down(tester.getCenter(find.byType(ArDriveCheckBox).at(1)));
+      await pointer.up();
+      await tester.pump();
+      expect(ticked, ['one']);
+    });
+
+    testWidgets('while selecting, every box and select-all show',
+        (tester) async {
+      await pump(tester, bulkActions: true, selecting: true);
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [true, true, true]);
+    });
+
+    testWidgets('nothing moves between hidden and shown', (tester) async {
+      await pump(tester, bulkActions: true);
+      await tester.pumpAndSettle();
+      final hidden = [
+        for (final t in ['one', 'one.ar.io', 'Link'])
+          tester.getTopLeft(find.text(t)),
+      ];
+
+      await pump(tester, bulkActions: true, selecting: true);
+      await tester.pumpAndSettle();
+
+      expect([
+        for (final t in ['one', 'one.ar.io', 'Link'])
+          tester.getTopLeft(find.text(t)),
+      ], hidden);
       expect(
         tester.getTopLeft(find.text('Link')).dx,
         tester.getTopLeft(find.text('one.ar.io')).dx,
-      );
-    });
-
-    testWidgets('and lines up with a list that offers no selection at all',
-        (tester) async {
-      await pump(tester);
-      final plain = tester.getTopLeft(find.text('one')).dx;
-
-      await pump(tester, selected: false, showsCheckbox: false);
-      await tester.pumpAndSettle();
-
-      expect(tester.getTopLeft(find.text('one')).dx, plain);
-    });
-
-    testWidgets('shown, one per row and select-all, still in line',
-        (tester) async {
-      await pump(tester, selected: false);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ArDriveCheckBox), findsNWidgets(3));
-      expect(
-        tester.getTopLeft(find.text('Link')).dx,
-        tester.getTopLeft(find.text('one.ar.io')).dx,
+        reason: 'the headings stay over their columns',
       );
     });
   });

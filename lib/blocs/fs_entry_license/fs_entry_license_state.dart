@@ -28,10 +28,15 @@ class FsEntryLicenseReviewing extends FsEntryLicenseState {
   /// it is read.
   final UploadReviewSummary? summary;
 
-  const FsEntryLicenseReviewing({this.summary}) : super();
+  /// The cost could not be worked out for a reason other than Turbo or the
+  /// connection, so the notice does not blame either.
+  final bool pricingFailed;
+
+  const FsEntryLicenseReviewing({this.summary, this.pricingFailed = false})
+      : super();
 
   @override
-  List<Object?> get props => [summary];
+  List<Object?> get props => [summary, pricingFailed];
 }
 
 class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {

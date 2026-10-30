@@ -98,6 +98,7 @@ class UploadReviewDialog extends StatefulWidget {
     this.leading = const [],
     this.onBack,
     this.subject = ReviewCostSubject.upload,
+    this.priceUnavailableMessage,
   });
 
   final String title;
@@ -142,6 +143,10 @@ class UploadReviewDialog extends StatefulWidget {
 
   /// What is being paid for, which the notices name.
   final ReviewCostSubject subject;
+
+  /// In place of the usual no-price notice, which blames the connection,
+  /// when the cause was something else.
+  final String? priceUnavailableMessage;
 
   @override
   State<UploadReviewDialog> createState() => _UploadReviewDialogState();
@@ -343,12 +348,25 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           width: double.infinity,
           child: ArDriveNotice(
             type: ArDriveNoticeType.error,
-            message: copy.priceUnavailable,
+            message: widget.priceUnavailableMessage ?? copy.priceUnavailable,
             actionLabel: l10n.tryAgain,
             onAction: _refresh,
           ),
         )
-      else if (summary.needsCredits) ...[
+      // A change paid from the wallet, which can't cover it. An upload says
+      // so in its payment selector instead.
+      else if (widget.subject == ReviewCostSubject.change &&
+          summary.method == UploadMethod.ar &&
+          !summary.isCovered) ...[
+        const SizedBox(height: ArDriveSpacing.lg),
+        SizedBox(
+          width: double.infinity,
+          child: ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message: l10n.changeWalletShort,
+          ),
+        ),
+      ] else if (summary.needsCredits) ...[
         const SizedBox(height: ArDriveSpacing.lg),
         SizedBox(
           width: double.infinity,

@@ -394,15 +394,37 @@ void main() {
     testWidgets('and so does Enter on a row reached with Tab', (tester) async {
       await pumpClickable(tester);
 
+      // The row is the Tab stop, not its box: a file manager's order.
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(drawnChosen(), findsOneWidget, reason: 'Tab shows where it is');
+      expect(
+        tester
+            .widget<ArDriveMultiSelectBox>(find.byType(ArDriveMultiSelectBox))
+            .visible,
+        isTrue,
+        reason: 'focus in the row shows its box',
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
       expect(opened, 1);
+      expect(ticked, 0);
+    });
+
+    testWidgets('and Space on it ticks its box, without opening it',
+        (tester) async {
+      await pumpClickable(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+
+      expect(ticked, 1);
+      expect(opened, 0);
     });
 
     testWidgets('a ticked drive is drawn chosen', (tester) async {

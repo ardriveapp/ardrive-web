@@ -13,6 +13,7 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:drift/drift.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -486,7 +487,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _turboBalance = turboBalance;
     _hasNoTurboBalance = turboBalance == BigInt.zero;
     _turboCredits = convertWinstonToLiteralString(turboBalance);
-    _sufficentCreditsBalance = _costEstimateTurbo.totalCost <= _turboBalance;
+    // As in _computeIsSufficientBalance: a zero estimate is no price.
+    _sufficentCreditsBalance = _costEstimateTurbo.totalCost > BigInt.zero &&
+        _costEstimateTurbo.totalCost <= _turboBalance;
     _computeIsTurboEnabled();
     _computeIsButtonEnabled();
 
@@ -634,17 +637,26 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> confirmSnapshotCreation() async {
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      logger.w('Failed to confirm the upload: Wallet mismatch');
-      emit(SnapshotUploadFailure());
+    try {
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        logger.w('Failed to confirm the upload: Wallet mismatch');
+        emit(SnapshotUploadFailure());
+        return;
+      }
+    } on ArConnectUnavailableException catch (e) {
+      // Wander couldn't be reached and the person chose Cancel. Nothing was
+      // signed or sent: the confirmation stays, to try again or close.
+      logger.w('Could not check the wallet before a snapshot: $e');
       return;
     }
 
-    await _prepareAndSignTx(
-      _snapshotEntity!,
-    );
-
     try {
+      // Inside the try: a signature Wander never gave, then Cancel, is a
+      // failure the dialog can close, not a spinner that never ends.
+      await _prepareAndSignTx(
+        _snapshotEntity!,
+      );
+
       emit(UploadingSnapshot());
 
       if (_useTurboUpload) {

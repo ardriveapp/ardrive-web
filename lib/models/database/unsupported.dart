@@ -7,3 +7,7 @@ LazyDatabase openConnection() {
 LazyDatabase openPublicationConnection() {
   throw 'Platform not supported';
 }
+
+Future<bool> deleteLocalDatabase() {
+  throw 'Platform not supported';
+}

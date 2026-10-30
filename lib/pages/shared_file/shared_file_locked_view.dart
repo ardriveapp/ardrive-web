@@ -237,18 +237,13 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
   }
 }
 
-/// "Remember this key for this tab", made reachable without a mouse.
+/// "Remember this key for this tab".
 ///
-/// [ArDriveCheckBox] is a bare [GestureDetector]: it is not in the focus order,
-/// it cannot be toggled from the keyboard, and it announces nothing to a screen
-/// reader. That is a design system gap this page cannot close on its own, so it
-/// closes it here - a hole in the middle of the only form a recipient ever
-/// fills in is not something to leave for later.
-///
-/// The checkbox keeps its own internal state and only reads `checked` in its
-/// `initState`, which is why the key on it matters: toggling from out here
-/// rebuilds it with the new value rather than fighting it.
-class _RememberKeyCheckBox extends StatefulWidget {
+/// [ArDriveCheckBox] is reachable by keyboard and screen reader itself now:
+/// one Tab stop, Space ticks it, a focus ring shows where the keyboard
+/// is, and it is announced once, as a checkbox with this label. It follows
+/// [isChecked] as it changes, so it needs no key.
+class _RememberKeyCheckBox extends StatelessWidget {
   const _RememberKeyCheckBox({
     required this.isChecked,
     required this.onChanged,
@@ -258,54 +253,13 @@ class _RememberKeyCheckBox extends StatefulWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  State<_RememberKeyCheckBox> createState() => _RememberKeyCheckBoxState();
-}
-
-class _RememberKeyCheckBoxState extends State<_RememberKeyCheckBox> {
-  bool _isFocused = false;
-
-  @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final label = appLocalizationsOf(context).sharedFileRememberKeyForThisTab;
-
-    return Semantics(
-      checked: widget.isChecked,
-      label: label,
-      onTap: () => widget.onChanged(!widget.isChecked),
-      child: FocusableActionDetector(
-        onShowFocusHighlight: (isFocused) =>
-            setState(() => _isFocused = isFocused),
-        actions: {
-          ActivateIntent: CallbackAction<ActivateIntent>(
-            onInvoke: (_) {
-              widget.onChanged(!widget.isChecked);
-
-              return null;
-            },
-          ),
-        },
-        child: Container(
-          // A keyboard user has to be able to see where they are.
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: _isFocused ? colors.textHigh : Colors.transparent,
-            ),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          padding: const EdgeInsets.all(2),
-          child: ExcludeSemantics(
-            child: ArDriveCheckBox(
-              key: ValueKey(widget.isChecked),
-              title: label,
-              checked: widget.isChecked,
-              onChange: widget.onChanged,
-              titleStyle: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-              ),
-            ),
-          ),
-        ),
+    return ArDriveCheckBox(
+      title: appLocalizationsOf(context).sharedFileRememberKeyForThisTab,
+      checked: isChecked,
+      onChange: onChanged,
+      titleStyle: ArDriveTypographyNew.of(context).paragraphNormal(
+        color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
       ),
     );
   }

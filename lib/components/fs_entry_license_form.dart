@@ -267,6 +267,8 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
               summary: state.summary,
               primaryLabel: l10n.confirm,
               subject: ReviewCostSubject.change,
+              priceUnavailableMessage:
+                  state.pricingFailed ? l10n.priceUnavailableTryAgain : null,
               onUpload: (_) => bloc.add(const FsEntryLicenseReviewConfirm()),
               onBack: () => bloc.add(const FsEntryLicenseReviewBack()),
               onCancel: () => Navigator.of(context).pop(),

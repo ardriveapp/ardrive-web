@@ -138,6 +138,12 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
 
   void _onPointerDown(PointerDownEvent event) {
     if (!_longPressKinds.contains(event.kind)) return;
+    // A long press here is the row's - see [ArDriveTooltipLongPressYields].
+    if (context
+            .getInheritedWidgetOfExactType<ArDriveTooltipLongPressYields>() !=
+        null) {
+      return;
+    }
 
     (_longPress ??= LongPressGestureRecognizer(
       debugOwner: this,
@@ -293,4 +299,17 @@ class _LabelPosition extends SingleChildLayoutDelegate {
   @override
   bool shouldRelayout(_LabelPosition oldDelegate) =>
       target != oldDelegate.target;
+}
+
+/// Below this, a tooltip shows on hover only and leaves a long press alone,
+/// for what is around it to have: a table row that starts selecting on one.
+///
+/// A tooltip's long press enters the gesture arena before the row's, being
+/// deeper, and wins it: a long press on a name or an icon showed its label
+/// and never started selecting.
+class ArDriveTooltipLongPressYields extends InheritedWidget {
+  const ArDriveTooltipLongPressYields({super.key, required super.child});
+
+  @override
+  bool updateShouldNotify(ArDriveTooltipLongPressYields oldWidget) => false;
 }

@@ -253,6 +253,66 @@ Future<Uint8List?> readOpfsCopy(String name) async {
   }
 }
 
+/// Removes this database's OPFS directory, once [worker] has let go of it, or
+/// returns false if it is still held after about five seconds.
+///
+/// The file is first copied beside it as `<name>-reset-<time>`, whole, as
+/// it was: a reset is for a database that will not open, and the copy keeps
+/// what it held (a saved wallet above all) for anyone who can still read it.
+/// The copy is best effort: a browser that cannot write OPFS files from the
+/// page (Safari) keeps none.
+Future<bool> removeOpfsDatabase(String name,
+    {WebDatabaseWorker? worker}) async {
+  worker?.terminate();
+  final navigator = js_util.getProperty<Object?>(html.window, 'navigator');
+  final storage = js_util.getProperty<Object?>(navigator!, 'storage');
+  if (storage == null || !js_util.hasProperty(storage, 'getDirectory')) {
+    return true;
+  }
+  final Object parent;
+  try {
+    final root = await js_util.promiseToFuture<Object>(
+        js_util.callMethod(storage, 'getDirectory', []));
+    parent = await js_util.promiseToFuture<Object>(
+        js_util.callMethod(root, 'getDirectoryHandle', ['ardrive-db']));
+  } catch (_) {
+    return true; // OPFS never held a database here.
+  }
+
+  final copy = await readOpfsCopy(name);
+  if (copy != null) {
+    try {
+      final stamp = DateTime.now().toUtc().millisecondsSinceEpoch;
+      final handle = await js_util
+          .promiseToFuture<Object>(js_util.callMethod(parent, 'getFileHandle', [
+        '$name-reset-$stamp',
+        js_util.jsify({'create': true})
+      ]));
+      final writable = await js_util.promiseToFuture<Object>(
+          js_util.callMethod(handle, 'createWritable', []));
+      await js_util.promiseToFuture<Object?>(
+          js_util.callMethod(writable, 'write', [copy]));
+      await js_util
+          .promiseToFuture<Object?>(js_util.callMethod(writable, 'close', []));
+    } catch (_) {}
+  }
+
+  for (final wait in [Duration.zero, ..._releaseWaits]) {
+    await Future<void>.delayed(wait);
+    try {
+      await js_util
+          .promiseToFuture<Object?>(js_util.callMethod(parent, 'removeEntry', [
+        name,
+        js_util.jsify({'recursive': true})
+      ]));
+      return true;
+    } catch (e) {
+      if ('$e'.contains('NotFound')) return true;
+    }
+  }
+  return false;
+}
+
 /// How long a tab holding the writer lock waits, between attempts, for files
 /// a departed worker still holds. About five seconds in all.
 const _releaseWaits = [

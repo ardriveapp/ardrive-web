@@ -74,6 +74,19 @@ class PaymentService {
     return price;
   }
 
+  /// What 1 GiB costs in US dollars, Turbo's fees included: `fiat.usd` from
+  /// `GET /v1/rates`. The rate the price calculator shows as "1 GB".
+  Future<double> getUsdPerGiB() async {
+    final result = await httpClient.get(url: '$turboPaymentUri/v1/rates');
+    if (result.statusCode != 200) {
+      throw Exception(
+        'Turbo rates fetch failed with status code ${result.statusCode}',
+      );
+    }
+    final fiat = json.decode(result.data)['fiat'] as Map<String, dynamic>;
+    return (fiat['usd'] as num).toDouble();
+  }
+
   Future<PriceForFiat> getPriceForFiat({
     required Wallet? wallet,
     required double amount,

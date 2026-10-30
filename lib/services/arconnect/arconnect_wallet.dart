@@ -1,22 +1,48 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 
 class ArConnectWallet extends Wallet {
-  ArConnectWallet(this.arConnectService);
+  ArConnectWallet(this.arConnectService, {this.publicKey});
 
   final ArConnectService arConnectService;
 
+  /// The saved account's public key, when this wallet was loaded from it.
+  ///
+  /// Then the owner and address are known here and Wander is asked only to
+  /// sign, with a deadline (see [ArConnectPrompt]), so a locked Wander can't
+  /// hold up unlocking, a sync or a read. A Wander on another wallet is
+  /// caught before a write by `ProfileCubit.checkIfWalletMismatch`.
+  ///
+  /// Null while connecting at login, where Wander is the only source and the
+  /// sign-in panel has its own Cancel.
+  final String? publicKey;
+
   @override
   Future<String> getOwner() async {
-    return await arConnectService.getPublicKey();
+    return publicKey ?? await arConnectService.getPublicKey();
   }
 
   @override
   Future<String> getAddress() async {
+    final savedPublicKey = publicKey;
+    if (savedPublicKey != null) return ownerToAddress(savedPublicKey);
     return await arConnectService.getWalletAddress();
+  }
+
+  /// [request] with a deadline and Try again, for the saved account's
+  /// wallet; as before while connecting at login.
+  Future<T> _ask<T>(Future<T> Function() request) {
+    if (publicKey == null) return request();
+    return ArConnectPrompt.ask(
+      arConnectService,
+      request,
+      within: ArConnectPrompt.signTimeout,
+    );
   }
 
   @override
@@ -24,7 +50,7 @@ class ArConnectWallet extends Wallet {
     logger.d('ArConnectWallet.sign() called with ${message.length} bytes'
         '${context != null ? ' (context: $context)' : ''}');
     try {
-      final result = await arConnectService.getSignature(message);
+      final result = await _ask(() => arConnectService.getSignature(message));
       logger.d('ArConnectWallet.sign() successful, got ${result.length} bytes');
       return result;
     } catch (e, stackTrace) {
@@ -35,10 +61,12 @@ class ArConnectWallet extends Wallet {
 
   /// Signs a [DataItem] via ArConnect. Not part of the arweave [Wallet] interface.
   Future<Uint8List> signDataItem(DataItem dataItem) async {
-    logger.d('ArConnectWallet.signDataItem() called with ${dataItem.data.length} bytes');
+    logger.d(
+        'ArConnectWallet.signDataItem() called with ${dataItem.data.length} bytes');
     try {
-      final result = await arConnectService.signDataItem(dataItem);
-      logger.d('ArConnectWallet.signDataItem() successful, got ${result.length} bytes');
+      final result = await _ask(() => arConnectService.signDataItem(dataItem));
+      logger.d(
+          'ArConnectWallet.signDataItem() successful, got ${result.length} bytes');
       return result;
     } catch (e, stackTrace) {
       logger.e('ArConnectWallet.signDataItem() failed', e, stackTrace);

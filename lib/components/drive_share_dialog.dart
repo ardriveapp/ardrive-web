@@ -116,10 +116,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                     if (state.drive.isPrivate) ...{
                       const SizedBox(height: 20),
                       ArDriveCheckBox(
-                        // The checkbox only reads `checked` when it is first
-                        // built, so the key forces a fresh one whenever the
-                        // cubit's answer changes.
-                        key: ValueKey(state.keyIsInLink),
+                        // Follows the cubit's answer as it changes.
                         checked: state.keyIsInLink,
                         title: state.isFolder
                             ? appLocalizationsOf(context)

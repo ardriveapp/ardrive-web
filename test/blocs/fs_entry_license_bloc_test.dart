@@ -78,6 +78,7 @@ void main() {
       registerFallbackValue(Wallet());
       registerFallbackValue(BigInt.zero);
       registerFallbackValue(<int>[]);
+      registerFallbackValue(<String, String>{});
 
       db = getTestDb();
       await db.batch((batch) {
@@ -356,20 +357,40 @@ void main() {
       late MockTurboUploadService turbo;
 
       setUp(() {
+        // Each file's new metadata a distinct item, as it really is, so a
+        // test can tell one sent twice from two sent once.
+        final wallet = getTestWallet();
+        when(() => arweave.prepareEntityDataItem(any(), any(),
+                key: any(named: 'key'),
+                skipSignature: any(named: 'skipSignature')))
+            .thenAnswer((call) async {
+          final item = DataItem.withBlobData(
+              data: Uint8List.fromList(const Uuid().v4().codeUnits))
+            ..setOwner(await wallet.getOwner());
+          if (call.namedArguments[#skipSignature] != true) {
+            await item.sign(ArweaveSigner(wallet));
+          }
+          return item;
+        });
         turbo = MockTurboUploadService();
         when(() => turbo.useTurboUpload).thenReturn(true);
         when(() => turbo.postDataItem(
               dataItem: any(named: 'dataItem'),
               wallet: any(named: 'wallet'),
+              headers: any(named: 'headers'),
             )).thenAnswer((_) async {});
       });
 
-      void costs(UploadReviewSummary summary) => when(() => costReader.read(
-            itemSizes: any(named: 'itemSizes'),
-            wallet: any(named: 'wallet'),
-            walletBalance: any(named: 'walletBalance'),
-            refusedByTurbo: any(named: 'refusedByTurbo'),
-          )).thenAnswer((_) async => summary);
+      void costs(UploadReviewSummary summary,
+              {List<String> paidBy = const []}) =>
+          when(() => costReader.read(
+                    itemSizes: any(named: 'itemSizes'),
+                    wallet: any(named: 'wallet'),
+                    walletBalance: any(named: 'walletBalance'),
+                    refusedByTurbo: any(named: 'refusedByTurbo'),
+                  ))
+              .thenAnswer(
+                  (_) async => MetadataWriteCost(summary, paidBy: paidBy));
 
       /// A bloc on the review of a license on the root folder's files.
       Future<FsEntryLicenseBloc> reviewing() async {
@@ -413,7 +434,9 @@ void main() {
         expect(sizes.every((s) => s > 1000), isTrue);
         // Nothing is posted or saved to price it.
         verifyNever(() => turbo.postDataItem(
-            dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')));
+            dataItem: any(named: 'dataItem'),
+            wallet: any(named: 'wallet'),
+            headers: any(named: 'headers')));
         expect(await licensesSaved(), 0);
         await bloc.close();
       });
@@ -428,6 +451,7 @@ void main() {
         verify(() => turbo.postDataItem(
               dataItem: any(named: 'dataItem'),
               wallet: any(named: 'wallet'),
+              headers: any(named: 'headers'),
             )).called(rootFolderFileCount * 2);
         verifyNever(() => arweave.postTx(any()));
         expect(await licensesSaved(), rootFolderFileCount);
@@ -460,7 +484,9 @@ void main() {
 
           expect(states, isEmpty);
           verifyNever(() => turbo.postDataItem(
-              dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')));
+              dataItem: any(named: 'dataItem'),
+              wallet: any(named: 'wallet'),
+              headers: any(named: 'headers')));
           verifyNever(() => arweave.postTx(any()));
           expect(await licensesSaved(), 0);
           await sub.cancel();
@@ -475,6 +501,7 @@ void main() {
         when(() => turbo.postDataItem(
               dataItem: any(named: 'dataItem'),
               wallet: any(named: 'wallet'),
+              headers: any(named: 'headers'),
             )).thenThrow(TurboPaymentRequiredException());
         final bloc = await reviewing();
         costs(_summary());
@@ -503,6 +530,7 @@ void main() {
         when(() => turbo.postDataItem(
               dataItem: any(named: 'dataItem'),
               wallet: any(named: 'wallet'),
+              headers: any(named: 'headers'),
             )).thenThrow(Exception('network'));
         final bloc = await reviewing();
 
@@ -510,6 +538,132 @@ void main() {
         await bloc.stream.firstWhere((s) => s is FsEntryLicenseFailure);
 
         expect(await licensesSaved(), 0);
+        await bloc.close();
+      });
+
+      /// Sends every item, recording each; the [failOn]th send fails with
+      /// [failure] once.
+      List<String> sends({int? failOn, Object? failure}) {
+        final sent = <String>[];
+        var calls = 0;
+        when(() => turbo.postDataItem(
+              dataItem: any(named: 'dataItem'),
+              wallet: any(named: 'wallet'),
+              headers: any(named: 'headers'),
+            )).thenAnswer((call) async {
+          calls++;
+          if (calls == failOn) throw failure!;
+          sent.add((call.namedArguments[#dataItem] as DataItem).id);
+        });
+        return sent;
+      }
+
+      Future<int> licenseRevisionsSaved() async => (await (db
+                  .select(db.fileRevisions)
+                ..where((r) => r.action.equals(RevisionAction.assertLicense)))
+              .get())
+          .length;
+
+      /// A license assertion and new metadata for each file.
+      const items = rootFolderFileCount * 2;
+
+      test('two Confirms write it once', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final sent = sends();
+        final bloc = await reviewing();
+
+        bloc
+          ..add(const FsEntryLicenseReviewConfirm())
+          ..add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere((s) => s is FsEntryLicenseSuccess);
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        expect(sent, hasLength(items));
+        expect(await licensesSaved(), rootFolderFileCount);
+        expect(await licenseRevisionsSaved(), rootFolderFileCount);
+        await bloc.close();
+      });
+
+      test(
+          'a failure part way, then Try again: sends only the rest, and '
+          'saves exactly what was sent', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final sent = sends(failOn: 3, failure: Exception('network'));
+        final bloc = await reviewing();
+
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere((s) => s is FsEntryLicenseFailure);
+
+        // The first file's assertion and metadata reached Turbo.
+        expect(sent, hasLength(2));
+        expect(await licensesSaved(), 1);
+        expect(await licenseRevisionsSaved(), 1);
+
+        bloc.add(const FsEntryLicenseFailureTryAgain());
+        await bloc.stream.firstWhere(
+            (s) => s is FsEntryLicenseReviewing && s.summary != null);
+        // The review prices what is left.
+        final sizes = verify(() => costReader.read(
+              itemSizes: captureAny(named: 'itemSizes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+              refusedByTurbo: any(named: 'refusedByTurbo'),
+            )).captured.last as List<int>;
+        expect(sizes, hasLength(items - 2));
+
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere((s) => s is FsEntryLicenseSuccess);
+
+        expect(sent, hasLength(items));
+        expect(sent.toSet(), hasLength(items));
+        expect(await licensesSaved(), rootFolderFileCount);
+        expect(await licenseRevisionsSaved(), rootFolderFileCount);
+        await bloc.close();
+      });
+
+      test(
+          'refused part way, then credits and Confirm: sends only the rest, '
+          'and saves exactly what was sent', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final sent = sends(failOn: 4, failure: TurboPaymentRequiredException());
+        final bloc = await reviewing();
+        costs(_summary());
+
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere(
+            (s) => s is FsEntryLicenseReviewing && s.summary != null);
+
+        expect(sent, hasLength(3));
+        expect(await licensesSaved(), 2);
+        expect(await licenseRevisionsSaved(), 1);
+
+        // Credits added: the review reads the cost again, now covered.
+        costs(_summary(isCovered: true));
+        bloc.add(const FsEntryLicenseCostRefresh());
+        await bloc.stream.firstWhere((s) =>
+            s is FsEntryLicenseReviewing && (s.summary?.isCovered ?? false));
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere((s) => s is FsEntryLicenseSuccess);
+
+        expect(sent, hasLength(items));
+        expect(sent.toSet(), hasLength(items));
+        expect(await licensesSaved(), rootFolderFileCount);
+        expect(await licenseRevisionsSaved(), rootFolderFileCount);
+        await bloc.close();
+      });
+
+      test('names the wallets whose shared credits pay for it', () async {
+        costs(_summary(isCovered: true), paidBy: ['sharer']);
+        final bloc = await reviewing();
+
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere((s) => s is FsEntryLicenseSuccess);
+
+        verify(() => turbo.postDataItem(
+              dataItem: any(named: 'dataItem'),
+              wallet: any(named: 'wallet'),
+              headers: {'x-paid-by': 'sharer'},
+            )).called(items);
         await bloc.close();
       });
 
@@ -526,6 +680,8 @@ void main() {
         final state = bloc.state as FsEntryLicenseReviewing;
         expect(state.summary!.priceUnavailable, isTrue);
         expect(state.summary!.isCovered, isFalse);
+        // Not the connection's fault, so the notice doesn't say it is.
+        expect(state.pricingFailed, isTrue);
         await bloc.close();
       });
 

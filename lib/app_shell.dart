@@ -5,12 +5,14 @@ import 'package:ardrive/components/migrate_private_drives_modal.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/sync_failure_test_panel.dart';
+import 'package:ardrive/components/wander_unavailable_dialog.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -47,8 +49,22 @@ class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
 
+  /// Removes this shell's Wander prompt; see [ArConnectPrompt].
+  VoidCallback? _forgetWanderPrompt;
+
   @override
   void initState() {
+    // Where a write, or a private drive key, says Wander couldn't be reached
+    // and offers Try again. Writes only happen inside the shell.
+    _forgetWanderPrompt = ArConnectPrompt.registerRetryPrompt(
+      (reason, answered) async =>
+          mounted &&
+          await askToRetryWander(context, reason, answered: answered),
+    );
+    // Back from Wander's window with a request still waiting: say so now
+    // rather than at the deadline.
+    ArConnectPrompt.tabFocus = TabVisibilitySingleton().onTabFocusChanged;
+
     onArConnectWalletSwitch(() {
       logger.d('Wallet switch detected');
       context.read<ProfileCubit>().isCurrentProfileArConnect().then(
@@ -56,7 +72,13 @@ class AppShellState extends State<AppShell> {
           if (_showWalletSwitchDialog) {
             if (isCurrentProfileArConnect) {
               context.read<ArDriveAuth>().isUserLoggedIn().then((isLoggedIn) {
-                context.read<ProfileCubit>().logoutIfWalletMismatch();
+                context
+                    .read<ProfileCubit>()
+                    .logoutIfWalletMismatch()
+                    .catchError((Object e) {
+                  logger.w('Could not check the wallet after a switch: $e');
+                  return false;
+                });
                 if (isLoggedIn) {
                   logger.d('Wallet switch detected while logged in'
                       ' to ArConnect. Showing wallet switch dialog.');
@@ -78,6 +100,12 @@ class AppShellState extends State<AppShell> {
     });
 
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _forgetWanderPrompt?.call();
+    super.dispose();
   }
 
   @override

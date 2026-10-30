@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_uploader.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -114,11 +115,18 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
     // the artifact and confirming it. Readers only accept an artifact the
     // drive's owner uploaded, so publishing under a different wallet would
     // pay for an artifact no importer accepts.
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      logger.w('[drive-state] refusing to publish: wallet mismatch');
+    try {
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        logger.w('[drive-state] refusing to publish: wallet mismatch');
+        return const DriveStateUploadResult.failed(
+          'Your wallet changed while this snapshot was being prepared. '
+          'Nothing was uploaded and nothing was spent.',
+        );
+      }
+    } on ArConnectUnavailableException catch (e) {
+      logger.w('[drive-state] could not check the wallet: $e');
       return const DriveStateUploadResult.failed(
-        'Your wallet changed while this snapshot was being prepared. Nothing '
-        'was uploaded and nothing was spent.',
+        "Wander didn't answer. Nothing was uploaded and nothing was spent.",
       );
     }
 

@@ -1,10 +1,9 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/blocs/hide/hide_state.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -14,6 +13,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,7 +24,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-  final ArDriveUploadPreparationManager _uploadPreparationManager;
+  final MetadataWriteCostReader _costReader;
 
   HideBloc({
     required ArweaveService arweaveService,
@@ -32,26 +32,28 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
-    required ArDriveAuth auth,
-    required ArDriveUploadPreparationManager uploadPreparationManager,
+    required MetadataWriteCostReader costReader,
   })  : _arweave = arweaveService,
         _crypto = crypto,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
-        _uploadPreparationManager = uploadPreparationManager,
+        _costReader = costReader,
         super(const InitialHideState()) {
     on<HideFileEvent>(_onHideFileEvent);
     on<HideFolderEvent>(_onHideFolderEvent);
     on<UnhideFileEvent>(_onUnhideFileEvent);
     on<UnhideFolderEvent>(_onUnhideFolderEvent);
-    on<ConfirmUploadEvent>(_onConfirmUploadEvent);
+    // A second Confirm while one is under way is dropped, not queued.
+    on<ConfirmUploadEvent>(_onConfirmUploadEvent, transformer: droppable());
+    on<HideCostRefreshEvent>(_onCostRefreshEvent);
     on<HideDriveEvent>(_onHideDriveEvent);
     on<UnhideDriveEvent>(_onUnhideDriveEvent);
     on<ErrorEvent>(_onErrorEvent);
   }
 
-  bool _useTurboUpload = false;
+  /// A write is under way.
+  var _writing = false;
 
   Future<void> _onHideFileEvent(
     HideFileEvent event,
@@ -157,12 +159,6 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     final dataItems = [hideEntitySettings.dataItem];
 
-    final paymentInfo =
-        await _uploadPreparationManager.getUploadPaymentInfoForEntityUpload(
-            dataItem: hideEntitySettings.dataItem);
-
-    _useTurboUpload = paymentInfo.isFreeUploadPossibleUsingTurbo;
-
     HideAction action;
 
     if (entryIsFile) {
@@ -173,14 +169,60 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       action = isHidden ? HideAction.hideFolder : HideAction.unhideFolder;
     }
 
-    emit(
-      ConfirmingHideState(
-        uploadMethod: UploadMethod.turbo,
-        hideAction: action,
-        dataItems: dataItems,
-        hideEntitySettings: hideEntitySettings,
-      ),
+    final confirming = ConfirmingHideState(
+      uploadMethod:
+          _costReader.usesTurbo ? UploadMethod.turbo : UploadMethod.ar,
+      hideAction: action,
+      dataItems: dataItems,
+      hideEntitySettings: hideEntitySettings,
     );
+    emit(await _withCost(confirming));
+  }
+
+  /// [state] with the cost of its write read: Turbo's free upload allowance,
+  /// or its price in Turbo Credits, the way a license is priced. The wallet
+  /// pays only when Turbo uploads are off.
+  Future<ConfirmingHideState> _withCost(ConfirmingHideState state) async {
+    MetadataWriteCost cost;
+    try {
+      final profile = _profileCubit.state as ProfileLoggedIn;
+      cost = await _costReader.read(
+        itemSizes: [
+          for (final item in state.dataItems) signedDataItemSize(item),
+        ],
+        wallet: profile.user.wallet,
+        walletBalance: profile.user.walletBalance,
+        refusedByTurbo: state.refused,
+      );
+    } catch (e) {
+      logger.e('Could not price the hide', e);
+      cost = MetadataWriteCost(MetadataWriteCostReader.unavailable());
+    }
+    return ConfirmingHideState(
+      uploadMethod: state.uploadMethod,
+      hideAction: state.hideAction,
+      dataItems: state.dataItems,
+      hideEntitySettings: state.hideEntitySettings,
+      cost: cost,
+      refused: state.refused,
+    );
+  }
+
+  Future<void> _onCostRefreshEvent(
+    HideCostRefreshEvent event,
+    Emitter<HideState> emit,
+  ) async {
+    final state = this.state;
+    if (_writing || state is! ConfirmingHideState) return;
+    final reading = ConfirmingHideState(
+      uploadMethod: state.uploadMethod,
+      hideAction: state.hideAction,
+      dataItems: state.dataItems,
+      hideEntitySettings: state.hideEntitySettings,
+      refused: state.refused,
+    );
+    emit(reading);
+    emit(await _withCost(reading));
   }
 
   Future<HideEntitySettings<FolderEntry>> _getFolderHideEntitySettings(
@@ -310,45 +352,59 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     ConfirmUploadEvent event,
     Emitter<HideState> emit,
   ) async {
+    final state = this.state;
+    // Only what is free, or paid for the way the review showed: never with
+    // no price, or credits short, and never twice.
+    if (_writing || state is! ConfirmingHideState) return;
+    final cost = state.cost;
+    if (cost == null || !cost.summary.isCovered) return;
+    _writing = true;
+
     try {
-      final state = this.state as ConfirmingHideState;
       final profile = _profileCubit.state as ProfileLoggedIn;
       final dataItems = state.dataItems;
 
       emit(UploadingHideState(hideAction: state.hideAction));
 
-      await _driveDao.transaction(() async {
-        final dataBundle = await DataBundle.fromDataItems(
-          items: dataItems,
-        );
-
-        if (_useTurboUpload) {
-          final hideTx = await _arweave.prepareBundledDataItem(
-            dataBundle,
-            profile.user.wallet,
-          );
+      if (_turboUploadService.useTurboUpload) {
+        // Through Turbo, like every other change: free under the allowance,
+        // Turbo Credits after it. Never the wallet as a fallback.
+        for (final item in dataItems) {
           await _turboUploadService.postDataItem(
-            dataItem: hideTx,
+            dataItem: item,
             wallet: profile.user.wallet,
+            headers: cost.headers,
           );
-        } else {
-          final hideTx = await _arweave.prepareDataBundleTx(
-            dataBundle,
-            profile.user.wallet,
-          );
-          await _arweave.postTx(hideTx);
         }
+      } else {
+        final hideTx = await _arweave.prepareDataBundleTx(
+          await DataBundle.fromDataItems(items: dataItems),
+          profile.user.wallet,
+        );
+        await _arweave.postTx(hideTx);
+      }
 
-        await _saveNewRevision(state.hideEntitySettings);
-
-        emit(SuccessHideState(hideAction: state.hideAction));
-      });
+      await _saveNewRevision(state.hideEntitySettings);
+      _writing = false;
+      emit(SuccessHideState(hideAction: state.hideAction));
     } catch (e) {
+      _writing = false;
       logger.e('Error while hiding', e);
-      emit(FailureHideState(
-        hideAction: state.hideAction,
-        isPaymentError: isTurboPaymentError(e),
-      ));
+      if (isTurboPaymentError(e)) {
+        // Not paid for after all: the review, with the balance read again
+        // and Add credits.
+        final refused = ConfirmingHideState(
+          uploadMethod: state.uploadMethod,
+          hideAction: state.hideAction,
+          dataItems: state.dataItems,
+          hideEntitySettings: state.hideEntitySettings,
+          refused: true,
+        );
+        emit(refused);
+        emit(await _withCost(refused));
+        return;
+      }
+      emit(FailureHideState(hideAction: state.hideAction));
     }
   }
 

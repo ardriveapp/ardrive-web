@@ -245,7 +245,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
   final _focusNode = FocusNode(debugLabel: 'ArDriveDataTable');
   int? _shiftSelectionStartIndex;
 
-  bool get _isMultiSelecting => ArDriveMultiSelect.showsCheckboxes(
+  bool get _isMultiSelecting => ArDriveMultiSelect.isSelecting(
         longPressed: _isMultiSelectingWithLongPress,
         anyTicked: _multiSelectBoxes
             .any((element) => element.selectedItems.isNotEmpty),
@@ -343,6 +343,25 @@ class _ArDriveDataTableState<T extends IndexedItem>
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     final onRowOpen = widget.onRowOpen;
     final selected = _selectedItem;
+
+    // Space ticks the chosen row's box, as a file manager's does: the table is
+    // the Tab stop, not a box per row. Only when the table itself has focus,
+    // so Space on select-all still ticks select-all.
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.space &&
+        node.hasPrimaryFocus &&
+        selected != null &&
+        _currentPage.contains(selected) &&
+        !widget.lockMultiSelect) {
+      _onChangeItemCheck(
+        row: selected,
+        index: selected.index,
+        value: !getMultiSelectBox()
+            .selectedItems
+            .any((r) => r.index == selected.index),
+      );
+      return KeyEventResult.handled;
+    }
 
     if (onRowOpen == null ||
         selected == null ||
@@ -789,6 +808,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
     return Focus(
         focusNode: _focusNode,
         onKeyEvent: _onKey,
+        // The selected row shows its checkbox while the table has focus:
+        // the row's keyboard focus, see [_multiSelectColumn].
+        onFocusChange: (_) => setState(() {}),
         child: ArDriveCard(
           backgroundColor:
               ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
@@ -988,15 +1010,17 @@ class _ArDriveDataTableState<T extends IndexedItem>
     final isMasterCheckBoxChecked = multiselectPage.page == _selectedPage &&
         multiselectPage.selectedItems.length == _currentPage.length;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: _isMultiSelecting ? checkboxSize + 14 : 0,
+    // Reserved whether or not it shows, so the headings never move.
+    // None while multi-select is locked (a sync reading the drive, say): a
+    // box that ticks and selects nothing is worse than no box.
+    return ArDriveMultiSelectBox(
+      visible: _isMultiSelecting && !widget.lockMultiSelect,
+      width: checkboxSize + 14,
+      // Not keyed by its state: the box follows `checked`, and a key that
+      // changed with every tick threw away its focus.
       child: ArDriveCheckBox(
-        key: ValueKey(
-          isMasterCheckBoxChecked.toString() +
-              multiselectPage.page.toString() +
-              multiselectPage.selectedItems.length.toString(),
-        ),
+        // A Tab stop only while there is a selection to act on.
+        inTabOrder: _isMultiSelecting && !widget.lockMultiSelect,
         checked: isMasterCheckBoxChecked,
         isIndeterminate: multiselectPage.selectedItems.isNotEmpty &&
             multiselectPage.selectedItems.length != _currentPage.length,
@@ -1024,21 +1048,31 @@ class _ArDriveDataTableState<T extends IndexedItem>
       (element) => element.index == row.index,
     );
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: _isMultiSelecting ? checkboxSize + 14 : 0,
-      child: ArDriveCheckBox(
-        key: ValueKey(
-          index.toString() + isSelected.toString(),
+    // The row's own hover, so a Builder: this method's context is the
+    // table's. Reserved whether or not it shows, so the row's content never
+    // moves under the pointer.
+    return Builder(
+      builder: (context) => ArDriveMultiSelectBox(
+        visible: !widget.lockMultiSelect &&
+            ArDriveMultiSelect.showsRowCheckbox(
+              selecting: _isMultiSelecting,
+              hovered: _RowHover.of(context),
+              focused: _focusNode.hasFocus && _selectedItem == row,
+            ),
+        width: checkboxSize + 14,
+        child: ArDriveCheckBox(
+          // The table is the Tab stop and Space ticks the chosen row's box,
+          // as in a file manager; a box per row would be a stop per row.
+          inTabOrder: false,
+          checked: isSelected,
+          onChange: (value) {
+            _onChangeItemCheck(
+              row: row,
+              index: index,
+              value: value,
+            );
+          },
         ),
-        checked: isSelected,
-        onChange: (value) {
-          _onChangeItemCheck(
-            row: row,
-            index: index,
-            value: value,
-          );
-        },
       ),
     );
   }
@@ -1161,81 +1195,91 @@ class _ArDriveDataTableState<T extends IndexedItem>
           _onRowTapped(row);
         }
       },
-      onLongPress: () {
-        setState(() {
-          _isMultiSelectingWithLongPress = !_isMultiSelectingWithLongPress;
-        });
+      // Ignored while multi-select is locked: it put the table into
+      // selecting with no boxes to show for it, and every tap on a row then
+      // went to a tick that was refused.
+      onLongPress: widget.lockMultiSelect
+          ? null
+          : () {
+              setState(() {
+                _isMultiSelectingWithLongPress =
+                    !_isMultiSelectingWithLongPress;
+              });
 
-        if (widget.onChangeMultiSelecting != null) {
-          widget.onChangeMultiSelecting!(_isMultiSelecting);
-        }
-      },
+              if (widget.onChangeMultiSelecting != null) {
+                widget.onChangeMultiSelecting!(_isMultiSelecting);
+              }
+            },
       behavior: HitTestBehavior.opaque,
-      // A Builder, so the fill reads the hover of the row it is in: this
-      // method's own context is the table's.
-      child: Builder(
-        builder: (context) => Container(
-          key: ValueKey(row),
-          constraints:
-              const BoxConstraints(minHeight: ArDriveDataTable.rowHeight),
-          padding: const EdgeInsets.symmetric(horizontal: _tablePadding),
-          color: _rowColour(
-            context,
-            selected: (!_isMultiSelecting && _selectedItem == row) ||
-                multiselect.selectedItems.contains(row),
-          ),
-          child: Row(
-            children: [
-              _multiSelectColumn(false, index: index, row: row),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  child: Row(
-                    children: [
-                      if (widget.leading != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 40,
-                              maxHeight: 40,
-                            ),
-                            child: widget.leading!.call(row),
-                          ),
-                        ),
-                      ...List.generate(
-                        columns.length,
-                        (index) {
-                          if (!columns[index].isVisible) {
-                            return const SizedBox();
-                          }
-                          return Flexible(
-                            flex: columns[columns[index].index].size,
-                            child: ArDriveClickArea(
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: buildRow[columns[index].index],
+      // The row's long press starts selecting; a tooltip in a cell leaves it
+      // to the row.
+      child: ArDriveTooltipLongPressYields(
+        // A Builder, so the fill reads the hover of the row it is in: this
+        // method's own context is the table's.
+        child: Builder(
+          builder: (context) => Container(
+            key: ValueKey(row),
+            constraints:
+                const BoxConstraints(minHeight: ArDriveDataTable.rowHeight),
+            padding: const EdgeInsets.symmetric(horizontal: _tablePadding),
+            color: _rowColour(
+              context,
+              selected: (!_isMultiSelecting && _selectedItem == row) ||
+                  multiselect.selectedItems.contains(row),
+            ),
+            child: Row(
+              children: [
+                _multiSelectColumn(false, index: index, row: row),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Row(
+                      children: [
+                        if (widget.leading != null)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: 40,
+                                maxHeight: 40,
                               ),
+                              child: widget.leading!.call(row),
                             ),
-                          );
-                        },
-                        growable: false,
-                      ),
-                      if (widget.trailing != null)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Container(
-                            alignment: Alignment.center,
-                            height: 44,
-                            width: trailingSlot,
-                            child: widget.trailing!.call(row),
                           ),
+                        ...List.generate(
+                          columns.length,
+                          (index) {
+                            if (!columns[index].isVisible) {
+                              return const SizedBox();
+                            }
+                            return Flexible(
+                              flex: columns[columns[index].index].size,
+                              child: ArDriveClickArea(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: buildRow[columns[index].index],
+                                ),
+                              ),
+                            );
+                          },
+                          growable: false,
                         ),
-                    ],
+                        if (widget.trailing != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: Container(
+                              alignment: Alignment.center,
+                              height: 44,
+                              width: trailingSlot,
+                              child: widget.trailing!.call(row),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

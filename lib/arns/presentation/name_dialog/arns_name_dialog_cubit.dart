@@ -487,7 +487,21 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
     ));
 
     // After the stage moves on, so a second click finds nothing to commit.
-    if (await _walletMismatch?.call() ?? false) return;
+    try {
+      if (await _walletMismatch?.call() ?? false) return;
+    } catch (e) {
+      // The browser wallet couldn't be asked and the person chose Cancel.
+      // Nothing was asked to sign or charged, so Try again is safe.
+      logger.w('Could not check the wallet before a name change: $e');
+      if (!isClosed) {
+        emit(state.copyWith(
+          stage: ArNSDialogStage.failed,
+          failure: () => ArNSChangeFailure(ArNSFailureKind.rejected, cause: e),
+          step: () => null,
+        ));
+      }
+      return;
+    }
 
     try {
       await _executor.execute(
