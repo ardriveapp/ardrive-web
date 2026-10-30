@@ -1354,6 +1354,12 @@ class _GetANameButton extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              // As ArDriveButtonNew's own label, so this one sits where theirs
+              // does rather than about 2 px low.
+              textHeightBehavior: const TextHeightBehavior(
+                applyHeightToFirstAscent: false,
+                applyHeightToLastDescent: false,
+              ),
               style: style,
             ),
           ),
