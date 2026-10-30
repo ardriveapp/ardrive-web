@@ -269,16 +269,66 @@ void main() {
       });
 
       test(
-          'a typo costs the batch and its check, and the right password '
-          'then costs nothing', () async {
+          'a typo costs the batch alone, and the right password then costs '
+          'nothing', () async {
         await drivesWith(5, 'right');
 
         await expectLater(auth.validateUser(wander.wallet, 'typo'),
             throwsA(isA<PasswordOpensNoDriveException>()));
-        expect(wander.prompts, 2);
+        expect(wander.prompts, 1);
 
         await auth.validateUser(wander.wallet, 'right');
-        expect(wander.prompts, 2);
+        expect(wander.prompts, 1);
+      });
+
+      test(
+          'an older v1 drive without a stored signature doesn\'t cost a '
+          'second prompt: v2 drives are tried first after the batch', () async {
+        onChain([
+          await makeWebPrivateDrive(
+            wallet: wallet,
+            driveId: id(0),
+            password: 'right',
+            signatureType: DriveSignatureType.v1,
+            unixTime: 1700000000,
+          ),
+          for (var i = 1; i < 3; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: 'right',
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+        when(() => arweave.getDriveSignatureForDriveOnSync(any(), id(0)))
+            .thenAnswer((_) async => null);
+        when(() => arweave.getDriveSignatureForDrive(any(), id(0)))
+            .thenAnswer((_) async => null);
+
+        await auth.validateUser(wander.wallet, 'right');
+
+        expect(wander.prompts, 1);
+      });
+
+      test(
+          'the gateway is down: no approval is asked for, and the error says '
+          'so', () async {
+        when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
+        final drives = [
+          for (var i = 0; i < 3; i++)
+            await makeWebPrivateDrive(
+                wallet: wallet, driveId: id(i), password: 'right'),
+        ];
+        when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+                maxRetries: any(named: 'maxRetries')))
+            .thenAnswer((_) async => [for (final d in drives) d.tx]);
+        when(() => arweave.getEntityDataBytes(any(),
+                configuredGatewayOnly: any(named: 'configuredGatewayOnly')))
+            .thenThrow(Exception('gateway down'));
+
+        await expectLater(auth.validateUser(wander.wallet, 'right'),
+            throwsA(isA<AuthenticationGatewayException>()));
+        expect(wander.prompts, 0);
       });
 
       test(

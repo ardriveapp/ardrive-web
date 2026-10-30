@@ -215,6 +215,13 @@ class FakeWander extends Fake implements ArConnectService {
   /// `saltLength: 0` would.
   bool varyBatch = false;
 
+  /// Signs the batch's first item right and answers the rest with random
+  /// bytes: a Wander that a single spot check would pass.
+  bool partialBatch = false;
+
+  /// Returns the batch's signatures in reverse order.
+  bool reverseBatch = false;
+
   /// Never answers the batch: a Wander that is locked, or a popup closed.
   bool hangBatch = false;
 
@@ -249,16 +256,17 @@ class FakeWander extends Fake implements ArConnectService {
       throw Exception(
           'Only local wallets are currently supported for batch signing');
     }
-    return [
-      for (final dataItem in dataItems)
-        if (varyBatch)
+    final signatures = [
+      for (var i = 0; i < dataItems.length; i++)
+        if (varyBatch || (partialBatch && i > 0))
           _random()
         else
           await () async {
-            await dataItem.sign(ArweaveSigner(inner));
-            return utils.decodeBase64ToBytes(dataItem.signature);
+            await dataItems[i].sign(ArweaveSigner(inner));
+            return utils.decodeBase64ToBytes(dataItems[i].signature);
           }(),
     ];
+    return reverseBatch ? signatures.reversed.toList() : signatures;
   }
 
   @override

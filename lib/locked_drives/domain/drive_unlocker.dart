@@ -131,8 +131,8 @@ enum DriveSignatureBatch {
   /// drive.
   notAsked,
 
-  /// Every drive's v2 signature is held now, checked against Wander's
-  /// single-item signature.
+  /// Every drive's v2 signature is held now, each checked to be the one its
+  /// drive key comes from.
   signed,
 
   /// The person said no, or chose not to wait for Wander. One cancel for
@@ -141,7 +141,8 @@ enum DriveSignatureBatch {
   declined,
 
   /// Wander was asked, but the batch can't be used: it refused (a hardware
-  /// wallet), failed, or its signatures didn't match. Go on drive by drive.
+  /// wallet), failed, or some of its signatures weren't the ones drive keys
+  /// come from. Any that were are kept. Go on drive by drive.
   unusable,
 }
 
@@ -192,25 +193,19 @@ class DriveUnlocker {
   /// can then be tried on all of those drives without asking again.
   ///
   /// Only for a Wander that can, with at least two drives to sign for; a
-  /// batch takes one prompt from [promptBudget], and so does a check (3). The signatures are kept for
-  /// the session like any other, and only once they are shown to be the
-  /// ones Wander gives one item at a time, because a key derived from any
-  /// other signature opens nothing. The proof, cheapest first:
+  /// batch takes one prompt from [promptBudget]. It is the only prompt.
   ///
-  /// 1. A drive in [driveIds] whose signature the session holds is signed
-  ///    again in the batch, and the two must match.
-  /// 2. Otherwise a signature that, with [password], opens one of
-  ///    [proofDrives] (v2 drives only): AES-GCM authentication passing is
-  ///    the proof.
-  /// 3. Otherwise one more prompt: a single-item signature of one drive.
-  ///
-  /// If they don't match, the batch is dropped and not tried again this
-  /// session, in case a Wander build ever ignores `saltLength: 0`.
+  /// Every signature that comes back is checked on its own
+  /// ([ArDriveCrypto.isDriveSignature]): RSA-PSS with no salt, over the item
+  /// asked for, against the wallet's public key. With no salt there is one
+  /// valid signature per item, so one that passes is the one every ArDrive
+  /// app derives that drive's key from. Only those are kept, for the session
+  /// like any other. If any fails (a Wander build that ignores `saltLength`,
+  /// items out of order, a hardware wallet), the batch is not tried again
+  /// this session and the drives whose signature failed go one by one.
   Future<DriveSignatureBatch> signInOneApproval({
     required Wallet wallet,
     required List<String> driveIds,
-    String? password,
-    List<DriveMetadata> proofDrives = const [],
     WalletPromptBudget? promptBudget,
   }) async {
     if (wallet is! ArConnectWallet || !wallet.canBatchSign) {
@@ -223,15 +218,13 @@ class DriveUnlocker {
       return DriveSignatureBatch.notAsked;
     }
 
-    Uint8List? held(String driveId) =>
-        _session.signature(owner, driveId, DriveSignatureType.v2);
-
     final needed = {
       for (final driveId in driveIds)
-        if (held(driveId) == null) driveId,
+        if (_session.signature(owner, driveId, DriveSignatureType.v2) == null)
+          driveId,
     }.take(maxDrivesPerBatch).toList();
 
-    // One drive costs one prompt either way, and its own path needs no proof.
+    // One drive costs one prompt either way.
     if (needed.length < 2) {
       return DriveSignatureBatch.notAsked;
     }
@@ -240,18 +233,9 @@ class DriveUnlocker {
       return DriveSignatureBatch.notAsked;
     }
 
-    String? reference;
-    for (final driveId in driveIds) {
-      if (held(driveId) != null) {
-        reference = driveId;
-        break;
-      }
-    }
-
     final List<Uint8List> signatures;
     try {
-      signatures = await _crypto.batchWalletSignaturesForDrives(
-          wallet, [...needed, if (reference != null) reference]);
+      signatures = await _crypto.batchWalletSignaturesForDrives(wallet, needed);
     } catch (e) {
       if (_personDeclined(e)) {
         logger.i('The batch of drive signatures was declined: $e');
@@ -266,99 +250,37 @@ class DriveUnlocker {
       return DriveSignatureBatch.unusable;
     }
 
-    final batch = {
-      for (var i = 0; i < needed.length; i++) needed[i]: signatures[i],
-    };
+    final publicKey = await wallet.getOwner();
+    var allValid = true;
 
-    final bool matches;
-    if (reference != null) {
-      matches = _sameBytes(signatures.last, held(reference)!);
-    } else if (password != null &&
-        await _opensAny(batch, proofDrives, password)) {
-      matches = true;
-    } else {
-      // The check is a prompt too, and comes out of the same budget.
-      if (promptBudget != null && !promptBudget.take()) {
-        return DriveSignatureBatch.unusable;
+    for (var i = 0; i < needed.length; i++) {
+      if (await _crypto.isDriveSignature(
+          owner: publicKey, driveId: needed[i], signature: signatures[i])) {
+        _session.rememberSignature(
+            owner, needed[i], DriveSignatureType.v2, signatures[i]);
+      } else {
+        allValid = false;
       }
-
-      final checked = needed.first;
-      final Uint8List single;
-      try {
-        single = await wallet.signDataItem(
-            _crypto.driveSignatureDataItem(await wallet.getOwner(), checked));
-      } catch (e) {
-        logger.w('The wallet did not sign the check for its batch: $e');
-        if (_personDeclined(e)) {
-          for (final driveId in needed) {
-            _session.markWalletDeclined(owner, driveId);
-          }
-          return DriveSignatureBatch.declined;
-        }
-        return DriveSignatureBatch.unusable;
-      }
-
-      _session.rememberSignature(owner, checked, DriveSignatureType.v2, single);
-      matches = _sameBytes(single, batch[checked]!);
     }
 
-    if (!matches) {
-      logger.w('Wander signed the batch differently from one item at a time: '
-          'its drives are asked for one by one');
+    if (!allValid) {
+      logger.w('Wander signed some drives in its batch with a signature no '
+          'drive key comes from: those are asked for one by one');
       _session.markBatchSigningUnusable(owner);
       return DriveSignatureBatch.unusable;
     }
 
-    batch.forEach((driveId, signature) => _session.rememberSignature(
-        owner, driveId, DriveSignatureType.v2, signature));
-
     return DriveSignatureBatch.signed;
   }
 
-  /// Whether one of [signatures], with [password], opens its drive in
-  /// [drives]. Only v2 drives: a v1 drive's key needs its record read.
-  Future<bool> _opensAny(
-    Map<String, Uint8List> signatures,
-    List<DriveMetadata> drives,
-    String password,
-  ) async {
-    for (final drive in drives) {
-      final signature = signatures[drive.tx.getTag(EntityTag.driveId)];
-      final type = DriveSignatureType.fromString(
-          drive.tx.getTag(EntityTag.signatureType) ?? '1');
-
-      if (signature == null || type != DriveSignatureType.v2) continue;
-
-      for (final info in drivePasswordInfos(password)) {
-        final key = await _crypto.driveKeyFromSignature(signature, info,
-            generated: true);
-
-        if (await _openOrNull(drive.tx, drive.data, key) != null) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  static bool _sameBytes(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  /// Drive discovery's one approval, before it tries [password] on [drives]
-  /// one by one: [signInOneApproval] for the drives that would otherwise
-  /// ask the wallet. Those are the ones with no key in memory or stored on
-  /// this device ([storedKey]), no signature held, and no prompt cancelled
-  /// this session.
+  /// Drive discovery's one approval, before it tries a password on
+  /// [drives] one by one: [signInOneApproval] for the drives that would
+  /// otherwise ask the wallet. Those are the ones with no key in memory or
+  /// stored on this device ([storedKey]), no signature held, and no prompt
+  /// cancelled this session.
   Future<DriveSignatureBatch> signForDiscovery({
     required Wallet wallet,
     required List<DriveMetadata> drives,
-    required String password,
     StoredDriveKeyReader? storedKey,
     WalletPromptBudget? promptBudget,
   }) async {
@@ -396,25 +318,11 @@ class DriveUnlocker {
           (tx) => createdAt[tx.getTag(EntityTag.driveId)] ?? _commitTime(tx),
         ));
 
-    // A drive whose signature is held, to check the batch against.
-    String? reference;
-    for (final drive in drives) {
-      final driveId = drive.tx.getTag(EntityTag.driveId);
-      if (driveId != null &&
-          _session.signature(owner, driveId, DriveSignatureType.v2) != null) {
-        reference = driveId;
-        break;
-      }
-    }
-
     return signInOneApproval(
       wallet: wallet,
       driveIds: [
         for (final drive in pending) drive.tx.getTag(EntityTag.driveId)!,
-        if (reference != null) reference,
       ],
-      password: password,
-      proofDrives: pending,
       promptBudget: promptBudget,
     );
   }
@@ -723,8 +631,6 @@ class DriveUnlocker {
       final batch = await signInOneApproval(
         wallet: wallet,
         driveIds: [driveId, ...others],
-        password: password,
-        proofDrives: [metadata],
       );
 
       if (batch == DriveSignatureBatch.declined) {

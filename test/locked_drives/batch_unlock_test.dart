@@ -112,8 +112,6 @@ void main() {
       final outcome = await unlocker.signInOneApproval(
         wallet: wander.wallet,
         driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
       );
 
       expect(outcome, DriveSignatureBatch.signed);
@@ -132,8 +130,6 @@ void main() {
       final outcome = await unlocker.signInOneApproval(
         wallet: wander.wallet,
         driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
       );
 
       expect(outcome, DriveSignatureBatch.notAsked);
@@ -147,7 +143,6 @@ void main() {
         await unlocker.signInOneApproval(
           wallet: jwk,
           driveIds: [for (final d in drives) d.driveId],
-          password: 'pw',
         ),
         DriveSignatureBatch.notAsked,
       );
@@ -160,8 +155,6 @@ void main() {
         await unlocker.signInOneApproval(
           wallet: wander.wallet,
           driveIds: [drives.single.driveId],
-          password: 'pw',
-          proofDrives: metadataOf(drives),
         ),
         DriveSignatureBatch.notAsked,
       );
@@ -177,8 +170,6 @@ void main() {
       final outcome = await unlocker.signInOneApproval(
         wallet: wander.wallet,
         driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
       );
 
       expect(outcome, DriveSignatureBatch.declined);
@@ -197,8 +188,7 @@ void main() {
       final ids = [for (final d in drives) d.driveId];
 
       expect(
-        await unlocker.signInOneApproval(
-            wallet: wander.wallet, driveIds: ids, password: 'pw'),
+        await unlocker.signInOneApproval(wallet: wander.wallet, driveIds: ids),
         DriveSignatureBatch.unusable,
       );
       expect(session.batchSigningUnusable(owner), isTrue);
@@ -206,89 +196,73 @@ void main() {
           reason: 'not the user: its drives may still be asked one by one');
 
       expect(
-        await unlocker.signInOneApproval(
-            wallet: wander.wallet, driveIds: ids, password: 'pw'),
+        await unlocker.signInOneApproval(wallet: wander.wallet, driveIds: ids),
         DriveSignatureBatch.notAsked,
       );
       expect(wander.batches, 1);
     });
 
     test(
-        'signatures that differ from a held one are dropped, and batches '
-        'stop for the session', () async {
+        'every signature is checked: item 0 right and the rest wrong keeps '
+        'only item 0, stops batches, and drive 1 still opens with its own '
+        'password', () async {
       final drives = await drivesWith(['pw', 'pw', 'pw']);
-      final held = await singleSignature(drives[0].driveId);
-      session.rememberSignature(
-          owner, drives[0].driveId, DriveSignatureType.v2, held);
-      wander.varyBatch = true;
+      wander.partialBatch = true;
 
       final outcome = await unlocker.signInOneApproval(
         wallet: wander.wallet,
         driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
       );
 
       expect(outcome, DriveSignatureBatch.unusable);
-      expect(wander.lastBatchSize, 3, reason: 'two needed and the reference');
-      expect(wander.prompts, 1, reason: 'the held one is the check: free');
+      expect(wander.prompts, 1, reason: 'no second prompt to check it');
+      expect(session.signature(owner, drives[0].driveId, DriveSignatureType.v2),
+          await singleSignature(drives[0].driveId));
       expect(session.holdsSignatureFor(owner, drives[1].driveId), isFalse);
       expect(session.holdsSignatureFor(owner, drives[2].driveId), isFalse);
       expect(session.batchSigningUnusable(owner), isTrue);
-    });
 
-    test(
-        'with nothing held, a signature that opens a drive is the proof: '
-        'no second prompt', () async {
-      final drives = await drivesWith(['other', 'pw', 'other']);
-
-      expect(
-        await unlocker.signInOneApproval(
-          wallet: wander.wallet,
-          driveIds: [for (final d in drives) d.driveId],
-          password: 'pw',
-          proofDrives: metadataOf(drives),
-        ),
-        DriveSignatureBatch.signed,
+      // Drive 1 is asked for on its own and opens: never "wrong password".
+      final attempt = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: drives[1].tx,
+        data: drives[1].data,
+        password: 'pw',
       );
-      expect(wander.prompts, 1);
-    });
-
-    test(
-        'with nothing held and nothing opened, one single signature checks '
-        'the batch', () async {
-      final drives = await drivesWith(['pw', 'pw']);
-
-      expect(
-        await unlocker.signInOneApproval(
-          wallet: wander.wallet,
-          driveIds: [for (final d in drives) d.driveId],
-          password: 'typo',
-          proofDrives: metadataOf(drives),
-        ),
-        DriveSignatureBatch.signed,
-      );
+      expect(attempt.opened, isTrue);
       expect(wander.prompts, 2);
-      expect(session.holdsSignatureFor(owner, drives[1].driveId), isTrue);
     });
 
-    test(
-        'a batch that differs from the single check is dropped; the single '
-        'signature is kept', () async {
+    test('signatures returned out of order fail their check', () async {
+      final drives = await drivesWith(['pw', 'pw', 'pw']);
+      wander.reverseBatch = true;
+
+      expect(
+        await unlocker.signInOneApproval(
+          wallet: wander.wallet,
+          driveIds: [for (final d in drives) d.driveId],
+        ),
+        DriveSignatureBatch.unusable,
+      );
+      // The middle one is in its own place, and is the right one.
+      expect(session.holdsSignatureFor(owner, drives[0].driveId), isFalse);
+      expect(session.holdsSignatureFor(owner, drives[1].driveId), isTrue);
+      expect(session.holdsSignatureFor(owner, drives[2].driveId), isFalse);
+    });
+
+    test('random signatures: nothing is kept, and no second prompt', () async {
       final drives = await drivesWith(['pw', 'pw']);
       wander.varyBatch = true;
 
-      final outcome = await unlocker.signInOneApproval(
-        wallet: wander.wallet,
-        driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
+      expect(
+        await unlocker.signInOneApproval(
+          wallet: wander.wallet,
+          driveIds: [for (final d in drives) d.driveId],
+        ),
+        DriveSignatureBatch.unusable,
       );
-
-      expect(outcome, DriveSignatureBatch.unusable);
-      expect(wander.prompts, 2);
-      expect(session.signature(owner, drives[0].driveId, DriveSignatureType.v2),
-          await singleSignature(drives[0].driveId));
+      expect(wander.prompts, 1);
+      expect(session.holdsSignatureFor(owner, drives[0].driveId), isFalse);
       expect(session.holdsSignatureFor(owner, drives[1].driveId), isFalse);
       expect(session.batchSigningUnusable(owner), isTrue);
     });
@@ -301,7 +275,6 @@ void main() {
         await unlocker.signInOneApproval(
           wallet: wander.wallet,
           driveIds: [for (final d in drives) d.driveId],
-          password: 'pw',
           promptBudget: WalletPromptBudget(0),
         ),
         DriveSignatureBatch.notAsked,
@@ -316,8 +289,6 @@ void main() {
       await unlocker.signInOneApproval(
         wallet: wander.wallet,
         driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
         promptBudget: budget,
       );
 
@@ -340,8 +311,6 @@ void main() {
       final outcome = await unlocker.signInOneApproval(
         wallet: saved,
         driveIds: [for (final d in drives) d.driveId],
-        password: 'pw',
-        proofDrives: metadataOf(drives),
       );
 
       expect(reasons, [ArConnectUnavailableReason.noAnswer]);
@@ -439,7 +408,9 @@ void main() {
       expect(wander.batches, 0);
     });
 
-    test('a batch that fails its check falls back to drive by drive', () async {
+    test(
+        'a batch whose signatures fail their check falls back to drive by drive',
+        () async {
       final drives = await drivesWith(['pw', 'pw', 'pw']);
       session
           .setLockedDrives(owner, [for (final d in drives) locked(d.driveId)]);
@@ -453,8 +424,7 @@ void main() {
       );
 
       expect(result.openedDriveIds, hasLength(3));
-      // The batch, its single check (which opens the first drive), then one
-      // each for the other two.
+      // The batch, then the drive asked for and the other two one at a time.
       expect(wander.prompts, 4);
     });
 
@@ -490,15 +460,14 @@ void main() {
       final outcome = await unlocker.signForDiscovery(
         wallet: wander.wallet,
         drives: metadataOf(drives),
-        password: 'pw',
         storedKey: (driveId) async =>
             driveId == drives[1].driveId ? drives[1].key : null,
       );
 
       expect(outcome, DriveSignatureBatch.signed);
       expect(wander.prompts, 1);
-      // Drives 4 and 5, and drive 2 again to check the batch against.
-      expect(wander.lastBatchSize, 3);
+      // Drives 4 and 5 only.
+      expect(wander.lastBatchSize, 2);
       expect(session.holdsSignatureFor(owner, drives[4].driveId), isTrue);
       expect(session.holdsSignatureFor(owner, drives[5].driveId), isTrue);
       expect(session.holdsSignatureFor(owner, drives[1].driveId), isFalse);
@@ -509,7 +478,7 @@ void main() {
       final drives = await drivesWith(['pw', 'pw', 'other']);
 
       await unlocker.signForDiscovery(
-          wallet: wander.wallet, drives: metadataOf(drives), password: 'pw');
+          wallet: wander.wallet, drives: metadataOf(drives));
       final attempts = [
         for (final drive in drives)
           await unlocker.resolveForDiscovery(
@@ -535,12 +504,77 @@ void main() {
         await unlocker.signForDiscovery(
           wallet: wander.wallet,
           drives: metadataOf(drives),
-          password: 'typo',
           promptBudget: WalletPromptBudget(0),
         ),
         DriveSignatureBatch.notAsked,
       );
       expect(wander.prompts, 0);
+    });
+  });
+
+  group('checking a drive signature', () {
+    test(
+        'the deterministic signature passes; another drive\'s or random '
+        'bytes fail', () async {
+      final publicKey = await jwk.getOwner();
+      final right = await singleSignature(_id(1));
+
+      expect(
+          await crypto.isDriveSignature(
+              owner: publicKey, driveId: _id(1), signature: right),
+          isTrue);
+      expect(
+          await crypto.isDriveSignature(
+              owner: publicKey,
+              driveId: _id(1),
+              signature: await singleSignature(_id(2))),
+          isFalse);
+      expect(
+          await crypto.isDriveSignature(
+              owner: publicKey,
+              driveId: _id(1),
+              signature: Uint8List.fromList(List.filled(512, 7))),
+          isFalse);
+    });
+
+    test(
+        'a single Wander signature is checked too: one no key can come from '
+        'is refused, and no key is made', () async {
+      wander.varyV2 = true;
+
+      await expectLater(
+        crypto.walletSignatureForDrive(
+            wander.wallet, _id(1), DriveSignatureType.v2),
+        throwsA(isA<WalletCantMakeDriveKeysException>()),
+      );
+      await expectLater(
+        crypto.deriveDriveKey(
+            wander.wallet, _id(1), 'pw', DriveSignatureType.v2, null),
+        throwsA(isA<WalletCantMakeDriveKeysException>()),
+      );
+
+      wander.varyV2 = false;
+      expect(
+          await crypto.walletSignatureForDrive(
+              wander.wallet, _id(1), DriveSignatureType.v2),
+          await singleSignature(_id(1)));
+    });
+
+    test(
+        'unlocking with a wallet like that is a wallet failure, never '
+        '"wrong password"', () async {
+      final drives = await drivesWith(['pw']);
+      wander.varyV2 = true;
+
+      final attempt = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: drives.single.tx,
+        data: drives.single.data,
+        password: 'pw',
+      );
+
+      expect(attempt.failure, DriveUnlockFailure.walletFailed);
+      expect(session.holdsSignatureFor(owner, drives.single.driveId), isFalse);
     });
   });
 
@@ -554,9 +588,14 @@ void main() {
       expect(
           drivePasswordTryRank(createdAt: before, appName: 'ArDrive-CLI'), 0);
       expect(drivePasswordTryRank(createdAt: before), 0);
-      expect(
-          drivePasswordTryRank(createdAt: before, appName: 'ArDrive-Desktop'),
-          1);
+      for (final desktop in [
+        'ArDrive-Desktop',
+        'ArDrive-Sync',
+        'ArDrive-Core'
+      ]) {
+        expect(drivePasswordTryRank(createdAt: before, appName: desktop), 1,
+            reason: desktop);
+      }
       expect(drivePasswordTryRank(createdAt: after, appName: 'ArDrive-App'), 2);
     });
 

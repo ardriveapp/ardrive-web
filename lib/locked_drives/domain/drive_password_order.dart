@@ -6,21 +6,27 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 ///
 /// Before 3.0 a private drive's password was the account's sign-in password
 /// in practice: web always used it, and the CLI made every drive use the
-/// first drive's. Only desktop let each drive have its own. So a drive made
+/// first drive's. Only the desktop apps let each drive have its own. So a drive made
 /// before this date most likely opens with the password that opened the
 /// others. Only the order passwords are tried in depends on it: a drive that
 /// doesn't open still shows as locked, whatever this says.
 final drivePasswordEraCutoff = DateTime.utc(2026, 11, 1);
 
-/// The `App-Name` of ArDrive desktop, the one app that let each private
-/// drive have its own password.
-const _perDrivePasswordApps = {'ArDrive-Desktop'};
+/// The `App-Name`s of the desktop apps, which let each private drive have
+/// its own password: ArDrive desktop, its older sync app, and the desktop MVP,
+/// which tags drives with core-js's default `ArDrive-Core`. Other core-js
+/// integrations share that tag; it only moves their drives down the order.
+const _perDrivePasswordApps = {
+  'ArDrive-Desktop',
+  'ArDrive-Sync',
+  'ArDrive-Core',
+};
 
 /// Which drives to try a password on first: lower first.
 ///
 /// 0. Made before [drivePasswordEraCutoff] by an app that used one password
-///    for every drive (web, the CLI, core-js).
-/// 1. Made before it by desktop, which allowed a password per drive.
+///    for every drive (web, the CLI).
+/// 1. Made before it by a desktop app, which allowed a password per drive.
 /// 2. Made since.
 ///
 /// [appName] is the drive transaction's `App-Name`. It names the app that

@@ -2168,7 +2168,6 @@ class _SyncRepository implements SyncRepository {
           ? (drives) => _driveUnlocker.signForDiscovery(
                 wallet: wallet,
                 drives: drives,
-                password: checkedDrivePassword ?? password,
                 storedKey: (driveId) =>
                     _driveDao.getStoredDriveKey(driveId, cipherKey),
                 promptBudget: promptBudget,

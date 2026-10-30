@@ -97,9 +97,32 @@ class ArDriveCrypto {
       DataItem.withBlobData(data: driveSignatureMessage(driveId), owner: owner)
         ..addTag('Action', 'Drive-Signature-V2');
 
-  /// Each of [driveIds]' v2 wallet signatures, signed in one Wander approval:
-  /// the same bytes [walletSignatureForDrive] gets one drive at a time, as
-  /// long as Wander honours `saltLength: 0`, which the caller must check.
+  /// Whether [signature] is [owner]'s signature of [driveId]'s v2 item
+  /// ([driveSignatureDataItem]): RSA-PSS with a salt of length 0 over the
+  /// item's ANS-104 signature data, checked against the public key [owner].
+  ///
+  /// With no salt there is exactly one valid signature, so one that passes is
+  /// the one every ArDrive app derives this drive's key from. A wallet that
+  /// salts its signatures, signs another item (another drive's, or with an
+  /// anchor of its own, as Keystone does) or returns them out of order fails.
+  Future<bool> isDriveSignature({
+    required String owner,
+    required String driveId,
+    required Uint8List signature,
+  }) async {
+    final signer = _GivenSignature(signature);
+    try {
+      await driveSignatureDataItem(owner, driveId).sign(signer);
+      return await SignatureConfig.arweave
+          .verify(signer.signedMessage!, signature, owner);
+    } catch (e) {
+      logger.w('Could not check a drive signature: $e');
+      return false;
+    }
+  }
+
+  /// Each of [driveIds]' v2 wallet signatures, signed in one Wander approval.
+  /// Not checked here: the caller checks each with [isDriveSignature].
   ///
   /// Throws whatever Wander throws, a cancelled prompt included, and a
   /// [StateError] if it returns a different number of signatures.
@@ -148,12 +171,11 @@ class ArDriveCrypto {
       }
     } else if (signatureType == DriveSignatureType.v2) {
       final dataItem = driveSignatureDataItem(await wallet.getOwner(), driveId);
+      final Uint8List signature;
       try {
         if (wallet is ArConnectWallet) {
           logger.d('Signing with v2 signature (wallet.signDataItem)');
-          final signature = await wallet.signDataItem(dataItem);
-          logger.d('v2 signing successful');
-          return signature;
+          signature = await wallet.signDataItem(dataItem);
         } else {
           logger.d('Signing with v2 signature (DataItem.sign)');
           await dataItem.sign(ArweaveSigner(wallet));
@@ -164,6 +186,15 @@ class ArDriveCrypto {
         logger.e('v2 signing failed', e, stackTrace);
         throw Exception('Failed to sign data item: $e');
       }
+
+      // A browser wallet signs for us, so its answer is checked before a key
+      // is made from it: a key from any other signature never opens again.
+      if (!await isDriveSignature(
+          owner: dataItem.owner, driveId: driveId, signature: signature)) {
+        throw const WalletCantMakeDriveKeysException();
+      }
+      logger.d('v2 signing successful');
+      return signature;
     } else {
       throw Exception('Invalid signature type: $signatureType');
     }
@@ -423,4 +454,33 @@ class DriveKey {
   final bool generated;
 
   DriveKey(this.key, this.generated);
+}
+
+/// The wallet's signature for a drive is not the one a drive key can be made
+/// from: it isn't RSA-PSS with no salt over the exact item asked for. Keystone
+/// adds an anchor of its own, for one. A key made from it would never open
+/// the drive again, so none is made.
+class WalletCantMakeDriveKeysException implements Exception {
+  const WalletCantMakeDriveKeysException();
+
+  @override
+  String toString() => 'WalletCantMakeDriveKeysException';
+}
+
+/// A [Signer] that answers with a signature already made, and keeps the
+/// message it was asked to sign: the item's signature data.
+class _GivenSignature implements Signer {
+  _GivenSignature(this._signature);
+
+  final Uint8List _signature;
+  Uint8List? signedMessage;
+
+  @override
+  SignatureConfig get signatureConfig => SignatureConfig.arweave;
+
+  @override
+  Future<Uint8List> sign(Uint8List message, [String? context]) async {
+    signedMessage = message;
+    return _signature;
+  }
 }

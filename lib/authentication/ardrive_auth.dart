@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
@@ -528,17 +529,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
       },
     );
 
-    if (batches) {
+    // Nothing to try the password on (the gateway is down, say): no
+    // approval is asked for, and the error below says why.
+    if (batches && data.any((d) => d != null)) {
       final batch = await _driveUnlocker.signInOneApproval(
         wallet: wallet,
-        driveIds: [
-          for (final tx in [...rest, ...heldTxs]) tx.getTag(EntityTag.driveId)!,
-        ],
-        password: password,
-        proofDrives: [
-          for (var i = 0; i < candidates.length; i++)
-            if (data[i] != null) (tx: candidates[i], data: data[i]!),
-        ],
+        driveIds: [for (final tx in rest) tx.getTag(EntityTag.driveId)!],
         promptBudget: promptBudget,
       );
 
@@ -547,6 +543,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _markSignInPassword(address, proven: false);
         throw const PasswordOpensNoDriveException();
       }
+
+      // The batch signed every drive's v2 item, which is all a v2 drive (or a
+      // v1 drive with a stored signature) needs. A v1 drive without one still
+      // needs its own v1 signature, a prompt, so v2-tagged drives go first:
+      // the password usually opens one of them for the batch alone.
+      _v2First(candidates, data, readErrors);
     }
 
     final deadline = DateTime.now().add(signInTimeBudget);
@@ -611,6 +613,33 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     await _markSignInPassword(address, proven: false);
     throw const PasswordOpensNoDriveException();
+  }
+
+  /// Reorders [candidates], and their [data] and [readErrors] with them, so
+  /// drives tagged `Signature-Type: 2` come first, each group keeping its
+  /// order.
+  static void _v2First(
+    List<TransactionCommonMixin> candidates,
+    List<Uint8List?> data,
+    List<Object?> readErrors,
+  ) {
+    bool isV2(int i) =>
+        candidates[i].getTag(EntityTag.signatureType) ==
+        DriveSignatureType.v2.value;
+    final order = [
+      for (var i = 0; i < candidates.length; i++)
+        if (isV2(i)) i,
+      for (var i = 0; i < candidates.length; i++)
+        if (!isV2(i)) i,
+    ];
+    final c = [for (final i in order) candidates[i]];
+    final d = [for (final i in order) data[i]];
+    final r = [for (final i in order) readErrors[i]];
+    for (var i = 0; i < order.length; i++) {
+      candidates[i] = c[i];
+      data[i] = d[i];
+      readErrors[i] = r[i];
+    }
   }
 
   /// Records whether the sign-in password opened a drive: in the session,
