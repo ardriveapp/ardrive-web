@@ -211,6 +211,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(PromptPassword(
         wallet: pending.promptWallet,
         derivedEthWallet: pending.derivedEthWallet,
+        sourceWalletAddress: _sourceWalletAddress,
         showWalletCreated: pending.showWalletCreated,
       ));
       return;

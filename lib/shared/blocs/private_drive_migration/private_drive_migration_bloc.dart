@@ -341,6 +341,10 @@ class PrivateDriveMigrationBloc
     User user, {
     String? password,
   }) async {
+    // A refusal belongs to the drive it was made for: without this, a drive
+    // that returns early below would be read with the previous drive's.
+    recordBuilder.lastRefusal = null;
+
     if (driveUnlocker.session.isLocked(drive.id)) {
       return null;
     }

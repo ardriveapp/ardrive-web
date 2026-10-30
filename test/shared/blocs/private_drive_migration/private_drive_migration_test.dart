@@ -565,6 +565,53 @@ void main() {
       await bloc.close();
     });
 
+    test(
+        'a drive that ends early is not asked for its password because the '
+        'drive before it was', () async {
+      final unknown = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: _otherId,
+          password: 'own pw',
+          signatureType: DriveSignatureType.v1);
+      final known = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: _driveId,
+          password: 'login pw',
+          signatureType: DriveSignatureType.v1);
+      onChain(unknown);
+      onChain(known);
+      session.rememberProvenPasswordInfo(_otherId, utf8.encode('not it'));
+      final bloc =
+          buildBloc([await v1DriveRow(unknown), await v1DriveRow(known)]);
+      expect(await offered(bloc), isA<PrivateDriveMigrationVisible>());
+
+      // The second drive locks after it was offered, so its turn ends before
+      // anything is built for it.
+      session.setLockedDrives(owner, [
+        LockedDrive(
+          driveId: _driveId,
+          ownerAddress: owner,
+          signatureType: DriveSignatureType.v1,
+          lastUpdated: DateTime(2026),
+        ),
+      ]);
+
+      final asked = <String>[];
+      final sub = bloc.stream.listen((s) {
+        if (s is PrivateDriveMigrationNeedsPassword) {
+          asked.add(s.drive.id);
+          bloc.add(const PrivateDriveMigrationPasswordEntered(null));
+        }
+      });
+      bloc.add(const PrivateDriveMigrationStartEvent());
+      await bloc.stream.firstWhere((s) => s is PrivateDriveMigrationFailed);
+      await sub.cancel();
+
+      expect(asked, [_otherId]);
+      expect(posted, isEmpty);
+      await bloc.close();
+    });
+
     test('a drive whose record can\'t be proven does not stop the others',
         () async {
       final unknown = await makeWebPrivateDrive(
