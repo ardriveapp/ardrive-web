@@ -440,7 +440,9 @@ void main() {
   // is usable, and the bento waits with it.
   group('the bento while the page is held still', () {
     Future<void> pumpScaffold(WidgetTester tester,
-        {required bool moving, required Size size}) async {
+        {required bool moving,
+        required Size size,
+        bool nextFrame = true}) async {
       final preferences = _MockUserPreferencesRepository();
       when(() => preferences.watch())
           .thenAnswer((_) => const Stream<UserPreferences>.empty());
@@ -480,7 +482,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
+      if (nextFrame) await tester.pump();
     }
 
     testWidgets('on a desktop, a plain surface until the page moves',
@@ -489,7 +491,11 @@ void main() {
       expect(find.byKey(const Key('bentoPlaceholder')), findsOneWidget);
       expect(find.byType(TilesView), findsNothing);
 
-      await pumpScaffold(tester, moving: true, size: const Size(1440, 900));
+      await pumpScaffold(tester,
+          moving: true, size: const Size(1440, 900), nextFrame: false);
+      // The frame that makes the panel usable first, the bento in the next.
+      expect(find.byType(TilesView), findsNothing);
+      await tester.pump();
       expect(find.byKey(const Key('bentoPlaceholder')), findsNothing);
       expect(find.byType(TilesView), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
@@ -499,7 +505,14 @@ void main() {
     testWidgets('on a phone, nothing below the panel until the page moves',
         (tester) async {
       await pumpScaffold(tester, moving: false, size: const Size(390, 844));
+      await tester.pump();
       expect(find.byType(TilesView), findsNothing);
+
+      await pumpScaffold(tester, moving: true, size: const Size(390, 844));
+      await tester.pump();
+      expect(find.byType(TilesView), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 

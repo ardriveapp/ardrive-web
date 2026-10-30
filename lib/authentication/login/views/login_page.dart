@@ -465,11 +465,10 @@ class _PhoneView extends StatelessWidget {
                   buildWhen: (_, current) => loginPanelRebuildsOn(current),
                   // Not before the panel is usable: see _Bento.
                   builder: (context, state) =>
-                      (state is LoginLanding || state is LoginLoading) &&
-                              TickerMode.of(context)
+                      state is LoginLanding || state is LoginLoading
                           ? const Padding(
                               padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
-                              child: TilesView(),
+                              child: BentoWhenReady(),
                             )
                           : const SizedBox.shrink(),
                 ),
@@ -793,17 +792,55 @@ class _Bento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (TickerMode.of(context)) return const TilesView();
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    return DecoratedBox(
-      key: const Key('bentoPlaceholder'),
-      decoration: BoxDecoration(
-        color: colors.containerL1,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.strokeLow),
-      ),
+    return BentoWhenReady(
+      placeholder: Builder(builder: (context) {
+        final colors = ArDriveTheme.of(context).themeData.colorTokens;
+        return DecoratedBox(
+          key: const Key('bentoPlaceholder'),
+          decoration: BoxDecoration(
+            color: colors.containerL1,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.strokeLow),
+          ),
+        );
+      }),
     );
   }
+}
+
+/// [TilesView] once the page around it moves (`TickerMode` on), and
+/// [placeholder] until then.
+///
+/// One frame after: the frame that makes the panel usable is drawn first, and
+/// the bento, the heaviest thing on the page, in the next. Built in the same
+/// frame, the enabled panel waited about 3 s for it on a throttled phone.
+@visibleForTesting
+class BentoWhenReady extends StatefulWidget {
+  const BentoWhenReady({super.key, this.placeholder = const SizedBox.shrink()});
+
+  final Widget placeholder;
+
+  @override
+  State<BentoWhenReady> createState() => _BentoWhenReadyState();
+}
+
+class _BentoWhenReadyState extends State<BentoWhenReady> {
+  bool _show = false;
+  bool _scheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!TickerMode.of(context) || _show || _scheduled) return;
+    _scheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _show = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _show ? const TilesView() : widget.placeholder;
 }
 
 /// The sign-in panel while the app checks for an account on this device and
