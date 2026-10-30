@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -340,5 +341,81 @@ void main() {
     expect(session.walletDeclined(owner, _opens), isFalse);
     expect(session.isLocked(_opens), isFalse);
     expect(session.walletDeclined(owner, _locked), isTrue);
+  });
+
+  group('a Wander sign-in, then discovery', () {
+    late FakeWander wander;
+    late ArDriveAuthImpl auth;
+
+    setUp(() async {
+      wander = FakeWander(wallet);
+      auth = ArDriveAuthImpl(
+        arweave: arweave,
+        userRepository: MockUserRepository(),
+        crypto: ArDriveCrypto(),
+        biometricAuthentication: MockBiometricAuthentication(),
+        secureKeyValueStore: MockSecureKeyValueStore(),
+        arConnectService: MockArConnectService(),
+        databaseHelpers: MockDatabaseHelpers(),
+        driveUnlocker: unlocker,
+      );
+    });
+
+    Future<void> drives(List<String> passwords) async {
+      onChain = [
+        for (var i = 0; i < passwords.length; i++)
+          await makeWebPrivateDrive(
+            wallet: wallet,
+            driveId: '00000000-0000-4000-8000-00000000000$i',
+            password: passwords[i],
+            unixTime: 1700000000 + i,
+          ),
+      ];
+      when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => [for (final d in onChain) d.tx]);
+      for (final drive in onChain) {
+        when(() => arweave.getEntityDataBytes(drive.tx.id,
+                configuredGatewayOnly: any(named: 'configuredGatewayOnly')))
+            .thenAnswer((_) async => drive.data);
+      }
+    }
+
+    Future<void> discoverAs({required String password, bool again = false}) =>
+        syncRepository.updateUserDrives(
+          wallet: wander.wallet,
+          password: password,
+          cipherKey: profileKey,
+          askWalletAgain: again,
+        );
+
+    test(
+        'a typo, then Continue, costs 3 prompts in all: discovery asks '
+        'nothing more, not even in a sync the user starts', () async {
+      await drives(List.filled(6, 'right'));
+
+      await expectLater(auth.validateUser(wander.wallet, 'typo'),
+          throwsA(isA<PasswordOpensNoDriveException>()));
+      expect(wander.prompts, 3);
+
+      await discoverAs(password: 'typo');
+      await discoverAs(password: 'typo', again: true);
+
+      expect(wander.prompts, 3);
+      expect(session.currentLockedDrives, hasLength(6));
+    });
+
+    test(
+        'the right password: discovery still gets its 3 prompts for the '
+        'drives sign-in didn\'t reach', () async {
+      await drives(['right', ...List.filled(6, 'other')]);
+
+      await auth.validateUser(wander.wallet, 'right');
+      expect(wander.prompts, 1);
+
+      await discoverAs(password: 'right');
+
+      expect(wander.prompts, 4);
+    });
   });
 }

@@ -134,6 +134,22 @@ class DriveUnlockSession {
     _walletDeclined.remove(_key(ownerAddress, driveId));
   }
 
+  final _signInPasswordProven = <String, bool>{};
+
+  /// Whether the password this session signed in with opened one of
+  /// [ownerAddress]'s private drives: true if it did (or there were none to
+  /// open), false if it opened none and the user chose to continue, null if
+  /// the session didn't sign in through that check (Welcome back).
+  ///
+  /// False means the password may be a typo. It is then not tried again on
+  /// the wallet's behalf at the cost of a prompt, and not used to make a new
+  /// private drive's key.
+  bool? signInPasswordProven(String ownerAddress) =>
+      _signInPasswordProven[ownerAddress];
+
+  void setSignInPasswordProven(String ownerAddress, bool proven) =>
+      _signInPasswordProven[ownerAddress] = proven;
+
   /// The password bytes that last opened [driveId] this session, if any.
   List<int>? provenPasswordInfo(String driveId) => _provenPasswordInfo[driveId];
 
@@ -145,6 +161,7 @@ class DriveUnlockSession {
     _signatures.clear();
     _walletDeclined.clear();
     _provenPasswordInfo.clear();
+    _signInPasswordProven.clear();
     _unlockedAt.clear();
     _lockedDrives.add(const []);
   }

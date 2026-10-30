@@ -211,6 +211,9 @@ FirstDriveAttempt createMyFiles(BuildContext context) {
   final profileCubit = context.read<ProfileCubit>();
   final drivesCubit = context.read<DrivesCubit>();
 
+  // No unlock session: a new account has just chosen its password, and has
+  // no private drive it could have failed to open, so "My files" takes that
+  // password as every new account's first drive always has.
   return () => _createMyFiles(DriveCreateCubit(
         privacy: DrivePrivacy.private,
         arweave: arweave,

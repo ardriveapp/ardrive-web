@@ -5717,5 +5717,7 @@
   "passwordOpensNoDrivesBody": "Check it and try again, or continue. Drives it doesn't open stay locked until you unlock them.",
   "@passwordOpensNoDrivesBody": {"description": "Under the title. Continue signs in with those drives locked."},
   "migrationDrivePasswordPrompt": "{name} has its own password. Enter it to update this drive.",
-  "@migrationDrivePasswordPrompt": {"description": "Drive update banner: the sign-in password doesn't open this drive.", "placeholders": {"name": {"type": "String"}}}
+  "@migrationDrivePasswordPrompt": {"description": "Drive update banner: the sign-in password doesn't open this drive.", "placeholders": {"name": {"type": "String"}}},
+  "newDrivePasswordBody": "Set a password for this drive. You'll need it to open the drive.",
+  "@newDrivePasswordBody": {"description": "Create drive, when the sign-in password didn't open the user's private drives: the new private drive gets its own password."}
 }

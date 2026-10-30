@@ -582,6 +582,33 @@ void main() {
     }
 
     blocTest<LoginBloc, LoginState>(
+      'Wander: Continue checks the wallet again; one switched while the '
+      'dialog was open is a mismatch, not a sign-in',
+      build: createBloc,
+      act: (bloc) async {
+        bloc.profileType = ProfileType.arConnect;
+        bloc.lastKnownWalletAddress = 'some address';
+        bloc.add(LoginWithPassword(
+            wallet: wallet, password: 'typo', showWalletCreated: false));
+        await Future<void>.delayed(Duration.zero);
+        when(() => mockArConnectService.getWalletAddress())
+            .thenAnswer((_) async => 'another address');
+        bloc.add(const ContinueSignInWithLockedDrives());
+      },
+      expect: () => [
+        LoginCheckingPassword(),
+        const LoginPasswordOpensNoDrives(),
+        LoginCheckingPassword(),
+        const LoginFailure(WalletMismatchException()),
+        isA<LoginState>(),
+      ],
+      verify: (_) => verifyNever(() => mockArDriveAuth.login(
+          any(), any(), any(),
+          sourceWalletAddress: any(named: 'sourceWalletAddress'),
+          skipDriveCheck: true)),
+    );
+
+    blocTest<LoginBloc, LoginState>(
       'Try again or Continue with nothing pending does nothing',
       build: createBloc,
       act: (bloc) {
