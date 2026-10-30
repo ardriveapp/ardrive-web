@@ -513,15 +513,31 @@ void main() {
       verifyNever(() => loginBloc.add(any()));
     });
 
-    testWidgets('a keyfile goes on to the password', (tester) async {
+    testWidgets('a file that cannot be read says so', (tester) async {
       final keyfile = await tester.runAsync(() => _file(getWalletString));
       when(() => loginBloc.validateAndReturnWalletFile(any()))
-          .thenAnswer((_) async => getTestWallet());
+          .thenThrow(const KeyfileUnreadableException());
       await pump(
           tester, EnterRecoveryPhraseView(pickKeyfile: () async => keyfile!));
       await tester.tap(find.byKey(const Key('phraseChooseKeyfile')));
       await tester.pump();
-      expect(added().single, isA<AddWalletFile>());
+      expect(find.text("Couldn't read that file. Try again."), findsOneWidget);
+      expect(find.textContaining("isn't a keyfile"), findsNothing);
+      verifyNever(() => loginBloc.add(any()));
+    });
+
+    testWidgets('a keyfile goes on to the password, with the wallet it read',
+        (tester) async {
+      final keyfile = await tester.runAsync(() => _file(getWalletString));
+      final wallet = getTestWallet();
+      when(() => loginBloc.validateAndReturnWalletFile(any()))
+          .thenAnswer((_) async => wallet);
+      await pump(
+          tester, EnterRecoveryPhraseView(pickKeyfile: () async => keyfile!));
+      await tester.tap(find.byKey(const Key('phraseChooseKeyfile')));
+      await tester.pump();
+      final sent = added().single as AddWalletFile;
+      expect(sent.wallet, same(wallet));
     });
 
     testWidgets('closing the file picker does nothing', (tester) async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/utils/exceptions.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -16,10 +18,16 @@ import 'package:retry/retry.dart';
 /// On 429 or 5xx errors, falls back to Goldsky since most AR.IO gateways don't
 /// index ArDrive L2 data.
 class GraphQLRetry {
-  GraphQLRetry(this._client,
-      {required InternetChecker internetChecker, String? fallbackGraphqlUrl})
-      : _internetChecker = internetChecker,
-        _fallbackGraphqlUrl = fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl;
+  GraphQLRetry(
+    this._client, {
+    required InternetChecker internetChecker,
+    String? fallbackGraphqlUrl,
+    Duration attemptTimeout = defaultAttemptTimeout,
+    Duration maxAttemptTimeout = defaultMaxAttemptTimeout,
+  })  : _internetChecker = internetChecker,
+        _fallbackGraphqlUrl = fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl,
+        _attemptTimeout = attemptTimeout,
+        _maxAttemptTimeout = maxAttemptTimeout;
 
   /// Where a query goes when the primary endpoint will not serve it.
   ///
@@ -38,6 +46,42 @@ class GraphQLRetry {
   final ArtemisClient _client;
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
+  final Duration _attemptTimeout;
+  final Duration _maxAttemptTimeout;
+
+  /// How long the first attempt may take before it counts as failed, and is
+  /// retried or sent to the fallback like any other failure. Each retry gets
+  /// longer, see [attemptTimeoutFor].
+  ///
+  /// Without it a request the gateway accepted and never answered waited for
+  /// ever: nothing below this sets a deadline, so no retry or fallback ever
+  /// ran. Every query here asks for at most 100 items. A sync page of a
+  /// drive's history from block 0 on turbo-gateway.com (measured 2026-10-29)
+  /// takes under a second as this app sends it, and up to about 9 seconds
+  /// with the fragments `fragmentFreeArtemisClient` removes. Twenty seconds
+  /// is twice the slow case, and short enough that a stall is retried while
+  /// the person is still waiting.
+  static const defaultAttemptTimeout = Duration(seconds: 20);
+
+  /// The longest any one attempt may take: 60 seconds.
+  ///
+  /// A page of 100 transactions is about 85 KB uncompressed, which takes 15
+  /// to 25 seconds on a poor mobile link. An attempt that timed out isn't
+  /// aborted (the http client can't), so it keeps using the link while the
+  /// retry runs, and each retry is slower than the one before.
+  static const defaultMaxAttemptTimeout = Duration(seconds: 60);
+
+  /// How long attempt [attempt] (1 for the first) may take: [first] times
+  /// [attempt], up to [max]. 20, 40, then 60 seconds by default.
+  @visibleForTesting
+  static Duration attemptTimeoutFor(
+    int attempt, {
+    Duration first = defaultAttemptTimeout,
+    Duration max = defaultMaxAttemptTimeout,
+  }) {
+    final grown = first * attempt;
+    return grown > max ? max : grown;
+  }
 
   /// Attempts against the *primary* endpoint before falling back.
   ///
@@ -131,6 +175,9 @@ class GraphQLRetry {
   /// does put a code in its message.
   @visibleForTesting
   static bool deservesFallback(Object error) {
+    // Attempts that never answered: another endpoint might.
+    if (error is TimeoutException) return true;
+
     final status = _statusCodeOf(error);
 
     if (status != null) {
@@ -169,9 +216,14 @@ class GraphQLRetry {
     Function(Exception e)? onRetry,
     int maxAttempts = defaultMaxAttempts,
   }) {
+    var attempt = 0;
     return retry(
       () async {
-        final response = await client.execute(query);
+        attempt++;
+        final response = await client.execute(query).timeout(attemptTimeoutFor(
+            attempt,
+            first: _attemptTimeout,
+            max: _maxAttemptTimeout));
         if (response.errors != null && response.errors!.isNotEmpty) {
           throw GraphQLException(response.errors);
         }

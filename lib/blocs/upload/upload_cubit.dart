@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -967,8 +968,18 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (_uploadFileAsCustomManifest) {
+      final Uint8List bytes;
+      try {
+        bytes = await _files.first.ioFile.readAsBytes();
+      } catch (e) {
+        // The file can't be read any more, such as when it changed after it
+        // was chosen. Nothing was sent: a failure the form can close.
+        logger.e('Could not read the file to upload as a manifest', e);
+        emit(UploadFailure(error: UploadErrors.unknown));
+        return;
+      }
       final fileWithCustomContentType = await IOFile.fromData(
-        await _files.first.ioFile.readAsBytes(),
+        bytes,
         name: _files.first.ioFile.name,
         lastModifiedDate: _files.first.ioFile.lastModifiedDate,
         contentType: ContentType.manifest,
