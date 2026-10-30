@@ -236,6 +236,38 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await w.close();
   });
 
+  // The drive the open unlock dialog is for, read from the dialog itself: it
+  // names the drive by its shortened ID ("6939b9...8885"). Matched against
+  // drives.json, so the password typed is always that drive's, whatever
+  // order the rows are in.
+  const dialogDriveId = async () => {
+    for (const n of await labels()) {
+      const m = n.label.match(/([0-9a-f]{6})(?:\.\.\.|\u2026)([0-9a-f]{4})/);
+      if (!m) continue;
+      const hit = drives.find((d) => d.driveId.startsWith(m[1]) && d.driveId.endsWith(m[2]));
+      if (hit) return hit.driveId;
+    }
+    return null;
+  };
+  // The password of the drive the open dialog is for. Never printed.
+  const dialogPassword = async (what) => {
+    const id = await dialogDriveId();
+    await check(`${what}: the dialog names a drive of this wallet`, id !== null);
+    return passwords[drives.find((d) => d.driveId === id).password];
+  };
+  // Opens the first locked row's dialog, types that drive's own password,
+  // and fails unless one drive fewer is locked afterwards.
+  const unlockFirstLocked = async (what) => {
+    const lockedBefore = await lockedCount();
+    const row = (await lockedRows())[0];
+    await check(`${what}: there is a locked drive`, row !== undefined);
+    const button = await unlockButtonOf(row);
+    await page.mouse.click(button.x, button.y);
+    await check(`${what}: the dialog opens`, await until(() => has('Unlock drive'), 10000));
+    await typeInField(await dialogPassword(what));
+    await check(what, await until(async () => await lockedCount() < lockedBefore, 30000));
+  };
+
   async function rememberCases() {
     await page.setViewportSize({ width: 1440, height: 900 });
     await wait(1500);
@@ -268,7 +300,7 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await activate('Remember on this device');
     await wait(500);
     await shot('r2-remember-off');
-    await typeInField(passwords.other);
+    await typeInField(await dialogPassword('R2'));
     await check('it opens', await until(async () => await lockedCount() === 0, 30000));
     await reloadAndUnlock();
     await check('R2: unlocked with Remember off, it is locked after a reload',
@@ -276,12 +308,7 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await shot('r2-reload');
 
     // R4: sign-out forgets everything, and the copies older builds left go.
-    lockedRow = (await lockedRows())[0];
-    unlockButton = await unlockButtonOf(lockedRow);
-    await page.mouse.click(unlockButton.x, unlockButton.y);
-    await until(() => has('Unlock drive'), 10000);
-    await typeInField(passwords.other);
-    await until(async () => await lockedCount() === 0, 30000);
+    await unlockFirstLocked('the drive locked by R2 opens again');
     await plantOlderStores();
     const before = await storageReport();
     await check('(the older stores are planted)',
@@ -302,13 +329,7 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await shot('r4-after-sign-out');
 
     // R5: cleared site storage falls back to locked; passwords still open.
-    lockedRow = (await lockedRows())[0];
-    unlockButton = await unlockButtonOf(lockedRow);
-    await page.mouse.click(unlockButton.x, unlockButton.y);
-    await until(() => has('Unlock drive'), 10000);
-    await typeInField(lockedIds([unicodeDrive.driveId, ...shared.map((d) => d.driveId)])[0] === unicodeDrive.driveId
-      ? passwords.unicode : passwords.other);
-    await until(async () => await lockedCount() < drives.length - 1, 30000);
+    await unlockFirstLocked('R5: a drive is unlocked, and so remembered, before');
     const session = await page.context().newCDPSession(page);
     await session.send('Storage.clearDataForOrigin', { origin: new URL(APP_URL).origin, storageTypes: 'all' });
     await session.detach();
@@ -316,14 +337,7 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await signInFresh();
     await check('R5: with site storage cleared, the drives are locked',
       await until(async () => await lockedCount() === drives.length - 1, 60000));
-    lockedRow = (await lockedRows())[0];
-    unlockButton = await unlockButtonOf(lockedRow);
-    await page.mouse.click(unlockButton.x, unlockButton.y);
-    await until(() => has('Unlock drive'), 10000);
-    const firstLocked = lockedIds([unicodeDrive.driveId, ...shared.map((d) => d.driveId)])[0];
-    await typeInField(firstLocked === unicodeDrive.driveId ? passwords.unicode : passwords.other);
-    await check('R5: and their passwords still open them',
-      await until(async () => await lockedCount() < drives.length - 1, 30000));
+    await unlockFirstLocked('R5: and their passwords still open them');
     await shot('r5-cleared');
 
     // Forget all on this device: every drive, the sign-in password's own
