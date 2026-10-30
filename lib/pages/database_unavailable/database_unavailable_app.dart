@@ -1,4 +1,6 @@
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,24 +9,24 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 ///
 /// Every screen after the splash reads the database, so a database that fails
 /// to open or migrate would otherwise leave the splash up for good. This runs
-/// on its own, with nothing from the app's providers, and gives the user two
-/// ways on: try again, or reset the data this device keeps and start fresh.
+/// on its own, with nothing from the app's providers, and offers Try again
+/// and the ways to get help the Help menu offers. Nothing here deletes or
+/// changes the data.
 class DatabaseUnavailableApp extends StatelessWidget {
   const DatabaseUnavailableApp({
     super.key,
     required this.onTryAgain,
-    required this.onReset,
+    required this.onHelpCenter,
+    required this.onShareLogs,
     this.dark = false,
   });
 
   final VoidCallback onTryAgain;
+  final VoidCallback onHelpCenter;
+  final Future<void> Function(LogExportInfo info) onShareLogs;
 
   /// Whether to show it in the dark theme, as the app would have been.
   final bool dark;
-
-  /// Deletes the local data and starts again. Completes with false if some
-  /// of it would not go.
-  final Future<bool> Function() onReset;
 
   @override
   Widget build(BuildContext context) {
@@ -40,52 +42,43 @@ class DatabaseUnavailableApp extends StatelessWidget {
             ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: DatabaseUnavailablePage(onTryAgain: onTryAgain, onReset: onReset),
+        home: DatabaseUnavailablePage(
+          onTryAgain: onTryAgain,
+          onHelpCenter: onHelpCenter,
+          onShareLogs: onShareLogs,
+        ),
       ),
     );
   }
 }
 
-class DatabaseUnavailablePage extends StatefulWidget {
+class DatabaseUnavailablePage extends StatelessWidget {
   const DatabaseUnavailablePage({
     super.key,
     required this.onTryAgain,
-    required this.onReset,
+    required this.onHelpCenter,
+    required this.onShareLogs,
   });
 
   final VoidCallback onTryAgain;
-  final Future<bool> Function() onReset;
-
-  @override
-  State<DatabaseUnavailablePage> createState() =>
-      _DatabaseUnavailablePageState();
-}
-
-class _DatabaseUnavailablePageState extends State<DatabaseUnavailablePage> {
-  var _resetting = false;
-  var _resetFailed = false;
-
-  Future<void> _reset() async {
-    setState(() {
-      _resetting = true;
-      _resetFailed = false;
-    });
-    var deleted = false;
-    try {
-      deleted = await widget.onReset();
-    } catch (_) {}
-    if (!mounted) return;
-    setState(() {
-      _resetting = false;
-      _resetFailed = !deleted;
-    });
-  }
+  final VoidCallback onHelpCenter;
+  final Future<void> Function(LogExportInfo info) onShareLogs;
 
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+
+    Widget button(String text, ButtonVariant variant, VoidCallback onPressed) =>
+        ArDriveButtonNew(
+          variant: variant,
+          size: ArDriveButtonSize.large,
+          typography: typography,
+          maxWidth: double.infinity,
+          onPressed: onPressed,
+          text: text,
+        );
 
     return Scaffold(
       body: Center(
@@ -112,39 +105,21 @@ class _DatabaseUnavailablePageState extends State<DatabaseUnavailablePage> {
                   style: typography.paragraphLarge(color: colors.textMid),
                 ),
                 const SizedBox(height: 24),
-                ArDriveButtonNew(
-                  variant: ButtonVariant.primary,
-                  size: ArDriveButtonSize.large,
-                  typography: typography,
-                  maxWidth: double.infinity,
-                  isDisabled: _resetting,
-                  onPressed: widget.onTryAgain,
-                  text: strings.tryAgain,
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  strings.databaseUnavailableResetWarning,
-                  textAlign: TextAlign.center,
-                  style: typography.paragraphNormal(color: colors.textMid),
-                ),
+                button(strings.tryAgain, ButtonVariant.primary, onTryAgain),
                 const SizedBox(height: 12),
-                ArDriveButtonNew(
-                  variant: ButtonVariant.outline,
-                  size: ArDriveButtonSize.large,
-                  typography: typography,
-                  maxWidth: double.infinity,
-                  isDisabled: _resetting,
-                  onPressed: _reset,
-                  text: strings.databaseUnavailableReset,
+                button(strings.helpCenter, ButtonVariant.outline, onHelpCenter),
+                const SizedBox(height: 12),
+                button(
+                  strings.shareLogsText,
+                  ButtonVariant.outline,
+                  () => onShareLogs(LogExportInfo(
+                    emailSubject: strings.shareLogsEmailSubject,
+                    emailBody: strings.shareLogsEmailBody,
+                    shareText: strings.shareLogsNativeShareText,
+                    shareSubject: strings.shareLogsNativeShareSubject,
+                    emailSupport: Resources.emailSupport,
+                  )),
                 ),
-                if (_resetFailed) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    strings.databaseUnavailableResetFailed,
-                    textAlign: TextAlign.center,
-                    style: typography.paragraphNormal(color: colors.textRed),
-                  ),
-                ],
               ],
             ),
           ),

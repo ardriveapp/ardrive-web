@@ -5649,11 +5649,5 @@
   "databaseUnavailableTitle": "ArDrive could not start",
   "@databaseUnavailableTitle": {"description": "Start-up screen when the local database will not open."},
   "databaseUnavailableBody": "The data it keeps in this browser did not open. Your files on Arweave are safe.",
-  "@databaseUnavailableBody": {"description": "Under the title of the start-up screen when the local database will not open."},
-  "databaseUnavailableResetWarning": "Reset local data removes the wallet saved here. You will need your keyfile or recovery phrase to log in again.",
-  "@databaseUnavailableResetWarning": {"description": "Above the Reset local data button."},
-  "databaseUnavailableReset": "Reset local data",
-  "@databaseUnavailableReset": {"description": "Deletes the local database and starts again."},
-  "databaseUnavailableResetFailed": "Some data is still in use. Close other ArDrive tabs, then try again.",
-  "@databaseUnavailableResetFailed": {"description": "When Reset local data could not delete everything."}
+  "@databaseUnavailableBody": {"description": "Under the title of the start-up screen when the local database will not open."}
 }

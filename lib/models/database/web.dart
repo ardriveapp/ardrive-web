@@ -112,44 +112,6 @@ LazyDatabase openConnection() {
   });
 }
 
-/// The IndexedDB database the sql.js backend kept every named store in.
-const _legacyIndexedDbName = 'moor_databases';
-
-/// Deletes the database from every store this browser keeps it in, for a
-/// start that cannot open it (`DatabaseUnavailableApp`). The app reloads
-/// afterwards and starts fresh.
-///
-/// All of them, the older stores included: the next start would otherwise
-/// fill the new database from one of those, and an older store that is the
-/// cause would fail it again. The OPFS file is kept as a copy beside the new
-/// one ([removeOpfsDatabase]). Returns false if a store would not go.
-Future<bool> deleteLocalDatabase({
-  String opfsName = _opfsDatabaseName,
-  String indexedDbName = _indexedDbName,
-  String legacyIndexedDbName = _legacyIndexedDbName,
-}) async {
-  var deleted = true;
-  final worker = webDatabaseWorker;
-  webDatabaseWorker = null;
-  if (!await removeOpfsDatabase(opfsName, worker: worker)) {
-    logger.w('[web-db] the OPFS database is still held; not removed');
-    deleted = false;
-  }
-
-  final held = webSqlite?.vfs;
-  webSqlite = null;
-  if (held is IndexedDbFileSystem) await held.close();
-  for (final name in [indexedDbName, legacyIndexedDbName]) {
-    try {
-      await IndexedDbFileSystem.deleteDatabase(name);
-    } catch (e) {
-      logger.w('[web-db] could not delete IndexedDB $name: $e');
-      deleted = false;
-    }
-  }
-  return deleted;
-}
-
 /// A publication's database (`PublicationMode`): in memory on this page, filled
 /// from the page's snapshot on every load and gone when the tab closes.
 ///

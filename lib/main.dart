@@ -28,6 +28,7 @@ import 'package:ardrive/publication/data/publication_meta_reader.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/pages/database_unavailable/database_unavailable_app.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
@@ -53,6 +54,7 @@ import 'package:ardrive/utils/app_url_strategy.dart';
 import 'package:ardrive/utils/dependency_injection_utils.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -131,8 +133,8 @@ Future<void> _startApp() async {
 /// The app opens its database on the first read, which the first screen
 /// makes while the splash is up, and no screen after it can show without
 /// one. Started alongside the app rather than awaited before it, so a sound
-/// database opens no later than it did. Web only: the way out reloads the
-/// page.
+/// database opens no later than it did. Web only: Try again reloads the page.
+/// Nothing there deletes or changes the data.
 Future<void> _replaceAppIfDatabaseFails() async {
   final failure = await db.openFailure();
   if (failure == null) return;
@@ -144,14 +146,8 @@ Future<void> _replaceAppIfDatabaseFails() async {
   runApp(DatabaseUnavailableApp(
     dark: theme == ArDriveThemes.dark.name,
     onTryAgain: triggerHTMLPageReload,
-    onReset: () async {
-      try {
-        await db.close().timeout(const Duration(seconds: 5));
-      } catch (_) {}
-      final deleted = await Database.deleteLocalData();
-      if (deleted) triggerHTMLPageReload();
-      return deleted;
-    },
+    onHelpCenter: () => openUrl(url: Resources.helpCenterLink),
+    onShareLogs: (info) => logger.exportLogs(info: info),
   ));
 }
 
