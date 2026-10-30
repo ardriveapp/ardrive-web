@@ -15,6 +15,7 @@ import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -168,9 +169,14 @@ Future<void> uploadIntoFirstDrive(
         if (context.mounted) await openCreateDrive();
       case FirstUploadDrive.failed:
         if (context.mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-            content: Text(appLocalizationsOf(context).firstDriveFailed),
-          ));
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (messenger != null) {
+            showArDriveToast(
+              messenger,
+              text: appLocalizationsOf(context).firstDriveFailed,
+              type: ArDriveStatusType.error,
+            );
+          }
         }
     }
   } finally {

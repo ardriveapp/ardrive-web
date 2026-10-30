@@ -178,15 +178,30 @@ class DriveUnlockSession {
   void setNewDrivePassword(String ownerAddress, String password) =>
       _newDrivePassword[ownerAddress] = password;
 
+  final _provenDrivePasswordKeepsKeys = <String, bool>{};
+
   /// The last password that opened one of [ownerAddress]'s drives this
-  /// session, from Create drive or Unlock. Discovery tries it while the
-  /// sign-in password is unproven: each attempt is proven by opening a drive.
-  /// Never used to make a drive.
+  /// session, from Create drive, or from Unlock with "Try on my other locked
+  /// drives" ticked. Discovery tries it while the sign-in password is
+  /// unproven: each attempt is proven by opening a drive. Never used to make
+  /// a drive.
   String? provenDrivePassword(String ownerAddress) =>
       _provenDrivePassword[ownerAddress];
 
-  void rememberProvenDrivePassword(String ownerAddress, String password) =>
-      _provenDrivePassword[ownerAddress] = password;
+  /// Whether the drives discovery opens with [provenDrivePassword] have their
+  /// key stored on this device: the "Remember on this device" choice made
+  /// with that password. Without it they are kept for this session only.
+  bool provenDrivePasswordKeepsKeys(String ownerAddress) =>
+      _provenDrivePasswordKeepsKeys[ownerAddress] ?? true;
+
+  void rememberProvenDrivePassword(
+    String ownerAddress,
+    String password, {
+    bool keepKeys = true,
+  }) {
+    _provenDrivePassword[ownerAddress] = password;
+    _provenDrivePasswordKeepsKeys[ownerAddress] = keepKeys;
+  }
 
   /// The password bytes that last opened [driveId] this session, if any.
   List<int>? provenPasswordInfo(String driveId) => _provenPasswordInfo[driveId];
@@ -203,6 +218,7 @@ class DriveUnlockSession {
     _signInPasswordProven.clear();
     _newDrivePassword.clear();
     _provenDrivePassword.clear();
+    _provenDrivePasswordKeepsKeys.clear();
     _unlockedAt.clear();
     _lockedDrives.add(const []);
   }

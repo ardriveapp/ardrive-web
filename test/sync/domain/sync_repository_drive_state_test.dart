@@ -713,7 +713,9 @@ void main() {
       ));
     });
 
-    test('is never asked about, and the sync walks the range itself', () async {
+    test(
+        'is never asked about, and the sync reads nothing for it: no key, '
+        'nothing to decrypt with, and its watermark stays put', () async {
       await publish();
 
       // A cipher key is supplied, so `getDriveKey` is the path taken - and it
@@ -727,7 +729,17 @@ void main() {
           reason: 'a private drive with no key has nothing to open an '
               'artifact with, so it must not even look for one');
       expect(await fileRows(), isEmpty);
-      expect(gqlStartedAt(), startsFromWithoutArtifact);
+      verifyNever(() => arweave.getSegmentedTransactionsFromDrive(
+            any(),
+            minBlockHeight: any(named: 'minBlockHeight'),
+            maxBlockHeight: any(named: 'maxBlockHeight'),
+            ownerAddress: any(named: 'ownerAddress'),
+            strategy: any(named: 'strategy'),
+          ));
+      expect(
+          (await db.driveDao.driveById(driveId: driveId).getSingle())
+              .lastBlockHeight,
+          localWatermark);
     });
 
     test('produces no outcome, because no artifact was ever identified',

@@ -1050,6 +1050,14 @@ class SyncCubit extends Cubit<SyncState> {
     _emitIfOpen(state);
   }
 
+  bool _lastStartRefused = false;
+
+  /// Whether the last [startSync] was refused before it ran: another sync
+  /// was running, the tab had no focus, or an activity was in the way. Not a
+  /// sync that ran and was stopped or failed, which also returns false and
+  /// must not be started again behind the person's back.
+  bool get lastStartWasRefused => _lastStartRefused;
+
   Future<bool> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
@@ -1068,6 +1076,7 @@ class SyncCubit extends Cubit<SyncState> {
     /// [askWalletAgain] is false.
     Iterable<String>? askWalletAgainFor,
   }) async {
+    _lastStartRefused = true;
     if (PublicationMode.isOn) return false;
     logger.i('Starting Sync');
 
@@ -1076,6 +1085,7 @@ class SyncCubit extends Cubit<SyncState> {
       return false;
     }
 
+    _lastStartRefused = false;
     _syncProgress = SyncProgress.initial();
     _syncGeneration++;
 
@@ -1162,12 +1172,14 @@ class SyncCubit extends Cubit<SyncState> {
             !skipTabVisibilityCheck &&
             !_tabVisibility.isTabFocused()) {
           logger.d('Tab hidden for ArConnect user, skipping sync...');
+          _lastStartRefused = true;
           _emitIfOpen(SyncIdle());
           return false;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
           logger.d('Uninterruptible activity in progress, skipping sync...');
+          _lastStartRefused = true;
           _emitIfOpen(SyncIdle());
           return false;
         }
@@ -1750,6 +1762,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     /// See [startSync]'s `askWalletAgain`.
     bool? askWalletAgain,
+
+    /// See [startSync].
+    bool skipTabVisibilityCheck = false,
   }) async {
     if (driveIds.isEmpty) {
       return false;
@@ -1766,7 +1781,31 @@ class SyncCubit extends Cubit<SyncState> {
       onlyDriveIds: driveIds,
       deepSync: deep,
       askWalletAgain: askWalletAgain,
+      skipTabVisibilityCheck: skipTabVisibilityCheck,
     );
+  }
+
+  /// Waits until nothing that refuses a sync is running: another sync, or
+  /// an activity a sync may not interrupt (an upload, say). Returns at once
+  /// if neither is. Ends early if this cubit closes.
+  Future<void> waitUntilSyncCanStart() async {
+    while (!isClosed) {
+      if (state is SyncInProgress) {
+        await waitCurrentSync();
+        continue;
+      }
+      if (_activityCubit.state is ActivityInProgress) {
+        try {
+          await _activityCubit.stream
+              .firstWhere((activity) => activity is! ActivityInProgress);
+        } on StateError {
+          // The activity cubit closed: nothing more will end.
+          return;
+        }
+        continue;
+      }
+      return;
+    }
   }
 
   /// Get the current sync progress

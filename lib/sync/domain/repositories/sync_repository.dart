@@ -630,6 +630,7 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _drivesWalkedToTheEnd.clear();
+    _drivesSkippedWithNoKey.clear();
     _resetMetadataFetchCounts();
 
     // Names a snapshot damaged before snapshots were read as UTF-8 - see
@@ -661,6 +662,23 @@ class _SyncRepository implements SyncRepository {
     if (onlyDriveIds != null && onlyDriveIds.isNotEmpty) {
       final only = onlyDriveIds.toSet();
       drives = drives.where((d) => only.contains(d.id)).toList();
+    }
+
+    // A private drive with a row and no key can't be read. Syncing it would
+    // fetch metadata it can't decrypt and still move its watermark on, so a
+    // later attach with its key would resume past items it never read. It is
+    // left alone, watermark and all, until a key comes back.
+    if (cipherKey != null) {
+      final readable = <Drive>[];
+      for (final drive in drives) {
+        if (await _hasNoKey(drive, cipherKey)) {
+          logger.w('Skipping ${drive.id}: a private drive with no key on '
+              'this device');
+        } else {
+          readable.add(drive);
+        }
+      }
+      drives = readable;
     }
 
     if (drives.isEmpty) {
@@ -1014,12 +1032,18 @@ class _SyncRepository implements SyncRepository {
             syncProgress = syncProgressController.add(syncProgress);
           }
           totalProgress += 1;
+          final skipped = _drivesSkippedWithNoKey.contains(drive.id);
           syncProgress = syncProgress.copyWith(
+            // Counts drives done, as the catch below does for failures.
             drivesSynced: syncProgress.drivesSynced + 1,
             // Recorded only on the path that got to the end. The catch below
             // increments the same counters for a drive that failed, and a
-            // drive that failed has not been synced.
-            syncedDriveIds: [...syncProgress.syncedDriveIds, drive.id],
+            // drive that failed has not been synced. Nor has one skipped for
+            // having no key.
+            syncedDriveIds: [
+              ...syncProgress.syncedDriveIds,
+              if (!skipped) drive.id,
+            ],
             progress:
                 (totalProgress / numberOfDrivesToSync) * _progressDriveWalkEnd,
           );
@@ -1372,6 +1396,7 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _drivesWalkedToTheEnd.clear();
+    _drivesSkippedWithNoKey.clear();
     _resetMetadataFetchCounts();
 
     // Names a snapshot damaged before snapshots were read as UTF-8 - see
@@ -1515,6 +1540,22 @@ class _SyncRepository implements SyncRepository {
             entitiesSynced: _syncedEntityCount,
           );
           syncProgress = syncProgressController.add(syncProgress);
+        }
+
+        // A drive skipped for having no key was not synced: nothing was
+        // read, so nothing follows, and it is neither counted nor named as
+        // synced ("Synced just now" would be false).
+        if (_drivesSkippedWithNoKey.contains(driveId)) {
+          syncProgress = syncProgress.copyWith(
+            progress: _progressComplete,
+            statusMessage: null,
+            isIndeterminate: false,
+            metadataFetchesCompleted: 0,
+            metadataFetchesTotal: 0,
+          );
+          syncProgress = syncProgressController.add(syncProgress);
+          await syncProgressController.close();
+          return;
         }
 
         // The walk is over however it went, so whatever it was allowed to
@@ -2198,10 +2239,19 @@ class _SyncRepository implements SyncRepository {
     final checkedDrivePassword = signInUnproven
         ? _driveUnlocker.session.provenDrivePassword(address)
         : null;
-    final unproven = signInUnproven && checkedDrivePassword == null;
+    // A wallet that prompts is never asked by discovery for a password other
+    // than the sign-in one: that one is tried at sign-in, where the person
+    // expects Wander to ask. A password from Create drive or Unlock opens only
+    // the drives whose signature is already held; for the rest, discovery
+    // would open a Wander window nobody asked for. They stay locked for their
+    // own Unlock.
     final promptBudget = wallet is ArConnectWallet
-        ? WalletPromptBudget(unproven ? 0 : WalletPromptBudget.perPass)
+        ? WalletPromptBudget(signInUnproven ? 0 : WalletPromptBudget.perPass)
         : null;
+    // The "Remember on this device" choice made with that other password.
+    final keepKeysOpenedByPassword = checkedDrivePassword == null ||
+        _driveUnlocker.session.provenDrivePasswordKeepsKeys(address);
+    final openedForSessionOnly = <String, DriveKey>{};
 
     // Drives this device was told not to keep a key for: opened only by the
     // person, never by the sign-in password.
@@ -2222,18 +2272,35 @@ class _SyncRepository implements SyncRepository {
                 promptBudget: promptBudget,
               )
           : null,
-      resolvePrivateDriveKey: (driveTx, data) =>
-          _driveUnlocker.resolveForDiscovery(
-        wallet: wallet,
-        driveTx: driveTx,
-        data: data,
-        password: checkedDrivePassword ?? password,
-        storedKey: (driveId) => _driveDao.getStoredDriveKey(driveId, cipherKey),
-        mayAskWallet: false,
-        promptBudget: promptBudget,
-        forgotten: forgotten.contains(driveTx.getTag(EntityTag.driveId)),
-      ),
+      resolvePrivateDriveKey: (driveTx, data) async {
+        final driveId = driveTx.getTag(EntityTag.driveId);
+        final attempt = await _driveUnlocker.resolveForDiscovery(
+          wallet: wallet,
+          driveTx: driveTx,
+          data: data,
+          password: checkedDrivePassword ?? password,
+          storedKey: (driveId) =>
+              _driveDao.getStoredDriveKey(driveId, cipherKey),
+          mayAskWallet: false,
+          promptBudget: promptBudget,
+          forgotten: forgotten.contains(driveId),
+        );
+        // Opened by the password just now, not by a key already held.
+        if (attempt.opened &&
+            attempt.passwordInfo != null &&
+            !keepKeysOpenedByPassword &&
+            driveId != null) {
+          openedForSessionOnly[driveId] = attempt.key!;
+        }
+        return attempt;
+      },
     );
+
+    // Before the rows are written, so none of them stores these keys.
+    for (final entry in openedForSessionOnly.entries) {
+      await _driveDao.keepDriveKeyForSession(
+          driveId: entry.key, driveKey: entry.value);
+    }
 
     final walletAddress = await wallet.getAddress();
 
@@ -2692,6 +2759,21 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  /// The drives [_syncDrive] left alone this sync because no key opens them.
+  /// Not synced, so never counted or named as synced.
+  final Set<String> _drivesSkippedWithNoKey = {};
+
+  /// Whether [drive] is private and this device holds no key for it. A key
+  /// that can't be read is not this: that drive is synced, and fails.
+  Future<bool> _hasNoKey(Drive drive, SecretKey cipherKey) async {
+    if (!drive.isPrivate) return false;
+    try {
+      return await _driveDao.getDriveKey(drive.id, cipherKey) == null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Stream<double> _syncDrive(
     String driveId, {
     SecretKey? cipherKey,
@@ -2726,6 +2808,15 @@ class _SyncRepository implements SyncRepository {
       // Only sync private drives when the user is logged in.
       if (cipherKey != null) {
         driveKey = await _driveDao.getDriveKey(drive.id, cipherKey);
+
+        // Nothing to decrypt it with: see [syncAllDrives]. Its watermark is
+        // left where it is.
+        if (driveKey == null) {
+          logger.w('Not syncing ${drive.id}: a private drive with no key on '
+              'this device');
+          _drivesSkippedWithNoKey.add(drive.id);
+          return;
+        }
       } else {
         driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
 
