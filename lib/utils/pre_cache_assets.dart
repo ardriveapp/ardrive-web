@@ -4,7 +4,60 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+
+/// The pictures the sign-in page shows on its first paint: the panel's logo
+/// and the bento's first group of people, its backdrop, its hero picture and
+/// first feature slide.
+@visibleForTesting
+List<String> firstLoginImages() => [
+      Resources.images.brand.logo1,
+      Resources.images.login.bentoBox.particleSpace,
+      Resources.images.login.bentoBox.profile1,
+      Resources.images.login.bentoBox.profile2,
+      Resources.images.login.bentoBox.profile3,
+    ];
+
+@visibleForTesting
+List<String> firstLoginSvgs({required bool light}) => [
+      Resources.images.login.bentoBox.dataStorage,
+      bentoFeatureArt(light: light).first,
+    ];
+
+/// Starts loading [firstLoginImages] and [firstLoginSvgs] before the app's
+/// first frame, and returns at once.
+///
+/// Started from `main`, while the config loads, so the pictures are decoded
+/// by the time the sign-in page paints, or soon after, rather than requested
+/// only once its first frame, the heaviest of the start, has been built. Each
+/// goes into the cache the widgets read: the image cache under the key
+/// `Image.asset` makes (these assets have one resolution), and flutter_svg's
+/// cache.
+void preCacheFirstLoginAssets({required bool light}) {
+  final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+  final configuration = ImageConfiguration(
+    bundle: rootBundle,
+    devicePixelRatio: view?.devicePixelRatio ?? 1.0,
+    platform: defaultTargetPlatform,
+  );
+  for (final path in firstLoginImages()) {
+    final stream = AssetImage(path).resolve(configuration);
+    late final ImageStreamListener listener;
+    void done() => stream.removeListener(listener);
+    listener = ImageStreamListener(
+      (_, __) => done(),
+      onError: (_, __) => done(),
+    );
+    stream.addListener(listener);
+  }
+
+  if (!kIsWeb) return;
+
+  for (final path in firstLoginSvgs(light: light)) {
+    SvgAssetLoader(path).loadBytes(null).ignore();
+  }
+}
 
 /// The pictures the sign-in screen shows only after its first paint: the
 /// bento's second group of people (10 s in) and the wallet-created step's two

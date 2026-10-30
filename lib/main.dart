@@ -62,6 +62,7 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
+import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -175,6 +176,21 @@ Future<void> _initializeServices() async {
   // browser that has never run the app.
   _profilePresenceHint = ProfilePresenceHint(localKeyValueStore);
 
+  // Opening the database (its worker, sqlite3.wasm, the schema) is most of
+  // what a start waits for, and needs nothing below, so it starts now, beside
+  // the config. Left to the first read, it began only after the first frame,
+  // the heaviest of the start, had been built. Failures are handled after
+  // runApp, as before (_replaceAppIfDatabaseFails).
+  db = PublicationMode.isOn ? Database.forPublication() : Database();
+  if (kIsWeb && !PublicationMode.isOn) unawaited(db.openFailure());
+
+  // The pictures the sign-in page paints first, for a start that shows it.
+  if (!PublicationMode.isOn && !_opensALinkPage(Uri.base)) {
+    final theme = localKeyValueStore.getString('currentTheme') ??
+        ThemeDetector().getOSDefaultTheme().name;
+    preCacheFirstLoginAssets(light: theme == ArDriveThemes.light.name);
+  }
+
   // Mobile UI setup (non-blocking, fire-and-forget)
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
@@ -217,8 +233,6 @@ Future<void> _initializeServices() async {
     useGatewayForDownloadHelper(
         Uri.parse(config.arweaveGatewayForDataRequest.url));
   }
-
-  db = PublicationMode.isOn ? Database.forPublication() : Database();
 
   arweave = ArweaveService(
     Arweave(
@@ -264,6 +278,15 @@ Future<void> _initializeServices() async {
   if (kIsWeb && !PublicationMode.isOn) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
+}
+
+/// Whether [uri] opens a page for someone who was sent a link (a shared
+/// file, a raw transaction), which never shows the sign-in page.
+bool _opensALinkPage(Uri uri) {
+  final route = uri.fragment;
+  return route.startsWith('/file/') ||
+      route.startsWith('/view/') ||
+      route.startsWith('/share/');
 }
 
 class App extends StatefulWidget {

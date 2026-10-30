@@ -71,7 +71,8 @@ class ArIOGatewayDetector {
   /// host itself.
   ///
   /// Never a parent domain with no dot, which is a top-level domain (`com`
-  /// above `turbo-gateway.com`); and never [notGateways], ArDrive's
+  /// above `turbo-gateway.com`), nor one of an IP address; and never
+  /// [notGateways], ArDrive's
   /// own domain, which serves app.ardrive.io and staging.ardrive.io and is no
   /// gateway: asking it cost every first visit there a request that 404s
   /// before the app could start.
@@ -82,8 +83,13 @@ class ArIOGatewayDetector {
   }) {
     final parts = host.split('.');
     final domain = parts.length > 1 ? parts.sublist(1).join('.') : parts[0];
+    // An IP address has no domain above it: `0.0.1` above 127.0.0.1 was
+    // asked, and took the full timeout to fail.
+    final isIp =
+        RegExp(r'^\d{1,3}(\.\d{1,3}){3}$').hasMatch(host) || host.contains(':');
     return {
-      if (domain.contains('.') && !notGateways.contains(domain)) domain,
+      if (!isIp && domain.contains('.') && !notGateways.contains(domain))
+        domain,
       if (alsoTryHost && !notGateways.contains(host)) host,
     }.toList();
   }

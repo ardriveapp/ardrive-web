@@ -25,6 +25,14 @@ void main() {
       expect(candidates('localhost'), isEmpty);
     });
 
+    test('never the "domain" of an IP address', () {
+      expect(candidates('127.0.0.1'), isEmpty);
+      expect(candidates('192.168.1.20'), isEmpty);
+      expect(candidates('::1'), isEmpty);
+      expect(candidates('127.0.0.1', alsoTryHost: true), ['127.0.0.1'],
+          reason: 'a gateway can be served from an address');
+    });
+
     // ardrive.io 404s, and asking it held up every first visit to the app.
     test("never ArDrive's own domain", () {
       expect(candidates('app.ardrive.io'), isEmpty);

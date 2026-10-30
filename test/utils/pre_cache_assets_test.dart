@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('the pictures loaded once the sign-in panel is up', () {
+  group('the sign-in pictures loaded ahead of time', () {
     final all = [
+      ...firstLoginImages(),
+      ...firstLoginSvgs(light: true),
+      ...firstLoginSvgs(light: false),
       ...laterLoginImages(),
       ...laterLoginSvgs(light: true),
       ...laterLoginSvgs(light: false),
@@ -36,7 +39,13 @@ void main() {
       }
     });
 
-    test('leave the first slide to the slide itself', () {
+    test('first and later never overlap: each picture loads once', () {
+      final first = {...firstLoginImages(), ...firstLoginSvgs(light: true)};
+      final later = {...laterLoginImages(), ...laterLoginSvgs(light: true)};
+      expect(first.intersection(later), isEmpty);
+    });
+
+    test('later leaves the first slide to the first paint', () {
       expect(laterLoginSvgs(light: true), hasLength(4));
       expect(laterLoginSvgs(light: true).first, contains('cant_be_changed'));
       expect(laterLoginSvgs(light: false).first, isNot(contains('_light')));
