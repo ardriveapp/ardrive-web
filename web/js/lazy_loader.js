@@ -41,17 +41,32 @@
    * itself as an AMD module instead, setting no global, whenever require.js is
    * on the page, as it is in debug builds and under `flutter test`; clearing
    * define/require across the load forces the global branch.
+   *
+   * Loads can overlap (the EML bundles, PST, the wallet), so the real values
+   * are saved by the first and put back by the last. When each saved its own
+   * copy, the second saved the undefined the first had set, and the page was
+   * left without them.
    */
+  let _amdHidden = 0;
+  let _savedDefine;
+  let _savedRequire;
+
   async function loadGlobalScript(url) {
-    const savedDefine = window.define;
-    const savedRequire = window.require;
-    window.define = undefined;
-    window.require = undefined;
+    if (_amdHidden++ === 0) {
+      _savedDefine = window.define;
+      _savedRequire = window.require;
+      window.define = undefined;
+      window.require = undefined;
+    }
     try {
       await loadScript(url);
     } finally {
-      window.define = savedDefine;
-      window.require = savedRequire;
+      if (--_amdHidden === 0) {
+        window.define = _savedDefine;
+        window.require = _savedRequire;
+        _savedDefine = undefined;
+        _savedRequire = undefined;
+      }
     }
   }
 
@@ -146,16 +161,7 @@
     console.log('[LazyLoader] window.define exists:', typeof window.define !== 'undefined');
     console.log('[LazyLoader] window.require exists:', typeof window.require !== 'undefined');
 
-    const savedDefine = window.define;
-    const savedRequire = window.require;
-    window.define = undefined;
-    window.require = undefined;
-    try {
-      await loadScript('./js/arweave-wallet.js');
-    } finally {
-      window.define = savedDefine;
-      window.require = savedRequire;
-    }
+    await loadGlobalScript('./js/arweave-wallet.js');
 
     if (window.ArweaveWallet) {
       console.log('[LazyLoader] ArweaveWallet loaded successfully, has generateJWKStringFromMnemonic:', typeof window.ArweaveWallet.generateJWKStringFromMnemonic);
@@ -166,6 +172,7 @@
 
   window.LazyLoader = {
     loadScript,
+    loadGlobalScript,
     loadModule,
     loadTurboSDK,
     loadArioSDK,
