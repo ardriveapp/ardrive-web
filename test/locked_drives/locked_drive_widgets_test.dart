@@ -3,6 +3,7 @@ import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../test_utils/locked_drive_fixtures.dart' show MemoryKeyValueStore;
 import '../test_utils/utils.dart';
 
 class _MockDriveUnlocker extends Mock implements DriveUnlocker {}
@@ -528,6 +530,68 @@ void main() {
               canvasKit: false,
               platform: TargetPlatform.android),
           isTrue);
+    });
+  });
+
+  group('a password that unlocks a drive', () {
+    late _MockDriveUnlocker unlocker;
+    late DriveUnlockSession session;
+    late MemoryKeyValueStore deviceStore;
+    late SignInPasswordProofStore proofStore;
+    late String owner;
+
+    setUpAll(() => registerFallbackValue(getTestWallet()));
+
+    setUp(() async {
+      owner = await getTestWallet().getAddress();
+      unlocker = _MockDriveUnlocker();
+      session = DriveUnlockSession()..setSignInPasswordProven(owner, false);
+      deviceStore = MemoryKeyValueStore();
+      proofStore = SignInPasswordProofStore(store: () async => deviceStore);
+      when(() => unlocker.session).thenReturn(session);
+      when(() => unlocker.unlock(
+                wallet: any(named: 'wallet'),
+                profileKey: any(named: 'profileKey'),
+                driveId: any(named: 'driveId'),
+                password: any(named: 'password'),
+                tryOthers: any(named: 'tryOthers'),
+              ))
+          .thenAnswer((_) async => const DriveUnlockResult.opened([_driveId]));
+    });
+
+    UnlockDriveCubit cubit() => UnlockDriveCubit(
+          driveId: _driveId,
+          unlocker: unlocker,
+          wallet: getTestWallet(),
+          profileKey: null,
+          syncDrives: (_) async {},
+          signInPassword: 'sign-in password',
+          proofStore: proofStore,
+        );
+
+    test(
+        'proves the sign-in password when it is that one: in the session and '
+        'on this device', () async {
+      await proofStore.markUnproven(owner);
+
+      await cubit().submit(password: 'sign-in password', tryOthers: false);
+
+      expect(session.signInPasswordProven(owner), isTrue);
+      expect(await proofStore.isUnproven(owner), isFalse);
+    });
+
+    test(
+        'another password, while the sign-in one is unproven, is one '
+        'discovery may try, never the one new drives use, and proves nothing '
+        'about the sign-in one', () async {
+      await proofStore.markUnproven(owner);
+
+      await cubit().submit(password: 'old cli password', tryOthers: false);
+
+      expect(session.provenDrivePassword(owner), 'old cli password');
+      expect(session.newDrivePassword(owner), isNull);
+      expect(session.signInPasswordProven(owner), isFalse);
+      expect(await proofStore.isUnproven(owner), isTrue);
     });
   });
 }
