@@ -259,7 +259,9 @@ class _AppSideBarState extends State<AppSideBar> {
                 children: [
                   const SizedBox(height: 24),
                   _buildLogo(false),
-                  const SizedBox(height: 24),
+                  // New lines up with the page's title row and its button,
+                  // as Google Drive lines up New with the top of its content.
+                  const SizedBox(height: ArDriveSpacing.lg + ArDriveSpacing.sm),
                   _buildDriveActionsButton(context, false),
                   const SizedBox(height: 16),
                   // The only part that scrolls, and the only part that needs

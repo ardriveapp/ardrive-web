@@ -80,7 +80,10 @@ void main() {
       ]),
     );
 
-    expect(find.text('Changed since last sync'), findsNWidgets(2));
+    expect(find.textContaining(', changed since'), findsNWidgets(2));
+    // The time stays, so the column still says when, and sorts by it.
+    expect(find.textContaining(RegExp(r'^Synced .+, changed since$')),
+        findsNWidgets(2));
   });
 
   testWidgets('and nothing above the table says it again', (tester) async {
@@ -103,7 +106,7 @@ void main() {
   testWidgets('says nothing when every drive is current', (tester) async {
     await pump(tester, DrivesListLoaded(drives: [drive('a'), drive('b')]));
 
-    expect(find.text('Changed since last sync'), findsNothing);
+    expect(find.textContaining(', changed since'), findsNothing);
   });
 
   testWidgets('a drive being synced says that instead', (tester) async {
@@ -114,7 +117,7 @@ void main() {
       ]),
     );
 
-    expect(find.text('Changed since last sync'), findsNothing);
+    expect(find.textContaining(', changed since'), findsNothing);
     expect(find.text('Syncing...'), findsOneWidget);
   });
 
@@ -127,7 +130,7 @@ void main() {
     );
 
     expect(find.text('Last sync failed'), findsOneWidget);
-    expect(find.text('Changed since last sync'), findsNothing);
+    expect(find.textContaining(', changed since'), findsNothing);
   });
 
   /// The jump this used to cause: the banner left on the first tick or the
@@ -169,10 +172,10 @@ void main() {
       size: phone,
     );
 
-    expect(find.text('Changed since last sync'), findsNWidgets(2));
+    expect(find.textContaining(', changed since'), findsNWidgets(2));
     expect(tester.takeException(), isNull);
     for (var i = 0; i < 2; i++) {
-      final rect = tester.getRect(find.text('Changed since last sync').at(i));
+      final rect = tester.getRect(find.textContaining(', changed since').at(i));
       expect(rect.right, lessThanOrEqualTo(phone.width));
     }
   });

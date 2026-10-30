@@ -640,14 +640,11 @@ String formatDriveSyncState(
     return appLocalizationsOf(context).driveSyncFailed;
   }
 
-  // Ahead of the timestamp for the same reason: the time it last synced is
-  // true, but the figures beside it are now out of date, which is what the
-  // reader needs to know.
-  if (drive.hasUnreadChanges) {
+  final lastSyncedAt = drive.lastSyncedAt;
+
+  if (lastSyncedAt == null && drive.hasUnreadChanges) {
     return appLocalizationsOf(context).driveChangedSinceSync;
   }
-
-  final lastSyncedAt = drive.lastSyncedAt;
 
   if (lastSyncedAt == null) {
     // Walked by a build that did not record the time. It has been synced; we
@@ -657,6 +654,16 @@ String formatDriveSyncState(
         : appLocalizationsOf(context).driveNeverSynced;
   }
 
+  final synced = _syncedAgo(context, lastSyncedAt, now);
+
+  // The time it last synced stays, so the column keeps its time and sorts
+  // as before; what follows says the figures beside it are now behind.
+  return drive.hasUnreadChanges
+      ? appLocalizationsOf(context).driveSyncedChangedSince(synced)
+      : synced;
+}
+
+String _syncedAgo(BuildContext context, DateTime lastSyncedAt, DateTime? now) {
   final elapsed = (now ?? DateTime.now()).difference(lastSyncedAt);
 
   if (elapsed.inMinutes < 1) {

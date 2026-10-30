@@ -980,6 +980,11 @@
     "description": "The activity tab of a drive not synced on this device, when its history could not be read from the network either. A Sync this drive button follows it"
   },
   "driveChangedSinceSync": "Changed since last sync",
+  "driveSyncedChangedSince": "{synced}, changed since",
+  "@driveSyncedChangedSince": {
+    "description": "A drive's last-synced time when it has changed on Arweave since then, e.g. 'Synced 5 minutes ago, changed since'.",
+    "placeholders": {"synced": {"type": "String"}}
+  },
   "@driveChangedSinceSync": {
     "description": "Sync state of a drive the network says has changed since this device last synced it"
   },
