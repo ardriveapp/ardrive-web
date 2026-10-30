@@ -298,6 +298,11 @@ Widget? _drivePanel(
           isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress),
         ),
         currentDrive: drive,
+        // The row's own answer, so the panel's menu offers what the row's
+        // does.
+        driveIsSynced: _DrivesListChrome._isSynced(
+          list.drives.firstWhere((row) => row.id == drive.id),
+        ),
         canNavigateThroughImages: false,
         // The panel's header carries the drive's own menu, so Sync and Full
         // resync are reached the same way as from the drive's row.

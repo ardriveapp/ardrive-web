@@ -113,6 +113,7 @@ void main() {
   Future<void> pumpPanel(
     WidgetTester tester, {
     bool withSync = true,
+    bool? driveIsSynced,
     Future<List<DriveEntity>?> Function()? networkHistory,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
@@ -186,6 +187,7 @@ void main() {
                         canNavigateThroughImages: false,
                         onClose: () => closed++,
                         onSync: withSync ? () => synced++ : null,
+                        driveIsSynced: driveIsSynced,
                       ),
                     ),
                   ),
@@ -308,6 +310,28 @@ void main() {
       await tester.pump();
 
       expect(synced, 1, reason: 'the surface\'s own sync, as it was given');
+    } finally {
+      await takeDown(tester);
+    }
+  });
+
+  // A drive made and uploaded to on this device has no block height yet;
+  // the drives page counts it as synced, and its row menu offers Download.
+  // The panel's menu beside it has to agree.
+  testWidgets('its menu offers what the drives page says the drive has',
+      (tester) async {
+    await pumpPanel(tester, driveIsSynced: true);
+    try {
+      await tester.tap(find.byType(EntityActionsMenu));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.ancestor(
+          of: find.text('Download'),
+          matching: find.byType(ArDriveDropdownItem),
+        ),
+        findsOneWidget,
+      );
     } finally {
       await takeDown(tester);
     }

@@ -709,12 +709,19 @@ class EntityActionsMenu extends StatelessWidget {
     this.drive,
     this.isFileRevision = false,
     this.onSync,
+    this.driveIsSynced,
   });
 
   final ArDriveDataTableItem item;
   final bool withInfo;
   final Anchor alignment;
   final Drive? drive;
+
+  /// Whether this device has [drive]'s contents, when the caller knows
+  /// better than the drive record: the drives page counts a drive made and
+  /// uploaded to here, whose block height is still 0. Its row menu and this
+  /// one must agree.
+  final bool? driveIsSynced;
   final bool isFileRevision;
 
   /// A drive's Sync, where the surface has its own way to sync it. Without
@@ -794,8 +801,9 @@ class EntityActionsMenu extends StatelessWidget {
         context,
         drive: drive,
         isOwner: item.isOwner,
-        isSynced: (drive.lastBlockHeight ?? 0) > 0 ||
-            _explorerShows(context, drive.id),
+        isSynced: driveIsSynced ??
+            ((drive.lastBlockHeight ?? 0) > 0 ||
+                _explorerShows(context, drive.id)),
         isSyncing: isSyncing,
         onMoreInfo: onMoreInfo,
         onSync: onSync,

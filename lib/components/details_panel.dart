@@ -64,10 +64,14 @@ class DetailsPanel extends StatefulWidget {
     required this.canNavigateThroughImages,
     this.onClose,
     this.onSync,
+    this.driveIsSynced,
   });
 
   final ArDriveDataTableItem item;
   final Drive? currentDrive;
+
+  /// See [EntityActionsMenu.driveIsSynced].
+  final bool? driveIsSynced;
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
   final bool canNavigateThroughImages;
@@ -374,6 +378,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         withInfo: false,
         item: widget.item,
         onSync: widget.onSync,
+        driveIsSynced: widget.driveIsSynced,
         alignment: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,

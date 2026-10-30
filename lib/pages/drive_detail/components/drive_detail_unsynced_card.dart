@@ -28,7 +28,9 @@ class UnsyncedDriveMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     // Watched, not read: the Sync item is drawn as unavailable while a sync
     // runs, so the menu has to be rebuilt when one starts and stops.
-    final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
+    // As every other Sync on the page: off while a drive-list refresh runs
+    // too.
+    final isSyncing = driveSyncUnavailable(context.watch<SyncCubit>().state);
 
     return ArDriveDropdown(
       anchor: const Aligned(
