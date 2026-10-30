@@ -79,6 +79,7 @@ class _Service extends ArweaveService {
   Future<Uint8List> getEntityDataFromNetwork({
     required String txId,
     bool largeBody = false,
+    bool Function()? isCancelled,
   }) async {
     read.add(txId);
     final body = bodies[txId];

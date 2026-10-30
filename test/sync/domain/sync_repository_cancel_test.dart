@@ -356,6 +356,63 @@ void main() {
     expect(drive.lastBlockHeight, oldHeight);
   });
 
+  // The same window, on the one-drive sync Stop can cancel too: from the
+  // watermark write, through the pending-transaction fetch, to the check
+  // before its ghosts are made.
+  test(
+      'a one-drive sync stopped just after it raised its watermark keeps its '
+      'ghost folder', () async {
+    final token = SyncCancellationToken();
+    final errors = <Object>[];
+    final ended = Completer<void>();
+
+    syncRepository
+        .syncSingleDrive(
+          driveId: finished,
+          wallet: wallet,
+          cancellationToken: token,
+          // Called right after the watermark is written.
+          txFechedCallback: (driveId, _) => token.cancel(),
+        )
+        .listen((_) {}, onError: errors.add, onDone: ended.complete);
+    await ended.future.timeout(const Duration(seconds: 2));
+
+    expect(errors, [isA<SyncCancelledException>()]);
+    final drive = await db.driveDao.driveById(driveId: finished).getSingle();
+    expect(drive.lastBlockHeight, currentHeight);
+    final ghost =
+        await db.driveDao.folderById(folderId: ghostParent).getSingleOrNull();
+    expect(ghost?.isGhost, isTrue);
+  });
+
+  // After the walk, before its ghosts are made: every drive in the run has
+  // finished, so each keeps its ghosts.
+  test('a stop between the walk and the ghost folders keeps them', () async {
+    final token = SyncCancellationToken();
+    final errors = <Object>[];
+    final ended = Completer<void>();
+
+    // Read once per drive as the drive's walk closes, after its last stop
+    // check: the last drive's read is the last thing before the run moves on
+    // to its ghost folders.
+    when(() => arweave.snapshotMetadataHits).thenAnswer((_) {
+      token.cancel();
+      return <String, int>{};
+    });
+
+    syncRepository.syncAllDrives(
+      wallet: wallet,
+      cancellationToken: token,
+      onlyDriveIds: [finished],
+    ).listen((_) {}, onError: errors.add, onDone: ended.complete);
+    await ended.future.timeout(const Duration(seconds: 2));
+
+    expect(errors, [isA<SyncCancelledException>()]);
+    final ghost =
+        await db.driveDao.folderById(folderId: ghostParent).getSingleOrNull();
+    expect(ghost?.isGhost, isTrue);
+  });
+
   test('the drive that was stopped is left for the next sync to redo',
       () async {
     await syncAndStop();

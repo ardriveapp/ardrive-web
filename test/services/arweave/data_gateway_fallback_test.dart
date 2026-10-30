@@ -135,6 +135,25 @@ void main() {
       expect(DataGatewayFallback.syncMaxAttempts, 2);
     });
 
+    // A dead transaction holds a sync slot for an attempt and then the retry.
+    // Once the sync is stopped the retry is not worth making.
+    test('makes no retry once the sync is stopped', () async {
+      var stopped = false;
+      var attempts = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        attempts++;
+        stopped = true;
+        throw Exception('connection reset');
+      });
+
+      await expectLater(
+        fallback.fetchDataForSync(txId, primaryClient,
+            isCancelled: () => stopped),
+        throwsA(isA<Exception>()),
+      );
+      expect(attempts, 1);
+    });
+
     test('retries a 404, because a gateway mid-index answers one', () async {
       // Observed in the wild: a drive signature 404ed once and resolved on the
       // retry. The gateway had the transaction, it just had not indexed it

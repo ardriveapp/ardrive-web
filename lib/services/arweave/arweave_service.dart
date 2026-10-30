@@ -879,6 +879,7 @@ class ArweaveService {
           entityId: entity.id,
           driveId: driveId,
           isPrivate: driveKey != null,
+          isCancelled: () => cancellationToken?.isCancelled ?? false,
         );
 
         if (data == null) {
@@ -1032,6 +1033,7 @@ class ArweaveService {
     required String entityId,
     required String driveId,
     required bool isPrivate,
+    bool Function()? isCancelled,
   }) async {
     final txId = entityId;
 
@@ -1054,7 +1056,7 @@ class ArweaveService {
     // line each would be the slowest part of the sync.
     snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
 
-    return getEntityDataFromNetwork(txId: txId)
+    return getEntityDataFromNetwork(txId: txId, isCancelled: isCancelled)
         .then<Uint8List?>((d) => d)
         .catchError((e) {
       logger.e('Failed to get entity data from network for tx $txId', e);
@@ -1101,11 +1103,15 @@ class ArweaveService {
   Future<Uint8List> getEntityDataFromNetwork({
     required String txId,
     bool largeBody = false,
+
+    /// See [DataGatewayFallback.fetchDataForSync].
+    bool Function()? isCancelled,
   }) async {
     final Response data = await _gatewayFallback.fetchDataForSync(
       txId,
       client,
       largeBody: largeBody,
+      isCancelled: isCancelled,
     );
     return data.bodyBytes;
   }

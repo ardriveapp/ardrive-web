@@ -1726,6 +1726,19 @@ class _SyncRepository implements SyncRepository {
       } catch (e) {
         if (e is SyncCancelledException) {
           logger.i('Single drive sync cancelled');
+          // A stop after the watermark was raised leaves a finished drive,
+          // and the next sync starts above the files that called for its
+          // ghosts. See [_createGhostsForFinishedDrives].
+          if (_drivesWalkedToTheEnd.contains(driveId)) {
+            String? ownerAddress;
+            try {
+              ownerAddress = await wallet?.getAddress();
+            } catch (_) {}
+            await _createGhostsForFinishedDrives(
+              {driveId},
+              ownerAddress: ownerAddress,
+            );
+          }
           // Clear per-sync state to prevent leaking into subsequent runs
           driveGhostFolders.clear();
           _folderIds.clear();
