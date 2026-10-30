@@ -28,7 +28,13 @@ bool welcomeBackHears(LoginState state) =>
 /// device: its password unlocks it. Another account means forgetting this
 /// one first.
 class WelcomeBackView extends StatefulWidget {
-  const WelcomeBackView({super.key});
+  const WelcomeBackView({super.key, this.ready = true});
+
+  /// False while the app is still checking for the account this view
+  /// expects (`ProfileCubit.presence`): the password can be typed, and goes
+  /// nowhere until the check is in. The same view then carries on, typed
+  /// password and all.
+  final bool ready;
 
   @override
   State<WelcomeBackView> createState() => _WelcomeBackViewState();
@@ -61,10 +67,18 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
   @override
   void initState() {
     super.initState();
-    PlausibleEventTracker.trackPageview(
-      page: PlausiblePageView.returnUserPage,
-    );
+    if (widget.ready) _trackPageview();
   }
+
+  @override
+  void didUpdateWidget(WelcomeBackView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.ready && !oldWidget.ready) _trackPageview();
+  }
+
+  void _trackPageview() => PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.returnUserPage,
+      );
 
   @override
   void dispose() {
@@ -73,7 +87,7 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
   }
 
   void _submit() {
-    if (_password.text.isEmpty) return;
+    if (!widget.ready || _password.text.isEmpty) return;
     PlausibleEventTracker.trackClickContinueReturnUserButton();
     context
         .read<LoginBloc>()
@@ -162,7 +176,8 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
                   typography: type,
                   text: s.logIn,
                   variant: ButtonVariant.primary,
-                  isDisabled: _password.text.isEmpty || checking,
+                  isDisabled:
+                      !widget.ready || _password.text.isEmpty || checking,
                   customContent: checking
                       ? Row(
                           mainAxisSize: MainAxisSize.min,
@@ -189,8 +204,11 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
                 Center(
                   child: BiometricToggle(
                     padding: const EdgeInsets.only(top: ArDriveSpacing.lg),
-                    onEnableBiometric: () =>
-                        loginBloc.add(const UnLockWithBiometrics()),
+                    onEnableBiometric: () {
+                      if (widget.ready) {
+                        loginBloc.add(const UnLockWithBiometrics());
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: ArDriveSpacing.lg),
@@ -199,7 +217,7 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
                     key: const Key('welcomeBackDifferentAccount'),
                     text: s.welcomeBackDifferentAccount,
                     isAction: true,
-                    onTap: checking
+                    onTap: checking || !widget.ready
                         ? null
                         : () => showArDriveDialog(
                               context,

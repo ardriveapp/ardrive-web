@@ -319,6 +319,8 @@ password.
 ### CI Pipeline
 CI (`.github/workflows/test.yml`) generates code once (`generate`), then runs `flutter analyze`, the app's tests in four shards (`tool/ci_test_shard.sh`), the packages' tests (`SKIP_APP=1 scripts/run_tests.sh`) and `bash tool/browser_tests.sh` in parallel. The final `test-and-lint` job is green only when all of them are. Locally, `scr test` and `bash tool/browser_tests.sh` cover the same ground. A new push to a PR cancels the run for the push before it, and a closed PR's Firebase preview is deleted (`pr-closed.yaml`).
 
+The deploy workflows build the web app with `--dart2js-optimization=O2`, which minifies: a class's name in a release build is not its source name, so never compare `runtimeType.toString()` or a default `toString()` against a string. `docs/WEB_LOAD_TIME.md` covers that and the start-up path (what may run before the first frame, the sign-in panel drawn before the database answers).
+
 ### Git Hooks (Lefthook)
 - **Pre-commit**: Validates Flutter version matches 3.19.6
 - **Pre-push**: Validates database schema version is incremented when `.drift` files change

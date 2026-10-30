@@ -3,6 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
+    show DrivePrivacy;
+import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -346,6 +353,7 @@ void main() {
   group('a Wander sign-in, then discovery', () {
     late FakeWander wander;
     late ArDriveAuthImpl auth;
+    late User user;
 
     setUp(() async {
       wander = FakeWander(wallet);
@@ -403,6 +411,90 @@ void main() {
 
       expect(wander.prompts, 3);
       expect(session.currentLockedDrives, hasLength(6));
+    });
+
+    test(
+        'a typo, Continue, then a reload and Welcome back: discovery asks '
+        'nothing, and Create drive asks for the drive password', () async {
+      await drives(List.filled(6, 'right'));
+      final deviceStore = MemoryKeyValueStore();
+      final proofStore =
+          SignInPasswordProofStore(store: () async => deviceStore);
+      ArDriveAuthImpl authOnThisDevice() {
+        final userRepository = MockUserRepository();
+        final biometrics = MockBiometricAuthentication();
+        when(() => biometrics.isEnabled()).thenAnswer((_) async => false);
+        when(() => userRepository.getUser('typo'))
+            .thenAnswer((_) async => user);
+        when(() => userRepository.getBalance(any()))
+            .thenAnswer((_) async => BigInt.zero);
+        when(() => userRepository.getARIOTokens(any()))
+            .thenAnswer((_) async => '0');
+        return ArDriveAuthImpl(
+          arweave: arweave,
+          userRepository: userRepository,
+          crypto: ArDriveCrypto(),
+          biometricAuthentication: biometrics,
+          secureKeyValueStore: MockSecureKeyValueStore(),
+          arConnectService: MockArConnectService(),
+          databaseHelpers: MockDatabaseHelpers(),
+          driveUnlocker: unlocker,
+          signInPasswordProofStore: proofStore,
+        );
+      }
+
+      user = User(
+        password: 'typo',
+        wallet: wander.wallet,
+        walletAddress: owner,
+        walletBalance: BigInt.from(10000001),
+        cipherKey: profileKey,
+        profileType: ProfileType.arConnect,
+        errorFetchingIOTokens: false,
+      );
+
+      await expectLater(authOnThisDevice().validateUser(wander.wallet, 'typo'),
+          throwsA(isA<PasswordOpensNoDriveException>()));
+      expect(wander.prompts, 3);
+
+      // A reload: the session is gone, the device's record is not.
+      session.clear();
+      await authOnThisDevice().unlockUser(password: 'typo');
+
+      await discoverAs(password: 'typo');
+      await discoverAs(password: 'typo', again: true);
+      expect(wander.prompts, 3, reason: 'the typo was tried again');
+      expect(session.currentLockedDrives, hasLength(6));
+
+      final profileCubit = MockProfileCubit();
+      when(() => profileCubit.state)
+          .thenReturn(ProfileLoggedIn(user: user, useTurbo: false));
+      final create = DriveCreateCubit(
+        arweave: arweave,
+        turboUploadService: DontUseUploadService(),
+        driveDao: db.driveDao,
+        profileCubit: profileCubit,
+        drivesCubit: MockDrivesCubit(),
+        privacy: DrivePrivacy.private,
+        driveUnlocker: unlocker,
+        proofStore: proofStore,
+      );
+      expect(create.needsDrivePassword, isTrue);
+      await create.close();
+    });
+
+    test(
+        'once a drive password is checked this session, discovery tries it '
+        'instead of the unproven sign-in one', () async {
+      await drives(['right', 'right']);
+
+      await expectLater(auth.validateUser(wander.wallet, 'typo'),
+          throwsA(isA<PasswordOpensNoDriveException>()));
+      session.rememberProvenDrivePassword(owner, 'right');
+
+      await discoverAs(password: 'typo');
+
+      expect(session.currentLockedDrives, isEmpty);
     });
 
     test(

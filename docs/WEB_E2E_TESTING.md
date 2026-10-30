@@ -99,7 +99,7 @@ Build a production release, the same as users get:
 
 ```bash
 flutter build web --release --dart-define=environment=production \
-  --pwa-strategy=none --no-web-resources-cdn --dart2js-optimization=O1
+  --pwa-strategy=none --no-web-resources-cdn --dart2js-optimization=O2
 ```
 
 Copy `build/web` somewhere stable first, so a later build or branch switch

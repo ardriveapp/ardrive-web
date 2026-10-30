@@ -301,6 +301,32 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// it, so the two cannot disagree.
   static bool canShowDrivesList(ProfileState profileState) =>
       profileState is ProfileLoggedIn;
+
+  /// Whether the sign-in page shows while the app is still checking for an
+  /// account on this device.
+  ///
+  /// Every start without a link ends on the sign-in page, whatever the check
+  /// finds: Welcome back for an account, the landing for none. So the page
+  /// comes up at once, its panel drawn from [ProfileCubit.presence] and
+  /// usable once the check is in, rather than a blank page for as long as
+  /// the database takes to open. A link (a drive, a shared file, a raw
+  /// transaction) still waits: for a visitor it ends somewhere else. Built
+  /// under [signingIn]'s key, so the page and its state carry over when the
+  /// check ends.
+  @visibleForTesting
+  bool signsInWhileChecking(ProfileState profileState) =>
+      _routeKnown &&
+      profileState is ProfileCheckingAvailability &&
+      !PublicationMode.isOn &&
+      !gettingStarted &&
+      !hasARouteToHonour;
+
+  /// Whether the address the app was opened at has been read. The first
+  /// frame can come before it is ([setNewRoutePath] is asynchronous), and
+  /// until then a link looks like no link: the sign-in page went up and came
+  /// down again on a reload of a drive.
+  bool _routeKnown = false;
+
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
@@ -592,7 +618,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   name: rawTransactionName,
                   contentType: rawTransactionContentType,
                 );
-              } else if (signingIn) {
+              } else if (signingIn || signsInWhileChecking(state)) {
                 shellKey = 'signIn';
                 shell = const LoginPage();
               } else if (gettingStarted) {
@@ -1321,6 +1347,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
+    _routeKnown = true;
     if (PublicationMode.isOn) {
       _publicationFolderRequest = configuration.publicationFolderId;
       _publicationFileRequest = configuration.publicationFileId;

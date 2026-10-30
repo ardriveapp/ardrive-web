@@ -302,6 +302,58 @@ void main() {
     await done(tester);
   });
 
+  // The sign-in page holds the bento still while the database opens: every
+  // frame it drew there was main-thread time the database's worker waited
+  // for.
+  testWidgets('held still by the page, it draws nothing until let go',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(696, 868);
+    addTearDown(tester.view.reset);
+    var moving = false;
+    late StateSetter setMoving;
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StatefulBuilder(builder: (context, setState) {
+            setMoving = setState;
+            return TickerMode(
+              enabled: moving,
+              child: Scaffold(
+                body: SizedBox.fromSize(
+                  size: const Size(696, 868),
+                  child: TilesView(loadPricePerGb: () async => 23.69),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('bentoTypedName'))).data,
+      'maya',
+      reason: 'the whole name, not typed out',
+    );
+    await tester.pump(const Duration(seconds: 12));
+    expect(find.text('Private files stay private'), findsOneWidget);
+    expect(tester.binding.hasScheduledFrame, isFalse,
+        reason: 'nothing asks for another frame');
+
+    setMoving(() => moving = true);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Private files stay private'), findsNothing,
+        reason: 'let go, the slides move on');
+    await done(tester);
+  });
+
   testWidgets('the price shows when Turbo answers', (tester) async {
     await pumpBento(tester, size: const Size(696, 868));
     expect(find.text('\$23.69'), findsOneWidget);

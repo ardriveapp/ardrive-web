@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:async';
 
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
@@ -23,6 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stash_memory/stash_memory.dart';
 
+import '../test_utils/locked_drive_fixtures.dart' show MemoryKeyValueStore;
 import '../test_utils/utils.dart';
 
 class TransactionCommonMixinFake extends Fake
@@ -92,6 +94,9 @@ void main() {
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
   late MockDriveUnlocker mockDriveUnlocker;
+  late MemoryKeyValueStore deviceStore;
+  late SignInPasswordProofStore proofStore;
+  late DriveUnlockSession unlockSession;
 
   final wallet = getTestWallet();
 
@@ -130,6 +135,8 @@ void main() {
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
     mockDriveUnlocker = MockDriveUnlocker();
+    deviceStore = MemoryKeyValueStore();
+    proofStore = SignInPasswordProofStore(store: () async => deviceStore);
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
@@ -145,11 +152,13 @@ void main() {
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
       driveUnlocker: mockDriveUnlocker,
+      signInPasswordProofStore: proofStore,
     );
 
     registerFallbackValue(wallet);
     registerFallbackValue(fakePrivateDriveV1);
-    when(() => mockDriveUnlocker.session).thenReturn(DriveUnlockSession());
+    when(() => mockDriveUnlocker.session)
+        .thenReturn(unlockSession = DriveUnlockSession());
     registerFallbackValue(Uint8List(0));
     registerFallbackValue(DriveEntity(
       id: 'some_id',
@@ -643,6 +652,29 @@ void main() {
         expect(user.profileType, unlockedUser.profileType);
       });
 
+      test(
+          'Welcome back and biometrics: a sign-in password this device left '
+          'unproven is unproven in the new session too', () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((_) async => unlockedUser);
+        when(() => mockUserRepository.getARIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
+        await arDriveAuth.unlockUser(password: 'password');
+        expect(unlockSession.signInPasswordProven('walletAddress'), isNull,
+            reason: 'nothing recorded: nothing known');
+
+        await proofStore.markUnproven('walletAddress');
+        await arDriveAuth.unlockUser(password: 'password');
+        expect(unlockSession.signInPasswordProven('walletAddress'), isFalse);
+        expect(deviceStore.values.values, everyElement(isA<bool>()),
+            reason: 'only the fact is stored, never a password');
+      });
+
       test('should throw when password is not correct', () async {
         when(() => mockUserRepository.getUser('password'))
             .thenThrow(ProfilePasswordIncorrectException());
@@ -703,6 +735,31 @@ void main() {
         // What was read out of the tables goes with them: drive keys and
         // previewed bytes live in memory, not in a table.
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+      });
+
+      test('signing out forgets that the sign-in password was unproven',
+          () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((_) async => unlockedUser);
+        when(() => mockUserRepository.getARIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockSecureKeyValueStore.remove(any()))
+            .thenAnswer((_) async => true);
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+        await proofStore.markUnproven('walletAddress');
+        await arDriveAuth.unlockUser(password: 'password');
+
+        await arDriveAuth.logout();
+
+        expect(await proofStore.isUnproven('walletAddress'), isFalse);
       });
 
       test('signs out even when Wander never answers', () async {
@@ -792,6 +849,7 @@ void main() {
           openStore: () async => _KeptValues(kept),
         );
         final auth = ArDriveAuthImpl(
+          signInPasswordProofStore: proofStore,
           arweave: mockArweaveService,
           userRepository: mockUserRepository,
           crypto: mockArDriveCrypto,
@@ -819,6 +877,7 @@ void main() {
           'somethingElse': 'stays',
         };
         final auth = ArDriveAuthImpl(
+          signInPasswordProofStore: proofStore,
           arweave: mockArweaveService,
           userRepository: mockUserRepository,
           crypto: mockArDriveCrypto,

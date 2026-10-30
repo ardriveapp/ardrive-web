@@ -1,8 +1,6 @@
 import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
-import 'package:ardrive/authentication/password/breached_password.dart';
-import 'package:ardrive/authentication/password/new_password.dart';
-import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -37,18 +35,14 @@ Future<void> promptToCreateDrive(
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
           drivesCubit: context.read<DrivesCubit>(),
-          unlockSession: context.read<DriveUnlockSession>(),
+          driveUnlocker: context.read<DriveUnlocker>(),
         ),
         child: const DriveCreateForm(),
       ),
     );
 
 class DriveCreateForm extends StatefulWidget {
-  const DriveCreateForm({super.key, this.breachCheck});
-
-  /// Asks whether a typed drive password is in a known breach. Replaced in
-  /// tests.
-  final BreachedPasswordCheck? breachCheck;
+  const DriveCreateForm({super.key});
 
   @override
   State<DriveCreateForm> createState() => _DriveCreateFormState();
@@ -58,30 +52,15 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
   final _driveNameController = TextEditingController();
   bool _isDriveNameValid = false;
 
-  // The drive's own password, when the sign-in one isn't proven - see
-  // [DriveCreateCubit.needsDrivePassword]. The new-account rules apply.
+  // The drive password, when the sign-in one isn't proven - see
+  // [DriveCreateCubit.needsDrivePassword]. An existing password, checked by
+  // opening one of the user's drives, so no confirmation and no rules.
   final _drivePassword = TextEditingController();
-  final _confirmDrivePassword = TextEditingController();
-  String? _breachedPassword;
-  bool _checkingBreach = false;
+  final _drivePasswordFocus = FocusNode(debugLabel: 'drivePassword');
+  bool _checking = false;
 
-  String? _drivePasswordError(BuildContext context) {
-    final password = _drivePassword.text;
-    if (password.isEmpty) return null;
-    final s = appLocalizationsOf(context);
-    if (password == _breachedPassword) return s.newPasswordBreached;
-    return switch (assessNewPassword(password)) {
-      PasswordStrength.tooShort => s.newPasswordTooShort,
-      PasswordStrength.weak => s.newPasswordWeak,
-      PasswordStrength.fair => s.newPasswordFair,
-      PasswordStrength.strong => null,
-    };
-  }
-
-  bool get _drivePasswordReady =>
-      assessNewPassword(_drivePassword.text) == PasswordStrength.strong &&
-      _drivePassword.text != _breachedPassword &&
-      _drivePassword.text == _confirmDrivePassword.text;
+  // Typing again clears what the last check said.
+  bool _rejectionSeen = false;
 
   Future<void> _create(DriveCreateCubit cubit) async {
     if (!cubit.needsDrivePassword) {
@@ -89,24 +68,34 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
       return;
     }
 
-    final password = _drivePassword.text;
-    setState(() => _checkingBreach = true);
-    final breached = await (widget.breachCheck ?? BreachedPasswordCheck())
-        .isBreached(password);
-    if (!mounted) return;
     setState(() {
-      _checkingBreach = false;
-      if (breached == true) _breachedPassword = password;
+      _checking = true;
+      _rejectionSeen = false;
     });
-    if (breached == true) return;
+    try {
+      await cubit.submit(_driveNameController.text,
+          drivePassword: _drivePassword.text);
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
 
-    await cubit.submit(_driveNameController.text, drivePassword: password);
+  String? _drivePasswordError(BuildContext context, DriveCreateState state) {
+    if (state is! DriveCreateDrivePasswordRejected || _rejectionSeen) {
+      return null;
+    }
+    final s = appLocalizationsOf(context);
+    return switch (state.reason) {
+      DriveUnlockFailure.wrongPassword => s.drivePasswordOpensNoDrives,
+      DriveUnlockFailure.walletFailed => s.unlockWalletFailed,
+      _ => s.unlockNetworkError,
+    };
   }
 
   @override
   void dispose() {
     _drivePassword.dispose();
-    _confirmDrivePassword.dispose();
+    _drivePasswordFocus.dispose();
     super.dispose();
   }
 
@@ -114,7 +103,16 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
   Widget build(BuildContext context) =>
       BlocConsumer<DriveCreateCubit, DriveCreateState>(
         listener: (context, state) {
-          if (state is DriveCreateInProgress) {
+          if (state is DriveCreateDrivePasswordRejected) {
+            // Back to the field, its text selected, so the next attempt is
+            // typed straight over the last.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _drivePasswordFocus.requestFocus();
+              _drivePassword.selection = TextSelection(
+                  baseOffset: 0, extentOffset: _drivePassword.text.length);
+            });
+          } else if (state is DriveCreateInProgress) {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).creatingDriveEmphasized,
@@ -171,8 +169,6 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
             final cubit = context.read<DriveCreateCubit>();
             final needsPassword = cubit.needsDrivePassword;
-            final mismatch = _confirmDrivePassword.text.isNotEmpty &&
-                _confirmDrivePassword.text != _drivePassword.text;
 
             return ArDriveStandardModalNew(
               title: appLocalizationsOf(context).createDriveEmphasized,
@@ -230,39 +226,24 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                       ),
                       if (needsPassword) ...[
                         const SizedBox(height: 16),
-                        Text(
-                          appLocalizationsOf(context).newDrivePasswordBody,
-                          style: typography.paragraphNormal(
-                              color: colorTokens.textMid),
-                        ),
-                        const SizedBox(height: 8),
                         ArDriveTextFieldNew(
-                          key: const Key('newDrivePassword'),
+                          key: const Key('drivePassword'),
                           controller: _drivePassword,
-                          label: appLocalizationsOf(context).drivePasswordLabel,
+                          focusNode: _drivePasswordFocus,
+                          label: appLocalizationsOf(context)
+                              .enterYourDrivePassword,
                           obscureText: true,
                           showObfuscationToggle: true,
                           autocorrect: false,
                           enableSuggestions: false,
-                          errorMessage: _drivePasswordError(context),
+                          autofillHints: const [AutofillHints.password],
+                          isEnabled: !_checking,
+                          errorMessage: _drivePasswordError(context, state),
                           showErrorMessage:
-                              _drivePasswordError(context) != null,
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const SizedBox(height: 8),
-                        ArDriveTextFieldNew(
-                          key: const Key('newDrivePasswordConfirm'),
-                          controller: _confirmDrivePassword,
-                          label: appLocalizationsOf(context).confirmPassword,
-                          obscureText: true,
-                          showObfuscationToggle: true,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          errorMessage: mismatch
-                              ? appLocalizationsOf(context).passwordDoNotMatch
-                              : null,
-                          showErrorMessage: mismatch,
-                          onChanged: (_) => setState(() {}),
+                              _drivePasswordError(context, state) != null,
+                          onChanged: (_) => setState(() {
+                            _rejectionSeen = true;
+                          }),
                         ),
                       ],
                       const SizedBox(height: 32),
@@ -303,8 +284,8 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                 ),
                 ModalAction(
                   isEnable: _isDriveNameValid &&
-                      (!needsPassword || _drivePasswordReady),
-                  isLoading: _checkingBreach,
+                      (!needsPassword || _drivePassword.text.isNotEmpty),
+                  isLoading: _checking,
                   action: () => _create(cubit),
                   title: appLocalizationsOf(context).createDriveEmphasized,
                 ),

@@ -52,7 +52,8 @@ class DriveCreateSuccess extends DriveCreateState {
 
 class DriveCreateFailure extends DriveCreateState {
   final bool isPaymentError;
-  const DriveCreateFailure({required super.privacy, this.isPaymentError = false});
+  const DriveCreateFailure(
+      {required super.privacy, this.isPaymentError = false});
 
   @override
   DriveCreateFailure copyWith({DrivePrivacy? privacy}) {
@@ -71,4 +72,24 @@ class DriveCreateWalletMismatch extends DriveCreateState {
   DriveCreateWalletMismatch copyWith({DrivePrivacy? privacy}) {
     return DriveCreateWalletMismatch(privacy: privacy ?? this.privacy);
   }
+}
+
+/// The drive password typed didn't open any of the user's private drives
+/// ([DriveUnlockFailure.wrongPassword]), or couldn't be checked. Nothing was
+/// created.
+class DriveCreateDrivePasswordRejected extends DriveCreateState {
+  final DriveUnlockFailure reason;
+
+  const DriveCreateDrivePasswordRejected({
+    required super.privacy,
+    required this.reason,
+  });
+
+  @override
+  DriveCreateDrivePasswordRejected copyWith({DrivePrivacy? privacy}) =>
+      DriveCreateDrivePasswordRejected(
+          privacy: privacy ?? this.privacy, reason: reason);
+
+  @override
+  List<Object> get props => [privacy, reason];
 }
