@@ -83,7 +83,7 @@ void main() {
 
   test('the stored method values never change', () {
     expect(DeviceUnlockMethod.values.map((m) => m.value),
-        ['password', 'wander', 'solana', 'ethereum']);
+        ['password', 'wander', 'solana', 'ethereum', 'ethereum-account']);
     expect(DeviceUnlockMethod.fromValue('wander'), DeviceUnlockMethod.wander);
     expect(DeviceUnlockMethod.fromValue('passkey'), isNull);
   });
