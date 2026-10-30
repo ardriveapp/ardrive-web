@@ -303,16 +303,16 @@ void main() {
         'a published file page is headed by its page, and says how '
         'its key comes', (tester) async {
       final loader = _MockPublicationLoaderCubit();
-      when(() => loader.state).thenReturn(PublicationReady(
+      when(() => loader.state).thenReturn(const PublicationReady(
         PublicationConfig(
           version: 2,
           driveId: 'c863be1f-a725-4554-9a9e-18268ed8a035',
           rootFolderId: '41520b33-28c1-4892-886b-b845a5709085',
-          scope: const PublicationFileScope(fileId),
+          scope: PublicationFileScope(fileId),
           privacy: 'private',
           owner: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
           snapshot: null,
-          file: const PublicationFile(
+          file: PublicationFile(
             dataTxId: 'FILEdata00000000000000000000000000000000000',
             metadataTxId: 'FILEmeta00000000000000000000000000000000000',
             cipher: 'AES256-GCM',
@@ -320,7 +320,7 @@ void main() {
           ),
           title: 'Plans for the lake',
           description: 'Opens with the key in its link.',
-          images: const PublicationImages(),
+          images: PublicationImages(),
           publishedAt: null,
           viewer: null,
         ),
