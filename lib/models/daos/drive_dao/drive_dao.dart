@@ -313,7 +313,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<List<DriveID>> detachForgottenDrives() async {
     final detached = <DriveID>[];
     for (final driveId in await forgottenDriveIds()) {
-      if (_sessionHeldDriveIds.contains(driveId)) continue;
       final row = await driveById(driveId: driveId).getSingleOrNull();
       if (row == null || row.encryptedKey != null) continue;
       if (await getDriveKeyFromMemory(driveId) != null) {
