@@ -26,6 +26,7 @@ class ArDriveDropdown extends StatefulWidget {
     this.hasDivider = true,
     this.hasBorder = true,
     this.header,
+    this.fitContent = false,
   });
 
   final double height;
@@ -45,6 +46,11 @@ class ArDriveDropdown extends StatefulWidget {
   /// an action; it is still dismissed by the overlay's barrier like the rest of
   /// the menu.
   final Widget? header;
+
+  /// Whether the menu is as tall as what is in it, up to [maxHeight], rather
+  /// than exactly the height it is given. For a menu whose [header] is as tall
+  /// as its text, which a fixed height either cuts off or pads out.
+  final bool fitContent;
 
   /// The menu's follower alignment, given whether it opens up: in the lower
   /// half of the screen, or when it fits better above (see `_placeMenu`).
@@ -256,6 +262,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
       anchor: _anchor,
       content: _ArDriveDropdownContent(
         height: _fittedHeight ?? dropdownHeight,
+        fitContent: widget.fitContent,
         child: ArDriveCard(
           border: widget.hasBorder
               ? Border.all(
@@ -380,10 +387,14 @@ class _ArDriveDropdownContent extends StatefulWidget {
   const _ArDriveDropdownContent({
     required this.child,
     this.height = 200,
+    this.fitContent = false,
   });
 
   final Widget child;
   final double height;
+
+  /// See [ArDriveDropdown.fitContent]: [height] is then a cap.
+  final bool fitContent;
 }
 
 class _ArDriveDropdownContentState extends State<_ArDriveDropdownContent>
@@ -431,6 +442,12 @@ class _ArDriveDropdownContentState extends State<_ArDriveDropdownContent>
               builder: (context, child) {
                 double maxHeight = constraints.maxHeight;
                 double currentHeight = _animation.value.clamp(0.0, maxHeight);
+                if (widget.fitContent) {
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: currentHeight),
+                    child: child,
+                  );
+                }
                 return SizedBox(
                   height: currentHeight,
                   child: child,
