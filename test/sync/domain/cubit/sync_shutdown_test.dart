@@ -258,6 +258,69 @@ void main() {
     });
   });
 
+  /// What the reader sees between pressing Stop and the run having stopped.
+  /// The drives in flight finish the request they are on, and each goes on
+  /// reporting its own phase meanwhile - which read as Stop not having been
+  /// pressed at all.
+  group('between Stop and stopped', () {
+    test('the sync says it is stopping at once, and keeps saying it', () async {
+      // Drives in the middle of reading metadata, as in a real walk. The
+      // header puts that count ahead of any status.
+      when(() => syncRepository.syncAllDrives(
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            syncDeep: any(named: 'syncDeep'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            cancellationToken: any(named: 'cancellationToken'),
+            txFechedCallback: any(named: 'txFechedCallback'),
+          )).thenAnswer((invocation) async* {
+        final token = invocation.namedArguments[#cancellationToken]
+            as SyncCancellationToken?;
+        while (true) {
+          yield SyncProgress.initial()
+              .copyWith(metadataFetchesCompleted: 7, metadataFetchesTotal: 20);
+          await nextCheckpoint.future;
+          nextCheckpoint = Completer<void>();
+          yield SyncProgress.initial()
+              .copyWith(metadataFetchesCompleted: 9, metadataFetchesTotal: 20);
+          token?.checkCancellation();
+        }
+      });
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final reported = <SyncProgress>[];
+      final subscription =
+          cubit.syncProgressController.stream.listen(reported.add);
+      addTearDown(subscription.cancel);
+
+      final sync = cubit.startSync();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      cubit.cancelSync();
+      await Future<void>.delayed(Duration.zero);
+      expect(reported.last.statusMessage, syncStoppingStatus,
+          reason: 'said when Stop is pressed, not at the next report');
+      expect(reported.last.metadataFetchesCompleted, 0,
+          reason: 'the header shows a fetch count ahead of any status');
+      expect(cubit.state, isA<SyncInProgress>(),
+          reason: 'precondition: the run has not stopped yet');
+
+      // One more report from a drive still in flight, as the real one makes.
+      nextCheckpoint.complete();
+      await sync;
+      await settled();
+
+      expect(reported.last.statusMessage, syncStoppingStatus,
+          reason: 'a drive still reporting its own phase took it back');
+      expect(reported.last.metadataFetchesCompleted, 0);
+      expect(cubit.state, isA<SyncCancelled>());
+    });
+  });
+
   group('closing the cubit stops the sync', () {
     /// Pressing Stop, as against logging out.
     ///
