@@ -1426,7 +1426,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         !canAnonymouslyShowDriveDetail(profileState) &&
         !isViewingSharedFile &&
         !isViewingRawTransaction) {
-      signingIn = true;
+      // Reported as a replace of the address that was asked for. As a push,
+      // Back from /sign-in went to that address, which sent the visitor to
+      // /sign-in again, and Back never left the page.
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        Router.neglect(context, () => signingIn = true);
+      } else {
+        signingIn = true;
+      }
     }
   }
 
