@@ -829,7 +829,6 @@ class _OnlineTileState extends State<_OnlineTile> {
   }
 }
 
-/// The art's sparkles and dots, drawn behind a tile that has no picture.
 /// [typed], in the brand gradient, taking its own width in a row.
 ///
 /// The gradient is a [ShaderMask] as wide as the widest of [names] and in a
@@ -916,6 +915,7 @@ class _GradientNameState extends State<_GradientName> {
   }
 }
 
+/// The art's sparkles and dots, drawn behind a tile that has no picture.
 class _Sparkles extends StatelessWidget {
   const _Sparkles();
 
