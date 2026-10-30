@@ -11,6 +11,8 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -40,6 +42,8 @@ class _MockUserPreferencesRepository extends Mock
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
+
+class _MockPaymentService extends Mock implements PaymentService {}
 
 Future<IOFile> _file(String text) => IOFile.fromData(
       Uint8List.fromList(text.codeUnits),
@@ -427,6 +431,75 @@ void main() {
                   loginBloc) as CreatingAccountView)
               .noWalletFound,
           isTrue);
+    });
+  });
+
+  // Drawn on the first frame, the bento's pictures, slides and text took
+  // seconds of main thread on a throttled phone, which the database's worker
+  // waited for. The sign-in page holds still (TickerMode off) until its panel
+  // is usable, and the bento waits with it.
+  group('the bento while the page is held still', () {
+    Future<void> pumpScaffold(WidgetTester tester,
+        {required bool moving, required Size size}) async {
+      final preferences = _MockUserPreferencesRepository();
+      when(() => preferences.watch())
+          .thenAnswer((_) => const Stream<UserPreferences>.empty());
+      when(() => preferences.currentPreferences).thenReturn(null);
+      when(() => loginBloc.isArConnectAvailable).thenReturn(false);
+      when(() => loginBloc.isMetamaskAvailable).thenReturn(false);
+      when(() => loginBloc.isSolanaAvailable).thenReturn(false);
+      final payments = _MockPaymentService();
+      when(() => payments.getUsdPerGiB()).thenAnswer((_) async => 23.69);
+      whenListen(loginBloc, const Stream<LoginState>.empty(),
+          initialState: const LoginLanding());
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<LoginBloc>.value(value: loginBloc),
+            BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+            RepositoryProvider<UserPreferencesRepository>.value(
+                value: preferences),
+            RepositoryProvider<PaymentService>.value(value: payments),
+            BlocProvider<ThemeSwitcherBloc>(
+              create: (_) =>
+                  ThemeSwitcherBloc(userPreferencesRepository: preferences),
+            ),
+          ],
+          child: ArDriveApp(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: TickerMode(
+                enabled: moving,
+                child: const LoginPageScaffold(loginState: LoginLanding()),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('on a desktop, a plain surface until the page moves',
+        (tester) async {
+      await pumpScaffold(tester, moving: false, size: const Size(1440, 900));
+      expect(find.byKey(const Key('bentoPlaceholder')), findsOneWidget);
+      expect(find.byType(TilesView), findsNothing);
+
+      await pumpScaffold(tester, moving: true, size: const Size(1440, 900));
+      expect(find.byKey(const Key('bentoPlaceholder')), findsNothing);
+      expect(find.byType(TilesView), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    testWidgets('on a phone, nothing below the panel until the page moves',
+        (tester) async {
+      await pumpScaffold(tester, moving: false, size: const Size(390, 844));
+      expect(find.byType(TilesView), findsNothing);
     });
   });
 

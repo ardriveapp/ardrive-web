@@ -9,8 +9,6 @@ void main() {
   group('the sign-in pictures loaded ahead of time', () {
     final all = [
       ...firstLoginImages(),
-      ...firstLoginSvgs(light: true),
-      ...firstLoginSvgs(light: false),
       ...laterLoginImages(),
       ...laterLoginSvgs(light: true),
       ...laterLoginSvgs(light: false),
@@ -40,7 +38,7 @@ void main() {
     });
 
     test('first and later never overlap: each picture loads once', () {
-      final first = {...firstLoginImages(), ...firstLoginSvgs(light: true)};
+      final first = firstLoginImages().toSet();
       final later = {...laterLoginImages(), ...laterLoginSvgs(light: true)};
       expect(first.intersection(later), isEmpty);
     });

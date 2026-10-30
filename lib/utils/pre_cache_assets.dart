@@ -7,34 +7,21 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
-/// The pictures the sign-in page shows on its first paint: the panel's logo
-/// and the bento's first group of people, its backdrop, its hero picture and
-/// first feature slide.
+/// What the sign-in page shows on its first paint and loads itself: the
+/// panel's logo. The bento waits until the panel is usable (`_Bento` in
+/// login_page.dart) and loads its own pictures then.
 @visibleForTesting
-List<String> firstLoginImages() => [
-      Resources.images.brand.logo1,
-      Resources.images.login.bentoBox.particleSpace,
-      Resources.images.login.bentoBox.profile1,
-      Resources.images.login.bentoBox.profile2,
-      Resources.images.login.bentoBox.profile3,
-    ];
+List<String> firstLoginImages() => [Resources.images.brand.logo1];
 
-@visibleForTesting
-List<String> firstLoginSvgs({required bool light}) => [
-      Resources.images.login.bentoBox.dataStorage,
-      bentoFeatureArt(light: light).first,
-    ];
-
-/// Starts loading [firstLoginImages] and [firstLoginSvgs] before the app's
-/// first frame, and returns at once.
+/// Starts loading [firstLoginImages] before the app's first frame, and
+/// returns at once: started from `main`, while the config loads, the logo is
+/// decoded by the time the panel paints. Into the image cache, under the key
+/// `Image.asset` makes (the asset has one resolution).
 ///
-/// Started from `main`, while the config loads, so the pictures are decoded
-/// by the time the sign-in page paints, or soon after, rather than requested
-/// only once its first frame, the heaviest of the start, has been built. Each
-/// goes into the cache the widgets read: the image cache under the key
-/// `Image.asset` makes (these assets have one resolution), and flutter_svg's
-/// cache.
-void preCacheFirstLoginAssets({required bool light}) {
+/// Nothing heavier: an SVG parsed here (flutter_svg parses on the main thread
+/// on the web) held a throttled phone's start back by seconds, and pictures
+/// fetched here competed with the database's own download.
+void preCacheFirstLoginAssets() {
   final view = WidgetsBinding.instance.platformDispatcher.implicitView;
   final configuration = ImageConfiguration(
     bundle: rootBundle,
@@ -50,12 +37,6 @@ void preCacheFirstLoginAssets({required bool light}) {
       onError: (_, __) => done(),
     );
     stream.addListener(listener);
-  }
-
-  if (!kIsWeb) return;
-
-  for (final path in firstLoginSvgs(light: light)) {
-    SvgAssetLoader(path).loadBytes(null).ignore();
   }
 }
 

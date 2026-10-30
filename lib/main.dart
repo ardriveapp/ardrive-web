@@ -184,11 +184,9 @@ Future<void> _initializeServices() async {
   db = PublicationMode.isOn ? Database.forPublication() : Database();
   if (kIsWeb && !PublicationMode.isOn) unawaited(db.openFailure());
 
-  // The pictures the sign-in page paints first, for a start that shows it.
+  // The logo the sign-in page paints first, for a start that shows it.
   if (!PublicationMode.isOn && !_opensALinkPage(Uri.base)) {
-    final theme = localKeyValueStore.getString('currentTheme') ??
-        ThemeDetector().getOSDefaultTheme().name;
-    preCacheFirstLoginAssets(light: theme == ArDriveThemes.light.name);
+    preCacheFirstLoginAssets();
   }
 
   // Mobile UI setup (non-blocking, fire-and-forget)

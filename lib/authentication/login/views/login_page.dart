@@ -245,7 +245,7 @@ class _LargeDesktopView extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Expanded(child: TilesView()),
+                  const Expanded(child: _Bento()),
                   const SizedBox(width: _pageMargin),
                   Expanded(
                     child: _roundedBorderContainer(
@@ -320,7 +320,7 @@ class _SmallDesktopView extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Expanded(child: TilesView()),
+                  const Expanded(child: _Bento()),
                   const SizedBox(width: _pageMargin),
                   Expanded(
                     child: _roundedBorderContainer(
@@ -463,15 +463,15 @@ class _PhoneView extends StatelessWidget {
                 // screen, so the bento is for the first panel only.
                 BlocBuilder<LoginBloc, LoginState>(
                   buildWhen: (_, current) => loginPanelRebuildsOn(current),
-                  builder: (context, state) => state is LoginLanding ||
-                          (state is LoginLoading &&
-                              context.read<ProfileCubit>().presence !=
-                                  ProfilePresence.present)
-                      ? const Padding(
-                          padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
-                          child: TilesView(),
-                        )
-                      : const SizedBox.shrink(),
+                  // Not before the panel is usable: see _Bento.
+                  builder: (context, state) =>
+                      (state is LoginLanding || state is LoginLoading) &&
+                              TickerMode.of(context)
+                          ? const Padding(
+                              padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                              child: TilesView(),
+                            )
+                          : const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -781,6 +781,29 @@ Widget loginPanelFor(
   }
 
   return content;
+}
+
+/// The bento, once the sign-in panel is usable, and a plain surface in its
+/// place before. The page holds still until then (`TickerMode` off, see
+/// [_LoginPageState.build]), and the bento follows it. Drawn on the first
+/// frame, its pictures, slides and text took seconds of main thread on a
+/// throttled phone, which the database's worker waited for while it opened.
+class _Bento extends StatelessWidget {
+  const _Bento();
+
+  @override
+  Widget build(BuildContext context) {
+    if (TickerMode.of(context)) return const TilesView();
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return DecoratedBox(
+      key: const Key('bentoPlaceholder'),
+      decoration: BoxDecoration(
+        color: colors.containerL1,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.strokeLow),
+      ),
+    );
+  }
 }
 
 /// The sign-in panel while the app checks for an account on this device and
