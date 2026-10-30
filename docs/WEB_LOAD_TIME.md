@@ -13,15 +13,18 @@ pull request that introduced this file.
    desktop browsers, the HTML renderer on phones), then `main()`.
 3. **Before `runApp`.** Local storage, then the config
    (`ConfigFetcher.fetchConfig`, which on a first visit may ask the serving
-   host's parent domain whether it is an AR.IO gateway). Nothing else is
-   awaited here: the app version (version.json) loads alongside.
-4. **First frame.** For a start without a link, the sign-in page. Its panel
-   is the one the last start found (`ProfilePresenceHint`): Welcome back, the
-   landing, or a plain card when there is no telling. It is drawn, not yet
-   usable.
+   host's parent domain whether it is an AR.IO gateway). Only those two are
+   awaited. Beside them the database starts opening, the sign-in page's first
+   pictures start loading, and the app version (version.json) loads.
+4. **First frame.** For a start without a link, the sign-in page, once the
+   address has been read. Its panel is the one the last start found
+   (`ProfilePresenceHint`): Welcome back, the landing, or a plain card when
+   there is no telling. It is drawn, not yet usable, and nothing on the page
+   moves: every frame is drawn on the main thread, which the database's
+   worker needs while it opens.
 5. **The database.** Opening it (the OPFS worker, or IndexedDB) and creating
-   or migrating the schema is most of what is left. When `ProfileCubit` and
-   `LoginBloc` have their answer the panel becomes usable, and the log says
+   or migrating the schema is most of what is left. When `LoginBloc` has its
+   answer the panel becomes usable, the page starts moving, and the log says
    `login: panel ready`.
 6. **After the panel.** A start with no account clears what an earlier
    visitor left; the sign-in pictures for later steps load, one a frame.
@@ -48,6 +51,10 @@ check is in, because for a visitor it ends somewhere other than sign-in.
   the check is in takes `ready: false` and sends nothing until it is
   `true`. A returning user must never see the landing: with no hint, draw the
   plain card.
+- **Nothing animates before the panel is usable.** The sign-in page sets
+  `TickerMode` off until then, and the bento's timers follow it (`_still` in
+  tiles_view.dart). A new animation there must do the same, or it costs the
+  database open its main-thread time.
 
 ## Measuring
 
