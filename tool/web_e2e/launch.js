@@ -61,6 +61,23 @@ const { E2E_DIR, APP_URL, CDP_PORT, CREDENTIALS, chromePath, ensureDirs, keyfile
 // How long after login.js writes its marker its chooser may take the
 // keyfile. The chooser opens within a second or two of the marker.
 const LOGIN_MARKER_MS = 30000;
+
+// Whether the login.js whose process id is in its marker is still running.
+// Signal 0 checks without signalling. Only a process of this user counts:
+// login.js runs as this user, so EPERM (someone else's process, which an id
+// reused after the login died could be), ESRCH or no id at all is no login.
+function loginIsRunning(marker) {
+  const text = String(marker).trim();
+  const pid = Number(text);
+  if (!/^[0-9]+$/.test(text) || !Number.isSafeInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 const AR_UPLOADS = process.env.AR_UPLOADS || 'chaos';
 const CHAOS_URL = process.env.CHAOS_URL || 'http://127.0.0.1:8850';
 const TURBO_FREE_BYTES = Number(process.env.TURBO_FREE_BYTES || 107520);
@@ -318,14 +335,18 @@ async function guardTurbo(route) {
     try { files = JSON.parse(fs.readFileSync(queue, 'utf8')); } catch (e) {}
     const real = (p) => { try { return fs.realpathSync(p); } catch (e) { return path.resolve(p); } };
     const keyfile = keyfilePath();
-    // The chooser is login's only while login.js's marker is fresh and the
-    // queue holds the keyfile and nothing else. A marker left by a login
-    // that missed its chooser goes stale, so a later upload's chooser can't
-    // be handed the keyfile. The marker is used up either way.
+    // The chooser is login's only while login.js's marker is fresh, the
+    // login.js that wrote it is still running, and the queue holds the
+    // keyfile and nothing else. A marker left by a login that missed its
+    // chooser goes stale, and one left by a login that was killed outright
+    // (SIGKILL runs no cleanup) names a process that is gone, so a later
+    // upload's chooser can't be handed the keyfile. The marker is used up
+    // either way.
     const loginMarker = `${E2E_DIR}/login-chooser`;
     let markerFresh = false;
     try {
-      markerFresh = Date.now() - fs.statSync(loginMarker).mtimeMs < LOGIN_MARKER_MS;
+      markerFresh = Date.now() - fs.statSync(loginMarker).mtimeMs < LOGIN_MARKER_MS
+        && loginIsRunning(fs.readFileSync(loginMarker, 'utf8'));
       fs.rmSync(loginMarker, { force: true });
     } catch (e) {}
     const onlyKeyfile = !!keyfile && files.length === 1 && real(files[0]) === real(keyfile);

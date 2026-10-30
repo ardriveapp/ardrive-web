@@ -1242,7 +1242,116 @@ void main() {
         verifyNever(() => mockProfileCubit!.checkIfWalletMismatch());
       },
     );
+
+    // The manifest is read between the in-progress check and the upload, so
+    // a second press while it was being read passed the check too, and the
+    // file was uploaded twice.
+    blocTest<UploadCubit, UploadState>(
+      'a double press on a manifest upload starts it once',
+      setUp: () {
+        clearInteractions(mockProfileCubit!);
+        // The first thing an upload that got past the check does. Stopping
+        // there keeps this to the check itself.
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((_) async => true);
+      },
+      build: () => getUploadCubitInstanceWith([
+        UploadFile(ioFile: _SlowManifestFile(), parentFolderId: tRootFolderId),
+      ]),
+      seed: () {
+        final ready = _MockUploadReady();
+        when(() => ready.copyWith(
+            uploadFileAsCustomManifest:
+                any(named: 'uploadFileAsCustomManifest'))).thenReturn(ready);
+        return ready;
+      },
+      act: (cubit) async {
+        cubit.setIsUploadingCustomManifest(true);
+        final uploadPlan = await UploadPlan.create(
+          useTurbo: false,
+          maxDataItemCount: 10,
+          fileV2UploadHandles: {},
+          fileDataItemUploadHandles: {},
+          folderDataItemUploadHandles: {},
+          turboUploadService: DontUseUploadService(),
+        );
+        await Future.wait([
+          cubit.startUpload(uploadPlanForAr: uploadPlan),
+          cubit.startUpload(uploadPlanForAr: uploadPlan),
+        ]);
+      },
+      verify: (_) {
+        verify(() => mockProfileCubit!.checkIfWalletMismatch()).called(1);
+      },
+    );
+
+    // A failed read gives the upload back, so Upload works again.
+    blocTest<UploadCubit, UploadState>(
+      'a manifest that could not be read can be uploaded again',
+      setUp: () {
+        clearInteractions(mockProfileCubit!);
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((_) async => true);
+      },
+      build: () => getUploadCubitInstanceWith([
+        UploadFile(
+          ioFile: _SlowManifestFile(failFirstRead: true),
+          parentFolderId: tRootFolderId,
+        ),
+      ]),
+      seed: () {
+        final ready = _MockUploadReady();
+        when(() => ready.copyWith(
+            uploadFileAsCustomManifest:
+                any(named: 'uploadFileAsCustomManifest'))).thenReturn(ready);
+        return ready;
+      },
+      act: (cubit) async {
+        cubit.setIsUploadingCustomManifest(true);
+        final uploadPlan = await UploadPlan.create(
+          useTurbo: false,
+          maxDataItemCount: 10,
+          fileV2UploadHandles: {},
+          fileDataItemUploadHandles: {},
+          folderDataItemUploadHandles: {},
+          turboUploadService: DontUseUploadService(),
+        );
+        await cubit.startUpload(uploadPlanForAr: uploadPlan);
+        await cubit.startUpload(uploadPlanForAr: uploadPlan);
+      },
+      verify: (_) {
+        verify(() => mockProfileCubit!.checkIfWalletMismatch()).called(1);
+      },
+    );
   });
+}
+
+/// A file chosen to upload as a manifest whose read takes a moment, as a
+/// real one's does: long enough for a second press to land during it.
+class _SlowManifestFile extends Fake implements IOFile {
+  _SlowManifestFile({this.failFirstRead = false});
+
+  final bool failFirstRead;
+  var _reads = 0;
+
+  @override
+  String get name => 'manifest.json';
+
+  @override
+  String get path => 'manifest.json';
+
+  @override
+  DateTime get lastModifiedDate => DateTime(2026);
+
+  @override
+  Future<Uint8List> readAsBytes() async {
+    _reads++;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    if (failFirstRead && _reads == 1) {
+      throw Exception('NotReadableError');
+    }
+    return Uint8List.fromList('{"manifest":"arweave/paths"}'.codeUnits);
+  }
 }
 
 class _MockUploadReady extends Mock implements UploadReady {}

@@ -11,9 +11,12 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:clock/clock.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -50,6 +53,29 @@ void main() {
       profileCubit: mockProfileCubit,
       configService: mockConfigService,
     );
+  }
+
+  /// Every state [build]'s bloc emits for [act] once [elapse] has passed, in
+  /// fake time: nothing waits on the wall clock, so a loaded machine can't
+  /// make a wait too short.
+  List<LoginState> statesInFakeTime(
+    LoginBloc Function() build,
+    void Function(LoginBloc bloc) act, {
+    required Duration elapse,
+    void Function(LoginBloc bloc, FakeAsync async)? during,
+  }) {
+    final states = <LoginState>[];
+    fakeAsync((async) {
+      final bloc = build();
+      final subscription = bloc.stream.listen(states.add);
+      act(bloc);
+      during?.call(bloc, async);
+      async.elapse(elapse);
+      subscription.cancel();
+      bloc.close();
+      async.flushMicrotasks();
+    });
+    return states;
   }
 
   setUp(() {
@@ -181,19 +207,9 @@ void main() {
     );
 
     group('when a lookup fails', () {
-      LoginBloc quickBloc() => LoginBloc(
-            arDriveAuth: mockArDriveAuth,
-            arConnectService: mockArConnectService,
-            ethereumProviderService: mockEthereumProviderService,
-            solanaProviderService: mockSolanaProviderService,
-            turboUploadService: mockTurboUploadService,
-            arweaveService: mockArweaveService,
-            downloadService: mockDownloadService,
-            userRepository: mockUserRepository,
-            profileCubit: mockProfileCubit,
-            configService: mockConfigService,
-            walletLookupTimeout: const Duration(milliseconds: 100),
-          );
+      // In fake time against the real bound: a loaded machine can't stretch
+      // a page past it, and the bound under test is the one that ships.
+      const bound = LoginBloc.defaultWalletLookupTimeout;
 
       setUp(() {
         when(() => mockConfigService.config).thenReturn(AppConfig(
@@ -202,119 +218,123 @@ void main() {
         ));
       });
 
-      // The hang: the dialog said "Loading wallet details..." for ever.
-      blocTest<LoginBloc, LoginState>(
-        'a lookup that never answers closes the dialog with an error',
-        build: quickBloc,
-        setUp: () {
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) => Completer<bool>().future);
-        },
-        act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 300),
-        expect: () => [
-          LoginLoadingIfUserAlreadyExists(),
-          LoginLoadingIfUserAlreadyExistsSuccess(),
-          isA<GatewayLoginFailure>(),
-          isA<LoginLoading>(),
-        ],
-      );
+      /// The states a chosen keyfile leads to once [after] has passed.
+      List<LoginState> lookUp(Duration after) => statesInFakeTime(
+            createBloc,
+            (bloc) => bloc.add(AddWalletFile(wallet)),
+            elapse: after,
+          );
 
-      blocTest<LoginBloc, LoginState>(
-        'so does the drives lookup',
-        build: quickBloc,
-        setUp: () {
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) async => false);
-          when(() => mockArDriveAuth.isExistingUser(any()))
-              .thenAnswer((_) => Completer<bool>().future);
-        },
-        act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 300),
-        expect: () => [
-          LoginLoadingIfUserAlreadyExists(),
-          LoginLoadingIfUserAlreadyExistsSuccess(),
-          isA<GatewayLoginFailure>(),
-          isA<LoginLoading>(),
-        ],
-      );
+      final failedToTheGateway = [
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
+        isA<GatewayLoginFailure>(),
+        isA<LoginLoading>(),
+      ];
 
-      // A wallet with many drives takes many pages. The bound counts from
-      // the last one, so a lookup longer than the bound still logs in.
-      blocTest<LoginBloc, LoginState>(
-        'a lookup that keeps receiving pages is not cut off',
-        build: quickBloc,
-        setUp: () {
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) async {
-            final address = await wallet.getAddress();
-            for (var page = 0; page < 8; page++) {
-              await Future<void>.delayed(const Duration(milliseconds: 25));
-              pages.add(address);
-            }
-            return true;
-          });
-        },
-        act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 400),
-        expect: () => [
+      // A page of the wallet's drives gets two GraphQL attempts, of 20 and
+      // then 40 seconds, before a third. The bound has to outlast both, or a
+      // page that stalls once fails the login while its retry is running.
+      test('outlasts the first two attempts at a page', () {
+        expect(
+          bound,
+          greaterThan(GraphQLRetry.attemptTimeoutFor(1) +
+              GraphQLRetry.attemptTimeoutFor(2)),
+        );
+      });
+
+      test('a page answered by its second attempt still logs in', () {
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) => Future.delayed(
+                  GraphQLRetry.attemptTimeoutFor(1) +
+                      GraphQLRetry.attemptTimeoutFor(2) +
+                      const Duration(seconds: 1),
+                  () => true,
+                ));
+
+        expect(lookUp(bound * 2), [
           LoginLoadingIfUserAlreadyExists(),
           LoginLoadingIfUserAlreadyExistsSuccess(),
           isA<PromptPassword>(),
-        ],
-      );
+        ]);
+      });
 
-      blocTest<LoginBloc, LoginState>(
-        'a lookup that stops receiving pages fails',
-        build: quickBloc,
-        setUp: () {
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) async {
-            final address = await wallet.getAddress();
-            for (var page = 0; page < 3; page++) {
-              await Future<void>.delayed(const Duration(milliseconds: 25));
-              pages.add(address);
-            }
-            return Completer<bool>().future;
-          });
-        },
-        act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 400),
-        expect: () => [
+      // The hang: the dialog said "Loading wallet details..." for ever.
+      test('a lookup that never answers closes the dialog with an error', () {
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) => Completer<bool>().future);
+
+        expect(lookUp(bound - const Duration(seconds: 1)),
+            [LoginLoadingIfUserAlreadyExists()],
+            reason: 'not before the bound');
+        expect(lookUp(bound + const Duration(seconds: 1)), failedToTheGateway);
+      });
+
+      test('so does the drives lookup', () {
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) => Completer<bool>().future);
+
+        expect(lookUp(bound + const Duration(seconds: 1)), failedToTheGateway);
+      });
+
+      // A wallet with many drives takes many pages. The bound counts from
+      // the last one, so a lookup longer than the bound still logs in.
+      test('a lookup that keeps receiving pages is not cut off', () {
+        final gap = bound - const Duration(seconds: 5);
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async {
+          final address = await wallet.getAddress();
+          for (var page = 0; page < 8; page++) {
+            await Future<void>.delayed(gap);
+            pages.add(address);
+          }
+          return true;
+        });
+
+        expect(lookUp(gap * 9), [
           LoginLoadingIfUserAlreadyExists(),
           LoginLoadingIfUserAlreadyExistsSuccess(),
-          isA<GatewayLoginFailure>(),
-          isA<LoginLoading>(),
-        ],
-      );
+          isA<PromptPassword>(),
+        ]);
+      });
 
-      blocTest<LoginBloc, LoginState>(
-        "another wallet's pages don't keep a stalled lookup going",
-        build: quickBloc,
-        setUp: () {
-          // Pages for another wallet keep arriving past the test's wait.
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) async {
-            for (var page = 0; page < 24; page++) {
-              await Future<void>.delayed(const Duration(milliseconds: 25));
-              if (!pages.isClosed) pages.add('another wallet');
-            }
-            return Completer<bool>().future;
-          });
-        },
-        act: (bloc) => bloc.add(AddWalletFile(wallet)),
-        wait: const Duration(milliseconds: 400),
-        expect: () => [
-          LoginLoadingIfUserAlreadyExists(),
-          LoginLoadingIfUserAlreadyExistsSuccess(),
-          isA<GatewayLoginFailure>(),
-          isA<LoginLoading>(),
-        ],
-      );
+      test('a lookup that stops receiving pages fails', () {
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async {
+          final address = await wallet.getAddress();
+          for (var page = 0; page < 3; page++) {
+            await Future<void>.delayed(const Duration(seconds: 10));
+            pages.add(address);
+          }
+          return Completer<bool>().future;
+        });
+
+        expect(
+          lookUp(
+              const Duration(seconds: 30) + bound + const Duration(seconds: 1)),
+          failedToTheGateway,
+        );
+      });
+
+      test("another wallet's pages don't keep a stalled lookup going", () {
+        // Pages for another wallet keep arriving past the bound.
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async {
+          for (var page = 0; page < 24; page++) {
+            await Future<void>.delayed(const Duration(seconds: 10));
+            if (!pages.isClosed) pages.add('another wallet');
+          }
+          return Completer<bool>().future;
+        });
+
+        expect(lookUp(bound + const Duration(seconds: 1)), failedToTheGateway);
+      });
 
       blocTest<LoginBloc, LoginState>(
         'a lookup that throws closes the dialog with an error',
-        build: quickBloc,
+        build: createBloc,
         setUp: () {
           when(() => mockArDriveAuth.userHasPassword(any()))
               .thenThrow(Exception('the gateway is down'));
@@ -330,7 +350,7 @@ void main() {
 
       blocTest<LoginBloc, LoginState>(
         'the wallet is not read from a file again',
-        build: quickBloc,
+        build: createBloc,
         setUp: () {
           when(() => mockArDriveAuth.userHasPassword(any()))
               .thenAnswer((_) async => true);
@@ -721,25 +741,30 @@ void main() {
     // Log in pressed on the welcome panel while the check was still
     // running (the database opens slowly on a fresh load) went back to the
     // welcome panel when the check finished.
-    blocTest<LoginBloc, LoginState>(
-      'a check that ends after Log in was pressed leaves Log in showing',
-      build: createBloc,
-      setUp: () {
-        when(() => mockArDriveAuth.isUserLoggedIn()).thenAnswer((_) =>
-            Future.delayed(const Duration(milliseconds: 50), () => false));
-      },
-      act: (bloc) async {
-        bloc.add(const CheckIfUserIsLoggedIn());
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        bloc.add(const SelectLoginFlow(existingUser: true));
-      },
-      wait: const Duration(milliseconds: 100),
-      expect: () => [
-        LoginLoading(),
-        isA<LoginInitial>()
-            .having((s) => s.existingUserFlow, 'existingUserFlow', true),
-      ],
-    );
+    test('a check that ends after Log in was pressed leaves Log in showing',
+        () {
+      when(() => mockArDriveAuth.isUserLoggedIn()).thenAnswer(
+          (_) => Future.delayed(const Duration(milliseconds: 50), () => false));
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((invocation) => false);
+
+      expect(
+        statesInFakeTime(
+          createBloc,
+          (bloc) => bloc.add(const CheckIfUserIsLoggedIn()),
+          during: (bloc, async) {
+            async.elapse(const Duration(milliseconds: 10));
+            bloc.add(const SelectLoginFlow(existingUser: true));
+          },
+          elapse: const Duration(milliseconds: 100),
+        ),
+        [
+          LoginLoading(),
+          isA<LoginInitial>()
+              .having((s) => s.existingUserFlow, 'existingUserFlow', true),
+        ],
+      );
+    });
   });
 
   group('UnlockUserWithPassword', () {
@@ -1811,38 +1836,45 @@ void main() {
         ],
       );
 
-      blocTest<LoginBloc, LoginState>(
-        'Wander injected a moment after the page loads: still the choice',
-        build: logInBloc,
-        setUp: () {
-          final loaded = DateTime.now().add(const Duration(milliseconds: 300));
-          when(() => mockArConnectService.isExtensionPresent())
-              .thenAnswer((_) => DateTime.now().isAfter(loaded));
-        },
-        act: (bloc) =>
-            bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
-        wait: const Duration(milliseconds: 1500),
-        expect: () => [
+      // In fake time: the wait for a wallet is a second of the clock, and on
+      // a loaded machine a real second and a half was not always enough.
+      List<LoginState> getStarted({required Duration after}) =>
+          statesInFakeTime(
+            logInBloc,
+            (bloc) =>
+                bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
+            elapse: after,
+          );
+
+      test('Wander injected a moment after the page loads: still the choice',
+          () {
+        DateTime? loaded;
+        when(() => mockArConnectService.isExtensionPresent()).thenAnswer((_) {
+          loaded ??= clock.now().add(const Duration(milliseconds: 300));
+          return clock.now().isAfter(loaded!);
+        });
+
+        expect(getStarted(after: const Duration(seconds: 2)), [
           LoginLoading(),
           predicate<LoginInitial>((s) => !s.existingUserFlow),
-        ],
-      );
+        ]);
+      });
 
-      blocTest<LoginBloc, LoginState>(
-        'no wallet: straight to making one, saying why',
-        build: logInBloc,
-        setUp: () => when(() => mockArConnectService.isExtensionPresent())
-            .thenReturn(false),
-        act: (bloc) =>
-            bloc.add(const CheckIfUserIsLoggedIn(gettingStarted: true)),
-        // It looks for a wallet for up to a second first.
-        wait: const Duration(milliseconds: 1500),
-        expect: () => [
+      test('no wallet: straight to making one, saying why', () {
+        when(() => mockArConnectService.isExtensionPresent()).thenReturn(false);
+
+        // It looks for a wallet for a second first, and only then decides.
+        expect(
+          getStarted(after: const Duration(milliseconds: 900)),
+          [LoginLoading()],
+          reason: 'still looking for a wallet',
+        );
+        expect(getStarted(after: const Duration(seconds: 2)), [
           LoginLoading(),
           const LoginCreatingAccount(noWalletFound: true),
           const TypeMatcher<CreateNewPassword>(),
-        ],
-      );
+        ]);
+      });
     });
 
     blocTest<LoginBloc, LoginState>(
