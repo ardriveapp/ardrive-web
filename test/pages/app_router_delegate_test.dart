@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/widgets.dart';
@@ -778,6 +779,65 @@ void main() {
       delegate.signInKeepingDrive();
 
       expect(delegate.sharedDriveKey, key);
+    });
+  });
+
+  // The page used to stay blank (the HTML splash) until the database had
+  // opened and answered whether there was an account, which on a phone was
+  // most of the load.
+  group('the sign-in page while the check for an account runs', () {
+    final checking = ProfileCheckingAvailability();
+
+    tearDown(() => PublicationMode.debugSet(null));
+
+    test('shows for a start with no link, whatever the address', () async {
+      for (final path in [
+        AppRoutePath.unknown(),
+        AppRoutePath.signIn(),
+        AppRoutePath.drivesList(),
+        AppRoutePath.names(),
+        AppRoutePath.webPages(),
+      ]) {
+        delegate = AppRouterDelegate();
+        await delegate.setNewRoutePath(path);
+        expect(delegate.signsInWhileChecking(checking), isTrue,
+            reason: '$path');
+      }
+    });
+
+    test('waits for a link, which can end elsewhere for a visitor', () async {
+      for (final path in [
+        AppRoutePath.driveDetail(driveId: driveId),
+        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
+        AppRoutePath.sharedFile(sharedFileId: driveId),
+        AppRoutePath.rawTransaction(txId: 'tx'),
+      ]) {
+        delegate = AppRouterDelegate();
+        await delegate.setNewRoutePath(path);
+        expect(delegate.signsInWhileChecking(checking), isFalse,
+            reason: '$path');
+      }
+    });
+
+    test('waits for the address to be read: a link looks like none before', () {
+      expect(delegate.signsInWhileChecking(checking), isFalse);
+    });
+
+    test('leaves the get-started page to itself', () async {
+      await delegate.setNewRoutePath(AppRoutePath.getStarted());
+      expect(delegate.signsInWhileChecking(checking), isFalse);
+    });
+
+    test('is over once the check is', () async {
+      await delegate.setNewRoutePath(AppRoutePath.unknown());
+      expect(delegate.signsInWhileChecking(ProfilePromptAdd()), isFalse);
+      expect(delegate.signsInWhileChecking(ProfilePromptLogIn()), isFalse);
+    });
+
+    test('never in a publication', () async {
+      await delegate.setNewRoutePath(AppRoutePath.unknown());
+      PublicationMode.debugSet('publication.json');
+      expect(delegate.signsInWhileChecking(checking), isFalse);
     });
   });
 }
