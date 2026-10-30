@@ -622,10 +622,10 @@ class FileDownloadDialog extends StatelessWidget {
     required VoidCallback onDismiss,
   }) {
     // `colorTokens.textRed` rather than anything from the older `colors`: it is
-    // the one red that clears 3:1 on the modal surface *and* on the notice
-    // panel in *both* themes (3.7/3.6 and 4.2/3.9). `themeErrorDefault` is the
-    // same red.400 either way and manages only 2.5:1 on the light surface,
-    // which is a warning sign nobody with low vision would find.
+    // the text red, held to 4.5:1 on every surface in both themes
+    // (text_contrast_test). `themeErrorDefault` is the same red.400 either way
+    // and manages only 2.5:1 on the light surface, which is a warning sign
+    // nobody with low vision would find.
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 

@@ -378,7 +378,7 @@ class _SplitButtonState extends State<_SplitButton> {
                         ? tokens.textOnPrimary
                         : primaryEnabled
                             ? tokens.textHigh
-                            : tokens.textLow,
+                            : tokens.textXLow,
                   ),
                 ),
               ),

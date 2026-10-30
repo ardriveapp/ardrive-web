@@ -79,7 +79,7 @@ class SearchCoverageNotice extends StatelessWidget {
             : failed
                 ? ArDriveIcons.triangle(
                     size: compact ? 14 : 16,
-                    color: colorTokens.strokeRed,
+                    color: colorTokens.statusErrorFg,
                   )
                 : ArDriveIcons.cloudSync(
                     size: compact ? 14 : 16,
@@ -156,7 +156,7 @@ class SearchCoverageNotice extends StatelessWidget {
                           '$lead $status',
                           style: typography.paragraphNormal(
                             color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.semiBold,
+                            fontWeight: ArFontWeight.book,
                           ),
                         ),
                       ),
@@ -207,7 +207,7 @@ class _CompactNotice extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final style = typography.paragraphSmall(
       color: colorTokens.textMid,
-      fontWeight: ArFontWeight.semiBold,
+      fontWeight: ArFontWeight.book,
     );
     final link = this.link;
 
@@ -281,7 +281,7 @@ class _NoticeLink extends StatelessWidget {
             label,
             style: style.copyWith(
               color: colorTokens.textHigh,
-              fontWeight: ArFontWeight.bold.weight,
+              fontWeight: ArFontWeight.semiBold.weight,
               decoration: TextDecoration.underline,
               decorationColor: colorTokens.textHigh,
             ),

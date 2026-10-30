@@ -250,7 +250,7 @@ class PublicationIcon extends StatelessWidget {
     final icon = config?.images.icon;
     if (icon == null) return fallback;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 6),
+      borderRadius: BorderRadius.circular(ArDriveRadius.md),
       child: Image.network(
         Uri.base.resolve(icon).toString(),
         width: size,

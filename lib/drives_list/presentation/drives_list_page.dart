@@ -553,8 +553,8 @@ class _DrivesListUnavailable extends StatelessWidget {
         Text(
           appLocalizationsOf(context).driveListUnavailableDescription,
           style: typography.paragraphLarge(
-            color: colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textMid,
+            fontWeight: ArFontWeight.book,
           ),
           textAlign: TextAlign.center,
         ),
@@ -601,8 +601,8 @@ class _DrivesListEmpty extends StatelessWidget {
           Text(
             'Create a new drive to start uploading your files.',
             style: typography.paragraphLarge(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.book,
+              color: colorTokens.textMid,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1254,7 +1254,7 @@ class _PartialFailureBanner extends StatelessWidget {
                     children: [
                       ArDriveIcons.triangle(
                         size: 16,
-                        color: colorTokens.strokeRed,
+                        color: colorTokens.statusErrorFg,
                       ),
                       const SizedBox(width: 8),
                       Flexible(

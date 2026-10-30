@@ -456,14 +456,15 @@ class DriveListRow extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ArDriveIcons.triangle(size: 14, color: colorTokens.strokeRed),
+          ArDriveIcons.triangle(size: 14, color: colorTokens.statusErrorFg),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
               formatDriveSyncState(context, drive),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: typography.paragraphSmall(color: colorTokens.textRed),
+              style:
+                  typography.paragraphSmall(color: colorTokens.statusErrorFg),
             ),
           ),
         ],
