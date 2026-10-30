@@ -18,6 +18,7 @@ import 'package:ardrive/sync/domain/sync_run.dart';
 import 'package:ardrive/sync/domain/sync_trigger.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/opaque_error_text.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -1661,10 +1662,11 @@ class SyncCubit extends Cubit<SyncState> {
           failedDrives: _syncProgress.failedQueries,
           totalDrives: _syncProgress.drivesCount,
           // A sync that threw before reaching a drive has no per-drive
-          // messages, so its own error is what there is to report.
+          // messages, so its own error is what there is to report, when it
+          // says something: in a release build most read "minified:Xy".
           errorMessages: _syncProgress.errorMessages.isNotEmpty
               ? _syncProgress.errorMessages
-              : error != null
+              : error != null && !isOpaqueErrorText(error.toString())
                   ? {'': error.toString()}
                   : const <String, String>{},
         ),

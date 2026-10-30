@@ -133,6 +133,45 @@ void main() {
       verify(() => ethereum.addChain(CryptoToken.ethBase)).called(1);
     });
 
+    test(
+        'a rejected network add says so in words, not as an exception\'s '
+        'text', () async {
+      when(() => ethereum.switchChain(any()))
+          .thenThrow(EthereumWalletException('CHAIN_NOT_ADDED'));
+      when(() => ethereum.addChain(any()))
+          .thenThrow(EthereumWalletException('USER_REJECTED'));
+      final bloc = blocFor(Flavor.development);
+      addTearDown(bloc.close);
+
+      final failed = bloc.stream.firstWhere(
+        (s) => s is CryptoTopupNetworkSwitch && s.error != null,
+      );
+      await connectOnWrongChain(bloc);
+      final state = (await failed.timeout(const Duration(seconds: 5)))
+          as CryptoTopupNetworkSwitch;
+
+      expect(state.error, 'You cancelled the request in your wallet.');
+    });
+
+    test('a network add that fails for another reason gives no exception text',
+        () async {
+      when(() => ethereum.switchChain(any()))
+          .thenThrow(EthereumWalletException('CHAIN_NOT_ADDED'));
+      when(() => ethereum.addChain(any())).thenThrow(_Opaque());
+      final bloc = blocFor(Flavor.development);
+      addTearDown(bloc.close);
+
+      final failed = bloc.stream.firstWhere(
+        (s) => s is CryptoTopupNetworkSwitch && s.error != null,
+      );
+      await connectOnWrongChain(bloc);
+      final state = (await failed.timeout(const Duration(seconds: 5)))
+          as CryptoTopupNetworkSwitch;
+
+      expect(state.error, isNot(contains('Instance of')));
+      expect(state.error, 'Could not add the network. Try again.');
+    });
+
     test('production asks the wallet for Base mainnet', () async {
       when(() => ethereum.switchChain(any()))
           .thenThrow(EthereumWalletException('USER_REJECTED'));
@@ -147,3 +186,7 @@ void main() {
     });
   });
 }
+
+/// An error with no toString of its own: in a release build its text is
+/// "Instance of 'minified:Xy'".
+class _Opaque implements Exception {}

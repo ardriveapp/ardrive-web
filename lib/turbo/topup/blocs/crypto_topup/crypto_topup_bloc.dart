@@ -450,8 +450,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         isUserRejected: e.isUserRejected,
         isNotInstalled: e.isNoProvider,
       ));
-    } catch (e) {
-      add(CryptoTopupWalletConnectionFailed(error: e.toString()));
+    } catch (e, s) {
+      logger.e('Could not connect the wallet', e, s);
+      add(const CryptoTopupWalletConnectionFailed(
+        error: _couldNotConnectWallet,
+      ));
     }
   }
 
@@ -588,8 +591,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         error: e.userMessage,
         isUserRejected: e.isUserRejected,
       ));
-    } catch (e) {
-      add(CryptoTopupAOConnectSignatureFailed(error: e.toString()));
+    } catch (e, s) {
+      logger.e('Could not sign for AO', e, s);
+      add(const CryptoTopupAOConnectSignatureFailed(error: _couldNotSign));
     }
   }
 
@@ -975,8 +979,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       } else {
         add(CryptoTopupNetworkSwitchFailed(e.userMessage));
       }
-    } catch (e) {
-      add(CryptoTopupNetworkSwitchFailed(e.toString()));
+    } catch (e, s) {
+      logger.e('Could not switch the network', e, s);
+      add(const CryptoTopupNetworkSwitchFailed(_couldNotSwitchNetwork));
     }
   }
 
@@ -1057,8 +1062,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     try {
       await _ethereumWalletService.addChain(event.token);
       add(const CryptoTopupNetworkAddCompleted());
-    } catch (e) {
-      add(CryptoTopupNetworkAddFailed(e.toString()));
+    } on EthereumWalletException catch (e) {
+      add(CryptoTopupNetworkAddFailed(e.userMessage));
+    } catch (e, s) {
+      logger.e('Could not add the network', e, s);
+      add(const CryptoTopupNetworkAddFailed(_couldNotAddNetwork));
     }
   }
 
@@ -1211,12 +1219,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           isUserRejected: result.status == CryptoPaymentStatus.userRejected,
         ));
       }
-    } catch (e) {
-      logger.e('Payment error: $e');
-      add(CryptoTopupPaymentFailed(
-        error: e.toString(),
-        canRetry: true,
-      ));
+    } catch (e, s) {
+      logger.e('Payment error', e, s);
+      // No details: the screen's own notice says the payment failed, and an
+      // exception's text reads "Instance of 'minified:Xy'" in a release build.
+      add(const CryptoTopupPaymentFailed(error: '', canRetry: true));
     }
   }
 
@@ -1334,9 +1341,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           canRetry: true,
         ));
       }
-    } catch (e) {
+    } catch (e, s) {
+      logger.e('Payment retry error', e, s);
       add(CryptoTopupPaymentFailed(
-        error: e.toString(),
+        error: '',
         txId: event.txId,
         canRetry: true,
       ));
@@ -1778,3 +1786,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     return super.close();
   }
 }
+
+// What the top-up shows when something other than the wallet failed. Never
+// an exception's text: in a release build it reads "Instance of 'minified:Xy'".
+const _couldNotConnectWallet = 'Could not connect your wallet. Try again.';
+const _couldNotSign = 'Could not sign. Try again.';
+const _couldNotSwitchNetwork = 'Could not switch networks. Try again.';
+const _couldNotAddNetwork = 'Could not add the network. Try again.';

@@ -6,6 +6,8 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -35,6 +37,12 @@ void main() {
           child: BlocProvider<ProfileCubit>.value(
             value: MockProfileCubit(),
             child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en', '')],
               home: const Text('Explorer'),
               routes: {
                 '/preview': (context) => Scaffold(
@@ -62,6 +70,10 @@ void main() {
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget,
         reason: 'the error is shown');
+    // In words, not the exception's text, which a release build prints as
+    // "Instance of 'minified:Xy'".
+    expect(find.text('Could not load file'), findsOneWidget);
+    expect(find.textContaining('no such drive'), findsNothing);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 

@@ -38,6 +38,7 @@ import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/opaque_error_text.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
@@ -1341,6 +1342,10 @@ class _SyncRepository implements SyncRepository {
     } else if (errorStr.contains('network')) {
       return 'Network error';
     }
+
+    // Nothing a person can read: a release build names the class
+    // "minified:Xy". The error itself is in the log.
+    if (isOpaqueErrorText(errorStr)) return 'Unknown error';
 
     // Return a truncated version of the error message
     return errorStr.length > 100
