@@ -1039,6 +1039,12 @@ class SyncCubit extends Cubit<SyncState> {
     /// that follows an unlock passes false, because the user acted on the
     /// drives they unlocked, not on every other one.
     bool? askWalletAgain,
+
+    /// Asks again for these drives only, as syncing one drive does. Retrying
+    /// the drives that failed passes them: the user asked for those, not for
+    /// every drive whose prompt they cancelled. Given this, the default for
+    /// [askWalletAgain] is false.
+    Iterable<String>? askWalletAgainFor,
   }) async {
     if (PublicationMode.isOn) return false;
     logger.i('Starting Sync');
@@ -1157,8 +1163,10 @@ class SyncCubit extends Cubit<SyncState> {
           wallet: wallet,
           password: password,
           cipherKey: profile.user.cipherKey,
-          askWalletAgain:
-              askWalletAgain ?? trigger == SyncTrigger.userInitiated,
+          askWalletAgain: askWalletAgain ??
+              (askWalletAgainFor == null &&
+                  trigger == SyncTrigger.userInitiated),
+          askWalletAgainFor: askWalletAgainFor,
         );
 
         // Clear status message after discovery completes
@@ -1695,7 +1703,9 @@ class SyncCubit extends Cubit<SyncState> {
     if (driveIds.isEmpty) return;
 
     logger.i('Retrying ${driveIds.length} failed drives');
-    await startSync(onlyDriveIds: driveIds);
+    // A cancelled wallet prompt comes back for these drives only: the user
+    // asked to retry what failed, not to be asked about every other drive.
+    await startSync(onlyDriveIds: driveIds, askWalletAgainFor: driveIds);
   }
 
   /// Sync a chosen few drives, in one run.

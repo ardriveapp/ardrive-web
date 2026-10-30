@@ -935,9 +935,8 @@ class _SyncButtonMenu extends StatelessWidget {
   /// the last sync could not read.
   ///
   /// The same calls the drives list makes for the same failures. A drive
-  /// retry is a sync the user asked for, so like every such sync it may ask
-  /// the wallet again for a drive whose prompt was cancelled; the drive-list
-  /// refresh never does.
+  /// retry may ask the wallet again for the failed drives whose prompt was
+  /// cancelled, and for no other drive; the drive-list refresh never asks.
   void _tryAgain(BuildContext context) {
     final syncCubit = context.read<SyncCubit>();
 

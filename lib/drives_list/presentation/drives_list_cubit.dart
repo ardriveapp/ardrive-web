@@ -527,7 +527,9 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       return;
     }
 
-    unawaited(_syncCubit.syncDrives(failed));
+    // The top bar's Try again makes the same call: these drives again, and a
+    // cancelled wallet prompt back for these drives only.
+    unawaited(_syncCubit.retryFailedDrives(failed));
   }
 
   /// Syncs the ticked drives in one run, then drops the selection.
