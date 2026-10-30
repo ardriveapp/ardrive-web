@@ -1833,21 +1833,20 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-  /// Takes the last sync's result off the top bar, at the reader's asking.
+  /// Reads again the items the last sync could not read: a full resync of
+  /// the drives they are in, and of no other drive.
   ///
-  /// Only a result: a running sync is not one, and a drive list that could
-  /// not be read stays reported, because the drives page reads that state to
-  /// avoid saying the account has no drives.
-  void dismissSyncResult() {
-    final state = this.state;
-    final isResult = state is SyncComplete ||
-        state is SyncStopped ||
-        state is SyncCancelled ||
-        state is SyncCompleteWithErrors ||
-        (state is SyncFailure && state.kind == SyncFailureKind.sync);
-    if (isResult) {
-      emit(SyncIdle());
-    }
+  /// Full, because the drive's watermark moved past them: an ordinary sync
+  /// starts after them and would not look again (see
+  /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`). Returns false when nothing is
+  /// waiting to be read again.
+  Future<bool> retrySkippedItems() async {
+    final driveIds = [
+      for (final entry in _skipsByExaminedDrive.entries)
+        if (entry.value.isNotEmpty) entry.key,
+    ];
+    if (driveIds.isEmpty) return false;
+    return startSync(onlyDriveIds: driveIds, deepSync: true);
   }
 
   /// Runs again what the last failed sync was doing, and only that: the

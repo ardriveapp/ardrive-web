@@ -309,27 +309,47 @@ void main() {
     });
   });
 
-  group('a result can be put away', () {
-    test('a finished sync returns to rest', () async {
+  group('items that could not be read', () {
+    test('are read again by a full resync of their drives alone', () async {
+      repositoryReports(Stream.value(SyncProgress.initial().copyWith(
+        examinedDriveIds: {'drive-a', 'drive-b'},
+        syncedDriveIds: ['drive-a', 'drive-b'],
+        skippedEntityCount: 1,
+        skippedEntityTxIdsByDrive: {
+          'drive-a': ['tx-1'],
+        },
+        progress: 1,
+      )));
+
       final cubit = buildCubit();
       await cubit.startSync();
-      expect(cubit.state, isA<SyncComplete>());
+      expect((cubit.state as SyncComplete).skippedEntityCount, 1);
 
-      cubit.dismissSyncResult();
-      expect(cubit.state.runtimeType, SyncIdle);
+      repositoryReports(Stream.value(SyncProgress.emptySyncCompleted()));
+      expect(await cubit.retrySkippedItems(), isTrue);
+
+      final calls = verify(() => syncRepository.syncAllDrives(
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            syncDeep: captureAny(named: 'syncDeep'),
+            onlyDriveIds: captureAny(named: 'onlyDriveIds'),
+            cancellationToken: any(named: 'cancellationToken'),
+            txFechedCallback: any(named: 'txFechedCallback'),
+          )).captured;
+      // The second run: deep, because the watermark moved past them, and
+      // only over the drive they are in.
+      expect(calls[2], isTrue);
+      expect(calls[3], ['drive-a']);
 
       await cubit.close();
     });
 
-    test('a drive list that could not be read stays reported', () async {
-      driveListReads(() async => throw Exception('the gateway said no'));
-
+    test('and with none waiting, nothing runs', () async {
       final cubit = buildCubit();
-      await cubit.syncMetadataOnly();
-      cubit.dismissSyncResult();
+      await cubit.startSync();
 
-      expect(cubit.state, isA<SyncFailure>());
-      expect(cubit.driveListRefreshFailed, isTrue);
+      expect(await cubit.retrySkippedItems(), isFalse);
 
       await cubit.close();
     });

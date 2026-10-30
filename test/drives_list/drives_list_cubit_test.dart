@@ -306,12 +306,11 @@ void main() {
       expect(state.drives.single.lastSyncedAt, DateTime(2026, 8, 1));
     });
 
-    // The details panel says a drive whose root was never read has not been
-    // synced on this device, whatever its block height or recorded time. The
-    // row said "Synced 7 hours ago" with 0 files beside it.
-    test('a recorded sync of a drive whose root was never read is not synced',
-        () async {
-      await addDrive('drive-a', lastBlockHeight: 100);
+    // A recorded time alone is not a read: the details panel says a drive
+    // with no block height and no root revision has not been synced on this
+    // device. The row said "Synced 7 hours ago" with 0 files beside it.
+    test('a recorded sync of a drive nothing has read is not synced', () async {
+      await addDrive('drive-a');
       when(() => preferences.currentPreferences).thenReturn(
         prefs(lastSynced: {'drive-a': DateTime(2026, 8, 1)}),
       );
@@ -323,6 +322,25 @@ void main() {
       expect(state.drives.single.fileCount, isNull);
       expect(state.drives.single.totalSize, isNull);
       expect(state.drives.single.lastSyncedAt, isNull);
+    });
+
+    // The explorer's and search's rule: a sync walked it, or its root has a
+    // revision. A walked drive whose root revision never landed (a ghost or
+    // skipped root, or a drive synced by an older build) is synced, and no
+    // incremental sync would ever repair the root to say otherwise.
+    test('a block height with no root revision counts as synced', () async {
+      await addDrive('drive-a', lastBlockHeight: 100);
+      await addFile('drive-a', 'f1', 200);
+      when(() => preferences.currentPreferences).thenReturn(
+        prefs(lastSynced: {'drive-a': DateTime(2026, 8, 1)}),
+      );
+
+      final state = await settle(loaded(await drivesNamed(['drive-a'])))
+          as DrivesListLoaded;
+
+      expect(state.drives.single.hasBeenWalked, isTrue);
+      expect(state.drives.single.fileCount, 1);
+      expect(state.drives.single.lastSyncedAt, DateTime(2026, 8, 1));
     });
 
     test('files on a drive whose root was never read are not counted',

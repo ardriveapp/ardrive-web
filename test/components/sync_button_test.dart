@@ -74,7 +74,7 @@ void main() {
     when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {});
     when(() => syncCubit.clearCancelledState()).thenReturn(null);
     when(() => syncCubit.retryFailure()).thenAnswer((_) async {});
-    when(() => syncCubit.dismissSyncResult()).thenReturn(null);
+    when(() => syncCubit.retrySkippedItems()).thenAnswer((_) async => true);
   });
 
   tearDown(() async {
@@ -152,6 +152,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
       // The overlay shows what changed on the frame after.
       await tester.pump();
+    }
+  }
+
+  /// Opens the indicator's menu and waits until its items take a tap.
+  Future<void> openMenuNow(WidgetTester tester) async {
+    await tester.tap(find.byType(SyncButton));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
     }
   }
 
@@ -466,8 +474,7 @@ void main() {
     expect(find.text('Up to date, nothing new'), findsNothing);
   });
 
-  testWidgets('the indicator keeps the result after the pill has gone',
-      (tester) async {
+  testWidgets('a clean result goes once it has been read', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
 
@@ -477,55 +484,125 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ArDriveIcon), findsOneWidget);
-
-    // The pill's few seconds are too short to read (WCAG 2.2.1), so the
-    // result stays on the indicator, and in its menu, until the next sync or
-    // until it is dismissed.
-    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
-    await tester.pump();
-    expect(find.text('12 items changed'), findsNothing);
-    expect(find.byType(ArDriveIcon), findsOneWidget);
     expect(
       tester.widget<Tooltip>(find.byType(Tooltip)).message,
       '12 items changed',
     );
 
-    await tester.tap(find.byType(SyncButton));
+    // Long enough to read, and then the indicator is idle again: nothing else
+    // rebuilds the bar here, so it has to take itself away.
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(
-      find.descendant(
-        of: find.byKey(syncStatusHeaderKey),
-        matching: find.text('12 items changed'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('12 items changed'), findsNothing);
+    expect(find.byType(ArDriveIcon), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Dismiss puts the result away', (tester) async {
-    when(() => syncCubit.dismissSyncResult()).thenReturn(null);
+  testWidgets('a result with holes in it stays after the pill has gone',
+      (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
 
-    stateController.add(finished(entitiesSynced: 12));
+    stateController.add(finished(entitiesSynced: 12, skippedEntityCount: 3));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+    // Rebuilt, as anything else on the page would rebuild it: the report is
+    // decided again, and still stays.
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    expect(find.byType(ArDriveIcon), findsOneWidget);
+    expect(
+      tester.widget<Tooltip>(find.byType(Tooltip)).message,
+      '12 items changed\n3 items could not be read',
+    );
+
+    // Its next step is Try again, which reads those items again.
+    await openMenuNow(tester);
+    expect(
+      find.descendant(
+        of: find.byKey(syncStatusHeaderKey),
+        matching: find.text('3 items could not be read'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    verify(() => syncCubit.retrySkippedItems()).called(1);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Dismiss puts away the report and leaves the failure standing',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(SyncCompleteWithErrors(
+      failedDrives: 2,
+      totalDrives: 5,
+      failedDriveIds: const ['drive-a', 'drive-b'],
+      errorMessages: const {},
+      completedAt: clock.now(),
+    ));
     await tester.pump(const Duration(milliseconds: 10));
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
     await tester.pump();
 
-    await tester.tap(find.byType(SyncButton));
-    // Until the menu has finished opening and its items take a tap.
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 150));
-    }
+    await openMenuNow(tester);
+    await tester.tap(find.text('Dismiss'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Gone from the top bar, and only from there: the drives page reads the
+    // state for its "Last sync failed" rows and its Try again.
+    expect(find.byType(ArDriveDropdown), findsNothing);
+    verifyNever(() => syncCubit.clearErrorState());
+    verifyNever(() => syncCubit.retryFailedDrives(any()));
+
+    // The next report is shown.
+    stateController.add(SyncCompleteWithErrors(
+      failedDrives: 1,
+      totalDrives: 5,
+      failedDriveIds: const ['drive-a'],
+      errorMessages: const {},
+      completedAt: clock.now().add(const Duration(seconds: 1)),
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+    expect(find.byType(ArDriveDropdown), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('dismissing a stopped sync still lets it go', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    final stoppedAt = clock.now();
+    stateController.add(SyncCancelled(
+      drivesCompleted: 1,
+      totalDrives: 3,
+      cancelledAt: stoppedAt,
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+
+    await openMenuNow(tester);
     await tester.tap(find.text('Dismiss'));
     await tester.pump();
 
-    verify(() => syncCubit.dismissSyncResult()).called(1);
+    // Its announcement is what released it, and that is no longer shown.
+    verify(() => syncCubit.clearCancelledState()).called(1);
 
-    // The cubit returns to rest, and the slot is empty again.
-    stateController.add(SyncIdle());
+    // And the rest it moves on to is the same report, still put away.
+    stateController.add(SyncStopped(
+      drivesCompleted: 1,
+      totalDrives: 3,
+      stoppedAt: stoppedAt,
+    ));
     await tester.pump(const Duration(milliseconds: 10));
     await tester.pump();
     expect(find.byType(ArDriveIcon), findsNothing);
@@ -557,7 +634,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
     await tester.pump();
 
-    expect(spoken, ['12 items changed. 3 updates could not be read']);
+    expect(spoken, ['12 items changed. 3 items could not be read']);
 
     // Once: a rebuild does not say it again.
     await tester.pump(const Duration(seconds: 1));
@@ -576,7 +653,7 @@ void main() {
     await tester.pump();
 
     final warning = tester.widget<ArDriveStatusText>(find.ancestor(
-      of: find.text('3 updates could not be read'),
+      of: find.text('3 items could not be read'),
       matching: find.byType(ArDriveStatusText),
     ));
     expect(warning.type, ArDriveStatusType.warning);
@@ -681,7 +758,7 @@ void main() {
     // The overlay shows what changed on the frame after.
     await tester.pump();
 
-    const unreadable = '3 updates could not be read';
+    const unreadable = '3 items could not be read';
     expect(find.text(unreadable), findsOneWidget);
 
     // Rendered, not merely present: the clause has to fit the lines it was
@@ -715,9 +792,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('12 items changed'), findsNothing);
-    // Not flashed again, but still on the indicator: it is the last result,
-    // and it stays readable until the next sync or until it is dismissed.
-    expect(find.byType(ArDriveIcon), findsOneWidget);
+    // And nothing is drawn at all: a clean result this old has been read,
+    // and there is no sync running to report on.
+    expect(find.byType(ArDriveIcon), findsNothing);
   });
 
   testWidgets('a sync the user asked for reports here too', (tester) async {

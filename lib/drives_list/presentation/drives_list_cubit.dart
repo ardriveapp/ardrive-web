@@ -159,7 +159,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     // before: a block height or a recorded sync time.
     Set<String>? readDriveIds;
     try {
-      readDriveIds = await _driveDao.driveIdsWithReadRoot();
+      readDriveIds = await _driveDao.driveIdsSyncedHere();
     } catch (e, stackTrace) {
       logger.e('Could not read which drives have been synced', e, stackTrace);
     }
@@ -206,7 +206,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     Map<String, DateTime> lastSyncedAt,
 
     /// The drives whose root folder has been read on this device, or null
-    /// when that could not be asked. See [DriveDao.driveIdsWithReadRoot].
+    /// when that could not be asked. See [DriveDao.driveIdsSyncedHere].
     Set<String>? readDriveIds,
     int sequence,
   ) {
@@ -240,9 +240,9 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
     final items = drives.map((drive) {
       // Whether this device has read the drive. One answer for the row, the
-      // details panel and the explorer: its root folder has a revision. A
-      // block height or a recorded sync time could each say "synced" of a
-      // drive whose root was never read, so the row said "Synced 7 hours ago"
+      // details panel, search and the explorer: a sync walked it, or its root
+      // folder has a revision. A recorded sync time alone could say "synced"
+      // of a drive nothing had read, so the row said "Synced 7 hours ago"
       // with 0 files while the details panel said it had never been synced.
       //
       // Before the drive has been read, every number derived from the local
@@ -277,7 +277,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       // unwalked one still means unknown. Only a non-zero count proves the
       // device knows something, which is why this asks for one.
       //
-      // Only when the read-root test could not be asked. Creating a drive
+      // Only when the synced-here test could not be asked. Creating a drive
       // writes its root's revision, so that test already counts a drive made
       // here; with it, files beside "Not synced on this device" would be the
       // contradiction the row must not make.

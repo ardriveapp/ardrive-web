@@ -149,10 +149,15 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                   return;
                 }
 
-                // The explorer's own test for a drive that has been read: its
-                // root folder has a revision. Reading the drive list stores
-                // only a placeholder for it.
-                if (rootFolderRevision == null) {
+                // The explorer's own test for a drive that has been read
+                // (`DriveDetailCubit._hasRootFolderMetadata`): a sync walked
+                // it, or its root folder has a revision. Reading the drive
+                // list stores only a placeholder root and no block height. A
+                // walked drive whose root revision never landed is still
+                // synced: the explorer opens it, and so the panel describes
+                // it.
+                if (rootFolderRevision == null &&
+                    (d.lastBlockHeight ?? 0) == 0) {
                   emit(FsEntryUnsyncedDriveInfo(d));
                   return;
                 }

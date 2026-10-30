@@ -861,7 +861,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('SyncComplete is announced, and stays readable on the menu',
+    testWidgets('a clean SyncComplete is readable for a while, then goes',
         (tester) async {
       await tester.pumpWidget(host());
       await tester.pump();
@@ -877,13 +877,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('12 items changed'), findsOneWidget);
-
-      // Long after the pill has gone the result is still there to read: the
-      // pill's few seconds are too short (WCAG 2.2.1), so the indicator keeps
-      // it until the next sync or until it is dismissed.
-      await tester.pump(const Duration(seconds: 30));
-      await tester.pump();
-      expect(find.byType(ArDriveDropdown), findsOneWidget);
       await openMenu(tester);
 
       expect(
@@ -901,6 +894,38 @@ void main() {
       expect(status.type, ArDriveStatusType.success);
       expect(find.text('Dismiss'), findsOneWidget);
       expect(find.text('Your drives'), findsNothing);
+
+      // It needs nothing from the reader, so once its time is up the
+      // indicator goes back to idle, menu and all.
+      await tester.tapAt(const Offset(5, 500));
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pump();
+      expect(find.byType(ArDriveDropdown), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a result with holes in it stays, with a Try again',
+        (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncComplete(
+        entitiesSynced: 12,
+        skippedEntityCount: 3,
+        sequence: 2,
+        completedAt: DateTime.now(),
+        trigger: SyncTrigger.background,
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pump();
+
+      expect(find.byType(ArDriveDropdown), findsOneWidget);
+      await openMenu(tester);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -926,7 +951,7 @@ void main() {
         matching: find.byType(ArDriveStatusText),
       ));
       expect(status.type, ArDriveStatusType.warning);
-      expect(find.text('3 updates could not be read'), findsOneWidget);
+      expect(find.text('3 items could not be read'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });

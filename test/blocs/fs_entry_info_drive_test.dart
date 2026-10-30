@@ -94,4 +94,30 @@ void main() {
 
     expect(await info.stream.first, isA<FsEntryInfoFailure>());
   });
+
+  /// The explorer's rule, and search's: a sync walked it, or its root has a
+  /// revision. A walked drive whose root revision never landed opens in the
+  /// explorer, so the panel must not say it was never synced.
+  test('a walked drive with no root revision is described as synced', () async {
+    await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+        .write(const DrivesCompanion(lastBlockHeight: Value(100)));
+    await db.into(db.driveRevisions).insert(
+          DriveRevisionsCompanion.insert(
+            driveId: driveId,
+            rootFolderId: rootFolderId,
+            ownerAddress: 'owner',
+            name: 'Photos',
+            privacy: DrivePrivacyTag.private,
+            metadataTxId: 'drive-tx',
+            action: RevisionAction.create,
+          ),
+        );
+
+    final info = cubit();
+    addTearDown(info.close);
+
+    final state = await info.stream.first;
+    expect(state, isA<FsEntryDriveInfoSuccess>());
+    expect((state as FsEntryDriveInfoSuccess).rootFolderRevision, isNull);
+  });
 }

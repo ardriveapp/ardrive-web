@@ -35,6 +35,7 @@ import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/sync/presentation/sync_failure_toast.dart';
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
 import 'package:ardrive/search/search_scope.dart';
 import 'package:ardrive/services/services.dart';
@@ -941,9 +942,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   // A failed sync is reported once, at the top bar's sync
                   // indicator, with a Try again that repeats what failed. A
                   // toast here said the same failure a second time, in other
-                  // words, and its Try again synced every drive.
-                  child: ArNSResumeScope(
-                    child: SearchScope(child: navigator),
+                  // words, and its Try again synced every drive. Only a
+                  // publication, whose top bar has no indicator, gets one.
+                  child: SyncFailureToastListener(
+                    enabled: PublicationMode.isOn,
+                    child: ArNSResumeScope(
+                      child: SearchScope(child: navigator),
+                    ),
                   ),
                 );
               } else {

@@ -331,11 +331,23 @@ class SyncButton extends StatelessWidget {
             // The controller replays nothing, so a button mounted mid-sync
             // would show an empty ring until the next event without this.
             initialData: syncCubit.syncProgress,
-            builder: (context, snapshot) => _build(
-              context,
-              syncState,
-              snapshot.data,
-              drivesState,
+            builder: (context, snapshot) => ValueListenableBuilder<Object?>(
+              valueListenable: _dismissedSyncReport,
+              builder: (context, dismissed, _) => _RebuildAfter(
+                // A clean result is shown for its few seconds and then the
+                // slot empties, which nothing else would rebuild the bar for.
+                after: syncState is SyncComplete &&
+                        syncState.skippedEntityCount == 0
+                    ? syncSummaryRemaining(syncState)
+                    : null,
+                builder: (context) => _build(
+                  context,
+                  syncState,
+                  snapshot.data,
+                  drivesState,
+                  dismissed,
+                ),
+              ),
             ),
           );
         },
@@ -376,9 +388,21 @@ class SyncButton extends StatelessWidget {
     SyncState syncState,
     SyncProgress? syncProgress,
     DrivesState drivesState,
+    Object? dismissed,
   ) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final l10n = appLocalizationsOf(context);
+
+    // A report the reader put away is not drawn again. Only the top bar's
+    // report goes: the state, which the drives page reads for its "Last sync
+    // failed" rows and its Try again, stays until the next sync.
+    final reportKey = _syncReportKey(syncState);
+    if (reportKey != null && reportKey == dismissed) {
+      return const SizedBox(
+        width: _syncButtonOuterSize,
+        height: _syncButtonOuterSize,
+      );
+    }
     final syncCubit = context.read<SyncCubit>();
 
     // Every partial failure, whoever asked for the sync. It used to be only
@@ -485,7 +509,11 @@ class SyncButton extends StatelessWidget {
         detailMaxLines: 2,
       );
       indicator = ArDriveIcons.triangle(color: colorTokens.statusWarningFg);
-    } else if (complete != null) {
+    } else if (complete != null &&
+        // A clean result needs nothing from the reader, so it is shown for
+        // its few seconds, long enough to read and announced once, and then
+        // the indicator goes back to idle. A result with holes in it stays.
+        (complete.skippedEntityCount > 0 || syncSummaryIsFresh(complete))) {
       final summary = syncCompleteSummaryParts(l10n, complete);
       // Items that could not be read are a hole in the result, so a result
       // with any is a warning rather than a success.
@@ -537,6 +565,18 @@ class SyncButton extends StatelessWidget {
         isSyncing: isSyncing,
         failedDriveIds: errors?.failedDriveIds,
         failure: failure,
+        // Items that could not be read can be read again, so the warning
+        // carries its own Try again.
+        retriesSkippedItems:
+            complete != null && complete.skippedEntityCount > 0,
+        onDismiss: () {
+          _dismissedSyncReport.value = reportKey;
+          // A cancelled sync is released by its announcement, which a
+          // dismissed report no longer shows, so it is released here.
+          if (syncState is SyncCancelled) {
+            context.read<SyncCubit>().clearCancelledState();
+          }
+        },
         // Every report of how a sync ended can be put away, except a drive
         // list that could not be read: the drives page reads that state to
         // avoid saying the account has no drives.
@@ -1048,7 +1088,9 @@ class _SyncButtonMenu extends StatelessWidget {
     this.isSyncing = false,
     this.failedDriveIds,
     this.failure,
+    this.retriesSkippedItems = false,
     this.canDismiss = false,
+    required this.onDismiss,
     required this.child,
   });
 
@@ -1070,8 +1112,13 @@ class _SyncButtonMenu extends StatelessWidget {
   /// refresh, one drive, some drives or all of them.
   final SyncFailure? failure;
 
-  /// Whether the report can be put away. See [SyncCubit.dismissSyncResult].
+  /// Whether the last result left items unread that Try again can read again.
+  /// See [SyncCubit.retrySkippedItems].
+  final bool retriesSkippedItems;
+
+  /// Whether the report can be put away, and what putting it away does.
   final bool canDismiss;
+  final VoidCallback onDismiss;
 
   final Widget child;
 
@@ -1084,6 +1131,11 @@ class _SyncButtonMenu extends StatelessWidget {
   void _tryAgain(BuildContext context) {
     final syncCubit = context.read<SyncCubit>();
     final failure = this.failure;
+
+    if (retriesSkippedItems) {
+      syncCubit.retrySkippedItems();
+      return;
+    }
 
     if (failure != null) {
       // Through the drives list when it is the page saying the list could not
@@ -1111,7 +1163,9 @@ class _SyncButtonMenu extends StatelessWidget {
 
   /// Whether there is something that failed and can be run again.
   bool get _canTryAgain =>
-      failure != null || (failedDriveIds?.isNotEmpty ?? false);
+      retriesSkippedItems ||
+      failure != null ||
+      (failedDriveIds?.isNotEmpty ?? false);
 
   @override
   Widget build(BuildContext context) {
@@ -1158,7 +1212,7 @@ class _SyncButtonMenu extends StatelessWidget {
       // away sooner.
       if (canDismiss)
         ArDriveDropdownItem(
-          onClick: () => context.read<SyncCubit>().dismissSyncResult(),
+          onClick: onDismiss,
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).syncDismiss,
             icon: ArDriveIcons.x(color: iconColor),
@@ -1404,4 +1458,77 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
       ],
     );
   }
+}
+
+/// The top bar report the reader dismissed, by [_syncReportKey].
+///
+/// Held here rather than on the cubit: dismissing is the top bar's business,
+/// and the state it reports is read elsewhere too, by the drives page's
+/// failure marks and its Try again, which must outlive a dismissed report.
+/// Shared by both breakpoints' bars, so a report put away on one stays away
+/// on the other.
+final ValueNotifier<Object?> _dismissedSyncReport = ValueNotifier(null);
+
+/// Which report [state] is, so the one that was dismissed stays dismissed and
+/// the next one is shown. Null for a state that is not a report of how a sync
+/// ended.
+///
+/// A cancelled sync and the rest it moves on to are one report: both are
+/// keyed by the moment it was stopped.
+Object? _syncReportKey(SyncState state) => switch (state) {
+      SyncComplete() => ('complete', state.sequence),
+      SyncStopped() => ('stopped', state.stoppedAt),
+      SyncCancelled() => ('stopped', state.cancelledAt),
+      SyncCompleteWithErrors() => ('errors', state.completedAt),
+      SyncFailure() => ('failure', state.failedAt),
+      _ => null,
+    };
+
+/// Builds [builder] again once [after] has passed, so a report that is only
+/// shown for a while goes when its time is up rather than when something
+/// unrelated next rebuilds the bar.
+class _RebuildAfter extends StatefulWidget {
+  const _RebuildAfter({required this.after, required this.builder});
+
+  /// Null when nothing on screen is on a clock.
+  final Duration? after;
+  final WidgetBuilder builder;
+
+  @override
+  State<_RebuildAfter> createState() => _RebuildAfterState();
+}
+
+class _RebuildAfterState extends State<_RebuildAfter> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RebuildAfter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _schedule();
+  }
+
+  void _schedule() {
+    _timer?.cancel();
+    _timer = null;
+    final after = widget.after;
+    if (after == null || after <= Duration.zero) return;
+    _timer = Timer(after, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context);
 }

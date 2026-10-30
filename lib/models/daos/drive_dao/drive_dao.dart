@@ -1398,21 +1398,24 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     };
   }
 
-  /// The drives whose root folder has a revision on this device: the drives
-  /// this device has read, by the explorer's own test.
+  /// The drives this device has read, by the drive page's own test
+  /// (`DriveDetailCubit._hasRootFolderMetadata`) and search's
+  /// (`searchCoverageDrives`): a sync has walked it, or its root folder has a
+  /// revision, which a sync writes and so does creating the drive here.
   ///
-  /// Reading the drive list stores only a placeholder for a drive's root, so a
-  /// drive nothing has read has none. The drives list asks this rather than
-  /// the drive's block height or a recorded sync time, so its rows, the
-  /// details panel and the explorer all agree on whether a drive is synced.
-  Future<Set<String>> driveIdsWithReadRoot() async {
+  /// Reading the drive list stores only a placeholder for a drive's root and
+  /// no block height, so a drive nothing has read has neither. The drives list
+  /// asks this rather than a recorded sync time, so its rows, search and the
+  /// explorer agree on whether a drive is synced.
+  Future<Set<String>> driveIdsSyncedHere() async {
     final rows = await customSelect(
       '''
       SELECT d.id AS id FROM drives d
-      WHERE EXISTS (
-        SELECT 1 FROM folder_revisions r
-        WHERE r.driveId = d.id AND r.folderId = d.rootFolderId
-      )
+      WHERE COALESCE(d.lastBlockHeight, 0) > 0
+        OR EXISTS (
+          SELECT 1 FROM folder_revisions r
+          WHERE r.driveId = d.id AND r.folderId = d.rootFolderId
+        )
       ''',
       readsFrom: {drives, folderRevisions},
     ).get();

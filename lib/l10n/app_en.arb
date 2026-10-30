@@ -3593,9 +3593,9 @@
   "@syncProgressSaved": {
     "description": "Message shown when sync is cancelled"
   },
-  "syncCancelledDetails": "Completed {completed} of {total} drives. Uploading files before a full sync may cause conflicts.",
+  "syncCancelledDetails": "Stopped after {completed} of {total, plural, =1{1 drive} other{{total} drives}}. Uploading files before a full sync may cause conflicts.",
   "@syncCancelledDetails": {
-    "description": "Details about what was synced before cancellation",
+    "description": "What a sync that was stopped got through before it stopped, and why that matters for uploads",
     "placeholders": {
       "completed": {
         "type": "int",
@@ -3701,9 +3701,9 @@
       }
     }
   },
-  "syncSummarySkippedEntities":"{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
+  "syncSummarySkippedEntities":"{count, plural, =1{1 item could not be read} other{{count} items could not be read}}",
   "@syncSummarySkippedEntities": {
-    "description": "How many updates a sync had to leave out because their metadata could not be read. Counts transactions, not files",
+    "description": "How many items a sync had to leave out because their metadata could not be read. An item is a file or a folder, the word every sync count uses",
     "placeholders": {
       "count": {
         "type": "int",
@@ -3936,7 +3936,7 @@
   },
   "syncHistoryFailedDetail": "This sync stopped with an error. Try syncing again.",
   "@syncHistoryFailedDetail": {
-    "description": "What a history entry says about a sync that threw before it could walk any drive"
+    "description": "What a history entry says about a sync that stopped with an error, and what to do next"
   },
   "syncHistoryCancelledDetail": "This sync was stopped before it finished.",
   "@syncHistoryCancelledDetail": {
