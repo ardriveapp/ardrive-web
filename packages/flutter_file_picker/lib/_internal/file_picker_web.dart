@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:html';
 import 'dart:typed_data';
 
+import 'package:file_picker/blob_reader.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
@@ -201,9 +202,8 @@ class FilePickerWeb extends FilePicker {
           ? globalEnd
           : globalOffset + _readStreamChunkSize;
       final blob = file.slice(globalOffset, chunkEnd);
-      reader.readAsArrayBuffer(blob);
-      await reader.onLoad.first;
-      yield reader.result as Uint8List;
+      // Throws when the read fails, rather than waiting for ever.
+      yield await readBlobBytes(blob, reader: reader);
       globalOffset += _readStreamChunkSize;
     }
   }

@@ -206,12 +206,19 @@ void main() {
         expect(tester.getTopLeft(find.text(item)).dy, lessThan(version));
       }
 
+      // A line to read, not an action: a click on it leaves the menu open.
+      await tester.tap(find.textContaining('Version 2.90.0'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppVersionHelpLine), findsOneWidget);
+
       final link = find.byWidgetPredicate(
         (w) => w is ArDriveLink && w.text == "What's new",
       );
       await tester.tap(link);
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(launcher.launched, [url]);
+      // The link closes the menu, as every other item in it does.
+      expect(find.byType(AppVersionHelpLine), findsNothing);
     });
   }
 }

@@ -22,7 +22,30 @@ class DriveListItem extends Equatable {
     required this.lastSyncedAt,
     required this.isSyncing,
     required this.lastSyncFailed,
+    this.isLocked = false,
   });
+
+  /// A private drive of the user's that this session can't open.
+  ///
+  /// Its name is encrypted, so [name] is empty and the row says "Private
+  /// drive" with the drive's emoji; nothing about its contents is known, so
+  /// every figure is withheld. Opening it opens the unlock dialog. See
+  /// `LockedDrive`.
+  const DriveListItem.locked({
+    required this.id,
+    required this.dateCreated,
+  })  : name = '',
+        isPrivate = true,
+        isSharedWithMe = false,
+        isHidden = false,
+        hasBeenWalked = false,
+        hasUnreadChanges = false,
+        fileCount = null,
+        totalSize = null,
+        lastSyncedAt = null,
+        isSyncing = false,
+        lastSyncFailed = false,
+        isLocked = true;
 
   final String id;
   final String name;
@@ -98,6 +121,8 @@ class DriveListItem extends Equatable {
   /// indistinguishable from one nobody had opened yet.
   final bool lastSyncFailed;
 
+  final bool isLocked;
+
   @override
   List<Object?> get props => [
         id,
@@ -113,5 +138,6 @@ class DriveListItem extends Equatable {
         lastSyncedAt,
         isSyncing,
         lastSyncFailed,
+        isLocked,
       ];
 }

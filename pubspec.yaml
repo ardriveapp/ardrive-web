@@ -237,6 +237,7 @@ flutter:
   assets:
     - assets/config/
     - assets/fonts/
+    - assets/fonts/fingerprint-emoji/
     - assets/images/
     - assets/images/brand/
     - assets/images/login/

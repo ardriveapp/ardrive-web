@@ -16,10 +16,17 @@ class DrivesLoadSuccess extends DrivesState {
   final List<Drive> userDrives;
   final List<Drive> sharedDrives;
 
+  /// The user's private drives this session can't open. Never in
+  /// [userDrives]: they have no row and no name. See [LockedDrive].
+  final List<LockedDrive> lockedDrives;
+
   final List<String> drivesWithAlerts;
   final bool canCreateNewDrive;
 
-  bool get hasNoDrives => userDrives.isEmpty && sharedDrives.isEmpty;
+  /// Whether the user has no drive at all, locked ones included: an account
+  /// whose only drives are locked is not an empty account.
+  bool get hasNoDrives =>
+      userDrives.isEmpty && sharedDrives.isEmpty && lockedDrives.isEmpty;
 
   DrivesLoadSuccess({
     required this.selectedDriveId,
@@ -27,6 +34,7 @@ class DrivesLoadSuccess extends DrivesState {
     required this.sharedDrives,
     required this.drivesWithAlerts,
     required this.canCreateNewDrive,
+    this.lockedDrives = const [],
   });
 
   DrivesLoadSuccess copyWith({
@@ -35,6 +43,7 @@ class DrivesLoadSuccess extends DrivesState {
     List<Drive>? sharedDrives,
     List<String>? drivesWithAlerts,
     bool? canCreateNewDrive,
+    List<LockedDrive>? lockedDrives,
   }) =>
       DrivesLoadSuccess(
         selectedDriveId: selectedDriveId ?? this.selectedDriveId,
@@ -42,6 +51,7 @@ class DrivesLoadSuccess extends DrivesState {
         sharedDrives: sharedDrives ?? this.sharedDrives,
         drivesWithAlerts: drivesWithAlerts ?? this.drivesWithAlerts,
         canCreateNewDrive: canCreateNewDrive ?? this.canCreateNewDrive,
+        lockedDrives: lockedDrives ?? this.lockedDrives,
       );
 
   @override
@@ -49,6 +59,7 @@ class DrivesLoadSuccess extends DrivesState {
         selectedDriveId,
         userDrives,
         sharedDrives,
+        lockedDrives,
         drivesWithAlerts,
         canCreateNewDrive,
       ];

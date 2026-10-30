@@ -1,3 +1,4 @@
+import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/utils/logger.dart';
 
@@ -5,6 +6,8 @@ class DatabaseHelpers {
   final Database _db;
 
   DatabaseHelpers(this._db);
+
+  DriveDao get driveDao => _db.driveDao;
 
   Future<void> deleteAllTables() async {
     try {

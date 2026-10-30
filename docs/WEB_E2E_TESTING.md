@@ -128,9 +128,14 @@ profile.
 ### 3. Log in
 
 ```bash
-node login.js           # new profile: Log in, Import wallet, keyfile, password
+node login.js           # new profile: Log in, Recovery phrase or keyfile, keyfile, password
 node login.js unlock    # profile already logged in: just the password
 ```
+
+`login.js` finds its buttons by their labels, read in a second tab with the
+accessibility tree on, and clicks them in `launch.js`'s tab, where the tree
+stays off. It prints how long the password took to appear after the keyfile
+was chosen, and fails if it doesn't appear within 90 seconds.
 
 The app asks for the password each time the browser starts, so after a
 restart use `unlock`. Check the last screenshot,
@@ -167,7 +172,9 @@ decide the next step.
   Flutter's semantics tree is on, and it starts off, so by default
   `labels()` returns nothing and the screenshot is the source of truth. To
   check what a screen reader hears, turn it on with
-  `await page.evaluate(() => document.querySelector('flt-semantics-placeholder')?.click())`,
+  `await (await page.$('flt-semantics-placeholder'))?.evaluate((e) => e.click())`
+  (the placeholder is inside a shadow root, which `page.$` looks into and
+  `document.querySelector` doesn't; click again if it was too early),
   and do that last: see *Accessibility on* below.
 - **Choosing files.** `queueFiles([paths])` sets what the next file chooser
   receives. Use it before the click that opens the chooser. Files of any
@@ -332,6 +339,32 @@ page. `solana_wallet.js` gives the page one, a Wallet Standard wallet called
 `net.log` shows each prompt as a `solana` line and each ArNS action created
 as an `arns-action` line with Turbo's nonce and status. `launch.js` refuses
 ArNS actions on any payment service but the testnet one.
+
+**Locked drives.** A wallet whose private drives have different passwords
+signs in with one; the others show as locked and are unlocked from the list.
+It needs its own wallet, so it runs in its own profile and credentials:
+1. Once, make the wallet and its drives: a fresh wallet owning *E2E Locked
+   Login* (the login password), *E2E Locked A* and *E2E Locked B* (a second
+   password) and *E2E Locked Unicode* (a non-ASCII password, made with
+   core-js, whose encoding of it differs from web's). Each is free metadata
+   on Turbo. Keep `env` (login.js's credentials for it), `passwords.json`
+   (`login`, `other`, `unicode`) and `drives.json` (`name`, `password`,
+   `driveId`) in `~/.config/ardrive-e2e/locked-drives/`, and the keyfile in
+   `~/.config/ardrive-e2e/locked-drives-wallet/wallet.json`, all chmod 600.
+   The keyfile has to be outside the credentials folder: `launch.js` never
+   hands a file from that folder to a file chooser, the login's included.
+2. Start the browser and log in with them, in a profile of their own:
+   `export E2E_DIR=~/.cache/ardrive-e2e-locked CREDENTIALS=~/.config/ardrive-e2e/locked-drives/env`,
+   then `node launch.js` and `node login.js` as usual.
+3. `node locked_drives.js`. It checks, through the accessibility tree: the
+   three drives are listed as locked with their emoji; a wrong password says
+   *Wrong password*; offline says *Couldn't reach the network. Try again.*;
+   the right password opens the drive; one password with *Try on my other
+   locked drives* opens the drives that share it. Screenshots are
+   `$E2E_DIR/shots/locked-*.png`, at desktop and phone width.
+
+A drive unlocked this way is remembered on this profile, so a second run
+needs a fresh `E2E_DIR`.
 
 ## What to test
 

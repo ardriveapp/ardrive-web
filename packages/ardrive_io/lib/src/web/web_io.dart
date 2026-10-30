@@ -7,6 +7,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/utils/completer.dart';
 import 'package:ardrive_io/src/utils/print_utils.dart';
 import 'package:ardrive_io/src/web/stream_saver.dart';
+import 'package:file_picker/blob_reader.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:file_system_access_api/file_system_access_api.dart';
@@ -404,10 +405,8 @@ class WebFile implements IOFile {
   Future<Uint8List> readAsBytes() async {
     final bytes = _bytes;
     if (bytes == null) {
-      final reader = FileReader();
-      reader.readAsArrayBuffer(_file);
-      await reader.onLoad.first;
-      return reader.result as Uint8List;
+      // Throws when the read fails, rather than waiting for ever.
+      return readBlobBytes(_file);
     }
 
     return bytes;
@@ -435,10 +434,8 @@ class WebFile implements IOFile {
           : globalOffset + readStreamChunkSize;
 
       final blob = _file.slice(globalOffset, chunkEnd);
-      reader.readAsArrayBuffer(blob);
-      await reader.onLoad.first;
 
-      yield reader.result as Uint8List;
+      yield await readBlobBytes(blob, reader: reader);
 
       globalOffset += readStreamChunkSize;
     }

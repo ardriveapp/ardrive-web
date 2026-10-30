@@ -68,7 +68,8 @@ function credentials() {
   if (!keyfile || !password) {
     throw new Error(`Set ARDRIVE_E2E_KEYFILE and ARDRIVE_E2E_PASSWORD in ${CREDENTIALS} (see docs/WEB_E2E_TESTING.md)`);
   }
-  if (!fs.existsSync(keyfile)) throw new Error(`ARDRIVE_E2E_KEYFILE does not exist: ${keyfile}`);
+  // Not the path: it is kept out of logs and output.
+  if (!fs.existsSync(keyfile)) throw new Error(`ARDRIVE_E2E_KEYFILE, set in ${CREDENTIALS} or the environment, names a file that does not exist`);
   return { keyfile, password };
 }
 

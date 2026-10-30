@@ -81,6 +81,7 @@ class ModalAction {
     this.isEnable = true,
     this.customWidth,
     this.variant,
+    this.isLoading = false,
   });
 
   /// An action that only closes the dialog, such as Cancel or Close. It is
@@ -92,11 +93,17 @@ class ModalAction {
     required this.title,
     this.customWidth,
   })  : isEnable = true,
+        isLoading = false,
         variant = ButtonVariant.secondary;
 
   final String title;
   final dynamic Function() action;
   final bool isEnable;
+
+  /// Draws a spinner in place of the title, and takes no press, while the
+  /// action it started is still running. The button keeps its width, so
+  /// nothing beside it moves.
+  final bool isLoading;
   final double? customWidth;
 
   /// Overrides the variant [ArDriveStandardModalNew] picks from the action's
@@ -408,6 +415,13 @@ class ArDriveModalActions extends StatelessWidget {
 
   final List<ModalAction> actions;
 
+  static Widget? _loading(BuildContext context, ModalAction action) =>
+      action.isLoading
+          ? ArDriveSpinner(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+            )
+          : null;
+
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -425,7 +439,8 @@ class ArDriveModalActions extends StatelessWidget {
                 (actions.length > 1
                     ? ButtonVariant.secondary
                     : ButtonVariant.primary),
-            isDisabled: !actions[0].isEnable,
+            isDisabled: !actions[0].isEnable || actions[0].isLoading,
+            customContent: _loading(context, actions[0]),
             text: actions.first.title,
             onPressed: actions.first.action,
           ),
@@ -440,7 +455,8 @@ class ArDriveModalActions extends StatelessWidget {
                   (actions.length > 2
                       ? ButtonVariant.secondary
                       : ButtonVariant.primary),
-              isDisabled: !actions[1].isEnable,
+              isDisabled: !actions[1].isEnable || actions[1].isLoading,
+              customContent: _loading(context, actions[1]),
               text: actions[1].title,
               onPressed: actions[1].action,
               typography: typography,
@@ -457,7 +473,8 @@ class ArDriveModalActions extends StatelessWidget {
               maxWidth: actions[2].customWidth ??
                   ArDriveButtonNew.fittedWidth(context, actions[2].title,
                       minWidth: 110),
-              isDisabled: !actions[2].isEnable,
+              isDisabled: !actions[2].isEnable || actions[2].isLoading,
+              customContent: _loading(context, actions[2]),
               text: actions[2].title,
               onPressed: actions[2].action,
             ),

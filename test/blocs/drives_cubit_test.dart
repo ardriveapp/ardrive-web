@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -344,6 +347,78 @@ void main() {
       expect((cubit.state as DrivesLoadSuccess).userDrives.map((d) => d.id),
           ['drive-a']);
       verifyNever(() => syncCubit.waitForDriveListRefresh());
+
+      await cubit.close();
+    });
+  });
+
+  group('locked drives', () {
+    LockedDrive locked(String id, {String owner = ownerAddress}) => LockedDrive(
+          driveId: id,
+          ownerAddress: owner,
+          signatureType: DriveSignatureType.v2,
+          lastUpdated: DateTime(2026),
+        );
+
+    DrivesCubit buildWith(DriveUnlockSession session) => DrivesCubit(
+          activityTracker: MockActivityTracker(),
+          auth: auth,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          promptToSnapshotBloc: promptToSnapshotBloc,
+          userPreferencesRepository: userPreferencesRepository,
+          syncCubit: syncCubit,
+          unlockSession: session,
+        );
+
+    test(
+        'are listed apart from the user\'s drives, never among them, and an '
+        'account whose only drives are locked is not empty', () async {
+      final session = DriveUnlockSession()
+        ..setLockedDrives(ownerAddress, [locked('locked-1')]);
+      final cubit = buildWith(session);
+
+      final state = await cubit.stream.firstWhere((s) => s is DrivesLoadSuccess)
+          as DrivesLoadSuccess;
+
+      expect(state.userDrives, isEmpty);
+      expect(state.lockedDrives.map((d) => d.driveId), ['locked-1']);
+      expect(state.hasNoDrives, isFalse);
+
+      await cubit.close();
+    });
+
+    test(
+        'a locked drive that has a row is readable and is not listed twice; '
+        'another wallet\'s locked drives are never listed', () async {
+      await insertDrive('opened-by-link');
+      final session = DriveUnlockSession()
+        ..setLockedDrives(ownerAddress, [locked('opened-by-link')])
+        ..setLockedDrives(
+            'someone-else', [locked('theirs', owner: 'someone-else')]);
+      final cubit = buildWith(session);
+
+      final state = await cubit.stream.firstWhere(
+              (s) => s is DrivesLoadSuccess && s.userDrives.isNotEmpty)
+          as DrivesLoadSuccess;
+
+      expect(state.lockedDrives, isEmpty);
+
+      await cubit.close();
+    });
+
+    test('a drive unlocking redraws the lists', () async {
+      final session = DriveUnlockSession()
+        ..setLockedDrives(ownerAddress, [locked('locked-1')]);
+      final cubit = buildWith(session);
+
+      await cubit.stream.firstWhere(
+          (s) => s is DrivesLoadSuccess && s.lockedDrives.isNotEmpty);
+
+      session.markUnlocked('locked-1');
+
+      await cubit.stream
+          .firstWhere((s) => s is DrivesLoadSuccess && s.lockedDrives.isEmpty);
 
       await cubit.close();
     });

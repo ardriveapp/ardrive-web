@@ -16,13 +16,16 @@ class SelectLoginFlow extends LoginEvent {
   List<Object> get props => [existingUser];
 }
 
+/// A keyfile was chosen and read. It carries the wallet, not the file: the
+/// file is read once, by [LoginBloc.validateAndReturnWalletFile], because a
+/// second read can fail where the first didn't.
 class AddWalletFile extends LoginEvent {
-  const AddWalletFile(this.walletFile);
+  const AddWalletFile(this.wallet);
 
-  final IOFile walletFile;
+  final Wallet wallet;
 
   @override
-  List<Object> get props => [walletFile];
+  List<Object> get props => [wallet];
 }
 
 class AddWalletFromArConnect extends LoginEvent {

@@ -70,6 +70,8 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          askWalletAgain: any(named: 'askWalletAgain'),
+          askWalletAgainFor: any(named: 'askWalletAgainFor'),
         )).thenAnswer((_) async {});
     when(() => tabVisibility.isTabFocused()).thenReturn(true);
     when(() => tabVisibility.onTabGetsFocused(any()))
@@ -273,5 +275,81 @@ void main() {
         )).called(1);
 
     await cubit.close();
+  });
+
+  group('wallet prompts cancelled earlier', () {
+    void allDrivesSyncAtOnce() {
+      when(() => syncRepository.syncAllDrives(
+            syncDeep: any(named: 'syncDeep'),
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            cancellationToken: any(named: 'cancellationToken'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            txFechedCallback: any(named: 'txFechedCallback'),
+          )).thenAnswer(
+          (_) => Stream.value(SyncProgress.emptySyncCompleted()));
+    }
+
+    /// What the last drive-list refresh was told about asking again.
+    ({bool? all, Iterable<String>? only}) lastAsk() {
+      final captured = verify(() => syncRepository.updateUserDrives(
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            askWalletAgain: captureAny(named: 'askWalletAgain'),
+            askWalletAgainFor: captureAny(named: 'askWalletAgainFor'),
+          )).captured;
+      return (
+        all: captured[captured.length - 2] as bool?,
+        only: captured.last as Iterable<String>?,
+      );
+    }
+
+    test('a sync the user starts asks again for every drive', () async {
+      allDrivesSyncAtOnce();
+      final cubit = buildCubit();
+      await settled();
+
+      await cubit.startSync();
+
+      expect(lastAsk().all, isTrue);
+      await cubit.close();
+    });
+
+    test(
+        'the sync after an unlock does not: unlocking one drive is not a '
+        'request to be prompted for the others', () async {
+      allDrivesSyncAtOnce();
+      final cubit = buildCubit();
+      await settled();
+
+      await cubit.syncDrives(['unlocked'], askWalletAgain: false);
+
+      expect(lastAsk().all, isFalse);
+      await cubit.close();
+    });
+
+    test('syncing one drive asks again for that drive only', () async {
+      when(() => syncRepository.syncSingleDrive(
+            driveId: any(named: 'driveId'),
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            syncDeep: any(named: 'syncDeep'),
+            cancellationToken: any(named: 'cancellationToken'),
+            txFechedCallback: any(named: 'txFechedCallback'),
+          )).thenAnswer(
+          (_) => Stream.value(SyncProgress.emptySyncCompleted()));
+      final cubit = buildCubit();
+      await settled();
+
+      await cubit.startSyncForDrive(driveId: 'drive-a');
+
+      final ask = lastAsk();
+      expect(ask.all, isFalse);
+      expect(ask.only, ['drive-a']);
+      await cubit.close();
+    });
   });
 }

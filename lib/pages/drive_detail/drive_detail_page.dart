@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/locked_drives/presentation/locked_drive_view.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -571,6 +572,42 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               hasFiles,
                               hideState,
                             ),
+                          ),
+                        ),
+                      );
+                    } else if (driveDetailState is DriveDetailLoadNotFound &&
+                        context.read<AppRouterDelegate>().sharedDriveKey ==
+                            null) {
+                      // A private drive of the user's that this session
+                      // can't open. A link that brought its key goes on to
+                      // attach as it always has.
+                      // Only that: anyone else - a visitor without the
+                      // key, a drive that doesn't exist - gets what they
+                      // always got here, nothing, with the attach dialog
+                      // over it. The shell is drawn only for a locked drive.
+                      return LockedDriveView(
+                        driveId:
+                            context.read<DriveDetailCubit>().currentDriveId,
+                        otherwise: const SizedBox(),
+                        frame: (panel) => ScreenTypeLayout.builder(
+                          mobile: (context) => Scaffold(
+                            drawerScrimColor: Colors.transparent,
+                            drawer: PublicationMode.isOn
+                                ? null
+                                : const AppSideBar(),
+                            appBar: const MobileAppBar(),
+                            body: panel,
+                          ),
+                          desktop: (context) => Column(
+                            children: [
+                              const AppTopBar(),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 16),
+                                  child: panel,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -1181,23 +1218,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: (hasSubfolders || hasFiles)
               ? _foldsPublicationHeader(
                   state.folderInView.folder.id,
-                  ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 16,
-                    ),
+                  ArDriveItemList(
                     controller: _scrollController,
-                    separatorBuilder: (context, index) => const SizedBox(
-                      height: 5,
-                    ),
-                    itemCount: filteredItems.length,
-                    itemBuilder: (context, index) {
-                      return ArDriveItemListTile(
-                        key: ObjectKey([filteredItems[index]]),
-                        drive: state.currentDrive,
-                        item: filteredItems[index],
-                      );
-                    },
+                    drive: state.currentDrive,
+                    items: filteredItems,
+                    selectedItem: state.selectedItem,
                   ))
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
@@ -1215,124 +1240,190 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   }
 }
 
+/// The explorer's list on a phone: the desktop table's rows, flat.
+///
+/// Rows meet with no gap and no rule between them, as the table's do, and
+/// each row's fill runs from one edge of the screen to the other.
+class ArDriveItemList extends StatelessWidget {
+  const ArDriveItemList({
+    super.key,
+    required this.items,
+    required this.drive,
+    this.selectedItem,
+    this.controller,
+  });
+
+  final List<ArDriveDataTableItem> items;
+  final Drive drive;
+
+  /// The item whose details were last opened, drawn selected.
+  final ArDriveDataTableItem? selectedItem;
+  final ScrollController? controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      controller: controller,
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return ArDriveItemListTile(
+          key: ObjectKey([item]),
+          drive: drive,
+          item: item,
+          selected: item.id == selectedItem?.id,
+        );
+      },
+    );
+  }
+}
+
+/// A row of [ArDriveItemList]: flat, like the desktop table's. Nothing at
+/// rest; the table's hover colour while pressed, and its selected colour
+/// for the item whose details were last opened.
 class ArDriveItemListTile extends StatelessWidget {
   const ArDriveItemListTile({
     super.key,
     required this.item,
     required this.drive,
+    this.selected = false,
   });
 
   final ArDriveDataTableItem item;
   final Drive drive;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveCard(
-      backgroundColor:
-          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-      content: InkWell(
-        onTap: () {
-          final cubit = context.read<DriveDetailCubit>();
-          if (item is FolderDataTableItem) {
-            cubit.openFolder(folderId: item.id);
-          } else if (item is FileDataTableItem) {
-            if (item.id == cubit.selectedItem?.id) {
-              cubit.toggleSelectedItemDetails();
-              return;
+    final table = ArDriveTheme.of(context).themeData.tableTheme;
+    // A selected row keeps its colour under a press, as under the desktop
+    // pointer.
+    final pressed = selected ? Colors.transparent : table.hoverItemColor;
+
+    return ColoredBox(
+      color: selected ? table.selectedItemColor : Colors.transparent,
+      // Transparent, so the press is drawn over the selected fill rather
+      // than under an opaque card, where it never showed.
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          highlightColor: pressed,
+          hoverColor: pressed,
+          splashFactory: NoSplash.splashFactory,
+          onTap: () {
+            final cubit = context.read<DriveDetailCubit>();
+            if (item is FolderDataTableItem) {
+              cubit.openFolder(folderId: item.id);
+            } else if (item is FileDataTableItem) {
+              if (item.id == cubit.selectedItem?.id) {
+                cubit.toggleSelectedItemDetails();
+                return;
+              }
+              cubit.selectDataItem(item);
             }
-            cubit.selectDataItem(item);
-          }
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            DriveExplorerItemTileLeading(
-              item: item,
-            ),
-            const SizedBox(
-              width: 12,
-            ),
-            Flexible(
-              child: dimIfHidden(
-                  item.isHidden,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ArNSTitleWithChip(
-                        title: Text(
-                          item.name,
-                          style:
-                              ArDriveTypographyNew.of(context).paragraphNormal(
-                            fontWeight: ArFontWeight.bold,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colorTokens
-                                .textHigh,
-                          ),
-                        ),
-                        chip: item is FileDataTableItem
-                            ? ArNSNameChip(
-                                dataTxId: (item as FileDataTableItem).dataTxId,
-                                hints:
-                                    (item as FileDataTableItem).assignedNames ??
-                                        const [],
-                                isOwner: item.isOwner,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+          },
+          child: Container(
+            // The table's row height, which is also past the 48 px a
+            // finger needs.
+            constraints:
+                const BoxConstraints(minHeight: ArDriveDataTable.rowHeight),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                DriveExplorerItemTileLeading(
+                  item: item,
+                ),
+                const SizedBox(
+                  width: 12,
+                ),
+                Flexible(
+                  child: dimIfHidden(
+                      item.isHidden,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (item is FileDataTableItem) ...[
-                            Text(
-                              filesize(item.size),
-                              style: ArDriveTypographyNew.of(context).caption(
+                          ArNSTitleWithChip(
+                            title: Text(
+                              item.name,
+                              style: ArDriveTypographyNew.of(context)
+                                  .paragraphNormal(
+                                fontWeight: ArFontWeight.bold,
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .colorTokens
-                                    .textMid,
+                                    .textHigh,
                               ),
                             ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colorTokens
-                                      .textMid,
-                                ),
-                                height: 3,
-                                width: 3,
-                              ),
-                            )
-                          ],
-                          Flexible(
-                            child: Text(
-                              'Last updated: ${formatDate(item.lastUpdated)}',
-                              style: ArDriveTypographyNew.of(context).caption(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .textMid,
-                              ),
-                            ),
+                            chip: item is FileDataTableItem
+                                ? ArNSNameChip(
+                                    dataTxId:
+                                        (item as FileDataTableItem).dataTxId,
+                                    hints: (item as FileDataTableItem)
+                                            .assignedNames ??
+                                        const [],
+                                    isOwner: item.isOwner,
+                                  )
+                                : const SizedBox.shrink(),
                           ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (item is FileDataTableItem) ...[
+                                Text(
+                                  filesize(item.size),
+                                  style:
+                                      ArDriveTypographyNew.of(context).caption(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colorTokens
+                                        .textMid,
+                                  ),
+                                ),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .textMid,
+                                    ),
+                                    height: 3,
+                                    width: 3,
+                                  ),
+                                )
+                              ],
+                              Flexible(
+                                child: Text(
+                                  'Last updated: ${formatDate(item.lastUpdated)}',
+                                  style:
+                                      ArDriveTypographyNew.of(context).caption(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colorTokens
+                                        .textMid,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
                         ],
-                      )
-                    ],
-                  )),
+                      )),
+                ),
+                const SizedBox(
+                  width: 12,
+                ),
+                DriveExplorerItemTileTrailing(
+                  item: item,
+                  drive: drive,
+                )
+              ],
             ),
-            const SizedBox(
-              width: 12,
-            ),
-            DriveExplorerItemTileTrailing(
-              item: item,
-              drive: drive,
-            )
-          ],
+          ),
         ),
       ),
     );

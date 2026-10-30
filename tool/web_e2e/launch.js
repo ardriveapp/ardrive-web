@@ -58,6 +58,9 @@ const fs = require('fs');
 const path = require('path');
 const { E2E_DIR, APP_URL, CDP_PORT, CREDENTIALS, chromePath, ensureDirs, keyfilePath } = require('./config');
 
+// How long after login.js writes its marker its chooser may take the
+// keyfile. The chooser opens within a second or two of the marker.
+const LOGIN_MARKER_MS = 30000;
 const AR_UPLOADS = process.env.AR_UPLOADS || 'chaos';
 const CHAOS_URL = process.env.CHAOS_URL || 'http://127.0.0.1:8850';
 const TURBO_FREE_BYTES = Number(process.env.TURBO_FREE_BYTES || 107520);
@@ -313,19 +316,32 @@ async function guardTurbo(route) {
     const queue = `${E2E_DIR}/nextfiles.json`;
     let files = [];
     try { files = JSON.parse(fs.readFileSync(queue, 'utf8')); } catch (e) {}
-    const loginMarker = `${E2E_DIR}/login-chooser`;
-    const forLogin = fs.existsSync(loginMarker);
-    if (forLogin) fs.rmSync(loginMarker);
     const real = (p) => { try { return fs.realpathSync(p); } catch (e) { return path.resolve(p); } };
     const keyfile = keyfilePath();
-    const secret = (p) => (keyfile && real(p) === real(keyfile) && !forLogin) ||
-      real(p).startsWith(real(path.dirname(CREDENTIALS)) + path.sep);
+    // The chooser is login's only while login.js's marker is fresh and the
+    // queue holds the keyfile and nothing else. A marker left by a login
+    // that missed its chooser goes stale, so a later upload's chooser can't
+    // be handed the keyfile. The marker is used up either way.
+    const loginMarker = `${E2E_DIR}/login-chooser`;
+    let markerFresh = false;
+    try {
+      markerFresh = Date.now() - fs.statSync(loginMarker).mtimeMs < LOGIN_MARKER_MS;
+      fs.rmSync(loginMarker, { force: true });
+    } catch (e) {}
+    const onlyKeyfile = !!keyfile && files.length === 1 && real(files[0]) === real(keyfile);
+    const forLogin = markerFresh && onlyKeyfile;
+    // The keyfile goes only to login's chooser, even when it is kept in the
+    // credentials folder. Nothing else from that folder goes anywhere.
+    const secret = (p) => (keyfile && real(p) === real(keyfile)
+      ? !forLogin
+      : real(p).startsWith(real(path.dirname(CREDENTIALS)) + path.sep));
     if (files.some(secret)) {
       log({ ev: 'BLOCKED', what: 'filechooser', why: 'a queued file is the wallet keyfile or a credentials file' });
       files = [];
     }
     log({ ev: 'filechooser', files: files.length, login: forLogin });
-    try { await chooser.setFiles(files); } catch (e) { log({ ev: 'filechooser-failed', err: e.message.split('\n')[0] }); }
+    // Not Playwright's message: it can name the file.
+    try { await chooser.setFiles(files); } catch (e) { log({ ev: 'filechooser-failed', files: files.length }); }
     fs.writeFileSync(queue, '[]');
   });
   const consoleLog = fs.createWriteStream(`${E2E_DIR}/console.log`, { flags: 'a' });

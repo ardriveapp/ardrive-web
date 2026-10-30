@@ -12,6 +12,8 @@ import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -285,6 +287,14 @@ abstract class SyncRepository {
 
     /// Called as each private drive is unlocked. See the same.
     void Function(int unlocked, int total)? onDriveUnlocked,
+
+    /// Whether to ask the wallet again for drives whose prompt was cancelled
+    /// earlier this session. Only when the user asked for this sync: a
+    /// background pass must not bring back a prompt they just dismissed.
+    bool askWalletAgain = false,
+
+    /// Asks again for these drives only: the user synced one drive.
+    Iterable<String>? askWalletAgainFor,
   });
 
   Future<void> createGhosts({
@@ -371,6 +381,11 @@ abstract class SyncRepository {
     required SnapshotValidationService snapshotValidationService,
     required UserPreferencesRepository userPreferencesRepository,
     DriveStateSyncSource? driveStateSyncSource,
+
+    /// Opens private drives during discovery. The app passes its one shared
+    /// unlocker; a test that leaves it out gets a fresh one with its own
+    /// session.
+    DriveUnlocker? driveUnlocker,
   }) {
     return _SyncRepository(
       arweave: arweave,
@@ -380,6 +395,13 @@ abstract class SyncRepository {
       snapshotValidationService: snapshotValidationService,
       userPreferencesRepository: userPreferencesRepository,
       driveStateSyncSource: driveStateSyncSource,
+      driveUnlocker: driveUnlocker ??
+          DriveUnlocker(
+            crypto: ArDriveCrypto(),
+            arweave: arweave,
+            driveDao: driveDao,
+            session: DriveUnlockSession(),
+          ),
     );
   }
 }
@@ -409,6 +431,7 @@ class _SyncRepository implements SyncRepository {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
+  final DriveUnlocker _driveUnlocker;
   final ConfigService _configService;
   final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
@@ -570,7 +593,9 @@ class _SyncRepository implements SyncRepository {
     required SnapshotValidationService snapshotValidationService,
     required UserPreferencesRepository userPreferencesRepository,
     DriveStateSyncSource? driveStateSyncSource,
+    required DriveUnlocker driveUnlocker,
   })  : _driveStateSyncSource = driveStateSyncSource,
+        _driveUnlocker = driveUnlocker,
         _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
@@ -2031,7 +2056,22 @@ class _SyncRepository implements SyncRepository {
     bool forceRefresh = false,
     void Function(int read, int found)? onDriveRead,
     void Function(int unlocked, int total)? onDriveUnlocked,
+    bool askWalletAgain = false,
+    Iterable<String>? askWalletAgainFor,
   }) async {
+    // The user asked for this sync: every drive whose wallet prompt they
+    // cancelled earlier may ask again. Before joining a fetch in flight, so
+    // the request is honoured on the next pass even if this one is shared.
+    if (askWalletAgain) {
+      _driveUnlocker.session.forgetWalletDeclined();
+    } else if (askWalletAgainFor != null) {
+      final owner = await wallet.getAddress();
+      for (final driveId in askWalletAgainFor) {
+        _driveUnlocker.session
+            .forgetWalletDeclined(ownerAddress: owner, driveId: driveId);
+      }
+    }
+
     // Two callers that overlap share one fetch. A caller that arrives after
     // one has *finished* does not.
     //
@@ -2085,22 +2125,50 @@ class _SyncRepository implements SyncRepository {
     //
     // It also adds the encryption keys onto the drive models which isn't touched by the
     // later system.
-    final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+    //
+    // Each private drive is opened by a key the session already holds - in
+    // memory, or stored on this device under the profile key - before the
+    // sign-in password is tried, which may ask the wallet. A drive whose
+    // prompt was cancelled this session is not asked again here; see
+    // [updateUserDrives]'s `askWalletAgain`.
+    // A drive unlocked while this pass runs was read as locked by it.
+    final unlockGeneration = _driveUnlocker.session.unlockGeneration;
+
+    final discovery = await _arweave.getUniqueUserDriveEntities(
       wallet,
       password,
       onDriveRead: onDriveRead,
       onDriveUnlocked: onDriveUnlocked,
+      resolvePrivateDriveKey: (driveTx, data) =>
+          _driveUnlocker.resolveForDiscovery(
+        wallet: wallet,
+        driveTx: driveTx,
+        data: data,
+        password: password,
+        storedKey: (driveId) => _driveDao.getStoredDriveKey(driveId, cipherKey),
+        mayAskWallet: false,
+      ),
     );
+
+    final walletAddress = await wallet.getAddress();
 
     // From the listing the call above just made. Cached only: if a finished
     // sync has cleared it since, stored dates are left alone this pass.
-    final creationTimes =
-        _arweave.cachedUserDriveCreationTimes(await wallet.getAddress());
+    final creationTimes = _arweave.cachedUserDriveCreationTimes(walletAddress);
 
     await _driveDao.updateUserDrives(
-      userDriveEntities,
+      discovery.drives,
       cipherKey,
       creationTimes: creationTimes,
+    );
+
+    // Listed, never written: a locked drive has no name or root folder to
+    // write, and a row without them is a drive everything else would read.
+    // See [LockedDrive].
+    _driveUnlocker.session.setLockedDrives(
+      walletAddress,
+      discovery.lockedDrives,
+      since: unlockGeneration,
     );
   }
 

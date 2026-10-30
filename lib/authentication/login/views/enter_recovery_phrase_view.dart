@@ -7,6 +7,7 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/secret_text_field/secret_text_field.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -101,6 +102,7 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
   final _focus = FocusNode();
   RecoveryPhraseProblem? _problem;
   bool _keyfileInvalid = false;
+  bool _keyfileUnreadable = false;
 
   @override
   void initState() {
@@ -130,6 +132,7 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
     setState(() {
       _problem = problem;
       _keyfileInvalid = false;
+      _keyfileUnreadable = false;
     });
     if (problem != null) return;
     PlausibleEventTracker.trackClickContinueWithSeedphraseButton();
@@ -140,6 +143,7 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
     final loginBloc = context.read<LoginBloc>();
     setState(() {
       _keyfileInvalid = false;
+      _keyfileUnreadable = false;
       _problem = null;
     });
     final IOFile file;
@@ -152,14 +156,21 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
       logger.w('Could not open the file picker for a keyfile');
       return;
     }
-    final wallet = await loginBloc.validateAndReturnWalletFile(file);
+    final Wallet? wallet;
+    try {
+      wallet = await loginBloc.validateAndReturnWalletFile(file);
+    } on KeyfileUnreadableException {
+      if (mounted) setState(() => _keyfileUnreadable = true);
+      return;
+    }
     if (!mounted) return;
     if (wallet == null) {
       setState(() => _keyfileInvalid = true);
       return;
     }
     PlausibleEventTracker.trackClickUseKeyfileButton();
-    loginBloc.add(AddWalletFile(file));
+    // The wallet, not the file: the file isn't read a second time.
+    loginBloc.add(AddWalletFile(wallet));
   }
 
   String? _problemText(BuildContext context) {
@@ -276,6 +287,14 @@ class _EnterRecoveryPhraseViewState extends State<EnterRecoveryPhraseView> {
               ArDriveStatusText(
                 key: const Key('keyfileInvalid'),
                 text: s.keyfileInvalid,
+                type: ArDriveStatusType.error,
+              ),
+            ],
+            if (_keyfileUnreadable) ...[
+              const SizedBox(height: ArDriveSpacing.xs),
+              ArDriveStatusText(
+                key: const Key('keyfileUnreadable'),
+                text: s.keyfileUnreadable,
                 type: ArDriveStatusType.error,
               ),
             ],
