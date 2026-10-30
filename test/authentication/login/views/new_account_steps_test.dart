@@ -182,6 +182,18 @@ void main() {
       expect(find.text('Forget wallet'), findsNothing);
     });
 
+    testWidgets(
+        'says plainly it can\'t be recovered, and that the recovery phrase '
+        'alone doesn\'t open private files', (tester) async {
+      await pump(tester, dialog());
+      expect(find.textContaining("We can't recover this password"),
+          findsOneWidget);
+      expect(
+          find.text('Your recovery phrase restores your wallet. Your private '
+              'files also need this password.'),
+          findsOneWidget);
+    });
+
     testWidgets('a short password is refused', (tester) async {
       await pump(tester, dialog());
       await enterBoth(tester, 'short');
