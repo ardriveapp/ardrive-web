@@ -606,6 +606,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
     await _databaseHelpers.wipeAfterSignOut();
   }
 
+  /// The drives this device was told not to keep a key for; none if that
+  /// can't be read.
+  Future<Set<String>> _forgottenDriveIds() async {
+    try {
+      return await _databaseHelpers.driveDao.forgottenDriveIds();
+    } catch (e) {
+      logger.w('Could not read the drives forgotten here: $e');
+      return const {};
+    }
+  }
+
   /// Whether an account is saved on this device. One that can't be told is
   /// taken as saved, so a sign-out still runs.
   Future<bool> _hasSavedAccount() async {
@@ -734,8 +745,18 @@ class ArDriveAuthImpl implements ArDriveAuth {
     int likeliestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
         compareForPasswordTries(a, b, created);
 
-    final heldTxs = privateDriveTxs.where(held).toList()..sort(likeliestFirst);
-    final rest = privateDriveTxs.where((tx) => !held(tx)).toList()
+    // A drive forgotten on this device is opened only by the person: it is
+    // neither tried nor signed for here, in a batch or alone.
+    final forgotten = await _forgottenDriveIds();
+    bool notForgotten(TransactionCommonMixin tx) =>
+        !forgotten.contains(tx.getTag(EntityTag.driveId));
+
+    final heldTxs = privateDriveTxs.where(held).where(notForgotten).toList()
+      ..sort(likeliestFirst);
+    final rest = privateDriveTxs
+        .where((tx) => !held(tx))
+        .where(notForgotten)
+        .toList()
       ..sort(likeliestFirst);
     final prompts = wallet is ArConnectWallet;
     final promptBudget =

@@ -317,8 +317,9 @@ class DriveUnlocker {
   /// Drive discovery's one approval, before it tries a password on
   /// [drives] one by one: [signInOneApproval] for the drives that would
   /// otherwise ask the wallet. Those are the ones with no key in memory or
-  /// stored on this device ([storedKey]), no signature held, and no prompt
-  /// cancelled this session.
+  /// stored on this device ([storedKey]), no signature held, no prompt
+  /// cancelled this session, and not forgotten on this device: a forgotten
+  /// drive is opened only by the person, never signed for on its behalf.
   Future<DriveSignatureBatch> signForDiscovery({
     required Wallet wallet,
     required List<DriveMetadata> drives,
@@ -330,10 +331,8 @@ class DriveUnlocker {
     }
 
     final owner = await wallet.getAddress();
-    final pending = <DriveMetadata>[];
-    // Discovery never opens a drive this device was told to forget (see
-    // [resolveForDiscovery]), so it asks no signature for one either.
     final forgotten = await _driveDao.forgottenDriveIds();
+    final pending = <DriveMetadata>[];
 
     for (final drive in drives) {
       final driveId = drive.tx.getTag(EntityTag.driveId);
@@ -692,10 +691,17 @@ class DriveUnlocker {
     // come back after being cancelled.
     _session.forgetWalletDeclined(ownerAddress: owner, driveId: driveId);
 
+    // Forgotten drives are left out of "Try on my other locked drives": the
+    // person unlocks a forgotten drive by itself, or it stays locked. Trying
+    // the password on it here would sign for it and remember it again.
+    final forgotten =
+        tryOthers ? await _driveDao.forgottenDriveIds() : const <String>{};
     final others = [
       if (tryOthers)
         for (final drive in _session.currentLockedDrives)
-          if (drive.ownerAddress == owner && drive.driveId != driveId)
+          if (drive.ownerAddress == owner &&
+              drive.driveId != driveId &&
+              !forgotten.contains(drive.driveId))
             drive.driveId,
     ];
 

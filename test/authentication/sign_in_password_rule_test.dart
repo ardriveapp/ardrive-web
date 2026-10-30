@@ -268,6 +268,38 @@ void main() {
         expect(session.signInPasswordProven(await wallet.getAddress()), isTrue);
       });
 
+      test('a drive forgotten on this device is neither tried nor signed for',
+          () async {
+        await drivesWith(4, 'right');
+        final helpers = MockDatabaseHelpers();
+        final driveDao = MockDriveDao();
+        when(() => helpers.driveDao).thenReturn(driveDao);
+        when(() => driveDao.forgottenDriveIds())
+            .thenAnswer((_) async => {id(0)});
+        final withForgotten = ArDriveAuthImpl(
+          signInPasswordProofStore: proofStore,
+          arweave: arweave,
+          userRepository: MockUserRepository(),
+          crypto: ArDriveCrypto(),
+          biometricAuthentication: MockBiometricAuthentication(),
+          secureKeyValueStore: MockSecureKeyValueStore(),
+          arConnectService: MockArConnectService(),
+          databaseHelpers: helpers,
+          driveUnlocker: DriveUnlocker(
+            crypto: ArDriveCrypto(),
+            arweave: arweave,
+            driveDao: MockDriveDao(),
+            session: session,
+          ),
+        );
+
+        await withForgotten.validateUser(wander.wallet, 'right');
+
+        expect(wander.lastBatchSize, 3);
+        expect(session.holdsSignatureFor(await wallet.getAddress(), id(0)),
+            isFalse);
+      });
+
       test(
           'a typo costs the batch alone, and the right password then costs '
           'nothing', () async {
