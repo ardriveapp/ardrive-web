@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart' show IterableExtension;
+
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -864,8 +866,20 @@ class DriveUnlocker {
       }
     }
 
-    if (locked.isEmpty && knownPrivateDriveIds.isNotEmpty) {
-      final driveId = knownPrivateDriveIds.first;
+    // Nothing to unlock with it: it is checked on one drive, and nothing is
+    // kept. An open drive first; otherwise a drive this device was told to
+    // forget, so it stays forgotten ([tryPassword] keeps no key).
+    final forgottenLocked = [
+      for (final drive in _session.currentLockedDrives)
+        if (drive.ownerAddress == owner && forgotten.contains(drive.driveId))
+          drive,
+    ]..sort((a, b) => created(a).compareTo(created(b)));
+    final checkOn = knownPrivateDriveIds.isNotEmpty
+        ? knownPrivateDriveIds.first
+        : forgottenLocked.firstOrNull?.driveId;
+
+    if (locked.isEmpty && checkOn != null) {
+      final driveId = checkOn;
       try {
         final driveTx = await _arweave.getLatestDriveTx(driveId, owner,
             maxRetries: unlockMaxRetries);

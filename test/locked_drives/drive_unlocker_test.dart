@@ -838,6 +838,30 @@ void main() {
     });
 
     test(
+        'every locked drive forgotten and none open: the password is checked '
+        'on a forgotten one, which stays forgotten with no key kept', () async {
+      final forgotten = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'drive pw', name: 'A');
+      onChain([forgotten]);
+      await db.driveDao.forgetStoredDriveKeyUnread(_driveA);
+      session.setLockedDrives(owner, [lockedAt(_driveA, 2020)]);
+
+      expect(
+          await unlocker.verifyDrivePassword(
+              wallet: wallet, profileKey: profileKey, password: 'drive pw'),
+          isNull);
+      expect(
+          await unlocker.verifyDrivePassword(
+              wallet: wallet, profileKey: profileKey, password: 'typo'),
+          DriveUnlockFailure.wrongPassword);
+
+      expect(session.isLocked(_driveA), isTrue);
+      expect(await db.driveDao.forgottenDriveIds(), {_driveA});
+      expect(await db.driveDao.getDriveKeyFromMemory(_driveA), isNull);
+      expect(await db.driveDao.allDrives().get(), isEmpty);
+    });
+
+    test(
         'a password that derives a key but opens none is wrongPassword, and '
         'no key is kept', () async {
       final a = await makeWebPrivateDrive(

@@ -570,6 +570,15 @@ class ArDriveAuthImpl implements ArDriveAuth {
     // sign-out racing the first.
     if (_currentUser == null && !await _hasSavedAccount()) {
       logger.i('No account to sign out');
+      // Still nothing of a sign-in that was abandoned may stay in memory:
+      // drive keys and wallet signatures it held before a Wander switch.
+      try {
+        await _databaseHelpers.clearSessionMemory();
+      } catch (e) {
+        logger.w('Could not clear session memory: ${e.runtimeType}');
+      }
+      _injectedDriveUnlocker?.session.clear();
+      _deviceUnlocker.clear();
       return;
     }
 

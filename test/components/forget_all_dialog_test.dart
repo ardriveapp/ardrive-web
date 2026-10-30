@@ -1,8 +1,15 @@
 import 'package:ardrive/components/profile_card.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
+import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/user/user.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../test_utils/utils.dart';
 
 /// "Forget all on this device" asks first; a single drive's Forget does not.
 void main() {
@@ -56,4 +63,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Forget 1 drive on this device?'), findsOneWidget);
   });
+
+  group('after the confirmation', () {
+    late MockDriveDao driveDao;
+    late _MockDeviceTabs tabs;
+    final user = User(
+      password: '',
+      wallet: getTestWallet(),
+      walletAddress: 'owner',
+      walletBalance: BigInt.zero,
+      cipherKey: SecretKey(List.filled(32, 1)),
+      profileType: ProfileType.json,
+      errorFetchingIOTokens: false,
+    );
+
+    setUpAll(() => registerFallbackValue(SecretKey([0])));
+
+    setUp(() {
+      driveDao = MockDriveDao();
+      tabs = _MockDeviceTabs();
+      when(() => driveDao.rememberedDriveIds(
+              ownerAddress: any(named: 'ownerAddress')))
+          .thenAnswer((_) async => ['d']);
+      when(() => driveDao.forgetAllDriveKeys(any(),
+          ownerAddress: any(named: 'ownerAddress'))).thenAnswer((_) async => 1);
+    });
+
+    for (final answer in [false, null]) {
+      test('Cancel ($answer) forgets nothing and tells no tab', () async {
+        await forgetAllIfConfirmed(
+            confirmed: answer, driveDao: driveDao, user: user, tabs: tabs);
+
+        verifyNever(() => driveDao.forgetAllDriveKeys(any(),
+            ownerAddress: any(named: 'ownerAddress')));
+        verifyNever(() => tabs.announceForgotten(any()));
+      });
+    }
+
+    test('Forget forgets the owner\'s drives and tells the other tabs',
+        () async {
+      await forgetAllIfConfirmed(
+          confirmed: true, driveDao: driveDao, user: user, tabs: tabs);
+
+      verify(() => driveDao.forgetAllDriveKeys(user.cipherKey,
+          ownerAddress: 'owner')).called(1);
+      verify(() => tabs.announceForgotten(['d'])).called(1);
+    });
+  });
 }
+
+class _MockDeviceTabs extends Mock implements DeviceTabs {}
