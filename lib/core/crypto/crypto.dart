@@ -90,6 +90,36 @@ class ArDriveCrypto {
   Uint8List driveSignatureMessage(String driveId) =>
       Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
 
+  /// The data item whose signature is [driveId]'s v2 wallet signature:
+  /// [driveSignatureMessage] tagged `Action: Drive-Signature-V2`, with no
+  /// target or anchor, owned by [owner] (a public key).
+  DataItem driveSignatureDataItem(String owner, String driveId) =>
+      DataItem.withBlobData(data: driveSignatureMessage(driveId), owner: owner)
+        ..addTag('Action', 'Drive-Signature-V2');
+
+  /// Each of [driveIds]' v2 wallet signatures, signed in one Wander approval:
+  /// the same bytes [walletSignatureForDrive] gets one drive at a time, as
+  /// long as Wander honours `saltLength: 0`, which the caller must check.
+  ///
+  /// Throws whatever Wander throws, a cancelled prompt included, and a
+  /// [StateError] if it returns a different number of signatures.
+  Future<List<Uint8List>> batchWalletSignaturesForDrives(
+    ArConnectWallet wallet,
+    List<String> driveIds,
+  ) async {
+    final owner = await wallet.getOwner();
+    final signatures = await wallet.batchSignDataItems([
+      for (final driveId in driveIds) driveSignatureDataItem(owner, driveId),
+    ]);
+
+    if (signatures.length != driveIds.length) {
+      throw StateError('Wander returned ${signatures.length} signatures for '
+          '${driveIds.length} items');
+    }
+
+    return signatures;
+  }
+
   /// The wallet's signature for [driveId], the secret half of its key.
   ///
   /// v1 is `wallet.sign` over [driveSignatureMessage]; v2 is the signature of
@@ -117,9 +147,7 @@ class ArDriveCrypto {
         rethrow;
       }
     } else if (signatureType == DriveSignatureType.v2) {
-      final owner = await wallet.getOwner();
-      final dataItem = DataItem.withBlobData(data: message, owner: owner);
-      dataItem.addTag('Action', 'Drive-Signature-V2');
+      final dataItem = driveSignatureDataItem(await wallet.getOwner(), driveId);
       try {
         if (wallet is ArConnectWallet) {
           logger.d('Signing with v2 signature (wallet.signDataItem)');

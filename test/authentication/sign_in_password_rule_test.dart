@@ -246,6 +246,95 @@ void main() {
           throwsA(isA<PasswordOpensNoDriveException>()));
       expect(signer.signatures, ArDriveAuthImpl.signInMaxDrives);
     });
+
+    group('a Wander that signs every drive in one approval', () {
+      late FakeWander wander;
+
+      setUp(() => wander = FakeWander(wallet)..batch = true);
+
+      test(
+          '25 drives: the right password costs one prompt, and every drive '
+          'can then be opened without asking', () async {
+        await drivesWith(25, 'right');
+
+        await auth.validateUser(wander.wallet, 'right');
+
+        expect(wander.prompts, 1);
+        expect(wander.lastBatchSize, 25);
+        for (var i = 0; i < 25; i++) {
+          expect(session.holdsSignatureFor(await wallet.getAddress(), id(i)),
+              isTrue);
+        }
+        expect(session.signInPasswordProven(await wallet.getAddress()), isTrue);
+      });
+
+      test(
+          'a typo costs the batch and its check, and the right password '
+          'then costs nothing', () async {
+        await drivesWith(5, 'right');
+
+        await expectLater(auth.validateUser(wander.wallet, 'typo'),
+            throwsA(isA<PasswordOpensNoDriveException>()));
+        expect(wander.prompts, 2);
+
+        await auth.validateUser(wander.wallet, 'right');
+        expect(wander.prompts, 2);
+      });
+
+      test(
+          'the drive the password opens needn\'t be the oldest: every drive '
+          'is tried for the one prompt', () async {
+        onChain([
+          for (var i = 0; i < 6; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: i == 5 ? 'newest' : 'old',
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+
+        await auth.validateUser(wander.wallet, 'newest');
+
+        expect(wander.prompts, 1);
+      });
+
+      test(
+          'a cancelled batch is one no: nothing opens and nothing more is asked',
+          () async {
+        await drivesWith(5, 'right');
+        wander.cancelBatch = true;
+
+        await expectLater(auth.validateUser(wander.wallet, 'right'),
+            throwsA(isA<PasswordOpensNoDriveException>()));
+
+        expect(wander.prompts, 1);
+        expect(
+            session.signInPasswordProven(await wallet.getAddress()), isFalse);
+      });
+
+      for (final (name, setUpWander) in [
+        ('refused (a hardware wallet)', (FakeWander w) => w.refuseBatch = true),
+        ('mismatched', (FakeWander w) => w.varyBatch = true),
+      ]) {
+        test(
+            'a batch $name falls back to drive by drive, still at most '
+            '3 prompts', () async {
+          await drivesWith(5, 'right');
+          setUpWander(wander);
+
+          await expectLater(auth.validateUser(wander.wallet, 'typo'),
+              throwsA(isA<PasswordOpensNoDriveException>()));
+          expect(wander.prompts, ArDriveAuthImpl.signInMaxNewPrompts);
+          // The drives the check didn't reach weren't cancelled: discovery
+          // may still ask for them.
+          expect(session.walletDeclined(await wallet.getAddress(), id(4)),
+              isFalse);
+
+          await auth.validateUser(wander.wallet, 'right');
+        });
+      }
+    });
   });
 
   test(

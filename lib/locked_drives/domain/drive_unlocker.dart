@@ -5,9 +5,11 @@ import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart' hide Cipher;
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
+import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -121,6 +123,36 @@ class WalletPromptBudget {
   }
 }
 
+/// What became of asking the wallet to sign several drives in one approval.
+/// See [DriveUnlocker.signInOneApproval].
+enum DriveSignatureBatch {
+  /// Nobody was asked: the wallet can't batch-sign, there were fewer than
+  /// two drives to sign for, or the pass had no prompt left. Go on drive by
+  /// drive.
+  notAsked,
+
+  /// Every drive's v2 signature is held now, checked against Wander's
+  /// single-item signature.
+  signed,
+
+  /// The person said no, or chose not to wait for Wander. One cancel for
+  /// every drive in it: each is marked declined and stays locked, and is not
+  /// asked for again one by one.
+  declined,
+
+  /// Wander was asked, but the batch can't be used: it refused (a hardware
+  /// wallet), failed, or its signatures didn't match. Go on drive by drive.
+  unusable,
+}
+
+/// A private drive's newest metadata transaction and that metadata.
+typedef DriveMetadata = ({TransactionCommonMixin tx, Uint8List data});
+
+/// Whether [error], thrown while asking Wander, means the person said no:
+/// they cancelled its prompt, or chose not to wait when it didn't answer.
+bool _personDeclined(Object error) =>
+    error is ArConnectUnavailableException || isWalletCancellation(error);
+
 /// How many times the unlock dialog's metadata read is tried.
 const unlockMaxRetries = 3;
 
@@ -150,6 +182,250 @@ class DriveUnlocker {
   final DriveUnlockSession _session;
 
   DriveUnlockSession get session => _session;
+
+  /// The most drives one approval signs for. Wander caps a batch at 200 KB
+  /// of item data, about 9,000 drives; any past this go drive by drive.
+  static const maxDrivesPerBatch = 2000;
+
+  /// Gets the v2 wallet signatures of [driveIds] that the session doesn't
+  /// hold yet in one Wander approval (`batchSignDataItem`), so a password
+  /// can then be tried on all of those drives without asking again.
+  ///
+  /// Only for a Wander that can, with at least two drives to sign for; a
+  /// batch takes one prompt from [promptBudget], and so does a check (3). The signatures are kept for
+  /// the session like any other, and only once they are shown to be the
+  /// ones Wander gives one item at a time, because a key derived from any
+  /// other signature opens nothing. The proof, cheapest first:
+  ///
+  /// 1. A drive in [driveIds] whose signature the session holds is signed
+  ///    again in the batch, and the two must match.
+  /// 2. Otherwise a signature that, with [password], opens one of
+  ///    [proofDrives] (v2 drives only): AES-GCM authentication passing is
+  ///    the proof.
+  /// 3. Otherwise one more prompt: a single-item signature of one drive.
+  ///
+  /// If they don't match, the batch is dropped and not tried again this
+  /// session, in case a Wander build ever ignores `saltLength: 0`.
+  Future<DriveSignatureBatch> signInOneApproval({
+    required Wallet wallet,
+    required List<String> driveIds,
+    String? password,
+    List<DriveMetadata> proofDrives = const [],
+    WalletPromptBudget? promptBudget,
+  }) async {
+    if (wallet is! ArConnectWallet || !wallet.canBatchSign) {
+      return DriveSignatureBatch.notAsked;
+    }
+
+    final owner = await wallet.getAddress();
+
+    if (_session.batchSigningUnusable(owner)) {
+      return DriveSignatureBatch.notAsked;
+    }
+
+    Uint8List? held(String driveId) =>
+        _session.signature(owner, driveId, DriveSignatureType.v2);
+
+    final needed = {
+      for (final driveId in driveIds)
+        if (held(driveId) == null) driveId,
+    }.take(maxDrivesPerBatch).toList();
+
+    // One drive costs one prompt either way, and its own path needs no proof.
+    if (needed.length < 2) {
+      return DriveSignatureBatch.notAsked;
+    }
+
+    if (promptBudget != null && !promptBudget.take()) {
+      return DriveSignatureBatch.notAsked;
+    }
+
+    String? reference;
+    for (final driveId in driveIds) {
+      if (held(driveId) != null) {
+        reference = driveId;
+        break;
+      }
+    }
+
+    final List<Uint8List> signatures;
+    try {
+      signatures = await _crypto.batchWalletSignaturesForDrives(
+          wallet, [...needed, if (reference != null) reference]);
+    } catch (e) {
+      if (_personDeclined(e)) {
+        logger.i('The batch of drive signatures was declined: $e');
+        for (final driveId in needed) {
+          _session.markWalletDeclined(owner, driveId);
+        }
+        return DriveSignatureBatch.declined;
+      }
+
+      logger.w('Could not sign the drives in one approval: $e');
+      _session.markBatchSigningUnusable(owner);
+      return DriveSignatureBatch.unusable;
+    }
+
+    final batch = {
+      for (var i = 0; i < needed.length; i++) needed[i]: signatures[i],
+    };
+
+    final bool matches;
+    if (reference != null) {
+      matches = _sameBytes(signatures.last, held(reference)!);
+    } else if (password != null &&
+        await _opensAny(batch, proofDrives, password)) {
+      matches = true;
+    } else {
+      // The check is a prompt too, and comes out of the same budget.
+      if (promptBudget != null && !promptBudget.take()) {
+        return DriveSignatureBatch.unusable;
+      }
+
+      final checked = needed.first;
+      final Uint8List single;
+      try {
+        single = await wallet.signDataItem(
+            _crypto.driveSignatureDataItem(await wallet.getOwner(), checked));
+      } catch (e) {
+        logger.w('The wallet did not sign the check for its batch: $e');
+        if (_personDeclined(e)) {
+          for (final driveId in needed) {
+            _session.markWalletDeclined(owner, driveId);
+          }
+          return DriveSignatureBatch.declined;
+        }
+        return DriveSignatureBatch.unusable;
+      }
+
+      _session.rememberSignature(owner, checked, DriveSignatureType.v2, single);
+      matches = _sameBytes(single, batch[checked]!);
+    }
+
+    if (!matches) {
+      logger.w('Wander signed the batch differently from one item at a time: '
+          'its drives are asked for one by one');
+      _session.markBatchSigningUnusable(owner);
+      return DriveSignatureBatch.unusable;
+    }
+
+    batch.forEach((driveId, signature) => _session.rememberSignature(
+        owner, driveId, DriveSignatureType.v2, signature));
+
+    return DriveSignatureBatch.signed;
+  }
+
+  /// Whether one of [signatures], with [password], opens its drive in
+  /// [drives]. Only v2 drives: a v1 drive's key needs its record read.
+  Future<bool> _opensAny(
+    Map<String, Uint8List> signatures,
+    List<DriveMetadata> drives,
+    String password,
+  ) async {
+    for (final drive in drives) {
+      final signature = signatures[drive.tx.getTag(EntityTag.driveId)];
+      final type = DriveSignatureType.fromString(
+          drive.tx.getTag(EntityTag.signatureType) ?? '1');
+
+      if (signature == null || type != DriveSignatureType.v2) continue;
+
+      for (final info in drivePasswordInfos(password)) {
+        final key = await _crypto.driveKeyFromSignature(signature, info,
+            generated: true);
+
+        if (await _openOrNull(drive.tx, drive.data, key) != null) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static bool _sameBytes(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Drive discovery's one approval, before it tries [password] on [drives]
+  /// one by one: [signInOneApproval] for the drives that would otherwise
+  /// ask the wallet. Those are the ones with no key in memory or stored on
+  /// this device ([storedKey]), no signature held, and no prompt cancelled
+  /// this session.
+  Future<DriveSignatureBatch> signForDiscovery({
+    required Wallet wallet,
+    required List<DriveMetadata> drives,
+    required String password,
+    StoredDriveKeyReader? storedKey,
+    WalletPromptBudget? promptBudget,
+  }) async {
+    if (wallet is! ArConnectWallet || !wallet.canBatchSign) {
+      return DriveSignatureBatch.notAsked;
+    }
+
+    final owner = await wallet.getAddress();
+    final pending = <DriveMetadata>[];
+
+    for (final drive in drives) {
+      final driveId = drive.tx.getTag(EntityTag.driveId);
+      if (driveId == null ||
+          _session.holdsSignatureFor(owner, driveId) ||
+          _session.walletDeclined(owner, driveId) ||
+          await _driveDao.getDriveKeyFromMemory(driveId) != null) {
+        continue;
+      }
+
+      if (storedKey != null) {
+        try {
+          if (await storedKey(driveId) != null) continue;
+        } catch (_) {
+          // Unreadable: resolving the drive says so.
+        }
+      }
+
+      pending.add(drive);
+    }
+
+    final createdAt = _arweave.cachedUserDriveCreationTimes(owner);
+    pending.sort((a, b) => compareForPasswordTries(
+          a.tx,
+          b.tx,
+          (tx) => createdAt[tx.getTag(EntityTag.driveId)] ?? _commitTime(tx),
+        ));
+
+    // A drive whose signature is held, to check the batch against.
+    String? reference;
+    for (final drive in drives) {
+      final driveId = drive.tx.getTag(EntityTag.driveId);
+      if (driveId != null &&
+          _session.signature(owner, driveId, DriveSignatureType.v2) != null) {
+        reference = driveId;
+        break;
+      }
+    }
+
+    return signInOneApproval(
+      wallet: wallet,
+      driveIds: [
+        for (final drive in pending) drive.tx.getTag(EntityTag.driveId)!,
+        if (reference != null) reference,
+      ],
+      password: password,
+      proofDrives: pending,
+      promptBudget: promptBudget,
+    );
+  }
+
+  static DateTime _commitTime(TransactionCommonMixin tx) {
+    try {
+      return tx.getCommitTime();
+    } catch (_) {
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+  }
 
   /// Decrypts the drive metadata [data] of [driveTx] with [key].
   ///
@@ -417,6 +693,46 @@ class DriveUnlocker {
     // come back after being cancelled.
     _session.forgetWalletDeclined(ownerAddress: owner, driveId: driveId);
 
+    final others = [
+      if (tryOthers)
+        for (final drive in _session.currentLockedDrives)
+          if (drive.ownerAddress == owner && drive.driveId != driveId)
+            drive.driveId,
+    ];
+
+    // A Wander that can signs for this drive and every other locked one in
+    // one approval, so trying the password on the others asks nothing more.
+    // The user asked for all of them, so a prompt cancelled earlier doesn't
+    // keep one out. Cancelling this one leaves them all locked.
+    DriveMetadata? metadata;
+    if (others.isNotEmpty &&
+        wallet is ArConnectWallet &&
+        wallet.canBatchSign &&
+        !_session.batchSigningUnusable(owner)) {
+      try {
+        metadata = await _readLatest(driveId, owner);
+      } catch (e) {
+        logger.w('Could not read the metadata of $driveId: $e');
+        return const DriveUnlockResult.failed(DriveUnlockFailure.unavailable);
+      }
+
+      if (metadata == null) {
+        return const DriveUnlockResult.failed(DriveUnlockFailure.unavailable);
+      }
+
+      final batch = await signInOneApproval(
+        wallet: wallet,
+        driveIds: [driveId, ...others],
+        password: password,
+        proofDrives: [metadata],
+      );
+
+      if (batch == DriveSignatureBatch.declined) {
+        return const DriveUnlockResult.failed(
+            DriveUnlockFailure.walletDeclined);
+      }
+    }
+
     final first = await _unlockOne(
       wallet: wallet,
       ownerAddress: owner,
@@ -424,6 +740,7 @@ class DriveUnlocker {
       driveId: driveId,
       password: password,
       mayAskWallet: true,
+      metadata: metadata,
     );
 
     if (!first.opened) {
@@ -432,17 +749,13 @@ class DriveUnlocker {
 
     final opened = [driveId];
 
-    if (tryOthers) {
+    if (others.isNotEmpty) {
       // The drive asked for may prompt; the others share a small budget, so
       // one password tried on many drives can't become a prompt per drive.
+      // After a batch their signatures are held, and they cost nothing.
       final budget = wallet is ArConnectWallet
           ? WalletPromptBudget(WalletPromptBudget.perPass)
           : null;
-      final others = [
-        for (final drive in _session.currentLockedDrives)
-          if (drive.ownerAddress == owner && drive.driveId != driveId)
-            drive.driveId,
-      ];
 
       for (final other in others) {
         final attempt = await _unlockOne(
@@ -567,34 +880,26 @@ class DriveUnlocker {
     required String password,
     required bool mayAskWallet,
     WalletPromptBudget? promptBudget,
+    DriveMetadata? metadata,
   }) async {
-    final TransactionCommonMixin? driveTx;
-    final Uint8List data;
+    var drive = metadata;
 
-    try {
-      // A few quick tries, not the eight a sync makes: somebody is watching
-      // the dialog, and "Couldn't reach the network" after a minute and a
-      // half of backoff is a dialog that looks frozen.
-      driveTx = await _arweave.getLatestDriveTx(
-        driveId,
-        ownerAddress,
-        maxRetries: unlockMaxRetries,
-      );
-
-      if (driveTx == null) {
-        return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
+    if (drive == null) {
+      try {
+        drive = await _readLatest(driveId, ownerAddress);
+      } catch (e) {
+        logger.w('Could not read the metadata of $driveId: $e');
       }
 
-      data = await _arweave.getEntityDataBytes(driveTx.id);
-    } catch (e) {
-      logger.w('Could not read the metadata of $driveId: $e');
-      return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
+      if (drive == null) {
+        return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
+      }
     }
 
     final attempt = await tryPassword(
       wallet: wallet,
-      driveTx: driveTx,
-      data: data,
+      driveTx: drive.tx,
+      data: drive.data,
       password: password,
       mayAskWallet: mayAskWallet,
       promptBudget: promptBudget,
@@ -605,6 +910,24 @@ class DriveUnlocker {
     }
 
     return attempt;
+  }
+
+  /// [driveId]'s newest metadata, or null if it has none. Throws if it
+  /// can't be read.
+  Future<DriveMetadata?> _readLatest(
+      String driveId, String ownerAddress) async {
+    // A few quick tries, not the eight a sync makes: somebody is watching
+    // the dialog, and "Couldn't reach the network" after a minute and a
+    // half of backoff is a dialog that looks frozen.
+    final driveTx = await _arweave.getLatestDriveTx(
+      driveId,
+      ownerAddress,
+      maxRetries: unlockMaxRetries,
+    );
+
+    if (driveTx == null) return null;
+
+    return (tx: driveTx, data: await _arweave.getEntityDataBytes(driveTx.id));
   }
 
   /// Keeps a proven key the way an unlocked drive's key is kept today: in the

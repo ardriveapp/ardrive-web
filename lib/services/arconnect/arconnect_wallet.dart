@@ -59,6 +59,33 @@ class ArConnectWallet extends Wallet {
     }
   }
 
+  /// Whether Wander can sign several data items in one approval.
+  bool get canBatchSign {
+    try {
+      return arConnectService.isBatchSignSupported();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Signs [dataItems] in one Wander approval and returns each one's
+  /// signature in order. Asked like [signDataItem], with the same deadline,
+  /// so a batch Wander never answers ends in the same Try again prompt.
+  Future<List<Uint8List>> batchSignDataItems(List<DataItem> dataItems) async {
+    logger.d('ArConnectWallet.batchSignDataItems() called with '
+        '${dataItems.length} items');
+    try {
+      final result =
+          await _ask(() => arConnectService.batchSignDataItems(dataItems));
+      logger.d('ArConnectWallet.batchSignDataItems() successful, got '
+          '${result.length} signatures');
+      return result;
+    } catch (e, stackTrace) {
+      logger.e('ArConnectWallet.batchSignDataItems() failed', e, stackTrace);
+      rethrow;
+    }
+  }
+
   /// Signs a [DataItem] via ArConnect. Not part of the arweave [Wallet] interface.
   Future<Uint8List> signDataItem(DataItem dataItem) async {
     logger.d(

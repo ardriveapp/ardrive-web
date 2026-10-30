@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
@@ -481,17 +482,29 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     bool held(TransactionCommonMixin tx) =>
         session.holdsSignatureFor(address, tx.getTag(EntityTag.driveId)!);
-    int oldestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
-        created(a).compareTo(created(b));
+    // Drives made before 3.0 by an app that used one password for all of
+    // them first, then oldest first. See [drivePasswordTryRank].
+    int likeliestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
+        compareForPasswordTries(a, b, created);
 
-    final heldTxs = privateDriveTxs.where(held).toList()..sort(oldestFirst);
+    final heldTxs = privateDriveTxs.where(held).toList()..sort(likeliestFirst);
     final rest = privateDriveTxs.where((tx) => !held(tx)).toList()
-      ..sort(oldestFirst);
+      ..sort(likeliestFirst);
     final prompts = wallet is ArConnectWallet;
+    final promptBudget =
+        prompts ? WalletPromptBudget(signInMaxNewPrompts) : null;
+
+    // A Wander that batch-signs is asked once for every private drive, so
+    // the password is tried on up to [signInMaxDrives] of them for that one
+    // approval. Otherwise each drive not held is a prompt of its own.
+    final batches = wallet is ArConnectWallet &&
+        wallet.canBatchSign &&
+        !session.batchSigningUnusable(address) &&
+        rest.length > 1;
 
     final candidates = [
       ...heldTxs,
-      ...(prompts ? rest.take(signInMaxNewPrompts) : rest),
+      ...(prompts && !batches ? rest.take(signInMaxNewPrompts) : rest),
     ].take(signInMaxDrives).toList();
 
     // Their metadata, a few at a time rather than one after another.
@@ -515,6 +528,27 @@ class ArDriveAuthImpl implements ArDriveAuth {
       },
     );
 
+    if (batches) {
+      final batch = await _driveUnlocker.signInOneApproval(
+        wallet: wallet,
+        driveIds: [
+          for (final tx in [...rest, ...heldTxs]) tx.getTag(EntityTag.driveId)!,
+        ],
+        password: password,
+        proofDrives: [
+          for (var i = 0; i < candidates.length; i++)
+            if (data[i] != null) (tx: candidates[i], data: data[i]!),
+        ],
+        promptBudget: promptBudget,
+      );
+
+      if (batch == DriveSignatureBatch.declined) {
+        // The user said no to their wallet: one no for every drive.
+        await _markSignInPassword(address, proven: false);
+        throw const PasswordOpensNoDriveException();
+      }
+    }
+
     final deadline = DateTime.now().add(signInTimeBudget);
     Object? unreadable;
 
@@ -533,11 +567,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
         continue;
       }
 
+      // Out of prompts, as when a batch couldn't be used: drives whose
+      // signature isn't held are left for discovery and Unlock.
+      final outOfPrompts = promptBudget != null && promptBudget.remaining == 0;
+      if (outOfPrompts && !held(candidates[i])) continue;
+
       final attempt = await _driveUnlocker.tryPassword(
         wallet: wallet,
         driveTx: candidates[i],
         data: driveData,
         password: password,
+        promptBudget: promptBudget,
       );
 
       switch (attempt.failure) {
@@ -545,6 +585,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
           await _markSignInPassword(address, proven: true);
           return;
         case DriveUnlockFailure.wrongPassword:
+          continue;
+        case DriveUnlockFailure.walletDeclined when outOfPrompts:
+          // Not the user: the budget (a v1 drive whose own signature isn't
+          // held).
           continue;
         case DriveUnlockFailure.walletDeclined:
         case DriveUnlockFailure.walletFailed:

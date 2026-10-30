@@ -98,19 +98,29 @@ void main() {
           wallet: wallet, driveId: _locked, password: 'cli', name: 'Secret'),
     ];
 
-    // Discovery as ArweaveService runs it: each private drive through the
-    // resolver it is handed, sorted by the verdict.
+    // Discovery as ArweaveService runs it: every private drive to the hook
+    // that may sign for them all at once, then each through the resolver it
+    // is handed, sorted by the verdict.
     when(() => arweave.getUniqueUserDriveEntities(
           any(),
           any(),
           onDriveRead: any(named: 'onDriveRead'),
           onDriveUnlocked: any(named: 'onDriveUnlocked'),
           resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey'),
+          beforeResolvingPrivateDrives:
+              any(named: 'beforeResolvingPrivateDrives'),
         )).thenAnswer((invocation) async {
       final resolve =
           invocation.namedArguments[#resolvePrivateDriveKey] as _Resolver;
+      final beforeResolving =
+          invocation.namedArguments[#beforeResolvingPrivateDrives]
+              as Future<void> Function(List<DriveMetadata>)?;
       final drives = <DriveEntity, DriveKey?>{};
       final locked = <LockedDrive>[];
+
+      await beforeResolving?.call([
+        for (final drive in onChain) (tx: drive.tx, data: drive.data),
+      ]);
 
       for (final drive in onChain) {
         final attempt = await resolve(drive.tx, drive.data);
@@ -508,6 +518,67 @@ void main() {
       await discoverAs(password: 'right');
 
       expect(wander.prompts, 4);
+    });
+
+    group('with a Wander that signs every drive in one approval', () {
+      setUp(() => wander.batch = true);
+
+      test(
+          'the sign-in check and discovery cost one prompt in all, and every '
+          'drive the password opens is open', () async {
+        await drives(['other', 'right', 'right', 'unicode', 'right']);
+
+        await auth.validateUser(wander.wallet, 'right');
+        await discoverAs(password: 'right');
+        await discoverAs(password: 'right', again: true);
+
+        expect(wander.prompts, 1);
+        expect(await db.driveDao.allDrives().get(), hasLength(3));
+        expect(session.currentLockedDrives, hasLength(2));
+      });
+
+      test(
+          'Welcome back, with nothing held: discovery costs one prompt for '
+          'every drive', () async {
+        await drives(['right', 'right', 'right', 'other']);
+
+        await discoverAs(password: 'right');
+
+        expect(wander.prompts, 1);
+        expect(wander.batches, 1);
+        expect(await db.driveDao.allDrives().get(), hasLength(3));
+      });
+
+      test(
+          'a cancelled batch: the drives stay locked, discovery asks nothing, '
+          'and Unlock with the others costs one prompt', () async {
+        await drives(['right', 'right', 'other', 'other']);
+        wander.cancelBatch = true;
+
+        await expectLater(auth.validateUser(wander.wallet, 'right'),
+            throwsA(isA<PasswordOpensNoDriveException>()));
+        await discoverAs(password: 'right');
+        expect(wander.prompts, 1);
+        expect(session.currentLockedDrives, hasLength(4));
+        expect(await db.driveDao.allDrives().get(), isEmpty);
+
+        wander.cancelBatch = false;
+        for (final drive in onChain) {
+          when(() => arweave.getLatestDriveTx(drive.driveId, owner,
+                  maxRetries: any(named: 'maxRetries')))
+              .thenAnswer((_) async => drive.tx);
+        }
+        final result = await unlocker.unlock(
+          wallet: wander.wallet,
+          profileKey: profileKey,
+          driveId: onChain[2].driveId,
+          password: 'other',
+        );
+
+        expect(wander.prompts, 2);
+        expect(result.openedDriveIds, hasLength(2));
+        expect(session.currentLockedDrives, hasLength(2));
+      });
     });
   });
 }

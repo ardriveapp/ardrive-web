@@ -2138,7 +2138,8 @@ class _SyncRepository implements SyncRepository {
     // The sign-in password is tried on every private drive here too, so a
     // wallet that prompts gets the same small budget as at sign-in: drives
     // whose signature is held cost nothing, and past the budget the rest stay
-    // locked for their own Unlock. No popup storm after a sign-in.
+    // locked for their own Unlock. No popup storm after a sign-in. A Wander
+    // that batch-signs spends one prompt on all of them.
     //
     // And none at all while that password is unproven: it opened none of the
     // wallet's drives at sign-in and the user continued, so it is probably a
@@ -2162,6 +2163,17 @@ class _SyncRepository implements SyncRepository {
       password,
       onDriveRead: onDriveRead,
       onDriveUnlocked: onDriveUnlocked,
+      // One Wander approval for every drive below that would ask it.
+      beforeResolvingPrivateDrives: wallet is ArConnectWallet
+          ? (drives) => _driveUnlocker.signForDiscovery(
+                wallet: wallet,
+                drives: drives,
+                password: checkedDrivePassword ?? password,
+                storedKey: (driveId) =>
+                    _driveDao.getStoredDriveKey(driveId, cipherKey),
+                promptBudget: promptBudget,
+              )
+          : null,
       resolvePrivateDriveKey: (driveTx, data) =>
           _driveUnlocker.resolveForDiscovery(
         wallet: wallet,
