@@ -503,6 +503,12 @@ class _SyncRepository implements SyncRepository {
   /// In-memory only - cleared at the start of each sync.
   final Map<String, Set<String>> _syncedEntityIdsByDrive = {};
 
+  /// The drives this run has walked to the end of and raised the watermark
+  /// on. A stop can land after that and before the drive is counted as
+  /// synced; the drive is finished all the same, and the next sync starts
+  /// above everything it read. See [_createGhostsForFinishedDrives].
+  final Set<String> _drivesWalkedToTheEnd = {};
+
   int get _syncedEntityCount =>
       _syncedEntityIdsByDrive.values.fold(0, (sum, ids) => sum + ids.length);
 
@@ -622,6 +628,7 @@ class _SyncRepository implements SyncRepository {
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
+    _drivesWalkedToTheEnd.clear();
     _resetMetadataFetchCounts();
 
     // Names a snapshot damaged before snapshots were read as UTF-8 - see
@@ -1055,7 +1062,7 @@ class _SyncRepository implements SyncRepository {
           logger.d(
               'Sync was cancelled during drive sync, adding error to stream');
           await _createGhostsForFinishedDrives(
-            syncProgress.syncedDriveIds,
+            {...syncProgress.syncedDriveIds, ..._drivesWalkedToTheEnd},
             ownerAddress: walletAddress,
           );
           // Clear the maps on cancellation to prevent state issues
@@ -1279,7 +1286,7 @@ class _SyncRepository implements SyncRepository {
           // Every drive in the walk finished, so each keeps its ghosts. A
           // no-op when they were already written before the stop.
           await _createGhostsForFinishedDrives(
-            syncProgress.syncedDriveIds,
+            {...syncProgress.syncedDriveIds, ..._drivesWalkedToTheEnd},
             ownerAddress: walletAddress,
           );
           // Clear the maps on cancellation to prevent state issues
@@ -1359,6 +1366,7 @@ class _SyncRepository implements SyncRepository {
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
+    _drivesWalkedToTheEnd.clear();
     _resetMetadataFetchCounts();
 
     // Names a snapshot damaged before snapshots were read as UTF-8 - see
@@ -2977,6 +2985,7 @@ class _SyncRepository implements SyncRepository {
           lastBlockHeight: Value(currentBlockHeight),
           syncCursor: const Value(null),
         ));
+        _drivesWalkedToTheEnd.add(drive.id);
       }
 
       txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);

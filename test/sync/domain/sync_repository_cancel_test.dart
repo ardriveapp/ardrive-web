@@ -271,6 +271,35 @@ void main() {
     expect(ghost!.isGhost, isTrue);
   });
 
+  // The window between a drive raising its watermark and being counted as
+  // synced. A stop there still leaves a finished drive: the next sync starts
+  // above the file that called for the ghost.
+  test(
+      'a drive stopped just after it raised its watermark keeps its ghost '
+      'folder too', () async {
+    final token = SyncCancellationToken();
+    final errors = <Object>[];
+    final ended = Completer<void>();
+
+    syncRepository
+        .syncAllDrives(
+          wallet: wallet,
+          cancellationToken: token,
+          onlyDriveIds: [finished],
+          // Called right after the watermark is written.
+          txFechedCallback: (driveId, _) => token.cancel(),
+        )
+        .listen((_) {}, onError: errors.add, onDone: ended.complete);
+    await ended.future.timeout(const Duration(seconds: 2));
+
+    expect(errors, [isA<SyncCancelledException>()]);
+    final drive = await db.driveDao.driveById(driveId: finished).getSingle();
+    expect(drive.lastBlockHeight, currentHeight);
+    final ghost =
+        await db.driveDao.folderById(folderId: ghostParent).getSingleOrNull();
+    expect(ghost?.isGhost, isTrue);
+  });
+
   test('the drive that was stopped is left for the next sync to redo',
       () async {
     await syncAndStop();

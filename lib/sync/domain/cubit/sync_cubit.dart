@@ -191,8 +191,14 @@ class SyncCubit extends Cubit<SyncState> {
     // phase for the second or two they take to reach a point where they can
     // stop, and without this the header went back to "Reading 412 files..."
     // as if the press had not registered.
+    // The fetch count goes with it: the header puts a running count ahead of
+    // any status, so left set it would go on reading "Reading 346 files...".
     if (_currentSyncToken?.isCancelled ?? false) {
-      _syncProgress = _syncProgress.copyWith(statusMessage: syncStoppingStatus);
+      _syncProgress = _syncProgress.copyWith(
+        statusMessage: syncStoppingStatus,
+        metadataFetchesCompleted: 0,
+        metadataFetchesTotal: 0,
+      );
     }
 
     syncProgressController.add(_syncProgress);
