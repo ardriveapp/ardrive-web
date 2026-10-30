@@ -581,13 +581,15 @@ void main() {
     });
 
     test(
-        'is the session\'s drive password while the sign-in one is unproven, '
-        'and proves nothing about the sign-in one', () async {
+        'another password, while the sign-in one is unproven, is one '
+        'discovery may try, never the one new drives use, and proves nothing '
+        'about the sign-in one', () async {
       await proofStore.markUnproven(owner);
 
-      await cubit().submit(password: 'drive password', tryOthers: false);
+      await cubit().submit(password: 'old cli password', tryOthers: false);
 
-      expect(session.drivePassword(owner), 'drive password');
+      expect(session.provenDrivePassword(owner), 'old cli password');
+      expect(session.newDrivePassword(owner), isNull);
       expect(session.signInPasswordProven(owner), isFalse);
       expect(await proofStore.isUnproven(owner), isTrue);
     });

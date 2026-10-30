@@ -490,7 +490,7 @@ void main() {
 
       await expectLater(auth.validateUser(wander.wallet, 'typo'),
           throwsA(isA<PasswordOpensNoDriveException>()));
-      session.rememberDrivePassword(owner, 'right');
+      session.rememberProvenDrivePassword(owner, 'right');
 
       await discoverAs(password: 'typo');
 

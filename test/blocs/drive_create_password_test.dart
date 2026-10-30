@@ -8,6 +8,7 @@ import 'package:ardrive/models/models.dart' show Drive;
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/locked_drives/presentation/unlock_drive_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:cryptography/cryptography.dart';
@@ -167,7 +168,7 @@ void main() {
           reason: DriveUnlockFailure.wrongPassword),
     );
     neverCreated();
-    expect(session.drivePassword(address), isNull);
+    expect(session.newDrivePassword(address), isNull);
     expect(create.needsDrivePassword, isTrue);
     await create.close();
   });
@@ -285,5 +286,63 @@ void main() {
     await makeMyFiles(cubit());
 
     expect(passwordUsed(), 'sign-in password');
+  });
+
+  group('after an Unlock', () {
+    setUp(() {
+      when(() => unlocker.unlock(
+            wallet: any(named: 'wallet'),
+            profileKey: any(named: 'profileKey'),
+            driveId: any(named: 'driveId'),
+            password: any(named: 'password'),
+            tryOthers: any(named: 'tryOthers'),
+          )).thenAnswer((_) async => const DriveUnlockResult.opened(['old']));
+    });
+
+    Future<void> unlockWith(String password) => UnlockDriveCubit(
+          driveId: 'old',
+          unlocker: unlocker,
+          wallet: getTestWallet(),
+          profileKey: null,
+          syncDrives: (_) async {},
+          signInPassword: 'sign-in password',
+          proofStore: proofStore,
+        ).submit(password: password, tryOthers: false);
+
+    test(
+        'an Unlock with another password while the sign-in one is unproven: '
+        'Create still asks for the drive password, and never uses that one',
+        () async {
+      session.setSignInPasswordProven(address, false);
+      passwordOpens(null);
+
+      await unlockWith('Q2');
+      final create = cubit();
+
+      expect(create.needsDrivePassword, isTrue);
+      await expectLater(create.submit('Drive'), throwsArgumentError);
+      await create.submit('Drive', drivePassword: 'drive password');
+      expect(passwordUsed(), 'drive password');
+      await create.close();
+    });
+
+    test(
+        'a later Unlock with the sign-in password proves it, and Create uses '
+        'it again over the drive password typed earlier', () async {
+      session.setSignInPasswordProven(address, false);
+      passwordOpens(null);
+      final first = cubit();
+      await first.submit('Drive', drivePassword: 'drive password');
+      expect(passwordUsed(), 'drive password');
+      await first.close();
+
+      await unlockWith('sign-in password');
+      final next = cubit();
+
+      expect(next.needsDrivePassword, isFalse);
+      await next.submit('Another');
+      expect(passwordUsed(), 'sign-in password');
+      await next.close();
+    });
   });
 }

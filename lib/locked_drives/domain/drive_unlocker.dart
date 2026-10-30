@@ -6,6 +6,7 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart' hide Cipher;
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -481,19 +482,25 @@ class DriveUnlocker {
     final budget = wallet is ArConnectWallet
         ? WalletPromptBudget(WalletPromptBudget.perPass)
         : null;
+    // Oldest by creation first, as at sign-in: the drive most likely made
+    // with the account's password.
+    final createdAt = _arweave.cachedUserDriveCreationTimes(owner);
+    DateTime created(LockedDrive drive) =>
+        createdAt[drive.driveId] ?? drive.lastUpdated;
     final locked = [
       for (final drive in _session.currentLockedDrives)
         if (drive.ownerAddress == owner) drive,
-    ]..sort((a, b) => a.lastUpdated.compareTo(b.lastUpdated));
+    ]..sort((a, b) => created(a).compareTo(created(b)));
 
     var unavailable = false;
 
     for (final drive in locked) {
-      // Out of prompts: what was tried didn't open.
+      // Out of prompts: only drives whose signature is already held are
+      // still tried.
       if (budget != null &&
           budget.remaining == 0 &&
           !_session.holdsSignatureFor(owner, drive.driveId)) {
-        break;
+        continue;
       }
 
       final attempt = await _unlockOne(

@@ -2145,11 +2145,14 @@ class _SyncRepository implements SyncRepository {
     // typo, and asking the wallet to try it again - even in a sync the user
     // started - would only cost prompts. The drives open with Unlock.
     final address = await wallet.getAddress();
-    // A drive password the user typed and proved this session (Create drive
-    // asks for it while the sign-in one is unproven) is tried instead.
-    final checkedDrivePassword = _driveUnlocker.session.drivePassword(address);
-    final unproven = checkedDrivePassword == null &&
+    // While the sign-in password is unproven, a password that opened one of
+    // the user's drives this session (Create drive, Unlock) is tried instead.
+    final signInUnproven =
         _driveUnlocker.session.signInPasswordProven(address) == false;
+    final checkedDrivePassword = signInUnproven
+        ? _driveUnlocker.session.provenDrivePassword(address)
+        : null;
+    final unproven = signInUnproven && checkedDrivePassword == null;
     final promptBudget = wallet is ArConnectWallet
         ? WalletPromptBudget(unproven ? 0 : WalletPromptBudget.perPass)
         : null;

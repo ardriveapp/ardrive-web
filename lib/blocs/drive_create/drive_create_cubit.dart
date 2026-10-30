@@ -79,13 +79,22 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         profile is ProfileLoggedIn &&
         session != null &&
         session.signInPasswordProven(profile.user.walletAddress) == false &&
-        session.drivePassword(profile.user.walletAddress) == null;
+        session.newDrivePassword(profile.user.walletAddress) == null;
   }
 
-  /// The password a new private drive's key is made from.
-  String _keyPassword(ProfileLoggedIn profile) =>
-      _driveUnlocker?.session.drivePassword(profile.user.walletAddress) ??
-      profile.user.password;
+  /// The password a new private drive's key is made from: the sign-in
+  /// password unless it is unproven, and then only the drive password typed
+  /// here. Once the sign-in password is proven (an Unlock with it, say), it
+  /// is preferred again.
+  String _keyPassword(ProfileLoggedIn profile) {
+    final address = profile.user.walletAddress;
+    final session = _driveUnlocker?.session;
+
+    if (session?.signInPasswordProven(address) == false) {
+      return session!.newDrivePassword(address) ?? profile.user.password;
+    }
+    return profile.user.password;
+  }
 
   /// The user's private drives with rows, oldest first: what a drive password
   /// is checked on when none is locked.
@@ -139,7 +148,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       // rest of this session uses it too. If it is the sign-in password after
       // all, that is now proven, here and on this device.
       final address = profile.user.walletAddress;
-      _driveUnlocker.session.rememberDrivePassword(address, drivePassword);
+      _driveUnlocker.session
+        ..setNewDrivePassword(address, drivePassword)
+        ..rememberProvenDrivePassword(address, drivePassword);
       if (drivePassword == profile.user.password) {
         _driveUnlocker.session.setSignInPasswordProven(address, true);
         await _proofStore.clear(address);

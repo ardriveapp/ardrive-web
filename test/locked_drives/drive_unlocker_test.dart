@@ -593,16 +593,25 @@ void main() {
           lastUpdated: DateTime(year),
         );
 
+    setUp(() {
+      when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
+    });
+
     test(
-        'the password is proven by opening the oldest locked drive, which '
-        'stays unlocked with its key kept; nothing else is tried', () async {
+        'the password is proven by opening the oldest locked drive by '
+        'creation, which stays unlocked with its key kept; nothing else is '
+        'tried', () async {
       final newer = await makeWebPrivateDrive(
           wallet: wallet, driveId: _driveA, password: 'drive pw', name: 'A');
       final oldest = await makeWebPrivateDrive(
           wallet: wallet, driveId: _driveB, password: 'drive pw', name: 'B');
       onChain([newer, oldest]);
+      // B was made first, though updated last: creation decides, as at
+      // sign-in.
+      when(() => arweave.cachedUserDriveCreationTimes(owner))
+          .thenReturn({_driveA: DateTime(2023), _driveB: DateTime(2020)});
       session.setLockedDrives(
-          owner, [lockedAt(_driveA, 2026), lockedAt(_driveB, 2024)]);
+          owner, [lockedAt(_driveA, 2024), lockedAt(_driveB, 2026)]);
       signer.signatures = 0;
 
       final failure = await unlocker.verifyDrivePassword(
@@ -682,6 +691,38 @@ void main() {
 
       expect(failure, DriveUnlockFailure.wrongPassword);
       expect(wander.prompts, WalletPromptBudget.perPass);
+    });
+
+    test(
+        'out of prompts, a drive whose signature is already held is still '
+        'tried', () async {
+      final wander = FakeWander(wallet);
+      final ids = [_driveA, _driveB, _driveC, _driveD, _driveE];
+      final drives = [
+        for (final id in ids)
+          await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id,
+              password: id == _driveE ? 'drive pw' : 'other'),
+      ];
+      onChain(drives);
+      session.setLockedDrives(owner, [
+        for (var i = 0; i < ids.length; i++) lockedAt(ids[i], 2020 + i),
+      ]);
+      // An earlier attempt left E's signature in the session.
+      await unlocker.tryPassword(
+          wallet: wander.wallet,
+          driveTx: drives.last.tx,
+          data: drives.last.data,
+          password: 'nope');
+      wander.prompts = 0;
+
+      final failure = await unlocker.verifyDrivePassword(
+          wallet: wander.wallet, profileKey: profileKey, password: 'drive pw');
+
+      expect(failure, isNull);
+      expect(wander.prompts, WalletPromptBudget.perPass);
+      expect(session.isLocked(_driveE), isFalse);
     });
 
     test('a cancelled Wander prompt stops the check quietly', () async {

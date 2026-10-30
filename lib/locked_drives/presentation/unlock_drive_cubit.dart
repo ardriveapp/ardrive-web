@@ -136,11 +136,11 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
     }
   }
 
-  /// A password that opened a drive is a drive password. If it is the
-  /// sign-in password, that is now proven, in the session and on this
-  /// device. If the sign-in password is unproven and this is another one,
-  /// the session uses it as the drive password: for discovery, and so Create
-  /// drive doesn't ask for it again.
+  /// If the password that opened a drive is the sign-in password, that is
+  /// now proven, in the session and on this device, and new drives use it.
+  /// If the sign-in password is unproven and this is another one, discovery
+  /// may try it - it opened a drive - but new drives never use it: it may be
+  /// an old drive's password, not the drive password.
   Future<void> _notePasswordOpened(String password) async {
     final owner = await _wallet.getAddress();
     final session = _unlocker.session;
@@ -149,7 +149,7 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
       session.setSignInPasswordProven(owner, true);
       await (_proofStore ?? SignInPasswordProofStore()).clear(owner);
     } else if (session.signInPasswordProven(owner) == false) {
-      session.rememberDrivePassword(owner, password);
+      session.rememberProvenDrivePassword(owner, password);
     }
   }
 
