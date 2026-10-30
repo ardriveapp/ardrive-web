@@ -7,6 +7,7 @@ import 'package:ardrive/entities/entities.dart' hide Cipher;
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -259,8 +260,13 @@ class DriveUnlocker {
         logger.w('The wallet did not sign for $driveId: $e');
         // Either way a background pass does not ask again this session.
         _session.markWalletDeclined(owner, driveId);
+        // Cancel on ArDrive's own "Wander didn't answer" prompt: the person
+        // gave up on Wander for now, so the rest of this pass asks it nothing
+        // either, rather than a Cancel per drive.
+        final gaveUp = e is ArConnectUnavailableException;
+        if (gaveUp) promptBudget?.remaining = 0;
         return DriveKeyAttempt.failed(
-          isWalletCancellation(e)
+          gaveUp || isWalletCancellation(e)
               ? DriveUnlockFailure.walletDeclined
               : DriveUnlockFailure.walletFailed,
         );

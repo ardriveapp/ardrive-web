@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
+import 'package:arweave/utils.dart' show ownerToAddress;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -311,6 +312,171 @@ void main() {
 
       expect(prompts, 2, reason: 'the next failure shows a prompt again');
       expect(second, isA<ArConnectUnavailableException>());
+    });
+  });
+
+  group('Wander has lost ArDrive\'s permissions', () {
+    // What Wander throws after an update reset every site's permissions.
+    Exception missing() =>
+        Exception('Missing permission(s) for "signDataItem": SIGN_TRANSACTION');
+
+    test('Reconnect connects once, then asks again', () async {
+      pick = () => true;
+      var calls = 0;
+      when(() => wander.connect()).thenAnswer((_) async {});
+
+      final answer = await ArConnectPrompt.ask(wander, () async {
+        calls++;
+        if (calls == 1) throw missing();
+        return 'signed';
+      });
+
+      expect(answer, 'signed');
+      expect(shown, [ArConnectUnavailableReason.noPermission]);
+      verify(() => wander.connect()).called(1);
+      expect(ArConnectPrompt.hasAnswered, isTrue);
+    });
+
+    test('Cancel ends it, without connecting', () async {
+      pick = () => false;
+
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing()),
+        throwsA(isA<ArConnectUnavailableException>().having((e) => e.reason,
+            'reason', ArConnectUnavailableReason.noPermission)),
+      );
+      verifyNever(() => wander.connect());
+    });
+
+    test('nobody asked in the background, and nothing connects', () async {
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing(),
+            askPerson: false),
+        throwsA(isA<ArConnectUnavailableException>().having((e) => e.reason,
+            'reason', ArConnectUnavailableReason.noPermission)),
+      );
+      expect(shown, isEmpty);
+      verifyNever(() => wander.connect());
+    });
+
+    test('asks that fail together share one prompt and one connect', () async {
+      final choice = Completer<bool>();
+      var prompts = 0;
+      ArConnectPrompt.registerRetryPrompt((reason, answered) {
+        prompts++;
+        return choice.future;
+      });
+      var allowed = false;
+      when(() => wander.connect()).thenAnswer((_) async => allowed = true);
+      Future<String> sign() async {
+        if (!allowed) throw missing();
+        return 'signed';
+      }
+
+      final both = Future.wait([
+        ArConnectPrompt.ask(wander, sign),
+        ArConnectPrompt.ask(wander, sign),
+        ArConnectPrompt.ask(wander, sign),
+      ]);
+      await pumpEventQueue();
+      choice.complete(true);
+
+      expect(await both, ['signed', 'signed', 'signed']);
+      expect(prompts, 1);
+      verify(() => wander.connect()).called(1);
+    });
+
+    test('a connect that fails shows the prompt again', () async {
+      final picks = [true, false];
+      pick = () => picks.removeAt(0);
+      when(() => wander.connect())
+          .thenAnswer((_) async => throw Exception('User cancelled'));
+
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing()),
+        throwsA(isA<ArConnectUnavailableException>()),
+      );
+      expect(shown, [
+        ArConnectUnavailableReason.noPermission,
+        ArConnectUnavailableReason.noPermission,
+      ]);
+    });
+
+    test('reconnected on another wallet is a mismatch, and says so', () async {
+      pick = () => true;
+      var told = 0;
+      ArConnectPrompt.registerOtherWalletHandler(() => told++);
+      when(() => wander.connect()).thenAnswer((_) async {});
+      when(() => wander.getWalletAddress())
+          .thenAnswer((_) async => ownerToAddress('other-public-key'));
+      var calls = 0;
+
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async {
+          calls++;
+          throw missing();
+        }, savedPublicKey: 'saved-public-key'),
+        throwsA(isA<ArConnectWalletMismatchException>()),
+      );
+      expect(told, 1);
+      expect(calls, 1, reason: 'nothing is signed for another wallet');
+    });
+
+    test('reconnected on the saved wallet signs', () async {
+      pick = () => true;
+      when(() => wander.connect()).thenAnswer((_) async {});
+      when(() => wander.getWalletAddress())
+          .thenAnswer((_) async => ownerToAddress('saved-public-key'));
+      var calls = 0;
+
+      final answer = await ArConnectPrompt.ask(wander, () async {
+        calls++;
+        if (calls == 1) throw missing();
+        return 'signed';
+      }, savedPublicKey: 'saved-public-key');
+
+      expect(answer, 'signed');
+    });
+  });
+
+  group('Wander\'s unlock window closed', () {
+    // What Wander throws when its unlock window is closed or cancelled.
+    Exception dismissed() => Exception('User cancelled the operation');
+
+    test('is no answer: the Try again prompt, and Try again asks again',
+        () async {
+      pick = () => true;
+      var calls = 0;
+
+      final answer = await ArConnectPrompt.ask(wander, () async {
+        calls++;
+        if (calls == 1) throw dismissed();
+        return 'signed';
+      });
+
+      expect(answer, 'signed');
+      expect(shown, [ArConnectUnavailableReason.noAnswer]);
+      expect(calls, 2);
+    });
+
+    test('Cancel ends it as no answer', () async {
+      pick = () => false;
+
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw dismissed()),
+        throwsA(isA<ArConnectUnavailableException>().having(
+            (e) => e.reason, 'reason', ArConnectUnavailableReason.noAnswer)),
+      );
+    });
+
+    test('a refused prompt is still a refusal, with no prompt', () async {
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander,
+            () async => throw Exception('User rejected the signature request')),
+        throwsA(isA<Exception>()
+            .having((e) => '$e', 'message', contains('rejected'))),
+      );
+      expect(shown, isEmpty);
     });
   });
 }

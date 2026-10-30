@@ -31,4 +31,12 @@ class TabVisibilitySingleton {
 Function() onArConnectWalletSwitch(Function onWalletSwitch) =>
     implementation.onWalletSwitch(onWalletSwitch);
 
+/// Calls [onWalletSwitch] with the address Wander switched to each time it
+/// says so (its `walletSwitch` event), or null when it gives none, as when a
+/// page disconnects. Returns what stops listening.
+Function() onArConnectWalletSwitchTo(
+  void Function(String? address) onWalletSwitch,
+) =>
+    implementation.onWalletSwitchTo(onWalletSwitch);
+
 void triggerHTMLPageReload() => implementation.reload();

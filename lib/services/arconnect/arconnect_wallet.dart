@@ -34,14 +34,17 @@ class ArConnectWallet extends Wallet {
     return await arConnectService.getWalletAddress();
   }
 
-  /// [request] with a deadline and Try again, for the saved account's
-  /// wallet; as before while connecting at login.
+  /// [request] with a deadline and Try again, or Reconnect when Wander has
+  /// lost ArDrive's permissions, for the saved account's wallet; as before
+  /// while connecting at login.
   Future<T> _ask<T>(Future<T> Function() request) {
-    if (publicKey == null) return request();
+    final savedPublicKey = publicKey;
+    if (savedPublicKey == null) return request();
     return ArConnectPrompt.ask(
       arConnectService,
       request,
       within: ArConnectPrompt.signTimeout,
+      savedPublicKey: savedPublicKey,
     );
   }
 

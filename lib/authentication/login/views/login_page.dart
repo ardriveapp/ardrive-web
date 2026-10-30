@@ -11,6 +11,7 @@ import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive/core/download_service.dart';
@@ -89,47 +90,73 @@ class _LoginPageState extends State<LoginPage> {
           gettingStarted: widget.gettingStarted,
         ),
       );
+
+    // Signed out from the drives because Wander moved to another account.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sayIfWanderChanged());
   }
 
   late LoginBloc _loginBloc;
+
+  /// Says, once, that Wander's account changed and that is why this screen
+  /// is showing. See [ProfileCubit.signOutForOtherWallet].
+  void _sayIfWanderChanged() {
+    if (!mounted || !context.read<ProfileCubit>().takeOtherWalletNotice()) {
+      return;
+    }
+    showArDriveDialog(context, content: const WalletSwitchDialog());
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<LoginBloc>(
       create: (context) => _loginBloc,
-      child: BlocConsumer<LoginBloc, LoginState>(
-        listener: (context, loginState) {
-          if (gettingStartedReady(loginState)) {
-            setState(() {
-              didGettingStartedLoadedAlready = true;
-            });
-          }
-
-          handleLoginState(context, loginState);
+      child: BlocListener<ProfileCubit, ProfileState>(
+        // Wander moved to another account while this screen showed, as on
+        // Welcome back: the saved account is gone, so this screen starts
+        // over, and says why.
+        listenWhen: (_, current) => current is ProfileSignedOutForOtherWallet,
+        listener: (context, _) {
+          _loginBloc.add(const CheckIfUserIsLoggedIn());
+          _sayIfWanderChanged();
         },
-        buildWhen: (previous, current) {
-          return current is! LoginCreatePasswordComplete;
-        },
-        builder: (context, loginState) {
-          late Widget view;
-          if (loginState is LoginDownloadGeneratedWallet &&
-              loginState.mnemonic == null) {
-            // Rare: no 12 words to save, only a keyfile.
-            view = WalletCreatedView(
-                mnemonic: loginState.mnemonic, wallet: loginState.wallet);
-          } else {
-            view = LoginPageScaffold(
-              loginState: loginState,
-              isGettingStartedLoading: isGettingStartedLoading,
-            );
-          }
-
-          return FadeThroughTransitionSwitcher(
-            fillColor: Colors.transparent,
-            child: view,
-          );
-        },
+        child: _buildPage(context),
       ),
+    );
+  }
+
+  Widget _buildPage(BuildContext context) {
+    return BlocConsumer<LoginBloc, LoginState>(
+      listener: (context, loginState) {
+        if (gettingStartedReady(loginState)) {
+          setState(() {
+            didGettingStartedLoadedAlready = true;
+          });
+        }
+
+        handleLoginState(context, loginState);
+      },
+      buildWhen: (previous, current) {
+        return current is! LoginCreatePasswordComplete;
+      },
+      builder: (context, loginState) {
+        late Widget view;
+        if (loginState is LoginDownloadGeneratedWallet &&
+            loginState.mnemonic == null) {
+          // Rare: no 12 words to save, only a keyfile.
+          view = WalletCreatedView(
+              mnemonic: loginState.mnemonic, wallet: loginState.wallet);
+        } else {
+          view = LoginPageScaffold(
+            loginState: loginState,
+            isGettingStartedLoading: isGettingStartedLoading,
+          );
+        }
+
+        return FadeThroughTransitionSwitcher(
+          fillColor: Colors.transparent,
+          child: view,
+        );
+      },
     );
   }
 }

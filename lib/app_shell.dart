@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/migrate_private_drives_modal.dart';
@@ -18,8 +17,6 @@ import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migra
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/sync_overlay.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -31,7 +28,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'blocs/blocs.dart';
 import 'components/app_top_bar.dart';
 import 'components/banners/app_announcement_banner.dart';
-import 'components/wallet_switch_dialog.dart';
 
 class AppShell extends StatefulWidget {
   final Widget page;
@@ -47,7 +43,6 @@ class AppShell extends StatefulWidget {
 
 class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
-  bool _showWalletSwitchDialog = true;
 
   /// Removes this shell's Wander prompt; see [ArConnectPrompt].
   VoidCallback? _forgetWanderPrompt;
@@ -65,39 +60,8 @@ class AppShellState extends State<AppShell> {
     // rather than at the deadline.
     ArConnectPrompt.tabFocus = TabVisibilitySingleton().onTabFocusChanged;
 
-    onArConnectWalletSwitch(() {
-      logger.d('Wallet switch detected');
-      context.read<ProfileCubit>().isCurrentProfileArConnect().then(
-        (isCurrentProfileArConnect) {
-          if (_showWalletSwitchDialog) {
-            if (isCurrentProfileArConnect) {
-              context.read<ArDriveAuth>().isUserLoggedIn().then((isLoggedIn) {
-                context
-                    .read<ProfileCubit>()
-                    .logoutIfWalletMismatch()
-                    .catchError((Object e) {
-                  logger.w('Could not check the wallet after a switch: $e');
-                  return false;
-                });
-                if (isLoggedIn) {
-                  logger.d('Wallet switch detected while logged in'
-                      ' to ArConnect. Showing wallet switch dialog.');
-                  showArDriveDialog(
-                    context,
-                    content: const WalletSwitchDialog(),
-                  );
-                }
-              });
-            } else {
-              logger.d('Wallet switch detected while not logged in'
-                  ' to ArConnect. Ignoring.');
-            }
-          }
-          // Used to prevent the dialog being shown multiple times.
-          _showWalletSwitchDialog = false;
-        },
-      );
-    });
+    // A Wander account switch is answered by ProfileCubit, which signs out
+    // and has the sign-in screen say why.
 
     super.initState();
   }

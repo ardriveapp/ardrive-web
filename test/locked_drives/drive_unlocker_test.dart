@@ -331,6 +331,36 @@ void main() {
     expect(session.walletDeclined(owner, _driveB), isTrue);
   });
 
+  test(
+      'Cancel on the Wander prompt is walletDeclined, and the rest of the '
+      'pass asks Wander nothing', () async {
+    final wander = FakeWander(wallet);
+    final drive = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveA, password: 'pw');
+    final other = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveB, password: 'pw');
+    final budget = WalletPromptBudget(WalletPromptBudget.perPass);
+
+    wander.gaveUp = true;
+    final first = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw',
+        promptBudget: budget);
+    wander.gaveUp = false;
+    final next = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: other.tx,
+        data: other.data,
+        password: 'pw',
+        promptBudget: budget);
+
+    expect(first.failure, DriveUnlockFailure.walletDeclined);
+    expect(next.failure, DriveUnlockFailure.walletDeclined);
+    expect(wander.prompts, 1, reason: 'one Cancel for every drive in the pass');
+  });
+
   test('isWalletCancellation: Wander\'s cancels, and nothing else', () {
     for (final cancel in [
       'User cancelled the AuthRequest',

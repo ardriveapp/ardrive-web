@@ -564,6 +564,7 @@ class ArweaveService {
     required List<String> driveIds,
     required int minBlockHeight,
     required String ownerAddress,
+    Map<String, int>? readUpTo,
   }) async {
     final query = await graphQLRetry.execute(
       DriveActivityProbeQuery(
@@ -582,10 +583,14 @@ class ArweaveService {
 
     final activeDriveIds = <String>{};
     for (final edge in query.data!.transactions.edges) {
+      final height = edge.node.block?.height;
       for (final tag in edge.node.tags) {
-        if (tag.name == 'Drive-Id') {
-          activeDriveIds.add(tag.value);
-        }
+        if (tag.name != 'Drive-Id') continue;
+        // One query covers drives read up to different heights, from the
+        // lowest of them; a drive counts only for what is past its own.
+        final readTo = readUpTo?[tag.value];
+        if (readTo != null && height != null && height <= readTo) continue;
+        activeDriveIds.add(tag.value);
       }
     }
 

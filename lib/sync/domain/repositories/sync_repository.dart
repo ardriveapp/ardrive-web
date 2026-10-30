@@ -3558,14 +3558,23 @@ class _SyncRepository implements SyncRepository {
 
       for (final entry in drivesByOwner.entries) {
         final ownerDrives = entry.value;
-        final minBlock = ownerDrives
-            .map((d) => _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
-            .reduce(min);
+        // Each drive strictly after what it was last read up to, with no
+        // look-back. A sync looks back [kBlockHeightLookBack] blocks after a
+        // reload to catch late-indexed items, and one query starts at the
+        // lowest drive's height; a question about what changed must not
+        // count either, or a drive's own writes before its last read, or
+        // before a drive synced later, are "changed" again after every
+        // reload, however often it is synced.
+        final minBlock =
+            ownerDrives.map((d) => (d.lastBlockHeight ?? 0) + 1).reduce(min);
 
         final result = await _arweave.probeActiveDriveIds(
           driveIds: ownerDrives.map((d) => d.id).toList(),
           minBlockHeight: minBlock,
           ownerAddress: entry.key,
+          readUpTo: {
+            for (final drive in ownerDrives) drive.id: drive.lastBlockHeight!,
+          },
         );
 
         // One unconfirmable owner ends the whole probe, rather than dropping

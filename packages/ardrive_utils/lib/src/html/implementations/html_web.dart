@@ -55,6 +55,23 @@ Function() onWalletSwitch(Function callback) {
   return () => window.removeEventListener('walletSwitch', listener);
 }
 
+Function() onWalletSwitchTo(void Function(String? address) callback) {
+  void listener(Event event) {
+    String? address;
+    try {
+      final detail = event is CustomEvent ? event.detail : null;
+      final value = detail is Map ? detail['address'] : null;
+      if (value is String && value.isNotEmpty) address = value;
+    } catch (_) {
+      // No readable address: reported as none.
+    }
+    callback(address);
+  }
+
+  window.addEventListener('walletSwitch', listener);
+  return () => window.removeEventListener('walletSwitch', listener);
+}
+
 void reload() {
   window.location.reload();
 }
