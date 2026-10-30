@@ -36,6 +36,12 @@ Future<Uint8List> signDataItem(DataItem dataItem) async {
   throw UnimplementedError();
 }
 
+bool isBatchSignSupported() => false;
+
+Future<List<Uint8List>> batchSignDataItems(List<DataItem> dataItems) async {
+  throw UnimplementedError();
+}
+
 Future<String> getWalletVersion() async {
   throw UnimplementedError();
 }
