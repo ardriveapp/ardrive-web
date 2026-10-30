@@ -246,6 +246,165 @@ void main() {
           throwsA(isA<PasswordOpensNoDriveException>()));
       expect(signer.signatures, ArDriveAuthImpl.signInMaxDrives);
     });
+
+    group('a Wander that signs every drive in one approval', () {
+      late FakeWander wander;
+
+      setUp(() => wander = FakeWander(wallet)..batch = true);
+
+      test(
+          '25 drives: the right password costs one prompt, and every drive '
+          'can then be opened without asking', () async {
+        await drivesWith(25, 'right');
+
+        await auth.validateUser(wander.wallet, 'right');
+
+        expect(wander.prompts, 1);
+        expect(wander.lastBatchSize, 25);
+        for (var i = 0; i < 25; i++) {
+          expect(session.holdsSignatureFor(await wallet.getAddress(), id(i)),
+              isTrue);
+        }
+        expect(session.signInPasswordProven(await wallet.getAddress()), isTrue);
+      });
+
+      test(
+          'a typo costs the batch alone, and the right password then costs '
+          'nothing', () async {
+        await drivesWith(5, 'right');
+
+        await expectLater(auth.validateUser(wander.wallet, 'typo'),
+            throwsA(isA<PasswordOpensNoDriveException>()));
+        expect(wander.prompts, 1);
+
+        await auth.validateUser(wander.wallet, 'right');
+        expect(wander.prompts, 1);
+      });
+
+      test(
+          'an older v1 drive without a stored signature doesn\'t cost a '
+          'second prompt: v2 drives are tried first after the batch', () async {
+        onChain([
+          await makeWebPrivateDrive(
+            wallet: wallet,
+            driveId: id(0),
+            password: 'right',
+            signatureType: DriveSignatureType.v1,
+            unixTime: 1700000000,
+          ),
+          for (var i = 1; i < 3; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: 'right',
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+        when(() => arweave.getDriveSignatureForDriveOnSync(any(), id(0)))
+            .thenAnswer((_) async => null);
+        when(() => arweave.getDriveSignatureForDrive(any(), id(0)))
+            .thenAnswer((_) async => null);
+
+        await auth.validateUser(wander.wallet, 'right');
+
+        expect(wander.prompts, 1);
+      });
+
+      test('only v1 drives without a stored signature: no batch', () async {
+        onChain([
+          for (var i = 0; i < 3; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: 'right',
+              signatureType: DriveSignatureType.v1,
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+        when(() => arweave.getDriveSignatureForDrive(any(), any()))
+            .thenAnswer((_) async => null);
+
+        await auth.validateUser(wander.wallet, 'right');
+
+        expect(wander.batches, 0);
+        expect(wander.prompts, 1, reason: 'the oldest drive\'s own signature');
+      });
+
+      test(
+          'the gateway is down: no approval is asked for, and the error says '
+          'so', () async {
+        when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
+        final drives = [
+          for (var i = 0; i < 3; i++)
+            await makeWebPrivateDrive(
+                wallet: wallet, driveId: id(i), password: 'right'),
+        ];
+        when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+                maxRetries: any(named: 'maxRetries')))
+            .thenAnswer((_) async => [for (final d in drives) d.tx]);
+        when(() => arweave.getEntityDataBytes(any(),
+                configuredGatewayOnly: any(named: 'configuredGatewayOnly')))
+            .thenThrow(Exception('gateway down'));
+
+        await expectLater(auth.validateUser(wander.wallet, 'right'),
+            throwsA(isA<AuthenticationGatewayException>()));
+        expect(wander.prompts, 0);
+      });
+
+      test(
+          'the drive the password opens needn\'t be the oldest: every drive '
+          'is tried for the one prompt', () async {
+        onChain([
+          for (var i = 0; i < 6; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: i == 5 ? 'newest' : 'old',
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+
+        await auth.validateUser(wander.wallet, 'newest');
+
+        expect(wander.prompts, 1);
+      });
+
+      test(
+          'a cancelled batch is one no: nothing opens and nothing more is asked',
+          () async {
+        await drivesWith(5, 'right');
+        wander.cancelBatch = true;
+
+        await expectLater(auth.validateUser(wander.wallet, 'right'),
+            throwsA(isA<PasswordOpensNoDriveException>()));
+
+        expect(wander.prompts, 1);
+        expect(
+            session.signInPasswordProven(await wallet.getAddress()), isFalse);
+      });
+
+      for (final (name, setUpWander) in [
+        ('refused (a hardware wallet)', (FakeWander w) => w.refuseBatch = true),
+        ('mismatched', (FakeWander w) => w.varyBatch = true),
+      ]) {
+        test(
+            'a batch $name falls back to drive by drive, still at most '
+            '3 prompts', () async {
+          await drivesWith(5, 'right');
+          setUpWander(wander);
+
+          await expectLater(auth.validateUser(wander.wallet, 'typo'),
+              throwsA(isA<PasswordOpensNoDriveException>()));
+          expect(wander.prompts, ArDriveAuthImpl.signInMaxNewPrompts);
+          // The drives the check didn't reach weren't cancelled: discovery
+          // may still ask for them.
+          expect(session.walletDeclined(await wallet.getAddress(), id(4)),
+              isFalse);
+
+          await auth.validateUser(wander.wallet, 'right');
+        });
+      }
+    });
   });
 
   test(

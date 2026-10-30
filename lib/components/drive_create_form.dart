@@ -129,6 +129,13 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             Navigator.pop(context);
             if (state.isPaymentError) {
               showTurboPaymentRequiredDialog(context);
+            } else if (state.walletCantMakeDriveKeys) {
+              showErrorDialog(
+                context: context,
+                title: appLocalizationsOf(context).error,
+                message:
+                    appLocalizationsOf(context).walletCantCreatePrivateDrives,
+              );
             } else {
               showErrorDialog(
                 context: context,

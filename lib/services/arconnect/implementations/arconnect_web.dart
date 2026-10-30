@@ -34,6 +34,12 @@ external Uint8List _getSignature(Uint8List message);
 external Uint8List _signDataItem(
     Uint8List data, dynamic tags, String owner, String target, String anchor);
 
+@JS('isBatchSignSupported')
+external bool _isBatchSignSupported();
+
+@JS('batchSignDataItems')
+external dynamic _batchSignDataItems(dynamic items);
+
 @JS('getWalletVersion')
 external String _getWalletVersion();
 
@@ -76,6 +82,30 @@ Future<Uint8List> signDataItem(DataItem dataItem) async {
 
   return await promiseToFuture<Uint8List>(_signDataItem(dataItem.data,
       jsTags, dataItem.owner, dataItem.target, dataItem.nonce));
+}
+
+bool isBatchSignSupported() => _isBatchSignSupported();
+
+Future<List<Uint8List>> batchSignDataItems(List<DataItem> dataItems) async {
+  // Plain objects, as for signDataItem: Dart objects don't expose their
+  // properties to JS in release mode.
+  final items = jsify([
+    for (final dataItem in dataItems)
+      {
+        'data': dataItem.data,
+        'tags': [
+          for (final tag in dataItem.tags)
+            {'name': tag.name, 'value': tag.value},
+        ],
+        'owner': dataItem.owner,
+        'target': dataItem.target,
+        'anchor': dataItem.nonce,
+      },
+  ]);
+
+  final signatures =
+      await promiseToFuture<List<dynamic>>(_batchSignDataItems(items));
+  return [for (final signature in signatures) signature as Uint8List];
 }
 
 Future<String> getWalletVersion() async {

@@ -5731,5 +5731,7 @@
   "enterYourDrivePassword": "Enter your drive password",
   "@enterYourDrivePassword": {"description": "Create drive, when the sign-in password didn't open the user's private drives: the drive password is asked, and checked on one of them, before a private drive is made with it."},
   "drivePasswordOpensNoDrives": "That password didn't open your private drives. Try again.",
-  "@drivePasswordOpensNoDrives": {"description": "Create drive: the drive password typed opened none of the user's private drives, so nothing was created."}
+  "@drivePasswordOpensNoDrives": {"description": "Create drive: the drive password typed opened none of the user's private drives, so nothing was created."},
+  "walletCantCreatePrivateDrives": "This wallet can't create private drives. Use a software wallet.",
+  "@walletCantCreatePrivateDrives": {"description": "Create drive: the browser wallet's signature can't make a drive key that would open again (a hardware wallet such as Keystone), so no private drive was created."}
 }

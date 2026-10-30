@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -211,6 +212,37 @@ class FakeWander extends Fake implements ArConnectService {
   /// Answers every v2 (data item) signature with fresh random bytes.
   bool varyV2 = false;
 
+  /// Has `batchSignDataItem`, as Wander 1.41 does. Off by default, which is
+  /// an older Wander: every drive is then asked for on its own.
+  bool batch = false;
+
+  /// How many batch approvals were asked for. Each also counts in [prompts].
+  int batches = 0;
+
+  /// How many items the last batch held.
+  int lastBatchSize = 0;
+
+  /// Cancels the batch prompt only.
+  bool cancelBatch = false;
+
+  /// Refuses the batch after it is approved, as Wander does for a hardware
+  /// wallet.
+  bool refuseBatch = false;
+
+  /// Answers the batch with random bytes, as a Wander that ignored
+  /// `saltLength: 0` would.
+  bool varyBatch = false;
+
+  /// Signs the batch's first item right and answers the rest with random
+  /// bytes: a Wander that a single spot check would pass.
+  bool partialBatch = false;
+
+  /// Returns the batch's signatures in reverse order.
+  bool reverseBatch = false;
+
+  /// Never answers the batch: a Wander that is locked, or a popup closed.
+  bool hangBatch = false;
+
   void _prompt() {
     prompts++;
     if (cancel) throw Exception('User cancelled the auth');
@@ -224,6 +256,45 @@ class FakeWander extends Fake implements ArConnectService {
       throw const ArConnectUnavailableException(
           ArConnectUnavailableReason.noAnswer);
     }
+  }
+
+  Uint8List _random() {
+    final random = Random.secure();
+    return Uint8List.fromList(List.generate(512, (_) => random.nextInt(256)));
+  }
+
+  @override
+  bool isBatchSignSupported() => batch;
+
+  @override
+  Future<List<Uint8List>> batchSignDataItems(List<DataItem> dataItems) async {
+    if (!batch) throw UnimplementedError('this Wander has no batch signing');
+    batches++;
+    lastBatchSize = dataItems.length;
+    if (hangBatch) return Completer<List<Uint8List>>().future;
+    prompts++;
+    if (cancel || cancelBatch) {
+      throw Exception('User cancelled the AuthRequest');
+    }
+    if (missingPermission) {
+      throw Exception(
+          'Missing permission(s) for "batchSignDataItem": SIGN_TRANSACTION');
+    }
+    if (refuseBatch) {
+      throw Exception(
+          'Only local wallets are currently supported for batch signing');
+    }
+    final signatures = [
+      for (var i = 0; i < dataItems.length; i++)
+        if (varyBatch || (partialBatch && i > 0))
+          _random()
+        else
+          await () async {
+            await dataItems[i].sign(ArweaveSigner(inner));
+            return utils.decodeBase64ToBytes(dataItems[i].signature);
+          }(),
+    ];
+    return reverseBatch ? signatures.reversed.toList() : signatures;
   }
 
   @override
@@ -241,10 +312,7 @@ class FakeWander extends Fake implements ArConnectService {
   @override
   Future<Uint8List> signDataItem(DataItem dataItem) async {
     _prompt();
-    if (varyV2) {
-      final random = Random.secure();
-      return Uint8List.fromList(List.generate(512, (_) => random.nextInt(256)));
-    }
+    if (varyV2) return _random();
     await dataItem.sign(ArweaveSigner(inner));
     return utils.decodeBase64ToBytes(dataItem.signature);
   }

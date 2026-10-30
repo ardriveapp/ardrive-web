@@ -1515,6 +1515,12 @@ class ArweaveService {
     /// several of them sits on a finished fetch count for a long time with
     /// nothing said. Never fires when there are none.
     void Function(int unlocked, int total)? onDriveUnlocked,
+
+    /// Called once with every private drive that was read, before the first
+    /// is resolved, so one wallet approval can cover them all. A failure
+    /// here is logged and the drives are resolved as usual.
+    Future<void> Function(List<DriveMetadata> privateDrives)?
+        beforeResolvingPrivateDrives,
   }) async {
     try {
       final userAddress = await wallet.getAddress();
@@ -1611,6 +1617,20 @@ class ArweaveService {
       }
 
       final lockedDrives = <LockedDrive>[];
+
+      if (beforeResolvingPrivateDrives != null && privateDriveIds.isNotEmpty) {
+        try {
+          await beforeResolvingPrivateDrives([
+            for (var i = 0; i < driveTxs.length; i++)
+              if (driveResponses[i] != null &&
+                  driveTxs[i].getTag(EntityTag.drivePrivacy) ==
+                      DrivePrivacyTag.private)
+                (tx: driveTxs[i], data: driveResponses[i]!.bodyBytes),
+          ]);
+        } catch (e) {
+          logger.w('Could not prepare the private drives: $e');
+        }
+      }
 
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
