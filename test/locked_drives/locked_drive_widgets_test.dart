@@ -528,14 +528,34 @@ void main() {
   test('the sync after an unlock never asks the wallet again for others',
       () async {
     final syncCubit = _MockSyncCubit();
+    when(() => syncCubit.isClosed).thenReturn(false);
     when(() => syncCubit.syncDrives(any(),
-            askWalletAgain: any(named: 'askWalletAgain')))
+            askWalletAgain: any(named: 'askWalletAgain'),
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck')))
         .thenAnswer((_) async => true);
 
     await syncUnlockedDrives(syncCubit, [_driveId]);
 
-    verify(() => syncCubit.syncDrives([_driveId], askWalletAgain: false))
-        .called(1);
+    verify(() => syncCubit.syncDrives([_driveId],
+        askWalletAgain: false, skipTabVisibilityCheck: true)).called(1);
+  });
+
+  test(
+      'the sync after an unlock that stays refused gives up after a few '
+      'tries, waiting between them', () async {
+    final syncCubit = _MockSyncCubit();
+    when(() => syncCubit.isClosed).thenReturn(false);
+    when(() => syncCubit.waitUntilSyncCanStart()).thenAnswer((_) async {});
+    when(() => syncCubit.syncDrives(any(),
+            askWalletAgain: any(named: 'askWalletAgain'),
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck')))
+        .thenAnswer((_) async => false);
+
+    await syncUnlockedDrives(syncCubit, [_driveId]);
+
+    verify(() => syncCubit.syncDrives([_driveId],
+        askWalletAgain: false, skipTabVisibilityCheck: true)).called(3);
+    verify(() => syncCubit.waitUntilSyncCanStart()).called(2);
   });
 
   testWidgets('the fingerprint is drawn in its own colour emoji face',
@@ -622,6 +642,7 @@ void main() {
                 driveId: any(named: 'driveId'),
                 password: any(named: 'password'),
                 tryOthers: any(named: 'tryOthers'),
+                remember: any(named: 'remember'),
               ))
           .thenAnswer((_) async => const DriveUnlockResult.opened([_driveId]));
     });
@@ -653,12 +674,25 @@ void main() {
         'about the sign-in one', () async {
       await proofStore.markUnproven(owner);
 
-      await cubit().submit(password: 'old cli password', tryOthers: false);
+      await cubit().submit(
+          password: 'old cli password', tryOthers: true, remember: false);
 
       expect(session.provenDrivePassword(owner), 'old cli password');
+      expect(session.provenDrivePasswordKeepsKeys(owner), isFalse);
       expect(session.newDrivePassword(owner), isNull);
       expect(session.signInPasswordProven(owner), isFalse);
       expect(await proofStore.isUnproven(owner), isTrue);
+    });
+
+    test(
+        'with "Try on my other locked drives" unticked, discovery is not '
+        'given it: the person asked for this drive alone', () async {
+      await proofStore.markUnproven(owner);
+
+      await cubit().submit(password: 'old cli password', tryOthers: false);
+
+      expect(session.provenDrivePassword(owner), isNull);
+      expect(session.signInPasswordProven(owner), isFalse);
     });
   });
 }

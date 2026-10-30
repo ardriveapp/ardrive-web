@@ -182,8 +182,9 @@ void main() {
     });
 
     test(
-        'a drive someone else owns, opened here by its share link, keeps its '
-        'rows; only its dead key goes', () async {
+        'a drive someone else owns, opened here by its share link, goes too, '
+        'rows and all: its link opens it again, and a row kept without its '
+        'key would only be skipped by every sync', () async {
       await db.profileDao.addProfile(
           'user.username', 'old password', wallet, ProfileType.arConnect);
       await db.into(db.drives).insert(DrivesCompanion.insert(
@@ -208,9 +209,7 @@ void main() {
       await auth.loginWithWallet(
           wallet, ProfileType.arConnect, _wallet(DeviceUnlockMethod.wander));
 
-      final rows = await db.select(db.drives).get();
-      expect(rows.map((d) => d.id), ['shared']);
-      expect(rows.single.encryptedKey, isNull);
+      expect(await db.select(db.drives).get(), isEmpty);
     });
 
     test(

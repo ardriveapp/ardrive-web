@@ -142,6 +142,41 @@ void main() {
     expect(await dao.driveById(driveId: driveId).getSingleOrNull(), isNotNull);
   });
 
+  test(
+      'a private row with no key and nothing in memory is detached at the '
+      'next session start, though never forgotten', () async {
+    await dao.writeDriveEntity(
+      name: 'shared',
+      entity: entity(driveId, owner: 'someone else'),
+      driveKey: driveKey,
+      profileKey: deviceKey,
+    );
+    await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
+      const DrivesCompanion(
+          encryptedKey: Value(null), keyEncryptionIv: Value(null)),
+    );
+    await newSession();
+
+    expect(await dao.detachForgottenDrives(), [driveId]);
+    expect(await dao.driveById(driveId: driveId).getSingleOrNull(), isNull);
+  });
+
+  test(
+      'a drive opened before signing in, with its key in memory only, is '
+      'kept and stored once signed in', () async {
+    // Opened as a visitor: no profile key, so the key is in memory alone.
+    await dao.writeDriveEntity(
+      name: 'opened',
+      entity: entity(driveId),
+      driveKey: driveKey,
+    );
+
+    expect(await dao.detachForgottenDrives(), isEmpty);
+    expect(dao.isSessionHeld(driveId), isFalse);
+    expect(await dao.persistInMemoryDriveKeys(deviceKey), [driveId]);
+    expect((await row(driveId)).encryptedKey, isNotNull);
+  });
+
   test('Forget all on this device forgets every stored key', () async {
     for (final (id, key) in [(driveId, driveKey), (otherId, otherKey)]) {
       await dao.writeDriveEntity(

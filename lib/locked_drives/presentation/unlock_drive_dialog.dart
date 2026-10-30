@@ -6,6 +6,7 @@ import 'package:ardrive/locked_drives/presentation/unlock_drive_cubit.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -48,22 +49,35 @@ Future<void> showUnlockDriveDialog(
 /// Syncs drives that were just unlocked: they have a row and a key now, and
 /// nothing else under them.
 ///
-/// A sync is refused while another runs - one at a time, never queued - so
-/// this waits for the running one once and asks again.
+/// The person just acted, so the tab counts as focused, as for the sync
+/// after signing in: Wander's window in front of it takes the focus away.
+///
+/// A sync is refused while another runs - one at a time, never queued - or
+/// while an upload or the like runs. This waits for whichever it was and
+/// asks again, a few times, and says in the log if the drives stay unsynced.
 ///
 /// It never asks the wallet again for other drives whose prompt was
 /// cancelled: unlocking one drive is not a request to be prompted for the
 /// rest.
 Future<void> syncUnlockedDrives(
   SyncCubit syncCubit,
-  List<String> driveIds,
-) async {
-  if (await syncCubit.syncDrives(driveIds, askWalletAgain: false)) {
-    return;
+  List<String> driveIds, {
+  int attempts = 3,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) await syncCubit.waitUntilSyncCanStart();
+    if (syncCubit.isClosed) return;
+    if (await syncCubit.syncDrives(
+      driveIds,
+      askWalletAgain: false,
+      skipTabVisibilityCheck: true,
+    )) {
+      return;
+    }
   }
 
-  await syncCubit.waitCurrentSync();
-  await syncCubit.syncDrives(driveIds, askWalletAgain: false);
+  logger.w('${driveIds.length} drive(s) just unlocked were not synced: '
+      'every sync was refused. The next sync picks them up.');
 }
 
 void _sayHowManyOpened(ScaffoldMessengerState? messenger, int count) {

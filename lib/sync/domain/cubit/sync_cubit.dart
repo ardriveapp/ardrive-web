@@ -1750,6 +1750,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     /// See [startSync]'s `askWalletAgain`.
     bool? askWalletAgain,
+
+    /// See [startSync].
+    bool skipTabVisibilityCheck = false,
   }) async {
     if (driveIds.isEmpty) {
       return false;
@@ -1766,7 +1769,31 @@ class SyncCubit extends Cubit<SyncState> {
       onlyDriveIds: driveIds,
       deepSync: deep,
       askWalletAgain: askWalletAgain,
+      skipTabVisibilityCheck: skipTabVisibilityCheck,
     );
+  }
+
+  /// Waits until nothing that refuses a sync is running: another sync, or
+  /// an activity a sync may not interrupt (an upload, say). Returns at once
+  /// if neither is. Ends early if this cubit closes.
+  Future<void> waitUntilSyncCanStart() async {
+    while (!isClosed) {
+      if (state is SyncInProgress) {
+        await waitCurrentSync();
+        continue;
+      }
+      if (_activityCubit.state is ActivityInProgress) {
+        try {
+          await _activityCubit.stream
+              .firstWhere((activity) => activity is! ActivityInProgress);
+        } on StateError {
+          // The activity cubit closed: nothing more will end.
+          return;
+        }
+        continue;
+      }
+      return;
+    }
   }
 
   /// Get the current sync progress

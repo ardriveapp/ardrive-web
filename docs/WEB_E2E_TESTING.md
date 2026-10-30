@@ -402,6 +402,32 @@ It needs its own wallet, so it runs in its own profile and credentials:
 A drive unlocked this way is remembered on this profile, so a second run
 needs a fresh `E2E_DIR`.
 
+**Sync with locked drives.** `node locked_sync.js`, with the same wallet and
+credentials, in a fresh `E2E_DIR` after `login.js fresh` (so the sign-in
+password has opened its own drive and the other three are locked). It turns
+auto-sync on every 30 seconds (`AUTO_SYNC_SECONDS`) through the stored config
+and puts the config back at the end. It reads each sync from the app's
+console and fails on "Error syncing drives", "Sync completed with N errors",
+a page error, or a "could not be synced" banner. It checks:
+- 1 of 4 open: three background syncs end clean, the locked drives stay
+  locked, and the third costs no more GraphQL requests and no more gateway
+  errors than the second (each tick's cost is printed as `COST`).
+- Unlock one with *Try on my other locked drives* unticked: only that drive
+  opens, the sync after it covers one drive, and the next background sync
+  leaves the drives sharing its password locked.
+- Unlock with the box ticked: the drives sharing the password open, and the
+  sync after covers exactly those.
+- Unlock while a background sync runs: the unlocked drive is synced once the
+  running one ends, and nothing fails.
+- *Stop syncing* mid-sync stops it, is not a failure, and the next background
+  sync runs.
+- *Forget on this device*: the drive stays open and syncing this session;
+  after a reload it alone is locked, the rest open, and background syncs run
+  clean.
+
+It takes about fifteen minutes. Wander isn't covered here: see the next
+paragraph, and the unit tests in `test/locked_drives/`.
+
 **Signing in without a password (browser wallets).** Wander, Phantom,
 Solflare and new MetaMask accounts sign in with a wallet approval and no
 ArDrive password (the 3.0 password design, P3). `login.js` signs in with a

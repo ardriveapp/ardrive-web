@@ -114,7 +114,11 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
     }
 
     if (result.opened) {
-      await _notePasswordOpened(password);
+      await _notePasswordOpened(
+        password,
+        tryOthers: tryOthers,
+        remember: remember,
+      );
 
       // Not awaited: the sync outlives the dialog, which closes now.
       unawaited(_syncDrives(result.openedDriveIds));
@@ -153,15 +157,23 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   /// If the sign-in password is unproven and this is another one, discovery
   /// may try it - it opened a drive - but new drives never use it: it may be
   /// an old drive's password, not the drive password.
-  Future<void> _notePasswordOpened(String password) async {
+  ///
+  /// Only with [tryOthers]: unticked, the person asked for this drive alone,
+  /// and a later discovery must not open the others with it. The drives
+  /// discovery opens with it follow [remember].
+  Future<void> _notePasswordOpened(
+    String password, {
+    required bool tryOthers,
+    required bool remember,
+  }) async {
     final owner = await _wallet.getAddress();
     final session = _unlocker.session;
 
     if (password == _signInPassword) {
       session.setSignInPasswordProven(owner, true);
       await (_proofStore ?? SignInPasswordProofStore()).clear(owner);
-    } else if (session.signInPasswordProven(owner) == false) {
-      session.rememberProvenDrivePassword(owner, password);
+    } else if (tryOthers && session.signInPasswordProven(owner) == false) {
+      session.rememberProvenDrivePassword(owner, password, keepKeys: remember);
     }
   }
 

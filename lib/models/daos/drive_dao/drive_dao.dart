@@ -330,14 +330,30 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// itself only have a row and no key. They are detached, rows and
   /// contents, so they show as locked until unlocked again. A drive whose key
   /// this session already holds (opened before signing in) is left alone.
+  ///
+  /// So is any other private drive with a row and no key, such as a shared
+  /// drive whose key an older version dropped: nothing can read it, and a
+  /// sync would only skip it. The signed-in wallet's own come back as locked;
+  /// a shared one, through its link.
+  ///
   /// Returns the ids detached.
   Future<List<DriveID>> detachForgottenDrives() async {
     final detached = <DriveID>[];
-    for (final driveId in await forgottenDriveIds()) {
+    final forgotten = await forgottenDriveIds();
+    final keyless = (await (select(drives)
+              ..where((d) =>
+                  d.privacy.equals(DrivePrivacyTag.private) &
+                  d.encryptedKey.isNull()))
+            .get())
+        .map((d) => d.id);
+    for (final driveId in {...forgotten, ...keyless}) {
       final row = await driveById(driveId: driveId).getSingleOrNull();
       if (row == null || row.encryptedKey != null) continue;
       if (await getDriveKeyFromMemory(driveId) != null) {
-        _sessionHeldDriveIds.add(driveId);
+        // Opened before signing in. Kept for the session only if this device
+        // was told to forget it; otherwise its key is stored on sign-in
+        // ([persistInMemoryDriveKeys]).
+        if (forgotten.contains(driveId)) _sessionHeldDriveIds.add(driveId);
         continue;
       }
       await detachDrive(driveId);
@@ -350,11 +366,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// can make any more (a profile from before 3.0 that a browser wallet now
   /// signs in to without its password).
   ///
-  /// - [ownerAddress]'s own drives go, rows and contents: they show as
-  ///   locked, and their password opens them again.
-  /// - A drive someone else owns, opened here by its share link, keeps its
-  ///   rows; only the dead key goes. Detaching it would lose it for good, as
-  ///   nothing lists it but this device. Its share link opens it again.
+  /// Every such drive goes, rows and contents:
+  /// - [ownerAddress]'s own drives show as locked, and their password opens
+  ///   them again.
+  /// - A drive someone else owns, opened here by its share link, is opened
+  ///   again by that link, and synced from the start.
+  ///
+  /// A row kept without its key would be read by every sync as a drive it
+  /// can't decrypt, and its watermark would move on past items a later
+  /// attach by link would then never read.
   ///
   /// Returns how many of each.
   Future<({int own, int shared})> discardStoredDriveKeys({
@@ -365,16 +385,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     var own = 0;
     var shared = 0;
     for (final drive in stored) {
+      await detachDrive(drive.id);
       if (drive.ownerAddress == ownerAddress) {
-        await detachDrive(drive.id);
         own++;
       } else {
-        await (update(drives)..where((d) => d.id.equals(drive.id))).write(
-          const DrivesCompanion(
-            encryptedKey: Value(null),
-            keyEncryptionIv: Value(null),
-          ),
-        );
         shared++;
       }
     }
