@@ -40,14 +40,14 @@ class ArDriveDropdownItemTile extends StatelessWidget {
 
   Color _labelColor(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return isDisabled ? colorTokens.textLow : colorTokens.textHigh;
+    return isDisabled ? colorTokens.textXLow : colorTokens.textHigh;
   }
 
   /// The icon in the label's colour, unless it was given one of its own (a
   /// red delete, say). A disabled item greys it either way.
   ArDriveIcon _icon(BuildContext context) => icon!.copyWith(
         color: isDisabled
-            ? ArDriveTheme.of(context).themeData.colorTokens.textLow
+            ? ArDriveTheme.of(context).themeData.colorTokens.textXLow
             : icon!.color ?? _labelColor(context),
       );
 
@@ -116,7 +116,7 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                                   ? ArDriveTheme.of(context)
                                       .themeData
                                       .colorTokens
-                                      .textLow
+                                      .textXLow
                                   : ArDriveTheme.of(context)
                                       .themeData
                                       .colorTokens

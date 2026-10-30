@@ -495,7 +495,7 @@ class _SearchDropdown extends StatelessWidget {
               : localizations.searchSearching,
           style: typography.paragraphNormal(
             color: colorTokens.textMid,
-            fontWeight: ArFontWeight.semiBold,
+            fontWeight: ArFontWeight.book,
           ),
         ),
       );
@@ -649,7 +649,7 @@ class _ResultRow extends StatelessWidget {
                       ),
                       matchStyle: typography.paragraphNormal(
                         color: colorTokens.textHigh,
-                        fontWeight: ArFontWeight.bold,
+                        fontWeight: ArFontWeight.semiBold,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -715,7 +715,7 @@ class _SeeAllRow extends StatelessWidget {
                   label,
                   style: typography.paragraphNormal(
                     color: colorTokens.textHigh,
-                    fontWeight: ArFontWeight.bold,
+                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
               ),

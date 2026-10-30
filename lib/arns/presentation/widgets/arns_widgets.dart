@@ -117,7 +117,7 @@ class ArNSChoiceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
-    final fg = enabled ? colors.textHigh : colors.textLow;
+    final fg = enabled ? colors.textHigh : colors.textXLow;
 
     return Semantics(
       inMutuallyExclusiveGroup: true,

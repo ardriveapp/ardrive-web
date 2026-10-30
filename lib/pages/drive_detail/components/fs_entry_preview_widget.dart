@@ -545,7 +545,7 @@ class _PlayPauseButton extends StatelessWidget {
                 isPlaying ? Icons.pause_outlined : Icons.play_arrow_outlined,
                 size: 32,
                 color: onPressed == null
-                    ? colorTokens.textLow
+                    ? colorTokens.textXLow
                     : colorTokens.textOnPrimary,
               ),
             ),

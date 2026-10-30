@@ -174,7 +174,7 @@ class NewButton extends StatelessWidget {
                                 ArDriveTypographyNew.of(context).paragraphLarge(
                               fontWeight: ArFontWeight.semiBold,
                               color: item.isDisabled
-                                  ? colorTokens.textLow
+                                  ? colorTokens.textXLow
                                   : colorTokens.textHigh,
                             ),
                           ),

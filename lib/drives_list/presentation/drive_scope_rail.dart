@@ -170,10 +170,16 @@ class DriveNavRow extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
             child: Container(
+              // The table's selected-row colour, so the nav and the table
+              // mark where you are alike. containerL2 was about 1.1:1
+              // against the page in dark.
               decoration: isCurrent
                   ? BoxDecoration(
-                      color: colorTokens.containerL2,
-                      borderRadius: BorderRadius.circular(4),
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .tableTheme
+                          .selectedItemColor,
+                      borderRadius: BorderRadius.circular(ArDriveRadius.sm),
                     )
                   : null,
               padding: EdgeInsets.symmetric(
@@ -197,11 +203,11 @@ class DriveNavRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         label,
+                        // SemiBold, like every label: Bold is for titles, and
+                        // the fill already marks the current row.
                         style: typography.paragraphNormal(
                           color: color,
-                          fontWeight: isCurrent
-                              ? ArFontWeight.bold
-                              : ArFontWeight.semiBold,
+                          fontWeight: ArFontWeight.semiBold,
                         ),
                       ),
                     ),

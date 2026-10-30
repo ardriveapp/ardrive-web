@@ -144,7 +144,7 @@ class SyncRunTile extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 2),
                 child: ArDriveIcons.triangle(
                   size: 14,
-                  color: colorTokens.strokeRed,
+                  color: colorTokens.statusErrorFg,
                 ),
               ),
               const SizedBox(width: 6),
