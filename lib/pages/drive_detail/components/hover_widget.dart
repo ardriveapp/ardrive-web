@@ -43,7 +43,7 @@ class _HoverWidgetState extends State<HoverWidget> {
             borderRadius: BorderRadius.circular(ArDriveRadius.control),
           ),
           child: Container(
-            padding: widget.padding ?? const EdgeInsets.all(5.0),
+            padding: widget.padding ?? const EdgeInsets.all(ArDriveSpacing.xxs),
             decoration: BoxDecoration(
               color: _isHovering
                   ? widget.hoverColor ??

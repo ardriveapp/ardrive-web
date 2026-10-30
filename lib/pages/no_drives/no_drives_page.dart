@@ -468,10 +468,17 @@ class GettingStartedCards extends StatelessWidget {
   }
 }
 
-/// Getting started's one primary action. The files go into a private "My
-/// files", made for them first: see `startUpload`.
+/// Getting started's main action. The files go into a private "My files",
+/// made for them first: see `startUpload`.
 class UploadFirstFilesButton extends StatelessWidget {
-  const UploadFirstFilesButton({super.key});
+  const UploadFirstFilesButton({
+    super.key,
+    this.variant = ButtonVariant.primary,
+  });
+
+  /// Secondary where the view already has its one primary, as the drives
+  /// list does in the sidebar's New.
+  final ButtonVariant variant;
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +490,7 @@ class UploadFirstFilesButton extends StatelessWidget {
         size: ArDriveButtonSize.large,
         text: appLocalizationsOf(context).uploadFirstFiles,
         typography: typography,
-        variant: ButtonVariant.primary,
+        variant: variant,
         onPressed: () => startUpload(context, isFolderUpload: false),
       ),
     );

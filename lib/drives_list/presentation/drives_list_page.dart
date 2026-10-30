@@ -3,6 +3,7 @@ import 'package:ardrive/pages/no_drives/first_drive_page.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
+import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
@@ -41,9 +42,8 @@ const Duration _selectionFade = Duration(milliseconds: 150);
 /// Wide enough for "Sync all drives" and no wider, at a text scale of 1.
 ///
 /// The label measures 120px in Wavehaus at the button's size, plus its 20px of
-/// padding.
-/// Both primary actions on this page. A button that fills its column
-/// reads as an alert rather than an offer.
+/// padding. A button that fills its column reads as an alert rather than an
+/// offer.
 ///
 /// Never used raw - see [driveListSyncAllButtonWidth]. It is a measurement of
 /// text, and text is not a fixed number of pixels.
@@ -225,6 +225,7 @@ class _DrivesListChrome extends StatelessWidget {
               onChoose: onChoose,
               settingUpFirstDrive: FirstDrivePage.settingUp.value,
               state: state,
+              scope: cubit.scope,
               // Selecting is how a drive is opened from anywhere on this route,
               // the sidebar included. A locked drive opens its unlock dialog.
               onOpenDrive: (drive) => drive.isLocked
@@ -337,7 +338,12 @@ class DrivesListBody extends StatelessWidget {
     this.onChoose,
     this.buildEmpty,
     this.settingUpFirstDrive = false,
+    this.scope = DriveScope.all,
   });
+
+  /// The scope the page is on, which names the title row while there is no
+  /// list to say so. A loaded list's own scope wins over it.
+  final DriveScope scope;
 
   /// What an account with no drives sees, in place of Getting started.
   final WidgetBuilder? buildEmpty;
@@ -387,21 +393,42 @@ class DrivesListBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = this.state;
+    final scope = state is DrivesListLoaded ? state.scope : this.scope;
+
+    // Every state below has the same title row at the same height as the
+    // list's own, so nothing on the page moves when the list arrives or a
+    // scope turns out to be empty.
+    Widget titled(Widget body) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _DrivesTitleRow(
+              title: DriveScopeRail.labelFor(context, scope),
+              syncMenu: syncMenu,
+            ),
+            const SizedBox(height: _blockGap),
+            Expanded(child: body),
+          ],
+        );
 
     if (state is DrivesListUnavailable) {
-      return _DrivesListUnavailable(onTryAgain: onTryAgain);
+      return titled(_DrivesListUnavailable(onTryAgain: onTryAgain));
     }
 
     if (state is DrivesListEmpty ||
         (buildEmpty != null && settingUpFirstDrive)) {
-      return buildEmpty?.call(context) ?? const _DrivesListEmpty();
+      return titled(buildEmpty?.call(context) ?? const _DrivesListEmpty());
     }
 
     // A scope that filters to nothing is not an empty account: the wallet has
     // drives, just none of this kind. `DrivesListEmpty` above is the account
     // with none at all, and says something quite different.
     if (state is DrivesListLoaded && state.drives.isEmpty) {
-      return DriveScopeEmpty(scope: state.scope);
+      return titled(
+        DriveScopeEmpty(
+          scope: state.scope,
+          hiddenCount: state.counts[DriveScope.hidden],
+        ),
+      );
     }
 
     if (state is DrivesListLoaded) {
@@ -429,8 +456,10 @@ class DrivesListBody extends StatelessWidget {
 
     // Loading, and anything that has not yet resolved into one of the other
     // three. Never "you have none".
-    return _DrivesListLoading(
-      state: state is DrivesListLoading ? state : null,
+    return titled(
+      _DrivesListLoading(
+        state: state is DrivesListLoading ? state : null,
+      ),
     );
   }
 }
@@ -451,12 +480,10 @@ class _CentredMessage extends StatelessWidget {
             child: Padding(
               // The page's own margin, so this panel stops where the table's
               // panel stops rather than running into the window edge.
-              padding: const EdgeInsets.fromLTRB(
-                _pagePadding,
-                _blockGap,
-                _pagePadding,
-                _sectionGap,
-              ),
+              // The table's own edges, so this card is exactly as wide as the
+              // table it stands in for, and the title row above already
+              // leaves the gap the table has.
+              padding: const EdgeInsets.only(bottom: _sectionGap),
               child: Container(
                 // The ground every other full-panel state sits on. These two -
                 // the drives loading, and the drive list that could not be
@@ -565,10 +592,10 @@ class _DrivesListUnavailable extends StatelessWidget {
         ArDriveButtonNew(
           text: appLocalizationsOf(context).tryAgain,
           typography: typography,
-          variant: ButtonVariant.primary,
-          // Without a cap this fills its column - 420px of danger red on the
-          // screen whose message is that nothing has been lost. Scaled,
-          // because the cap is a measurement of the label inside it.
+          // Secondary: the sidebar's New is the view's one primary.
+          variant: ButtonVariant.secondary,
+          // Without a cap this fills its column. Scaled, because the cap is a
+          // measurement of the label inside it.
           maxWidth: driveListSyncAllButtonWidth(context),
           onPressed: onTryAgain,
         ),
@@ -610,7 +637,9 @@ class _DrivesListEmpty extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          const UploadFirstFilesButton(),
+          // Not red: the sidebar's New is this view's one primary, and the
+          // two drive cards below are secondary too.
+          const UploadFirstFilesButton(variant: ButtonVariant.secondary),
           const SizedBox(height: 32),
           const GettingStartedCards(),
         ],
@@ -847,21 +876,44 @@ class _DrivesListLoadedView extends StatelessWidget {
   }
 
   Widget _heading(BuildContext context) {
+    return _DrivesTitleRow(
+      title: DriveScopeRail.labelFor(context, state.scope),
+      syncMenu: syncMenu,
+      selectionCount: onClearSelection == null ? 0 : state.selected.length,
+      onClearSelection: onClearSelection,
+    );
+  }
+}
+
+/// The page's title row, named for the scope on screen, with the page's sync
+/// control at its end. Every state of the page draws it, so the page never
+/// moves when the list arrives, fails or turns out to be empty.
+///
+/// While drives are ticked the same line becomes the selection: what is
+/// ticked and the way out, with the sync control at its end acting on them.
+/// It used to be a band of its own between the cards and the table, which
+/// pushed the list down on the first tick. In place, at the same height,
+/// nothing below it moves.
+class _DrivesTitleRow extends StatelessWidget {
+  const _DrivesTitleRow({
+    required this.title,
+    required this.syncMenu,
+    this.selectionCount = 0,
+    this.onClearSelection,
+  });
+
+  final String title;
+  final Widget? syncMenu;
+  final int selectionCount;
+  final VoidCallback? onClearSelection;
+
+  @override
+  Widget build(BuildContext context) {
+    final onClear = onClearSelection;
     // Tinted the table's colour for a ticked row while selecting, so the
     // heading and the rows read as one selection.
-    final selecting = state.selected.isNotEmpty && onClearSelection != null;
+    final selecting = selectionCount > 0 && onClear != null;
 
-    // The heading and the drive-wide actions on one line. The actions were
-    // behind the top bar's indicator, which is now present only when there is
-    // something to report - so they needed a home that always is, and they act
-    // on the drives this page lists.
-    //
-    // While drives are ticked the same line becomes the selection: what is
-    // ticked, the way out, and - in the sync button at its end - what to do
-    // with them. It used to be a band of its own between the cards and the
-    // table, which pushed the list down on the first tick and put the count
-    // and its action at opposite ends of the screen from the page's other
-    // sync button. In place, at the same height, nothing below it moves.
     return ListPageTitleRow(
       highlighted: selecting,
       title: AnimatedSwitcher(
@@ -873,12 +925,12 @@ class _DrivesListLoadedView extends StatelessWidget {
         child: selecting
             ? _SelectionHeading(
                 key: const ValueKey('selecting'),
-                count: state.selected.length,
-                onClear: onClearSelection!,
+                count: selectionCount,
+                onClear: onClear,
               )
             : ListPageTitleRow.text(
                 context,
-                appLocalizationsOf(context).yourDrives,
+                title,
                 key: const ValueKey('title'),
               ),
       ),

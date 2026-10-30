@@ -299,10 +299,9 @@ void main() {
     });
   });
 
-  /// The main half does the one obvious thing for the page as it stands, and
-  /// is red only while there is one: nothing has synced yet, or drives are
-  /// ticked. It is the page's only sync button - the never-synced card and the
-  /// selection used to carry red buttons of their own.
+  /// The main half does the one obvious thing for the page as it stands. It is
+  /// the page's only sync button, and never red: the sidebar's New is the
+  /// view's one primary.
   group('the main half', () {
     late _MockDrivesListCubit drivesList;
 
@@ -366,16 +365,24 @@ void main() {
       await pumpMenu(tester);
 
       expect(label(tester).data, 'Sync');
+      // The label style every button uses: paragraphLarge SemiBold.
+      final style = label(tester).style!;
+      final buttonLabel = ArDriveTypographyNew.of(
+        tester.element(find.byKey(DrivesSyncMenu.primaryKey)),
+      ).paragraphLarge(fontWeight: ArFontWeight.semiBold);
+      expect(style.fontSize, buttonLabel.fontSize);
+      expect(style.fontWeight, buttonLabel.fontWeight);
       expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
     });
 
-    testWidgets('reads "Sync all drives" in red before anything has synced',
+    testWidgets('reads "Sync all drives", outlined, before anything has synced',
         (tester) async {
       listed(walked: false);
       await pumpMenu(tester);
 
       expect(label(tester).data, 'Sync all drives');
-      expect(fillOf(tester), lightTheme().colorTokens.buttonPrimaryDefault);
+      // Never red: the sidebar's New is the view's one primary.
+      expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
@@ -385,13 +392,13 @@ void main() {
           reason: 'the main half acts; only the chevron opens the menu');
     });
 
-    testWidgets('reads "Sync 2 selected" in red with two drives ticked',
+    testWidgets('reads "Sync 2 selected", outlined, with two drives ticked',
         (tester) async {
       listed(walked: true, selected: const {'a', 'b'});
       await pumpMenu(tester);
 
       expect(label(tester).data, 'Sync 2 selected');
-      expect(fillOf(tester), lightTheme().colorTokens.buttonPrimaryDefault);
+      expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
@@ -425,6 +432,10 @@ void main() {
       await pumpMenu(tester);
 
       expect(label(tester).data, 'Sync');
+      // Drawn as a disabled button is: the disabled fill and the faintest
+      // text, not an outline with a dimmed label.
+      expect(fillOf(tester), lightTheme().colorTokens.buttonDisabled);
+      expect(label(tester).style?.color, lightTheme().colorTokens.textXLow);
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();

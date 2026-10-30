@@ -1,3 +1,5 @@
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/pages/drive_detail/components/item_menus.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +19,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// The icon inside the tap target, which is [driveListMenuTapTarget] - a
 /// layout constant, kept with the rest of the row's geometry.
 const double _menuIconSize = 20;
+
+/// How far the menu button's target sits in from the row's end: it is
+/// centred in the gutter the row reserves for it.
+const double _targetInset = (listMenuGutter - driveListMenuTapTarget) / 2;
 
 /// The drive-wide actions, offered where the drives are listed.
 ///
@@ -78,13 +84,22 @@ class DriveActionsMenu extends StatelessWidget {
       // callback is supplied; the file explorer's row menu does the same.
       calculateVerticalAlignment: (isBelowHalfScreen) =>
           isBelowHalfScreen ? Alignment.bottomRight : Alignment.topRight,
-      anchor: const Aligned(
+      anchor: Aligned(
         follower: Alignment.topRight,
         target: Alignment.bottomRight,
+        // On a phone the button's target runs to within a few pixels of the
+        // screen's edge, so the menu is pulled in to the phone's 16 px
+        // gutter rather than lining up with it.
+        offset: Offset(
+          MediaQuery.sizeOf(context).width < TABLET
+              ? -(ArDriveSpacing.md - _targetInset)
+              : 0,
+          0,
+        ),
         // The button is at the row's trailing edge and the menu is wider than
         // the room left of it on a phone, so without this it opens past the
         // screen's left edge and takes every item's icon with it.
-        shiftToWithinBound: AxisFlag(x: true),
+        shiftToWithinBound: const AxisFlag(x: true),
       ),
       items: driveMenuItems(
         context,

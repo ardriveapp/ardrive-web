@@ -299,6 +299,16 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     // Counted over everything, filtered to one scope. A scope reading zero is
     // exactly the fact a reader wants before clicking it, so the counts cannot
     // come from the filtered list.
+    final counts = DriveScopeCounts.of(items);
+
+    // The sidebar offers Hidden only while something is hidden, so unhiding
+    // the last hidden drive takes the row away. Staying on it would leave the
+    // page on a scope nothing in the sidebar names, so the page goes home.
+    if (_scope == DriveScope.hidden && counts[DriveScope.hidden] == 0) {
+      _scope = DriveScope.all;
+      _selected.clear();
+    }
+
     final shown = items.where(_scope.matches).toList()
       ..sort(_sort.comparator(ascending: _sortAscending));
 
@@ -315,7 +325,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     emit(DrivesListLoaded(
       drives: shown,
       scope: _scope,
-      counts: DriveScopeCounts.of(items),
+      counts: counts,
       sort: _sort,
       sortAscending: _sortAscending,
       selected: Set.unmodifiable(_selected),

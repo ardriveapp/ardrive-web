@@ -1,6 +1,7 @@
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
+import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -12,50 +13,53 @@ import 'package:flutter/material.dart';
 /// the sharp case - attaching is the *only* way a drive gets there, and the
 /// only place to attach one was the New menu, which reads as "make something",
 /// not "add something somebody sent me".
+///
+/// The design system's empty state, so it has the icon, spacing and phone
+/// gutter every other empty state has. Its action is secondary: the sidebar's
+/// New is the view's one primary.
 class DriveScopeEmpty extends StatelessWidget {
-  const DriveScopeEmpty({super.key, required this.scope});
+  const DriveScopeEmpty({
+    super.key,
+    required this.scope,
+    this.hiddenCount = 0,
+  });
 
   final DriveScope scope;
 
+  /// How many drives are hidden. Your drives leaves hidden drives out, so a
+  /// wallet whose drives are all hidden lands here, and is told where they
+  /// went rather than that it has none.
+  final int hiddenCount;
+
+  bool get _allHidden => scope == DriveScope.all && hiddenCount > 0;
+
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final l = appLocalizationsOf(context);
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _title(l),
-              // The same step every other state of this page uses. The one that
-              // read `heading2` was louder than the page's own title.
-              style: typography.heading4(
-                color: colorTokens.textHigh,
-                fontWeight: ArFontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+    // Scrolls rather than overflows on a short screen, and centres itself in
+    // the height there is.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: ArDriveEmptyState(
+            icon: Icon(
+              _allHidden
+                  ? DriveScopeRail.iconFor(DriveScope.hidden)
+                  : DriveScopeRail.iconFor(scope),
+              size: 32,
+              color: colorTokens.iconLow,
             ),
-            const SizedBox(height: 8),
-            Text(
-              _description(l),
-              style: typography.paragraphNormal(color: colorTokens.textMid),
-              textAlign: TextAlign.center,
-            ),
-            if (scope == DriveScope.sharedWithMe) ...[
-              const SizedBox(height: 24),
-              ArDriveButtonNew(
-                text: l.attachDrive,
-                typography: typography,
-                variant: ButtonVariant.primary,
-                maxWidth: 220,
-                onPressed: () => attachDrive(context: context),
-              ),
-            ],
-          ],
+            title: _title(l),
+            message: _description(l),
+            secondaryActionLabel:
+                scope == DriveScope.sharedWithMe ? l.attachDrive : null,
+            onSecondaryAction: scope == DriveScope.sharedWithMe
+                ? () => attachDrive(context: context)
+                : null,
+          ),
         ),
       ),
     );
@@ -69,13 +73,14 @@ class DriveScopeEmpty extends StatelessWidget {
         return l.noPrivateDrives;
       case DriveScope.sharedWithMe:
         return l.noSharedDrives;
-      case DriveScope.all:
       case DriveScope.hidden:
-        return l.noDrivesInScope;
+        return l.noHiddenDrives;
+      case DriveScope.all:
+        return _allHidden ? l.allDrivesHidden : l.noDrivesInScope;
     }
   }
 
-  String _description(AppLocalizations l) {
+  String? _description(AppLocalizations l) {
     switch (scope) {
       case DriveScope.public:
         return l.noPublicDrivesDescription;
@@ -83,9 +88,10 @@ class DriveScopeEmpty extends StatelessWidget {
         return l.noPrivateDrivesDescription;
       case DriveScope.sharedWithMe:
         return l.noSharedDrivesDescription;
-      case DriveScope.all:
       case DriveScope.hidden:
-        return l.noSharedDrivesDescription;
+        return l.noHiddenDrivesDescription;
+      case DriveScope.all:
+        return _allHidden ? l.allDrivesHiddenDescription : null;
     }
   }
 }

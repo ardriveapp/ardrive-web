@@ -464,8 +464,9 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(
                   width: 24,
                 ),
+                // The phone's 16 px gutter.
                 const Padding(
-                  padding: EdgeInsets.only(right: 12.0),
+                  padding: EdgeInsets.only(right: ArDriveSpacing.md),
                   child: ProfileCard(),
                 ),
               ],

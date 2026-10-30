@@ -23,10 +23,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 ///
 /// A split button: the main half does the one obvious thing for the page as
 /// it stands, and the chevron opens every action. It is the page's only sync
-/// control. The never-synced card and the selection used to carry red buttons
-/// of their own, so a first login could show three sync buttons at once; now
-/// this one turns red when there is an obvious thing to do - nothing has
-/// synced yet, or drives are ticked - and is outlined otherwise.
+/// control.
+///
+/// Always the outline variant, never red: the sidebar's New is the view's one
+/// primary, and a red Sync beside it was two filled red buttons with
+/// different jobs on one screen.
 class DrivesSyncMenu extends StatelessWidget {
   const DrivesSyncMenu({super.key});
 
@@ -68,21 +69,19 @@ class DrivesSyncMenu extends StatelessWidget {
 
         final offersRetry = errors != null && errors.failedDriveIds.isNotEmpty;
 
-        // One height for both halves, from the label's size at the reader's
-        // text scale, so they stay one control when the text grows.
-        final labelStyle = ArDriveTypographyNew.of(context).paragraphNormal(
+        // The label style every button uses, so this reads as one of them.
+        // One height for both halves, from the label's line at the reader's
+        // text scale, so they stay one control when the text grows: the
+        // regular button's 40 at a scale of 1.
+        final labelStyle = ArDriveTypographyNew.of(context).paragraphLarge(
           fontWeight: ArFontWeight.semiBold,
         );
         final height = math.max(
           40.0,
           MediaQuery.textScalerOf(context).scale(labelStyle.fontSize ?? 16) *
-                  (labelStyle.height ?? 1.4) +
-              18,
+                  (labelStyle.height ?? 1.5) +
+              16,
         );
-
-        // Red when there is one obvious thing to do; outlined otherwise, so
-        // the page calms down once it has nothing to ask of the reader.
-        final emphasis = !isSyncing && (selection > 0 || nothingSynced);
 
         final String primaryLabel;
         final VoidCallback? onPrimary;
@@ -202,7 +201,6 @@ class DrivesSyncMenu extends StatelessWidget {
             );
 
         return _SplitButton(
-          emphasis: emphasis,
           height: height,
           onPrimary: onPrimary,
           primaryLabel: primaryLabel,
@@ -239,12 +237,12 @@ class DrivesSyncMenu extends StatelessWidget {
 /// chevron half is inert and only reads the pointer for its fill. The main half
 /// handles its own tap.
 ///
-/// [emphasis] is the primary variant, `ArDriveButtonNew`'s tokens, and
-/// otherwise the outline variant. Colours are animated, so the button turning
-/// red when a drive is ticked reads as a change rather than a flicker.
+/// The outline variant, with `ArDriveButtonNew`'s tokens: a disabled half is
+/// filled `buttonDisabled` with its label in `textXLow`, as a disabled button
+/// is. Colours are animated, so a change of state reads as one rather than as
+/// a flicker.
 class _SplitButton extends StatefulWidget {
   const _SplitButton({
-    required this.emphasis,
     required this.height,
     required this.onPrimary,
     required this.primaryLabel,
@@ -253,7 +251,6 @@ class _SplitButton extends StatefulWidget {
     required this.wrapChevron,
   });
 
-  final bool emphasis;
   final double height;
   final VoidCallback? onPrimary;
   final String primaryLabel;
@@ -279,14 +276,7 @@ class _SplitButtonState extends State<_SplitButton> {
     required bool hovered,
     required bool pressed,
   }) {
-    if (widget.emphasis) {
-      return pressed
-          ? tokens.buttonPrimaryPress
-          : hovered
-              ? tokens.buttonPrimaryHover
-              : tokens.buttonPrimaryDefault;
-    }
-    if (!enabled) return tokens.buttonOutlineDefault;
+    if (!enabled) return tokens.buttonDisabled;
     return pressed
         ? tokens.buttonOutlinePress
         : hovered
@@ -323,13 +313,7 @@ class _SplitButtonState extends State<_SplitButton> {
     final primaryEnabled = widget.onPrimary != null;
     final active = (_primaryHovered && primaryEnabled) || _moreHovered;
 
-    final outline = widget.emphasis
-        ? Colors.transparent
-        : active
-            ? tokens.strokeHigh
-            : tokens.strokeMid;
-    final divider =
-        widget.emphasis ? tokens.textOnPrimary.withOpacity(0.35) : outline;
+    final outline = active ? tokens.strokeHigh : tokens.strokeMid;
 
     final primaryHalf = Semantics(
       button: true,
@@ -377,11 +361,7 @@ class _SplitButtonState extends State<_SplitButton> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: widget.labelStyle.copyWith(
-                      color: widget.emphasis
-                          ? tokens.textOnPrimary
-                          : primaryEnabled
-                              ? tokens.textHigh
-                              : tokens.textXLow,
+                      color: primaryEnabled ? tokens.textHigh : tokens.textXLow,
                     ),
                   ),
                 ),
@@ -420,7 +400,7 @@ class _SplitButtonState extends State<_SplitButton> {
             widthFactor: 1,
             child: ArDriveIcons.chevronDown(
               size: 16,
-              color: widget.emphasis ? tokens.textOnPrimary : tokens.textMid,
+              color: tokens.textMid,
             ),
           ),
         ),
@@ -441,7 +421,7 @@ class _SplitButtonState extends State<_SplitButton> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Flexible(child: primaryHalf),
-          AnimatedContainer(duration: _fade, width: 1, color: divider),
+          AnimatedContainer(duration: _fade, width: 1, color: outline),
           widget.wrapChevron(chevron),
         ],
       ),

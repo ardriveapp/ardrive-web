@@ -411,7 +411,8 @@ class DriveListRow extends StatelessWidget {
       title: drive.name,
       marks: [
         if (drive.isSharedWithMe) _SharedMarker(),
-        PublishedToWebMark(driveId: drive.id),
+        // The name's marks are spaced by the list, so the mark adds none.
+        PublishedToWebMark(driveId: drive.id, leadingGap: 0),
       ],
     );
   }
@@ -457,7 +458,7 @@ class DriveListRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ArDriveIcons.triangle(size: 14, color: colorTokens.statusErrorFg),
-          const SizedBox(width: 6),
+          const SizedBox(width: ArDriveSpacing.xxs),
           Flexible(
             child: Text(
               formatDriveSyncState(context, drive),

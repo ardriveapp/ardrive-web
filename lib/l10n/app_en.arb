@@ -4619,7 +4619,7 @@
   "@noSharedDrives": {
     "description": "Empty state for the Shared with me scope."
   },
-  "noSharedDrivesDescription": "A drive someone shares with you appears here once you attach it.",
+  "noSharedDrivesDescription": "Drives you attach appear here.",
   "@noSharedDrivesDescription": {
     "description": "Says how a drive gets into the Shared scope, since attaching is the only way."
   },
@@ -4630,6 +4630,22 @@
   "noPrivateDrivesDescription": "A private drive is encrypted, and only you can read it.",
   "@noPrivateDrivesDescription": {
     "description": "Says what a private drive is, for somebody who has none."
+  },
+  "noHiddenDrives": "No hidden drives",
+  "@noHiddenDrives": {
+    "description": "Empty state for the Hidden scope."
+  },
+  "noHiddenDrivesDescription": "Drives you hide appear here.",
+  "@noHiddenDrivesDescription": {
+    "description": "Says how a drive gets into the Hidden scope."
+  },
+  "allDrivesHidden": "All your drives are hidden",
+  "@allDrivesHidden": {
+    "description": "Empty state for Your drives when every drive is hidden."
+  },
+  "allDrivesHiddenDescription": "Find them under Hidden.",
+  "@allDrivesHiddenDescription": {
+    "description": "Points to the Hidden scope in the sidebar, where hidden drives are listed."
   },
   "publicationLoadingFiles": "Loading files...",
   "@publicationLoadingFiles": {
