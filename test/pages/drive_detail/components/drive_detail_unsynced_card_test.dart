@@ -346,8 +346,7 @@ void main() {
     // an unsynced card with two unavailable buttons, nothing in flight, and a
     // strip at the top of the app reporting a sync that is not this one.
     const notStarted =
-        'Another drive is syncing, so this one was not started. Sync it once '
-        'that one finishes.';
+        'Another drive is syncing. Sync this one when it finishes.';
     const alreadyRunning = 'A sync is already running for this drive.';
 
     testWidgets('nothing is claimed when no sync is running', (tester) async {

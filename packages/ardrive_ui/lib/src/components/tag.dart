@@ -2,7 +2,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 enum ArDriveTagType {
-  /// A plain label: "Deployment", "Shared with me", "Managed for its owner".
+  /// A plain label: "Shared with me", "Controller".
   neutral,
 
   /// Brand Info: something to know about the item.
