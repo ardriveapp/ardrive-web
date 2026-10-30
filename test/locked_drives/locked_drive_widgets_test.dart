@@ -546,6 +546,7 @@ void main() {
     final syncCubit = _MockSyncCubit();
     when(() => syncCubit.isClosed).thenReturn(false);
     when(() => syncCubit.waitUntilSyncCanStart()).thenAnswer((_) async {});
+    when(() => syncCubit.lastStartWasRefused).thenReturn(true);
     when(() => syncCubit.syncDrives(any(),
             askWalletAgain: any(named: 'askWalletAgain'),
             skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck')))
@@ -556,6 +557,23 @@ void main() {
     verify(() => syncCubit.syncDrives([_driveId],
         askWalletAgain: false, skipTabVisibilityCheck: true)).called(3);
     verify(() => syncCubit.waitUntilSyncCanStart()).called(2);
+  });
+
+  test('the sync after an unlock that ran and was stopped is not retried',
+      () async {
+    final syncCubit = _MockSyncCubit();
+    when(() => syncCubit.isClosed).thenReturn(false);
+    when(() => syncCubit.lastStartWasRefused).thenReturn(false);
+    when(() => syncCubit.syncDrives(any(),
+            askWalletAgain: any(named: 'askWalletAgain'),
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck')))
+        .thenAnswer((_) async => false);
+
+    await syncUnlockedDrives(syncCubit, [_driveId]);
+
+    verify(() => syncCubit.syncDrives([_driveId],
+        askWalletAgain: false, skipTabVisibilityCheck: true)).called(1);
+    verifyNever(() => syncCubit.waitUntilSyncCanStart());
   });
 
   testWidgets('the fingerprint is drawn in its own colour emoji face',

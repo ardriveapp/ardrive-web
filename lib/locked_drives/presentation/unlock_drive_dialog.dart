@@ -55,6 +55,7 @@ Future<void> showUnlockDriveDialog(
 /// A sync is refused while another runs - one at a time, never queued - or
 /// while an upload or the like runs. This waits for whichever it was and
 /// asks again, a few times, and says in the log if the drives stay unsynced.
+/// A sync that ran and was stopped or failed is not started again.
 ///
 /// It never asks the wallet again for other drives whose prompt was
 /// cancelled: unlocking one drive is not a request to be prompted for the
@@ -74,6 +75,9 @@ Future<void> syncUnlockedDrives(
     )) {
       return;
     }
+    // It ran, and was stopped or failed: that is the person's answer, or
+    // the sync's own to report. Starting it again would override Stop.
+    if (!syncCubit.lastStartWasRefused) return;
   }
 
   logger.w('${driveIds.length} drive(s) just unlocked were not synced: '

@@ -1050,6 +1050,14 @@ class SyncCubit extends Cubit<SyncState> {
     _emitIfOpen(state);
   }
 
+  bool _lastStartRefused = false;
+
+  /// Whether the last [startSync] was refused before it ran: another sync
+  /// was running, the tab had no focus, or an activity was in the way. Not a
+  /// sync that ran and was stopped or failed, which also returns false and
+  /// must not be started again behind the person's back.
+  bool get lastStartWasRefused => _lastStartRefused;
+
   Future<bool> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
@@ -1068,6 +1076,7 @@ class SyncCubit extends Cubit<SyncState> {
     /// [askWalletAgain] is false.
     Iterable<String>? askWalletAgainFor,
   }) async {
+    _lastStartRefused = true;
     if (PublicationMode.isOn) return false;
     logger.i('Starting Sync');
 
@@ -1076,6 +1085,7 @@ class SyncCubit extends Cubit<SyncState> {
       return false;
     }
 
+    _lastStartRefused = false;
     _syncProgress = SyncProgress.initial();
     _syncGeneration++;
 
@@ -1162,12 +1172,14 @@ class SyncCubit extends Cubit<SyncState> {
             !skipTabVisibilityCheck &&
             !_tabVisibility.isTabFocused()) {
           logger.d('Tab hidden for ArConnect user, skipping sync...');
+          _lastStartRefused = true;
           _emitIfOpen(SyncIdle());
           return false;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
           logger.d('Uninterruptible activity in progress, skipping sync...');
+          _lastStartRefused = true;
           _emitIfOpen(SyncIdle());
           return false;
         }

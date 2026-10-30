@@ -630,6 +630,7 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _drivesWalkedToTheEnd.clear();
+    _drivesSkippedWithNoKey.clear();
     _resetMetadataFetchCounts();
 
     // Names a snapshot damaged before snapshots were read as UTF-8 - see
@@ -1031,12 +1032,18 @@ class _SyncRepository implements SyncRepository {
             syncProgress = syncProgressController.add(syncProgress);
           }
           totalProgress += 1;
+          final skipped = _drivesSkippedWithNoKey.contains(drive.id);
           syncProgress = syncProgress.copyWith(
+            // Counts drives done, as the catch below does for failures.
             drivesSynced: syncProgress.drivesSynced + 1,
             // Recorded only on the path that got to the end. The catch below
             // increments the same counters for a drive that failed, and a
-            // drive that failed has not been synced.
-            syncedDriveIds: [...syncProgress.syncedDriveIds, drive.id],
+            // drive that failed has not been synced. Nor has one skipped for
+            // having no key.
+            syncedDriveIds: [
+              ...syncProgress.syncedDriveIds,
+              if (!skipped) drive.id,
+            ],
             progress:
                 (totalProgress / numberOfDrivesToSync) * _progressDriveWalkEnd,
           );
@@ -1389,6 +1396,7 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _drivesWalkedToTheEnd.clear();
+    _drivesSkippedWithNoKey.clear();
     _resetMetadataFetchCounts();
 
     // Names a snapshot damaged before snapshots were read as UTF-8 - see
@@ -1532,6 +1540,22 @@ class _SyncRepository implements SyncRepository {
             entitiesSynced: _syncedEntityCount,
           );
           syncProgress = syncProgressController.add(syncProgress);
+        }
+
+        // A drive skipped for having no key was not synced: nothing was
+        // read, so nothing follows, and it is neither counted nor named as
+        // synced ("Synced just now" would be false).
+        if (_drivesSkippedWithNoKey.contains(driveId)) {
+          syncProgress = syncProgress.copyWith(
+            progress: _progressComplete,
+            statusMessage: null,
+            isIndeterminate: false,
+            metadataFetchesCompleted: 0,
+            metadataFetchesTotal: 0,
+          );
+          syncProgress = syncProgressController.add(syncProgress);
+          await syncProgressController.close();
+          return;
         }
 
         // The walk is over however it went, so whatever it was allowed to
@@ -2735,6 +2759,10 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  /// The drives [_syncDrive] left alone this sync because no key opens them.
+  /// Not synced, so never counted or named as synced.
+  final Set<String> _drivesSkippedWithNoKey = {};
+
   /// Whether [drive] is private and this device holds no key for it. A key
   /// that can't be read is not this: that drive is synced, and fails.
   Future<bool> _hasNoKey(Drive drive, SecretKey cipherKey) async {
@@ -2786,6 +2814,7 @@ class _SyncRepository implements SyncRepository {
         if (driveKey == null) {
           logger.w('Not syncing ${drive.id}: a private drive with no key on '
               'this device');
+          _drivesSkippedWithNoKey.add(drive.id);
           return;
         }
       } else {

@@ -701,13 +701,16 @@ void main() {
       await keylessSharedRow();
       when(() => arweave.getCurrentBlockHeight()).thenAnswer((_) async => 5000);
 
-      await syncRepository
+      final progress = await syncRepository
           .syncSingleDrive(
               driveId: sharedId, wallet: wallet, cipherKey: profileKey)
           .handleError((_) {})
           .toList();
 
       expect(await watermark(), 1200);
+      expect(progress.any((p) => p.syncedDriveIds.contains(sharedId)), isFalse,
+          reason: 'reported as synced although nothing was read');
+      expect(progress.any((p) => p.drivesSynced > 0), isFalse);
       verifyNever(() => arweave.getAllSnapshotsOfDrive(any(), any(),
           ownerAddress: any(named: 'ownerAddress')));
     });

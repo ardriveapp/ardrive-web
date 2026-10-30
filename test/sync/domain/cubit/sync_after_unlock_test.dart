@@ -9,6 +9,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/locked_drives/presentation/unlock_drive_dialog.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
+import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
@@ -236,6 +237,55 @@ void main() {
     await sync;
 
     verifySynced(['just-unlocked']);
+    await cubit.close();
+  });
+
+  int runs() => verify(() => syncRepository.syncAllDrives(
+        syncDeep: any(named: 'syncDeep'),
+        wallet: any(named: 'wallet'),
+        password: any(named: 'password'),
+        cipherKey: any(named: 'cipherKey'),
+        cancellationToken: any(named: 'cancellationToken'),
+        onlyDriveIds: any(named: 'onlyDriveIds'),
+        txFechedCallback: any(named: 'txFechedCallback'),
+      )).callCount;
+
+  void stubSyncAllDrivesWith(Stream<SyncProgress> Function() answer) =>
+      when(() => syncRepository.syncAllDrives(
+            syncDeep: any(named: 'syncDeep'),
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            cancellationToken: any(named: 'cancellationToken'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            txFechedCallback: any(named: 'txFechedCallback'),
+          )).thenAnswer((_) => answer());
+
+  // Reviewer's probe of #2437, kept: a run that started is never started
+  // again, however it ended.
+  test('Stop on the sync after an unlock: it runs once, and stays stopped',
+      () async {
+    stubSyncAllDrivesWith(
+        () => Stream<SyncProgress>.error(SyncCancelledException()));
+    final cubit = buildCubit();
+    await settled();
+
+    await syncUnlockedDrives(cubit, ['just-unlocked']);
+
+    expect(runs(), 1, reason: 'Stop was overridden: the sync started again');
+    expect(cubit.lastStartWasRefused, isFalse);
+    await cubit.close();
+  });
+
+  test('the sync after an unlock fails: it runs once, and the failure stands',
+      () async {
+    stubSyncAllDrivesWith(() => Stream<SyncProgress>.error(Exception('gw')));
+    final cubit = buildCubit();
+    await settled();
+
+    await syncUnlockedDrives(cubit, ['just-unlocked']);
+
+    expect(runs(), 1, reason: 'a failed sync was started again');
     await cubit.close();
   });
 
