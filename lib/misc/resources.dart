@@ -39,17 +39,10 @@ class Brand {
 class Login {
   const Login();
 
-  final String ardriveLogoOnboarding = 'assets/images/brand/ArDrive.png';
   final String wanderLogo = 'assets/images/login/wander.svg';
   final String lattice = 'assets/images/login/lattice.svg';
   final String latticeLight = 'assets/images/login/lattice_light.svg';
-  final String latticeLarge = 'assets/images/login/lattice_large.svg';
-  final String latticeLargeLight =
-      'assets/images/login/lattice_large_light.svg';
   final String confetti = 'assets/images/login/confetti.png';
-  final String confettiLeft = 'assets/images/login/confetti_left.png';
-  final String confettiRight = 'assets/images/login/confetti_right.png';
-  final String arrowRed = 'assets/images/login/arrow_red.svg';
   final String ardriveLoader =
       'assets/animations/ardrive_plates_animation.json';
 
@@ -61,7 +54,6 @@ class Login {
   final String solana = 'assets/images/login/solana_logo.png';
   final String phantom = 'assets/images/login/phantom_logo.svg';
   final String solflare = 'assets/images/login/solflare_logo.png';
-  final String walletUpload = 'assets/images/login/wallet_upload.svg';
 
   final BentoBox bentoBox = const BentoBox();
 
@@ -75,25 +67,9 @@ class BentoBox {
   final String profile4 = 'assets/images/login/bento_box/profile_4.png';
   final String profile5 = 'assets/images/login/bento_box/profile_5.png';
   final String profile6 = 'assets/images/login/bento_box/profile_6.png';
-  final String noSubscription =
-      'assets/images/login/bento_box/no_subscription.svg';
-  final String decentralized =
-      'assets/images/login/bento_box/decentralized.svg';
-  final String permanentAccessibleData =
-      'assets/images/login/bento_box/permanent_accesible_data.svg';
-  final String priceCalculator =
-      'assets/images/login/bento_box/price_calculator.svg';
-  final String dots = 'assets/images/login/bento_box/dots.png';
-  final String bg = 'assets/images/login/bento_box/Bg.png';
   final String particleSpace =
       'assets/images/login/bento_box/particle_space.png';
   final String dataStorage = 'assets/images/login/bento_box/data_storage.svg';
-  final String bento2 = 'assets/images/login/bento_box/bento-2.svg';
-  final String bento2Bg = 'assets/images/login/bento_box/bento-2-bg.svg';
-  final String bentoBox2LightMode =
-      'assets/images/login/bento_box/bento-box-2-light-mode.svg';
-  final String bentoBox2DarkMode =
-      'assets/images/login/bento_box/bento-box-2-dark-mode.svg';
 
   /// A feature slide's art, faded into a dark or a light tile. Shapes from
   /// Phosphor Icons (MIT), see `assets/images/login/bento_box/LICENSES.md`.

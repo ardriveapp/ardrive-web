@@ -34,7 +34,6 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/icons/
     # Roboto Mono is loaded on demand by ArDriveMonospace, so it is an asset
     # and not in the fonts block: Flutter web downloads every listed font at
     # startup.
