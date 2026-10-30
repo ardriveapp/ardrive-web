@@ -91,6 +91,59 @@ class ArDriveCrypto {
   Uint8List driveSignatureMessage(String driveId) =>
       Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
 
+  /// The data item whose signature is [driveId]'s v2 wallet signature:
+  /// [driveSignatureMessage] tagged `Action: Drive-Signature-V2`, with no
+  /// target or anchor, owned by [owner] (a public key).
+  DataItem driveSignatureDataItem(String owner, String driveId) =>
+      DataItem.withBlobData(data: driveSignatureMessage(driveId), owner: owner)
+        ..addTag('Action', 'Drive-Signature-V2');
+
+  /// Whether [signature] is [owner]'s signature of [driveId]'s v2 item
+  /// ([driveSignatureDataItem]): RSA-PSS with a salt of length 0 over the
+  /// item's ANS-104 signature data, checked against the public key [owner].
+  ///
+  /// With no salt there is exactly one valid signature, so one that passes is
+  /// the one every ArDrive app derives this drive's key from. A wallet that
+  /// salts its signatures, signs another item (another drive's, or with an
+  /// anchor of its own, as Keystone does) or returns them out of order fails.
+  Future<bool> isDriveSignature({
+    required String owner,
+    required String driveId,
+    required Uint8List signature,
+  }) async {
+    final signer = _GivenSignature(signature);
+    try {
+      await driveSignatureDataItem(owner, driveId).sign(signer);
+      return await SignatureConfig.arweave
+          .verify(signer.signedMessage!, signature, owner);
+    } catch (e) {
+      logger.w('Could not check a drive signature: $e');
+      return false;
+    }
+  }
+
+  /// Each of [driveIds]' v2 wallet signatures, signed in one Wander approval.
+  /// Not checked here: the caller checks each with [isDriveSignature].
+  ///
+  /// Throws whatever Wander throws, a cancelled prompt included, and a
+  /// [StateError] if it returns a different number of signatures.
+  Future<List<Uint8List>> batchWalletSignaturesForDrives(
+    ArConnectWallet wallet,
+    List<String> driveIds,
+  ) async {
+    final owner = await wallet.getOwner();
+    final signatures = await wallet.batchSignDataItems([
+      for (final driveId in driveIds) driveSignatureDataItem(owner, driveId),
+    ]);
+
+    if (signatures.length != driveIds.length) {
+      throw StateError('Wander returned ${signatures.length} signatures for '
+          '${driveIds.length} items');
+    }
+
+    return signatures;
+  }
+
   /// The wallet's signature for [driveId], the secret half of its key.
   ///
   /// v1 is `wallet.sign` over [driveSignatureMessage]; v2 is the signature of
@@ -118,15 +171,12 @@ class ArDriveCrypto {
         rethrow;
       }
     } else if (signatureType == DriveSignatureType.v2) {
-      final owner = await wallet.getOwner();
-      final dataItem = DataItem.withBlobData(data: message, owner: owner);
-      dataItem.addTag('Action', 'Drive-Signature-V2');
+      final dataItem = driveSignatureDataItem(await wallet.getOwner(), driveId);
+      final Uint8List signature;
       try {
         if (wallet is ArConnectWallet) {
           logger.d('Signing with v2 signature (wallet.signDataItem)');
-          final signature = await wallet.signDataItem(dataItem);
-          logger.d('v2 signing successful');
-          return signature;
+          signature = await wallet.signDataItem(dataItem);
         } else {
           logger.d('Signing with v2 signature (DataItem.sign)');
           await dataItem.sign(ArweaveSigner(wallet));
@@ -143,6 +193,15 @@ class ArDriveCrypto {
         }
         throw Exception('Failed to sign data item: $e');
       }
+
+      // A browser wallet signs for us, so its answer is checked before a key
+      // is made from it: a key from any other signature never opens again.
+      if (!await isDriveSignature(
+          owner: dataItem.owner, driveId: driveId, signature: signature)) {
+        throw const WalletCantMakeDriveKeysException();
+      }
+      logger.d('v2 signing successful');
+      return signature;
     } else {
       throw Exception('Invalid signature type: $signatureType');
     }
@@ -402,4 +461,33 @@ class DriveKey {
   final bool generated;
 
   DriveKey(this.key, this.generated);
+}
+
+/// The wallet's signature for a drive is not the one a drive key can be made
+/// from: it isn't RSA-PSS with no salt over the exact item asked for. Keystone
+/// adds an anchor of its own, for one. A key made from it would never open
+/// the drive again, so none is made.
+class WalletCantMakeDriveKeysException implements Exception {
+  const WalletCantMakeDriveKeysException();
+
+  @override
+  String toString() => 'WalletCantMakeDriveKeysException';
+}
+
+/// A [Signer] that answers with a signature already made, and keeps the
+/// message it was asked to sign: the item's signature data.
+class _GivenSignature implements Signer {
+  _GivenSignature(this._signature);
+
+  final Uint8List _signature;
+  Uint8List? signedMessage;
+
+  @override
+  SignatureConfig get signatureConfig => SignatureConfig.arweave;
+
+  @override
+  Future<Uint8List> sign(Uint8List message, [String? context]) async {
+    signedMessage = message;
+    return _signature;
+  }
 }

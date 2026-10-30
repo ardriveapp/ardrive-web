@@ -15,6 +15,7 @@ import 'package:rxdart/rxdart.dart';
 ///   ask again until the user does something (unlocks, or syncs by hand).
 /// - The password bytes proven to open each drive, which the v1 drive
 ///   migration must use rather than the sign-in password.
+/// - Whether the wallet's one-approval batch signing can be used.
 ///
 /// None of it is ever written to storage. Signing out calls [clear]. A future
 /// "remember on this device" stores wrapped drive keys, never these.
@@ -134,6 +135,18 @@ class DriveUnlockSession {
     _walletDeclined.remove(_key(ownerAddress, driveId));
   }
 
+  final _batchSigningUnusable = <String>{};
+
+  /// Whether signing several drives in one wallet approval failed for
+  /// [ownerAddress] this session in a way asking again won't fix: Wander
+  /// refused it (a hardware wallet), or its signatures didn't match the
+  /// ones it gives one at a time. Its drives are then asked for one by one.
+  bool batchSigningUnusable(String ownerAddress) =>
+      _batchSigningUnusable.contains(ownerAddress);
+
+  void markBatchSigningUnusable(String ownerAddress) =>
+      _batchSigningUnusable.add(ownerAddress);
+
   final _signInPasswordProven = <String, bool>{};
 
   /// Whether the password this session signed in with opened one of
@@ -185,6 +198,7 @@ class DriveUnlockSession {
   void clear() {
     _signatures.clear();
     _walletDeclined.clear();
+    _batchSigningUnusable.clear();
     _provenPasswordInfo.clear();
     _signInPasswordProven.clear();
     _newDrivePassword.clear();

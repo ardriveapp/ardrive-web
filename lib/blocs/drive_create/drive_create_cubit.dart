@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/folder_entity.dart';
@@ -288,7 +289,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     // Emitting after close throws, and that throw comes back here.
     if (!isClosed) {
       emit(DriveCreateFailure(
-          privacy: state.privacy, isPaymentError: isTurboPaymentError(error)));
+        privacy: state.privacy,
+        isPaymentError: isTurboPaymentError(error),
+        walletCantMakeDriveKeys: error is WalletCantMakeDriveKeysException,
+      ));
     }
     super.onError(error, stackTrace);
 

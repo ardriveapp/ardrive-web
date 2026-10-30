@@ -98,6 +98,43 @@ async function signDataItem(data, tags, owner, target, anchor) {
   }
 }
 
+// Whether this Wander can sign several data items in one approval.
+function isBatchSignSupported() {
+  return isExtensionPresent() &&
+    typeof window.arweaveWallet.batchSignDataItem === 'function';
+}
+
+// Signs every item in one Wander approval and returns each item's signature,
+// as signDataItem does for one. saltLength 0 makes each signature the same as
+// signDataItem gives for the same item, which a drive key depends on.
+// Each item is {data, tags, owner, target, anchor}, tags base64 as above.
+async function batchSignDataItems(items) {
+  console.log('[ArConnect] batchSignDataItems called with', items.length, 'items');
+  try {
+    const jsItems = items.map(item => ({
+      owner: item.owner,
+      target: item.target,
+      anchor: item.anchor,
+      // Wander wants bytes, not the plain array jsify makes of them.
+      data: Uint8Array.from(item.data),
+      tags: item.tags.map(tag => ({
+        name: atob(tag.name),
+        value: atob(tag.value),
+      })),
+    }));
+    console.log('[ArConnect] Calling arweaveWallet.batchSignDataItem()...');
+    const signed = await window.arweaveWallet.batchSignDataItem(jsItems, { saltLength: 0 });
+    console.log('[ArConnect] batchSignDataItem() returned', signed?.length, 'items');
+
+    // Each signed item comes back as an ArrayBuffer of the raw data item;
+    // its signature is bytes [2:514].
+    return signed.map(raw => new Uint8Array(raw).slice(2, 514));
+  } catch (e) {
+    console.error('[ArConnect] batchSignDataItems FAILED:', e);
+    throw e;
+  }
+}
+
 async function getWalletVersion() {
   return await window.arweaveWallet.walletVersion;
 }
