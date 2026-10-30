@@ -250,6 +250,34 @@ void main() {
       expect(find.text('the gateway said no'), findsOneWidget);
     });
 
+    testWidgets('leaves out a message that says nothing', (tester) async {
+      // A release build names classes "minified:Xy", so an exception without
+      // its own toString saved "Instance of 'minified:Xy'" here: useless to
+      // the user and to support alike. The outcome line still says it failed.
+      historyIs([
+        run(
+          outcome: SyncRunOutcome.completedWithErrors,
+          itemsFound: 5,
+          failedDrives: 2,
+          totalDrives: 5,
+          errorMessages: const {
+            '': "Instance of 'minified:Xy'",
+            'drive-a': 'Drive A: minified:Ab',
+            'drive-b': 'the gateway said no',
+          },
+        )
+      ]);
+
+      await pumpPanel(tester);
+
+      expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
+      expect(find.text('the gateway said no'), findsOneWidget);
+      // The drive's name is kept; only the part that says nothing goes.
+      expect(find.text('Drive A: Unknown error'), findsOneWidget);
+      expect(find.textContaining('minified:'), findsNothing);
+      expect(find.textContaining('Instance of'), findsNothing);
+    });
+
     testWidgets('a sync that could not be done at all says so', (tester) async {
       historyIs([run(outcome: SyncRunOutcome.failed)]);
 

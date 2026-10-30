@@ -15,6 +15,8 @@ external dynamic _parseEml(String emlContent);
 class EmlParserWeb {
   /// Parse EML file content
   static Future<ParsedEmail> parse(String emlContent) async {
+    await _loadParser();
+
     try {
       // Call JS function which now returns a Promise
       final jsPromise = _parseEml(emlContent);
@@ -28,7 +30,8 @@ class EmlParserWeb {
 
       // Convert to proper Map<String, dynamic> by encoding and decoding as JSON
       final String jsonString = jsonEncode(dartified);
-      final Map<String, dynamic> result = jsonDecode(jsonString) as Map<String, dynamic>;
+      final Map<String, dynamic> result =
+          jsonDecode(jsonString) as Map<String, dynamic>;
 
       // Check for success
       if (result['success'] != true) {
@@ -39,6 +42,23 @@ class EmlParserWeb {
       return ParsedEmail.fromJS(result);
     } catch (e) {
       throw Exception('EML parsing error: $e');
+    }
+  }
+
+  /// Loads the parser's scripts (web/js/lazy_loader.js) on first use.
+  ///
+  /// index.html stopped carrying them in 2.82.0, so nothing else defines
+  /// `window.ArDriveEmlParser`: without this every .eml preview failed.
+  static Future<void> _loadParser() async {
+    try {
+      final lazyLoader = js_util.getProperty(js_util.globalThis, 'LazyLoader');
+      if (lazyLoader != null) {
+        await js_util.promiseToFuture(
+          js_util.callMethod(lazyLoader, 'loadEmlParser', []),
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to load the EML parser: $e');
     }
   }
 }

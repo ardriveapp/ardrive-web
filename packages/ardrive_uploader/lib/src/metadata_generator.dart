@@ -44,6 +44,8 @@ class ARFSUploadMetadataGenerator
     IOEntity entity, {
     required ARFSUploadMetadataArgs arguments,
   }) async {
+    await _tagsGenerator.loadAppInfo();
+
     final String id;
 
     if (arguments.entityId != null) {
@@ -140,6 +142,8 @@ class ARFSUploadMetadataGenerator
     required String name,
     required bool isPrivate,
   }) async {
+    await _tagsGenerator.loadAppInfo();
+
     final id = const Uuid().v4();
 
     final String contentType;
@@ -266,6 +270,11 @@ class ARFSTagsGenerator implements TagsGenerator<ARFSTagsArgs> {
   ARFSTagsGenerator({
     required AppInfoServices appInfoServices,
   }) : _appInfoServices = appInfoServices;
+
+  /// Loads the app's version, which [generateTags] reads, if it is not loaded
+  /// yet. The start does not wait for it, and a failed load there is tried
+  /// again here.
+  Future<void> loadAppInfo() => _appInfoServices.loadAppInfo();
 
   @override
   Map<String, List<Tag>> generateTags(ARFSTagsArgs arguments) {

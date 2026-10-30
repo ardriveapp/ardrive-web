@@ -210,7 +210,9 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
     } catch (e, stackTrace) {
       logger.e('Failed to load snapshots for drive $driveId', e, stackTrace);
       if (isClosed) return;
-      emit(FsEntrySnapshotsFailure(errorMessage: e.toString()));
+      // The error is in the log. Its text is not for the panel: in a release
+      // build it reads "Instance of 'minified:Xy'".
+      emit(const FsEntrySnapshotsFailure());
     }
   }
 

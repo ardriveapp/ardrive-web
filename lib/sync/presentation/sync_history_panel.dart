@@ -3,6 +3,7 @@ import 'package:ardrive/sync/domain/sync_trigger.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
+import 'package:ardrive/utils/opaque_error_text.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -185,11 +186,15 @@ class SyncRunTile extends StatelessWidget {
         // Verbatim, and never shortened. The user reading this is one button
         // away from sending the logs beside it to support, and a message this
         // panel paraphrased is a message support cannot search for.
-        for (final message in run.errorMessages.values)
+        // Except what says nothing, which an older version could have saved:
+        // "minified:Xy" is searchable by nobody. A message that is nothing
+        // else is left out; one with a drive's name keeps the name.
+        for (final message
+            in run.errorMessages.values.where((m) => !isOpaqueErrorText(m)))
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              message,
+              withoutOpaqueParts(message),
               style: typography.paragraphSmall(color: colorTokens.textRed),
             ),
           ),

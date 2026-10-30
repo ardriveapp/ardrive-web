@@ -48,14 +48,17 @@ class ManifestRepositoryImpl implements ManifestRepository {
         return ManifestResult.success(manifest, tx.owner.address);
       } catch (e) {
         logger.e('Failed to parse manifest data', e);
-        return ManifestResult.failure(
-          InvalidManifestFailure('Failed to parse manifest data: $e'),
+        return const ManifestResult.failure(
+          InvalidManifestFailure('This manifest could not be read.'),
         );
       }
     } catch (e) {
       logger.e('Failed to fetch manifest', e);
-      return ManifestResult.failure(
-        NetworkFailure('Failed to fetch manifest: $e'),
+      return const ManifestResult.failure(
+        NetworkFailure(
+          'The manifest could not be fetched. Check your connection and '
+          'try again.',
+        ),
       );
     }
   }

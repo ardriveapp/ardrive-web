@@ -53,9 +53,9 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
 
       _manifestOriginalOwnerAddress = manifestResult.ownerAddress;
       if (manifestResult.failure != null) {
-        emit(BulkImportError(
-          'Failed to load manifest: ${manifestResult.failure!.message}',
-        ));
+        // The failure's message is written for the user; the error itself
+        // is in the log.
+        emit(BulkImportError(manifestResult.failure!.message));
         return;
       }
 

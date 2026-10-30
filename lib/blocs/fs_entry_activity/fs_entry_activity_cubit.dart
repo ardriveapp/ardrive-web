@@ -145,7 +145,10 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(FsEntryActivityFailure());
+    // Emitting after close throws, and that throw comes back here.
+    if (!isClosed) {
+      emit(FsEntryActivityFailure());
+    }
     super.onError(error, stackTrace);
 
     logger.e('Failed to load entity activity', error, stackTrace);

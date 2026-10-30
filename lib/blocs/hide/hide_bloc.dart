@@ -482,11 +482,14 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    add(ErrorEvent(
-      error: error,
-      stackTrace: stackTrace,
-      hideAction: state.hideAction,
-    ));
+    // Adding after close throws, and that throw comes back here.
+    if (!isClosed) {
+      add(ErrorEvent(
+        error: error,
+        stackTrace: stackTrace,
+        hideAction: state.hideAction,
+      ));
+    }
     super.onError(error, stackTrace);
   }
 }

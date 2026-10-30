@@ -675,14 +675,17 @@ Future<void> handleMarkdownFileEdit(
 
     // Show error dialog
     if (context.mounted) {
+      // The error itself is in the log above. Its text is not for the user:
+      // in a release build it can read "Instance of 'minified:Xy'".
+      final strings = appLocalizationsOf(context);
       await showStandardDialog(
         context,
-        title: 'Error',
-        description: 'Failed to load file for editing: ${e.toString()}',
+        title: strings.error,
+        description: strings.couldNotLoadFile,
         actions: [
           ModalAction(
             action: () => Navigator.of(context).pop(),
-            title: 'OK',
+            title: strings.ok,
           ),
         ],
       );

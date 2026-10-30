@@ -232,13 +232,18 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
+    // Emitting after close throws, and that throw comes back here.
     if (_isRenamingFolder) {
-      emit(FolderEntryRenameFailure(
-          isPaymentError: error is TurboPaymentRequiredException));
+      if (!isClosed) {
+        emit(FolderEntryRenameFailure(
+            isPaymentError: error is TurboPaymentRequiredException));
+      }
       logger.e('Failed to rename folder', error, stackTrace);
     } else {
-      emit(FileEntryRenameFailure(
-          isPaymentError: error is TurboPaymentRequiredException));
+      if (!isClosed) {
+        emit(FileEntryRenameFailure(
+            isPaymentError: error is TurboPaymentRequiredException));
+      }
       logger.e('Failed to rename file', error, stackTrace);
     }
 

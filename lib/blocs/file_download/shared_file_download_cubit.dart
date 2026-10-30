@@ -277,7 +277,10 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   @override
   void onError(Object error, StackTrace stackTrace) {
     final reason = classifyDownloadError(error);
-    emit(FileDownloadFailure(reason));
+    // Emitting after close throws, and that throw comes back here.
+    if (!isClosed) {
+      emit(FileDownloadFailure(reason));
+    }
     super.onError(error, stackTrace);
 
     logger.e(

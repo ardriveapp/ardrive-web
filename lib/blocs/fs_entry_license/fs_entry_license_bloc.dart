@@ -333,7 +333,7 @@ class FsEntryLicenseBloc
     final driveKey =
         await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
     final owner = await wallet.getOwner();
-    final appInfo = AppInfoServices().appInfo;
+    final appInfo = await AppInfoServices().getAppInfo();
     final signer = ArweaveSigner(wallet);
     final write = _LicenseWrite();
     String? lastAssertionId;

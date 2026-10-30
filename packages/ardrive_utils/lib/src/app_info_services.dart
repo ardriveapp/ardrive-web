@@ -1,4 +1,5 @@
 import 'package:ardrive_utils/src/app_platform.dart';
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppInfo {
@@ -24,12 +25,25 @@ class AppInfoServices {
 
   AppInfoServices._internal();
 
+  /// The app's version and platform, once [loadAppInfo] has finished.
+  ///
+  /// Throws a [StateError] before then. Anything that runs well after the
+  /// start awaits [loadAppInfo] (or reads [getAppInfo]) first: the start does
+  /// not wait for it, and if version.json could not be read then, only a later
+  /// load gets the version for the rest of the session.
   AppInfo get appInfo {
     if (_appInfo == null) {
       throw StateError('AppInfoServices has not been initialized');
     }
 
     return _appInfo!;
+  }
+
+  /// [appInfo], loading it first if it is not loaded yet, or trying again if
+  /// the last load failed.
+  Future<AppInfo> getAppInfo() async {
+    await loadAppInfo();
+    return appInfo;
   }
 
   AppInfo? _appInfo;
@@ -45,8 +59,18 @@ class AppInfoServices {
         },
       );
 
+  /// How long a load waits for the platform. On the web that is a fetch of
+  /// version.json, which package_info_plus makes with no timeout of its own,
+  /// and an upload waits on it.
+  @visibleForTesting
+  Duration loadTimeout = const Duration(seconds: 15);
+
+  /// Where the version comes from; replaced in tests.
+  @visibleForTesting
+  Future<PackageInfo> Function() readPackageInfo = PackageInfo.fromPlatform;
+
   Future<void> _load() async {
-    final packageInfo = await PackageInfo.fromPlatform();
+    final packageInfo = await readPackageInfo().timeout(loadTimeout);
     final appPlatform = AppPlatform.getPlatform().name;
 
     _appInfo = AppInfo(

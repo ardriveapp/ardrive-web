@@ -195,7 +195,6 @@ class _ArNSNamesViewState extends State<ArNSNamesView> {
     ArNSNamesState names,
   ) {
     final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
     return ListPageTitleRow(
       title: Row(
         children: [
@@ -209,17 +208,7 @@ class _ArNSNamesViewState extends State<ArNSNamesView> {
       ),
       action: wallet.linked == null
           ? null
-          : ArDriveButtonNew(
-              text: strings.arnsGetAName,
-              typography: typography,
-              variant: ButtonVariant.secondary,
-              maxWidth: ArDriveButtonNew.fittedWidth(
-                context,
-                strings.arnsGetAName,
-                minWidth: 96,
-              ),
-              onPressed: () => openUrl(url: arnsGetNameUrl),
-            ),
+          : _GetANameButton(label: strings.arnsGetAName),
     );
   }
 
@@ -1330,6 +1319,55 @@ class ArNSRecordMenu extends StatelessWidget {
               isManifest: target.isManifest,
             )
           : null,
+    );
+  }
+}
+
+/// Opens the ar.io Console, so the label carries the new-window icon after
+/// it, as [ArDriveLink] does for an external link.
+class _GetANameButton extends StatelessWidget {
+  const _GetANameButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final style = typography.paragraphLarge(
+      color: colors.textLink,
+      fontWeight: ArFontWeight.semiBold,
+    );
+    final iconSize = (style.fontSize ?? 16) * 1.1;
+    final iconWidth = MediaQuery.textScalerOf(context).scale(iconSize);
+    return ArDriveButtonNew(
+      text: label,
+      typography: typography,
+      variant: ButtonVariant.secondary,
+      maxWidth: ArDriveButtonNew.fittedWidth(context, label, minWidth: 96) +
+          (ArDriveSpacing.xxs + iconWidth).ceilToDouble(),
+      customContent: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              // As ArDriveButtonNew's own label, so this one sits where theirs
+              // does rather than about 2 px low.
+              textHeightBehavior: const TextHeightBehavior(
+                applyHeightToFirstAscent: false,
+                applyHeightToLastDescent: false,
+              ),
+              style: style,
+            ),
+          ),
+          const SizedBox(width: ArDriveSpacing.xxs),
+          ArDriveIcons.newWindow(size: iconSize, color: colors.textLink),
+        ],
+      ),
+      onPressed: () => openUrl(url: arnsGetNameUrl),
     );
   }
 }
