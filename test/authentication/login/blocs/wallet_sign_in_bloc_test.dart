@@ -640,6 +640,27 @@ void main() {
     );
 
     blocTest<LoginBloc, LoginState>(
+      'Continue on a version 2 MetaMask account, the signature refused: a '
+      'refusal, not "couldn\'t reach your wallet"',
+      build: bloc,
+      setUp: () {
+        saved(account(DeviceUnlockMethod.ethereumAccount,
+            type: ProfileType.json, source: ethWallet.credentials.address.hex));
+        when(() => ethereum.connect())
+            .thenAnswer((_) async => _RefusingSigner(ethWallet));
+      },
+      act: (bloc) => bloc.add(const UnlockWithWallet()),
+      expect: () => [
+        isA<LoginWaitingOnWallet>(),
+        const PromptWalletUnlock(
+          wallet: BrowserWallet.metamask,
+          problem: WalletUnlockProblem.declined,
+        ),
+      ],
+      verify: (_) => verifyNever(() => auth.unlockWithWallet(any())),
+    );
+
+    blocTest<LoginBloc, LoginState>(
       'Continue: a wallet that signs differently says so',
       build: bloc,
       setUp: () {
@@ -865,6 +886,30 @@ class _CountingSigner extends EthereumWallet {
     signed++;
     return _inner.sign(message);
   }
+
+  @override
+  Future<String> getAddress() => _inner.getAddress();
+
+  @override
+  Future<String> getOwner() => _inner.getOwner();
+
+  @override
+  SignatureConfig getSignatureConfig() => SignatureConfig.ethereum;
+
+  @override
+  Map<String, dynamic> toJwk() => throw UnimplementedError();
+}
+
+/// A MetaMask whose person refuses every signature.
+class _RefusingSigner extends EthereumWallet {
+  _RefusingSigner(this._inner);
+
+  final EthereumProviderWallet _inner;
+
+  @override
+  Future<Uint8List> sign(Uint8List message, [String? context]) async =>
+      throw Exception('MetaMask Tx Signature: User denied message signature. '
+          'User rejected the request.');
 
   @override
   Future<String> getAddress() => _inner.getAddress();

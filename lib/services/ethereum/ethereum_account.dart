@@ -148,26 +148,34 @@ EthereumAccountRecord? classifyAccountRecords(List<AccountRecordTx> txs) {
   return null;
 }
 
-/// The [answers] of several endpoints, each earliest first, as one list,
-/// earliest first, each transaction once.
-///
-/// The endpoint asked last (the turbo-gateway index, asked to complete the
-/// picture) gives the order, with what only earlier endpoints have after
-/// it. When every transaction has a block, they are then ordered by block,
-/// the earliest record across all of them first.
+/// The [answers] of several endpoints as one list, earliest first, each
+/// transaction once: by block, with pending transactions (no block yet)
+/// after every mined one, whatever order an endpoint listed them in. Equal
+/// heights keep the order of the endpoint asked last (the turbo-gateway
+/// index), then of those before it.
 List<AccountRecordTx> mergeAccountRecords(
   List<List<AccountRecordTx>> answers,
 ) {
   final byId = <String, AccountRecordTx>{};
   for (final answer in answers.reversed) {
     for (final tx in answer) {
-      byId.putIfAbsent(tx.id, () => tx);
+      final known = byId[tx.id];
+      if (known == null) {
+        byId[tx.id] = tx;
+      } else if (known.height == null && tx.height != null) {
+        // Mined since the other endpoint saw it.
+        byId[tx.id] = tx;
+      }
     }
   }
   final merged = byId.values.toList();
-  if (merged.every((tx) => tx.height != null)) {
-    mergeSort(merged, compare: (a, b) => a.height!.compareTo(b.height!));
-  }
+  mergeSort(merged, compare: (a, b) {
+    final ha = a.height, hb = b.height;
+    if (ha == null && hb == null) return 0;
+    if (ha == null) return 1;
+    if (hb == null) return -1;
+    return ha.compareTo(hb);
+  });
   return merged;
 }
 
@@ -176,12 +184,11 @@ List<AccountRecordTx> mergeAccountRecords(
 /// [firstReachable]). The earliest record across the endpoints asked
 /// decides ([classifyAccountRecords]).
 ///
-/// - A marker found is the answer.
-/// - A version 1 record found still asks the endpoints after it, for an
-///   earlier marker the first doesn't index (an old build may have posted
-///   version 1 records under a version 2 account's auth key). If that extra
-///   check fails, the version 1 record stands: the password path can't
-///   lose an account.
+/// - A record found (a marker or a version 1 record) still asks the
+///   endpoints after it, for an earlier record the first doesn't index (an
+///   old build may have posted version 1 records under a version 2
+///   account's auth key, or a forged marker may sit on one gateway). If
+///   that extra check fails, the record found stands.
 /// - "No record" is only the answer once every endpoint has answered and
 ///   none has one: an index can lag or miss items, and a wrong "no record"
 ///   would make an existing account a new, empty one. Any endpoint failing
@@ -198,17 +205,19 @@ Future<EthereumAccountRecord?> findAccountRecordAcross(
 
   for (final lookup in endpoints) {
     final soFar = decide();
-    if (soFar is EthereumV1Record) {
-      try {
-        answers.add(await lookup());
-      } catch (e) {
-        return soFar;
-      }
-    } else {
+    if (soFar == null) {
+      // Nothing yet: an endpoint that fails is a failure.
       answers.add(await lookup());
+      continue;
     }
-    final found = decide();
-    if (found is EthereumV2Marker) return found;
+    // A record is known (a marker or a version 1 record): the next
+    // endpoint is still asked, for an earlier one it alone has. If it
+    // fails, what is known stands.
+    try {
+      answers.add(await lookup());
+    } catch (e) {
+      return soFar;
+    }
   }
   return decide();
 }

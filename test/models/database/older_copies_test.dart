@@ -169,7 +169,13 @@ void main() {
     expect(deleted, 0);
   });
 
-  group('VACUUM only when there are free pages', () {
+  group('VACUUM always', () {
+    Future<int> freePages(Database db) async =>
+        (await db.customSelect('PRAGMA freelist_count').getSingle())
+            .data
+            .values
+            .first as int;
+
     Future<_CountingDatabase> withCurrentProfile() async {
       driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
       final db = _CountingDatabase(NativeDatabase(File(
@@ -181,32 +187,32 @@ void main() {
     }
 
     test(
-        'none (a new profile on a new file): no VACUUM, which would rebuild a '
-        'big database in a phone worker\'s memory, and still marked done',
+        'even with no free pages: bytes deleted before secure_delete can sit '
+        'in a live page while the free list reads 0. Still marked done',
         () async {
       final db = await withCurrentProfile();
-      expect(await db.freePageCount(), 0);
+      expect(await freePages(db), 0);
 
       final cleared = await DatabaseHelpers(db).clearOlderCopies(
           deleteStores: () async => const [], ownsDatabase: true);
 
       expect(cleared, isTrue);
-      expect(db.vacuums, 0);
+      expect(db.vacuums, 1);
       expect(await db.profileDao.needsOlderCopiesCleared(), isFalse);
     });
 
-    test('some: VACUUM drops them', () async {
+    test('with free pages, VACUUM drops them', () async {
       final db = await withCurrentProfile();
       await db.customStatement('PRAGMA secure_delete = OFF');
       await addFormat1Profile(db, id: 'earlier');
       await (db.delete(db.profiles)..where((p) => p.id.equals('earlier'))).go();
-      expect(await db.freePageCount(), greaterThan(0));
+      expect(await freePages(db), greaterThan(0));
 
       await DatabaseHelpers(db).clearOlderCopies(
           deleteStores: () async => const [], ownsDatabase: true);
 
       expect(db.vacuums, 1);
-      expect(await db.freePageCount(), 0);
+      expect(await freePages(db), 0);
     });
   });
 }

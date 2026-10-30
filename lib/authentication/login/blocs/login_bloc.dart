@@ -13,6 +13,8 @@ import 'package:ardrive_logger/ardrive_logger.dart' show UntrackedException;
 import 'package:ardrive/device_unlock/domain/device_key.dart';
 import 'package:ardrive/device_unlock/domain/device_secret_source.dart';
 import 'package:ardrive/device_unlock/domain/device_unlocker.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart'
+    show isWalletCancellation;
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -2056,11 +2058,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           if (method == DeviceUnlockMethod.ethereumAccount) {
             // A version 2 account: its account message, the signature its
             // wallet comes from, is also its device key.
-            final signature = await _walletAnswer(
-              cancel,
-              ethWallet.sign(Uint8List.fromList(
-                  utf8.encode(ethereumAccountMessage(address!)))),
-            );
+            final Uint8List signature;
+            try {
+              signature = await _walletAnswer(
+                cancel,
+                ethWallet.sign(Uint8List.fromList(
+                    utf8.encode(ethereumAccountMessage(address!)))),
+              );
+            } on WalletLoginCancelled {
+              rethrow;
+            } catch (e) {
+              // Said no to the signature: a refusal, like any wallet's.
+              throw DeviceUnlockRefusedException(isWalletCancellation(e)
+                  ? DeviceUnlockStatus.declined
+                  : DeviceUnlockStatus.failed);
+            }
             source = DeviceSecretSource.fromSecret(
                 DeviceUnlockMethod.ethereumAccount, signature);
           } else {

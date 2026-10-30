@@ -296,12 +296,6 @@ class Database extends _$Database {
   /// tables are empty, when it is quick. Never inside a transaction.
   Future<void> vacuum() => customStatement('VACUUM');
 
-  /// How many free pages the file has: what [vacuum] would drop.
-  Future<int> freePageCount() async {
-    final row = await customSelect('PRAGMA freelist_count').getSingle();
-    return row.data.values.first as int;
-  }
-
   /// Adds [column] to [table] unless it is already there.
   ///
   /// Builds before the transaction above ran each upgrade statement on its

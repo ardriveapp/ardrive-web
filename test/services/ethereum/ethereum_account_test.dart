@@ -124,8 +124,8 @@ void main() {
     });
 
     test(
-        'records from several endpoints: by block when every one has a block, '
-        'in the last endpoint\'s order otherwise', () {
+        'records from several endpoints: by block, pending last, equal heights '
+        'in the last endpoint\'s order', () {
       List<String> ids(List<AccountRecordTx> txs) =>
           [for (final t in txs) t.id];
 
@@ -133,11 +133,12 @@ void main() {
         ids(mergeAccountRecords(const [
           [AccountRecordTx(id: 'b', height: 20)],
           [
+            AccountRecordTx(id: 'pending'),
             AccountRecordTx(id: 'a', height: 10),
             AccountRecordTx(id: 'b', height: 20),
           ],
         ])),
-        ['a', 'b'],
+        ['a', 'b', 'pending'],
       );
       expect(
         ids(mergeAccountRecords(const [
@@ -145,6 +146,14 @@ void main() {
           [AccountRecordTx(id: 'marker'), AccountRecordTx(id: 'late-v1')],
         ])),
         ['marker', 'late-v1'],
+      );
+      expect(
+        mergeAccountRecords(const [
+          [AccountRecordTx(id: 'x', height: 7)],
+          [AccountRecordTx(id: 'x')],
+        ]).single.height,
+        7,
+        reason: 'mined since the other endpoint saw it',
       );
     });
 
@@ -182,18 +191,69 @@ void main() {
       );
     });
 
-    test('a marker found first is the answer; later endpoints are not asked',
-        () async {
-      var later = 0;
+    test(
+        'a marker on the configured endpoint: the index is still asked, and '
+        'an earlier version 1 record only it has decides', () async {
+      var asked = 0;
       final found = await findAccountRecordAcross([
-        () async => [marker],
+        () async => [
+              const AccountRecordTx(id: 'marker', height: 500, tags: {
+                'ArDrive-Account-Version': '2',
+              })
+            ],
         () async {
-          later++;
-          return [];
+          asked++;
+          return [const AccountRecordTx(id: 'v1-2024', height: 100)];
         },
       ]);
+      expect(asked, 1);
+      expect(found, isA<EthereumV1Record>());
+    });
+
+    test('a marker, and the index can\'t be reached: the marker stands',
+        () async {
+      expect(
+        await findAccountRecordAcross([
+          () async => [marker],
+          () async => throw Exception('blocked'),
+        ]),
+        isA<EthereumV2Marker>(),
+      );
+    });
+
+    test(
+        'a pending record sorts after every mined one, whatever order an '
+        'endpoint listed it in', () async {
+      // The configured endpoint has an earlier mined record the index lacks;
+      // the index lists a pending version 1 record before a mined marker.
+      final found = await findAccountRecordAcross([
+        () async => [
+              const AccountRecordTx(id: 'pending-v1'),
+              const AccountRecordTx(id: 'early-marker', height: 50, tags: {
+                'ArDrive-Account-Version': '2',
+                'ArDrive-Account-Address': 'addr',
+              }),
+            ],
+        () async => [
+              const AccountRecordTx(id: 'pending-v1'),
+              const AccountRecordTx(id: 'later', height: 100),
+            ],
+      ]);
       expect(found, isA<EthereumV2Marker>());
-      expect(later, 0);
+      expect((found as EthereumV2Marker).txId, 'early-marker');
+
+      expect(
+        await findAccountRecordAcross([
+          () async => [
+                const AccountRecordTx(id: 'pending-marker', tags: {
+                  'ArDrive-Account-Version': '2',
+                }),
+                const AccountRecordTx(id: 'v1-2024', height: 1400000),
+              ],
+        ]),
+        isA<EthereumV1Record>(),
+        reason: 'a pending marker comes after a mined version 1 record',
+      );
     });
 
     test(
