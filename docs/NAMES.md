@@ -242,7 +242,7 @@ header (the profile card has it, where the ArNS wallet is linked), and:
   the row;
 - its cache time, changeable here (Q16);
 - Change and Remove actions;
-- "Managed for its owner" on names you control but don't own (Q23);
+- "Controller" on names you control but don't own (Q23): a tag on the name's page and in the picker, and "Role: Controller" in its details panel, never on the list rows;
 - a prompt to use a name with nothing linked;
 - console links for buying, renewing and ownership.
 

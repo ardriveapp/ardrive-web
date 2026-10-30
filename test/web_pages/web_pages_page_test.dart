@@ -1,6 +1,7 @@
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -212,6 +213,25 @@ void main() {
     expect(launcher.launched, [
       '${AppConfig(stripePublishableKey: '', allowedDataItemSizeForTurbo: 100).arweaveGatewayForDataRequest.url}/Recipes-tx',
     ]);
+  });
+
+  testWidgets('no checkboxes: web pages have no bulk actions', (tester) async {
+    // Checkboxes only where there is something to do with several rows at
+    // once: the explorer and Your drives. Not on hover, not on a long press.
+    pagesAre([older, newer]);
+    await pump(tester);
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await pointer.addPointer(location: Offset.zero);
+    addTearDown(pointer.removePointer);
+    await pointer.moveTo(tester.getCenter(find.byType(ListTableRow).first));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.byType(ListTableRow).first,
+        warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ListTableRow), findsWidgets);
+    expect(find.byType(ArDriveCheckBox), findsNothing);
+    expect(find.byType(ArDriveMultiSelectBox), findsNothing);
   });
 
   testWidgets('no inline copy button in the rows', (tester) async {

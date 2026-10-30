@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
@@ -20,8 +21,6 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/core/upload/cost_calculator.dart';
-import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/publication/data/download_helper.dart';
@@ -43,7 +42,6 @@ import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -60,7 +58,6 @@ import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
-import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -396,43 +393,10 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => HideBloc(
-            auth: context.read<ArDriveAuth>(),
-            uploadPreparationManager: ArDriveUploadPreparationManager(
-              uploadPreparePaymentOptions: UploadPaymentEvaluator(
-                appConfig: context.read<ConfigService>().config,
-                auth: context.read<ArDriveAuth>(),
-                turboBalanceRetriever: TurboBalanceRetriever(
-                  paymentService: context.read<PaymentService>(),
-                ),
-                turboUploadCostCalculator: TurboUploadCostCalculator(
-                  priceEstimator: TurboPriceEstimator(
-                    wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                    costCalculator: TurboCostCalculator(
-                      paymentService: context.read<PaymentService>(),
-                    ),
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  turboCostCalculator: TurboCostCalculator(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                ),
-                uploadCostEstimateCalculatorForAR:
-                    UploadCostEstimateCalculatorForAR(
-                  arweaveService: context.read<ArweaveService>(),
-                  pstService: context.read<PstService>(),
-                  arCostToUsd: ConvertArToUSD(
-                    arweave: context.read<ArweaveService>(),
-                  ),
-                ),
-              ),
-              uploadPreparer: UploadPreparer(
-                uploadPlanUtils: UploadPlanUtils(
-                  crypto: ArDriveCrypto(),
-                  arweave: context.read<ArweaveService>(),
-                  turboUploadService: context.read<TurboUploadService>(),
-                  driveDao: context.read<DriveDao>(),
-                ),
-              ),
+            costReader: MetadataWriteCostReader(
+              payments: context.read<PaymentService>(),
+              turbo: context.read<TurboUploadService>(),
+              arweave: context.read<ArweaveService>(),
             ),
             arweaveService: context.read<ArweaveService>(),
             crypto: ArDriveCrypto(),

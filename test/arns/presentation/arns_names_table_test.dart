@@ -259,6 +259,21 @@ void main() {
     expect(delegate.shownName, 'maya');
   });
 
+  testWidgets('no checkboxes: names have no bulk actions', (tester) async {
+    // Checkboxes only where there is something to do with several rows at
+    // once: the explorer and Your drives. Not on hover, not on a long press.
+    await pump(tester);
+    final pointer = await mouse(tester);
+    await pointer.moveTo(tester.getCenter(find.text('maya')));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.text('maya'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ArNSNameRow), findsWidgets);
+    expect(find.byType(ArDriveCheckBox), findsNothing);
+    expect(find.byType(ArDriveMultiSelectBox), findsNothing);
+  });
+
   testWidgets('no grey intro sentence under the title', (tester) async {
     await pump(tester);
 

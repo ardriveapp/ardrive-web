@@ -7,6 +7,9 @@ import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/blocs/hide/hide_state.dart';
+import 'package:ardrive/components/turbo_credits_funding.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -108,12 +111,17 @@ class HideDialog extends StatelessWidget {
                 userHasHiddenItems:
                     context.read<GlobalHideBloc>().state.userHasHiddenDrive,
               ));
-        } else if (state is ConfirmingHideState) {
+        } else if (state is ConfirmingHideState && state.isInstant) {
+          // Free: written straight away, as hiding always has been. Anything
+          // else waits on the review below.
           _driveDetailCubit.refreshDriveDataTable();
           context.read<HideBloc>().add(const ConfirmUploadEvent());
         }
       },
       builder: (context, state) {
+        if (state is ConfirmingHideState && !state.isInstant) {
+          return _review(context, state);
+        }
         return ArDriveStandardModalNew(
           title: _buildTitle(context, state),
           content: _buildContent(context, state),
@@ -123,12 +131,51 @@ class HideDialog extends StatelessWidget {
     );
   }
 
+  /// Not free: what the change costs, and Add credits when credits are
+  /// short, the same review as a license.
+  Widget _review(BuildContext context, ConfirmingHideState state) {
+    final l10n = appLocalizationsOf(context);
+    final bloc = context.read<HideBloc>();
+    final entry = state.hideEntitySettings.entry;
+    final name = switch (entry) {
+      FileEntry(:final name) => name,
+      FolderEntry(:final name) => name,
+      Drive(:final name) => name,
+      _ => '',
+    };
+    final hiding = switch (state.hideAction) {
+      HideAction.hideFile ||
+      HideAction.hideFolder ||
+      HideAction.hideDrive =>
+        true,
+      _ => false,
+    };
+    return UploadReviewDialog(
+      title: switch (state.hideAction) {
+        HideAction.hideFile => l10n.reviewHideFile,
+        HideAction.hideFolder => l10n.reviewHideFolder,
+        HideAction.hideDrive => l10n.reviewHideDrive,
+        HideAction.unhideFile => l10n.reviewUnhideFile,
+        HideAction.unhideFolder => l10n.reviewUnhideFolder,
+        HideAction.unhideDrive => l10n.reviewUnhideDrive,
+      },
+      destination: name,
+      files: const [],
+      summary: state.summary,
+      primaryLabel: hiding ? l10n.hide : l10n.unhide,
+      subject: ReviewCostSubject.change,
+      onUpload: (_) => bloc.add(const ConfirmUploadEvent()),
+      onCancel: () => Navigator.of(context).pop(),
+      funding: TurboCreditsFunding(
+        context,
+        onRefresh: () => bloc.add(const HideCostRefreshEvent()),
+      ),
+    );
+  }
+
   String _buildTitle(BuildContext context, HideState state) {
     final hideAction = state.hideAction;
     if (state is FailureHideState) {
-      if (state.isPaymentError) {
-        return appLocalizationsOf(context).freeAllowanceUsedUpTitle;
-      }
       switch (hideAction) {
         case HideAction.hideFile:
           return appLocalizationsOf(context).failedToHideFile;
@@ -163,9 +210,6 @@ class HideDialog extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, HideState state) {
     if (state is FailureHideState) {
-      if (state.isPaymentError) {
-        return Text(appLocalizationsOf(context).freeAllowanceUsedUpDescription);
-      }
       final hideAction = state.hideAction;
 
       switch (hideAction) {
