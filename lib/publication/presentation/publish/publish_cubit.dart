@@ -325,12 +325,11 @@ class PublishCubit extends Cubit<PublishState> {
     emit(state.copyWith(how: how));
   }
 
-  /// What stops a file being published: a sync the drive needs, the file
-  /// hidden or under a hidden folder, or its upload not confirmed yet.
+  /// What stops a file being published: the file hidden or under a hidden
+  /// folder, or its upload not confirmed yet. No drive-wide sync check: a
+  /// file page publishes no snapshot, only the one revision of its file that
+  /// this device holds, so the rest of the drive doesn't matter.
   Future<(PublishBlock, String)?> _checkFileBlocks() async {
-    final sync = _deps.syncSkipSource.statusFor(drive.id);
-    if (!sync.isClean) return (PublishBlock.sync, sync.reason);
-
     final f = file!;
     if (f.isHidden) return (PublishBlock.hiddenFile, '');
     final parent = await _deps.driveDao

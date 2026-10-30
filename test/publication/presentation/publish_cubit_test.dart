@@ -1156,6 +1156,17 @@ void main() {
       await inHidden.close();
     });
 
+    test('needs no drive sync: a file page publishes no snapshot', () async {
+      skip.status =
+          const DriveStateSyncSkipStatus.unknown('No sync has finished yet.');
+      final c = cubit(fileEntry: await fileNamed('lake', 'Lake.jpg'));
+      await c.load();
+
+      expect(c.state.stage, PublishStage.how);
+      expect(c.state.blocked, isNull);
+      await c.close();
+    });
+
     test('a failed upload is not published', () async {
       final c = cubit(
           fileEntry:
