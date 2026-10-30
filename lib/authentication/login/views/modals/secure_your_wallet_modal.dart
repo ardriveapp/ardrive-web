@@ -63,6 +63,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
 
   /// The passphrase last suggested, while it is what the field holds.
   String? _suggestion;
+
+  /// Whether both fields hide what they hold. One eye, on the password
+  /// field, controls both. A suggestion fills them in shown, as Chrome and
+  /// Safari do; typing a password of one's own hides them again.
+  bool _obscured = true;
   PasswordStrength? _strength;
 
   /// An account being made now, whose password locks everything it will
@@ -95,6 +100,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     // suggestion is strong and the same in both fields.
     setState(() {
       _suggestion = phrase;
+      _obscured = false;
       _strength = PasswordStrength.strong;
       _isPasswordValid = true;
       _confirmPasswordIsValid = true;
@@ -272,9 +278,14 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
                 controller: _passwordController,
+                key: const Key('signUpPassword'),
                 hintText: 'Enter your password',
-                showObfuscationToggle: true,
-                obscureText: true,
+                obscureText: _obscured,
+                suffixIcon: PasswordRevealToggle(
+                  key: const Key('signUpPasswordReveal'),
+                  obscured: _obscured,
+                  onToggle: () => setState(() => _obscured = !_obscured),
+                ),
                 autofocus: true,
                 autofillHints: const [AutofillHints.newPassword],
                 textInputAction: TextInputAction.next,
@@ -294,7 +305,10 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                     setState(() {
                       _strength = strength;
                       _isPasswordValid = strong;
-                      if (value != _suggestion) _suggestion = null;
+                      if (_suggestion != null && value != _suggestion) {
+                        _suggestion = null;
+                        _obscured = true;
+                      }
                     });
                     final s = appLocalizationsOf(context);
                     if (strong && value == _breachedPassword) {
@@ -349,9 +363,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
                   controller: _confirmPasswordController,
+                  key: const Key('signUpConfirmPassword'),
                   hintText: 'Re-enter your password',
-                  showObfuscationToggle: true,
-                  obscureText: true,
+                  obscureText: _obscured,
                   autofocus: true,
                   autofillHints: const [AutofillHints.newPassword],
                   textInputAction: TextInputAction.done,

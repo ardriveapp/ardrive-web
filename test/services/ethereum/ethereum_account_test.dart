@@ -104,8 +104,48 @@ void main() {
       expect(classifyAccountRecords([]), isNull);
     });
 
-    test('a marker wins over a version 1 record', () {
-      expect(classifyAccountRecords([v1, marker]), isA<EthereumV2Marker>());
+    test(
+        'the earliest record decides: a marker posted after a version 1 '
+        'record (by someone holding the verify signature) doesn\'t take the '
+        'account over', () {
+      expect(classifyAccountRecords([v1, marker]), isA<EthereumV1Record>());
+    });
+
+    test(
+        'a version 1 record an old build posts after the marker leaves the '
+        'account version 2, and is kept for the password path', () {
+      final found = classifyAccountRecords([marker, v1]);
+      expect(found, isA<EthereumV2Marker>());
+      expect((found as EthereumV2Marker).laterV1RecordId, 'v1');
+      expect(
+          (classifyAccountRecords([marker]) as EthereumV2Marker)
+              .laterV1RecordId,
+          isNull);
+    });
+
+    test(
+        'records from several endpoints: by block when every one has a block, '
+        'in the last endpoint\'s order otherwise', () {
+      List<String> ids(List<AccountRecordTx> txs) =>
+          [for (final t in txs) t.id];
+
+      expect(
+        ids(mergeAccountRecords(const [
+          [AccountRecordTx(id: 'b', height: 20)],
+          [
+            AccountRecordTx(id: 'a', height: 10),
+            AccountRecordTx(id: 'b', height: 20),
+          ],
+        ])),
+        ['a', 'b'],
+      );
+      expect(
+        ids(mergeAccountRecords(const [
+          [AccountRecordTx(id: 'late-v1')],
+          [AccountRecordTx(id: 'marker'), AccountRecordTx(id: 'late-v1')],
+        ])),
+        ['marker', 'late-v1'],
+      );
     });
 
     test(
@@ -142,7 +182,7 @@ void main() {
       );
     });
 
-    test('the first record found is the answer; later endpoints are not asked',
+    test('a marker found first is the answer; later endpoints are not asked',
         () async {
       var later = 0;
       final found = await findAccountRecordAcross([
@@ -154,6 +194,52 @@ void main() {
       ]);
       expect(found, isA<EthereumV2Marker>());
       expect(later, 0);
+    });
+
+    test(
+        'a version 1 record on the configured endpoint: the index is still '
+        'asked for an earlier marker, and the earliest decides', () async {
+      final found = await findAccountRecordAcross([
+        () async => [const AccountRecordTx(id: 'late-v1', height: 200)],
+        () async => [
+              const AccountRecordTx(id: 'marker', height: 100, tags: {
+                'ArDrive-Account-Version': '2',
+                'ArDrive-Account-Address': 'addr',
+              }),
+              const AccountRecordTx(id: 'late-v1', height: 200),
+            ],
+      ]);
+      expect(found, isA<EthereumV2Marker>());
+      expect((found as EthereumV2Marker).laterV1RecordId, 'late-v1');
+    });
+
+    test(
+        'a version 1 record, and the index can\'t be reached: the version 1 '
+        'record stands (the password path loses nothing)', () async {
+      expect(
+        await findAccountRecordAcross([
+          () async => [v1],
+          () async => throw Exception('blocked'),
+        ]),
+        isA<EthereumV1Record>(),
+      );
+    });
+
+    test(
+        'a version 1 record the index has after an earlier one stays version 1',
+        () async {
+      expect(
+        await findAccountRecordAcross([
+          () async => [const AccountRecordTx(id: 'v1', height: 10)],
+          () async => [
+                const AccountRecordTx(id: 'v1', height: 10),
+                const AccountRecordTx(id: 'late-marker', height: 50, tags: {
+                  'ArDrive-Account-Version': '2',
+                }),
+              ],
+        ]),
+        isA<EthereumV1Record>(),
+      );
     });
 
     test(

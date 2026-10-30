@@ -57,6 +57,11 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
   String? _breached;
   bool _confirmTouched = false;
 
+  /// Whether both fields hide what they hold. One eye, on the password
+  /// field, controls both. A suggestion fills them in shown, as Chrome and
+  /// Safari do; typing a password of one's own hides them again.
+  bool _obscured = true;
+
   PasswordStrength? get _strength =>
       _password.text.isEmpty ? null : assessNewPassword(_password.text);
 
@@ -73,7 +78,10 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
 
   void _changed() {
     setState(() {
-      if (_password.text != _suggestion) _suggestion = null;
+      if (_suggestion != null && _password.text != _suggestion) {
+        _suggestion = null;
+        _obscured = true;
+      }
     });
     final valid = isValid;
     if (valid != _lastValid) {
@@ -89,6 +97,7 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
     _password.text = phrase;
     _confirm.text = phrase;
     _suggestion = phrase;
+    _obscured = false;
     _confirmTouched = true;
     _changed();
   }
@@ -163,8 +172,12 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
             key: const Key('newPassword'),
             controller: _password,
             hintText: s.newPasswordHint,
-            obscureText: true,
-            showObfuscationToggle: true,
+            obscureText: _obscured,
+            suffixIcon: PasswordRevealToggle(
+              key: const Key('newPasswordReveal'),
+              obscured: _obscured,
+              onToggle: () => setState(() => _obscured = !_obscured),
+            ),
             autofocus: widget.autofocus,
             autocorrect: false,
             autofillHints: const [AutofillHints.newPassword],
@@ -210,8 +223,7 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
             key: const Key('confirmNewPassword'),
             controller: _confirm,
             hintText: s.confirmPasswordHint,
-            obscureText: true,
-            showObfuscationToggle: true,
+            obscureText: _obscured,
             autocorrect: false,
             autofillHints: const [AutofillHints.newPassword],
             textInputAction: TextInputAction.done,
@@ -280,8 +292,9 @@ class PasswordStrengthMeter extends StatelessWidget {
   }
 }
 
-/// The suggested passphrase, readable, with Copy and another suggestion.
-/// It is made on the device and kept nowhere; saving it is up to the user.
+/// Under a suggested passphrase, which the fields show: save it, Copy, and
+/// another suggestion. It is made on the device and kept nowhere; saving it
+/// is up to the user.
 class SuggestedPassphrase extends StatelessWidget {
   const SuggestedPassphrase({
     super.key,
@@ -308,14 +321,7 @@ class SuggestedPassphrase extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SelectableText(
-            phrase,
-            style: type.paragraphLarge(
-              color: colors.textHigh,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-          const SizedBox(height: 8),
+          // The fields show the passphrase; this card doesn't repeat it.
           Text(
             s.newPasswordSaveIt,
             style: type.paragraphSmall(color: colors.textMid),
@@ -338,6 +344,40 @@ class SuggestedPassphrase extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The one eye of a new password and its confirmation: shows or hides both.
+class PasswordRevealToggle extends StatelessWidget {
+  const PasswordRevealToggle({
+    super.key,
+    required this.obscured,
+    required this.onToggle,
+  });
+
+  final bool obscured;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final s = appLocalizationsOf(context);
+    return Semantics(
+      button: true,
+      label: obscured ? s.showPassword : s.hidePassword,
+      child: GestureDetector(
+        onTap: onToggle,
+        child: ArDriveClickArea(
+          child: ArDriveIcon(
+            size: 20,
+            icon: obscured
+                ? ArDriveIconsData.eye_closed
+                : ArDriveIconsData.eye_open,
+            color: obscured ? colors.iconLow : colors.iconMid,
+          ),
+        ),
       ),
     );
   }

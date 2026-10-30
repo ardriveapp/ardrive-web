@@ -9,6 +9,7 @@ import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -227,6 +228,79 @@ void main() {
       expect(find.text('Copy'), findsOneWidget);
       expect(find.textContaining("ArDrive can't recover it"), findsOneWidget);
       expect(continueEnabled(tester), isTrue);
+    });
+
+    group('one eye for a suggestion (the Chrome and Safari pattern)', () {
+      bool obscured(WidgetTester tester, String key) => tester
+          .widget<EditableText>(find.descendant(
+              of: find.byKey(Key(key)), matching: find.byType(EditableText)))
+          .obscureText;
+      String text(WidgetTester tester, String key) => tester
+          .widget<EditableText>(find.descendant(
+              of: find.byKey(Key(key)), matching: find.byType(EditableText)))
+          .controller
+          .text;
+
+      Future<void> suggest(WidgetTester tester) async {
+        await tester.tap(find.byKey(const Key('suggestPasswordButton')));
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets(
+          'a suggestion is shown in the fields, and only there; the eye hides '
+          'both; Copy copies it', (tester) async {
+        String? copied;
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String;
+          }
+          return null;
+        });
+        addTearDown(() => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null));
+        await pump(tester, dialog());
+        expect(obscured(tester, 'signUpPassword'), isTrue);
+
+        await suggest(tester);
+        final phrase = text(tester, 'signUpPassword');
+        expect(obscured(tester, 'signUpPassword'), isFalse);
+        expect(obscured(tester, 'signUpConfirmPassword'), isFalse);
+        // The card doesn't repeat it.
+        expect(
+            find.descendant(
+                of: find.byKey(const Key('suggestedPassphrase')),
+                matching: find.text(phrase)),
+            findsNothing);
+
+        await tester.tap(find.text('Copy'));
+        expect(copied, phrase);
+
+        await tester.tap(find.byKey(const Key('signUpPasswordReveal')));
+        await tester.pump();
+        expect(obscured(tester, 'signUpPassword'), isTrue);
+        expect(obscured(tester, 'signUpConfirmPassword'), isTrue);
+      });
+
+      testWidgets('typing a password of one\'s own hides the fields again',
+          (tester) async {
+        await pump(tester, dialog());
+        await suggest(tester);
+        expect(obscured(tester, 'signUpPassword'), isFalse);
+
+        await tester.enterText(
+            find.descendant(
+                of: find.byKey(const Key('signUpPassword')),
+                matching: find.byType(EditableText)),
+            'Copper meadow 92 kites unfold');
+        await tester.pump();
+
+        expect(obscured(tester, 'signUpPassword'), isTrue);
+        expect(obscured(tester, 'signUpConfirmPassword'), isTrue);
+        expect(find.byKey(const Key('suggestedPassphrase')), findsNothing);
+      });
     });
 
     testWidgets('a returning user keeps any password', (tester) async {

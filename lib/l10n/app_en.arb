@@ -5684,8 +5684,6 @@
   "@signUpUseYourWallet": {"description": "Divider above the browser wallets on Sign up's choice."},
   "signUpHaveAccount": "Already have an account?",
   "@signUpHaveAccount": {"description": "Before the Log in link on Sign up's choice."},
-  "creatingAccountNoWallet": "No wallet found in this browser, so we're making one for you.",
-  "@creatingAccountNoWallet": {"description": "Under Creating your account when Sign up found no browser wallet."},
   "databaseUnavailableTitle": "ArDrive could not start",
   "@databaseUnavailableTitle": {"description": "Start-up screen when the local database will not open."},
   "databaseUnavailableBody": "The data it keeps in this browser did not open. Your files on Arweave are safe.",
@@ -5801,5 +5799,11 @@
   "metaMaskMarkerUnreadable": "We couldn't read your account's record. Try again.",
   "@metaMaskMarkerUnreadable": {"description": "The version 2 marker was found but its address couldn't be read."},
   "metaMaskLookupFailed": "Couldn't check your account. Try again or change gateway.",
-  "@metaMaskLookupFailed": {"description": "A MetaMask account's records couldn't be read on the configured gateway or the turbo-gateway index."}
+  "@metaMaskLookupFailed": {"description": "A MetaMask account's records couldn't be read on the configured gateway or the turbo-gateway index."},
+  "usedMetaMaskBeforeBody": "Accounts made with MetaMask before ArDrive 3.0 have a password. If you set one, choose Yes. No makes a new, empty account.",
+  "@usedMetaMaskBeforeBody": {"description": "Under the question whether this MetaMask was used with ArDrive before."},
+  "showPassword": "Show password",
+  "@showPassword": {"description": "Screen reader name of the eye that shows a new password and its confirmation."},
+  "hidePassword": "Hide password",
+  "@hidePassword": {"description": "Screen reader name of the eye that hides a new password and its confirmation."}
 }

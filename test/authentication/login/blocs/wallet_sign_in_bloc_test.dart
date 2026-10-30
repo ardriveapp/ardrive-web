@@ -192,6 +192,8 @@ void main() {
       setUp(() async {
         when(() => ethereum.connect()).thenAnswer((_) async => ethWallet);
         when(() => auth.isExistingUser(any())).thenAnswer((_) async => true);
+        when(() => arweave.getFirstTxForWallet(any()))
+            .thenAnswer((_) async => null);
         accountAddress = await wallet.getAddress();
       });
 
@@ -231,8 +233,14 @@ void main() {
               sourceWalletAddress: any(named: 'sourceWalletAddress'),
               password: captureAny(named: 'password'),
               skipDriveCheck: any(named: 'skipDriveCheck'))).captured;
-          expect((captured[0] as DeviceSecretSource).method,
-              DeviceUnlockMethod.ethereum);
+          // The account-message signature is the device key, as Solana's
+          // sign-in signature is: no device-unlock message.
+          final source = captured[0] as DeviceSecretSource;
+          expect(source.method, DeviceUnlockMethod.ethereumAccount);
+          expect(
+              await source.secret(Uint8List(32)),
+              await ethWallet.sign(Uint8List.fromList(utf8.encode(
+                  ethereumAccountMessage(await ethWallet.getAddress())))));
           expect(captured[1], isEmpty);
           verifyNever(() => turbo.postDataItem(
               dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')));
@@ -252,6 +260,20 @@ void main() {
               bloc.state,
               isA<LoginFailure>().having((s) => s.error, 'error',
                   isA<EthereumWalletSignsDifferently>()));
+          neverSignedIn();
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a marker for another address, with a version 1 record after it (an '
+        'old build after a rollback): its password is asked, not a dead end',
+        build: bloc,
+        setUp: () => records(const EthereumV2Marker('marker',
+            accountAddress: 'other', laterV1RecordId: 'late-v1')),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<PromptPassword>());
           neverSignedIn();
         },
       );
@@ -324,6 +346,22 @@ void main() {
               SignatureConfig.ethereum.signatureType);
         },
       );
+
+      test(
+          'nothing found, No: three MetaMask approvals in all (verify, and the '
+          'account message twice), none for the device key', () async {
+        records(null);
+        final counting = _CountingSigner(ethWallet);
+        when(() => ethereum.connect()).thenAnswer((_) async => counting);
+        final login = bloc();
+        login.add(const LoginWithMetamask());
+        await login.stream.firstWhere((s) => s is LoginAskUsedMetaMaskBefore);
+        login.add(const AnswerUsedArDriveBefore(usedBefore: false));
+        await login.stream.firstWhere((s) => s is LoginSuccess);
+        await login.close();
+
+        expect(counting.signed, 3);
+      });
 
       blocTest<LoginBloc, LoginState>(
         'nothing found, No, with a MetaMask that signs differently each time: '
@@ -407,6 +445,21 @@ void main() {
               reason: 'version 1 records carry no tags');
           verifyNever(() => arweave.getFirstTxForWallet(any()));
         },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'nothing found, Yes: a wallet with no drive but its own verification '
+        'record counts as history',
+        build: bloc,
+        setUp: () {
+          records(null);
+          when(() => auth.isExistingUser(any())).thenAnswer((_) async => false);
+          when(() => arweave.getFirstTxForWallet(any()))
+              .thenAnswer((_) async => 'its-own-record');
+        },
+        act: yesThenPassword,
+        wait: const Duration(milliseconds: 500),
+        verify: (bloc) => expect(bloc.state, isA<LoginSuccess>()),
       );
 
       blocTest<LoginBloc, LoginState>(
@@ -554,6 +607,36 @@ void main() {
           problem: WalletUnlockProblem.declined,
         ),
       ],
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'Continue on a version 2 MetaMask account: one signature of the account '
+      'message opens it',
+      build: bloc,
+      setUp: () {
+        saved(account(DeviceUnlockMethod.ethereumAccount,
+            type: ProfileType.json, source: ethWallet.credentials.address.hex));
+        when(() => ethereum.connect()).thenAnswer((_) async => ethWallet);
+        when(() => auth.unlockWithWallet(any())).thenAnswer((_) async => user);
+      },
+      act: (bloc) => bloc.add(const UnlockWithWallet()),
+      expect: () => [
+        const LoginWaitingOnWallet(
+          wallet: BrowserWallet.metamask,
+          request: BrowserWalletRequest.openDrives,
+        ),
+        isA<LoginSuccess>(),
+      ],
+      verify: (_) async {
+        final source = verify(() => auth.unlockWithWallet(captureAny()))
+            .captured
+            .single as DeviceSecretSource;
+        expect(source.method, DeviceUnlockMethod.ethereumAccount);
+        expect(
+            await source.secret(Uint8List(32)),
+            await ethWallet.sign(Uint8List.fromList(utf8.encode(
+                ethereumAccountMessage(await ethWallet.getAddress())))));
+      },
     );
 
     blocTest<LoginBloc, LoginState>(
@@ -755,6 +838,32 @@ class _ChangingSigner extends EthereumWallet {
     final signature = await _inner.sign(message);
     signature[64] ^= ++_n;
     return signature;
+  }
+
+  @override
+  Future<String> getAddress() => _inner.getAddress();
+
+  @override
+  Future<String> getOwner() => _inner.getOwner();
+
+  @override
+  SignatureConfig getSignatureConfig() => SignatureConfig.ethereum;
+
+  @override
+  Map<String, dynamic> toJwk() => throw UnimplementedError();
+}
+
+/// A MetaMask that counts its approvals.
+class _CountingSigner extends EthereumWallet {
+  _CountingSigner(this._inner);
+
+  final EthereumProviderWallet _inner;
+  var signed = 0;
+
+  @override
+  Future<Uint8List> sign(Uint8List message, [String? context]) {
+    signed++;
+    return _inner.sign(message);
   }
 
   @override

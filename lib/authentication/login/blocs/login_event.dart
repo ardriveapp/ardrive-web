@@ -188,13 +188,7 @@ class GenerateWallet extends LoginEvent {
 }
 
 class CreateNewWallet extends LoginEvent {
-  const CreateNewWallet({this.noWalletFound = false});
-
-  /// Made because no wallet extension was found to offer instead.
-  final bool noWalletFound;
-
-  @override
-  List<Object> get props => [noWalletFound];
+  const CreateNewWallet();
 }
 
 /// Sign up on the first panel: offers the browser wallets found, if any,

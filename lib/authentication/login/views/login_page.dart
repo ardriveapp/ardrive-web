@@ -808,9 +808,8 @@ Widget loginPanelFor(
       wallet: loginState.wallet,
     );
   } else if (loginState is LoginCreatingAccount) {
-    content = CreatingAccountView(
-      key: const Key('creatingAccountView'),
-      noWalletFound: loginState.noWalletFound,
+    content = const CreatingAccountView(
+      key: Key('creatingAccountView'),
     );
   } else if (loginState is LoginLanding) {
     content = const LandingView(

@@ -3,6 +3,12 @@ query AccountRecords($owner: String!) {
     edges {
       node {
         id
+        owner {
+          address
+        }
+        block {
+          height
+        }
         tags {
           name
           value

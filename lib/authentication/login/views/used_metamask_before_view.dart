@@ -45,14 +45,22 @@ class UsedMetaMaskBeforeView extends StatelessWidget {
                 fontWeight: ArFontWeight.bold,
               ),
             ),
+            const SizedBox(height: ArDriveSpacing.xs),
+            Text(
+              s.usedMetaMaskBeforeBody,
+              key: const Key('usedMetaMaskBeforeBody'),
+              textAlign: TextAlign.center,
+              style: type.paragraphNormal(color: colors.textMid),
+            ),
             const SizedBox(height: ArDriveSpacing.lg),
+            // Equal weight: neither answer is the safe default.
             ArDriveButtonNew(
               key: const Key('usedMetaMaskBeforeNo'),
               size: ArDriveButtonSize.large,
               maxWidth: double.infinity,
               typography: type,
               text: s.usedMetaMaskBeforeNo,
-              variant: ButtonVariant.primary,
+              variant: ButtonVariant.secondary,
               onPressed: () =>
                   bloc.add(const AnswerUsedArDriveBefore(usedBefore: false)),
             ),

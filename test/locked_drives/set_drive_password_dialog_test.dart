@@ -140,4 +140,39 @@ void main() {
     expect(await result, isNull);
     expect(breaches.asked, 0);
   });
+
+  testWidgets(
+      'a suggestion is shown in both fields, not in the card; one eye hides '
+      'both; typing one\'s own hides them', (tester) async {
+    await open(tester);
+    bool obscured(String key) =>
+        tester.widget<EditableText>(field(key)).obscureText;
+    expect(obscured('newPassword'), isTrue);
+
+    await tester.tap(find.byKey(const Key('suggestPasswordButton')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pumpAndSettle();
+    final phrase =
+        tester.widget<EditableText>(field('newPassword')).controller.text;
+    expect(obscured('newPassword'), isFalse);
+    expect(obscured('confirmNewPassword'), isFalse);
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('suggestedPassphrase')),
+            matching: find.text(phrase)),
+        findsNothing);
+
+    await tester.tap(find.byKey(const Key('newPasswordReveal')));
+    await tester.pump();
+    expect(obscured('newPassword'), isTrue);
+    expect(obscured('confirmNewPassword'), isTrue);
+
+    await tester.tap(find.byKey(const Key('newPasswordReveal')));
+    await tester.pump();
+    await tester.enterText(field('newPassword'), _strong);
+    await tester.pump();
+    expect(obscured('newPassword'), isTrue);
+    expect(obscured('confirmNewPassword'), isTrue);
+  });
 }

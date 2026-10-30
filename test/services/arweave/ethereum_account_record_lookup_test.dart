@@ -25,9 +25,16 @@ http.Response _records(List<Map<String, Object>> edges) => http.Response(
       headers: {'content-type': 'application/json'},
     );
 
-Map<String, Object> _edge(String id, [Map<String, String> tags = const {}]) => {
+Map<String, Object> _edge(
+  String id, [
+  Map<String, String> tags = const {},
+  String owner = 'auth',
+]) =>
+    {
       'node': {
         'id': id,
+        'owner': {'address': owner},
+        'block': {'height': 100},
         'tags': [
           for (final t in tags.entries) {'name': t.key, 'value': t.value}
         ],
@@ -93,6 +100,25 @@ void main() {
     final found = await service.findEthereumAccountRecord('auth');
     expect(found, isA<EthereumV2Marker>());
     expect((found as EthereumV2Marker).accountAddress, 'arweave-address');
+  });
+
+  test(
+      'a record whose owner isn\'t the auth key is ignored, whatever the '
+      'gateway returns', () async {
+    final service = serviceAnswering({
+      'configured.example': () => _records([
+            _edge(
+                'forged',
+                {
+                  'ArDrive-Account-Version': '2',
+                  'ArDrive-Account-Address': 'attacker',
+                },
+                'someone-else')
+          ]),
+      'turbo-gateway.com': () => _records([]),
+    });
+
+    expect(await service.findEthereumAccountRecord('auth'), isNull);
   });
 
   test('turbo-gateway.com blocked: ardrive.net answers for the same index',

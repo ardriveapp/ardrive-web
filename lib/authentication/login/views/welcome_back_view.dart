@@ -83,7 +83,9 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
       setState(() => _walletPrompt = PromptWalletUnlock(
             wallet: switch (method) {
               DeviceUnlockMethod.wander => BrowserWallet.wander,
-              DeviceUnlockMethod.ethereum => BrowserWallet.metamask,
+              DeviceUnlockMethod.ethereum ||
+              DeviceUnlockMethod.ethereumAccount =>
+                BrowserWallet.metamask,
               _ => BrowserWallet.otherSolana,
             },
             relocks: account!.isLegacyWalletProfile,

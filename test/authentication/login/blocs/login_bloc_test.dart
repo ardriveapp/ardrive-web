@@ -1668,12 +1668,12 @@ void main() {
       }
 
       blocTest<LoginBloc, LoginState>(
-        'with no wallet goes straight to making one, and says why',
+        'with no wallet goes straight to making one',
         build: logInBloc,
         setUp: wallets,
         act: (bloc) => bloc.add(const StartSignUp()),
         expect: () => [
-          const LoginCreatingAccount(noWalletFound: true),
+          const LoginCreatingAccount(),
           const TypeMatcher<CreateNewPassword>(),
         ],
       );
@@ -1901,7 +1901,7 @@ void main() {
         );
         expect(getStarted(after: const Duration(seconds: 2)), [
           LoginLoading(),
-          const LoginCreatingAccount(noWalletFound: true),
+          const LoginCreatingAccount(),
           const TypeMatcher<CreateNewPassword>(),
         ]);
       });

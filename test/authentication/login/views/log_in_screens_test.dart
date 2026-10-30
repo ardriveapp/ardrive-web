@@ -260,6 +260,16 @@ void main() {
 
     expect(find.text('Have you used ArDrive with this MetaMask before?'),
         findsOneWidget);
+    expect(
+        find.text('Accounts made with MetaMask before ArDrive 3.0 have a '
+            'password. If you set one, choose Yes. No makes a new, empty '
+            'account.'),
+        findsOneWidget);
+    // Equal weight: neither answer is the primary one.
+    ButtonVariant variant(String key) =>
+        tester.widget<ArDriveButtonNew>(find.byKey(Key(key))).variant;
+    expect(variant('usedMetaMaskBeforeYes'), variant('usedMetaMaskBeforeNo'));
+    expect(variant('usedMetaMaskBeforeNo'), isNot(ButtonVariant.primary));
     await tester.tap(find.text("No, I'm new"));
     await tester.tap(find.text('Yes'));
     expect(added(), [
@@ -569,11 +579,8 @@ void main() {
               isArConnectAvailable: true, existingUserFlow: true),
           loginBloc) as LogInView;
       expect(logIn.signUp, isFalse);
-      expect(
-          (loginPanelFor(const LoginCreatingAccount(noWalletFound: true),
-                  loginBloc) as CreatingAccountView)
-              .noWalletFound,
-          isTrue);
+      expect(loginPanelFor(const LoginCreatingAccount(), loginBloc),
+          isA<CreatingAccountView>());
     });
   });
 
@@ -714,16 +721,15 @@ void main() {
       expect(find.text('Wander'), findsOneWidget);
     });
 
-    testWidgets('goes to Creating, with the line, when none is',
+    testWidgets('goes to Creating, with no word about wallets, when none is',
         (tester) async {
-      const creating = LoginCreatingAccount(noWalletFound: true);
+      const creating = LoginCreatingAccount();
       whenListen(loginBloc, const Stream<LoginState>.empty(),
           initialState: creating);
       await pumpPage(tester, creating);
       expect(
-          find.text("No wallet found in this browser, so we're making one "
-              'for you.'),
-          findsOneWidget);
+          find.textContaining('This can take up to a minute'), findsOneWidget);
+      expect(find.textContaining('No wallet found'), findsNothing);
     });
 
     test('waits only while the account check runs', () {
@@ -735,20 +741,16 @@ void main() {
     });
   });
 
-  group('Creating your account', () {
-    const line =
-        "No wallet found in this browser, so we're making one for you.";
-
-    testWidgets('says why when no wallet was found', (tester) async {
-      await pump(tester, const CreatingAccountView(noWalletFound: true));
-      expect(find.text(line), findsOneWidget);
-    });
-
-    testWidgets('says nothing of wallets when a new account was chosen',
-        (tester) async {
-      await pump(tester, const CreatingAccountView());
-      expect(find.text(line), findsNothing);
-    });
+  testWidgets(
+      'Creating your account says how long and why it is safe, and nothing '
+      'about wallets', (tester) async {
+    await pump(tester, const CreatingAccountView());
+    expect(
+        find.text('This can take up to a minute. Your account key is made '
+            'here on your device, so it never leaves it.'),
+        findsOneWidget);
+    expect(find.text('Keep this tab open.'), findsOneWidget);
+    expect(find.textContaining('No wallet found'), findsNothing);
   });
 
   testWidgets('Sign up on the first panel starts sign-up', (tester) async {

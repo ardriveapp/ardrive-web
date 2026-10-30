@@ -344,7 +344,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(_logInPanel);
     } else {
       await _handleCreateNewWalletEvent(
-          const CreateNewWallet(noWalletFound: true), emit);
+          const CreateNewWallet(), emit);
     }
   }
 
@@ -700,7 +700,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // it derives has ArDrive history. Its missing records go up again.
       final bool hasHistory;
       try {
-        hasHistory = await _arDriveAuth.isExistingUser(wallet);
+        // It owns drives, or at least its own verification record: its
+        // sign-up posted one from this wallet, even if it made no drive.
+        hasHistory = await _arDriveAuth.isExistingUser(wallet) ||
+            await _arweaveService
+                    .getFirstTxForWallet(await wallet.getAddress()) !=
+                null;
       } catch (e) {
         emit(e is AuthenticationGatewayException || e is GraphQLException
             ? GatewayLoginFailure(e, _getGatewayUrl())
@@ -835,8 +840,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     final record =
         await _arweaveService.findEthereumAccountRecord(arweaveNativeAddressForEth);
-    final String? ethFirstTxId =
-        record is EthereumV1Record ? record.txId : null;
+    final String? ethFirstTxId = switch (record) {
+      EthereumV1Record(:final txId) => txId,
+      EthereumV2Marker(:final laterV1RecordId) => laterV1RecordId,
+      null => null,
+    };
 
     if (firstBlockTxsFilteredBySize != null && ethFirstTxId != null) {
       final ethRecordedSignature =
@@ -1404,7 +1412,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
-    emit(LoginCreatingAccount(noWalletFound: event.noWalletFound));
+    emit(const LoginCreatingAccount());
 
     try {
       final wallet = await _walletFromMnemonic(mnemonic);
@@ -1539,13 +1547,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             derivedEthWallet: derivedEthWallet,
             sourceWalletAddress: _sourceWalletAddress,
             showWalletCreated: false));
-      case EthereumV2Marker(:final txId, :final accountAddress):
+      case EthereumV2Marker(
+          :final txId,
+          :final accountAddress,
+          :final laterV1RecordId
+        ):
         await _signInEthereumV2(
           emit,
           ethWallet: ethWallet,
           authWallet: derivedEthWallet,
           expectedAddress:
               accountAddress ?? await _markerAddressFromData(txId),
+          passwordAccountToo: laterV1RecordId != null,
         );
       case null:
         // Nothing anywhere: a new account, or one made before 3.0 whose
@@ -1631,6 +1644,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required EthereumProviderWallet authWallet,
     String? expectedAddress,
     bool newAccount = false,
+    bool passwordAccountToo = false,
   }) async {
     if (!newAccount && expectedAddress == null) {
       emit(_logInPanel);
@@ -1687,6 +1701,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (!newAccount && address != expectedAddress) {
       _walletAnswered(cancel);
       emit(_logInPanel);
+      if (passwordAccountToo) {
+        // A password account was made on this auth key after the marker
+        // (an old build, after a rollback): its password is the way in.
+        _ethNoRecord = false;
+        emit(PromptPassword(
+          wallet: ethWallet,
+          derivedEthWallet: authWallet,
+          sourceWalletAddress: _sourceWalletAddress,
+          showWalletCreated: false,
+        ));
+        return;
+      }
       emit(const LoginFailure(EthereumWalletSignsDifferently()));
       return;
     }
@@ -1705,12 +1731,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     }
 
+    // The account-message signature is also this device's key, as Solana's
+    // sign-in signature is: no extra approval.
     await _signInWithWallet(
       emit,
       cancel: cancel,
       wallet: wallet,
       profileType: ProfileType.json,
-      source: EthereumDeviceSecret(ethWallet),
+      source: DeviceSecretSource.fromSecret(
+          DeviceUnlockMethod.ethereumAccount, signature),
     );
   }
 
@@ -1905,6 +1934,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       case DeviceUnlockMethod.wander:
         return BrowserWallet.wander;
       case DeviceUnlockMethod.ethereum:
+      case DeviceUnlockMethod.ethereumAccount:
         return BrowserWallet.metamask;
       case DeviceUnlockMethod.solana:
       case DeviceUnlockMethod.password:
@@ -2010,6 +2040,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           }
           profileType = ProfileType.json;
         case DeviceUnlockMethod.ethereum:
+        case DeviceUnlockMethod.ethereumAccount:
           final ethWallet =
               await _walletAnswer(cancel, _ethereumProviderService.connect());
           final address = ethWallet == null
@@ -2021,8 +2052,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             problem(WalletUnlockProblem.otherAccount);
             return;
           }
-          user = await _arDriveAuth.unlockWithWallet(
-              _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel));
+          final DeviceSecretSource source;
+          if (method == DeviceUnlockMethod.ethereumAccount) {
+            // A version 2 account: its account message, the signature its
+            // wallet comes from, is also its device key.
+            final signature = await _walletAnswer(
+              cancel,
+              ethWallet.sign(Uint8List.fromList(
+                  utf8.encode(ethereumAccountMessage(address!)))),
+            );
+            source = DeviceSecretSource.fromSecret(
+                DeviceUnlockMethod.ethereumAccount, signature);
+          } else {
+            source = _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel);
+          }
+          user = await _arDriveAuth.unlockWithWallet(source);
           profileType = ProfileType.json;
         case DeviceUnlockMethod.password:
           // Not a wallet's: [SavedAccount.walletMethod] never says this.

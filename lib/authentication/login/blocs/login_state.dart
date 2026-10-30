@@ -66,14 +66,7 @@ class LoginShowLoader extends LoginState {}
 /// A new account's key is being made on this device, which can take up to a
 /// minute. Shown in the sign-in panel rather than over it.
 class LoginCreatingAccount extends LoginState {
-  const LoginCreatingAccount({this.noWalletFound = false});
-
-  /// Sign up found no wallet extension to offer, so it went straight here,
-  /// and the panel says so.
-  final bool noWalletFound;
-
-  @override
-  List<Object?> get props => [noWalletFound];
+  const LoginCreatingAccount();
 }
 
 class LoginShowBlockingDialog extends LoginState {

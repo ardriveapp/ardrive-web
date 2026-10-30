@@ -2588,10 +2588,14 @@ class ArweaveService {
         );
         return [
           for (final edge in result.data!.transactions.edges)
-            AccountRecordTx(
-              id: edge.node.id,
-              tags: {for (final tag in edge.node.tags) tag.name: tag.value},
-            ),
+            // Asked for [authAddress]'s transactions only, and checked: a
+            // gateway that answers with someone else's can't forge a record.
+            if (edge.node.owner.address == authAddress)
+              AccountRecordTx(
+                id: edge.node.id,
+                tags: {for (final tag in edge.node.tags) tag.name: tag.value},
+                height: edge.node.block?.height,
+              ),
         ];
       } finally {
         // An injected client is the test's to close.

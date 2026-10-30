@@ -318,13 +318,17 @@ At sign-up the message is signed twice and the two signatures must be equal; a w
 
 **Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and reads the transactions of the auth key's Arweave address, first on the configured GraphQL endpoint, then on the turbo-gateway index (turbo-gateway.com, or ardrive.net, another name for the same index, if turbo-gateway.com can't be reached). When the configured endpoint is one of those, only the index is asked.
 
-- A **marker** (`ArDrive-Account-Version: 2`): version 2. The account message is signed and the wallet derived from it must have the marker's address; if it doesn't, the wallet signs differently than it did at sign-up, and sign-in stops with an error rather than opening another, empty account.
-- An **untagged transaction**: a version 1 verification record. The password is asked.
-- **Nothing on either:** the person is asked whether they have used ArDrive with this MetaMask before. *No* makes a version 2 account as above. *Yes* asks the version 1 password; with no record to check it against, it is accepted only if the wallet it derives owns ArFS drives, and the account's two verification records are then posted again.
+- A **marker** (`ArDrive-Account-Version: 2`) first: version 2. The account message is signed and the wallet derived from it must have the marker's address; if it doesn't, the wallet signs differently than it did at sign-up, and sign-in stops with an error rather than opening another, empty account (unless a version 1 record came after the marker: then its password is asked).
+- An **untagged transaction** first: a version 1 verification record. The password is asked.
+- **Nothing on either:** the person is asked whether they have used ArDrive with this MetaMask before. *No* makes a version 2 account as above. *Yes* asks the version 1 password; with no record to check it against, it is accepted only if the wallet it derives owns ArFS drives or has any transaction (its sign-up posted one), and the account's two verification records are then posted again.
 
 A lookup that fails is an error, never "nothing": a 429 or 5xx from the configured endpoint, or the index unreachable on both domains. No other index is asked in their place. Version 1 sign-up posted its record, so a version 1 account normally has one; one whose sign-up stopped before the record was posted, or whose record no index has, takes the *Yes* path.
 
-Builds from before the marker don't know it. Signing in there with a version 2 account finds the marker as the auth key's first transaction, takes the account for version 1, asks a password, and reports every password as wrong (the marker is not the signature it compares against). They post nothing.
+**Older builds.** A build from before the marker doesn't know it. v2.88.x, which reads turbo-gateway.com by default, finds the marker as the auth key's first transaction, takes the account for version 1, asks a password and calls every password wrong; it posts nothing. Builds that read arweave.net or Goldsky by default (v2.40.0 to about June 2026) may find no record, offer to create a password and post version 1 records under the auth key, after the marker. Because the earliest record decides, this build still reads such an account as version 2; if its wallet doesn't match the marker, the password made there is offered.
+
+**The earliest record decides.** The auth key's transactions are read earliest first, across the endpoints asked. A real version 1 record (2024 to 2026) always predates any marker, so a marker posted later, by someone who phished the verify signature, can't take a version 1 account over. When the configured endpoint shows a version 1 record, the turbo-gateway index is still asked for an earlier marker. Records whose owner isn't the auth key's address are ignored, whatever a gateway returns.
+
+A version 2 account's device key on a device comes from its account-message signature, the one its wallet comes from (unlock method `ethereum-account`). A version 1 account's comes from a separate device-unlock message, because its wallet signature depends on its password.
 
 `personal_sign` from an ordinary Ethereum account is deterministic (RFC 6979). Smart-contract and MPC wallets may not be, under either version.
 

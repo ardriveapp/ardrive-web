@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:collection/collection.dart' show IterableExtension, mergeSort;
 // ignore: depend_on_referenced_packages
 import 'package:convert/convert.dart';
 
@@ -76,10 +77,13 @@ Map<String, String> ethereumAccountMarkerTags(String arweaveAddress) => {
 
 /// A transaction an auth key made, as an account lookup reads it.
 class AccountRecordTx {
-  const AccountRecordTx({required this.id, this.tags = const {}});
+  const AccountRecordTx({required this.id, this.tags = const {}, this.height});
 
   final String id;
   final Map<String, String> tags;
+
+  /// Its block, or null while it is pending.
+  final int? height;
 }
 
 /// What an auth key's records say about its account. See
@@ -99,48 +103,114 @@ class EthereumV1Record extends EthereumAccountRecord {
 /// A version 2 account (no password): its marker, and the Arweave address
 /// its wallet derives, when the marker carries it as a tag.
 class EthereumV2Marker extends EthereumAccountRecord {
-  const EthereumV2Marker(super.txId, {this.accountAddress});
+  const EthereumV2Marker(
+    super.txId, {
+    this.accountAddress,
+    this.laterV1RecordId,
+  });
 
   final String? accountAddress;
+
+  /// An untagged record that came after the marker: an old build, after a
+  /// rollback, made a password account on this auth key too. If the wallet
+  /// the account message derives isn't the marker's, the password is the
+  /// way in, checked against this record.
+  final String? laterV1RecordId;
 }
 
-/// Which account an auth key's transactions [txs] are for: a version 2
-/// marker wins, then the first untagged record (version 1). Null when there
-/// are none.
+bool _isMarker(AccountRecordTx tx) => tx.tags[ethereumAccountVersionTag] == '2';
+
+bool _isV1Record(AccountRecordTx tx) =>
+    !tx.tags.containsKey(ethereumAccountVersionTag);
+
+/// Which account an auth key's transactions [txs], earliest first, are for:
+/// the earliest record decides.
+///
+/// - A real version 1 record (2024 to 2026) always predates any marker, so
+///   a marker posted later by someone who phished the verify signature
+///   can't take a version 1 account over.
+/// - A version 1 record an old build posts after a rollback always comes
+///   after the real marker, so it can't take a version 2 account over.
+///
+/// Null when there are none.
 EthereumAccountRecord? classifyAccountRecords(List<AccountRecordTx> txs) {
-  for (final tx in txs) {
-    if (tx.tags[ethereumAccountVersionTag] == '2') {
-      return EthereumV2Marker(tx.id,
-          accountAddress: tx.tags[ethereumAccountAddressTag]);
+  for (var i = 0; i < txs.length; i++) {
+    final tx = txs[i];
+    if (_isMarker(tx)) {
+      return EthereumV2Marker(
+        tx.id,
+        accountAddress: tx.tags[ethereumAccountAddressTag],
+        laterV1RecordId: txs.skip(i + 1).where(_isV1Record).firstOrNull?.id,
+      );
     }
-  }
-  for (final tx in txs) {
-    if (!tx.tags.containsKey(ethereumAccountVersionTag)) {
-      return EthereumV1Record(tx.id);
-    }
+    if (_isV1Record(tx)) return EthereumV1Record(tx.id);
   }
   return null;
+}
+
+/// The [answers] of several endpoints, each earliest first, as one list,
+/// earliest first, each transaction once.
+///
+/// The endpoint asked last (the turbo-gateway index, asked to complete the
+/// picture) gives the order, with what only earlier endpoints have after
+/// it. When every transaction has a block, they are then ordered by block,
+/// the earliest record across all of them first.
+List<AccountRecordTx> mergeAccountRecords(
+  List<List<AccountRecordTx>> answers,
+) {
+  final byId = <String, AccountRecordTx>{};
+  for (final answer in answers.reversed) {
+    for (final tx in answer) {
+      byId.putIfAbsent(tx.id, () => tx);
+    }
+  }
+  final merged = byId.values.toList();
+  if (merged.every((tx) => tx.height != null)) {
+    mergeSort(merged, compare: (a, b) => a.height!.compareTo(b.height!));
+  }
+  return merged;
 }
 
 /// An auth key's account record, looked for on each of [endpoints] in turn:
 /// the configured GraphQL endpoint, then the turbo-gateway index (see
-/// [firstReachable]).
+/// [firstReachable]). The earliest record across the endpoints asked
+/// decides ([classifyAccountRecords]).
 ///
-/// A record any endpoint has is the answer. "No record" is only the answer
-/// once every endpoint has answered and none has one: an index can lag or
-/// miss items, and a wrong "no record" would make an existing account a new,
-/// empty one. Any endpoint failing (a 429 or 5xx included) throws, so a
-/// failed lookup is never read as "no record". The question "Have you used
-/// ArDrive with this MetaMask before?" is the safety net for an index that
-/// answers but misses the record.
+/// - A marker found is the answer.
+/// - A version 1 record found still asks the endpoints after it, for an
+///   earlier marker the first doesn't index (an old build may have posted
+///   version 1 records under a version 2 account's auth key). If that extra
+///   check fails, the version 1 record stands: the password path can't
+///   lose an account.
+/// - "No record" is only the answer once every endpoint has answered and
+///   none has one: an index can lag or miss items, and a wrong "no record"
+///   would make an existing account a new, empty one. Any endpoint failing
+///   (a 429 or 5xx included) throws, so a failed lookup is never read as "no
+///   record". The question "Have you used ArDrive with this MetaMask
+///   before?" is the safety net for an index that answers but misses the
+///   record.
 Future<EthereumAccountRecord?> findAccountRecordAcross(
   List<Future<List<AccountRecordTx>> Function()> endpoints,
 ) async {
+  final answers = <List<AccountRecordTx>>[];
+  EthereumAccountRecord? decide() =>
+      classifyAccountRecords(mergeAccountRecords(answers));
+
   for (final lookup in endpoints) {
-    final found = classifyAccountRecords(await lookup());
-    if (found != null) return found;
+    final soFar = decide();
+    if (soFar is EthereumV1Record) {
+      try {
+        answers.add(await lookup());
+      } catch (e) {
+        return soFar;
+      }
+    } else {
+      answers.add(await lookup());
+    }
+    final found = decide();
+    if (found is EthereumV2Marker) return found;
   }
-  return null;
+  return decide();
 }
 
 /// The answer of the first of [domains] that answers: the same index
