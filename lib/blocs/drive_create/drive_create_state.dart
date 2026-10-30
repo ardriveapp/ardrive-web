@@ -52,17 +52,29 @@ class DriveCreateSuccess extends DriveCreateState {
 
 class DriveCreateFailure extends DriveCreateState {
   final bool isPaymentError;
-  const DriveCreateFailure(
-      {required super.privacy, this.isPaymentError = false});
+
+  /// The wallet can't make a private drive's key: its signature isn't the
+  /// deterministic one a key must come from (a hardware wallet). Nothing was
+  /// created or derived.
+  final bool walletCantMakeDriveKeys;
+
+  const DriveCreateFailure({
+    required super.privacy,
+    this.isPaymentError = false,
+    this.walletCantMakeDriveKeys = false,
+  });
 
   @override
   DriveCreateFailure copyWith({DrivePrivacy? privacy}) {
     return DriveCreateFailure(
-        privacy: privacy ?? this.privacy, isPaymentError: isPaymentError);
+      privacy: privacy ?? this.privacy,
+      isPaymentError: isPaymentError,
+      walletCantMakeDriveKeys: walletCantMakeDriveKeys,
+    );
   }
 
   @override
-  List<Object> get props => [privacy, isPaymentError];
+  List<Object> get props => [privacy, isPaymentError, walletCantMakeDriveKeys];
 }
 
 class DriveCreateWalletMismatch extends DriveCreateState {

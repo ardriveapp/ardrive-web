@@ -42,6 +42,16 @@ class ArConnectService {
   Future<Uint8List> signDataItem(DataItem dataItem) async =>
       await implementation.signDataItem(dataItem);
 
+  /// Whether Wander can sign several data items in one approval
+  /// (`batchSignDataItem`). Older builds can't.
+  bool isBatchSignSupported() => implementation.isBatchSignSupported();
+
+  /// Signs [dataItems] in one Wander approval, with `saltLength: 0`, and
+  /// returns each one's signature bytes in order, as [signDataItem] does for
+  /// one. Wander refuses it for a hardware wallet, after the approval.
+  Future<List<Uint8List>> batchSignDataItems(List<DataItem> dataItems) =>
+      implementation.batchSignDataItems(dataItems);
+
   Future<bool> isWalletVersionSupported() {
     if (_walletVersionSupportedFuture != null) {
       return _walletVersionSupportedFuture!;

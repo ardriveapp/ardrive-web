@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
@@ -550,17 +552,29 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     bool held(TransactionCommonMixin tx) =>
         session.holdsSignatureFor(address, tx.getTag(EntityTag.driveId)!);
-    int oldestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
-        created(a).compareTo(created(b));
+    // Drives made before 3.0 by an app that used one password for all of
+    // them first, then oldest first. See [drivePasswordTryRank].
+    int likeliestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
+        compareForPasswordTries(a, b, created);
 
-    final heldTxs = privateDriveTxs.where(held).toList()..sort(oldestFirst);
+    final heldTxs = privateDriveTxs.where(held).toList()..sort(likeliestFirst);
     final rest = privateDriveTxs.where((tx) => !held(tx)).toList()
-      ..sort(oldestFirst);
+      ..sort(likeliestFirst);
     final prompts = wallet is ArConnectWallet;
+    final promptBudget =
+        prompts ? WalletPromptBudget(signInMaxNewPrompts) : null;
+
+    // A Wander that batch-signs is asked once for every private drive, so
+    // the password is tried on up to [signInMaxDrives] of them for that one
+    // approval. Otherwise each drive not held is a prompt of its own.
+    final batches = wallet is ArConnectWallet &&
+        wallet.canBatchSign &&
+        !session.batchSigningUnusable(address) &&
+        rest.length > 1;
 
     final candidates = [
       ...heldTxs,
-      ...(prompts ? rest.take(signInMaxNewPrompts) : rest),
+      ...(prompts && !batches ? rest.take(signInMaxNewPrompts) : rest),
     ].take(signInMaxDrives).toList();
 
     // Their metadata, a few at a time rather than one after another.
@@ -584,6 +598,39 @@ class ArDriveAuthImpl implements ArDriveAuth {
       },
     );
 
+    // Nothing to try the password on (the gateway is down, say): no
+    // approval is asked for, and the error below says why.
+    if (batches && data.any((d) => d != null)) {
+      final batch = await _driveUnlocker.signInOneApproval(
+        wallet: wallet,
+        driveIds: [
+          for (final tx in rest)
+            // A v1 drive without a stored signature needs its own v1
+            // signature: it is left to its own attempt.
+            if (await _driveUnlocker.opensWithV2Signature(
+              wallet: wallet,
+              driveId: tx.getTag(EntityTag.driveId)!,
+              signatureType: DriveSignatureType.fromString(
+                  tx.getTag(EntityTag.signatureType) ?? '1'),
+            ))
+              tx.getTag(EntityTag.driveId)!,
+        ],
+        promptBudget: promptBudget,
+      );
+
+      if (batch == DriveSignatureBatch.declined) {
+        // The user said no to their wallet: one no for every drive.
+        await _markSignInPassword(address, proven: false);
+        throw const PasswordOpensNoDriveException();
+      }
+
+      // The batch signed every drive's v2 item, which is all a v2 drive (or a
+      // v1 drive with a stored signature) needs. A v1 drive without one still
+      // needs its own v1 signature, a prompt, so v2-tagged drives go first:
+      // the password usually opens one of them for the batch alone.
+      _v2First(candidates, data, readErrors);
+    }
+
     final deadline = DateTime.now().add(signInTimeBudget);
     Object? unreadable;
 
@@ -602,11 +649,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
         continue;
       }
 
+      // Out of prompts, as when a batch couldn't be used: drives whose
+      // signature isn't held are left for discovery and Unlock.
+      final outOfPrompts = promptBudget != null && promptBudget.remaining == 0;
+      if (outOfPrompts && !held(candidates[i])) continue;
+
       final attempt = await _driveUnlocker.tryPassword(
         wallet: wallet,
         driveTx: candidates[i],
         data: driveData,
         password: password,
+        promptBudget: promptBudget,
       );
 
       switch (attempt.failure) {
@@ -615,6 +668,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
           return;
         case DriveUnlockFailure.wrongPassword:
         case DriveUnlockFailure.notTried:
+          continue;
+        case DriveUnlockFailure.walletDeclined when outOfPrompts:
+          // Not the user: the budget (a v1 drive whose own signature isn't
+          // held).
           continue;
         case DriveUnlockFailure.walletDeclined:
         case DriveUnlockFailure.walletFailed:
@@ -637,6 +694,33 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     await _markSignInPassword(address, proven: false);
     throw const PasswordOpensNoDriveException();
+  }
+
+  /// Reorders [candidates], and their [data] and [readErrors] with them, so
+  /// drives tagged `Signature-Type: 2` come first, each group keeping its
+  /// order.
+  static void _v2First(
+    List<TransactionCommonMixin> candidates,
+    List<Uint8List?> data,
+    List<Object?> readErrors,
+  ) {
+    bool isV2(int i) =>
+        candidates[i].getTag(EntityTag.signatureType) ==
+        DriveSignatureType.v2.value;
+    final order = [
+      for (var i = 0; i < candidates.length; i++)
+        if (isV2(i)) i,
+      for (var i = 0; i < candidates.length; i++)
+        if (!isV2(i)) i,
+    ];
+    final c = [for (final i in order) candidates[i]];
+    final d = [for (final i in order) data[i]];
+    final r = [for (final i in order) readErrors[i]];
+    for (var i = 0; i < order.length; i++) {
+      candidates[i] = c[i];
+      data[i] = d[i];
+      readErrors[i] = r[i];
+    }
   }
 
   /// Records whether the sign-in password opened a drive: in the session,
