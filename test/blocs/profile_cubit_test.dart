@@ -159,6 +159,7 @@ void main() {
       profileDao = MockProfileDao();
 
       final storedProfile = Profile(
+        formatVersion: 1,
         id: 'id',
         username: '',
         encryptedWallet: Uint8List(0),

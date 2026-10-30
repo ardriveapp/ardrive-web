@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/drive_fingerprint.dart';
+import 'package:ardrive/components/password_autofill.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/presentation/unlock_drive_cubit.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -35,6 +36,7 @@ Future<void> showUnlockDriveDialog(
         syncDrives: (driveIds) => syncUnlockedDrives(syncCubit, driveIds),
       ),
       child: UnlockDriveDialog(
+        walletAddress: user.walletAddress,
         onUnlocked: (openedDriveIds) =>
             _sayHowManyOpened(messenger, openedDriveIds.length),
       ),
@@ -94,7 +96,11 @@ void _sayHowManyOpened(ScaffoldMessengerState? messenger, int count) {
 /// network couldn't be reached; a wallet prompt that is cancelled says
 /// nothing at all.
 class UnlockDriveDialog extends StatefulWidget {
-  const UnlockDriveDialog({super.key, this.onUnlocked});
+  const UnlockDriveDialog({super.key, this.onUnlocked, this.walletAddress});
+
+  /// The account the drive password belongs to, for the browser's password
+  /// manager. See [PasswordAutofillGroup].
+  final String? walletAddress;
 
   /// Called once the drive opens, with every drive that opened.
   final void Function(List<String> openedDriveIds)? onUnlocked;
@@ -107,6 +113,9 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
   final _password = TextEditingController();
   final _focus = FocusNode(debugLabel: 'unlockDrivePassword');
   bool _tryOthers = true;
+
+  /// "Remember on this device", on by default (3.0 password design, D4).
+  bool _remember = true;
 
   @override
   void dispose() {
@@ -123,6 +132,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
     context.read<UnlockDriveCubit>().submit(
           password: _password.text,
           tryOthers: _tryOthers,
+          remember: _remember,
         );
   }
 
@@ -132,6 +142,12 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
     _focus.requestFocus();
     _password.selection =
         TextSelection(baseOffset: 0, extentOffset: _password.text.length);
+  }
+
+  Widget _withAutofill(Widget field) {
+    final address = widget.walletAddress;
+    if (address == null) return field;
+    return PasswordAutofillGroup(username: address, child: field);
   }
 
   @override
@@ -145,6 +161,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
       listener: (context, state) {
         switch (state.status) {
           case UnlockDriveStatus.unlocked:
+            if (widget.walletAddress != null) PasswordAutofillGroup.save();
             widget.onUnlocked?.call(state.openedDriveIds);
             Navigator.of(context).pop();
           case UnlockDriveStatus.wrongPassword:
@@ -183,7 +200,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   ),
                 ),
                 const SizedBox(height: ArDriveSpacing.lg),
-                ArDriveTextFieldNew(
+                _withAutofill(ArDriveTextFieldNew(
                   key: const Key('unlockDrivePassword'),
                   controller: _password,
                   focusNode: _focus,
@@ -207,7 +224,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                     setState(() {});
                   },
                   onFieldSubmitted: (_) => _submit(),
-                ),
+                )),
                 if (state.status == UnlockDriveStatus.networkError ||
                     state.status == UnlockDriveStatus.walletFailed) ...[
                   const SizedBox(height: ArDriveSpacing.xs),
@@ -229,6 +246,18 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                     onChange: (value) => setState(() => _tryOthers = value),
                   ),
                 ],
+                SizedBox(
+                  height: cubit.hasOtherLockedDrives
+                      ? ArDriveSpacing.xs
+                      : ArDriveSpacing.md,
+                ),
+                ArDriveCheckBox(
+                  key: const Key('unlockDriveRemember'),
+                  title: strings.rememberOnThisDevice,
+                  checked: _remember,
+                  isDisabled: working,
+                  onChange: (value) => setState(() => _remember = value),
+                ),
               ],
             ),
           ),

@@ -95,6 +95,8 @@ void main() {
   setUp(() {
     mockArweave = MockArweaveService();
     mockDriveDao = MockDriveDao();
+    // No drive is marked "not remembered on this device".
+    when(() => mockDriveDao.forgottenDriveIds()).thenAnswer((_) async => {});
     mockConfigService = MockConfigService();
     mockBatchProcessor = MockBatchProcessor();
     mockSnapshotValidation = MockSnapshotValidationService();

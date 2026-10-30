@@ -22,6 +22,32 @@ class DatabaseHelpers {
     }
   }
 
+  /// What sign-out does to the device after [deleteAllTables], so nothing the
+  /// profile held can be read back from storage (docs/WEB_DATABASE.md,
+  /// "Signing out"):
+  ///
+  /// 1. `VACUUM`: the file is rebuilt without its free pages, which still
+  ///    hold whatever was deleted before `secure_delete` was on.
+  /// 2. On the web, the tab that owns the database deletes the copies older
+  ///    builds left: the sql.js and #2197 IndexedDB stores and any
+  ///    `ardrive-reset-<time>` copy.
+  ///
+  /// Never throws: the user is already signed out. Returns what step 2
+  /// deleted.
+  Future<List<String>> wipeAfterSignOut() async {
+    try {
+      await _db.vacuum();
+    } catch (e) {
+      logger.w('Could not vacuum the database after sign-out: $e');
+    }
+    try {
+      return await Database.deleteLegacyStores();
+    } catch (e) {
+      logger.w('Could not delete older stores after sign-out: $e');
+      return const [];
+    }
+  }
+
   /// Drops what the signed-in session kept in memory rather than in a table -
   /// drive keys and recently previewed bytes. Logout needs both this and
   /// [deleteAllTables]: the tables go, and so must what was read out of them.

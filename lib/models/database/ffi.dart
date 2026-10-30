@@ -18,3 +18,9 @@ LazyDatabase openConnection() {
 LazyDatabase openPublicationConnection() {
   return LazyDatabase(() async => NativeDatabase.memory());
 }
+
+/// Web only: there are no older stores off the web.
+Future<List<String>> deleteLegacyLocalStores() async => const [];
+
+/// Off the web one process owns the database.
+bool get webDatabaseIsWriter => true;

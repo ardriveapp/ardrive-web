@@ -74,6 +74,7 @@ LazyDatabase openConnection() {
     // Claimed once, for the life of the tab, and shared by both paths below:
     // a second request from the same tab would find the lock taken.
     final isWriter = await claimWriterLock(_writerLockName);
+    webDatabaseIsWriter = isWriter;
 
     final viaWorker = await openThroughWorker(
       scriptUrl: _workerScript,
@@ -110,6 +111,63 @@ LazyDatabase openConnection() {
       fileSystem: fs is IndexedDbFileSystem ? fs : null,
     );
   });
+}
+
+/// The IndexedDB database the sql.js backend kept every named store in.
+const _legacyIndexedDbName = 'moor_databases';
+
+/// Whether this tab holds the `ardrive-database` Web Lock, and so owns the
+/// database. Set once the database opens; false before, and in a tab that
+/// works on a session copy.
+bool webDatabaseIsWriter = false;
+
+/// Deletes the copies of the database that earlier builds left in this
+/// browser, after sign-out (docs/WEB_DATABASE.md, "Signing out"):
+///
+/// - the sql.js store (IndexedDB `moor_databases`), which every user who
+///   started on sql.js still has;
+/// - #2197's store (IndexedDB `ardrive_sqlite3`), when the database is on
+///   OPFS: on the IndexedDB path it *is* the database, which sign-out has
+///   just emptied;
+/// - the `ardrive-reset-<time>` copies of the OPFS file that the database
+///   error screen's reset made while it existed.
+///
+/// Each held an encrypted copy of the wallet. Only the tab that owns the
+/// database deletes anything: another tab may be mid-start, reading one of
+/// them. Returns what it deleted, by name; never throws.
+Future<List<String>> deleteLegacyLocalStores({
+  String opfsName = _opfsDatabaseName,
+  String indexedDbName = _indexedDbName,
+  String legacyIndexedDbName = _legacyIndexedDbName,
+  bool? isWriter,
+  bool? onOpfs,
+}) async {
+  if (!(isWriter ?? webDatabaseIsWriter)) {
+    logger.i('[web-db] not the tab that owns the database; '
+        'older stores left to it');
+    return const [];
+  }
+  final deleted = <String>[];
+  final stores = [
+    legacyIndexedDbName,
+    if (onOpfs ?? webDatabaseWorker != null) indexedDbName,
+  ];
+  for (final name in stores) {
+    try {
+      if (!await indexedDbExists(name)) continue;
+      await IndexedDbFileSystem.deleteDatabase(name)
+          .timeout(const Duration(seconds: 10));
+      deleted.add(name);
+    } catch (e) {
+      logger.w('[web-db] could not delete IndexedDB $name: $e');
+    }
+  }
+  deleted.addAll(await removeOpfsResetCopies(opfsName));
+  if (deleted.isNotEmpty) {
+    logger.i('[web-db] deleted older stores after sign-out: '
+        '${deleted.join(', ')}');
+  }
+  return deleted;
 }
 
 /// A publication's database (`PublicationMode`): in memory on this page, filled

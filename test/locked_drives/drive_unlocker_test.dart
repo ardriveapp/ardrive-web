@@ -7,6 +7,7 @@ import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
+import 'package:ardrive/locked_drives/domain/user_drive_discovery.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
@@ -448,6 +449,38 @@ void main() {
           await _bytes(drive.key));
     });
 
+    test(
+        'a drive this device was told not to remember opens from memory '
+        'only: neither the sign-in password nor the wallet is tried', () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'pw');
+      signer.signatures = 0;
+
+      final attempt = await unlocker.resolveForDiscovery(
+        wallet: wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw',
+        forgotten: true,
+      );
+
+      expect(attempt.failure, DriveUnlockFailure.notTried);
+      expect(PrivateDriveVerdict.of(attempt), PrivateDriveVerdict.locked);
+      expect(signer.signatures, 0);
+
+      // Opened this session with Remember off: its key in memory still works.
+      await db.driveDao
+          .putDriveKeyInMemory(driveID: _driveA, driveKey: drive.key);
+      final again = await unlocker.resolveForDiscovery(
+        wallet: wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw',
+        forgotten: true,
+      );
+      expect(again.opened, isTrue);
+    });
+
     test('a drive whose prompt was cancelled is not asked again', () async {
       final drive = await makeWebPrivateDrive(
           wallet: wallet, driveId: _driveA, password: 'pw');
@@ -580,6 +613,49 @@ void main() {
       // A signed, B skipped, C (never declined) signed.
       expect(signer.signatures, 2);
       expect(session.isLocked(_driveB), isTrue);
+    });
+
+    test('Remember on this device off: the drives open, and nothing is stored',
+        () async {
+      final result = await unlocker.unlock(
+        wallet: wallet,
+        profileKey: profileKey,
+        driveId: _driveA,
+        password: 'shared',
+        remember: false,
+      );
+
+      expect(result.openedDriveIds, [_driveA, _driveB]);
+      for (final id in [_driveA, _driveB]) {
+        final row = await db.driveDao.driveById(driveId: id).getSingle();
+        expect(row.encryptedKey, isNull, reason: 'no key stored for $id');
+        // Readable this session, from memory.
+        expect(await db.driveDao.getDriveKey(id, profileKey), isNotNull);
+      }
+      expect(await db.driveDao.forgottenDriveIds(), {_driveA, _driveB});
+
+      // A reload: nothing to open them with.
+      await db.driveDao.clearSessionMemory();
+      expect(await db.driveDao.getDriveKey(_driveA, profileKey), isNull);
+    });
+
+    test('Remember on: stored, and an earlier "don\'t remember" is cleared',
+        () async {
+      await db.driveDao
+          .keepDriveKeyForSession(driveId: _driveA, driveKey: a.key);
+      await db.driveDao.clearSessionMemory();
+
+      await unlocker.unlock(
+        wallet: wallet,
+        profileKey: profileKey,
+        driveId: _driveA,
+        password: 'shared',
+        tryOthers: false,
+      );
+
+      expect(await db.driveDao.forgottenDriveIds(), isEmpty);
+      expect(
+          await db.driveDao.getStoredDriveKey(_driveA, profileKey), isNotNull);
     });
   });
 }

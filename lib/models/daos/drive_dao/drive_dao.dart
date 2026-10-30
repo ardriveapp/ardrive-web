@@ -129,8 +129,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     try {
       await _vaultsReady;
 
+      final forgotten = await forgottenDriveIds();
       final drives = (await allDrives().get()).where(
-        (drive) => drive.isPrivate && drive.encryptedKey == null,
+        (drive) =>
+            drive.isPrivate &&
+            drive.encryptedKey == null &&
+            !_sessionHeldDriveIds.contains(drive.id) &&
+            !forgotten.contains(drive.id),
       );
 
       for (final drive in drives) {
@@ -198,6 +203,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     _previewSession++;
     _previewCache.clear();
 
+    _sessionHeldDriveIds.clear();
     try {
       await _vaultsReady;
       await _driveKeyVault.clear();
@@ -205,6 +211,145 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       throw _handleError('Error clearing drive keys from memory', e);
     }
   }
+
+  /// Private drives whose key is kept for this session only, in the memory
+  /// vault: "Remember on this device" was off when they were unlocked, or
+  /// "Forget on this device" was used. Their row holds no key, and no write
+  /// may store one ([_addDriveKeyToDriveCompanion]); [getDriveKey] reads
+  /// their key from memory. The `forgotten_drives` table carries the choice
+  /// to the next session, which starts with them locked.
+  final Set<DriveID> _sessionHeldDriveIds = {};
+
+  bool isSessionHeld(DriveID driveId) => _sessionHeldDriveIds.contains(driveId);
+
+  /// The drives this device must not keep a key for. See [forgetDriveKey].
+  Future<Set<DriveID>> forgottenDriveIds() async =>
+      (await select(attachedDatabase.forgottenDrives).get())
+          .map((row) => row.driveId)
+          .toSet();
+
+  /// Keeps [driveKey] for this session only: in memory, its row (if any)
+  /// emptied of any stored key, and the drive marked so the next session
+  /// starts with it locked.
+  Future<void> keepDriveKeyForSession({
+    required DriveID driveId,
+    required DriveKey driveKey,
+  }) async {
+    await putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+    _sessionHeldDriveIds.add(driveId);
+    await transaction(() async {
+      await into(attachedDatabase.forgottenDrives).insert(
+        ForgottenDrivesCompanion.insert(driveId: driveId),
+        mode: InsertMode.insertOrIgnore,
+      );
+      await (update(drives)..where((d) => d.id.equals(driveId))).write(
+        const DrivesCompanion(
+          encryptedKey: Value(null),
+          keyEncryptionIv: Value(null),
+        ),
+      );
+    });
+  }
+
+  /// Lets [driveId]'s key be stored on this device again: the next write
+  /// that carries it stores it, wrapped by the device key.
+  Future<void> allowRememberingDriveKey(DriveID driveId) async {
+    _sessionHeldDriveIds.remove(driveId);
+    await (delete(attachedDatabase.forgottenDrives)
+          ..where((f) => f.driveId.equals(driveId)))
+        .go();
+  }
+
+  /// "Forget on this device": the stored key of [driveId] is deleted. The
+  /// drive stays open for this session, from memory, and the next session
+  /// starts with it locked. Returns false when nothing was stored.
+  Future<bool> forgetDriveKey(DriveID driveId, SecretKey profileKey) async {
+    final driveKey = await getStoredDriveKey(driveId, profileKey);
+    if (driveKey == null) return false;
+    await keepDriveKeyForSession(driveId: driveId, driveKey: driveKey);
+    return true;
+  }
+
+  /// [forgetDriveKey] without the device key, for a tab that is not signed
+  /// in: the stored key is deleted unread and the drive marked.
+  Future<void> forgetStoredDriveKeyUnread(DriveID driveId) =>
+      transaction(() async {
+        await into(attachedDatabase.forgottenDrives).insert(
+          ForgottenDrivesCompanion.insert(driveId: driveId),
+          mode: InsertMode.insertOrIgnore,
+        );
+        await (update(drives)..where((d) => d.id.equals(driveId))).write(
+          const DrivesCompanion(
+            encryptedKey: Value(null),
+            keyEncryptionIv: Value(null),
+          ),
+        );
+      });
+
+  /// "Forget all on this device": [forgetDriveKey] for every private drive
+  /// whose key is stored here. Returns how many.
+  Future<int> forgetAllDriveKeys(SecretKey profileKey) async {
+    final stored =
+        await (select(drives)..where((d) => d.encryptedKey.isNotNull())).get();
+    var forgotten = 0;
+    for (final drive in stored) {
+      try {
+        if (await forgetDriveKey(drive.id, profileKey)) forgotten++;
+      } catch (e) {
+        // A key the device key doesn't open is useless: drop it anyway.
+        logger.w('Could not read a stored drive key; deleting it: $e');
+        await forgetStoredDriveKeyUnread(drive.id);
+        forgotten++;
+      }
+    }
+    return forgotten;
+  }
+
+  /// At the start of a session: the drives a previous session kept for
+  /// itself only have a row and no key. They are detached, rows and
+  /// contents, so they show as locked until unlocked again. A drive whose key
+  /// this session already holds (opened before signing in) is left alone.
+  /// Returns the ids detached.
+  Future<List<DriveID>> detachForgottenDrives() async {
+    final detached = <DriveID>[];
+    for (final driveId in await forgottenDriveIds()) {
+      if (_sessionHeldDriveIds.contains(driveId)) continue;
+      final row = await driveById(driveId: driveId).getSingleOrNull();
+      if (row == null || row.encryptedKey != null) continue;
+      if (await getDriveKeyFromMemory(driveId) != null) {
+        _sessionHeldDriveIds.add(driveId);
+        continue;
+      }
+      await detachDrive(driveId);
+      detached.add(driveId);
+    }
+    return detached;
+  }
+
+  /// How many drive keys this device remembers, for "Forget all on this
+  /// device".
+  Stream<int> watchRememberedDriveKeyCount() {
+    final count = drives.id.count();
+    return (selectOnly(drives)
+          ..addColumns([count])
+          ..where(drives.encryptedKey.isNotNull()))
+        .map((row) => row.read(count) ?? 0)
+        .watchSingle()
+        .distinct();
+  }
+
+  Future<List<DriveID>> rememberedDriveIds() async =>
+      (await (select(drives)..where((d) => d.encryptedKey.isNotNull())).get())
+          .map((d) => d.id)
+          .toList();
+
+  /// Whether [driveId]'s key is stored on this device, as the details panel
+  /// shows it.
+  Stream<bool> watchDriveKeyRemembered(DriveID driveId) =>
+      driveById(driveId: driveId)
+          .watchSingleOrNull()
+          .map((drive) => drive?.encryptedKey != null)
+          .distinct();
 
   /// Bulk-loads ALL latest file revisions for a drive into a map keyed by fileId.
   Future<Map<String, FileRevision>> getAllLatestFileRevisionsMap(
@@ -609,6 +754,17 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey profileKey,
     DriveKey driveKey,
   ) async {
+    final driveId = drive.id.present ? drive.id.value : null;
+    if (driveId != null && _sessionHeldDriveIds.contains(driveId)) {
+      // Kept for this session only: memory, never the row.
+      await putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+      return drive.copyWith(
+        encryptedKey: const Value(null),
+        driveKeyGenerated: Value(driveKey.generated),
+        keyEncryptionIv: const Value(null),
+      );
+    }
+
     final encryptionRes = await aesGcm.encrypt(
       await driveKey.key.extractBytes(),
       secretKey: profileKey,
@@ -628,6 +784,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final drive = await driveById(driveId: driveId).getSingle();
 
     if (drive.encryptedKey == null) {
+      // A key kept for this session only is in memory. Any other private
+      // row with no key has nothing to open it with.
+      if (_sessionHeldDriveIds.contains(driveId)) {
+        return getDriveKeyFromMemory(driveId);
+      }
       return null;
     }
 

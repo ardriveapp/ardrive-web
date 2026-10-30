@@ -32,6 +32,11 @@ enum DriveUnlockFailure {
   /// Anything else: the drive's metadata or its signature record couldn't be
   /// read, or what decrypted couldn't be read as a drive.
   unavailable,
+
+  /// Not tried: this device was told not to keep the drive's key ("Remember
+  /// on this device" off, or "Forget on this device"), so it is not opened
+  /// on its own. It stays locked until the person unlocks it.
+  notTried,
 }
 
 /// One attempt to open a drive: the key and the drive it opened, or why not.
@@ -317,7 +322,8 @@ class DriveUnlocker {
   /// the one this device stored for the drive ([storedKey]). Only if neither
   /// opens it is [password] - the sign-in password - tried, which may ask the
   /// wallet. A drive whose prompt was cancelled this session is not asked
-  /// again unless [mayAskWallet].
+  /// again unless [mayAskWallet]. A [forgotten] drive gets only its key in
+  /// memory: see [DriveUnlockFailure.notTried].
   ///
   /// A key that opens the drive goes into memory. One that doesn't is never
   /// kept: a wrong key in memory would be found first on every later pass.
@@ -329,6 +335,7 @@ class DriveUnlocker {
     StoredDriveKeyReader? storedKey,
     bool mayAskWallet = true,
     WalletPromptBudget? promptBudget,
+    bool forgotten = false,
   }) async {
     final driveId = driveTx.getTag(EntityTag.driveId)!;
 
@@ -340,6 +347,13 @@ class DriveUnlocker {
       if (entity != null) {
         return DriveKeyAttempt.opened(key: inMemory, entity: entity);
       }
+    }
+
+    // Unlocked this session with "Remember on this device" off, or
+    // forgotten: only the person opens it, so neither a stored key (there is
+    // none) nor the sign-in password is tried.
+    if (forgotten) {
+      return const DriveKeyAttempt.failed(DriveUnlockFailure.notTried);
     }
 
     if (storedKey != null) {
@@ -397,8 +411,8 @@ class DriveUnlocker {
   ///
   /// The drive's newest metadata is read fresh, so a drive renamed since the
   /// list was read opens under its current name. Each drive that opens is kept
-  /// the way an unlocked drive's key is kept - in memory and, under
-  /// [profileKey], on its drive row - and leaves the locked list.
+  /// in memory and, with [remember], under [profileKey] on its drive row (see
+  /// [_keep]), and leaves the locked list.
   ///
   /// The result is about [driveId]: if it stays locked nothing else is tried.
   /// The other drives are tried quietly. Their wallet is asked only if their
@@ -409,6 +423,7 @@ class DriveUnlocker {
     required String driveId,
     required String password,
     bool tryOthers = true,
+    bool remember = true,
   }) async {
     final owner = await wallet.getAddress();
 
@@ -423,6 +438,7 @@ class DriveUnlocker {
       driveId: driveId,
       password: password,
       mayAskWallet: true,
+      remember: remember,
     );
 
     if (!first.opened) {
@@ -452,6 +468,7 @@ class DriveUnlocker {
           password: password,
           mayAskWallet: false,
           promptBudget: budget,
+          remember: remember,
         );
 
         if (attempt.opened) {
@@ -470,6 +487,7 @@ class DriveUnlocker {
     required String driveId,
     required String password,
     required bool mayAskWallet,
+    required bool remember,
     WalletPromptBudget? promptBudget,
   }) async {
     final TransactionCommonMixin? driveTx;
@@ -505,20 +523,33 @@ class DriveUnlocker {
     );
 
     if (attempt.opened) {
-      await _keep(attempt, profileKey);
+      await _keep(attempt, profileKey, remember: remember);
     }
 
     return attempt;
   }
 
-  /// Keeps a proven key the way an unlocked drive's key is kept today: in the
-  /// memory vault, and wrapped under the profile key on the drive's row.
-  Future<void> _keep(DriveKeyAttempt attempt, SecretKey? profileKey) async {
+  /// Keeps a proven key: in the memory vault and, with [remember] ("Remember
+  /// on this device"), wrapped by the device key ([profileKey]) on the
+  /// drive's row. Without it the key is kept for this session only and the
+  /// next session starts with the drive locked.
+  Future<void> _keep(
+    DriveKeyAttempt attempt,
+    SecretKey? profileKey, {
+    required bool remember,
+  }) async {
     final entity = attempt.entity!;
     final driveId = entity.id!;
 
     await _driveDao.putDriveKeyInMemory(
         driveID: driveId, driveKey: attempt.key!);
+
+    if (remember) {
+      await _driveDao.allowRememberingDriveKey(driveId);
+    } else {
+      await _driveDao.keepDriveKeyForSession(
+          driveId: driveId, driveKey: attempt.key!);
+    }
 
     await _driveDao.writeDriveEntity(
       name: entity.name!,

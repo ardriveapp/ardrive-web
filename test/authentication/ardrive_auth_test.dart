@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:async';
 
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
@@ -82,6 +83,8 @@ class _KeptValues implements KeyValueStore {
 
 class MockDriveUnlocker extends Mock implements DriveUnlocker {}
 
+class MockDeviceTabs extends Mock implements DeviceTabs {}
+
 void main() {
   late ArDriveAuthImpl arDriveAuth;
   late MockArweaveService mockArweaveService;
@@ -91,6 +94,8 @@ void main() {
   late MockSecureKeyValueStore mockSecureKeyValueStore;
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
+  late MockDeviceTabs mockDeviceTabs;
+  late MockDriveDao mockDriveDao;
   late MockDriveUnlocker mockDriveUnlocker;
 
   final wallet = getTestWallet();
@@ -135,6 +140,14 @@ void main() {
       await newMemoryCacheStore(),
     );
 
+    mockDeviceTabs = MockDeviceTabs();
+    mockDriveDao = MockDriveDao();
+    when(() => mockDatabaseHelpers.driveDao).thenReturn(mockDriveDao);
+    when(() => mockDriveDao.detachForgottenDrives())
+        .thenAnswer((_) async => []);
+    when(() => mockDatabaseHelpers.wipeAfterSignOut())
+        .thenAnswer((_) async => []);
+
     arDriveAuth = ArDriveAuthImpl(
       arweave: mockArweaveService,
       userRepository: mockUserRepository,
@@ -145,6 +158,7 @@ void main() {
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
       driveUnlocker: mockDriveUnlocker,
+      deviceTabs: mockDeviceTabs,
     );
 
     registerFallbackValue(wallet);
@@ -643,6 +657,20 @@ void main() {
         expect(user.profileType, unlockedUser.profileType);
       });
 
+      test('starts the session with the drives not remembered here locked',
+          () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
+        await arDriveAuth.unlockUser(password: 'password');
+
+        verify(() => mockDriveDao.detachForgottenDrives()).called(1);
+      });
+
       test('should throw when password is not correct', () async {
         when(() => mockUserRepository.getUser('password'))
             .thenThrow(ProfilePasswordIncorrectException());
@@ -703,6 +731,39 @@ void main() {
         // What was read out of the tables goes with them: drive keys and
         // previewed bytes live in memory, not in a table.
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+      });
+
+      test(
+          'clears the device after the tables: storage is wiped and the '
+          'other tabs are told', () async {
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.logout();
+
+        verifyInOrder([
+          () => mockDatabaseHelpers.deleteAllTables(),
+          () => mockDatabaseHelpers.clearSessionMemory(),
+          () => mockDeviceTabs.announceSignedOut(),
+          () => mockDatabaseHelpers.wipeAfterSignOut(),
+        ]);
+      });
+
+      test('a sign-out that came from another tab is not announced back',
+          () async {
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.logout(fromAnotherTab: true);
+
+        verifyNever(() => mockDeviceTabs.announceSignedOut());
+        verify(() => mockDatabaseHelpers.wipeAfterSignOut()).called(1);
       });
 
       test('signs out even when Wander never answers', () async {

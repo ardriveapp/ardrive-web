@@ -2151,6 +2151,10 @@ class _SyncRepository implements SyncRepository {
         ? WalletPromptBudget(unproven ? 0 : WalletPromptBudget.perPass)
         : null;
 
+    // Drives this device was told not to keep a key for: opened only by the
+    // person, never by the sign-in password.
+    final forgotten = await _driveDao.forgottenDriveIds();
+
     final discovery = await _arweave.getUniqueUserDriveEntities(
       wallet,
       password,
@@ -2165,6 +2169,7 @@ class _SyncRepository implements SyncRepository {
         storedKey: (driveId) => _driveDao.getStoredDriveKey(driveId, cipherKey),
         mayAskWallet: false,
         promptBudget: promptBudget,
+        forgotten: forgotten.contains(driveTx.getTag(EntityTag.driveId)),
       ),
     );
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
@@ -51,7 +52,11 @@ abstract class ArDriveAuth {
   });
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
-  Future<void> logout();
+
+  /// Signs out and clears this device of the account: the profile, every
+  /// remembered drive key, and the copies older builds left. Unless
+  /// [fromAnotherTab], the other ArDrive tabs are told to sign out too.
+  Future<void> logout({bool fromAnotherTab = false});
   User get currentUser;
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
@@ -71,8 +76,10 @@ abstract class ArDriveAuth {
     ArNSWalletStore? arnsWalletStore,
     ArNSPendingActionStore? arnsPendingActionStore,
     DriveUnlocker? driveUnlocker,
+    DeviceTabs? deviceTabs,
   }) =>
       ArDriveAuthImpl(
+        deviceTabs: deviceTabs,
         driveUnlocker: driveUnlocker,
         arweave: arweave,
         userRepository: userRepository,
@@ -101,7 +108,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
     ArNSWalletStore? arnsWalletStore,
     ArNSPendingActionStore? arnsPendingActionStore,
     DriveUnlocker? driveUnlocker,
+    DeviceTabs? deviceTabs,
   })  : _arweave = arweave,
+        _deviceTabs = deviceTabs ?? DeviceTabs.instance,
         _injectedDriveUnlocker = driveUnlocker,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
@@ -117,6 +126,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
+
+  /// The other ArDrive tabs, told when this one signs out.
+  final DeviceTabs _deviceTabs;
 
   final DriveUnlocker? _injectedDriveUnlocker;
 
@@ -260,6 +272,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
+      await _startSession();
+
       unawaited(_updateBalance());
 
       if (await _biometricAuthentication.isEnabled()) {
@@ -320,8 +334,23 @@ class ArDriveAuthImpl implements ArDriveAuth {
     throw WrongPasswordException('Biometric authentication failed');
   }
 
+  /// Drives an earlier session kept for itself only ("Remember on this
+  /// device" off, or forgotten) still have a row with no key. They go, so
+  /// they show as locked. Never stops a sign-in.
+  Future<void> _startSession() async {
+    try {
+      final detached = await _databaseHelpers.driveDao.detachForgottenDrives();
+      if (detached.isNotEmpty) {
+        logger.i('${detached.length} drives not remembered on this device '
+            'start locked');
+      }
+    } catch (e, stackTrace) {
+      logger.e('Could not clear drives not remembered here', e, stackTrace);
+    }
+  }
+
   @override
-  Future<void> logout() async {
+  Future<void> logout({bool fromAnotherTab = false}) async {
     logger.i('Logging out user');
 
     try {
@@ -348,6 +377,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
       logger.e('Failed to logout user', e, stacktrace);
       throw AuthenticationUnknownException('Failed to logout user');
     }
+
+    // Signed out: the rest only makes sure storage keeps nothing of it, and
+    // that a tab working on a session copy reaches the database that lasts.
+    if (!fromAnotherTab) _deviceTabs.announceSignedOut();
+    await _databaseHelpers.wipeAfterSignOut();
   }
 
   /// How long signing out waits for each of Wander's answers: a short wait,
@@ -526,6 +560,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
           session.setSignInPasswordProven(address, true);
           return;
         case DriveUnlockFailure.wrongPassword:
+        case DriveUnlockFailure.notTried:
           continue;
         case DriveUnlockFailure.walletDeclined:
         case DriveUnlockFailure.walletFailed:

@@ -69,9 +69,13 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   bool get hasOtherLockedDrives => _unlocker.session.currentLockedDrives
       .any((drive) => drive.driveId != driveId);
 
+  /// [remember] is "Remember on this device": the drive keys that open are
+  /// stored, wrapped by the device key; without it they are kept for this
+  /// session only.
   Future<void> submit({
     required String password,
     required bool tryOthers,
+    bool remember = true,
   }) async {
     if (state.status == UnlockDriveStatus.working ||
         state.status == UnlockDriveStatus.unlocked) {
@@ -88,6 +92,7 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
         driveId: driveId,
         password: password,
         tryOthers: tryOthers,
+        remember: remember,
       );
     } catch (_) {
       if (!isClosed) {
@@ -117,6 +122,8 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
       case DriveUnlockFailure.wrongPassword:
         emit(const UnlockDriveState(status: UnlockDriveStatus.wrongPassword));
       case DriveUnlockFailure.walletDeclined:
+      // Never the dialog's answer: it always tries the password.
+      case DriveUnlockFailure.notTried:
         // The user said no to their wallet. Nothing went wrong, so nothing is
         // said: the dialog is back where it was.
         emit(const UnlockDriveState());

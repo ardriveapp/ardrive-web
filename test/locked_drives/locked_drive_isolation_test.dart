@@ -236,6 +236,71 @@ void main() {
     expect(signer.signatures, 0);
   });
 
+  /// A reload: memory goes, the database stays, the session starts again.
+  Future<DriveUnlockSession> reload() async {
+    await db.driveDao.clearSessionMemory();
+    final reloaded = DriveUnlockSession();
+    syncRepository = SyncRepository(
+      arweave: arweave,
+      driveDao: db.driveDao,
+      configService: MockConfigService(),
+      batchProcessor: MockBatchProcessor(),
+      snapshotValidationService: MockSnapshotValidationService(),
+      userPreferencesRepository: MockUserPreferencesRepository(),
+      driveUnlocker: DriveUnlocker(
+        crypto: ArDriveCrypto(),
+        arweave: arweave,
+        driveDao: db.driveDao,
+        session: reloaded,
+      ),
+    );
+    // What signing in does first: drives kept for a session only go.
+    await db.driveDao.detachForgottenDrives();
+    return reloaded;
+  }
+
+  test(
+      'unlocked with "Remember on this device" off, a drive is locked again '
+      'after a reload, and nothing tries a password on it', () async {
+    await discover();
+    await unlocker.unlock(
+      wallet: wallet,
+      profileKey: profileKey,
+      driveId: _locked,
+      password: 'cli',
+      remember: false,
+    );
+    await discover();
+    expect(session.currentLockedDrives, isEmpty,
+        reason: 'open for the rest of this session');
+
+    final reloaded = await reload();
+    signer.signatures = 0;
+    await discover();
+
+    expect(reloaded.currentLockedDrives.map((d) => d.driveId), [_locked]);
+    expect(await db.driveDao.driveById(driveId: _locked).getSingleOrNull(),
+        isNull);
+  });
+
+  test(
+      'Forget on this device: even a drive the sign-in password opens is '
+      'locked after a reload', () async {
+    await discover();
+    expect(await db.driveDao.forgetDriveKey(_opens, profileKey), isTrue);
+
+    final reloaded = await reload();
+    signer.signatures = 0;
+    await discover();
+
+    expect(reloaded.currentLockedDrives.map((d) => d.driveId),
+        containsAll([_opens, _locked]));
+    // One signature: the other locked drive's, which the sign-in password
+    // is still tried on. None for the forgotten one.
+    expect(signer.signatures, 1,
+        reason: 'the sign-in password is not tried on a forgotten drive');
+  });
+
   test(
       'one drive\'s cancelled wallet prompt leaves that drive locked and the '
       'rest syncing; a background pass does not ask again, a sync the user '

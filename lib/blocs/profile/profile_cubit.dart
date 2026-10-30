@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/models.dart';
@@ -26,6 +27,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnect;
   StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<DeviceTabsMessage>? _tabsSubscription;
 
   ProfileCubit({
     required TurboUploadService turboUploadService,
@@ -34,6 +36,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     required TabVisibilitySingleton tabVisibilitySingleton,
     required ArDriveAuth arDriveAuth,
     ArConnectService? arConnectService,
+    DeviceTabs? deviceTabs,
   })  : _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
@@ -47,6 +50,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     // something called [refreshBalance].
     _authSubscription =
         _arDriveAuth.onAuthStateChanged().listen(_followAuthUser);
+    _tabsSubscription =
+        (deviceTabs ?? DeviceTabs.instance).messages.listen(_onOtherTab);
     promptToAuthenticate();
   }
 
@@ -280,8 +285,42 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoggingOut());
   }
 
+  /// What another ArDrive tab in this browser did. See [DeviceTabs].
+  ///
+  /// - Signed out: this tab signs out too, and if it owns the database, that
+  ///   clears the copy that lasts.
+  /// - Forgot drives: their stored keys go here as well. The tab that owns
+  ///   the database is the one that matters; a tab on a session copy keeps
+  ///   its copy consistent.
+  Future<void> _onOtherTab(DeviceTabsMessage message) async {
+    try {
+      switch (message) {
+        case SignedOutInAnotherTab():
+          if (state is! ProfileLoggedIn && state is! ProfilePromptLogIn) {
+            return;
+          }
+          logger.i('Signed out in another tab; signing out here too');
+          await _arDriveAuth.logout(fromAnotherTab: true);
+          await logoutProfile();
+        case ForgottenInAnotherTab(:final driveIds):
+          final current = state;
+          for (final driveId in driveIds) {
+            if (current is ProfileLoggedIn) {
+              await _db.driveDao
+                  .forgetDriveKey(driveId, current.user.cipherKey);
+            } else {
+              await _db.driveDao.forgetStoredDriveKeyUnread(driveId);
+            }
+          }
+      }
+    } catch (e, stackTrace) {
+      logger.e('Could not follow another tab', e, stackTrace);
+    }
+  }
+
   @override
   Future<void> close() async {
+    await _tabsSubscription?.cancel();
     await _authSubscription?.cancel();
     return super.close();
   }

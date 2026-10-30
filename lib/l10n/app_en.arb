@@ -5719,5 +5719,19 @@
   "migrationDrivePasswordPrompt": "{name} has its own password. Enter it to update this drive.",
   "@migrationDrivePasswordPrompt": {"description": "Drive update banner: the sign-in password doesn't open this drive.", "placeholders": {"name": {"type": "String"}}},
   "newDrivePasswordBody": "Set a password for this drive. You'll need it to open the drive.",
-  "@newDrivePasswordBody": {"description": "Create drive, when the sign-in password didn't open the user's private drives: the new private drive gets its own password."}
+  "@newDrivePasswordBody": {"description": "Create drive, when the sign-in password didn't open the user's private drives: the new private drive gets its own password."},
+  "rememberOnThisDevice": "Remember on this device",
+  "@rememberOnThisDevice": {"description": "Unlock dialog checkbox, on by default: keep this drive's key on this device so it opens without its password next time."},
+  "onThisDevice": "On this device",
+  "@onThisDevice": {"description": "Drive details: the row about whether this device remembers the drive's key."},
+  "forgetOnThisDevice": "Forget on this device",
+  "@forgetOnThisDevice": {"description": "Drive details button: delete this drive's remembered key. The drive stays open now and is locked next time."},
+  "notRememberedOnThisDevice": "Not remembered",
+  "@notRememberedOnThisDevice": {"description": "Drive details: this device keeps no key for the drive; it will be locked next time."},
+  "forgetAllOnThisDevice": "Forget all on this device",
+  "@forgetAllOnThisDevice": {"description": "Profile menu: delete every remembered drive key. Drives stay open now and are locked next time."},
+  "forgotDrivesOnThisDevice": "{count, plural, =1{Forgot 1 drive. It will be locked next time.} other{Forgot {count} drives. They will be locked next time.}}",
+  "@forgotDrivesOnThisDevice": {"description": "Snackbar after Forget all on this device.", "placeholders": {"count": {"type": "int"}}},
+  "approveInWanderToOpenDrives": "Approve in Wander to open your drives",
+  "@approveInWanderToOpenDrives": {"description": "Beside the waiting state while Wander is asked for the one approval that opens the drives remembered on this device."}
 }

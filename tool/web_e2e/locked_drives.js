@@ -17,11 +17,12 @@
 // menus, which is what the tree breaks), and exits non-zero on the first
 // check that fails.
 const { chromium } = require('playwright-core');
+const { execFileSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { E2E_DIR, CDP_PORT, ensureDirs, mainPage } = require('./config');
+const { E2E_DIR, CDP_PORT, APP_URL, ensureDirs, mainPage } = require('./config');
 
 const DIR = process.env.LOCKED_DRIVES ||
   path.join(os.homedir(), '.config', 'ardrive-e2e', 'locked-drives');
@@ -100,6 +101,200 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await wait(300);
     await page.keyboard.press('Enter');
   };
+
+  // Turns Flutter's accessibility tree on, which a reload turns off again.
+  // The placeholder sits in a shadow root.
+  const enableTree = async () => {
+    for (const end = Date.now() + 60000; Date.now() < end; await wait(1000)) {
+      await page.evaluate(() => {
+        const find = (root) => {
+          const hit = root.querySelector('flt-semantics-placeholder');
+          if (hit) return hit;
+          for (const e of root.querySelectorAll('*')) {
+            const inner = e.shadowRoot && find(e.shadowRoot);
+            if (inner) return inner;
+          }
+          return null;
+        };
+        find(document)?.click();
+      });
+      await wait(1000);
+      if ((await labels()).length > 0) return;
+    }
+  };
+  // Activates the node labelled [text] the way a screen reader does. Menus
+  // and overlays take a mouse click on what is behind them while the tree is
+  // on (#2347); activation reaches the node itself.
+  const activate = async (text) => page.evaluate((wanted) => {
+    const all = [];
+    const walk = (root) => root.querySelectorAll('*').forEach((e) => {
+      if (e.tagName === 'FLT-SEMANTICS') all.push(e);
+      if (e.shadowRoot) walk(e.shadowRoot);
+    });
+    walk(document);
+    const label = (e) => (e.getAttribute('aria-label') || e.innerText || '').trim().replace(/\s+/g, ' ');
+    const hit = all.find((e) => label(e) === wanted) || all.find((e) => label(e).startsWith(wanted));
+    if (!hit) return false;
+    hit.click();
+    return true;
+  }, text);
+
+  // R1-R5: "Remember on this device" (3.0 password design, P2). Starts with
+  // every drive open, each unlocked above with Remember on (the default).
+  const loginDrive = drives.find((d) => d.password === 'login');
+  const shared = drives.filter((d) => d.password === 'other');
+  const unicodeDrive = drives.find((d) => d.password === 'unicode');
+  const run = (args) => execFileSync('node', [path.join(__dirname, 'login.js'), ...args],
+    { stdio: ['ignore', 'inherit', 'inherit'], env: process.env });
+  // A reload is a new session: Welcome back, the device password, then the
+  // drive list as discovery leaves it.
+  const reloadAndUnlock = async () => {
+    await page.reload();
+    await wait(4000);
+    run(['unlock']);
+    await enableTree();
+    await until(() => has(loginDrive.name), 90000);
+    await wait(8000);
+  };
+  const signInFresh = async () => {
+    run(['fresh']);
+    await enableTree();
+    await until(() => has(loginDrive.name), 120000);
+    await wait(8000);
+  };
+  const lockedCount = async () => (await lockedRows()).length;
+  // Selecting a drive's row shows its details beside the list.
+  const selectRow = async (name) => {
+    const hit = (await labels()).filter((n) => n.label.includes(name) && n.w > 200)
+      .sort((x, y) => x.y - y.y)[0];
+    if (!hit) throw new Error(`no row for ${name}`);
+    await page.mouse.click(hit.x - Math.floor(hit.w / 2) + 40, hit.y);
+    await wait(1500);
+  };
+  const storageReport = () => page.evaluate(async () => {
+    const names = indexedDB.databases ? (await indexedDB.databases()).map((d) => d.name) : [];
+    let resets = [];
+    try {
+      const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('ardrive-db');
+      for await (const key of dir.keys()) if (key.includes('-reset-')) resets.push(key);
+    } catch (e) {}
+    return { names, resets };
+  });
+  // What earlier builds left: the sql.js store and a reset copy. Planted so
+  // sign-out has something to delete; none of it holds anything.
+  const plantOlderStores = () => page.evaluate(async () => {
+    await new Promise((resolve, reject) => {
+      const open = indexedDB.open('moor_databases');
+      open.onupgradeneeded = () => open.result.createObjectStore('moor_databases');
+      open.onsuccess = () => { open.result.close(); resolve(); };
+      open.onerror = () => reject(open.error);
+    });
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('ardrive-db', { create: true });
+    const file = await dir.getFileHandle('ardrive-reset-1761000000000', { create: true });
+    const w = await file.createWritable();
+    await w.write(new Uint8Array([1, 2, 3]));
+    await w.close();
+  });
+
+  async function rememberCases() {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await wait(1500);
+    const [a, b] = shared;
+
+    // R3, part 1: Forget on this device, from the drive's details.
+    await selectRow(a.name);
+    await check('the details panel offers "Forget on this device"',
+      await until(() => has('Forget on this device'), 20000));
+    await shot('r0-details');
+    await activate('Forget on this device');
+    await check('it then says "Not remembered"', await until(() => has('Not remembered'), 10000));
+    await check('and the drive stays open this session', await has(a.name));
+    await shot('r0-forgotten');
+
+    // R1 and R3: a reload opens every remembered drive with no drive
+    // prompt; the forgotten one is locked.
+    await reloadAndUnlock();
+    await check('R1: remembered drives open after a reload, with no prompt',
+      (await has(b.name)) && (await has(unicodeDrive.name)));
+    await check('R3: the forgotten drive is locked again', await lockedCount() === 1);
+    await shot('r1-reload');
+
+    // R2: unlocked with Remember off, it is locked again next session.
+    let lockedRow = (await lockedRows())[0];
+    let unlockButton = await unlockButtonOf(lockedRow);
+    await page.mouse.click(unlockButton.x, unlockButton.y);
+    await check('the dialog offers "Remember on this device"',
+      await until(() => has('Remember on this device'), 10000));
+    await activate('Remember on this device');
+    await wait(500);
+    await shot('r2-remember-off');
+    await typeInField(passwords.other);
+    await check('it opens', await until(async () => await lockedCount() === 0, 30000));
+    await reloadAndUnlock();
+    await check('R2: unlocked with Remember off, it is locked after a reload',
+      await lockedCount() === 1);
+    await shot('r2-reload');
+
+    // R4: sign-out forgets everything, and the copies older builds left go.
+    lockedRow = (await lockedRows())[0];
+    unlockButton = await unlockButtonOf(lockedRow);
+    await page.mouse.click(unlockButton.x, unlockButton.y);
+    await until(() => has('Unlock drive'), 10000);
+    await typeInField(passwords.other);
+    await until(async () => await lockedCount() === 0, 30000);
+    await plantOlderStores();
+    const before = await storageReport();
+    await check('(the older stores are planted)',
+      before.names.includes('moor_databases') && before.resets.length > 0);
+    await page.reload();
+    await wait(4000);
+    run(['unlock']);
+    await enableTree();
+    await until(() => has(loginDrive.name), 90000);
+    if (!(await activate('Log out'))) {
+      // The profile menu closed: open it from its button first.
+      const opener = (await labels()).find((n) => /profile|account|wallet/i.test(n.label) && n.y < 80);
+      if (opener) await page.mouse.click(opener.x, opener.y);
+      await wait(1000);
+      await activate('Log out');
+    }
+    await check('signed out', await until(() => has('Log in'), 30000));
+    await wait(3000);
+    const after = await storageReport();
+    await check('R4: sign-out deleted the sql.js store', !after.names.includes('moor_databases'));
+    await check('R4: and every reset copy', after.resets.length === 0);
+    await signInFresh();
+    await check('R4: signed in again, every other drive is locked',
+      await until(async () => await lockedCount() === drives.length - 1, 60000));
+    await shot('r4-after-sign-out');
+
+    // R5: cleared site storage falls back to locked; passwords still open.
+    lockedRow = (await lockedRows())[0];
+    unlockButton = await unlockButtonOf(lockedRow);
+    await page.mouse.click(unlockButton.x, unlockButton.y);
+    await until(() => has('Unlock drive'), 10000);
+    await typeInField(lockedIds([unicodeDrive.driveId, ...shared.map((d) => d.driveId)])[0] === unicodeDrive.driveId
+      ? passwords.unicode : passwords.other);
+    await until(async () => await lockedCount() < drives.length - 1, 30000);
+    const session = await page.context().newCDPSession(page);
+    await session.send('Storage.clearDataForOrigin', { origin: new URL(APP_URL).origin, storageTypes: 'all' });
+    await session.detach();
+    await page.reload();
+    await wait(6000);
+    await signInFresh();
+    await check('R5: with site storage cleared, the drives are locked',
+      await until(async () => await lockedCount() === drives.length - 1, 60000));
+    lockedRow = (await lockedRows())[0];
+    unlockButton = await unlockButtonOf(lockedRow);
+    await page.mouse.click(unlockButton.x, unlockButton.y);
+    await until(() => has('Unlock drive'), 10000);
+    const firstLocked = lockedIds([unicodeDrive.driveId, ...shared.map((d) => d.driveId)])[0];
+    await typeInField(firstLocked === unicodeDrive.driveId ? passwords.unicode : passwords.other);
+    await check('R5: and their passwords still open them',
+      await until(async () => await lockedCount() < drives.length - 1, 30000));
+    await shot('r5-cleared');
+  }
 
   await page.setViewportSize({ width: 1440, height: 900 });
   // The placeholder sits in a shadow root.
@@ -207,6 +402,8 @@ const OFFLINE = "Couldn't reach the network. Try again.";
   await shot('7-unlocked-phone');
   await page.setViewportSize({ width: 1440, height: 900 });
   await wait(1000);
+
+  if (process.env.SKIP_REMEMBER !== '1') await rememberCases();
 
   console.log('DONE');
   process.exit(0);

@@ -7,3 +7,7 @@ LazyDatabase openConnection() {
 LazyDatabase openPublicationConnection() {
   throw 'Platform not supported';
 }
+
+Future<List<String>> deleteLegacyLocalStores() async => const [];
+
+bool get webDatabaseIsWriter => true;
