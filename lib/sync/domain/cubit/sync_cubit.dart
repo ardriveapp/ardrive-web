@@ -1663,11 +1663,11 @@ class SyncCubit extends Cubit<SyncState> {
           totalDrives: _syncProgress.drivesCount,
           // A sync that threw before reaching a drive has no per-drive
           // messages, so its own error is what there is to report, when it
-          // says something: in a release build most read "minified:Xy".
+          // says something: in a release build many read only "minified:Xy".
           errorMessages: _syncProgress.errorMessages.isNotEmpty
               ? _syncProgress.errorMessages
               : error != null && !isOpaqueErrorText(error.toString())
-                  ? {'': error.toString()}
+                  ? {'': withoutOpaqueParts(error.toString())}
                   : const <String, String>{},
         ),
       );

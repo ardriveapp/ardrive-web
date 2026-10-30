@@ -172,6 +172,24 @@ void main() {
       expect(state.error, 'Could not add the network. Try again.');
     });
 
+    test('a network add that fails readably keeps its message', () async {
+      when(() => ethereum.switchChain(any()))
+          .thenThrow(EthereumWalletException('CHAIN_NOT_ADDED'));
+      when(() => ethereum.addChain(any()))
+          .thenThrow(Exception('the RPC URL was refused'));
+      final bloc = blocFor(Flavor.development);
+      addTearDown(bloc.close);
+
+      final failed = bloc.stream.firstWhere(
+        (s) => s is CryptoTopupNetworkSwitch && s.error != null,
+      );
+      await connectOnWrongChain(bloc);
+      final state = (await failed.timeout(const Duration(seconds: 5)))
+          as CryptoTopupNetworkSwitch;
+
+      expect(state.error, 'the RPC URL was refused');
+    });
+
     test('production asks the wallet for Base mainnet', () async {
       when(() => ethereum.switchChain(any()))
           .thenThrow(EthereumWalletException('USER_REJECTED'));

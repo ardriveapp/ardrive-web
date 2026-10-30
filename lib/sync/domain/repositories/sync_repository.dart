@@ -1343,14 +1343,14 @@ class _SyncRepository implements SyncRepository {
       return 'Network error';
     }
 
-    // Nothing a person can read: a release build names the class
-    // "minified:Xy". The error itself is in the log.
-    if (isOpaqueErrorText(errorStr)) return 'Unknown error';
+    // A release build names classes "minified:Xy", which no person can read:
+    // those parts say "Unknown error" instead. The error itself is in the log.
+    final readable = withoutOpaqueParts(errorStr);
 
     // Return a truncated version of the error message
-    return errorStr.length > 100
-        ? '${errorStr.substring(0, 100)}...'
-        : errorStr;
+    return readable.length > 100
+        ? '${readable.substring(0, 100)}...'
+        : readable;
   }
 
   @override

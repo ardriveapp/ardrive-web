@@ -14,6 +14,7 @@ import 'package:ardrive/turbo/topup/models/pending_transaction.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/opaque_error_text.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -452,8 +453,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       ));
     } catch (e, s) {
       logger.e('Could not connect the wallet', e, s);
-      add(const CryptoTopupWalletConnectionFailed(
-        error: _couldNotConnectWallet,
+      add(CryptoTopupWalletConnectionFailed(
+        error: _readableOr(e, _couldNotConnectWallet),
       ));
     }
   }
@@ -593,7 +594,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       ));
     } catch (e, s) {
       logger.e('Could not sign for AO', e, s);
-      add(const CryptoTopupAOConnectSignatureFailed(error: _couldNotSign));
+      add(CryptoTopupAOConnectSignatureFailed(
+        error: _readableOr(e, _couldNotSign),
+      ));
     }
   }
 
@@ -981,7 +984,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       }
     } catch (e, s) {
       logger.e('Could not switch the network', e, s);
-      add(const CryptoTopupNetworkSwitchFailed(_couldNotSwitchNetwork));
+      add(CryptoTopupNetworkSwitchFailed(
+        _readableOr(e, _couldNotSwitchNetwork),
+      ));
     }
   }
 
@@ -1066,7 +1071,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       add(CryptoTopupNetworkAddFailed(e.userMessage));
     } catch (e, s) {
       logger.e('Could not add the network', e, s);
-      add(const CryptoTopupNetworkAddFailed(_couldNotAddNetwork));
+      add(CryptoTopupNetworkAddFailed(_readableOr(e, _couldNotAddNetwork)));
     }
   }
 
@@ -1221,9 +1226,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       }
     } catch (e, s) {
       logger.e('Payment error', e, s);
-      // No details: the screen's own notice says the payment failed, and an
-      // exception's text reads "Instance of 'minified:Xy'" in a release build.
-      add(const CryptoTopupPaymentFailed(error: '', canRetry: true));
+      // The screen's own notice says the payment failed; the details line
+      // shows the error only when it can be read.
+      add(CryptoTopupPaymentFailed(error: _readableOr(e, ''), canRetry: true));
     }
   }
 
@@ -1344,7 +1349,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     } catch (e, s) {
       logger.e('Payment retry error', e, s);
       add(CryptoTopupPaymentFailed(
-        error: '',
+        error: _readableOr(e, ''),
         txId: event.txId,
         canRetry: true,
       ));
@@ -1787,9 +1792,21 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   }
 }
 
-// What the top-up shows when something other than the wallet failed. Never
-// an exception's text: in a release build it reads "Instance of 'minified:Xy'".
+// What the top-up shows when something other than the wallet failed and its
+// error can't be read: in a release build an exception without its own
+// toString reads "Instance of 'minified:Xy'".
 const _couldNotConnectWallet = 'Could not connect your wallet. Try again.';
 const _couldNotSign = 'Could not sign. Try again.';
 const _couldNotSwitchNetwork = 'Could not switch networks. Try again.';
 const _couldNotAddNetwork = 'Could not add the network. Try again.';
+
+/// [error]'s own message when a person can read it, else [fallback].
+String _readableOr(Object error, String fallback) {
+  final text = error.toString();
+  if (isOpaqueErrorText(text)) return fallback;
+  return withoutOpaqueParts(
+    text.startsWith('Exception: ')
+        ? text.substring('Exception: '.length)
+        : text,
+  );
+}

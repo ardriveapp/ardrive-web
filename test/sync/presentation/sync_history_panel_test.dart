@@ -272,7 +272,10 @@ void main() {
 
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
       expect(find.text('the gateway said no'), findsOneWidget);
+      // The drive's name is kept; only the part that says nothing goes.
+      expect(find.text('Drive A: Unknown error'), findsOneWidget);
       expect(find.textContaining('minified:'), findsNothing);
+      expect(find.textContaining('Instance of'), findsNothing);
     });
 
     testWidgets('a sync that could not be done at all says so', (tester) async {

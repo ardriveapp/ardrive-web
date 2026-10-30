@@ -186,14 +186,15 @@ class SyncRunTile extends StatelessWidget {
         // Verbatim, and never shortened. The user reading this is one button
         // away from sending the logs beside it to support, and a message this
         // panel paraphrased is a message support cannot search for.
-        // Except a message that says nothing, which an older version could
-        // have saved: "minified:Xy" is searchable by nobody.
+        // Except what says nothing, which an older version could have saved:
+        // "minified:Xy" is searchable by nobody. A message that is nothing
+        // else is left out; one with a drive's name keeps the name.
         for (final message
             in run.errorMessages.values.where((m) => !isOpaqueErrorText(m)))
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              message,
+              withoutOpaqueParts(message),
               style: typography.paragraphSmall(color: colorTokens.textRed),
             ),
           ),
