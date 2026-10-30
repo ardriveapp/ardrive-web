@@ -619,6 +619,7 @@ class _HeaderPreview extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final strings = appLocalizationsOf(context);
     final state = context.watch<PublishCubit>().state;
+    final cubit = context.read<PublishCubit>();
     final summary = state.summary;
     // The page always shows the address, beside a name when there is one.
     final address = shortenId(context.read<PublishCubit>().drive.ownerAddress);
@@ -705,6 +706,70 @@ class _HeaderPreview extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          // A file page shows its file under the header: what a visitor
+          // opens and downloads. A private file's name stays hidden until
+          // the key opens it.
+          if (cubit.isFile)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: _FilePreview(
+                name: cubit.isPrivateFile
+                    ? strings.sharedFileEncryptedFileTitle
+                    : cubit.scopeName,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The file's card on a file page, small: its icon, its name and Download.
+class _FilePreview extends StatelessWidget {
+  const _FilePreview({required this.name});
+
+  /// The file's name, or "Encrypted file" for a private one.
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.containerL1,
+        borderRadius: BorderRadius.circular(ArDriveRadius.control),
+        border: Border.all(color: colors.strokeLow),
+      ),
+      child: Row(
+        children: [
+          // The locked share page's own icon, private or not.
+          ArDriveIcons.file(size: 16, color: colors.iconMid),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(
+                  color: colors.textHigh, fontWeight: ArFontWeight.semiBold),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: colors.buttonPrimaryDefault,
+              borderRadius: BorderRadius.circular(ArDriveRadius.control),
+            ),
+            child: Text(
+              appLocalizationsOf(context).download,
+              style: typography.paragraphSmall(
+                  color: colors.textOnPrimary,
+                  fontWeight: ArFontWeight.semiBold),
             ),
           ),
         ],
