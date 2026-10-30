@@ -33,6 +33,7 @@ Future<void> showUnlockDriveDialog(
         wallet: user.wallet,
         profileKey: user.cipherKey,
         syncDrives: (driveIds) => syncUnlockedDrives(syncCubit, driveIds),
+        signInPassword: user.password,
       ),
       child: UnlockDriveDialog(
         onUnlocked: (openedDriveIds) =>

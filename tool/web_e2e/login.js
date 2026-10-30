@@ -166,8 +166,9 @@ async function logIn(mode, keyfile, password) {
     await shot('2-import');
     // launch.js answers the chooser with this queue, and hands the keyfile
     // over only while the marker, written just now, says the chooser is this
-    // login's. Both are taken back however this ends.
-    fs.writeFileSync(MARKER, '');
+    // login's: it holds this process's id, and launch.js honours it only
+    // while this process is alive. Both are taken back however this ends.
+    fs.writeFileSync(MARKER, String(process.pid));
     fs.writeFileSync(QUEUE, JSON.stringify([keyfile]));
     const chosen = Date.now();
     await page.mouse.click(places.chooseKeyfile.x, places.chooseKeyfile.y);

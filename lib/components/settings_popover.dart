@@ -88,23 +88,36 @@ class SettingsSubmenu extends StatelessWidget {
                   streamSnapshot.data?.syncAllDrivesOnLogin ??
                       repo.currentPreferences?.syncAllDrivesOnLogin ??
                       false;
-              return ArDriveHoverWidget(
-                hoverColor:
-                    ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
-                defaultColor: ArDriveTheme.of(context)
-                    .themeData
-                    .dropdownTheme
-                    .backgroundColor,
-                child: SizedBox(
-                  height: 48,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                    child: ArDriveToggleSwitch(
-                      value: syncAllDrivesOnLogin,
-                      text: appLocalizationsOf(context).syncAllDrivesOnLogin,
-                      onChanged: (value) {
-                        repo.saveSyncAllDrivesOnLogin(value);
-                      },
+              // The whole row flips the switch, as its pointer and hover fill
+              // say it will. A tap on the switch itself is the switch's: the
+              // inner detector wins, so it flips once. The row's tap is left
+              // out of the semantics tree, where the switch is already one
+              // control with its label and state.
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onTap: () =>
+                    repo.saveSyncAllDrivesOnLogin(!syncAllDrivesOnLogin),
+                child: ArDriveHoverWidget(
+                  hoverColor: ArDriveTheme.of(context)
+                      .themeData
+                      .dropdownTheme
+                      .hoverColor,
+                  defaultColor: ArDriveTheme.of(context)
+                      .themeData
+                      .dropdownTheme
+                      .backgroundColor,
+                  child: SizedBox(
+                    height: 48,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                      child: ArDriveToggleSwitch(
+                        value: syncAllDrivesOnLogin,
+                        text: appLocalizationsOf(context).syncAllDrivesOnLogin,
+                        onChanged: (value) {
+                          repo.saveSyncAllDrivesOnLogin(value);
+                        },
+                      ),
                     ),
                   ),
                 ),

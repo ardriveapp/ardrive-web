@@ -1,14 +1,12 @@
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publication_loader_page.dart';
-import 'package:ardrive/pages/app_router_delegate.dart';
-import 'package:ardrive/drives_list/domain/drive_scope.dart';
-import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_box.dart';
@@ -933,12 +931,40 @@ class _SyncButtonMenu extends StatelessWidget {
 
   final Widget child;
 
-  bool _canShowDrivesList(BuildContext context) {
-    final profile = context.read<ProfileCubit?>();
+  /// Runs again exactly what failed: the drive-list refresh, or the drives
+  /// the last sync could not read.
+  ///
+  /// The same calls the drives list makes for the same failures. A drive
+  /// retry may ask the wallet again for the failed drives whose prompt was
+  /// cancelled, and for no other drive; the drive-list refresh never asks.
+  void _tryAgain(BuildContext context) {
+    final syncCubit = context.read<SyncCubit>();
 
-    return profile == null ||
-        AppRouterDelegate.canShowDrivesList(profile.state);
+    if (refreshFailed) {
+      // Through the drives list when it is the page saying the list could not
+      // be loaded: its own Try again keeps it on "still looking" for the
+      // length of the retry, where a refresh it did not start would flash
+      // Getting Started over an empty table. Nullable, because only that
+      // route provides it.
+      final drivesList = context.read<DrivesListCubit?>();
+      if (drivesList != null && drivesList.state is DrivesListUnavailable) {
+        drivesList.retryLoadingDrives();
+      } else {
+        syncCubit.syncMetadataOnly();
+      }
+      return;
+    }
+
+    final failedDriveIds = this.failedDriveIds;
+    if (failedDriveIds != null && failedDriveIds.isNotEmpty) {
+      syncCubit.clearErrorState();
+      syncCubit.retryFailedDrives(failedDriveIds);
+    }
   }
+
+  /// Whether there is something that failed and can be run again.
+  bool get _canTryAgain =>
+      refreshFailed || (failedDriveIds?.isNotEmpty ?? false);
 
   @override
   Widget build(BuildContext context) {
@@ -946,10 +972,11 @@ class _SyncButtonMenu extends StatelessWidget {
     final iconColor = ArDriveTheme.of(context).themeData.colorTokens.textHigh;
 
     // Status, then the one way to act on it. The sync actions live on the
-    // drives list now - Sync all, Deep resync and the record are all
-    // drive-wide, and that is the page about drives. This indicator only
-    // appears when there is something to report, so a menu of controls behind
-    // it would be a second place to do what that page already does.
+    // drives list - Sync all, Deep resync and the record are all drive-wide,
+    // and that is the page about drives. This indicator only appears when
+    // there is something to report, so it carries only what answers the
+    // report: a way out of a sync that is running, and a way past one that
+    // failed. The sidebar is always the way to the drives list.
     final items = [
       // The way out of a sync that is going to take longer than the reader is
       // willing to wait.
@@ -969,24 +996,34 @@ class _SyncButtonMenu extends StatelessWidget {
             icon: ArDriveIcons.x(color: iconColor),
           ),
         ),
-      // Only where the list can actually be shown. For a visitor the router
-      // refuses it, so the item changed the address bar and nothing else - the
-      // same dead control the sidebar row and the breadcrumb already avoid.
-      // Read as nullable: the app always provides the cubit, and a tree that
-      // does not (a widget test of this menu alone) keeps the item.
-      if (_canShowDrivesList(context))
+      // A failure is reported here and outlives its announcement, so the way
+      // to run it again is here too, rather than only on a page the reader
+      // may not be on.
+      if (!isSyncing && _canTryAgain)
         ArDriveDropdownItem(
-          onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
+          onClick: () => _tryAgain(context),
           content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).yourDrives,
-            // The sidebar's Your drives icon: the same place, the same icon.
-            icon: ArDriveIcon(
-              icon: DriveScopeRail.iconFor(DriveScope.all),
-              color: iconColor,
-            ),
+            name: appLocalizationsOf(context).tryAgain,
+            icon: ArDriveIcons.refresh(color: iconColor),
           ),
         ),
     ];
+
+    // Nothing to read and nothing to do: a result that has only its pill to
+    // say. A menu here would open as an empty card, so the indicator is drawn
+    // alone, in the same slot, with no pointer and no tap.
+    if (status == null && items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(
+          (_syncButtonOuterSize - _syncIndicatorSize) / 2,
+        ),
+        child: SizedBox(
+          width: _syncIndicatorSize,
+          height: _syncIndicatorSize,
+          child: child,
+        ),
+      );
+    }
 
     // The dropdown would otherwise size itself as `items.length * 48` and cut
     // the header off. Scaled with the user's text, because the header grows

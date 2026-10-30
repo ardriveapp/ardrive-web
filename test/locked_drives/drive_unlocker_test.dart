@@ -21,6 +21,8 @@ import '../test_utils/utils.dart';
 const _driveA = '6939b9e0-cc98-42cb-bae0-5888eca78885';
 const _driveB = '2c1d4b5e-0f3a-4c8b-9d7e-6a5b4c3d2e1f';
 const _driveC = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
+const _driveD = '3d4e5f6a-7b8c-4d9e-8f0a-1b2c3d4e5f6a';
+const _driveE = '4e5f6a7b-8c9d-4e0f-9a1b-2c3d4e5f6a7b';
 
 Future<List<int>> _bytes(DriveKey key) => key.key.extractBytes();
 
@@ -687,6 +689,193 @@ void main() {
       // A signed, B skipped, C (never declined) signed.
       expect(signer.signatures, 2);
       expect(session.isLocked(_driveB), isTrue);
+    });
+  });
+
+  group('verifyDrivePassword', () {
+    LockedDrive lockedAt(String driveId, int year) => LockedDrive(
+          driveId: driveId,
+          ownerAddress: owner,
+          signatureType: DriveSignatureType.v2,
+          lastUpdated: DateTime(year),
+        );
+
+    setUp(() {
+      when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
+    });
+
+    test(
+        'the password is proven by opening the oldest locked drive by '
+        'creation, which stays unlocked with its key kept; nothing else is '
+        'tried', () async {
+      final newer = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'drive pw', name: 'A');
+      final oldest = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveB, password: 'drive pw', name: 'B');
+      onChain([newer, oldest]);
+      // B was made first, though updated last: creation decides, as at
+      // sign-in.
+      when(() => arweave.cachedUserDriveCreationTimes(owner))
+          .thenReturn({_driveA: DateTime(2023), _driveB: DateTime(2020)});
+      session.setLockedDrives(
+          owner, [lockedAt(_driveA, 2024), lockedAt(_driveB, 2026)]);
+      signer.signatures = 0;
+
+      final failure = await unlocker.verifyDrivePassword(
+          wallet: wallet, profileKey: profileKey, password: 'drive pw');
+
+      expect(failure, isNull);
+      expect(signer.signatures, 1);
+      expect(session.isLocked(_driveB), isFalse);
+      expect(session.isLocked(_driveA), isTrue);
+      expect(
+        await _bytes((await db.driveDao.getDriveKey(_driveB, profileKey))!),
+        await _bytes(oldest.key),
+      );
+      expect(
+        await _bytes((await db.driveDao.getDriveKeyFromMemory(_driveB))!),
+        await _bytes(oldest.key),
+      );
+      expect(await db.driveDao.driveById(driveId: _driveA).getSingleOrNull(),
+          isNull);
+    });
+
+    test(
+        'a password that derives a key but opens none is wrongPassword, and '
+        'no key is kept', () async {
+      final a = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'drive pw');
+      final b = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveB, password: 'drive pw');
+      onChain([a, b]);
+      session.setLockedDrives(
+          owner, [lockedAt(_driveA, 2024), lockedAt(_driveB, 2025)]);
+
+      final failure = await unlocker.verifyDrivePassword(
+          wallet: wallet, profileKey: profileKey, password: 'typo');
+
+      expect(failure, DriveUnlockFailure.wrongPassword);
+      expect(await db.driveDao.allDrives().get(), isEmpty);
+      expect(await db.driveDao.getDriveKeyFromMemory(_driveA), isNull);
+      expect(await db.driveDao.getDriveKeyFromMemory(_driveB), isNull);
+      expect(session.isLocked(_driveA), isTrue);
+    });
+
+    test(
+        'a drive core-js made with a non-ASCII password proves it: both '
+        'encodings are tried', () async {
+      final drive = await makePrivateDrive(
+        wallet: wallet,
+        driveId: _driveA,
+        passwordInfo: coreJsPasswordInfo('pässwörd ä'),
+      );
+      onChain([drive]);
+      session.setLockedDrives(owner, [lockedAt(_driveA, 2024)]);
+
+      expect(
+        await unlocker.verifyDrivePassword(
+            wallet: wallet, profileKey: profileKey, password: 'pässwörd ä'),
+        isNull,
+      );
+    });
+
+    test('Wander is asked at most three times, however many drives are locked',
+        () async {
+      final wander = FakeWander(wallet);
+      final ids = [_driveA, _driveB, _driveC, _driveD, _driveE];
+      final drives = [
+        for (final id in ids)
+          await makeWebPrivateDrive(
+              wallet: wallet, driveId: id, password: 'drive pw'),
+      ];
+      onChain(drives);
+      session.setLockedDrives(owner, [
+        for (var i = 0; i < ids.length; i++) lockedAt(ids[i], 2020 + i),
+      ]);
+
+      final failure = await unlocker.verifyDrivePassword(
+          wallet: wander.wallet, profileKey: profileKey, password: 'typo');
+
+      expect(failure, DriveUnlockFailure.wrongPassword);
+      expect(wander.prompts, WalletPromptBudget.perPass);
+    });
+
+    test(
+        'out of prompts, a drive whose signature is already held is still '
+        'tried', () async {
+      final wander = FakeWander(wallet);
+      final ids = [_driveA, _driveB, _driveC, _driveD, _driveE];
+      final drives = [
+        for (final id in ids)
+          await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id,
+              password: id == _driveE ? 'drive pw' : 'other'),
+      ];
+      onChain(drives);
+      session.setLockedDrives(owner, [
+        for (var i = 0; i < ids.length; i++) lockedAt(ids[i], 2020 + i),
+      ]);
+      // An earlier attempt left E's signature in the session.
+      await unlocker.tryPassword(
+          wallet: wander.wallet,
+          driveTx: drives.last.tx,
+          data: drives.last.data,
+          password: 'nope');
+      wander.prompts = 0;
+
+      final failure = await unlocker.verifyDrivePassword(
+          wallet: wander.wallet, profileKey: profileKey, password: 'drive pw');
+
+      expect(failure, isNull);
+      expect(wander.prompts, WalletPromptBudget.perPass);
+      expect(session.isLocked(_driveE), isFalse);
+    });
+
+    test('a cancelled Wander prompt stops the check quietly', () async {
+      final wander = FakeWander(wallet)..cancel = true;
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'drive pw');
+      onChain([drive]);
+      session.setLockedDrives(owner, [lockedAt(_driveA, 2024)]);
+
+      expect(
+        await unlocker.verifyDrivePassword(
+            wallet: wander.wallet,
+            profileKey: profileKey,
+            password: 'drive pw'),
+        DriveUnlockFailure.walletDeclined,
+      );
+    });
+
+    test(
+        'with nothing locked, the oldest known private drive is opened to '
+        'check it; with nothing at all, there is no verdict', () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'drive pw');
+      onChain([drive]);
+
+      expect(
+        await unlocker.verifyDrivePassword(
+            wallet: wallet,
+            profileKey: profileKey,
+            password: 'drive pw',
+            knownPrivateDriveIds: [_driveA]),
+        isNull,
+      );
+      expect(
+        await unlocker.verifyDrivePassword(
+            wallet: wallet,
+            profileKey: profileKey,
+            password: 'typo',
+            knownPrivateDriveIds: [_driveA]),
+        DriveUnlockFailure.wrongPassword,
+      );
+      expect(
+        await unlocker.verifyDrivePassword(
+            wallet: wallet, profileKey: profileKey, password: 'drive pw'),
+        DriveUnlockFailure.unavailable,
+      );
     });
   });
 }

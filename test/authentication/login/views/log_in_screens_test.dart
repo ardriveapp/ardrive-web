@@ -11,6 +11,10 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -38,6 +42,8 @@ class _MockUserPreferencesRepository extends Mock
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
+
+class _MockPaymentService extends Mock implements PaymentService {}
 
 Future<IOFile> _file(String text) => IOFile.fromData(
       Uint8List.fromList(text.codeUnits),
@@ -199,6 +205,93 @@ void main() {
     });
   });
 
+  group('before the check for an account is in', () {
+    test('draws the panel the hint expects, not yet usable', () {
+      final welcomeBack = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.present);
+      expect(welcomeBack, isA<WelcomeBackView>());
+      expect((welcomeBack as WelcomeBackView).ready, isFalse);
+
+      final landing = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.absent);
+      expect(landing, isA<LandingView>());
+      expect((landing as LandingView).ready, isFalse);
+
+      expect(
+          loginPanelFor(LoginLoading(), loginBloc,
+              presence: ProfilePresence.unknown),
+          isA<CheckingForAccountPanel>(),
+          reason: 'no guess: a returning user must not see the landing');
+    });
+
+    test('under the key of the panel it stands in for, which is ready', () {
+      final early = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.present) as WelcomeBackView;
+      final real =
+          loginPanelFor(const PromptPassword(alreadyLoggedIn: true), loginBloc)
+              as WelcomeBackView;
+      expect(early.key, real.key);
+      expect(real.ready, isTrue);
+
+      final earlyLanding = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.absent) as LandingView;
+      final realLanding =
+          loginPanelFor(const LoginLanding(), loginBloc) as LandingView;
+      expect(earlyLanding.key, realLanding.key);
+      expect(realLanding.ready, isTrue);
+    });
+
+    test('is ready once the check is in', () {
+      expect(loginPanelIsReady(LoginLoading()), isFalse);
+      expect(loginPanelIsReady(const LoginLanding()), isTrue);
+      expect(loginPanelIsReady(const PromptPassword(alreadyLoggedIn: true)),
+          isTrue);
+    });
+
+    testWidgets('a landing drawn early sends nothing', (tester) async {
+      await pump(tester, const LandingView(ready: false));
+      await tester.tap(find.text('Log in'));
+      await tester.tap(find.text('Sign up'));
+      await tester.tap(find.byKey(const Key('openDriveLandingLink')));
+      await tester.pump();
+      verifyNever(() => loginBloc.add(any()));
+      expect(find.text('Open a drive'), findsNothing,
+          reason: 'no dialog either');
+    });
+
+    testWidgets(
+        'Welcome back drawn early takes the password, and sends it once the '
+        'check is in', (tester) async {
+      var ready = false;
+      late StateSetter setReady;
+      await pump(
+        tester,
+        StatefulBuilder(builder: (context, setState) {
+          setReady = setState;
+          return WelcomeBackView(
+              key: const Key('welcomeBackView'), ready: ready);
+        }),
+      );
+      bool disabled() => tester
+          .widget<ArDriveButtonNew>(find.byKey(const Key('welcomeBackLogIn')))
+          .isDisabled;
+
+      await tester.enterText(find.byType(EditableText), 'secret');
+      await tester.pump();
+      expect(disabled(), isTrue);
+      await tester.tap(find.byKey(const Key('welcomeBackLogIn')));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      verifyNever(() => loginBloc.add(any()));
+
+      setReady(() => ready = true);
+      await tester.pump();
+      expect(disabled(), isFalse, reason: 'the typed password is kept');
+      await tester.tap(find.byKey(const Key('welcomeBackLogIn')));
+      expect(added().single, const UnlockUserWithPassword(password: 'secret'));
+    });
+  });
+
   group('Log in', () {
     Widget logIn({bool ar = false, bool eth = false, bool sol = false}) =>
         LogInView(
@@ -341,6 +434,88 @@ void main() {
     });
   });
 
+  // Drawn on the first frame, the bento's pictures, slides and text took
+  // seconds of main thread on a throttled phone, which the database's worker
+  // waited for. The sign-in page holds still (TickerMode off) until its panel
+  // is usable, and the bento waits with it.
+  group('the bento while the page is held still', () {
+    Future<void> pumpScaffold(WidgetTester tester,
+        {required bool moving,
+        required Size size,
+        bool nextFrame = true}) async {
+      final preferences = _MockUserPreferencesRepository();
+      when(() => preferences.watch())
+          .thenAnswer((_) => const Stream<UserPreferences>.empty());
+      when(() => preferences.currentPreferences).thenReturn(null);
+      when(() => loginBloc.isArConnectAvailable).thenReturn(false);
+      when(() => loginBloc.isMetamaskAvailable).thenReturn(false);
+      when(() => loginBloc.isSolanaAvailable).thenReturn(false);
+      final payments = _MockPaymentService();
+      when(() => payments.getUsdPerGiB()).thenAnswer((_) async => 23.69);
+      whenListen(loginBloc, const Stream<LoginState>.empty(),
+          initialState: const LoginLanding());
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<LoginBloc>.value(value: loginBloc),
+            BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+            RepositoryProvider<UserPreferencesRepository>.value(
+                value: preferences),
+            RepositoryProvider<PaymentService>.value(value: payments),
+            BlocProvider<ThemeSwitcherBloc>(
+              create: (_) =>
+                  ThemeSwitcherBloc(userPreferencesRepository: preferences),
+            ),
+          ],
+          child: ArDriveApp(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: TickerMode(
+                enabled: moving,
+                child: const LoginPageScaffold(loginState: LoginLanding()),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (nextFrame) await tester.pump();
+    }
+
+    testWidgets('on a desktop, a plain surface until the page moves',
+        (tester) async {
+      await pumpScaffold(tester, moving: false, size: const Size(1440, 900));
+      expect(find.byKey(const Key('bentoPlaceholder')), findsOneWidget);
+      expect(find.byType(TilesView), findsNothing);
+
+      await pumpScaffold(tester,
+          moving: true, size: const Size(1440, 900), nextFrame: false);
+      // The frame that makes the panel usable first, the bento in the next.
+      expect(find.byType(TilesView), findsNothing);
+      await tester.pump();
+      expect(find.byKey(const Key('bentoPlaceholder')), findsNothing);
+      expect(find.byType(TilesView), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    testWidgets('on a phone, nothing below the panel until the page moves',
+        (tester) async {
+      await pumpScaffold(tester, moving: false, size: const Size(390, 844));
+      await tester.pump();
+      expect(find.byType(TilesView), findsNothing);
+
+      await pumpScaffold(tester, moving: true, size: const Size(390, 844));
+      await tester.pump();
+      expect(find.byType(TilesView), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+    });
+  });
+
   group('the get-started link', () {
     Future<void> pumpPage(WidgetTester tester, LoginState state) async {
       final preferences = _MockUserPreferencesRepository();
@@ -352,6 +527,8 @@ void main() {
       when(() => loginBloc.isSolanaAvailable).thenReturn(false);
       when(() => loginBloc.existingUserFlow).thenReturn(false);
       when(() => loginBloc.signUpFromLogIn).thenReturn(false);
+      final profile = MockProfileCubit();
+      when(() => profile.presence).thenReturn(ProfilePresence.absent);
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(390, 844);
       addTearDown(tester.view.reset);
@@ -360,6 +537,7 @@ void main() {
           providers: [
             BlocProvider<LoginBloc>.value(value: loginBloc),
             BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+            BlocProvider<ProfileCubit>.value(value: profile),
             RepositoryProvider<UserPreferencesRepository>.value(
                 value: preferences),
             BlocProvider<ThemeSwitcherBloc>(

@@ -15,6 +15,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
+import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
@@ -102,6 +103,7 @@ late Database db;
 /// unlock dialog. See `lib/locked_drives/`.
 late DriveUnlocker driveUnlocker;
 late final LocalKeyValueStore localKeyValueStore;
+late final ProfilePresenceHint _profilePresenceHint;
 
 void main() async {
   await runZonedGuarded(() async {
@@ -139,11 +141,11 @@ Future<void> _startApp() async {
 /// Shows [DatabaseUnavailableApp] in place of the app if the database will
 /// not open or migrate.
 ///
-/// The app opens its database on the first read, which the first screen
-/// makes while the splash is up, and no screen after it can show without
-/// one. Started alongside the app rather than awaited before it, so a sound
-/// database opens no later than it did. Web only: Try again reloads the page.
-/// Nothing there deletes or changes the data.
+/// The database starts opening before `runApp` (`_initializeServices`), and
+/// no screen after the sign-in page can show without it. Waited for
+/// alongside the app rather than before it, so a sound database opens no
+/// later than it did. Web only: Try again reloads the page. Nothing there
+/// deletes or changes the data.
 Future<void> _replaceAppIfDatabaseFails() async {
   final failure = await db.openFailure();
   if (failure == null) return;
@@ -161,12 +163,31 @@ Future<void> _replaceAppIfDatabaseFails() async {
 }
 
 Future<void> _initializeServices() async {
-  // Run independent initializations in parallel
-  final results = await Future.wait([
-    LocalKeyValueStore.getInstance(),
-    AppInfoServices().loadAppInfo(),
-  ]);
-  localKeyValueStore = results[0] as LocalKeyValueStore;
+  // The app's version, a fetch of version.json on the web. Not awaited: only
+  // uploads, licences and Help read it, all well after the first frame, and
+  // the sign-in page should not wait a round trip for it.
+  unawaited(AppInfoServices().loadAppInfo().catchError(
+      (Object e, StackTrace s) =>
+          logger.e('Could not read the app version', e, s)));
+
+  localKeyValueStore = await LocalKeyValueStore.getInstance();
+
+  // Before the config below writes to the store: an empty store is a
+  // browser that has never run the app.
+  _profilePresenceHint = ProfilePresenceHint(localKeyValueStore);
+
+  // Opening the database (its worker, sqlite3.wasm, the schema) is most of
+  // what a start waits for, and needs nothing below, so it starts now, beside
+  // the config. Left to the first read, it began only after the first frame,
+  // the heaviest of the start, had been built. Failures are handled after
+  // runApp, as before (_replaceAppIfDatabaseFails).
+  db = PublicationMode.isOn ? Database.forPublication() : Database();
+  if (kIsWeb && !PublicationMode.isOn) unawaited(db.openFailure());
+
+  // The logo the sign-in page paints first, for a start that shows it.
+  if (!PublicationMode.isOn && !_opensALinkPage(Uri.base)) {
+    preCacheFirstLoginAssets();
+  }
 
   // Mobile UI setup (non-blocking, fire-and-forget)
   MobileStatusBar.show();
@@ -210,8 +231,6 @@ Future<void> _initializeServices() async {
     useGatewayForDownloadHelper(
         Uri.parse(config.arweaveGatewayForDataRequest.url));
   }
-
-  db = PublicationMode.isOn ? Database.forPublication() : Database();
 
   arweave = ArweaveService(
     Arweave(
@@ -259,6 +278,15 @@ Future<void> _initializeServices() async {
   }
 }
 
+/// Whether [uri] opens a page for someone who was sent a link (a shared
+/// file, a raw transaction), which never shows the sign-in page.
+bool _opensALinkPage(Uri uri) {
+  final route = uri.fragment;
+  return route.startsWith('/file/') ||
+      route.startsWith('/view/') ||
+      route.startsWith('/share/');
+}
+
 class App extends StatefulWidget {
   const App({super.key});
 
@@ -269,15 +297,6 @@ class App extends StatefulWidget {
 class AppState extends State<App> {
   final AppRouterDelegate _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
-
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      preCacheLoginAssets(context);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -391,6 +410,7 @@ class AppState extends State<App> {
             db: context.read<Database>(),
             tabVisibilitySingleton: TabVisibilitySingleton(),
             arDriveAuth: context.read<ArDriveAuth>(),
+            presenceHint: _profilePresenceHint,
           ),
         ),
         BlocProvider(

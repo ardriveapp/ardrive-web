@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -247,4 +248,33 @@ class FakeWander extends Fake implements ArConnectService {
     await dataItem.sign(ArweaveSigner(inner));
     return utils.decodeBase64ToBytes(dataItem.signature);
   }
+}
+
+/// A [KeyValueStore] in memory: this device's preferences, for one test.
+class MemoryKeyValueStore implements KeyValueStore {
+  final values = <String, Object>{};
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => values[key] as String?;
+
+  @override
+  Future<bool> putBool(String key, bool value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  bool? getBool(String key) => values[key] as bool?;
+
+  @override
+  Future<bool> remove(String key) async => values.remove(key) != null;
+
+  @override
+  Set<String> getKeys() => values.keys.toSet();
 }
