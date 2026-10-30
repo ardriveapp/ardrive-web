@@ -33,7 +33,7 @@ class AppTopBar extends StatelessWidget {
       height: _topBarRowHeight,
       width: double.maxFinite,
       child: Padding(
-        padding: const EdgeInsets.only(right: 17.0),
+        padding: const EdgeInsets.only(right: ArDriveSpacing.md),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
@@ -127,7 +127,7 @@ const double syncIndicatorSize = _syncIndicatorSize;
 /// wrapped around it. The placeholder that holds the slot while there is
 /// nothing to report has to match this and not the indicator, or the bar still
 /// moves - just by less.
-const double _syncButtonOuterSize = 34;
+const double _syncButtonOuterSize = _syncIndicatorSize + 2 * ArDriveSpacing.xxs;
 
 /// How far the ring is drawn inside its box, so its ink matches a glyph's.
 const double _syncRingInset = 2;
@@ -1088,7 +1088,12 @@ class _SyncStatusHeader extends StatelessWidget {
       key: syncStatusHeaderKey,
       width: _syncStatusHeaderWidth,
       constraints: const BoxConstraints(minHeight: _syncStatusHeaderMinHeight),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      // The menu rows' own side padding, so the header's words line up with
+      // the items under it.
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.md,
+        vertical: ArDriveSpacing.sm,
+      ),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: colorTokens.strokeLow),

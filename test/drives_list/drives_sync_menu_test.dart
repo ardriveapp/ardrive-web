@@ -281,7 +281,8 @@ void main() {
     testWidgets('every drive-wide action, in one place', (tester) async {
       await openMenu(tester);
 
-      expect(find.text('Sync all drives'), findsOneWidget);
+      expect(find.widgetWithText(ArDriveDropdownItemTile, 'Sync all drives'),
+          findsOneWidget);
       expect(find.text('Full resync all drives'), findsOneWidget);
       expect(find.text('Sync history'), findsOneWidget);
     });
@@ -295,14 +296,14 @@ void main() {
 
       await openMenu(tester);
 
-      expect(find.text('Sync all drives'), findsOneWidget);
+      expect(find.widgetWithText(ArDriveDropdownItemTile, 'Sync all drives'),
+          findsOneWidget);
     });
   });
 
-  /// The main half does the one obvious thing for the page as it stands, and
-  /// is red only while there is one: nothing has synced yet, or drives are
-  /// ticked. It is the page's only sync button - the never-synced card and the
-  /// selection used to carry red buttons of their own.
+  /// The main half does the one obvious thing for the page as it stands. It is
+  /// the page's only sync button, and never red: the sidebar's New is the
+  /// view's one primary.
   group('the main half', () {
     late _MockDrivesListCubit drivesList;
 
@@ -360,22 +361,33 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
-    testWidgets('reads "Sync" and is outlined once drives have synced',
+    testWidgets(
+        'reads "Sync all drives" and is outlined once drives have synced',
         (tester) async {
       listed(walked: true);
       await pumpMenu(tester);
 
-      expect(label(tester).data, 'Sync');
+      // It syncs every drive, so it says so after the first sync as before
+      // it.
+      expect(label(tester).data, 'Sync all drives');
+      // The label style every button uses: paragraphLarge SemiBold.
+      final style = label(tester).style!;
+      final buttonLabel = ArDriveTypographyNew.of(
+        tester.element(find.byKey(DrivesSyncMenu.primaryKey)),
+      ).paragraphLarge(fontWeight: ArFontWeight.semiBold);
+      expect(style.fontSize, buttonLabel.fontSize);
+      expect(style.fontWeight, buttonLabel.fontWeight);
       expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
     });
 
-    testWidgets('reads "Sync all drives" in red before anything has synced',
+    testWidgets('reads "Sync all drives", outlined, before anything has synced',
         (tester) async {
       listed(walked: false);
       await pumpMenu(tester);
 
       expect(label(tester).data, 'Sync all drives');
-      expect(fillOf(tester), lightTheme().colorTokens.buttonPrimaryDefault);
+      // Never red: the sidebar's New is the view's one primary.
+      expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
@@ -385,18 +397,68 @@ void main() {
           reason: 'the main half acts; only the chevron opens the menu');
     });
 
-    testWidgets('reads "Sync 2 selected" in red with two drives ticked',
+    testWidgets('reads "Sync selected", outlined, with two drives ticked',
         (tester) async {
       listed(walked: true, selected: const {'a', 'b'});
       await pumpMenu(tester);
 
-      expect(label(tester).data, 'Sync 2 selected');
-      expect(fillOf(tester), lightTheme().colorTokens.buttonPrimaryDefault);
+      // The title row says how many; the button does not say it again.
+      expect(label(tester).data, 'Sync selected');
+      expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
 
       verify(() => drivesList.syncSelectedDrives(deep: false)).called(1);
+    });
+
+    testWidgets('offers to sync only the drives that changed', (tester) async {
+      DriveListItem changed(String id) => DriveListItem(
+            id: id,
+            name: id,
+            isPrivate: false,
+            isSharedWithMe: false,
+            isHidden: false,
+            dateCreated: DateTime(2026, 1, 1),
+            hasBeenWalked: true,
+            hasUnreadChanges: true,
+            fileCount: 1,
+            totalSize: 1,
+            lastSyncedAt: DateTime(2026, 1, 1),
+            isSyncing: false,
+            lastSyncFailed: false,
+          );
+      whenListen(
+        drivesList,
+        const Stream<DrivesListState>.empty(),
+        initialState: DrivesListLoaded(
+          drives: [changed('a'), changed('b'), item('c', walked: true)],
+        ),
+      );
+      when(() => drivesList.selectionCount).thenReturn(0);
+      when(() => drivesList.syncDrivesWithUnreadChanges()).thenReturn(null);
+
+      await pumpMenu(tester);
+      await tester.tap(find.byKey(DrivesSyncMenu.moreKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      entryNamed(tester, 'Sync 2 changed drives').onClick!();
+      await tester.pump();
+
+      verify(() => drivesList.syncDrivesWithUnreadChanges()).called(1);
+      verifyNever(() => drivesList.syncSelectedDrives(deep: false));
+    });
+
+    testWidgets('and offers nothing of the kind when no drive changed',
+        (tester) async {
+      listed(walked: true);
+      await pumpMenu(tester);
+      await tester.tap(find.byKey(DrivesSyncMenu.moreKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('changed drive'), findsNothing);
     });
 
     testWidgets('offers to stop a sync that can be stopped', (tester) async {
@@ -424,7 +486,12 @@ void main() {
       whenListen(syncCubit, states.stream, initialState: SyncLoadingDrives());
       await pumpMenu(tester);
 
-      expect(label(tester).data, 'Sync');
+      // The same label as when it is live, so it does not change width.
+      expect(label(tester).data, 'Sync all drives');
+      // Drawn as a disabled button is: the disabled fill and the faintest
+      // text, not an outline with a dimmed label.
+      expect(fillOf(tester), lightTheme().colorTokens.buttonDisabled);
+      expect(label(tester).style?.color, lightTheme().colorTokens.textXLow);
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
@@ -437,7 +504,7 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(label(tester).data, 'Sync');
+      expect(label(tester).data, 'Sync all drives');
 
       await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
@@ -569,9 +636,12 @@ void main() {
       );
 
       await openMenu(tester);
-      expect(find.text('Retry failed'), findsOneWidget);
+      // The top bar's words: its retry, and its count of the run's drives.
+      expect(find.text('Try again'), findsOneWidget);
+      expect(itemNamed(tester, 'Try again').description,
+          '2 of 5 drives could not be synced');
 
-      entryNamed(tester, 'Retry failed').onClick!();
+      entryNamed(tester, 'Try again').onClick!();
       await tester.pump();
 
       verify(() => syncCubit.retryFailedDrives(['drive-a', 'drive-b']))
@@ -581,7 +651,7 @@ void main() {
     testWidgets('and does not offer it when nothing failed', (tester) async {
       await openMenu(tester);
 
-      expect(find.text('Retry failed'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
     });
   });
 

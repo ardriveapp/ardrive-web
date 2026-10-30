@@ -145,6 +145,9 @@ class DriveNavRow extends StatelessWidget {
   /// The icon's size, and the space a row without one keeps for it.
   static const iconSize = 18.0;
 
+  /// A full row's height: the touch target.
+  static const navRowHeight = 40.0;
+
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -186,9 +189,14 @@ class DriveNavRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(ArDriveRadius.sm),
                       )
                     : null,
-                padding: EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: dense ? 5 : 9,
+                // A full row is the 40 px touch target at any label length;
+                // a dense row, a drive under its heading, is its label's
+                // height with the scale's smallest step either side.
+                constraints:
+                    BoxConstraints(minHeight: dense ? 0 : navRowHeight),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ArDriveSpacing.sm,
+                  vertical: ArDriveSpacing.xxs,
                 ),
                 child: Row(
                   mainAxisAlignment: showLabel
@@ -200,7 +208,7 @@ class DriveNavRow extends StatelessWidget {
                     else
                       Icon(icon, size: iconSize, color: color),
                     if (showLabel) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: ArDriveSpacing.xs),
                       // Wraps rather than ellipsizes, like the drive names that
                       // used to be here: at a large text scale a clipped scope is
                       // a destination the reader cannot identify.

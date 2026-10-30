@@ -64,6 +64,13 @@ ArDriveDropdownItem _item(
   );
 }
 
+/// Whether a drive's Sync and Full resync are unavailable on the drives page
+/// and in a drive's details: while a sync runs, which refuses a second, and
+/// while the drive list refreshes, when the page's own Sync is unavailable
+/// too. One predicate, so the page and a drive's menu never disagree.
+bool driveSyncUnavailable(SyncState state) =>
+    state is SyncInProgress || state is SyncLoadingDrives;
+
 /// A drive's menu: share and publish; download and export; rename, snapshot
 /// and hide; the two syncs; More info; detach.
 ///

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/pages/drive_detail/components/item_menus.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/sync/presentation/sync_history_panel.dart';
@@ -23,10 +24,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 ///
 /// A split button: the main half does the one obvious thing for the page as
 /// it stands, and the chevron opens every action. It is the page's only sync
-/// control. The never-synced card and the selection used to carry red buttons
-/// of their own, so a first login could show three sync buttons at once; now
-/// this one turns red when there is an obvious thing to do - nothing has
-/// synced yet, or drives are ticked - and is outlined otherwise.
+/// control.
+///
+/// Always the outline variant, never red: the sidebar's New is the view's one
+/// primary, and a red Sync beside it was two filled red buttons with
+/// different jobs on one screen.
 class DrivesSyncMenu extends StatelessWidget {
   const DrivesSyncMenu({super.key});
 
@@ -42,8 +44,7 @@ class DrivesSyncMenu extends StatelessWidget {
 
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {
-        final isSyncing =
-            syncState is SyncInProgress || syncState is SyncLoadingDrives;
+        final isSyncing = driveSyncUnavailable(syncState);
         final errors = syncState is SyncCompleteWithErrors ? syncState : null;
 
         // How many drives are ticked, so both actions can say which set they
@@ -57,8 +58,13 @@ class DrivesSyncMenu extends StatelessWidget {
         final drivesList = context.watch<DrivesListCubit?>();
         final selection = drivesList?.selectionCount ?? 0;
         final listState = drivesList?.state;
-        final nothingSynced =
-            listState is DrivesListLoaded && listState.nothingHasEverBeenSynced;
+
+        // The drives the network has moved on without. Each one says so in
+        // its row; this is where they can be synced on their own.
+        final changed = listState is DrivesListLoaded
+            ? listState.drivesWithUnreadChanges.length
+            : 0;
+        final offersChanged = drivesList != null && changed > 0;
 
         // Stopping only while there is a run that stopping can stop:
         // `cancelSync` cancels the token a running sync holds, and the
@@ -68,48 +74,45 @@ class DrivesSyncMenu extends StatelessWidget {
 
         final offersRetry = errors != null && errors.failedDriveIds.isNotEmpty;
 
-        // One height for both halves, from the label's size at the reader's
-        // text scale, so they stay one control when the text grows.
-        final labelStyle = ArDriveTypographyNew.of(context).paragraphNormal(
+        // The label style every button uses, so this reads as one of them.
+        // One height for both halves, from the label's line at the reader's
+        // text scale, so they stay one control when the text grows: the
+        // regular button's 40 at a scale of 1.
+        final labelStyle = ArDriveTypographyNew.of(context).paragraphLarge(
           fontWeight: ArFontWeight.semiBold,
         );
         final height = math.max(
           40.0,
           MediaQuery.textScalerOf(context).scale(labelStyle.fontSize ?? 16) *
-                  (labelStyle.height ?? 1.4) +
-              18,
+                  (labelStyle.height ?? 1.5) +
+              16,
         );
 
-        // Red when there is one obvious thing to do; outlined otherwise, so
-        // the page calms down once it has nothing to ask of the reader.
-        final emphasis = !isSyncing && (selection > 0 || nothingSynced);
-
+        // Named for what it does. With nothing ticked it syncs every drive,
+        // so it says so, before the first sync and after it alike. With
+        // drives ticked it syncs those; the title row says how many, so this
+        // does not say it again. While the drive list refreshes it keeps its
+        // label and is unavailable, so it neither changes width nor offers a
+        // sync that would be refused.
+        final syncLabel = selection > 0
+            ? appLocalizationsOf(context).driveListSyncSelected
+            : appLocalizationsOf(context).syncAllDrives;
         final String primaryLabel;
         final VoidCallback? onPrimary;
         if (canStop) {
           primaryLabel = appLocalizationsOf(context).syncStopRunning;
           onPrimary = () => context.read<SyncCubit>().cancelSync();
-        } else if (isSyncing) {
-          primaryLabel = appLocalizationsOf(context).sync;
-          onPrimary = null;
-        } else if (selection > 0) {
-          primaryLabel =
-              appLocalizationsOf(context).driveListSyncSelectedCount(selection);
-          onPrimary = () => _sync(context, drivesList);
-        } else if (nothingSynced) {
-          primaryLabel = appLocalizationsOf(context).syncAllDrives;
-          onPrimary = () => _sync(context, drivesList);
         } else {
-          primaryLabel = appLocalizationsOf(context).sync;
-          onPrimary = () => _sync(context, drivesList);
+          primaryLabel = syncLabel;
+          onPrimary = isSyncing ? null : () => _sync(context, drivesList);
         }
 
         Widget buildMenu(Widget chevron) => ArDriveDropdown(
               // The two sync items carry a line saying what they do, so they are
               // taller than the rest, and the menu, which sizes itself from a
               // single item height, is told the total instead.
-              maxHeight: (2 * describedDropdownItemHeight +
-                      (offersRetry ? 2 : 1) * 48) *
+              maxHeight: ((offersRetry ? 3 : 2) * describedDropdownItemHeight +
+                      (offersChanged ? 2 : 1) * 48) *
                   MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
               anchor: const Aligned(
                 follower: Alignment.topRight,
@@ -125,10 +128,7 @@ class DrivesSyncMenu extends StatelessWidget {
                   content: ArDriveDropdownItemTile(
                     // One name for syncing everything, wherever it is offered, and
                     // whether or not anything has synced before.
-                    name: selection > 0
-                        ? appLocalizationsOf(context)
-                            .driveListSyncSelectedCount(selection)
-                        : appLocalizationsOf(context).syncAllDrives,
+                    name: syncLabel,
                     description:
                         appLocalizationsOf(context).syncMenuSyncDescription,
                     height: describedDropdownItemHeight,
@@ -162,7 +162,7 @@ class DrivesSyncMenu extends StatelessWidget {
                   content: ArDriveDropdownItemTile(
                     name: selection > 0
                         ? appLocalizationsOf(context)
-                            .driveListDeepResyncSelectedCount(selection)
+                            .driveListDeepResyncSelected
                         : appLocalizationsOf(context).deepResync,
                     description: appLocalizationsOf(context)
                         .syncMenuFullResyncDescription,
@@ -171,6 +171,24 @@ class DrivesSyncMenu extends StatelessWidget {
                     isDisabled: isSyncing,
                   ),
                 ),
+                if (offersChanged)
+                  ArDriveDropdownItem(
+                    onClick: isSyncing
+                        ? null
+                        : () {
+                            drivesList.syncDrivesWithUnreadChanges();
+                            PlausibleEventTracker.trackResync(
+                                type: ResyncType.resync);
+                          },
+                    content: ArDriveDropdownItemTile(
+                      name: appLocalizationsOf(context)
+                          .driveListSyncChanged(changed),
+                      icon: ArDriveIcons.refresh(color: iconColor),
+                      isDisabled: isSyncing,
+                    ),
+                  ),
+                // A failed run, in the top bar's words: its count is of the
+                // drives that run covered, and its retry is Try again.
                 if (offersRetry)
                   ArDriveDropdownItem(
                     onClick: isSyncing
@@ -181,7 +199,10 @@ class DrivesSyncMenu extends StatelessWidget {
                             cubit.retryFailedDrives(errors.failedDriveIds);
                           },
                     content: ArDriveDropdownItemTile(
-                      name: appLocalizationsOf(context).retryFailedDrives,
+                      name: appLocalizationsOf(context).tryAgain,
+                      description: appLocalizationsOf(context).syncDrivesFailed(
+                          errors.failedDrives, errors.totalDrives),
+                      height: describedDropdownItemHeight,
                       icon: ArDriveIcons.triangle(color: iconColor),
                       isDisabled: isSyncing,
                     ),
@@ -202,7 +223,6 @@ class DrivesSyncMenu extends StatelessWidget {
             );
 
         return _SplitButton(
-          emphasis: emphasis,
           height: height,
           onPrimary: onPrimary,
           primaryLabel: primaryLabel,
@@ -239,12 +259,12 @@ class DrivesSyncMenu extends StatelessWidget {
 /// chevron half is inert and only reads the pointer for its fill. The main half
 /// handles its own tap.
 ///
-/// [emphasis] is the primary variant, `ArDriveButtonNew`'s tokens, and
-/// otherwise the outline variant. Colours are animated, so the button turning
-/// red when a drive is ticked reads as a change rather than a flicker.
+/// The outline variant, with `ArDriveButtonNew`'s tokens: a disabled half is
+/// filled `buttonDisabled` with its label in `textXLow`, as a disabled button
+/// is. Colours are animated, so a change of state reads as one rather than as
+/// a flicker.
 class _SplitButton extends StatefulWidget {
   const _SplitButton({
-    required this.emphasis,
     required this.height,
     required this.onPrimary,
     required this.primaryLabel,
@@ -253,7 +273,6 @@ class _SplitButton extends StatefulWidget {
     required this.wrapChevron,
   });
 
-  final bool emphasis;
   final double height;
   final VoidCallback? onPrimary;
   final String primaryLabel;
@@ -279,14 +298,7 @@ class _SplitButtonState extends State<_SplitButton> {
     required bool hovered,
     required bool pressed,
   }) {
-    if (widget.emphasis) {
-      return pressed
-          ? tokens.buttonPrimaryPress
-          : hovered
-              ? tokens.buttonPrimaryHover
-              : tokens.buttonPrimaryDefault;
-    }
-    if (!enabled) return tokens.buttonOutlineDefault;
+    if (!enabled) return tokens.buttonDisabled;
     return pressed
         ? tokens.buttonOutlinePress
         : hovered
@@ -323,13 +335,7 @@ class _SplitButtonState extends State<_SplitButton> {
     final primaryEnabled = widget.onPrimary != null;
     final active = (_primaryHovered && primaryEnabled) || _moreHovered;
 
-    final outline = widget.emphasis
-        ? Colors.transparent
-        : active
-            ? tokens.strokeHigh
-            : tokens.strokeMid;
-    final divider =
-        widget.emphasis ? tokens.textOnPrimary.withOpacity(0.35) : outline;
+    final outline = active ? tokens.strokeHigh : tokens.strokeMid;
 
     final primaryHalf = Semantics(
       button: true,
@@ -377,11 +383,7 @@ class _SplitButtonState extends State<_SplitButton> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: widget.labelStyle.copyWith(
-                      color: widget.emphasis
-                          ? tokens.textOnPrimary
-                          : primaryEnabled
-                              ? tokens.textHigh
-                              : tokens.textXLow,
+                      color: primaryEnabled ? tokens.textHigh : tokens.textXLow,
                     ),
                   ),
                 ),
@@ -420,7 +422,7 @@ class _SplitButtonState extends State<_SplitButton> {
             widthFactor: 1,
             child: ArDriveIcons.chevronDown(
               size: 16,
-              color: widget.emphasis ? tokens.textOnPrimary : tokens.textMid,
+              color: tokens.textMid,
             ),
           ),
         ),
@@ -441,7 +443,7 @@ class _SplitButtonState extends State<_SplitButton> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Flexible(child: primaryHalf),
-          AnimatedContainer(duration: _fade, width: 1, color: divider),
+          AnimatedContainer(duration: _fade, width: 1, color: outline),
           widget.wrapChevron(chevron),
         ],
       ),

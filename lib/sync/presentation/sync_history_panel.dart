@@ -148,7 +148,7 @@ class SyncRunTile extends StatelessWidget {
                   color: colorTokens.statusErrorFg,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: ArDriveSpacing.xxs),
             ],
             Expanded(
               child: Text(

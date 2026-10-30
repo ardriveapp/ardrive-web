@@ -83,9 +83,14 @@ const double listMenuTapTarget = 48;
 /// row's columns are laid out in the same width in every state.
 const double listMenuGutter = listMenuTapTarget + 8;
 
-const double listRowVerticalPadding = 14;
-const double listColumnGap = 16;
-const double listStackedGap = 6;
+const double listRowVerticalPadding = ArDriveSpacing.sm;
+const double listColumnGap = ArDriveSpacing.md;
+const double listStackedGap = ArDriveSpacing.xxs;
+
+/// The least a row's content may be, so a row is the menu's target tall
+/// whether or not it draws a menu.
+const double listRowContentMinHeight =
+    listMenuTapTarget - 2 * listRowVerticalPadding;
 
 /// The card behind a table's header and rows: its top and bottom padding.
 const double listPanelPadding = 8;
@@ -452,20 +457,25 @@ class ListTableRow extends StatelessWidget {
                         // The box inside the row's tap target: shown, it
                         // takes its own tap and ticks; hidden, a tap passes
                         // through to the row, so its spot is not dead.
-                        child: hasCheckbox
-                            ? Row(
-                                children: [
-                                  if (selectable)
-                                    _RowCheckbox(
-                                      selection: selection,
-                                      semanticLabel: semanticLabel,
-                                    )
-                                  else
-                                    const SizedBox(width: listCheckboxColumn),
-                                  Expanded(child: child),
-                                ],
-                              )
-                            : child,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minHeight: listRowContentMinHeight,
+                          ),
+                          child: hasCheckbox
+                              ? Row(
+                                  children: [
+                                    if (selectable)
+                                      _RowCheckbox(
+                                        selection: selection,
+                                        semanticLabel: semanticLabel,
+                                      )
+                                    else
+                                      const SizedBox(width: listCheckboxColumn),
+                                    Expanded(child: child),
+                                  ],
+                                )
+                              : child,
+                        ),
                       ),
                     ),
                   ),

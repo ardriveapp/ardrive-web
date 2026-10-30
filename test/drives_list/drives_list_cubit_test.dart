@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -157,6 +158,62 @@ void main() {
         drivesWithAlerts: const [],
         canCreateNewDrive: true,
       );
+
+  /// The sidebar offers Hidden only while something is hidden. Unhiding the
+  /// last hidden drive takes the row away, and the page must not stay on a
+  /// scope nothing in the sidebar names.
+  group('the Hidden scope', () {
+    test('goes home once its last drive is unhidden', () async {
+      await addDrive('drive-a');
+      await addDrive('drive-b');
+      final drives = await drivesNamed(['drive-a', 'drive-b']);
+      final hidden = drives.first.copyWith(isHidden: true);
+
+      final states = StreamController<DrivesState>();
+      addTearDown(states.close);
+      whenListen(drivesCubit, states.stream,
+          initialState: loaded([hidden, drives.last]));
+      whenListen(syncCubit, const Stream<SyncState>.empty(),
+          initialState: const _Idle());
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      cubit.showScope(DriveScope.hidden);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect((cubit.state as DrivesListLoaded).scope, DriveScope.hidden);
+      expect((cubit.state as DrivesListLoaded).drives.single.id, 'drive-a');
+
+      states.add(loaded(drives));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final state = cubit.state as DrivesListLoaded;
+      expect(state.scope, DriveScope.all);
+      expect(cubit.scope, DriveScope.all);
+      expect(state.drives.map((d) => d.id), ['drive-a', 'drive-b']);
+    });
+
+    test('stays while something is still hidden', () async {
+      await addDrive('drive-a');
+      await addDrive('drive-b');
+      final drives = await drivesNamed(['drive-a', 'drive-b']);
+
+      final cubit = await settleLive(loaded([
+        drives.first.copyWith(isHidden: true),
+        drives.last.copyWith(isHidden: true),
+      ]));
+      cubit.showScope(DriveScope.hidden);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DrivesListLoaded).scope, DriveScope.hidden);
+    });
+  });
 
   group('the four answers', () {
     test('a drives cubit that has not answered is still loading', () async {
@@ -456,54 +513,6 @@ void main() {
 
       await cubit.close();
     });
-  });
-
-  group('the one offer the page makes', () {
-    test('stands while nothing has ever been walked', () async {
-      await addDrive('drive-a');
-      await addDrive('drive-b');
-
-      final state =
-          await settle(loaded(await drivesNamed(['drive-a', 'drive-b'])))
-              as DrivesListLoaded;
-
-      expect(state.nothingHasEverBeenSynced, isTrue);
-    });
-
-    test('is withdrawn as soon as one drive has been', () async {
-      await addDrive('drive-a', lastBlockHeight: 10);
-      await addDrive('drive-b');
-
-      final state =
-          await settle(loaded(await drivesNamed(['drive-a', 'drive-b'])))
-              as DrivesListLoaded;
-
-      expect(state.nothingHasEverBeenSynced, isFalse);
-    });
-  });
-
-  // Retry failed, on the drives list, is the top bar's Try again: the drives
-  // that failed, and a cancelled wallet prompt back for those drives only.
-  test('retrying the failed drives goes through the sync cubit\'s retry',
-      () async {
-    when(() => syncCubit.retryFailedDrives(any())).thenAnswer((_) async {});
-    await addDrive('a');
-    await addDrive('b');
-    final cubit = await settleLive(
-      loaded(await drivesNamed(['a', 'b'])),
-      syncState: SyncCompleteWithErrors(
-        failedDrives: 1,
-        totalDrives: 2,
-        failedDriveIds: const ['a'],
-        errorMessages: const {},
-      ),
-    );
-
-    cubit.retryFailedDrives();
-
-    verify(() => syncCubit.retryFailedDrives(['a'])).called(1);
-    verifyNever(() => syncCubit.syncDrives(any()));
-    await cubit.close();
   });
 
   /// Choosing drives to sync, and the one way a selection must never be lost.

@@ -104,9 +104,15 @@ class PublishedToWebMark extends StatelessWidget {
     required this.driveId,
     this.folderId,
     this.size = 14,
+    this.leadingGap = ArDriveSpacing.xs,
   });
 
   final String driveId;
+
+  /// The space before the mark. Zero where it sits in a list of marks that
+  /// spaces them already, as a drive row's name does: with its own gap on
+  /// top it sat further out than the tag beside it.
+  final double leadingGap;
 
   /// Null for the drive itself.
   final String? folderId;
@@ -134,7 +140,7 @@ class PublishedToWebMark extends StatelessWidget {
         }
         final colors = ArDriveTheme.of(context).themeData.colorTokens;
         return Padding(
-          padding: const EdgeInsetsDirectional.only(start: 6),
+          padding: EdgeInsetsDirectional.only(start: leadingGap),
           child: ArDriveTooltip(
             message: appLocalizationsOf(context).publishedToWeb,
             child: publishToWebIcon(size: size, color: colors.iconMid),

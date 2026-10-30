@@ -186,6 +186,18 @@ void main() {
       expect(entryNamed(tester, 'Sync this drive').onClick, isNull);
     });
 
+    testWidgets(
+        'is unavailable while the drive list refreshes, as the page\'s '
+        'Sync is', (tester) async {
+      // A refresh of the drive list is not a sync, but the page's own Sync is
+      // unavailable during it, and the page gives one answer.
+      when(() => syncCubit.state).thenReturn(SyncLoadingDrives());
+      await openMenu(tester, isOwner: true);
+
+      expect(itemNamed(tester, 'Sync this drive').isDisabled, isTrue);
+      expect(entryNamed(tester, 'Sync this drive').onClick, isNull);
+    });
+
     testWidgets('and the other actions are untouched', (tester) async {
       // A running sync has nothing to do with renaming or sharing a drive.
       await openMenu(tester, isOwner: true, isSyncing: true);
@@ -193,6 +205,59 @@ void main() {
       expect(itemNamed(tester, 'Rename drive').isDisabled, isFalse);
       expect(itemNamed(tester, 'Share drive').isDisabled, isFalse);
       expect(entryNamed(tester, 'Share drive').onClick, isNotNull);
+    });
+  });
+
+  /// The menu button's target is centred in the row's end gutter, a few
+  /// pixels from the screen's edge. On a phone the menu keeps the 16 px gutter
+  /// rather than lining up with the target.
+  group('where the menu opens', () {
+    Future<Rect> menuAt(WidgetTester tester, Size size) async {
+      // Starts from nothing, so a menu left open by an earlier call is gone.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+      // The view as well as the surface: the menu reads the screen's width
+      // from MediaQuery, which follows the view.
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        host(
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: DriveActionsMenu(
+                isSynced: true,
+                drive: drive(),
+                isOwner: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(DriveActionsMenu));
+      await tester.pumpAndSettle();
+
+      return tester.getRect(
+        find.widgetWithText(ArDriveDropdownItemTile, 'Share drive'),
+      );
+    }
+
+    testWidgets('keeps the 16 px gutter on a phone, not the button\'s edge',
+        (tester) async {
+      // The button's target ends 4 px from the edge here, as it does in a
+      // row's gutter. The menu card's own inset is the same on both screens,
+      // so the difference between them is the pull towards the gutter.
+      final wide = await menuAt(tester, const Size(1200, 900));
+      final phone = await menuAt(tester, const Size(390, 844));
+
+      final wideGap = (1200 - 4) - wide.right;
+      final phoneGap = (390 - 4) - phone.right;
+      expect(phoneGap - wideGap, 16 - 4);
     });
   });
 

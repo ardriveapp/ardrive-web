@@ -411,7 +411,8 @@ class DriveListRow extends StatelessWidget {
       title: drive.name,
       marks: [
         if (drive.isSharedWithMe) _SharedMarker(),
-        PublishedToWebMark(driveId: drive.id),
+        // The name's marks are spaced by the list, so the mark adds none.
+        PublishedToWebMark(driveId: drive.id, leadingGap: 0),
       ],
     );
   }
@@ -457,7 +458,7 @@ class DriveListRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ArDriveIcons.triangle(size: 14, color: colorTokens.statusErrorFg),
-          const SizedBox(width: 6),
+          const SizedBox(width: ArDriveSpacing.xxs),
           Flexible(
             child: Text(
               formatDriveSyncState(context, drive),
@@ -465,6 +466,27 @@ class DriveListRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style:
                   typography.paragraphSmall(color: colorTokens.statusErrorFg),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Changed since it was read: news, not a failure, so the strongest text
+    // and the sync mark rather than red. This is where the page says it now;
+    // there is no banner above the table.
+    if (drive.hasUnreadChanges) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIcons.cloudSync(size: 14, color: colorTokens.iconHigh),
+          const SizedBox(width: ArDriveSpacing.xxs),
+          Flexible(
+            child: Text(
+              formatDriveSyncState(context, drive),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(color: colorTokens.textHigh),
             ),
           ),
         ],
@@ -620,6 +642,10 @@ String formatDriveSyncState(
 
   final lastSyncedAt = drive.lastSyncedAt;
 
+  if (lastSyncedAt == null && drive.hasUnreadChanges) {
+    return appLocalizationsOf(context).driveChangedSinceSync;
+  }
+
   if (lastSyncedAt == null) {
     // Walked by a build that did not record the time. It has been synced; we
     // just cannot say when, so we do not.
@@ -628,6 +654,16 @@ String formatDriveSyncState(
         : appLocalizationsOf(context).driveNeverSynced;
   }
 
+  final synced = _syncedAgo(context, lastSyncedAt, now);
+
+  // The time it last synced stays, so the column keeps its time and sorts
+  // as before; what follows says the figures beside it are now behind.
+  return drive.hasUnreadChanges
+      ? appLocalizationsOf(context).driveSyncedChangedSince(synced)
+      : synced;
+}
+
+String _syncedAgo(BuildContext context, DateTime lastSyncedAt, DateTime? now) {
   final elapsed = (now ?? DateTime.now()).difference(lastSyncedAt);
 
   if (elapsed.inMinutes < 1) {

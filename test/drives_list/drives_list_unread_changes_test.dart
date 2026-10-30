@@ -7,14 +7,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// What a returning reader is told.
+/// What a returning reader is told, and where.
 ///
 /// Everything on this page comes from the local database, which is what makes
-/// it instant and also what makes it silently old: a reader who closed the tab
-/// on Tuesday sees Tuesday's file counts drawn with exactly the confidence of
-/// current ones. The notice under test is the only thing that says otherwise,
-/// and it is only ever shown when the network has confirmed there is something
-/// to say.
+/// it instant and also what makes it silently old. Each drive says so in its
+/// own row, only when the network has confirmed it: there is no banner above
+/// the table, which came and went with a tick or a sync and moved every row
+/// under the pointer when it did.
 void main() {
   DriveListItem drive(
     String id, {
@@ -55,8 +54,6 @@ void main() {
   Future<void> pump(
     WidgetTester tester,
     DrivesListLoaded state, {
-    VoidCallback? onSyncChanged,
-    VoidCallback? onRetryFailed,
     Size size = const Size(1200, 900),
   }) async {
     await tester.binding.setSurfaceSize(size);
@@ -68,15 +65,12 @@ void main() {
           state: state,
           onOpenDrive: (_) {},
           onTryAgain: () {},
-          onSyncChanged: onSyncChanged ?? () {},
-          onRetryFailed: onRetryFailed,
         ),
       ),
     );
   }
 
-  testWidgets('names how many drives moved on, and offers only those',
-      (tester) async {
+  testWidgets('a changed drive says so in its own row', (tester) async {
     await pump(
       tester,
       DrivesListLoaded(drives: [
@@ -86,41 +80,36 @@ void main() {
       ]),
     );
 
-    expect(
-      find.text('2 drives have changed since they were last read'),
-      findsOneWidget,
+    expect(find.textContaining(', changed since'), findsNWidgets(2));
+    // The time stays, so the column still says when, and sorts by it.
+    expect(find.textContaining(RegExp(r'^Synced .+, changed since$')),
+        findsNWidgets(2));
+  });
+
+  testWidgets('and nothing above the table says it again', (tester) async {
+    await pump(
+      tester,
+      DrivesListLoaded(drives: [
+        drive('a', hasUnreadChanges: true),
+        drive('b', lastSyncFailed: true),
+      ]),
     );
-    // The button names the same number the sentence does. A reader who is told
-    // two and offered "Sync All Drives" has been told two different things.
-    expect(find.text('Sync those 2'), findsOneWidget);
+
+    expect(find.textContaining('have changed since'), findsNothing);
+    expect(find.textContaining('has changed since'), findsNothing);
+    expect(find.textContaining('could not be read'), findsNothing);
+    expect(find.textContaining('Sync th'), findsNothing,
+        reason: 'the split button is the page\'s one sync control');
+    expect(find.byType(ArDriveButtonNew), findsNothing);
   });
 
   testWidgets('says nothing when every drive is current', (tester) async {
     await pump(tester, DrivesListLoaded(drives: [drive('a'), drive('b')]));
 
-    expect(find.textContaining('have changed since'), findsNothing);
+    expect(find.textContaining(', changed since'), findsNothing);
   });
 
-  testWidgets('syncs the drives it named and nothing else', (tester) async {
-    var pressed = 0;
-    await pump(
-      tester,
-      DrivesListLoaded(drives: [
-        drive('a', hasUnreadChanges: true),
-        drive('b'),
-      ]),
-      onSyncChanged: () => pressed++,
-    );
-
-    await tester.tap(find.text('Sync that drive'));
-    await tester.pump();
-
-    expect(pressed, 1);
-  });
-
-  /// The offer is only an offer while it can be taken - the same rule the
-  /// never-synced card follows one block up.
-  testWidgets('withdraws itself while a sync is running', (tester) async {
+  testWidgets('a drive being synced says that instead', (tester) async {
     await pump(
       tester,
       DrivesListLoaded(drives: [
@@ -128,94 +117,67 @@ void main() {
       ]),
     );
 
-    expect(find.textContaining('have changed since'), findsNothing);
-    expect(find.textContaining('has changed since'), findsNothing);
+    expect(find.textContaining(', changed since'), findsNothing);
+    expect(find.text('Syncing...'), findsOneWidget);
   });
 
-  /// Two red-adjacent offers of different scopes on one screen is the reader
-  /// having to work out which one they meant, and they have just said which by
-  /// ticking rows.
-  testWidgets('withdraws itself while rows are ticked', (tester) async {
+  testWidgets('and a drive whose last sync failed says that', (tester) async {
     await pump(
       tester,
-      DrivesListLoaded(
-        drives: [drive('a', hasUnreadChanges: true)],
-        selected: const {'a'},
-      ),
+      DrivesListLoaded(drives: [
+        drive('a', hasUnreadChanges: true, lastSyncFailed: true),
+      ]),
     );
 
-    expect(find.textContaining('has changed since'), findsNothing);
+    expect(find.text('Last sync failed'), findsOneWidget);
+    expect(find.textContaining(', changed since'), findsNothing);
   });
 
-  /// A drive that could not be read at all is worse news than one that is
-  /// merely behind, and the two notices say different things about different
-  /// drives - so both stand.
-  testWidgets('stands alongside a failure notice', (tester) async {
-    await pump(
-      tester,
+  /// The jump this used to cause: the banner left on the first tick or the
+  /// start of a sync, every row moved up under the pointer, and the next
+  /// click landed on a different drive.
+  testWidgets('the table does not move when drives change, are ticked or sync',
+      (tester) async {
+    await pump(tester, DrivesListLoaded(drives: [drive('a'), drive('b')]));
+    final before = tester.getTopLeft(find.text('Name'));
+
+    for (final state in [
       DrivesListLoaded(drives: [
         drive('a', hasUnreadChanges: true),
         drive('b', lastSyncFailed: true),
       ]),
-      onRetryFailed: () {},
-    );
-
-    expect(find.text('1 drive has changed since it was last read'),
-        findsOneWidget);
-    expect(find.textContaining('could not be read'), findsOneWidget);
+      DrivesListLoaded(
+        drives: [drive('a', hasUnreadChanges: true), drive('b')],
+        selected: const {'a'},
+      ),
+      DrivesListLoaded(drives: [
+        drive('a', hasUnreadChanges: true, isSyncing: true),
+        drive('b', isSyncing: true),
+      ]),
+    ]) {
+      await pump(tester, state);
+      expect(tester.getTopLeft(find.text('Name')), before);
+    }
   });
 
-  /// The notice is added outside the `showsColumns` branch, so a phone gets it
-  /// too - on a layout where the rows are stacked blocks rather than a table,
-  /// and where a two-column Wrap has to fall back to one.
   testWidgets('says the same thing on a phone, without overflowing',
       (tester) async {
+    const phone = Size(375, 667);
     await pump(
       tester,
       DrivesListLoaded(drives: [
         drive('a', hasUnreadChanges: true),
         drive('b', hasUnreadChanges: true),
       ]),
-      size: const Size(375, 667),
+      size: phone,
     );
 
-    const phone = Size(375, 667);
-
-    expect(
-      find.text('2 drives have changed since they were last read'),
-      findsOneWidget,
-    );
-    expect(find.text('Sync those 2'), findsOneWidget);
-
-    // A Wrap that could not fall back to one column would overflow here.
+    expect(find.textContaining(', changed since'), findsNWidgets(2));
     expect(tester.takeException(), isNull);
-
-    // Mounted is not the same as readable. A widget laid out past the right
-    // edge is still found by `findsOneWidget` and still invisible to whoever
-    // is holding the phone, which is the failure this notice would actually
-    // have on a narrow screen.
-    for (final finder in [
-      find.text('2 drives have changed since they were last read'),
-      find.text('Sync those 2'),
-    ]) {
-      final rect = tester.getRect(finder);
-
-      expect(rect.left, greaterThanOrEqualTo(0.0));
-      expect(
-        rect.right,
-        lessThanOrEqualTo(phone.width),
-        reason: 'laid out past the right edge of the screen',
-      );
-      expect(rect.width, greaterThan(0.0));
-      expect(rect.height, greaterThan(0.0));
+    for (var i = 0; i < 2; i++) {
+      final rect = tester.getRect(find.textContaining(', changed since').at(i));
+      expect(rect.right, lessThanOrEqualTo(phone.width));
     }
-
-    // And the whole notice is above the fold, since a warning nobody scrolls
-    // to is a warning nobody reads.
-    expect(
-      tester.getRect(find.byType(ArDriveButtonNew).first).bottom,
-      lessThanOrEqualTo(phone.height),
-    );
   });
 
   testWidgets("a new account's half-made first drive is not listed",
@@ -237,4 +199,3 @@ void main() {
     expect(find.text('my-files'), findsNothing);
   });
 }
-
