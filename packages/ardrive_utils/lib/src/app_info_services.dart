@@ -1,4 +1,5 @@
 import 'package:ardrive_utils/src/app_platform.dart';
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppInfo {
@@ -58,8 +59,18 @@ class AppInfoServices {
         },
       );
 
+  /// How long a load waits for the platform. On the web that is a fetch of
+  /// version.json, which package_info_plus makes with no timeout of its own,
+  /// and an upload waits on it.
+  @visibleForTesting
+  Duration loadTimeout = const Duration(seconds: 15);
+
+  /// Where the version comes from; replaced in tests.
+  @visibleForTesting
+  Future<PackageInfo> Function() readPackageInfo = PackageInfo.fromPlatform;
+
   Future<void> _load() async {
-    final packageInfo = await PackageInfo.fromPlatform();
+    final packageInfo = await readPackageInfo().timeout(loadTimeout);
     final appPlatform = AppPlatform.getPlatform().name;
 
     _appInfo = AppInfo(
