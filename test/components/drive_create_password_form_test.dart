@@ -39,8 +39,7 @@ void main() {
       'privacy': FormControl<String>(value: DrivePrivacy.private.name),
     }));
     when(() => cubit.needsDrivePassword).thenReturn(true);
-    when(() => cubit.submit(any(),
-            drivePassword: any(named: 'drivePassword')))
+    when(() => cubit.submit(any(), drivePassword: any(named: 'drivePassword')))
         .thenAnswer((_) async {});
   });
 
@@ -71,7 +70,8 @@ void main() {
       of: find.byKey(Key(key)), matching: find.byType(EditableText));
 
   bool createEnabled(WidgetTester tester) => tester
-      .widget<ArDriveButtonNew>(find.widgetWithText(ArDriveButtonNew, 'Create drive'))
+      .widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Create drive'))
       .isDisabled
       .let((disabled) => !disabled);
 
@@ -108,8 +108,8 @@ void main() {
         find.text(
             'This password has shown up in a data breach. Choose another.'),
         findsOneWidget);
-    verifyNever(() => cubit.submit(any(),
-        drivePassword: any(named: 'drivePassword')));
+    verifyNever(
+        () => cubit.submit(any(), drivePassword: any(named: 'drivePassword')));
 
     const other = 'Copper meadow 92 kites unfold';
     await tester.enterText(field('newDrivePassword'), other);
@@ -126,6 +126,16 @@ void main() {
     await pump(tester);
 
     expect(find.byKey(const Key('newDrivePassword')), findsNothing);
+  });
+
+  testWidgets('both fields ask the browser for a new password', (tester) async {
+    await pump(tester);
+
+    for (final key in ['newDrivePassword', 'newDrivePasswordConfirm']) {
+      final textField = tester.widget<TextField>(find.descendant(
+          of: find.byKey(Key(key)), matching: find.byType(TextField)));
+      expect(textField.autofillHints, [AutofillHints.newPassword], reason: key);
+    }
   });
 }
 
