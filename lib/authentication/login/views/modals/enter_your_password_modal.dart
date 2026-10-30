@@ -25,6 +25,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
     required this.showWalletCreated,
     required this.checkingPassword,
     required this.passwordFailed,
+    this.selectPassword = false,
   });
 
   /// The wallet just chosen. The account already on this device is
@@ -37,6 +38,9 @@ class EnterYourPasswordWidget extends StatefulWidget {
   final bool checkingPassword;
   final bool passwordFailed;
 
+  /// Back from "Try again": focus the field with what was typed selected.
+  final bool selectPassword;
+
   @override
   State<EnterYourPasswordWidget> createState() =>
       _EnterYourPasswordWidgetState();
@@ -44,6 +48,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
 
 class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   final _passwordController = TextEditingController();
+  final _passwordFocus = FocusNode(debugLabel: 'signInPassword');
   // final _formKey = GlobalKey<ArDriveFormState>();
   bool _isPasswordValid = false;
   bool _isPasswordFailed = false;
@@ -66,6 +71,24 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     setState(() {
       _isPasswordFailed = widget.passwordFailed;
     });
+
+    if (widget.selectPassword && !oldWidget.selectPassword) {
+      // After the frame: the field is disabled until this rebuild lands.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _passwordFocus.requestFocus();
+        _passwordController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _passwordController.text.length,
+        );
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _passwordFocus.dispose();
+    super.dispose();
   }
 
   /// Whether the profile name has been asked for. Once is enough: the wallet
@@ -185,7 +208,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   fontWeight: ArFontWeight.semiBold)),
           const SizedBox(height: 8),
           ArDriveTextFieldNew(
+            key: const Key('signInPassword'),
             controller: _passwordController,
+            focusNode: _passwordFocus,
             hintText: 'Enter your password',
             showObfuscationToggle: true,
             obscureText: true,
@@ -329,6 +354,8 @@ void showEnterYourPasswordDialog(
               current is LoginPasswordFailedWithPrivateDriveNotFound ||
               current is LoginCheckingPassword ||
               current is LoginPasswordFailed ||
+              current is LoginPasswordOpensNoDrives ||
+              current is LoginPasswordRetry ||
               current is LoginWithPassword ||
               current is LoginUnknownFailure);
         },
@@ -345,6 +372,7 @@ void showEnterYourPasswordDialog(
             showWalletCreated: showWalletCreated,
             checkingPassword: checkingPassword,
             passwordFailed: passwordFailed,
+            selectPassword: state is LoginPasswordRetry,
           );
         },
       ));
@@ -383,6 +411,55 @@ class ForgetWalletDialog extends StatelessWidget {
             loginBloc.add(const ForgetWallet());
             context.read<ProfileNameBloc>().add(const CleanProfileName());
             PlausibleEventTracker.trackClickForgetWalletTextButton();
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// The sign-in password opened none of the wallet's private drives.
+///
+/// Not a wrong password: drive passwords are separate from the sign-in one,
+/// so the user may correct it or go on with those drives locked. Shown for
+/// [LoginPasswordOpensNoDrives].
+Future<void> showPasswordOpensNoDrivesDialog({
+  required BuildContext context,
+  required LoginBloc loginBloc,
+}) =>
+    showArDriveDialog(
+      context,
+      barrierDismissible: false,
+      useRootNavigator: false,
+      content: PasswordOpensNoDrivesDialog(loginBloc: loginBloc),
+    );
+
+class PasswordOpensNoDrivesDialog extends StatelessWidget {
+  const PasswordOpensNoDrivesDialog({super.key, required this.loginBloc});
+
+  final LoginBloc loginBloc;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+
+    return ArDriveStandardModalNew(
+      key: const Key('passwordOpensNoDrivesDialog'),
+      title: strings.passwordOpensNoDrivesTitle,
+      description: strings.passwordOpensNoDrivesBody,
+      actions: [
+        ModalAction.dismiss(
+          title: strings.tryAgain,
+          action: () {
+            Navigator.of(context).pop();
+            loginBloc.add(const RetrySignInPassword());
+          },
+        ),
+        ModalAction(
+          title: strings.continueEmphasized,
+          action: () {
+            Navigator.of(context).pop();
+            loginBloc.add(const ContinueSignInWithLockedDrives());
           },
         ),
       ],

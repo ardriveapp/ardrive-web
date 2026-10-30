@@ -292,4 +292,36 @@ void main() {
 
     expect(session.isLocked(_locked), isFalse);
   });
+
+  test(
+      'after sign-in, a wallet that prompts is asked at most 3 times per '
+      'pass, and the drives left over are not asked by later passes', () async {
+    final wander = FakeWander(wallet);
+    onChain = [
+      for (var i = 0; i < 6; i++)
+        await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: '00000000-0000-4000-8000-00000000000$i',
+          password: 'cli',
+        ),
+    ];
+
+    Future<void> discoverWith({bool askWalletAgain = false}) =>
+        syncRepository.updateUserDrives(
+          wallet: wander.wallet,
+          password: 'login',
+          cipherKey: profileKey,
+          askWalletAgain: askWalletAgain,
+        );
+
+    await discoverWith();
+    expect(wander.prompts, 3);
+    expect(session.currentLockedDrives, hasLength(6));
+
+    await discoverWith();
+    expect(wander.prompts, 3, reason: 'a background pass asked again');
+
+    await discoverWith(askWalletAgain: true);
+    expect(wander.prompts, 6, reason: 'a sync the user started may ask');
+  });
 }

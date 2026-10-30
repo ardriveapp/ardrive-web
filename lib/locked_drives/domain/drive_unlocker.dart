@@ -7,6 +7,7 @@ import 'package:ardrive/entities/entities.dart' hide Cipher;
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
@@ -96,6 +97,27 @@ bool isWalletCancellation(Object error) => RegExp(
       r'cancel|reject|denied|declin|closed|dismiss|abort',
       caseSensitive: false,
     ).hasMatch(error.toString());
+
+/// How many new wallet prompts one pass over several drives may cost.
+///
+/// For a wallet that asks the user for every signature (Wander): a drive
+/// whose signature is already held costs nothing; each one that isn't takes
+/// one from here, and once it is spent the remaining drives are left locked
+/// rather than prompted for. One per sign-in, discovery pass or unlock.
+class WalletPromptBudget {
+  WalletPromptBudget(this.remaining);
+
+  /// How many prompts a pass may cost a prompting wallet.
+  static const perPass = 3;
+
+  int remaining;
+
+  bool take() {
+    if (remaining <= 0) return false;
+    remaining--;
+    return true;
+  }
+}
 
 /// How many times the unlock dialog's metadata read is tried.
 const unlockMaxRetries = 3;
@@ -190,6 +212,7 @@ class DriveUnlocker {
     required String password,
     bool forSync = false,
     bool mayAskWallet = true,
+    WalletPromptBudget? promptBudget,
   }) async {
     final driveId = driveTx.getTag(EntityTag.driveId)!;
     final signatureType = DriveSignatureType.fromString(
@@ -217,6 +240,14 @@ class DriveUnlocker {
 
     if (signature == null) {
       if (!mayAskWallet && _session.walletDeclined(owner, driveId)) {
+        return const DriveKeyAttempt.failed(DriveUnlockFailure.walletDeclined);
+      }
+
+      // Out of prompts for this pass: left locked, and not asked by later
+      // background passes either - only when the user acts (Unlock, or a
+      // sync they start). Otherwise every pass would ask three more.
+      if (promptBudget != null && !promptBudget.take()) {
+        _session.markWalletDeclined(owner, driveId);
         return const DriveKeyAttempt.failed(DriveUnlockFailure.walletDeclined);
       }
 
@@ -296,6 +327,7 @@ class DriveUnlocker {
     required String password,
     StoredDriveKeyReader? storedKey,
     bool mayAskWallet = true,
+    WalletPromptBudget? promptBudget,
   }) async {
     final driveId = driveTx.getTag(EntityTag.driveId)!;
 
@@ -336,6 +368,7 @@ class DriveUnlocker {
       password: password,
       forSync: true,
       mayAskWallet: mayAskWallet,
+      promptBudget: promptBudget,
     );
 
     if (attempt.opened) {
@@ -398,6 +431,11 @@ class DriveUnlocker {
     final opened = [driveId];
 
     if (tryOthers) {
+      // The drive asked for may prompt; the others share a small budget, so
+      // one password tried on many drives can't become a prompt per drive.
+      final budget = wallet is ArConnectWallet
+          ? WalletPromptBudget(WalletPromptBudget.perPass)
+          : null;
       final others = [
         for (final drive in _session.currentLockedDrives)
           if (drive.ownerAddress == owner && drive.driveId != driveId)
@@ -412,6 +450,7 @@ class DriveUnlocker {
           driveId: other,
           password: password,
           mayAskWallet: false,
+          promptBudget: budget,
         );
 
         if (attempt.opened) {
@@ -430,6 +469,7 @@ class DriveUnlocker {
     required String driveId,
     required String password,
     required bool mayAskWallet,
+    WalletPromptBudget? promptBudget,
   }) async {
     final TransactionCommonMixin? driveTx;
     final Uint8List data;
@@ -460,6 +500,7 @@ class DriveUnlocker {
       data: data,
       password: password,
       mayAskWallet: mayAskWallet,
+      promptBudget: promptBudget,
     );
 
     if (attempt.opened) {

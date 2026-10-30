@@ -14,6 +14,7 @@ import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -2134,6 +2135,14 @@ class _SyncRepository implements SyncRepository {
     // A drive unlocked while this pass runs was read as locked by it.
     final unlockGeneration = _driveUnlocker.session.unlockGeneration;
 
+    // The sign-in password is tried on every private drive here too, so a
+    // wallet that prompts gets the same small budget as at sign-in: drives
+    // whose signature is held cost nothing, and past the budget the rest stay
+    // locked for their own Unlock. No popup storm after a sign-in.
+    final promptBudget = wallet is ArConnectWallet
+        ? WalletPromptBudget(WalletPromptBudget.perPass)
+        : null;
+
     final discovery = await _arweave.getUniqueUserDriveEntities(
       wallet,
       password,
@@ -2147,6 +2156,7 @@ class _SyncRepository implements SyncRepository {
         password: password,
         storedKey: (driveId) => _driveDao.getStoredDriveKey(driveId, cipherKey),
         mayAskWallet: false,
+        promptBudget: promptBudget,
       ),
     );
 

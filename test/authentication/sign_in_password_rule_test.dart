@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/user/user.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:arweave/arweave.dart';
@@ -36,7 +39,10 @@ void main() {
     }
   }
 
-  setUpAll(() => registerFallbackValue(getTestWallet()));
+  setUpAll(() {
+    registerFallbackValue(getTestWallet());
+    registerFallbackValue(ProfileType.json);
+  });
 
   setUp(() {
     signer = SignatureCounter(json.decode(getWalletString));
@@ -81,8 +87,9 @@ void main() {
   });
 
   test(
-      'a password that opens none of the wallet\'s private drives is still '
-      '"Wrong password"', () async {
+      'a password that opens none of the wallet\'s private drives asks the '
+      'user to try again or continue, rather than signing in silently',
+      () async {
     onChain([
       await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
       await makeWebPrivateDrive(
@@ -90,7 +97,7 @@ void main() {
     ]);
 
     await expectLater(auth.validateUser(wallet, 'typo'),
-        throwsA(isA<WrongPasswordException>()));
+        throwsA(isA<PasswordOpensNoDriveException>()));
   });
 
   test(
@@ -109,15 +116,15 @@ void main() {
         throwsA(isA<AuthenticationGatewayException>()));
   });
 
-  test('a cancelled wallet prompt is "Wrong password", as it always was',
+  test('a cancelled wallet prompt opens nothing: try again or continue',
       () async {
     onChain([
       await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
     ]);
     signer.refuse = true;
 
-    await expectLater(
-        auth.validateUser(wallet, 'a'), throwsA(isA<WrongPasswordException>()));
+    await expectLater(auth.validateUser(wallet, 'a'),
+        throwsA(isA<PasswordOpensNoDriveException>()));
   });
 
   test(
@@ -132,8 +139,8 @@ void main() {
       ..signatures = 0
       ..refuse = true;
 
-    await expectLater(
-        auth.validateUser(wallet, 'a'), throwsA(isA<WrongPasswordException>()));
+    await expectLater(auth.validateUser(wallet, 'a'),
+        throwsA(isA<PasswordOpensNoDriveException>()));
     expect(signer.signatures, 1);
   });
 
@@ -176,7 +183,7 @@ void main() {
         final wander = FakeWander(wallet);
 
         await expectLater(auth.validateUser(wander.wallet, 'typo'),
-            throwsA(isA<WrongPasswordException>()));
+            throwsA(isA<PasswordOpensNoDriveException>()));
         expect(wander.prompts, 3);
 
         await auth.validateUser(wander.wallet, 'right');
@@ -218,7 +225,7 @@ void main() {
       signer.signatures = 0;
 
       await expectLater(auth.validateUser(wallet, 'typo'),
-          throwsA(isA<WrongPasswordException>()));
+          throwsA(isA<PasswordOpensNoDriveException>()));
       expect(signer.signatures, 20);
 
       await auth.validateUser(wallet, 'right');
@@ -230,8 +237,64 @@ void main() {
       signer.signatures = 0;
 
       await expectLater(auth.validateUser(wallet, 'typo'),
-          throwsA(isA<WrongPasswordException>()));
+          throwsA(isA<PasswordOpensNoDriveException>()));
       expect(signer.signatures, ArDriveAuthImpl.signInMaxDrives);
     });
+  });
+
+  test(
+      'continuing signs in without trying any drive: the drives the password '
+      'didn\'t open stay locked, and the wallet is not asked again', () async {
+    onChain([
+      await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
+    ]);
+    final userRepository = MockUserRepository();
+    final biometrics = MockBiometricAuthentication();
+    when(() => biometrics.isEnabled()).thenAnswer((_) async => false);
+    when(() => userRepository.hasUser()).thenAnswer((_) async => false);
+    when(() => userRepository.saveUser(any(), any(), any(),
+            sourceWalletAddress: any(named: 'sourceWalletAddress')))
+        .thenAnswer((_) async {});
+    when(() => userRepository.getUser(any())).thenAnswer((_) async => User(
+          password: 'typo',
+          wallet: wallet,
+          walletAddress: 'address',
+          walletBalance: BigInt.zero,
+          cipherKey: SecretKey([1]),
+          profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
+        ));
+    when(() => userRepository.getBalance(any()))
+        .thenAnswer((_) async => BigInt.zero);
+    when(() => userRepository.getARIOTokens(any()))
+        .thenAnswer((_) async => '0');
+    final auth = ArDriveAuthImpl(
+      arweave: arweave,
+      userRepository: userRepository,
+      crypto: ArDriveCrypto(),
+      biometricAuthentication: biometrics,
+      secureKeyValueStore: MockSecureKeyValueStore(),
+      arConnectService: MockArConnectService(),
+      databaseHelpers: MockDatabaseHelpers(),
+      driveUnlocker: DriveUnlocker(
+        crypto: ArDriveCrypto(),
+        arweave: arweave,
+        driveDao: MockDriveDao(),
+        session: DriveUnlockSession(),
+      ),
+    );
+    signer.signatures = 0;
+
+    await expectLater(auth.login(wallet, 'typo', ProfileType.json),
+        throwsA(isA<PasswordOpensNoDriveException>()));
+    final asked = signer.signatures;
+
+    final user = await auth.login(wallet, 'typo', ProfileType.json,
+        skipDriveCheck: true);
+
+    expect(user.password, 'typo');
+    expect(signer.signatures, asked, reason: 'continuing tried a drive again');
+    verify(() => userRepository.saveUser('typo', ProfileType.json, wallet,
+        sourceWalletAddress: any(named: 'sourceWalletAddress'))).called(1);
   });
 }
