@@ -122,12 +122,17 @@ class ArDriveIconButton extends StatelessWidget {
       label: tooltip,
       onTap: onPressed == null ? null : () => onPressed(),
       excludeSemantics: true,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: HoverWidget(
-          tooltip: tooltip,
-          hoverScale: scale == true ? 1.1 : 1.0,
-          child: icon,
+      // Tab reaches it and Enter or Space presses it, with the focus ring.
+      child: ArDriveFocusable(
+        onActivate: onPressed == null ? null : () => onPressed(),
+        radius: ArDriveRadius.control,
+        child: GestureDetector(
+          onTap: onPressed,
+          child: HoverWidget(
+            tooltip: tooltip,
+            hoverScale: scale == true ? 1.1 : 1.0,
+            child: icon,
+          ),
         ),
       ),
     );

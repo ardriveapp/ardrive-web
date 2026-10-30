@@ -337,48 +337,52 @@ class _SplitButtonState extends State<_SplitButton> {
       label: widget.primaryLabel,
       onTap: widget.onPrimary,
       excludeSemantics: true,
-      child: GestureDetector(
-        key: DrivesSyncMenu.primaryKey,
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onPrimary,
-        child: _pointer(
-          enabled: primaryEnabled,
-          onHover: (v) => setState(() => _primaryHovered = v),
-          onPress: (v) {
-            if (_primaryPressed != v) setState(() => _primaryPressed = v);
-          },
-          child: AnimatedContainer(
-            duration: _fade,
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: _fill(
-                tokens,
-                enabled: primaryEnabled,
-                hovered: _primaryHovered,
-                pressed: _primaryPressed,
+      // Tab reaches it and Enter or Space syncs, as a click does.
+      child: ArDriveFocusable(
+        onActivate: primaryEnabled ? widget.onPrimary : null,
+        child: GestureDetector(
+          key: DrivesSyncMenu.primaryKey,
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onPrimary,
+          child: _pointer(
+            enabled: primaryEnabled,
+            onHover: (v) => setState(() => _primaryHovered = v),
+            onPress: (v) {
+              if (_primaryPressed != v) setState(() => _primaryPressed = v);
+            },
+            child: AnimatedContainer(
+              duration: _fade,
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: _fill(
+                  tokens,
+                  enabled: primaryEnabled,
+                  hovered: _primaryHovered,
+                  pressed: _primaryPressed,
+                ),
               ),
-            ),
-            // As wide as its label and no wider: given more room, a centred
-            // box would fill it, and the button would become a slab. The
-            // label changes length with the selection; the width follows it
-            // rather than jumping.
-            child: Align(
-              widthFactor: 1,
-              child: AnimatedSize(
-                duration: _fade,
-                curve: Curves.easeOut,
-                alignment: Alignment.centerRight,
-                child: Text(
-                  widget.primaryLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: widget.labelStyle.copyWith(
-                    color: widget.emphasis
-                        ? tokens.textOnPrimary
-                        : primaryEnabled
-                            ? tokens.textHigh
-                            : tokens.textXLow,
+              // As wide as its label and no wider: given more room, a centred
+              // box would fill it, and the button would become a slab. The
+              // label changes length with the selection; the width follows it
+              // rather than jumping.
+              child: Align(
+                widthFactor: 1,
+                child: AnimatedSize(
+                  duration: _fade,
+                  curve: Curves.easeOut,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    widget.primaryLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: widget.labelStyle.copyWith(
+                      color: widget.emphasis
+                          ? tokens.textOnPrimary
+                          : primaryEnabled
+                              ? tokens.textHigh
+                              : tokens.textXLow,
+                    ),
                   ),
                 ),
               ),

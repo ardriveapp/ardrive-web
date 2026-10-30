@@ -453,16 +453,21 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
   Widget _errorMessageLabel(
       ArDriveColorTokens colorTokens, ArdriveTypographyNew typography) {
     final err = widget.errorMessage ?? _errorMessage;
-    return AnimatedTextFieldLabelNew(
-      text: err,
-      showing: err != null,
-      // The error text colour, not the red of the field's edge: that one is
-      // for a border and measures under 3:1 as text.
-      style: typography.paragraphNormal(
-        color: colorTokens.statusErrorFg,
-        fontWeight: ArFontWeight.semiBold,
+    // Read out when it appears, so a screen reader hears "Wrong password"
+    // and every other field error without hunting for it.
+    return Semantics(
+      liveRegion: true,
+      child: AnimatedTextFieldLabelNew(
+        text: err,
+        showing: err != null,
+        // The error text colour, not the red of the field's edge: that one is
+        // for a border and measures under 3:1 as text.
+        style: typography.paragraphNormal(
+          color: colorTokens.statusErrorFg,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        useLabelOffset: widget.useErrorMessageOffset,
       ),
-      useLabelOffset: widget.useErrorMessageOffset,
     );
   }
 

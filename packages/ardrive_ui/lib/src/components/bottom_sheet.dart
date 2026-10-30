@@ -133,12 +133,15 @@ class ArDriveBottomSheet extends StatelessWidget {
                       label: closeLabel,
                       excludeSemantics: true,
                       onTap: () => Navigator.of(context).maybePop(),
-                      child: ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () => Navigator.of(context).maybePop(),
-                          child: const ArDriveIcon(
-                            icon: ArDriveIconsData.x,
-                            size: 24,
+                      child: ArDriveFocusable(
+                        onActivate: () => Navigator.of(context).maybePop(),
+                        child: ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).maybePop(),
+                            child: const ArDriveIcon(
+                              icon: ArDriveIconsData.x,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),

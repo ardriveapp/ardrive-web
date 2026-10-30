@@ -60,8 +60,10 @@ class SearchTextField extends StatelessWidget {
           : ValueListenableBuilder<TextEditingValue>(
               valueListenable: controller!,
               builder: (context, value, _) {
+                // The x's room is kept when there is nothing to clear, so
+                // the field doesn't jump when it appears.
                 if (value.text.isEmpty) {
-                  return const SizedBox.shrink();
+                  return const SizedBox.square(dimension: 20);
                 }
 
                 return Transform(
@@ -70,18 +72,24 @@ class SearchTextField extends StatelessWidget {
                   child: Semantics(
                     button: true,
                     label: appLocalizationsOf(context).searchClear,
-                    child: ArDriveClickArea(
-                      tooltip: appLocalizationsOf(context).searchClear,
-                      child: GestureDetector(
-                        child: Icon(
-                          Icons.close,
-                          size: 20,
-                          color: colorTokens.textMid,
+                    child: ArDriveFocusable(
+                      onActivate: () {
+                        controller?.clear();
+                        onChanged?.call('');
+                      },
+                      child: ArDriveClickArea(
+                        tooltip: appLocalizationsOf(context).searchClear,
+                        child: GestureDetector(
+                          child: Icon(
+                            Icons.close,
+                            size: 20,
+                            color: colorTokens.textMid,
+                          ),
+                          onTap: () {
+                            controller?.clear();
+                            onChanged?.call('');
+                          },
                         ),
-                        onTap: () {
-                          controller?.clear();
-                          onChanged?.call('');
-                        },
                       ),
                     ),
                   ),

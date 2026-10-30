@@ -29,6 +29,7 @@ export 'components/submenu.dart';
 export 'components/tab_view.dart';
 export 'components/tag.dart';
 export 'components/toast.dart';
+export 'components/focusable.dart';
 export 'components/text_field_theme.dart';
 export 'components/text_field_new.dart';
 export 'components/toggle_switch.dart';
