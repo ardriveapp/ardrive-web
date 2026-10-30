@@ -141,11 +141,11 @@ Future<void> _startApp() async {
 /// Shows [DatabaseUnavailableApp] in place of the app if the database will
 /// not open or migrate.
 ///
-/// The app opens its database on the first read, which the first screen
-/// makes while the splash is up, and no screen after it can show without
-/// one. Started alongside the app rather than awaited before it, so a sound
-/// database opens no later than it did. Web only: Try again reloads the page.
-/// Nothing there deletes or changes the data.
+/// The database starts opening before `runApp` (`_initializeServices`), and
+/// no screen after the sign-in page can show without it. Waited for
+/// alongside the app rather than before it, so a sound database opens no
+/// later than it did. Web only: Try again reloads the page. Nothing there
+/// deletes or changes the data.
 Future<void> _replaceAppIfDatabaseFails() async {
   final failure = await db.openFailure();
   if (failure == null) return;

@@ -63,6 +63,8 @@ class _LoginPageState extends State<LoginPage> {
   bool get isGettingStartedLoading =>
       widget.gettingStarted && !didGettingStartedLoadedAlready;
 
+  /// Whether the check for an account on this device is in. Until it is,
+  /// the page holds still (see [build]).
   bool _panelReady = false;
 
   @override
@@ -100,6 +102,19 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Nothing on the page moves until the panel is usable. The bento animates
+    // for ever, and on the web every frame is drawn on the main thread, which
+    // the database's worker needs while it opens: with the page moving, the
+    // open took seconds longer than behind the old blank page. Timers still
+    // run, so a slide can change; it just doesn't animate. The get-started
+    // page's spinner is the one thing that has to move then.
+    return TickerMode(
+      enabled: _panelReady || widget.gettingStarted,
+      child: _page(context),
+    );
+  }
+
+  Widget _page(BuildContext context) {
     return BlocProvider<LoginBloc>(
       create: (context) => _loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
@@ -111,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
           }
 
           if (!_panelReady && loginPanelIsReady(loginState)) {
-            _panelReady = true;
+            setState(() => _panelReady = true);
             logger.d('login: panel ready');
             // Pictures for later in the page, now that it has painted.
             preCacheLaterLoginAssets(context);
@@ -770,7 +785,7 @@ Widget loginPanelFor(
 
 /// The sign-in panel while the app checks for an account on this device and
 /// has no hint which way it will go: the card and the logo the next panel
-/// has too.
+/// has too, and nothing else.
 @visibleForTesting
 class CheckingForAccountPanel extends StatelessWidget {
   const CheckingForAccountPanel({super.key});
@@ -787,9 +802,9 @@ class CheckingForAccountPanel extends StatelessWidget {
               image: AssetImage(Resources.images.brand.logo1),
               height: 50,
             ),
-            const SizedBox(height: 48),
-            const ArDriveSpinner(size: ArDriveSpinnerSize.large),
-            const SizedBox(height: 48),
+            // No spinner: one would redraw the page on every frame while
+            // the database opens (see _LoginPageState.build).
+            const SizedBox(height: 96),
           ],
         ),
       ),

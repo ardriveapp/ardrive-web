@@ -205,8 +205,12 @@ class _FlexIfBounded extends StatelessWidget {
       bounded ? Flexible(child: child) : child;
 }
 
-/// Whether the viewer asked for less motion: nothing then moves on its own.
-bool _still(BuildContext context) => MediaQuery.of(context).disableAnimations;
+/// Whether nothing moves on its own: the viewer asked for less motion, or
+/// the page has stopped its animations (`TickerMode`), as the sign-in page
+/// does while the database opens. Timers check this too, so a page that is
+/// held still draws no frames of its own.
+bool _still(BuildContext context) =>
+    MediaQuery.of(context).disableAnimations || !TickerMode.of(context);
 
 bool _isLight(BuildContext context) =>
     ArDriveTheme.of(context).themeData.name == 'light';
