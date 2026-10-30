@@ -300,6 +300,34 @@ void main() {
     );
     expect(outcome.key, isNull);
   });
+
+  test('an unlock that throws lets the next caller ask again', () async {
+    final unlocker = DeviceUnlocker();
+    final record = DeviceRecord(
+        method: DeviceUnlockMethod.solana, deviceSalt: newDeviceSalt());
+    final source = SolanaDeviceSecret(() async => _randomSignature());
+    var saves = 0;
+
+    await expectLater(
+      unlocker.unlockToRemember(
+        record: record,
+        source: source,
+        saveKeyCheck: (_) async {
+          saves++;
+          throw StateError('the disk is full');
+        },
+      ),
+      throwsA(isA<StateError>()),
+    );
+    final again = await unlocker.unlockToRemember(
+      record: record,
+      source: source,
+      saveKeyCheck: (_) async => saves++,
+    );
+
+    expect(again.status, DeviceUnlockStatus.unlocked);
+    expect(saves, 2);
+  });
 }
 
 class _Counting implements DeviceSecretSource {

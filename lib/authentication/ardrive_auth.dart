@@ -253,6 +253,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
         sourceWalletAddress: sourceWalletAddress,
       );
 
+      // A new profile on a device an older build used: its copies go too.
+      _clearOlderCopiesInBackground();
+
       _userStreamController.add(_currentUser);
 
       return currentUser;
@@ -338,6 +341,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   /// device" off, or forgotten) still have a row with no key. They go, so
   /// they show as locked. Never stops a sign-in.
   Future<void> _startSession() async {
+    _clearOlderCopiesInBackground();
     try {
       final detached = await _databaseHelpers.driveDao.detachForgottenDrives();
       if (detached.isNotEmpty) {
@@ -346,6 +350,18 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
     } catch (e, stackTrace) {
       logger.e('Could not clear drives not remembered here', e, stackTrace);
+    }
+  }
+
+  /// Every copy of the profile in the format before 3.0 goes, once: see
+  /// [DatabaseHelpers.clearOlderCopies]. Not awaited: the `VACUUM` it ends
+  /// with can take a moment on a large database, and signing in need not
+  /// wait for it.
+  void _clearOlderCopiesInBackground() {
+    try {
+      unawaited(_databaseHelpers.clearOlderCopies());
+    } catch (e) {
+      logger.w('Could not start clearing older copies: ${e.runtimeType}');
     }
   }
 

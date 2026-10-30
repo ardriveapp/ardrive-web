@@ -152,6 +152,13 @@ class LoginFailure extends LoginState {
   final Object error;
 }
 
+/// The account on this device was saved by a newer ArDrive than this tab
+/// runs. Reloading gets the newer build. Nothing may offer to sign out or
+/// forget the account from here.
+class LoginProfileFromNewerVersion extends LoginState {
+  const LoginProfileFromNewerVersion();
+}
+
 class LoginUnknownFailure extends LoginState {
   const LoginUnknownFailure(this.error);
 

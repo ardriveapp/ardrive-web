@@ -287,8 +287,7 @@ void main() {
             cancellationToken: any(named: 'cancellationToken'),
             onlyDriveIds: any(named: 'onlyDriveIds'),
             txFechedCallback: any(named: 'txFechedCallback'),
-          )).thenAnswer(
-          (_) => Stream.value(SyncProgress.emptySyncCompleted()));
+          )).thenAnswer((_) => Stream.value(SyncProgress.emptySyncCompleted()));
     }
 
     /// What the last drive-list refresh was told about asking again.
@@ -339,8 +338,7 @@ void main() {
             syncDeep: any(named: 'syncDeep'),
             cancellationToken: any(named: 'cancellationToken'),
             txFechedCallback: any(named: 'txFechedCallback'),
-          )).thenAnswer(
-          (_) => Stream.value(SyncProgress.emptySyncCompleted()));
+          )).thenAnswer((_) => Stream.value(SyncProgress.emptySyncCompleted()));
       final cubit = buildCubit();
       await settled();
 

@@ -174,6 +174,7 @@ void main() {
         LoginCheckingPassword(),
         LoginPasswordFailed(),
         LoginPasswordFailedWithPrivateDriveNotFound(),
+        const LoginProfileFromNewerVersion(),
       ]) {
         expect(loginPanelRebuildsOn(state), isFalse, reason: '$state');
       }
@@ -197,6 +198,24 @@ void main() {
               loginBloc),
           isA<WalletWaitView>());
     });
+  });
+
+  testWidgets(
+      'an account saved by a newer ArDrive offers only a reload: no '
+      'password, and no way to forget it', (tester) async {
+    whenListen(
+      loginBloc,
+      Stream<LoginState>.fromIterable([const LoginProfileFromNewerVersion()]),
+      initialState: const PromptPassword(alreadyLoggedIn: true),
+    );
+
+    await pump(tester, const WelcomeBackView());
+    await tester.pump();
+
+    expect(find.byKey(const Key('welcomeBackSavedByNewer')), findsOneWidget);
+    expect(find.byKey(const Key('welcomeBackReload')), findsOneWidget);
+    expect(find.byKey(const Key('welcomeBackPassword')), findsNothing);
+    expect(find.byKey(const Key('welcomeBackDifferentAccount')), findsNothing);
   });
 
   group('Log in', () {

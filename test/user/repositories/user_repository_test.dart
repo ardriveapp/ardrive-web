@@ -54,6 +54,7 @@ void main() {
         when(() => mockProfileDao.getDefaultProfile())
             .thenAnswer((_) async => Profile(
                   formatVersion: 1,
+                  olderCopiesCleared: false,
                   encryptedPublicKey: Uint8List.fromList([]),
                   encryptedWallet: Uint8List.fromList([]),
                   keySalt: Uint8List.fromList([]),
@@ -69,6 +70,7 @@ void main() {
                 key: SecretKey([1, 2, 3]),
                 details: Profile(
                   formatVersion: 1,
+                  olderCopiesCleared: false,
                   encryptedPublicKey: Uint8List.fromList([]),
                   encryptedWallet: Uint8List.fromList([]),
                   keySalt: Uint8List.fromList([]),
@@ -167,6 +169,7 @@ void main() {
         when(() => mockProfileDao.getDefaultProfile())
             .thenAnswer((_) async => Future.value(Profile(
                   formatVersion: 1,
+                  olderCopiesCleared: false,
                   encryptedPublicKey: Uint8List.fromList([]),
                   encryptedWallet: Uint8List.fromList([]),
                   keySalt: Uint8List.fromList([]),
@@ -231,6 +234,7 @@ void main() {
           (_) async => Future.value(
             Profile(
               formatVersion: 1,
+              olderCopiesCleared: false,
               encryptedPublicKey: Uint8List.fromList([]),
               encryptedWallet: Uint8List.fromList([]),
               keySalt: Uint8List.fromList([]),
@@ -267,6 +271,7 @@ void main() {
           (_) async => Future.value(
             Profile(
               formatVersion: 1,
+              olderCopiesCleared: false,
               encryptedPublicKey: Uint8List.fromList([]),
               encryptedWallet: Uint8List.fromList([]),
               keySalt: Uint8List.fromList([]),

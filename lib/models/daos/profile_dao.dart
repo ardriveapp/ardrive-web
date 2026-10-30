@@ -35,18 +35,44 @@ class ProfileUnlockMethodException implements UntrackedException {
   String toString() => 'ProfileUnlockMethodException($method)';
 }
 
+/// The profile was saved in a format this build does not know: by a newer
+/// ArDrive, so this tab is running an older one. Reloading gets the newer
+/// build. Nothing here may offer to sign out or forget the account: that
+/// would delete a wallet this build simply can't read.
+class ProfileFormatTooNewException implements UntrackedException {
+  const ProfileFormatTooNewException(this.formatVersion);
+
+  final int formatVersion;
+
+  @override
+  String toString() => 'ProfileFormatTooNewException($formatVersion)';
+}
+
+/// The profile was rewritten in the current format by another unlock while
+/// this one was rewriting it.
+class ProfileAlreadyMigratedException implements Exception {
+  const ProfileAlreadyMigratedException();
+}
+
 /// The local profile format this build writes.
 ///
 /// 1, before 3.0: the wallet and the public key encrypted with AES-GCM under
-/// PBKDF2(password, keySalt), both with keySalt as the nonce: one nonce for
-/// two messages under one key.
+/// PBKDF2(password, keySalt), both with keySalt as the nonce. One nonce for
+/// two messages under one key, and the public key is also stored in plain
+/// text, so XOR gives the first bytes of the wallet's JSON, the private
+/// exponent among them, without the password. Every copy of a format 1
+/// profile must go: see [ProfileDao.needsOlderCopiesCleared].
 ///
-/// 2: a random device salt and an unlock method; the device key is
+/// 2: a random device salt and an unlock method. The device key is
 /// HKDF(secret, deviceSalt, method) ([deriveDeviceKey]), where the secret is
 /// PBKDF2(password, keySalt) for a password and a wallet signature
-/// otherwise. The public key and the wallet are each sealed with a fresh
-/// random nonce (`nonce || ciphertext || mac`), beside a key check. Drive
-/// keys on drive rows are wrapped by the device key, each with its own nonce.
+/// otherwise. Each kind of value has its own subkey ([deviceSubkey]): the
+/// public key and the wallet are each sealed with a fresh random nonce
+/// (`nonce || ciphertext || mac`), beside a key check, and drive keys on
+/// drive rows are wrapped with the drive-key subkey, a fresh nonce and their
+/// drive ID as AAD ([wrapDriveKey]).
+///
+/// Any other value is from a newer build: [ProfileFormatTooNewException].
 const currentProfileFormat = 2;
 
 @DriftAccessor(include: {'../queries/profile_queries.drift'})
@@ -61,17 +87,28 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   /// it was and still opens; it is tried again on the next unlock.
   ///
   /// The key returned, [ProfileLoadDetails.key], is what wraps drive keys on
-  /// this device: the device key in the current format, the password's key
-  /// in the old one.
+  /// this device: the drive-key subkey in the current format, the password's
+  /// key in the old one.
   ///
-  /// Throws a [ProfilePasswordIncorrectException] if the password is wrong.
+  /// Throws a [ProfilePasswordIncorrectException] if the password is wrong,
+  /// and [ProfileFormatTooNewException] for a profile a newer build saved.
   Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
     final profile = await defaultProfile().getSingle();
 
-    if (profile.formatVersion < currentProfileFormat) {
-      return _loadFormat1AndMigrate(profile, password);
+    switch (profile.formatVersion) {
+      case 1:
+        return _loadFormat1AndMigrate(profile, password);
+      case currentProfileFormat:
+        return _loadCurrentFormat(profile, password);
+      default:
+        throw ProfileFormatTooNewException(profile.formatVersion);
     }
+  }
 
+  Future<ProfileLoadDetails> _loadCurrentFormat(
+    Profile profile,
+    String password,
+  ) async {
     final method = DeviceUnlockMethod.fromValue(profile.unlockMethod);
     if (method != DeviceUnlockMethod.password) {
       throw ProfileUnlockMethodException(profile.unlockMethod);
@@ -102,8 +139,11 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     SecretKey deviceKey,
   ) async {
     final profile = await defaultProfile().getSingle();
+    if (profile.formatVersion > currentProfileFormat) {
+      throw ProfileFormatTooNewException(profile.formatVersion);
+    }
     final keyCheck = profile.keyCheck;
-    if (profile.formatVersion < currentProfileFormat ||
+    if (profile.formatVersion != currentProfileFormat ||
         keyCheck == null ||
         !await keyCheckMatches(deviceKey, keyCheck)) {
       throw const DeviceKeyMismatchException();
@@ -118,7 +158,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   /// What a current-format profile keeps about its device key.
   Future<DeviceRecord?> deviceRecord() async {
     final profile = await getDefaultProfile();
-    if (profile == null || profile.formatVersion < currentProfileFormat) {
+    if (profile == null || profile.formatVersion != currentProfileFormat) {
       return null;
     }
     final method = DeviceUnlockMethod.fromValue(profile.unlockMethod);
@@ -137,26 +177,33 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   }) async {
     final String publicKey;
     try {
-      publicKey =
-          utf8.decode(await openSealed(deviceKey, profile.encryptedPublicKey));
+      publicKey = utf8.decode(await openSealed(
+        await deviceSubkey(deviceKey, DeviceKeyPurpose.publicKey),
+        profile.encryptedPublicKey,
+      ));
     } on SecretBoxAuthenticationError catch (_) {
       throw onWrongKey();
     }
+
+    final driveKeyWrap =
+        await deviceSubkey(deviceKey, DeviceKeyPurpose.driveKey);
 
     switch (ProfileType.values[profile.profileType]) {
       case ProfileType.json:
         final Map<String, dynamic> walletJwk;
         try {
-          walletJwk = json.decode(
-            utf8.decode(await openSealed(deviceKey, profile.encryptedWallet)),
-          );
+          walletJwk = json.decode(utf8.decode(await openSealed(
+            await deviceSubkey(deviceKey, DeviceKeyPurpose.wallet),
+            profile.encryptedWallet,
+          )));
         } on SecretBoxAuthenticationError catch (_) {
           throw onWrongKey();
         }
         return ProfileLoadDetails(
           details: profile,
           wallet: Wallet.fromJwk(walletJwk),
-          key: deviceKey,
+          key: driveKeyWrap,
+          deviceKey: deviceKey,
           walletPublicKey: publicKey,
         );
       case ProfileType.arConnect:
@@ -165,7 +212,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           // Knows its address from the key just unlocked, so unlocking never
           // asks Wander, which may be locked.
           wallet: ArConnectWallet(ArConnectService(), publicKey: publicKey),
-          key: deviceKey,
+          key: driveKeyWrap,
+          deviceKey: deviceKey,
           walletPublicKey: publicKey,
         );
     }
@@ -218,19 +266,32 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         wallet = ArConnectWallet(ArConnectService(), publicKey: publicKey);
     }
 
-    var key = profileKdRes.key;
     try {
-      key = await migrateToCurrentFormat(
+      final deviceKey = await migrateToCurrentFormat(
         profile: profile,
         format1Key: profileKdRes.key,
         publicKey: publicKey,
         walletJson: walletJson,
       );
-      logger
-          .i('The local profile was rewritten in format $currentProfileFormat');
+      logger.i('The local profile was rewritten in format '
+          '$currentProfileFormat');
+      return ProfileLoadDetails(
+        details: await defaultProfile().getSingle(),
+        wallet: wallet,
+        key: await deviceSubkey(deviceKey, DeviceKeyPurpose.driveKey),
+        deviceKey: deviceKey,
+        walletPublicKey: publicKey,
+      );
     } catch (e) {
-      // The transaction rolled back: the profile and every drive key are as
-      // they were, and the profile still opens with the old format.
+      // The transaction rolled back. Another unlock (another tab, a second
+      // tap) may have rewritten the profile meanwhile: then it opens the
+      // current way, with the same password.
+      final now = await defaultProfile().getSingle();
+      if (now.formatVersion == currentProfileFormat) {
+        return _loadCurrentFormat(now, password);
+      }
+      // Otherwise the profile and every drive key are as they were, and the
+      // profile still opens with the old format.
       logger.w('Could not rewrite the local profile in the current format; '
           'keeping the old one: ${e.runtimeType}');
     }
@@ -238,7 +299,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     return ProfileLoadDetails(
       details: await defaultProfile().getSingle(),
       wallet: wallet,
-      key: key,
+      key: profileKdRes.key,
       walletPublicKey: publicKey,
     );
   }
@@ -248,13 +309,17 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ///
   /// - a new random device salt, and the device key from it and the
   ///   password's key ([format1Key], already proven);
-  /// - the public key and the wallet sealed again, each with its own random
-  ///   nonce, and a key check;
+  /// - the public key and the wallet sealed again under their subkeys, each
+  ///   with its own random nonce, and a key check;
   /// - every drive key stored on this device unwrapped with the old key and
-  ///   wrapped with the device key.
+  ///   wrapped with the drive-key subkey and its drive ID.
   ///
-  /// Any failure, including a drive key the old key can't open, throws and
-  /// rolls the whole of it back.
+  /// A stored drive key the old key can't open is useless anyway: it is
+  /// dropped, and the drive marked so the next session starts with it locked
+  /// (its password opens it again). It must not keep the account in format
+  /// 1. Anything else that fails throws and rolls the whole of it back, as
+  /// does a profile another unlock has rewritten meanwhile
+  /// ([ProfileAlreadyMigratedException]).
   @visibleForTesting
   Future<SecretKey> migrateToCurrentFormat({
     required Profile profile,
@@ -268,28 +333,51 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       deviceSalt: deviceSalt,
       method: DeviceUnlockMethod.password,
     );
+    final driveKeyWrap =
+        await deviceSubkey(deviceKey, DeviceKeyPurpose.driveKey);
 
-    final sealedPublicKey = await seal(deviceKey, utf8.encode(publicKey));
+    final sealedPublicKey = await seal(
+      await deviceSubkey(deviceKey, DeviceKeyPurpose.publicKey),
+      utf8.encode(publicKey),
+    );
     final sealedWallet = walletJson == null
         ? Uint8List(0)
-        : await seal(deviceKey, utf8.encode(walletJson));
+        : await seal(
+            await deviceSubkey(deviceKey, DeviceKeyPurpose.wallet),
+            utf8.encode(walletJson),
+          );
     final keyCheck = await makeKeyCheck(deviceKey);
-    final crypto = ArDriveCrypto();
 
     await transaction(() async {
       final withKeys = await (select(attachedDatabase.drives)
             ..where((d) => d.encryptedKey.isNotNull()))
           .get();
 
+      var dropped = 0;
       for (final drive in withKeys) {
-        final driveKey = await aesGcm.decrypt(
-          crypto.secretBoxFromDataWithMacConcatenation(
-            drive.encryptedKey!,
-            nonce: drive.keyEncryptionIv!,
-          ),
-          secretKey: format1Key,
-        );
-        final box = await aesGcm.encrypt(driveKey, secretKey: deviceKey);
+        final List<int> driveKey;
+        try {
+          driveKey = await unwrapDriveKey(
+            encryptedKey: drive.encryptedKey!,
+            iv: drive.keyEncryptionIv!,
+            wrapKey: format1Key,
+            driveId: drive.id,
+          );
+        } on SecretBoxAuthenticationError {
+          dropped++;
+          await (update(attachedDatabase.drives)
+                ..where((d) => d.id.equals(drive.id)))
+              .write(const DrivesCompanion(
+            encryptedKey: Value(null),
+            keyEncryptionIv: Value(null),
+          ));
+          await into(attachedDatabase.forgottenDrives).insert(
+            ForgottenDrivesCompanion.insert(driveId: drive.id),
+            mode: InsertMode.insertOrIgnore,
+          );
+          continue;
+        }
+        final box = await wrapDriveKey(driveKey, driveKeyWrap, drive.id);
         await (update(attachedDatabase.drives)
               ..where((d) => d.id.equals(drive.id)))
             .write(DrivesCompanion(
@@ -297,11 +385,13 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           keyEncryptionIv: Value(Uint8List.fromList(box.nonce)),
         ));
       }
+      if (dropped > 0) {
+        logger.w('Dropped $dropped stored drive keys the profile key could '
+            'not open; those drives start locked');
+      }
 
       final updated = await (update(profiles)
-            ..where((p) =>
-                p.id.equals(profile.id) &
-                p.formatVersion.isSmallerThanValue(currentProfileFormat)))
+            ..where((p) => p.id.equals(profile.id) & p.formatVersion.equals(1)))
           .write(ProfilesCompanion(
         formatVersion: const Value(currentProfileFormat),
         deviceSalt: Value(deviceSalt),
@@ -309,14 +399,32 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         encryptedPublicKey: Value(sealedPublicKey),
         encryptedWallet: Value(sealedWallet),
         keyCheck: Value(keyCheck),
+        olderCopiesCleared: const Value(false),
       ));
+      // Another unlock rewrote it first: this whole transaction, the drive
+      // keys it rewrapped or dropped included, rolls back.
       if (updated != 1) {
-        throw StateError('the profile changed while it was rewritten');
+        throw const ProfileAlreadyMigratedException();
       }
     });
 
     return deviceKey;
   }
+
+  /// Whether this device may still hold format 1 copies of the profile to
+  /// clear: older database stores, reset copies, free pages. True for a
+  /// current-format profile until [markOlderCopiesCleared].
+  Future<bool> needsOlderCopiesCleared() async {
+    final profile = await getDefaultProfile();
+    return profile != null &&
+        profile.formatVersion == currentProfileFormat &&
+        !profile.olderCopiesCleared;
+  }
+
+  Future<void> markOlderCopiesCleared() =>
+      update(profiles).write(const ProfilesCompanion(
+        olderCopiesCleared: Value(true),
+      ));
 
   Future<List<int>> _passwordKey(String password, List<int> keySalt) async {
     final derived =
@@ -340,8 +448,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   }
 
   /// Adds a profile for [wallet], in the current format, unlocked on this
-  /// device by [password]. Returns the device key, which wraps the stored
-  /// wallet and the drive keys this device remembers.
+  /// device by [password]. Returns the key that wraps the drive keys this
+  /// device remembers (the drive-key subkey of the device key).
   Future<SecretKey> addProfile(
     String username,
     String password,
@@ -373,7 +481,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       sourceWalletAddress: sourceWalletAddress,
     );
 
-    return deviceKey;
+    return deviceSubkey(deviceKey, DeviceKeyPurpose.driveKey);
   }
 
   /// Adds a profile whose device key comes from a wallet: [record] holds the
@@ -410,8 +518,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   }) async {
     final publicKey = await wallet.getOwner();
     final encryptedWallet = switch (profileType) {
-      ProfileType.json =>
-        await seal(deviceKey, utf8.encode(json.encode(wallet.toJwk()))),
+      ProfileType.json => await seal(
+          await deviceSubkey(deviceKey, DeviceKeyPurpose.wallet),
+          utf8.encode(json.encode(wallet.toJwk())),
+        ),
       // Wander keeps the key; the profile holds no wallet.
       ProfileType.arConnect => Uint8List(0),
     };
@@ -424,7 +534,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         keySalt: keySalt,
         profileType: profileType.index,
         walletPublicKey: publicKey,
-        encryptedPublicKey: await seal(deviceKey, utf8.encode(publicKey)),
+        encryptedPublicKey: await seal(
+          await deviceSubkey(deviceKey, DeviceKeyPurpose.publicKey),
+          utf8.encode(publicKey),
+        ),
         sourceWalletAddress: Value(sourceWalletAddress),
         formatVersion: const Value(currentProfileFormat),
         deviceSalt: Value(record.deviceSalt),
@@ -438,13 +551,21 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 class ProfileLoadDetails {
   final Profile details;
   final Wallet wallet;
+
+  /// What wraps drive keys on this device: the drive-key subkey of the device
+  /// key, or for a format 1 profile that could not be rewritten, the
+  /// password's key.
   final SecretKey key;
+
+  /// The device key itself, for a current-format profile.
+  final SecretKey? deviceKey;
   final String walletPublicKey;
   ProfileLoadDetails({
     required this.details,
     required this.wallet,
     required this.key,
     required this.walletPublicKey,
+    this.deviceKey,
   });
 }
 

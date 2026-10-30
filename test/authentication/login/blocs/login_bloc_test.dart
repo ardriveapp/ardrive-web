@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/models/daos/profile_dao.dart'
+    show ProfileFormatTooNewException;
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/download_service.dart';
@@ -806,6 +808,28 @@ void main() {
         LoginCheckingPassword(),
         LoginPasswordFailed(),
       ],
+    );
+  });
+
+  group('an account saved by a newer ArDrive', () {
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+      when(() => mockArConnectService.isWalletVersionSupported())
+          .thenAnswer((_) => Future.value(true));
+    });
+
+    blocTest(
+      'says so, and nothing else: no wrong password, no unknown failure',
+      build: () => createBloc(),
+      setUp: () {
+        when(() => mockArDriveAuth.unlockUser(password: 'password'))
+            .thenThrow(const ProfileFormatTooNewException(3));
+      },
+      act: (bloc) =>
+          bloc.add(const UnlockUserWithPassword(password: 'password')),
+      expect: () =>
+          [LoginCheckingPassword(), const LoginProfileFromNewerVersion()],
     );
   });
 

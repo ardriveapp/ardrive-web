@@ -93,8 +93,46 @@ void main() {
       ethereumDeviceUnlockMessage('0xABCdef'),
       'ArDrive device unlock\n'
       'Open what ArDrive remembers on this device.\n'
+      'This is free and sends no transaction. Only sign it in ArDrive.\n'
       'Account: 0xabcdef\n'
       'Version: 1',
+    );
+  });
+
+  test('each purpose has its own subkey, and none is the device key', () async {
+    final deviceKey = await key(DeviceUnlockMethod.password);
+    final keys = {
+      base64.encode(await deviceKey.extractBytes()),
+      for (final purpose in DeviceKeyPurpose.values)
+        base64.encode(
+            await (await deviceSubkey(deviceKey, purpose)).extractBytes()),
+    };
+    expect(keys, hasLength(DeviceKeyPurpose.values.length + 1));
+    expect(DeviceKeyPurpose.values.map((p) => p.value),
+        ['wallet', 'public-key', 'key-check', 'drive-key']);
+  });
+
+  test('a wrapped drive key opens only for its own drive', () async {
+    final wrapKey = await deviceSubkey(
+        await key(DeviceUnlockMethod.password), DeviceKeyPurpose.driveKey);
+    final box = await wrapDriveKey([1, 2, 3], wrapKey, 'drive-a');
+    final stored = box.concatenation(nonce: false);
+
+    expect(
+      await unwrapDriveKey(
+          encryptedKey: stored,
+          iv: box.nonce,
+          wrapKey: wrapKey,
+          driveId: 'drive-a'),
+      [1, 2, 3],
+    );
+    expect(
+      () => unwrapDriveKey(
+          encryptedKey: stored,
+          iv: box.nonce,
+          wrapKey: wrapKey,
+          driveId: 'drive-b'),
+      throwsA(isA<SecretBoxAuthenticationError>()),
     );
   });
 }

@@ -6,8 +6,10 @@ library;
 import 'dart:html' as html;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:js_util' as js_util;
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/models/database/web.dart';
 import 'package:ardrive/models/database/web_artifact_vfs.dart';
@@ -15,6 +17,8 @@ import 'package:ardrive/models/database/web_worker/web_database_worker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:sqlite3/wasm.dart';
 import 'package:test/test.dart';
+
+import '../../test_utils/test_wallet.dart';
 
 /// Sign-out on the web: the copies of the database older builds left are
 /// deleted by the tab that owns the database, and what sign-out deletes from
@@ -206,6 +210,61 @@ void main() {
 
     expect(
         _contains((await readOpfsCopy(name)) ?? Uint8List(0), marker), isFalse);
+  });
+
+  test(
+      'once the profile is rewritten from format 1, its older copies go: the '
+      'stores, the reset copies, and every format 1 byte in the OPFS file',
+      () async {
+    final worker = WebDatabaseWorker.start(html.Url.createObjectUrlFromBlob(
+        html.Blob(
+            ["importScripts('$served/db_worker.js');"], 'text/javascript')));
+    addTearDown(() {
+      worker.terminate();
+      webDatabaseWorker = null;
+    });
+    final opened =
+        await worker.openWriter(name: name, sqlite3Url: '$served/sqlite3.wasm');
+    expect(opened.isOpen, isTrue, reason: '${opened.failure}');
+    if (opened.needsMigration) await worker.migrate(null);
+    final db = Database(await worker.serve());
+
+    const password = 'a password';
+    final wallet = getTestWallet();
+    // The format 1 profile, as builds before 3.0 wrote it.
+    final derived = await ArDriveCrypto().deriveProfileKey(password);
+    final publicKey = await wallet.getOwner();
+    final format1Wallet = (await aesGcm.encrypt(
+            utf8.encode(json.encode(wallet.toJwk())),
+            secretKey: derived.key,
+            nonce: derived.salt))
+        .concatenation(nonce: false);
+    await db.into(db.profiles).insert(ProfilesCompanion.insert(
+          id: await wallet.getAddress(),
+          username: 'user',
+          encryptedWallet: format1Wallet,
+          keySalt: Uint8List.fromList(derived.salt),
+          profileType: 0,
+          walletPublicKey: publicKey,
+          encryptedPublicKey: (await aesGcm.encrypt(utf8.encode(publicKey),
+                  secretKey: derived.key, nonce: derived.salt))
+              .concatenation(nonce: false),
+        ));
+    expect(_contains((await readOpfsCopy(name))!, format1Wallet), isTrue);
+
+    await db.profileDao.loadDefaultProfile(password);
+    final cleared = await DatabaseHelpers(db).clearOlderCopies(
+      ownsDatabase: true,
+      deleteStores: () => wipe(isWriter: true, onOpfs: true),
+    );
+    await db.close();
+
+    expect(cleared, isTrue);
+    expect(await indexedDbExists(sqlJsStore), isFalse);
+    expect(await indexedDbExists(idbStore), isFalse);
+    expect(await opfsHas('$name-reset-1761000000000'), isFalse);
+    expect(_contains((await readOpfsCopy(name)) ?? Uint8List(0), format1Wallet),
+        isFalse);
   });
 }
 

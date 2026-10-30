@@ -331,7 +331,11 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     await profileMenu();
     await until(() => has('Forget all on this device'), 10000);
     await activate('Forget all on this device');
-    await check('Forget all says how many it forgot', await until(() => has('Forgot '), 10000));
+    await check('Forget all asks first, saying how many',
+      await until(() => has('on this device?'), 10000));
+    await shot('r6-forget-all-confirm');
+    await activate('Forget');
+    await wait(2000);
     await reload();
     await run(['unlock']);
     await enableTree();

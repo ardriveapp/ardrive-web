@@ -131,11 +131,22 @@ and hands them to the worker. The worker refuses anything that is not a SQLite
 file or fails `PRAGMA quick_check` (the checks #2197 already has), writes the
 bytes to `database`, flushes, then marks `meta`. A failure before the mark
 leaves OPFS empty and the old store untouched, so the next start tries again.
-The old stores are left in place, so a rollback build still finds them,
-until the user signs out: sign-out deletes them (§11), because each holds an
-encrypted copy of the wallet and the user has chosen to leave this device.
-A rollback build after a sign-out finds no older store and starts fresh,
-which is what a signed-out user would see anyway.
+The old stores were left in place so that a rollback build would still find
+them. **That safety net is given up, for security.** Every older store holds
+the profile in format 1, which encrypts the wallet and its public key under
+one key with one nonce while also storing the public key in plain text: XOR
+recovers the first bytes of the wallet's JSON, the private exponent among
+them, without the password. So once the profile is in format 2, the tab
+that owns the database deletes the older stores and every
+`ardrive-reset-<time>` copy, then runs `VACUUM`, once per profile
+(`DatabaseHelpers.clearOlderCopies`, marked on the profile as
+`olderCopiesCleared`). Sign-out does the same (§11). A failure leaves the
+mark unset, and the next session tries again.
+
+A build before 3.0 can't read a format 2 profile either, so 3.0 can't be
+rolled back: fix forward. A profile in a format newer than the running build
+knows is never read: the sign-in panel says it was saved by a newer version
+and offers only Reload, never a way to forget the account.
 
 ## 5. Artifacts
 
@@ -300,10 +311,13 @@ ciphertext only.
 
 The local profile (format 2, `ProfileDao`) keeps a random device salt; the
 **device key** is derived from it and the session's unlock secret (the
-device password today; a wallet signature for passwordless accounts) and
-wraps the stored wallet and every remembered drive key. Remembered drive
-keys live where drive keys always lived, on the drive's row
-(`encryptedKey`, with its own random nonce). A drive unlocked with
+device password today; a wallet signature for passwordless accounts). Each
+kind of value has its own subkey of it (HKDF, `info`
+`ArDrive-Device-Key-V1/<purpose>`: `wallet`, `public-key`, `key-check`,
+`drive-key`). Remembered drive keys live where drive keys always lived, on
+the drive's row (`encryptedKey`), wrapped with the drive-key subkey, their
+own random nonce, and `drive-key/<driveId>` as AAD, so a wrap opens only on
+its own drive's row. A drive unlocked with
 "Remember on this device" off, or forgotten, has no key on its row: its key
 is in memory for the session, and `forgotten_drives` records the choice so
 the next session starts with it locked and never opens it on its own.

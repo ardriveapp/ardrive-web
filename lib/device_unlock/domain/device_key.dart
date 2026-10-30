@@ -76,23 +76,64 @@ Future<SecretKey> deriveDeviceKey({
       info: utf8.encode('ArDrive-Device-Key-V1/${method.value}'),
     );
 
+/// What a key derived from the device key is for. Each purpose has its own
+/// key ([deviceSubkey]), so no two kinds of value are ever sealed under the
+/// same key. The value strings are part of the format and never change.
+enum DeviceKeyPurpose {
+  wallet('wallet'),
+  publicKey('public-key'),
+  keyCheck('key-check'),
+  driveKey('drive-key');
+
+  const DeviceKeyPurpose(this.value);
+
+  final String value;
+}
+
+/// The key for [purpose]: HKDF-SHA256 of the device key, with the purpose in
+/// `info`.
+Future<SecretKey> deviceSubkey(
+  SecretKey deviceKey,
+  DeviceKeyPurpose purpose,
+) async =>
+    _hkdf.deriveKey(
+      secretKey: SecretKey(await deviceKey.extractBytes()),
+      // No salt: RFC 5869's default, a hash length of zeros. The device key
+      // is already uniformly random.
+      nonce: List<int>.filled(32, 0),
+      info: utf8.encode('ArDrive-Device-Key-V1/${purpose.value}'),
+    );
+
+/// The additional authenticated data of a drive key wrapped on its drive
+/// row: the wrap opens only on the row of the drive it was made for.
+List<int> driveKeyAad(String driveId) => utf8.encode('drive-key/$driveId');
+
 /// Encrypts [plaintext] under [key] with AES-256-GCM and a fresh random
 /// nonce, returned as `nonce || ciphertext || mac`.
 ///
 /// A fresh nonce every time is the point: the profile format before this
 /// encrypted the wallet and the public key under one key with one nonce.
-Future<Uint8List> seal(SecretKey key, List<int> plaintext) async {
+Future<Uint8List> seal(
+  SecretKey key,
+  List<int> plaintext, {
+  List<int> aad = const <int>[],
+}) async {
   final box = await _aesGcm.encrypt(
     plaintext,
     secretKey: key,
     nonce: _aesGcm.newNonce(),
+    aad: aad,
   );
   return box.concatenation();
 }
 
 /// Decrypts what [seal] made. Throws [SecretBoxAuthenticationError] when
 /// [key] is not the one it was sealed with.
-Future<Uint8List> openSealed(SecretKey key, List<int> sealed) async {
+Future<Uint8List> openSealed(
+  SecretKey key,
+  List<int> sealed, {
+  List<int> aad = const <int>[],
+}) async {
   if (sealed.length < _nonceLength + _macLength) {
     throw SecretBoxAuthenticationError();
   }
@@ -101,24 +142,28 @@ Future<Uint8List> openSealed(SecretKey key, List<int> sealed) async {
     nonceLength: _nonceLength,
     macLength: _macLength,
   );
-  return Uint8List.fromList(await _aesGcm.decrypt(box, secretKey: key));
+  return Uint8List.fromList(
+      await _aesGcm.decrypt(box, secretKey: key, aad: aad));
 }
 
 const _keyCheckPlaintext = 'ArDrive device key check v1';
 
-/// A known plaintext sealed under the device key, kept on the profile.
+/// A known plaintext sealed under the device key's key-check subkey, kept on
+/// the profile.
 ///
 /// It is how a wallet whose signature changes from one request to the next
 /// (a smart-contract wallet, some hardware set-ups) is caught: its key opens
 /// nothing, and the remembered values are treated as absent, so the person
 /// sees locked drives rather than wrong data.
-Future<Uint8List> makeKeyCheck(SecretKey deviceKey) =>
-    seal(deviceKey, utf8.encode(_keyCheckPlaintext));
+Future<Uint8List> makeKeyCheck(SecretKey deviceKey) async => seal(
+    await deviceSubkey(deviceKey, DeviceKeyPurpose.keyCheck),
+    utf8.encode(_keyCheckPlaintext));
 
 /// Whether [deviceKey] opens [keyCheck].
 Future<bool> keyCheckMatches(SecretKey deviceKey, List<int> keyCheck) async {
   try {
-    final plain = await openSealed(deviceKey, keyCheck);
+    final plain = await openSealed(
+        await deviceSubkey(deviceKey, DeviceKeyPurpose.keyCheck), keyCheck);
     return utf8.decode(plain, allowMalformed: true) == _keyCheckPlaintext;
   } on SecretBoxAuthenticationError {
     return false;
@@ -130,6 +175,7 @@ Future<bool> keyCheckMatches(SecretKey deviceKey, List<int> keyCheck) async {
 /// a new version gets a new method.
 String ethereumDeviceUnlockMessage(String address) => 'ArDrive device unlock\n'
     'Open what ArDrive remembers on this device.\n'
+    'This is free and sends no transaction. Only sign it in ArDrive.\n'
     'Account: ${address.toLowerCase()}\n'
     'Version: 1';
 
@@ -139,3 +185,45 @@ const wanderDeviceUnlockTags = {
   'App-Name': 'ArDrive',
   'Action': 'Unlock-Device-V1',
 };
+
+/// Wraps [driveKey] for the row of [driveId]: AES-256-GCM under [wrapKey]
+/// (the session's drive-key subkey), a fresh nonce, and [driveKeyAad]. The
+/// row keeps the ciphertext and MAC in `encryptedKey` and the nonce in
+/// `keyEncryptionIv`.
+Future<SecretBox> wrapDriveKey(
+  List<int> driveKey,
+  SecretKey wrapKey,
+  String driveId,
+) =>
+    _aesGcm.encrypt(
+      driveKey,
+      secretKey: wrapKey,
+      nonce: _aesGcm.newNonce(),
+      aad: driveKeyAad(driveId),
+    );
+
+/// Opens what [wrapDriveKey] made. Throws [SecretBoxAuthenticationError] for
+/// a wrong key or a wrap made for another drive.
+///
+/// A row written before format 2 has no AAD, and is opened without it. Only
+/// a format 1 profile's key opens such a row: every format 2 key is new, and
+/// everything format 2 writes has the AAD.
+Future<List<int>> unwrapDriveKey({
+  required List<int> encryptedKey,
+  required List<int> iv,
+  required SecretKey wrapKey,
+  required String driveId,
+}) async {
+  if (encryptedKey.length < _macLength) throw SecretBoxAuthenticationError();
+  final box = SecretBox(
+    encryptedKey.sublist(0, encryptedKey.length - _macLength),
+    nonce: iv,
+    mac: Mac(encryptedKey.sublist(encryptedKey.length - _macLength)),
+  );
+  try {
+    return await _aesGcm.decrypt(box,
+        secretKey: wrapKey, aad: driveKeyAad(driveId));
+  } on SecretBoxAuthenticationError {
+    return _aesGcm.decrypt(box, secretKey: wrapKey);
+  }
+}

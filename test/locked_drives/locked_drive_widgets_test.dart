@@ -382,9 +382,8 @@ void main() {
       final passwordElement = tester.element(find.descendant(
           of: find.byKey(const Key('unlockDrivePassword')),
           matching: find.byType(TextField)));
-      final usernameElement = tester.element(find.byKey(
-          const Key('passwordAutofillUsername'),
-          skipOffstage: false));
+      final usernameElement = tester.element(find
+          .byKey(const Key('passwordAutofillUsername'), skipOffstage: false));
       expect(AutofillGroup.of(passwordElement),
           same(AutofillGroup.of(usernameElement)));
     });

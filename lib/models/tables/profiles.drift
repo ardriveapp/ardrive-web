@@ -19,5 +19,8 @@ CREATE TABLE profiles (
     deviceSalt BLOB,
     unlockMethod TEXT,
     -- Format 2: a known plaintext sealed under the device key.
-    keyCheck BLOB
+    keyCheck BLOB,
+    -- Whether the copies of the format 1 profile this device may still hold
+    -- (older database stores, reset copies, free pages) were cleared.
+    olderCopiesCleared BOOLEAN NOT NULL DEFAULT FALSE
 );

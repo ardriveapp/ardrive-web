@@ -3,6 +3,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_utils/utils.dart';
@@ -22,13 +23,13 @@ void main() {
   final driveKey = DriveKey(SecretKey(List.filled(32, 3)), true);
   final otherKey = DriveKey(SecretKey(List.filled(32, 4)), true);
 
-  DriveEntity entity(String id) => DriveEntity(
+  DriveEntity entity(String id, {String owner = 'owner'}) => DriveEntity(
         id: id,
         name: 'drive $id',
         rootFolderId: 'root-$id',
         privacy: DrivePrivacyTag.private,
       )
-        ..ownerAddress = 'owner'
+        ..ownerAddress = owner
         ..createdAt = DateTime(2026);
 
   Future<List<int>?> bytesOf(DriveKey? key) async =>
@@ -150,12 +151,15 @@ void main() {
         profileKey: deviceKey,
       );
     }
-    expect(await dao.watchRememberedDriveKeyCount().first, 2);
-    expect((await dao.rememberedDriveIds()).toSet(), {driveId, otherId});
+    expect(
+        await dao.watchRememberedDriveKeyCount(ownerAddress: 'owner').first, 2);
+    expect((await dao.rememberedDriveIds(ownerAddress: 'owner')).toSet(),
+        {driveId, otherId});
 
-    expect(await dao.forgetAllDriveKeys(deviceKey), 2);
+    expect(await dao.forgetAllDriveKeys(deviceKey, ownerAddress: 'owner'), 2);
 
-    expect(await dao.watchRememberedDriveKeyCount().first, 0);
+    expect(
+        await dao.watchRememberedDriveKeyCount(ownerAddress: 'owner').first, 0);
     expect(await dao.forgottenDriveIds(), {driveId, otherId});
     expect(await bytesOf(await dao.getDriveKey(otherId, deviceKey)),
         await bytesOf(otherKey));
@@ -182,5 +186,79 @@ void main() {
 
     expect((await row(driveId)).encryptedKey, isNull);
     expect(await dao.forgottenDriveIds(), {driveId});
+  });
+
+  test(
+      'Forget all leaves a drive someone else shared: it is neither counted '
+      'nor forgotten', () async {
+    await dao.writeDriveEntity(
+      name: 'mine',
+      entity: entity(driveId),
+      driveKey: driveKey,
+      profileKey: deviceKey,
+    );
+    await dao.writeDriveEntity(
+      name: 'shared',
+      entity: entity(otherId, owner: 'someone-else'),
+      driveKey: otherKey,
+      profileKey: deviceKey,
+    );
+
+    expect(
+        await dao.watchRememberedDriveKeyCount(ownerAddress: 'owner').first, 1);
+    expect(await dao.rememberedDriveIds(ownerAddress: 'owner'), [driveId]);
+    expect(await dao.forgetAllDriveKeys(deviceKey, ownerAddress: 'owner'), 1);
+
+    expect((await row(otherId)).encryptedKey, isNotNull);
+    expect(await dao.forgottenDriveIds(), {driveId});
+  });
+
+  test(
+      'storing a key for a forgotten drive remembers it again: attached by '
+      'its key, or written by discovery', () async {
+    await dao.keepDriveKeyForSession(driveId: driveId, driveKey: driveKey);
+    await dao.keepDriveKeyForSession(driveId: otherId, driveKey: otherKey);
+    // A new session: the marks remain, nothing is held.
+    await newSession();
+
+    // Attached again from a share link or the attach dialog.
+    await dao.writeDriveEntity(
+      name: 'drive',
+      entity: entity(driveId),
+      driveKey: driveKey,
+      profileKey: deviceKey,
+    );
+    // Or written by a discovery pass that opened it.
+    await dao.updateUserDrives({entity(otherId): otherKey}, deviceKey);
+
+    expect(await dao.forgottenDriveIds(), isEmpty);
+    expect((await row(driveId)).encryptedKey, isNotNull);
+    expect((await row(otherId)).encryptedKey, isNotNull);
+    expect(await dao.watchDriveKeyRemembered(driveId).first, isTrue);
+  });
+
+  test('a stored key opens only on its own drive\'s row', () async {
+    await dao.writeDriveEntity(
+      name: 'drive',
+      entity: entity(driveId),
+      driveKey: driveKey,
+      profileKey: deviceKey,
+    );
+    await dao.writeDriveEntity(
+      name: 'other',
+      entity: entity(otherId),
+      driveKey: otherKey,
+      profileKey: deviceKey,
+    );
+    final moved = await row(driveId);
+    // The first drive's wrapped key copied onto the second drive's row.
+    await (db.update(db.drives)..where((d) => d.id.equals(otherId))).write(
+      DrivesCompanion(
+        encryptedKey: Value(moved.encryptedKey),
+        keyEncryptionIv: Value(moved.keyEncryptionIv),
+      ),
+    );
+
+    await expectLater(dao.getDriveKey(otherId, deviceKey), throwsA(anything));
   });
 }

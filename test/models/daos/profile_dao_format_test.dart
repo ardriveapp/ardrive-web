@@ -72,14 +72,16 @@ Future<void> _addDriveWithKey(
       ));
 }
 
-Future<List<int>> _unwrap(Database db, String id, SecretKey key) async {
+/// Opens drive [id]'s stored key as the drive DAO does, or as if it were
+/// the row of [asDrive].
+Future<List<int>> _unwrap(Database db, String id, SecretKey key,
+    {String? asDrive}) async {
   final row = await db.driveDao.driveById(driveId: id).getSingle();
-  return aesGcm.decrypt(
-    ArDriveCrypto().secretBoxFromDataWithMacConcatenation(
-      row.encryptedKey!,
-      nonce: row.keyEncryptionIv!,
-    ),
-    secretKey: key,
+  return unwrapDriveKey(
+    encryptedKey: row.encryptedKey!,
+    iv: row.keyEncryptionIv!,
+    wrapKey: key,
+    driveId: asDrive ?? id,
   );
 }
 
@@ -162,6 +164,10 @@ void main() {
         expect(await _unwrap(db, 'b', loaded.key), driveKeyB);
         expect(() => _unwrap(db, 'a', format1Key),
             throwsA(isA<SecretBoxAuthenticationError>()));
+        // Bound to its own drive: on another drive's row it opens nothing.
+        expect(() => _unwrap(db, 'a', loaded.key, asDrive: 'b'),
+            throwsA(isA<SecretBoxAuthenticationError>()));
+        expect(await db.profileDao.needsOlderCopiesCleared(), isTrue);
 
         // And the next unlock reads the new format with the same key.
         final again = await db.profileDao.loadDefaultProfile(_password);
@@ -215,7 +221,9 @@ void main() {
       expect(await _unwrap(db, 'a', later.key), driveKeyA);
     });
 
-    test('a drive key the old key cannot open stops the rewrite', () async {
+    test(
+        'a drive key the old key cannot open is dropped, its drive starts '
+        'locked, and the rewrite finishes', () async {
       final format1Key = await _addFormat1Profile(db, wallet, ProfileType.json);
       await _addDriveWithKey(db, 'a', driveKeyA, format1Key);
       await _addDriveWithKey(
@@ -223,9 +231,65 @@ void main() {
 
       final loaded = await db.profileDao.loadDefaultProfile(_password);
 
-      expect(
-          (await db.profileDao.defaultProfile().getSingle()).formatVersion, 1);
+      expect((await db.profileDao.defaultProfile().getSingle()).formatVersion,
+          currentProfileFormat);
       expect(await _unwrap(db, 'a', loaded.key), driveKeyA);
+      final corrupt =
+          await db.driveDao.driveById(driveId: 'corrupt').getSingle();
+      expect(corrupt.encryptedKey, isNull);
+      expect(corrupt.keyEncryptionIv, isNull);
+      expect(await db.driveDao.forgottenDriveIds(), {'corrupt'});
+    });
+
+    test('two unlocks at once both open, with one rewrite between them',
+        () async {
+      final format1Key = await _addFormat1Profile(db, wallet, ProfileType.json);
+      await _addDriveWithKey(db, 'a', driveKeyA, format1Key);
+
+      final both = await Future.wait([
+        db.profileDao.loadDefaultProfile(_password),
+        db.profileDao.loadDefaultProfile(_password),
+      ]);
+
+      expect(
+          await both[0].key.extractBytes(), await both[1].key.extractBytes());
+      expect(await _unwrap(db, 'a', both[0].key), driveKeyA);
+      expect(both[1].wallet.toJwk(), wallet.toJwk());
+    });
+
+    test('a rewrite of a profile another unlock has rewritten changes nothing',
+        () async {
+      final format1Key = await _addFormat1Profile(db, wallet, ProfileType.json);
+      await _addDriveWithKey(db, 'a', driveKeyA, format1Key);
+      final stale = await db.profileDao.defaultProfile().getSingle();
+      final publicKey = await wallet.getOwner();
+      final walletJson = json.encode(wallet.toJwk());
+
+      await db.profileDao.migrateToCurrentFormat(
+        profile: stale,
+        format1Key: format1Key,
+        publicKey: publicKey,
+        walletJson: walletJson,
+      );
+      final first = await db.profileDao.defaultProfile().getSingle();
+
+      await expectLater(
+        db.profileDao.migrateToCurrentFormat(
+          profile: stale,
+          format1Key: format1Key,
+          publicKey: publicKey,
+          walletJson: walletJson,
+        ),
+        throwsA(isA<ProfileAlreadyMigratedException>()),
+      );
+      final after = await db.profileDao.defaultProfile().getSingle();
+      expect(after.deviceSalt, first.deviceSalt);
+      expect(after.encryptedWallet, first.encryptedWallet);
+      // The drive key the first rewrite wrapped was not dropped as
+      // unreadable by the second: its transaction rolled back.
+      final opened = await db.profileDao.loadDefaultProfile(_password);
+      expect(await _unwrap(db, 'a', opened.key), driveKeyA);
+      expect(await db.driveDao.forgottenDriveIds(), isEmpty);
     });
   });
 
@@ -273,5 +337,36 @@ void main() {
         throwsA(isA<ProfileUnlockMethodException>()),
       );
     });
+  });
+
+  group('a profile from a newer build', () {
+    setUp(() async {
+      await db.profileDao
+          .addProfile('user', _password, wallet, ProfileType.json);
+      await db.customStatement('UPDATE profiles SET formatVersion = 3');
+    });
+
+    test('is never read, and says so, whichever way it is opened', () async {
+      await expectLater(
+        db.profileDao.loadDefaultProfile(_password),
+        throwsA(isA<ProfileFormatTooNewException>()),
+      );
+      await expectLater(
+        db.profileDao
+            .loadDefaultProfileWithDeviceKey(SecretKey(List.filled(32, 1))),
+        throwsA(isA<ProfileFormatTooNewException>()),
+      );
+      expect(await db.profileDao.deviceRecord(), isNull);
+      expect(await db.profileDao.needsOlderCopiesCleared(), isFalse);
+    });
+  });
+
+  test('older copies: needed once for a current profile, then not', () async {
+    await db.profileDao.addProfile('user', _password, wallet, ProfileType.json);
+    expect(await db.profileDao.needsOlderCopiesCleared(), isTrue);
+
+    await db.profileDao.markOlderCopiesCleared();
+
+    expect(await db.profileDao.needsOlderCopiesCleared(), isFalse);
   });
 }

@@ -116,6 +116,16 @@ LazyDatabase openConnection() {
 /// The IndexedDB database the sql.js backend kept every named store in.
 const _legacyIndexedDbName = 'moor_databases';
 
+/// An older IndexedDB store would not delete (another tab held it open).
+class OlderStoresNotDeleted implements Exception {
+  const OlderStoresNotDeleted(this.count);
+
+  final int count;
+
+  @override
+  String toString() => 'OlderStoresNotDeleted($count)';
+}
+
 /// Whether this tab holds the `ardrive-database` Web Lock, and so owns the
 /// database. Set once the database opens; false before, and in a tab that
 /// works on a session copy.
@@ -134,7 +144,8 @@ bool webDatabaseIsWriter = false;
 ///
 /// Each held an encrypted copy of the wallet. Only the tab that owns the
 /// database deletes anything: another tab may be mid-start, reading one of
-/// them. Returns what it deleted, by name; never throws.
+/// them. Returns what it deleted, by name. Throws [OlderStoresNotDeleted]
+/// after trying them all if an IndexedDB store would not go.
 Future<List<String>> deleteLegacyLocalStores({
   String opfsName = _opfsDatabaseName,
   String indexedDbName = _indexedDbName,
@@ -148,6 +159,7 @@ Future<List<String>> deleteLegacyLocalStores({
     return const [];
   }
   final deleted = <String>[];
+  var failed = 0;
   final stores = [
     legacyIndexedDbName,
     if (onOpfs ?? webDatabaseWorker != null) indexedDbName,
@@ -160,13 +172,14 @@ Future<List<String>> deleteLegacyLocalStores({
       deleted.add(name);
     } catch (e) {
       logger.w('[web-db] could not delete IndexedDB $name: $e');
+      failed++;
     }
   }
   deleted.addAll(await removeOpfsResetCopies(opfsName));
   if (deleted.isNotEmpty) {
-    logger.i('[web-db] deleted older stores after sign-out: '
-        '${deleted.join(', ')}');
+    logger.i('[web-db] deleted older stores: ${deleted.join(', ')}');
   }
+  if (failed > 0) throw OlderStoresNotDeleted(failed);
   return deleted;
 }
 

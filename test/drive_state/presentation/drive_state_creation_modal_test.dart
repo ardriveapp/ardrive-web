@@ -202,7 +202,8 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Uploads this small are free with Turbo.'), findsOneWidget);
+    expect(find.textContaining('Uploads this small are free with Turbo.'),
+        findsOneWidget);
     expect(find.byType(PaymentMethodSelector), findsNothing);
     expect(publishButton(tester).isDisabled, isFalse);
   });

@@ -6,7 +6,7 @@ void main() {
     test('detectArIOGateway returns null on non-web platforms', () async {
       // This test runs on VM (non-web), so it should return null
       final result = await ArIOGatewayDetector.detectArIOGateway();
-      
+
       expect(result, isNull);
     });
   });

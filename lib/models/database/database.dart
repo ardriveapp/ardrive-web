@@ -263,6 +263,7 @@ class Database extends _$Database {
               await _addColumn(m, profiles, profiles.deviceSalt);
               await _addColumn(m, profiles, profiles.unlockMethod);
               await _addColumn(m, profiles, profiles.keyCheck);
+              await _addColumn(m, profiles, profiles.olderCopiesCleared);
               await customStatement(
                 'CREATE TABLE IF NOT EXISTS forgotten_drives '
                 '(driveId TEXT NOT NULL PRIMARY KEY)',

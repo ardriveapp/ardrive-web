@@ -203,8 +203,7 @@ class _PixelAvatarPainter extends CustomPainter {
 
         final hsl = data.getCellColor(row, col);
         final color = hsl
-            .withLightness(
-                (hsl.lightness + breatheOffset).clamp(0.3, 0.75))
+            .withLightness((hsl.lightness + breatheOffset).clamp(0.3, 0.75))
             .toColor();
 
         final rect = Rect.fromLTWH(

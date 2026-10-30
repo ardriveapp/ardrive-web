@@ -51,8 +51,8 @@ void main() {
     });
 
     test('media containers', () {
-      expect(sniffTransactionContent(mp4).contentClass,
-          SniffedContentClass.media);
+      expect(
+          sniffTransactionContent(mp4).contentClass, SniffedContentClass.media);
       expect(sniffTransactionContent(ascii('OggS.......')).contentClass,
           SniffedContentClass.media);
     });

@@ -237,4 +237,3 @@ void main() {
     expect(find.text('my-files'), findsNothing);
   });
 }
-

@@ -147,6 +147,8 @@ void main() {
         .thenAnswer((_) async => []);
     when(() => mockDatabaseHelpers.wipeAfterSignOut())
         .thenAnswer((_) async => []);
+    when(() => mockDatabaseHelpers.clearOlderCopies())
+        .thenAnswer((_) async => false);
 
     arDriveAuth = ArDriveAuthImpl(
       arweave: mockArweaveService,
@@ -750,6 +752,35 @@ void main() {
           () => mockDeviceTabs.announceSignedOut(),
           () => mockDatabaseHelpers.wipeAfterSignOut(),
         ]);
+      });
+
+      test('a sign-out that fails wipes nothing and tells no other tab',
+          () async {
+        when(() => mockUserRepository.deleteUser())
+            .thenThrow(StateError('the profile would not delete'));
+
+        await expectLater(
+          arDriveAuth.logout(),
+          throwsA(isA<AuthenticationUnknownException>()),
+        );
+
+        verifyNever(() => mockDatabaseHelpers.wipeAfterSignOut());
+        verifyNever(() => mockDeviceTabs.announceSignedOut());
+      });
+
+      test(
+          'unlocking clears the older copies of the profile, in the '
+          'background', () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
+        await arDriveAuth.unlockUser(password: 'password');
+
+        verify(() => mockDatabaseHelpers.clearOlderCopies()).called(1);
       });
 
       test('a sign-out that came from another tab is not announced back',

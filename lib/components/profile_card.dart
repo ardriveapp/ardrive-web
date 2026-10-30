@@ -1894,11 +1894,19 @@ class _ForgetAllOnThisDeviceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final driveDao = context.read<DriveDao>();
+    final auth = context.read<ArDriveAuth>();
+    final String owner;
+    try {
+      owner = auth.currentUser.walletAddress;
+    } on AuthenticationUserIsNotLoggedInException {
+      return const SizedBox.shrink();
+    }
 
     return StreamBuilder<int>(
-      stream: driveDao.watchRememberedDriveKeyCount(),
+      stream: driveDao.watchRememberedDriveKeyCount(ownerAddress: owner),
       builder: (context, snapshot) {
-        if ((snapshot.data ?? 0) == 0) return const SizedBox.shrink();
+        final count = snapshot.data ?? 0;
+        if (count == 0) return const SizedBox.shrink();
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1908,24 +1916,54 @@ class _ForgetAllOnThisDeviceRow extends StatelessWidget {
               label: appLocalizationsOf(context).forgetAllOnThisDevice,
               icon: ArDriveIcons.lock(size: 21),
               onTap: () async {
-                final messenger = ScaffoldMessenger.maybeOf(context);
-                final strings = appLocalizationsOf(context);
-                final user = context.read<ArDriveAuth>().currentUser;
-                final ids = await driveDao.rememberedDriveIds();
-                final count = await driveDao.forgetAllDriveKeys(user.cipherKey);
-                DeviceTabs.instance.announceForgotten(ids);
+                final confirmed = await showArDriveDialogWithBuilder<bool>(
+                  context,
+                  builder: (dialogContext) =>
+                      ForgetAllOnThisDeviceDialog(count: count),
+                );
                 onDone();
-                if (count > 0 && messenger != null && messenger.mounted) {
-                  messenger.showSnackBar(
-                    SnackBar(
-                        content: Text(strings.forgotDrivesOnThisDevice(count))),
-                  );
-                }
+                if (confirmed != true) return;
+                final user = auth.currentUser;
+                final ids = await driveDao.rememberedDriveIds(
+                    ownerAddress: user.walletAddress);
+                await driveDao.forgetAllDriveKeys(
+                  user.cipherKey,
+                  ownerAddress: user.walletAddress,
+                );
+                DeviceTabs.instance.announceForgotten(ids);
               },
             ),
           ],
         );
       },
+    );
+  }
+}
+
+/// "Forget N drives on this device?": Forget pops true, Cancel false.
+@visibleForTesting
+class ForgetAllOnThisDeviceDialog extends StatelessWidget {
+  const ForgetAllOnThisDeviceDialog({super.key, required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    return ArDriveStandardModalNew(
+      key: const Key('forgetAllOnThisDeviceDialog'),
+      title: strings.forgetDrivesConfirmTitle(count),
+      description: strings.forgetDrivesConfirmBody,
+      actions: [
+        ModalAction.dismiss(
+          action: () => Navigator.of(context).pop(false),
+          title: strings.cancelEmphasized,
+        ),
+        ModalAction(
+          action: () => Navigator.of(context).pop(true),
+          title: strings.forget,
+        ),
+      ],
     );
   }
 }

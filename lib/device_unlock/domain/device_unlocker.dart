@@ -129,15 +129,24 @@ class DeviceUnlocker {
     final settled = _settled;
     if (settled != null) return Future.value(settled);
     final generation = _generation;
-    return _inFlight ??= _ask(record, source, saveKeyCheck).then((outcome) {
-      // Signed out while the wallet was asked: the answer belongs to a
-      // session that is over.
-      if (generation != _generation) return outcome;
-      _settled = outcome;
-      _inFlight = null;
-      if (outcome.key != null) _key = outcome.key;
-      return outcome;
-    });
+
+    Future<DeviceUnlockOutcome> ask() async {
+      try {
+        final outcome = await _ask(record, source, saveKeyCheck);
+        // Signed out while the wallet was asked: the answer belongs to a
+        // session that is over.
+        if (generation != _generation) return outcome;
+        _settled = outcome;
+        if (outcome.key != null) _key = outcome.key;
+        return outcome;
+      } finally {
+        // Also when it threw, so the next caller asks again rather than
+        // getting the same error for the rest of the session.
+        if (generation == _generation) _inFlight = null;
+      }
+    }
+
+    return _inFlight ??= ask();
   }
 
   Future<DeviceUnlockOutcome> _ask(

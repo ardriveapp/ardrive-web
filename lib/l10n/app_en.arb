@@ -5732,8 +5732,16 @@
   "@notRememberedOnThisDevice": {"description": "Drive details: this device keeps no key for the drive; it will be locked next time."},
   "forgetAllOnThisDevice": "Forget all on this device",
   "@forgetAllOnThisDevice": {"description": "Profile menu: delete every remembered drive key. Drives stay open now and are locked next time."},
-  "forgotDrivesOnThisDevice": "{count, plural, =1{Forgot 1 drive. It will be locked next time.} other{Forgot {count} drives. They will be locked next time.}}",
-  "@forgotDrivesOnThisDevice": {"description": "Snackbar after Forget all on this device.", "placeholders": {"count": {"type": "int"}}},
   "approveInWanderToOpenDrives": "Approve in Wander to open your drives",
-  "@approveInWanderToOpenDrives": {"description": "Beside the waiting state while Wander is asked for the one approval that opens the drives remembered on this device."}
+  "@approveInWanderToOpenDrives": {"description": "Beside the waiting state while Wander is asked for the one approval that opens the drives remembered on this device."},
+  "savedByNewerVersion": "This account was saved by a newer version of ArDrive. Reload to open it.",
+  "@savedByNewerVersion": {"description": "Welcome back, when the account on this device was saved by a newer ArDrive than the page that is open. Only Reload is offered."},
+  "reloadPage": "Reload",
+  "@reloadPage": {"description": "Reloads the page."},
+  "forgetDrivesConfirmTitle": "{count, plural, =1{Forget 1 drive on this device?} other{Forget {count} drives on this device?}}",
+  "@forgetDrivesConfirmTitle": {"description": "Confirmation for Forget all on this device.", "placeholders": {"count": {"type": "int"}}},
+  "forgetDrivesConfirmBody": "You'll need their passwords to open them again.",
+  "@forgetDrivesConfirmBody": {"description": "Under the Forget all confirmation title."},
+  "forget": "Forget",
+  "@forget": {"description": "Confirms Forget all on this device."}
 }

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
 import 'package:ardrive/utils/preview_byte_cache.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/device_unlock/domain/device_key.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/exception.dart';
@@ -145,16 +146,17 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           continue;
         }
 
-        final encryptionRes = await aesGcm.encrypt(
+        final encryptionRes = await wrapDriveKey(
           await driveKey.key.extractBytes(),
-          secretKey: profileKey,
+          profileKey,
+          drive.id,
         );
 
         await (update(this.drives)..where((d) => d.id.equals(drive.id))).write(
           DrivesCompanion(
             encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
             driveKeyGenerated: Value(driveKey.generated),
-            keyEncryptionIv: Value(encryptionRes.nonce as Uint8List),
+            keyEncryptionIv: Value(Uint8List.fromList(encryptionRes.nonce)),
           ),
         );
 
@@ -286,11 +288,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         );
       });
 
-  /// "Forget all on this device": [forgetDriveKey] for every private drive
-  /// whose key is stored here. Returns how many.
-  Future<int> forgetAllDriveKeys(SecretKey profileKey) async {
-    final stored =
-        await (select(drives)..where((d) => d.encryptedKey.isNotNull())).get();
+  /// "Forget all on this device": [forgetDriveKey] for every drive of
+  /// [ownerAddress] whose key is stored here. Returns how many.
+  ///
+  /// The signed-in wallet's own drives only, as the per-drive button: a
+  /// drive someone else shared would not come back as a locked drive, only
+  /// through its link again.
+  Future<int> forgetAllDriveKeys(
+    SecretKey profileKey, {
+    required String ownerAddress,
+  }) async {
+    final stored = await (select(drives)
+          ..where((d) =>
+              d.encryptedKey.isNotNull() & d.ownerAddress.equals(ownerAddress)))
+        .get();
     var forgotten = 0;
     for (final drive in stored) {
       try {
@@ -325,20 +336,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return detached;
   }
 
-  /// How many drive keys this device remembers, for "Forget all on this
-  /// device".
-  Stream<int> watchRememberedDriveKeyCount() {
+  /// How many of [ownerAddress]'s drive keys this device remembers, for
+  /// "Forget all on this device".
+  Stream<int> watchRememberedDriveKeyCount({required String ownerAddress}) {
     final count = drives.id.count();
     return (selectOnly(drives)
           ..addColumns([count])
-          ..where(drives.encryptedKey.isNotNull()))
+          ..where(drives.encryptedKey.isNotNull() &
+              drives.ownerAddress.equals(ownerAddress)))
         .map((row) => row.read(count) ?? 0)
         .watchSingle()
         .distinct();
   }
 
-  Future<List<DriveID>> rememberedDriveIds() async =>
-      (await (select(drives)..where((d) => d.encryptedKey.isNotNull())).get())
+  Future<List<DriveID>> rememberedDriveIds(
+          {required String ownerAddress}) async =>
+      (await (select(drives)
+                ..where((d) =>
+                    d.encryptedKey.isNotNull() &
+                    d.ownerAddress.equals(ownerAddress)))
+              .get())
           .map((d) => d.id)
           .toList();
 
@@ -624,6 +641,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             if (entity.privacy == DrivePrivacyTag.private) {
               driveCompanion = await _addDriveKeyToDriveCompanion(
                   driveCompanion, profileKey!, entry.value!);
+              if (_storesKey(driveCompanion)) {
+                b.deleteWhere(attachedDatabase.forgottenDrives,
+                    (f) => f.driveId.equals(entity.id!));
+              }
             }
 
             // `copyWith(dateCreated: null)` kept the value rather than
@@ -701,6 +722,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ),
       );
 
+      // A key stored on this device is remembered, whatever was chosen
+      // before: attaching a forgotten drive by its key, say.
+      if (_storesKey(companion)) {
+        await (delete(attachedDatabase.forgottenDrives)
+              ..where((f) => f.driveId.equals(entity.id!)))
+            .go();
+      }
+
       await into(folderEntries).insert(
         _rootFolderPlaceholder(
           driveId: entity.id!,
@@ -748,6 +777,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         );
       });
 
+  /// Whether [companion] writes a key to the row, rather than none.
+  static bool _storesKey(DrivesCompanion companion) =>
+      companion.encryptedKey.present && companion.encryptedKey.value != null;
+
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
     DrivesCompanion drive,
     SecretKey profileKey,
@@ -764,15 +797,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       );
     }
 
-    final encryptionRes = await aesGcm.encrypt(
+    final encryptionRes = await wrapDriveKey(
       await driveKey.key.extractBytes(),
-      secretKey: profileKey,
+      profileKey,
+      driveId!,
     );
 
     return drive.copyWith(
       encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
       driveKeyGenerated: Value(driveKey.generated),
-      keyEncryptionIv: Value(encryptionRes.nonce as Uint8List),
+      keyEncryptionIv: Value(Uint8List.fromList(encryptionRes.nonce)),
     );
   }
 
@@ -791,12 +825,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       return null;
     }
 
-    final driveKeyData = await aesGcm.decrypt(
-      _crypto.secretBoxFromDataWithMacConcatenation(
-        drive.encryptedKey!,
-        nonce: drive.keyEncryptionIv!,
-      ),
-      secretKey: profileKey,
+    final driveKeyData = await unwrapDriveKey(
+      encryptedKey: drive.encryptedKey!,
+      iv: drive.keyEncryptionIv!,
+      wrapKey: profileKey,
+      driveId: driveId,
     );
 
     return DriveKey(SecretKey(driveKeyData), drive.driveKeyGenerated!);
