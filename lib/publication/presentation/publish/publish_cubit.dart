@@ -295,7 +295,16 @@ class PublishCubit extends Cubit<PublishState> {
       availability = FilePageAvailability.unknown;
     }
     if (isClosed) return;
-    emit(state.copyWith(filePages: availability));
+    // A page the release can't open yet is no choice: a public file goes
+    // to the file itself rather than sitting on a disabled Next.
+    final moveToItself = availability == FilePageAvailability.needsRelease &&
+        !isPrivateFile &&
+        state.stage == PublishStage.how &&
+        state.how == FilePublishHow.page;
+    emit(state.copyWith(
+      filePages: availability,
+      how: moveToItself ? FilePublishHow.itself : null,
+    ));
     if (previous != null &&
         state.stage == PublishStage.how &&
         availability == FilePageAvailability.available) {

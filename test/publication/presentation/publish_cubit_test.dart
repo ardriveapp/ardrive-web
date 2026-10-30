@@ -1116,11 +1116,13 @@ void main() {
       await pumpEventQueue();
 
       expect(c.state.filePages, FilePageAvailability.needsRelease);
+      // Moved to the one choice there is, rather than a disabled Next.
+      expect(c.state.how, FilePublishHow.itself);
+      expect(c.state.howIsReady, isTrue);
+      c.setHow(FilePublishHow.page);
       expect(c.state.howIsReady, isFalse);
       c.next();
       expect(c.state.stage, PublishStage.how);
-      c.setHow(FilePublishHow.itself);
-      expect(c.state.howIsReady, isTrue);
       await c.close();
     });
 
