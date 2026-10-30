@@ -315,10 +315,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// check ends.
   @visibleForTesting
   bool signsInWhileChecking(ProfileState profileState) =>
+      _routeKnown &&
       profileState is ProfileCheckingAvailability &&
       !PublicationMode.isOn &&
       !gettingStarted &&
       !hasARouteToHonour;
+
+  /// Whether the address the app was opened at has been read. The first
+  /// frame can come before it is ([setNewRoutePath] is asynchronous), and
+  /// until then a link looks like no link: the sign-in page went up and came
+  /// down again on a reload of a drive.
+  bool _routeKnown = false;
 
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
@@ -1340,6 +1347,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
+    _routeKnown = true;
     if (PublicationMode.isOn) {
       _publicationFolderRequest = configuration.publicationFolderId;
       _publicationFileRequest = configuration.publicationFileId;

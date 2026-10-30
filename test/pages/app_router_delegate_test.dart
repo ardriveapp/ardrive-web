@@ -819,17 +819,23 @@ void main() {
       }
     });
 
+    test('waits for the address to be read: a link looks like none before', () {
+      expect(delegate.signsInWhileChecking(checking), isFalse);
+    });
+
     test('leaves the get-started page to itself', () async {
       await delegate.setNewRoutePath(AppRoutePath.getStarted());
       expect(delegate.signsInWhileChecking(checking), isFalse);
     });
 
-    test('is over once the check is', () {
+    test('is over once the check is', () async {
+      await delegate.setNewRoutePath(AppRoutePath.unknown());
       expect(delegate.signsInWhileChecking(ProfilePromptAdd()), isFalse);
       expect(delegate.signsInWhileChecking(ProfilePromptLogIn()), isFalse);
     });
 
-    test('never in a publication', () {
+    test('never in a publication', () async {
+      await delegate.setNewRoutePath(AppRoutePath.unknown());
       PublicationMode.debugSet('publication.json');
       expect(delegate.signsInWhileChecking(checking), isFalse);
     });
