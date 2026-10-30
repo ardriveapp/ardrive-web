@@ -331,11 +331,24 @@ void main() {
     expect(session.walletDeclined(owner, _driveB), isTrue);
   });
 
-  test('isWalletCancellation reads the usual wallet messages', () {
-    expect(isWalletCancellation(Exception('User cancelled the auth')), isTrue);
-    expect(
-        isWalletCancellation(Exception('User rejected the request')), isTrue);
-    expect(isWalletCancellation(Exception('Wallet is locked')), isFalse);
+  test('isWalletCancellation: Wander\'s cancels, and nothing else', () {
+    for (final cancel in [
+      'User cancelled the AuthRequest',
+      'User rejected the signature request',
+      'User rejected the request',
+      'Request canceled by the user',
+    ]) {
+      expect(isWalletCancellation(Exception(cancel)), isTrue, reason: cancel);
+    }
+    for (final failure in [
+      'Wallet is locked',
+      'The message port closed before a response was received.',
+      'The operation was aborted.',
+      'Permission denied',
+    ]) {
+      expect(isWalletCancellation(Exception(failure)), isFalse,
+          reason: failure);
+    }
   });
 
   group('resolveForDiscovery', () {

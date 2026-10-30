@@ -34,11 +34,20 @@ abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
   Future<bool> userHasPassword(Wallet wallet);
+
+  /// Signs in with [wallet], keeping its profile on this device encrypted
+  /// with [password].
+  ///
+  /// The password is first tried on the wallet's private drives, to open
+  /// them: see [ArDriveAuthImpl.validateUser]. If it opens none of
+  /// them this throws [PasswordOpensNoDriveException], so the user can
+  /// correct it; [skipDriveCheck] signs in anyway, with those drives locked.
   Future<User> login(
     Wallet wallet,
     String password,
     ProfileType profileType, {
     String? sourceWalletAddress,
+    bool skipDriveCheck = false,
   });
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
@@ -212,9 +221,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
     String password,
     ProfileType profileType, {
     String? sourceWalletAddress,
+    bool skipDriveCheck = false,
   }) async {
     try {
-      await _validateUser(wallet, password);
+      if (!skipDriveCheck) {
+        await _validateUser(wallet, password);
+      }
 
       if (await _biometricAuthentication.isEnabled()) {
         logger.i('Saving password in secure storage');
@@ -373,32 +385,31 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return _biometricAuthentication.isEnabled();
   }
 
-  /// Checks the sign-in password against the wallet's private drives.
+  /// Tries the sign-in password on the wallet's private drives, to open them
+  /// for the session. An auto-unlock attempt, not a check of the password:
+  /// drive passwords and the sign-in password are separate (the 3.0 password
+  /// design), and this password's own job is to encrypt the profile on this
+  /// device.
   ///
-  /// The rule: the password is accepted if it opens **any** private drive
-  /// this wallet owns, or if the wallet owns none. Drives it doesn't open are
-  /// not an error - they show as locked, each with its own Unlock.
-  ///
-  /// Why not "must open the first private drive", as it was: drives can have
-  /// different passwords (the CLI, desktop and core-js make them), and a
-  /// wallet whose first drive used another password could never sign in.
-  ///
-  /// Why not "accept anything": the password still guards this device's
-  /// profile and is tried on every drive, so a typo must not be taken as a
-  /// password that opens nothing. If the wallet has private drives and this
-  /// password opens none of them, it is still "Wrong password".
+  /// - The wallet has no private drives: nothing to try; sign in.
+  /// - The password opens any of them: sign in; the drives it opens are open.
+  /// - It opens none of those tried, or the wallet's prompt is cancelled:
+  ///   [PasswordOpensNoDriveException]. The sign-in asks the user to try
+  ///   again or continue; continuing signs in with those drives locked, each
+  ///   with its own Unlock. Sign-in is never blocked by this.
+  /// - A drive couldn't be read and none opened: the gateway is reported, not
+  ///   the password.
   ///
   /// Bounded: at most [signInMaxDrives] drives and [signInTimeBudget], and a
   /// wallet that prompts is asked at most [signInMaxNewPrompts] times, oldest
-  /// drive first after the drives whose signature is already held. A drive
-  /// beyond those bounds is not tried; if none tried opens, the answer is
-  /// still "Wrong password", and the drives it does open later show locked.
+  /// drive first after the drives whose signature is already held.
   ///
-  /// Only an AES-GCM authentication failure counts against the password. A
-  /// drive that can't be read leaves the question open: if no drive opened
-  /// and one couldn't be read, the sign-in reports the gateway, not "Wrong
-  /// password". A wallet prompt that is cancelled ends the check
-  /// as "Wrong password", as it always has.
+  /// Only an AES-GCM authentication failure counts against the password.
+  ///
+  /// The seam for P3 (sign in without a password): for a browser wallet this
+  /// whole step, and the dialog the sign-in shows for its exception, go away.
+  /// MetaMask's own password check, which picks the wallet, is elsewhere
+  /// (`LoginBloc`) and is identity, not this.
   @visibleForTesting
   Future<void> validateUser(Wallet wallet, String password) =>
       _validateUser(wallet, password);
@@ -515,7 +526,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
           continue;
         case DriveUnlockFailure.walletDeclined:
         case DriveUnlockFailure.walletFailed:
-          throw WrongPasswordException('Password is incorrect');
+          // The user said no to their wallet: stop asking it.
+          throw const PasswordOpensNoDriveException();
         case DriveUnlockFailure.unavailable:
           unreadable ??= const AuthenticationGatewayException();
           continue;
@@ -530,7 +542,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       throw const AuthenticationGatewayException();
     }
 
-    throw WrongPasswordException('Password is incorrect');
+    throw const PasswordOpensNoDriveException();
   }
 
   Future<User> _addUser(
@@ -635,6 +647,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
 class AuthenticationGatewayException implements Exception {
   const AuthenticationGatewayException();
+}
+
+/// The sign-in password opened none of the private drives it was tried on.
+/// Not a wrong password: sign-in may continue, with those drives locked.
+class PasswordOpensNoDriveException implements UntrackedException {
+  const PasswordOpensNoDriveException();
 }
 
 class WrongPasswordException implements UntrackedException {

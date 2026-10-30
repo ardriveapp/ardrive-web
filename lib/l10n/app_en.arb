@@ -5711,5 +5711,11 @@
   "driveFingerprintLabel": "Drive emoji: {names}",
   "@driveFingerprintLabel": {"description": "Screen reader name of a drive's three-emoji fingerprint.", "placeholders": {"names": {"type": "String"}}},
   "unlockWalletFailed": "Your wallet couldn't sign. Try again.",
-  "@unlockWalletFailed": {"description": "The wallet refused to sign for a reason other than the user cancelling its prompt."}
+  "@unlockWalletFailed": {"description": "The wallet refused to sign for a reason other than the user cancelling its prompt."},
+  "passwordOpensNoDrivesTitle": "This password didn't open your private drives",
+  "@passwordOpensNoDrivesTitle": {"description": "Sign-in: the password was tried on the wallet's private drives and opened none."},
+  "passwordOpensNoDrivesBody": "Check it and try again, or continue. Drives it doesn't open stay locked until you unlock them.",
+  "@passwordOpensNoDrivesBody": {"description": "Under the title. Continue signs in with those drives locked."},
+  "migrationDrivePasswordPrompt": "{name} has its own password. Enter it to update this drive.",
+  "@migrationDrivePasswordPrompt": {"description": "Drive update banner: the sign-in password doesn't open this drive.", "placeholders": {"name": {"type": "String"}}}
 }

@@ -18,3 +18,15 @@ final class PrivateDriveMigrationCloseEvent extends PrivateDriveMigrationEvent {
 final class PrivateDriveMigrationCheck extends PrivateDriveMigrationEvent {
   const PrivateDriveMigrationCheck();
 }
+
+/// The drive's own password, asked for by [PrivateDriveMigrationNeedsPassword],
+/// or null to skip that drive.
+final class PrivateDriveMigrationPasswordEntered
+    extends PrivateDriveMigrationEvent {
+  const PrivateDriveMigrationPasswordEntered(this.password);
+
+  final String? password;
+
+  @override
+  List<Object> get props => [password ?? ''];
+}

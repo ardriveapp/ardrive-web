@@ -1,6 +1,7 @@
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,20 @@ class PrivateDriveMigrationDialog extends StatefulWidget {
 class _PrivateDriveMigrationDialogState
     extends State<PrivateDriveMigrationDialog> {
   final _scrollController = ScrollController();
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _answer(String? password) {
+    context
+        .read<PrivateDriveMigrationBloc>()
+        .add(PrivateDriveMigrationPasswordEntered(password));
+    _password.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +152,32 @@ class _PrivateDriveMigrationDialogState
                       )),
                 ),
               ),
+              // A drive whose key the sign-in password doesn't make: its
+              // own password, or skip it.
+              if (state is PrivateDriveMigrationNeedsPassword) ...[
+                const SizedBox(height: 16),
+                Text(
+                  appLocalizationsOf(context)
+                      .migrationDrivePasswordPrompt(state.drive.name),
+                  style: typography.paragraphNormal(color: colorTokens.textMid),
+                ),
+                const SizedBox(height: 8),
+                ArDriveTextFieldNew(
+                  key: const Key('migrationDrivePassword'),
+                  controller: _password,
+                  label: appLocalizationsOf(context).drivePasswordLabel,
+                  obscureText: true,
+                  showObfuscationToggle: true,
+                  autofocus: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  errorMessage: state.wrongPassword
+                      ? appLocalizationsOf(context).unlockWrongPassword
+                      : null,
+                  showErrorMessage: state.wrongPassword,
+                  onFieldSubmitted: (value) => _answer(value),
+                ),
+              ],
               if (errorMessage != null) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -149,28 +190,40 @@ class _PrivateDriveMigrationDialogState
               ]
             ],
           ),
-          actions: [
-            ModalAction(
-              action: () {
-                context
-                    .read<PrivateDriveMigrationBloc>()
-                    .add(const PrivateDriveMigrationCheck());
-                Navigator.of(context).pop();
-              },
-              title: 'Close',
-              isEnable: state is! PrivateDriveMigrationInProgress,
-            ),
-            if (state is! PrivateDriveMigrationComplete) ...[
-              ModalAction(
-                action: () {
-                  // Navigator.of(context).pop();
-                  migrateBloc.add(const PrivateDriveMigrationStartEvent());
-                },
-                title: 'Update',
-                isEnable: state is! PrivateDriveMigrationInProgress,
-              ),
-            ],
-          ],
+          actions: state is PrivateDriveMigrationNeedsPassword
+              ? [
+                  ModalAction.dismiss(
+                    action: () => _answer(null),
+                    title: appLocalizationsOf(context).skip,
+                  ),
+                  ModalAction(
+                    action: () => _answer(_password.text),
+                    title: 'Update',
+                  ),
+                ]
+              : [
+                  ModalAction(
+                    action: () {
+                      context
+                          .read<PrivateDriveMigrationBloc>()
+                          .add(const PrivateDriveMigrationCheck());
+                      Navigator.of(context).pop();
+                    },
+                    title: 'Close',
+                    isEnable: state is! PrivateDriveMigrationInProgress,
+                  ),
+                  if (state is! PrivateDriveMigrationComplete) ...[
+                    ModalAction(
+                      action: () {
+                        // Navigator.of(context).pop();
+                        migrateBloc
+                            .add(const PrivateDriveMigrationStartEvent());
+                      },
+                      title: 'Update',
+                      isEnable: state is! PrivateDriveMigrationInProgress,
+                    ),
+                  ],
+                ],
         );
       },
     );

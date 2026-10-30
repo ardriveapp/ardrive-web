@@ -104,6 +104,17 @@ class RetrySignUpPassword extends LoginEvent {
   const RetrySignUpPassword();
 }
 
+/// "Try again" after [LoginPasswordOpensNoDrives].
+class RetrySignInPassword extends LoginEvent {
+  const RetrySignInPassword();
+}
+
+/// "Continue" after [LoginPasswordOpensNoDrives]: sign in with the drives the
+/// password didn't open locked.
+class ContinueSignInWithLockedDrives extends LoginEvent {
+  const ContinueSignInWithLockedDrives();
+}
+
 class FinishOnboarding extends LoginEvent {
   const FinishOnboarding({required this.wallet});
 

@@ -181,6 +181,19 @@ class LoginCheckingPassword extends LoginState {}
 
 class LoginPasswordFailed extends LoginState {}
 
+/// The sign-in password opened none of the wallet's private drives. The user
+/// tries again ([RetrySignInPassword]) or continues with those drives locked
+/// ([ContinueSignInWithLockedDrives]).
+class LoginPasswordOpensNoDrives extends LoginState {
+  const LoginPasswordOpensNoDrives();
+}
+
+/// Back at the password after [LoginPasswordOpensNoDrives], with what was
+/// typed selected.
+class LoginPasswordRetry extends LoginState {
+  const LoginPasswordRetry();
+}
+
 class LoginPasswordFailedWithPrivateDriveNotFound extends LoginState {}
 
 class LoginCreatePasswordComplete extends LoginState {}

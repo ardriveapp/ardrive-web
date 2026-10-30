@@ -483,7 +483,7 @@ void main() {
 
           expectLater(
               () => arDriveAuth.login(wallet, 'password', ProfileType.json),
-              throwsA(isA<WrongPasswordException>()));
+              throwsA(isA<PasswordOpensNoDriveException>()));
         });
       });
 

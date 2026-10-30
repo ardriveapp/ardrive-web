@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -12,6 +13,7 @@ import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -243,6 +245,108 @@ void main() {
       await tester.pump();
 
       verify(() => wallet.getAddress()).called(1);
+    });
+  });
+
+  group('a password that opens none of the private drives', () {
+    Widget app(Widget child) => ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<LoginBloc>.value(value: loginBloc),
+                BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+                RepositoryProvider<UserPreferencesRepository>.value(
+                  value: userPreferences,
+                ),
+                RepositoryProvider<ArDriveAuth>.value(value: auth),
+                RepositoryProvider<BiometricAuthentication>.value(
+                  value: biometrics,
+                ),
+                ChangeNotifierProvider<ActivityTracker>(
+                  create: (_) => ActivityTracker(),
+                ),
+              ],
+              child: Scaffold(body: child),
+            ),
+          ),
+        );
+
+    setUpAll(() => registerFallbackValue(const RetrySignInPassword()));
+
+    testWidgets('the dialog says so, and offers Try again and Continue',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(app(Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showPasswordOpensNoDrivesDialog(
+              context: context, loginBloc: loginBloc),
+          child: const Text('open'),
+        ),
+      )));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text("This password didn't open your private drives"),
+          findsOneWidget);
+      expect(
+          find.text('Check it and try again, or continue. Drives it '
+              "doesn't open stay locked until you unlock them."),
+          findsOneWidget);
+
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      verify(() => loginBloc.add(const RetrySignInPassword())).called(1);
+      expect(
+          find.byKey(const Key('passwordOpensNoDrivesDialog')), findsNothing);
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      verify(() => loginBloc.add(const ContinueSignInWithLockedDrives()))
+          .called(1);
+    });
+
+    testWidgets('Try again puts focus back in the field, its text selected',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      var select = false;
+      late StateSetter rebuild;
+
+      await tester.pumpWidget(app(StatefulBuilder(builder: (context, set) {
+        rebuild = set;
+        return EnterYourPasswordWidget(
+          loginBloc: loginBloc,
+          showWalletCreated: false,
+          wallet: wallet,
+          checkingPassword: false,
+          passwordFailed: false,
+          selectPassword: select,
+        );
+      })));
+      await tester.enterText(
+          find.byKey(const Key('signInPassword')).first, 'typo');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+
+      rebuild(() => select = true);
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<EditableText>(find.byType(EditableText));
+      expect(field.focusNode.hasFocus, isTrue);
+      expect(field.controller.selection,
+          const TextSelection(baseOffset: 0, extentOffset: 4));
     });
   });
 }

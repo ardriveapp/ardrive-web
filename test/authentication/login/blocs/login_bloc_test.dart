@@ -485,6 +485,113 @@ void main() {
     );
   });
 
+  group('a password that opens none of the private drives', () {
+    final loggedUser = User(
+      password: 'typo',
+      wallet: wallet,
+      walletAddress: 'walletAddress',
+      walletBalance: BigInt.one,
+      cipherKey: SecretKey([]),
+      profileType: ProfileType.json,
+      errorFetchingIOTokens: false,
+    );
+
+    setUp(() {
+      registerFallbackValue(ProfileType.json);
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+      when(() => mockArConnectService.isWalletVersionSupported())
+          .thenAnswer((_) => Future.value(true));
+      when(() => mockArConnectService.getWalletAddress())
+          .thenAnswer((_) async => 'some address');
+      when(() => mockArDriveAuth.login(any(), 'typo', any()))
+          .thenThrow(const PasswordOpensNoDriveException());
+      when(() => mockArDriveAuth.login(any(), 'right', any()))
+          .thenAnswer((_) async => loggedUser);
+      when(() =>
+              mockArDriveAuth.login(any(), 'typo', any(), skipDriveCheck: true))
+          .thenAnswer((_) async => loggedUser);
+    });
+
+    for (final type in [ProfileType.json, ProfileType.arConnect]) {
+      final name = type == ProfileType.json ? 'a keyfile' : 'Wander';
+
+      blocTest<LoginBloc, LoginState>(
+        '$name: asks to try again or continue, never "Wrong password"',
+        build: createBloc,
+        act: (bloc) {
+          bloc.profileType = type;
+          bloc.lastKnownWalletAddress = 'some address';
+          bloc.add(LoginWithPassword(
+              wallet: wallet, password: 'typo', showWalletCreated: false));
+        },
+        expect: () => [
+          LoginCheckingPassword(),
+          const LoginPasswordOpensNoDrives(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        '$name: Try again goes back to the password; the right one signs in',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.profileType = type;
+          bloc.lastKnownWalletAddress = 'some address';
+          bloc.add(LoginWithPassword(
+              wallet: wallet, password: 'typo', showWalletCreated: false));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const RetrySignInPassword());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(LoginWithPassword(
+              wallet: wallet, password: 'right', showWalletCreated: false));
+        },
+        expect: () => [
+          LoginCheckingPassword(),
+          const LoginPasswordOpensNoDrives(),
+          const LoginPasswordRetry(),
+          LoginCheckingPassword(),
+          const TypeMatcher<LoginSuccess>(),
+        ],
+        verify: (_) => verifyNever(() => mockArDriveAuth.login(
+            any(), any(), any(),
+            sourceWalletAddress: any(named: 'sourceWalletAddress'),
+            skipDriveCheck: true)),
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        '$name: Continue signs in, keeping the password, with the drives '
+        'it didn\'t open locked',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.profileType = type;
+          bloc.lastKnownWalletAddress = 'some address';
+          bloc.add(LoginWithPassword(
+              wallet: wallet, password: 'typo', showWalletCreated: false));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const ContinueSignInWithLockedDrives());
+        },
+        expect: () => [
+          LoginCheckingPassword(),
+          const LoginPasswordOpensNoDrives(),
+          LoginCheckingPassword(),
+          const TypeMatcher<LoginSuccess>(),
+        ],
+        verify: (_) => verify(() => mockArDriveAuth.login(any(), 'typo', type,
+            skipDriveCheck: true)).called(1),
+      );
+    }
+
+    blocTest<LoginBloc, LoginState>(
+      'Try again or Continue with nothing pending does nothing',
+      build: createBloc,
+      act: (bloc) {
+        bloc.add(const RetrySignInPassword());
+        bloc.add(const ContinueSignInWithLockedDrives());
+      },
+      expect: () => <LoginState>[],
+    );
+  });
+
   group('CheckIfUserIsLoggedIn', () {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())

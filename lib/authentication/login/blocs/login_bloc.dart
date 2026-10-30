@@ -184,6 +184,75 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(const LoginLanding());
     } else if (event is CancelWalletLogin) {
       await _handleCancelWalletLoginEvent(emit);
+    } else if (event is RetrySignInPassword) {
+      _handleRetrySignInPassword(emit);
+    } else if (event is ContinueSignInWithLockedDrives) {
+      await _handleContinueSignInWithLockedDrives(emit);
+    }
+  }
+
+  /// A sign-in whose password opened none of the wallet's private drives,
+  /// waiting for the user to try again or continue. See
+  /// [LoginPasswordOpensNoDrives].
+  _PendingSignIn? _pendingSignIn;
+
+  /// Back to the password, with what was typed selected.
+  void _handleRetrySignInPassword(Emitter<LoginState> emit) {
+    final pending = _pendingSignIn;
+    _pendingSignIn = null;
+
+    if (pending == null) {
+      return;
+    }
+
+    // MetaMask's password dialog closes when it is submitted, so it is asked
+    // again; any other wallet's is still open beneath.
+    if (pending.promptWallet is EthereumWallet) {
+      emit(PromptPassword(
+        wallet: pending.promptWallet,
+        derivedEthWallet: pending.derivedEthWallet,
+        sourceWalletAddress: _sourceWalletAddress,
+        showWalletCreated: pending.showWalletCreated,
+      ));
+      return;
+    }
+
+    emit(const LoginPasswordRetry());
+  }
+
+  /// Signs in anyway: the drives the password didn't open stay locked.
+  Future<void> _handleContinueSignInWithLockedDrives(
+    Emitter<LoginState> emit,
+  ) async {
+    final pending = _pendingSignIn;
+    _pendingSignIn = null;
+
+    if (pending == null) {
+      return;
+    }
+
+    emit(LoginCheckingPassword());
+
+    try {
+      await _verifyArConnectWalletAddressAndLogIn(
+        wallet: pending.wallet,
+        password: pending.password,
+        profileType: pending.profileType,
+        previousState: pending.previousState,
+        emit: emit,
+        mnemonic: pending.mnemonic,
+        isNewUser: pending.isNewUser,
+        showWalletCreated: pending.showWalletCreated,
+        skipDriveCheck: true,
+      );
+    } catch (e) {
+      logger.e('Failed to sign in with the drives locked', e);
+      usingSeedphrase = false;
+      if (e is AuthenticationGatewayException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+        return;
+      }
+      emit(LoginUnknownFailure(e));
     }
   }
 
@@ -599,6 +668,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       mnemonic: mnemonic,
       isNewUser: false,
       showWalletCreated: false,
+      promptWallet: event.wallet,
+      derivedEthWallet: derivedEthWallet,
     );
   }
 
@@ -1031,7 +1102,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       required Emitter<LoginState> emit,
       String? mnemonic,
       required bool isNewUser,
-      required bool showWalletCreated}) async {
+      required bool showWalletCreated,
+      Wallet? promptWallet,
+      EthereumProviderWallet? derivedEthWallet,
+      bool skipDriveCheck = false}) async {
     if (_isArConnectWallet()) {
       final isArConnectAddressValid = await _verifyArConnectWalletAddress();
 
@@ -1044,12 +1118,39 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     }
 
-    final user = await _arDriveAuth.login(
-      wallet,
-      password,
-      profileType,
-      sourceWalletAddress: _sourceWalletAddress,
-    );
+    final User user;
+    try {
+      user = skipDriveCheck
+          ? await _arDriveAuth.login(
+              wallet,
+              password,
+              profileType,
+              sourceWalletAddress: _sourceWalletAddress,
+              skipDriveCheck: true,
+            )
+          : await _arDriveAuth.login(
+              wallet,
+              password,
+              profileType,
+              sourceWalletAddress: _sourceWalletAddress,
+            );
+    } on PasswordOpensNoDriveException {
+      // Not a wrong password: the user may correct it or continue with
+      // those drives locked. Sign-in is never blocked by its drives.
+      _pendingSignIn = _PendingSignIn(
+        wallet: wallet,
+        password: password,
+        profileType: profileType,
+        previousState: previousState,
+        mnemonic: mnemonic,
+        isNewUser: isNewUser,
+        showWalletCreated: showWalletCreated,
+        promptWallet: promptWallet ?? wallet,
+        derivedEthWallet: derivedEthWallet,
+      );
+      emit(const LoginPasswordOpensNoDrives());
+      return;
+    }
 
     if (showWalletCreated) {
       emit(LoginDownloadGeneratedWallet(wallet: wallet, mnemonic: mnemonic));
@@ -1447,4 +1548,32 @@ class WalletLoginCancelled implements Exception {
 /// Not the same as a file that was read and isn't a keyfile.
 class KeyfileUnreadableException implements Exception {
   const KeyfileUnreadableException();
+}
+
+/// What a sign-in held back by [LoginPasswordOpensNoDrives] needs to go on.
+class _PendingSignIn {
+  const _PendingSignIn({
+    required this.wallet,
+    required this.password,
+    required this.profileType,
+    required this.previousState,
+    required this.mnemonic,
+    required this.isNewUser,
+    required this.showWalletCreated,
+    required this.promptWallet,
+    required this.derivedEthWallet,
+  });
+
+  /// The Arweave wallet signing in.
+  final Wallet wallet;
+  final String password;
+  final ProfileType profileType;
+  final LoginState previousState;
+  final String? mnemonic;
+  final bool isNewUser;
+  final bool showWalletCreated;
+
+  /// The wallet the password was asked for: for MetaMask, the Ethereum one.
+  final Wallet promptWallet;
+  final EthereumProviderWallet? derivedEthWallet;
 }

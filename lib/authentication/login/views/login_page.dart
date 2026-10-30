@@ -583,6 +583,11 @@ void handleLoginState(BuildContext context, LoginState loginState) {
       message:
           'Unable to connect to the server. Please check your connection and try again.',
     );
+  } else if (loginState is LoginPasswordOpensNoDrives) {
+    showPasswordOpensNoDrivesDialog(
+      context: context,
+      loginBloc: context.read<LoginBloc>(),
+    );
   } else if (loginState is LoginPasswordFailedWithPrivateDriveNotFound) {
     showErrorDialog(
       context: context,
@@ -617,8 +622,10 @@ bool loginPanelRebuildsOn(LoginState current) {
   // in the panel itself.
   final isPasswordDialog =
       current is PromptPassword && !current.alreadyLoggedIn;
-  final isPasswordChecking =
-      current is LoginCheckingPassword || current is LoginPasswordFailed;
+  final isPasswordChecking = current is LoginCheckingPassword ||
+      current is LoginPasswordFailed ||
+      current is LoginPasswordOpensNoDrives ||
+      current is LoginPasswordRetry;
   // The password dialog opens over whatever the panel shows: for a new
   // account, "Creating your account".
   final isChoosingPassword = current is CreateNewPassword;
