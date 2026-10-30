@@ -1,16 +1,24 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
+/// On the sign-in screen after ArDrive signed out because Wander moved to
+/// another account; see `ProfileCubit.signOutForOtherWallet`.
 class WalletSwitchDialog extends StatelessWidget {
-  final bool fromAuthPage;
+  const WalletSwitchDialog({super.key});
 
-  const WalletSwitchDialog({super.key, this.fromAuthPage = false});
   @override
-  Widget build(BuildContext context) => ArDriveStandardModalNew(
-        title: appLocalizationsOf(context).walletSwitch,
-        description: appLocalizationsOf(context).walletChangeDetected,
-      );
+  Widget build(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+    return ArDriveStandardModalNew(
+      title: l10n.wanderAccountChangedTitle,
+      description: l10n.wanderAccountChangedDescription,
+      actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(),
+          title: l10n.okEmphasized,
+        ),
+      ],
+    );
+  }
 }

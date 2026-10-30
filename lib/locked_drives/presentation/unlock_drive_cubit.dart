@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -86,6 +87,10 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
     }
 
     emit(const UnlockDriveState(status: UnlockDriveStatus.working));
+
+    // Unlock is the person acting: it may ask them to reconnect Wander again
+    // after an earlier Cancel.
+    ArConnectPrompt.personActed();
 
     final DriveUnlockResult result;
     try {

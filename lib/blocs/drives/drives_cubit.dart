@@ -153,6 +153,10 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final ghostFolders = await _driveDao.ghostFolders().get();
 
+      // Signing out empties every table, which fires this, and closes the
+      // cubit while the read above is waiting.
+      if (isClosed) return;
+
       final sharedDrives =
           drives.where((d) => !isDriveOwner(auth, d.ownerAddress)).toList();
 

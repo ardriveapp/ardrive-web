@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/utils.dart' show ownerToAddress;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,6 +30,21 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ProfilePresenceHint? _presenceHint;
   final ProfilePresence _presenceAtStart;
   StreamSubscription<User?>? _authSubscription;
+
+  /// Stops listening for Wander's account switches; see [_onWanderSwitch].
+  Function()? _forgetWanderSwitch;
+
+  /// Removes this cubit as the one told when a Wander reconnect finds
+  /// another wallet.
+  VoidCallback? _forgetOtherWalletHandler;
+
+  /// Set while [signOutForOtherWallet] runs, so it signs out once however
+  /// many times Wander says so.
+  Future<void>? _signingOutForOtherWallet;
+
+  /// Whether the sign-in screen still owes the notice that Wander's account
+  /// changed; see [takeOtherWalletNotice].
+  bool _otherWalletNotice = false;
 
   ProfileCubit({
     required TurboUploadService turboUploadService,
@@ -55,7 +71,71 @@ class ProfileCubit extends Cubit<ProfileState> {
     // something called [refreshBalance].
     _authSubscription =
         _arDriveAuth.onAuthStateChanged().listen(_followAuthUser);
+    // The one place that answers a Wander account switch, for as long as the
+    // app runs: in the drives, on Welcome back, anywhere.
+    _forgetWanderSwitch = onArConnectWalletSwitchTo(onWanderSwitch);
+    _forgetOtherWalletHandler =
+        ArConnectPrompt.registerOtherWalletHandler(signOutForOtherWallet);
     promptToAuthenticate();
+  }
+
+  /// Wander moved to another account. If this device has a saved Wander
+  /// account on a different wallet, it can't write through Wander any more,
+  /// so it signs out. [address] is the account Wander moved to; null is
+  /// Wander saying ArDrive disconnected, which signing out itself does.
+  @visibleForTesting
+  Future<void> onWanderSwitch(String? address) async {
+    if (address == null || isClosed) return;
+
+    try {
+      final profile = await _profileDao.defaultProfile().getSingleOrNull();
+      if (profile == null ||
+          profile.profileType != ProfileType.arConnect.index ||
+          await ownerToAddress(profile.walletPublicKey) == address) {
+        return;
+      }
+    } catch (e) {
+      logger.w('Could not read the saved account after a Wander switch: $e');
+      return;
+    }
+
+    logger.i('Wander moved to another account; signing out');
+    await signOutForOtherWallet();
+  }
+
+  /// Signs out because Wander is on another wallet than the saved account,
+  /// all the way: the saved account goes too, so the sign-in screen offers
+  /// no Welcome back for a wallet Wander is no longer on, and it says why.
+  ///
+  /// Once: while one is running, another call waits for it.
+  Future<void> signOutForOtherWallet() {
+    return _signingOutForOtherWallet ??= () async {
+      try {
+        _otherWalletNotice = true;
+        // Nothing still running, such as a drive unlock pass, may sign with
+        // the other wallet while this signs out.
+        final profile = await _profileDao.defaultProfile().getSingleOrNull();
+        if (profile != null &&
+            profile.profileType == ProfileType.arConnect.index) {
+          ArConnectPrompt.refuseFor(profile.walletPublicKey);
+        }
+        await _arDriveAuth.logout();
+        if (!isClosed) emit(ProfileSignedOutForOtherWallet());
+      } catch (e, stackTrace) {
+        logger.e('Could not sign out after a Wander switch', e, stackTrace);
+        if (!isClosed) emit(ProfileSignedOutForOtherWallet());
+      } finally {
+        _signingOutForOtherWallet = null;
+      }
+    }();
+  }
+
+  /// True once after [signOutForOtherWallet], for the sign-in screen to say
+  /// why it is there.
+  bool takeOtherWalletNotice() {
+    final owed = _otherWalletNotice;
+    _otherWalletNotice = false;
+    return owed;
   }
 
   /// Whether this device holds an account, for the sign-in panel to draw
@@ -143,8 +223,13 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Asked before a write. Wander is asked through [ArConnectPrompt], so a
   /// locked Wander, or one whose prompt was closed, ends in Try again rather
   /// than a wait; Cancel throws [ArConnectUnavailableException].
-  Future<bool> checkIfWalletMismatch() =>
-      _checkIfWalletMismatch(askPerson: true);
+  ///
+  /// A write is the person acting, so it may ask them to reconnect again
+  /// after an earlier Cancel; see [ArConnectPrompt.personActed].
+  Future<bool> checkIfWalletMismatch() {
+    ArConnectPrompt.personActed();
+    return _checkIfWalletMismatch(askPerson: true);
+  }
 
   Future<bool> _checkIfWalletMismatch({required bool askPerson}) async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
@@ -178,23 +263,30 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  /// Whether Wander is on a wallet other than [savedPublicKey]'s, or has
-  /// taken back ArDrive's permissions. Either way the account here can't
-  /// write through it, so both are handled as a switch.
+  /// Whether Wander is on a wallet other than [savedPublicKey]'s.
+  ///
+  /// A Wander that has lost ArDrive's permissions, as every site's are lost
+  /// when Wander updates, is not a switch: [ArConnectPrompt.ask] offers to
+  /// reconnect, then asks this again.
   Future<bool> _wanderIsElsewhere(String savedPublicKey) async {
     if (!await _arConnect.checkPermissions()) {
-      logger.w('ArConnect permissions changed');
-      return true;
+      logger.w('Wander does not have ArDrive\'s permissions');
+      throw const ArConnectMissingPermissionException();
     }
 
-    return await _arConnect.getPublicKey() != savedPublicKey;
+    // The address, not the public key: Wander reads its active address from
+    // storage, but decrypts the wallet for its public key, which brings up
+    // its unlock window when it is locked. So this check never does.
+    return await _arConnect.getWalletAddress() !=
+        await ownerToAddress(savedPublicKey);
   }
 
-  /// Returns true if a logout flow is initiated as a result of a detected wallet or permissions change
+  /// Returns true if Wander is on another wallet, after signing out (see
+  /// [signOutForOtherWallet]).
   Future<bool> logoutIfWalletMismatch() async {
     final isMismatch = await checkIfWalletMismatch();
     if (isMismatch) {
-      await logoutProfile();
+      await signOutForOtherWallet();
     }
     return isMismatch;
   }
@@ -202,8 +294,10 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// [logoutIfWalletMismatch] for the check a sync runs in the background.
   ///
   /// Quiet: it asks Wander only once Wander has answered in this session,
-  /// so it never brings up Wander's unlock prompt on its own; it asks the
-  /// person nothing; and no answer counts as no mismatch. A switch while the
+  /// and only for what it answers without its password (see
+  /// [_wanderIsElsewhere]), so it never brings up Wander's unlock prompt on
+  /// its own; it asks the person nothing; and no answer counts as no
+  /// mismatch. A switch while the
   /// app is open is also caught by Wander's walletSwitch event, and anything
   /// else at the next write.
   Future<bool> logoutIfWalletMismatchInBackground() async {
@@ -211,7 +305,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     try {
       final isMismatch = await _checkIfWalletMismatch(askPerson: false);
-      if (isMismatch) await logoutProfile();
+      if (isMismatch) await signOutForOtherWallet();
       return isMismatch;
     } on ArConnectUnavailableException catch (e) {
       logger.i('Wander did not answer the background wallet check: $e');
@@ -224,6 +318,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     ProfileType profileType,
   ) async {
     emit(ProfileLoggingIn());
+
+    // Wander may be asked again for this account, and the person asked to
+    // reconnect, whatever an earlier session decided.
+    ArConnectPrompt.signedIn();
 
     // Before anyone hears the user is in: the first sync after login reads a
     // private drive's key from its row, and a drive opened as a visitor has
@@ -316,6 +414,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   @override
   Future<void> close() async {
     await _authSubscription?.cancel();
+    _forgetWanderSwitch?.call();
+    _forgetOtherWalletHandler?.call();
     return super.close();
   }
 

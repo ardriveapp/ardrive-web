@@ -61,6 +61,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   bool ignoreNextWaletSwitch = false;
 
+  /// Stops listening for Wander's account switches when this bloc closes.
+  Function()? _forgetWalletSwitch;
+
   @visibleForTesting
   String? lastKnownWalletAddress;
 
@@ -1164,6 +1167,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
+  @override
+  Future<void> close() {
+    _forgetWalletSwitch?.call();
+    return super.close();
+  }
+
   bool _isArConnectWallet() {
     return profileType == ProfileType.arConnect;
   }
@@ -1173,16 +1182,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    onArConnectWalletSwitch(() async {
+    _forgetWalletSwitch = onArConnectWalletSwitch(() async {
+      if (isClosed) return;
       logger.d('Wallet switch detected on LoginBloc');
-      final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
-      if (isUserLoggedIng && !_isArConnectWallet()) {
-        logger.d(
-          'Wallet switch detected for non-arconnect wallet'
-          ' ($profileType) - ignoring',
-        );
-        return;
-      }
+      // A saved account is ProfileCubit's to sign out (see
+      // ProfileCubit.signOutForOtherWallet); this only covers a Wander
+      // sign-in that has not saved one yet.
+      if (await _arDriveAuth.isUserLoggedIn()) return;
 
       if (ignoreNextWaletSwitch) {
         ignoreNextWaletSwitch = false;

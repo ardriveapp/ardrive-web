@@ -3649,6 +3649,12 @@ class _SyncRepository implements SyncRepository {
 
       for (final entry in drivesByOwner.entries) {
         final ownerDrives = entry.value;
+        // From before the lowest height, looking back as a sync does after a
+        // reload, so a change a gateway indexed late is still found. What is
+        // already on this device, and anything at or below a drive's own
+        // height that this device never keeps as a row, is left out (see
+        // [ArweaveService.probeActiveDriveIds]): otherwise a drive's own
+        // writes before its last read are "changed" after every reload.
         final minBlock = ownerDrives
             .map((d) => _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
             .reduce(min);
@@ -3657,6 +3663,10 @@ class _SyncRepository implements SyncRepository {
           driveIds: ownerDrives.map((d) => d.id).toList(),
           minBlockHeight: minBlock,
           ownerAddress: entry.key,
+          readUpTo: {
+            for (final drive in ownerDrives) drive.id: drive.lastBlockHeight!,
+          },
+          knownTxIds: _driveDao.knownTransactionIds,
         );
 
         // One unconfirmable owner ends the whole probe, rather than dropping
