@@ -384,6 +384,11 @@ class ArDriveColorTokens {
   final Color textMid;
   final Color textLow;
   final Color textXLow;
+
+  /// The keyboard focus ring. text-mid, which holds 3:1 (WCAG's bar for a
+  /// focus indicator) on every surface up to a selected row; stroke-high,
+  /// a 16% white in dark, read as a faint tint.
+  Color get focusRing => textMid;
   final Color textLink;
   final Color textOnPrimary;
   final Color textRed;

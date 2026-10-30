@@ -314,14 +314,17 @@ class ArDriveStandardModalNew extends StatelessWidget {
                 label: closeLabel,
                 excludeSemantics: true,
                 onTap: _close(context),
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: _close(context),
-                    child: const Align(
-                      alignment: Alignment.centerRight,
-                      child: ArDriveIcon(
-                        icon: ArDriveIconsData.x,
-                        size: 24,
+                child: ArDriveFocusable(
+                  onActivate: _close(context),
+                  child: ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: _close(context),
+                      child: const Align(
+                        alignment: Alignment.centerRight,
+                        child: ArDriveIcon(
+                          icon: ArDriveIconsData.x,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),

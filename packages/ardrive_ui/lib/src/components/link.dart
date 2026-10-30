@@ -155,8 +155,9 @@ class _ArDriveLinkState extends State<ArDriveLink> {
               // The keyboard focus ring, drawn just outside the text so it takes
               // no room. Only the keyboard shows it: a click doesn't, as on the
               // web.
-              foregroundPainter:
-                  _focused ? _FocusRingPainter(colorTokens.strokeHigh) : null,
+              foregroundPainter: _focused
+                  ? ArDriveFocusRingPainter(colorTokens.focusRing)
+                  : null,
               child: text,
             ),
           ),
@@ -164,28 +165,4 @@ class _ArDriveLinkState extends State<ArDriveLink> {
       ),
     );
   }
-}
-
-class _FocusRingPainter extends CustomPainter {
-  _FocusRingPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        (Offset.zero & size).inflate(3),
-        const Radius.circular(ArDriveRadius.sm),
-      ),
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_FocusRingPainter oldDelegate) =>
-      oldDelegate.color != color;
 }

@@ -20,6 +20,23 @@ Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     );
 
 void main() {
+  testWidgets('an icon button is reached with Tab and pressed with Enter',
+      (tester) async {
+    var pressed = 0;
+    await _pump(
+      tester,
+      ArDriveIconButton(
+        icon: ArDriveIcons.share(),
+        tooltip: 'Share file',
+        onPressed: () => pressed++,
+      ),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(pressed, 1);
+  });
+
   /// The details panel's toolbar is a row of these. A screen reader read
   /// each one's name with nothing to say it could be pressed.
   testWidgets('an icon button is a button to a screen reader, named once',

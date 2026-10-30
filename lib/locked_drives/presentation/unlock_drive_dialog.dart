@@ -225,12 +225,16 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                 if (state.status == UnlockDriveStatus.networkError ||
                     state.status == UnlockDriveStatus.walletFailed) ...[
                   const SizedBox(height: ArDriveSpacing.xs),
-                  ArDriveStatusText(
-                    key: const Key('unlockDriveNetworkError'),
-                    text: state.status == UnlockDriveStatus.walletFailed
-                        ? strings.unlockWalletFailed
-                        : strings.unlockNetworkError,
-                    type: ArDriveStatusType.error,
+                  // Read out when it appears: a failed unlock was silent.
+                  Semantics(
+                    liveRegion: true,
+                    child: ArDriveStatusText(
+                      key: const Key('unlockDriveNetworkError'),
+                      text: state.status == UnlockDriveStatus.walletFailed
+                          ? strings.unlockWalletFailed
+                          : strings.unlockNetworkError,
+                      type: ArDriveStatusType.error,
+                    ),
                   ),
                 ],
                 if (cubit.hasOtherLockedDrives) ...[

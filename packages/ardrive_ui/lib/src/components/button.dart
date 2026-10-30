@@ -148,8 +148,33 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
         hover;
   }
 
+  /// Whether the button has focus from the keyboard, which draws the ring.
+  bool _keyboardFocused = false;
+
   @override
   Widget build(BuildContext context) {
+    // Material's button takes focus but draws no ring we can see, so Tab
+    // landed on a button with no sign it had. Only the keyboard shows it.
+    return Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      includeSemantics: false,
+      onFocusChange: (focused) => setState(() => _keyboardFocused = focused &&
+          FocusManager.instance.highlightMode ==
+              FocusHighlightMode.traditional),
+      child: CustomPaint(
+        foregroundPainter: _keyboardFocused
+            ? ArDriveFocusRingPainter(
+                ArDriveTheme.of(context).themeData.colorTokens.focusRing,
+                radius: widget.borderRadius + 2,
+              )
+            : null,
+        child: _button(context),
+      ),
+    );
+  }
+
+  Widget _button(BuildContext context) {
     var typography = widget.typography;
     var colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 

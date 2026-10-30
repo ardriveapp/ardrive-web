@@ -58,6 +58,46 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
   bool visible = false;
   late Anchor _anchor;
 
+  /// The menu's button, which takes focus back when a menu opened from the
+  /// keyboard closes; and the first item, which takes it when one opens
+  /// (README, Menus).
+  final _triggerFocus = FocusNode(debugLabel: 'menu button');
+  final _itemFocus = <FocusNode>[];
+  bool _openedByKeyboard = false;
+
+  /// One focus node per item, so Up and Down can move to the next one
+  /// directly.
+  FocusNode _focusFor(int index) {
+    while (_itemFocus.length <= index) {
+      _itemFocus.add(FocusNode(debugLabel: 'menu item ${_itemFocus.length}'));
+    }
+    return _itemFocus[index];
+  }
+
+  /// The items that can be picked, in order.
+  List<int> get _pickable => [
+        for (var i = 0; i < widget.items.length; i++)
+          if (!widget.items[i].isDivider && widget.items[i].onClick != null) i,
+      ];
+
+  /// Moves focus [step] items from [index], wrapping round.
+  void _move(int index, int step) {
+    final pickable = _pickable;
+    if (pickable.isEmpty) return;
+    final at = pickable.indexOf(index);
+    final next = pickable[(at + step) % pickable.length];
+    _focusFor(next).requestFocus();
+  }
+
+  @override
+  void dispose() {
+    _triggerFocus.dispose();
+    for (final node in _itemFocus) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
   double dropdownHeight = 0;
 
   @override
@@ -151,6 +191,43 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
   /// Kept clear between a placed menu and the screen's edge.
   static const _screenMargin = 8.0;
 
+  void _toggle({bool fromKeyboard = false}) {
+    widget.onClick?.call();
+    setState(() {
+      visible = !visible;
+      if (visible) _placeMenu();
+    });
+    _openedByKeyboard = visible && fromKeyboard;
+    if (_openedByKeyboard) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final pickable = _pickable;
+        if (mounted && visible && pickable.isNotEmpty) {
+          _focusFor(pickable.first).requestFocus();
+        }
+      });
+    }
+  }
+
+  /// Closed; from the keyboard, focus goes back to the menu's button, unless
+  /// what was picked put it somewhere else, such as the dialog it opened.
+  void _closed() {
+    if (_openedByKeyboard) {
+      _openedByKeyboard = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // A dialog the pick opened is on top now, and takes focus a moment
+        // later: the button under it must not take it back.
+        if (ModalRoute.of(context)?.isCurrent == false) return;
+        final focus = FocusManager.instance.primaryFocus;
+        final fellBack = focus == null ||
+            _itemFocus.contains(focus) ||
+            (focus is FocusScopeNode &&
+                _triggerFocus.ancestors.contains(focus));
+        if (fellBack) _triggerFocus.requestFocus();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // The rows grow with the reader's text scale (see ArDriveDropdownItemTile),
@@ -173,6 +250,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
         setState(() {
           visible = value;
         });
+        if (!value) _closed();
       },
       visible: visible,
       anchor: _anchor,
@@ -211,41 +289,62 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                         // A button of its own, named by its text, and
                         // disabled when it has nothing to do: without the
                         // flag the web gave it no role and no name.
+                        final item = widget.items[index];
+                        void pick() {
+                          item.onClick?.call();
+                          setState(() {
+                            visible = !visible;
+                          });
+                          if (!visible) _closed();
+                        }
+
                         return Semantics(
                           container: true,
                           button: true,
-                          enabled: widget.items[index].onClick != null,
-                          child: GestureDetector(
-                            onTap: () {
-                              widget.items[index].onClick?.call();
-                              setState(() {
-                                visible = !visible;
-                              });
+                          enabled: item.onClick != null,
+                          // Tab, or Up and Down, reach it; Enter or Space
+                          // picks it.
+                          child: CallbackShortcuts(
+                            bindings: {
+                              const SingleActivator(
+                                      LogicalKeyboardKey.arrowDown):
+                                  () => _move(index, 1),
+                              const SingleActivator(LogicalKeyboardKey.arrowUp):
+                                  () => _move(index, -1),
                             },
-                            child: ArDriveHoverWidget(
-                              hoverColor: dropdownTheme.hoverColor,
-                              defaultColor: dropdownTheme.backgroundColor,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  // Expanded, so the item is laid out to the
-                                  // menu's width. A Row hands its non-flexible
-                                  // children an unbounded main axis, so an item
-                                  // used to measure itself at whatever width its
-                                  // longest word wanted and the menu overflowed
-                                  // by the difference - which on a 320px phone
-                                  // at text scale 2.0 was 58 pixels off the
-                                  // right edge of every menu in the app. A
-                                  // bounded width is also what lets a label
-                                  // inside the item give at all.
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [widget.items[index]],
-                                    ),
+                            child: ArDriveFocusable(
+                              focusNode: _focusFor(index),
+                              onActivate: item.onClick == null ? null : pick,
+                              radius: 0,
+                              inflate: -2,
+                              child: GestureDetector(
+                                onTap: pick,
+                                child: ArDriveHoverWidget(
+                                  hoverColor: dropdownTheme.hoverColor,
+                                  defaultColor: dropdownTheme.backgroundColor,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    children: [
+                                      // Expanded, so the item is laid out to the
+                                      // menu's width. A Row hands its non-flexible
+                                      // children an unbounded main axis, so an item
+                                      // used to measure itself at whatever width its
+                                      // longest word wanted and the menu overflowed
+                                      // by the difference - which on a 320px phone
+                                      // at text scale 2.0 was 58 pixels off the
+                                      // right edge of every menu in the app. A
+                                      // bounded width is also what lets a label
+                                      // inside the item give at all.
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [widget.items[index]],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -259,16 +358,16 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
           ),
         ),
       ),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
-          widget.onClick?.call();
-          setState(() {
-            visible = !visible;
-            if (visible) _placeMenu();
-          });
-        },
-        child: IgnorePointer(ignoring: visible, child: widget.child),
+      // Tab reaches the menu's button and Enter or Space opens it, as a click
+      // does; every row's menu and the page's were out of reach.
+      child: ArDriveFocusable(
+        focusNode: _triggerFocus,
+        onActivate: () => _toggle(fromKeyboard: true),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => _toggle(),
+          child: IgnorePointer(ignoring: visible, child: widget.child),
+        ),
       ),
     );
   }
