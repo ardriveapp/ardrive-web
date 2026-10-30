@@ -94,8 +94,28 @@ class CreatePassword extends LoginEvent {
   List<Object> get props => [password, wallet, isNewUser, showWalletCreated];
 }
 
+/// Forgets the account stored on this device: Welcome back's "Use a
+/// different account", after its confirmation. Signs it out and deletes its
+/// profile and this device's data.
 class ForgetWallet extends LoginEvent {
   const ForgetWallet();
+}
+
+/// Leaves the wallet a sign-in or a sign-up has loaded, from its password
+/// dialog's close or "Use a different wallet", back to Log in ([toLogIn]) or
+/// the first panel.
+///
+/// Forgets an account stored on this device only if this flow saved it: a
+/// sign-up whose password step failed after its profile was saved. An
+/// account that was here before (a returning user who reached Sign up or Log
+/// in again) is never touched, whichever wallet it is.
+class LeaveWallet extends LoginEvent {
+  const LeaveWallet({this.toLogIn = false});
+
+  final bool toLogIn;
+
+  @override
+  List<Object> get props => [toLogIn];
 }
 
 /// Asks again for the password of a new account whose password step failed,

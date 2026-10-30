@@ -5666,6 +5666,8 @@
   "@welcomeBackBody": {"description": "Under the Welcome back title."},
   "welcomeBackWrongPassword": "Invalid password. Please try again.",
   "@welcomeBackWrongPassword": {"description": "The password didn't unlock the account."},
+  "useDifferentWallet": "Use a different wallet",
+  "@useDifferentWallet": {"description": "In a sign-in or sign-up password dialog: drop the wallet just chosen and go back to choose another. Forgets nothing stored on this device."},
   "welcomeBackDifferentAccount": "Use a different account",
   "@welcomeBackDifferentAccount": {"description": "Forgets this account on this device, after a confirmation."},
   "wanderNoAnswerTitle": "Wander didn't answer",

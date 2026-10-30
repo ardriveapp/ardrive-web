@@ -63,17 +63,13 @@ class ArDriveLoginModal extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: Padding(
                   padding: const EdgeInsets.all(ArDriveSpacing.md),
-                  child: hasCloseButton
-                      ? ArDriveIconButton(
-                          icon: ArDriveIcon(
-                            icon: ArDriveIconsData.x,
-                            size: 24,
-                            color: colorTokens.iconMid,
-                          ),
-                          tooltip: appLocalizationsOf(context).close,
-                          onPressed: onClose ?? () => Navigator.pop(context),
-                        )
-                      : SettingsSubmenu(
+                  // Settings, then close, in the corner: the close is the
+                  // dialog's own way out, and settings never takes its place.
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasSettingsButton)
+                        SettingsSubmenu(
                           child: ArDriveClickArea(
                             tooltip:
                                 appLocalizationsOf(context).advancedSettings,
@@ -84,6 +80,20 @@ class ArDriveLoginModal extends StatelessWidget {
                             ),
                           ),
                         ),
+                      if (hasSettingsButton && hasCloseButton)
+                        const SizedBox(width: ArDriveSpacing.sm),
+                      if (hasCloseButton)
+                        ArDriveIconButton(
+                          icon: ArDriveIcon(
+                            icon: ArDriveIconsData.x,
+                            size: 24,
+                            color: colorTokens.iconMid,
+                          ),
+                          tooltip: appLocalizationsOf(context).close,
+                          onPressed: onClose ?? () => Navigator.pop(context),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             Padding(

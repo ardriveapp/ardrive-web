@@ -1165,6 +1165,168 @@ void main() {
     );
   });
 
+  // Leaving a sign-in or sign-up's wallet: closing its password dialog or
+  // "Use a different wallet". An account already stored here must survive,
+  // whichever wallet it is; only an account this flow saved itself (a
+  // sign-up whose password step failed after saving) is forgotten.
+  group('LeaveWallet', () {
+    const flowAddress = 'the-flows-address';
+
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent()).thenReturn(false);
+      when(() => mockSolanaProviderService.disconnect())
+          .thenAnswer((_) => Future.value());
+      when(() => mockArDriveAuth.logout()).thenAnswer((_) async {});
+      when(() => mockProfileCubit.logoutProfile()).thenAnswer((_) async {});
+    });
+
+    blocTest<LoginBloc, LoginState>(
+      'keeps an account that was already stored here',
+      build: createBloc,
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => 'a-returning-users-address'),
+      act: (bloc) => bloc.add(const LeaveWallet()),
+      expect: () => [const LoginLanding()],
+      verify: (_) {
+        verifyNever(() => mockArDriveAuth.logout());
+        verifyNever(() => mockProfileCubit.logoutProfile());
+        verify(() => mockSolanaProviderService.disconnect()).called(1);
+      },
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'keeps it even when this flow loaded the same wallet',
+      build: createBloc,
+      // A returning user who reached Log in again with their own keyfile:
+      // the account was theirs before this flow, so closing keeps it.
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => flowAddress),
+      act: (bloc) => bloc.add(const LeaveWallet()),
+      verify: (_) => verifyNever(() => mockArDriveAuth.logout()),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'forgets the account this flow saved itself',
+      build: () => createBloc()..savedByThisFlowForTesting = flowAddress,
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => flowAddress),
+      act: (bloc) => bloc.add(const LeaveWallet()),
+      expect: () => [const LoginLanding()],
+      verify: (_) {
+        verify(() => mockArDriveAuth.logout()).called(1);
+        verify(() => mockProfileCubit.logoutProfile()).called(1);
+      },
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'forgets nothing when what is stored is no longer what this flow saved',
+      build: () => createBloc()..savedByThisFlowForTesting = flowAddress,
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => 'another-address'),
+      act: (bloc) => bloc.add(const LeaveWallet()),
+      verify: (_) => verifyNever(() => mockArDriveAuth.logout()),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'forgets nothing when the stored account cannot be read',
+      build: () => createBloc()..savedByThisFlowForTesting = flowAddress,
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenThrow(Exception('the profile store is closed')),
+      act: (bloc) => bloc.add(const LeaveWallet()),
+      expect: () => [const LoginLanding()],
+      verify: (_) => verifyNever(() => mockArDriveAuth.logout()),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'forgets what it saved only once: a second leave keeps it',
+      build: () => createBloc()..savedByThisFlowForTesting = flowAddress,
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => flowAddress),
+      act: (bloc) async {
+        bloc.add(const LeaveWallet());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const LeaveWallet());
+      },
+      verify: (_) => verify(() => mockArDriveAuth.logout()).called(1),
+    );
+
+    // A sign-up whose login() saved the profile, then failed reading it
+    // back: closing its password step afterwards forgets that account, as
+    // closing always did, but only when it wasn't stored here before.
+    Future<void> signUpFailingAfterSave(
+        LoginBloc bloc, String? storedBefore, String storedAfter) async {
+      final stored = [storedBefore, storedAfter];
+      when(() => mockArDriveAuth.getWalletAddress()).thenAnswer(
+          (_) async => stored.length > 1 ? stored.removeAt(0) : stored.first);
+      when(() => mockArDriveAuth.login(any(), any(), ProfileType.json,
+              sourceWalletAddress: any(named: 'sourceWalletAddress')))
+          .thenThrow(Exception('could not read the profile back'));
+      bloc.add(const CreateNewWallet());
+      await Future<void>.delayed(Duration.zero);
+      final created = bloc.state as CreateNewPassword;
+      bloc.add(CreatePassword(
+        password: 'river-lantern-orbit-maple-quiet-harbor',
+        wallet: created.wallet,
+        mnemonic: created.mnemonic,
+        isNewUser: true,
+        showWalletCreated: true,
+      ));
+      await Future<void>.delayed(Duration.zero);
+      bloc.add(const LeaveWallet());
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    final generated = getTestWallet();
+    LoginBloc signUpBloc() => LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          solanaProviderService: mockSolanaProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
+          userRepository: mockUserRepository,
+          profileCubit: mockProfileCubit,
+          configService: mockConfigService,
+          walletFromMnemonic: (_) async => generated,
+        );
+
+    blocTest<LoginBloc, LoginState>(
+      'forgets an account a failed sign-up saved',
+      build: signUpBloc,
+      act: (bloc) async =>
+          signUpFailingAfterSave(bloc, null, await generated.getAddress()),
+      verify: (_) => verify(() => mockArDriveAuth.logout()).called(1),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'keeps it when that wallet was stored here before the sign-up',
+      build: signUpBloc,
+      act: (bloc) async {
+        final address = await generated.getAddress();
+        await signUpFailingAfterSave(bloc, address, address);
+      },
+      verify: (_) => verifyNever(() => mockArDriveAuth.logout()),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'keeps another account when the sign-up failed before saving',
+      build: signUpBloc,
+      act: (bloc) async => signUpFailingAfterSave(
+          bloc, 'a-returning-users-address', 'a-returning-users-address'),
+      verify: (_) => verifyNever(() => mockArDriveAuth.logout()),
+    );
+
+    blocTest<LoginBloc, LoginState>(
+      'goes back to Log in from a sign-in',
+      build: createBloc,
+      setUp: () => when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => null),
+      act: (bloc) => bloc.add(const LeaveWallet(toLogIn: true)),
+      expect: () => [isA<LoginInitial>()],
+    );
+  });
+
   group('testing ArDriveAuth FinishOnboarding event', () {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
