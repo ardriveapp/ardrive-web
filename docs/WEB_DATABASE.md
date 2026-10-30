@@ -275,10 +275,21 @@ offline. Sign-out now leaves none:
    does this, and only after the user is signed out: another tab may be
    starting and reading one of them.
 
-Steps 3 and 4 never fail a sign-out; a failure is logged. Measured cost of
-`secure_delete` (native SQLite, the 41,767-file benchmark's shape): see the
-PR that added it; deletes of whole drives and the sign-out itself are the
-only paths that write more, and sync rarely deletes rows.
+Steps 3 and 4 never fail a sign-out; a failure is logged.
+
+What `secure_delete` costs, measured on native SQLite with 41,767 file rows
+(`test/models/database/secure_delete_cost_test.dart`, three runs):
+
+| Step | Off | On |
+|---|---|---|
+| Delete 10% of the rows | 200-340 ms | 160-230 ms |
+| Delete every row (a whole drive, or sign-out) | 35-50 ms | 140-240 ms |
+| `VACUUM` afterwards | 15-30 ms | 9-30 ms |
+
+Scattered deletes cost the same, since their pages are rewritten either
+way. Emptying a table costs a few hundred milliseconds more, because the
+freed pages are zeroed rather than only unlinked. Only detaching a drive and
+sign-out do that, and sync rarely deletes rows.
 
 What this does not reach: a browser's own copies (a disk backup, the OS swap
 file) and the rollback journal's freed blocks on the storage below OPFS.
