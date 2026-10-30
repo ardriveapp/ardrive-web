@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
 import 'package:ardrive/models/models.dart';
@@ -211,10 +212,14 @@ FirstDriveAttempt createMyFiles(BuildContext context) {
   final profileCubit = context.read<ProfileCubit>();
   final drivesCubit = context.read<DrivesCubit>();
 
-  // No unlock session: a new account has just chosen its password, and has
-  // no private drive it could have failed to open, so "My files" takes that
-  // password as every new account's first drive always has.
-  return () => _createMyFiles(DriveCreateCubit(
+  // With the session, as Create drive has it. A new account has just chosen
+  // its password and has no private drive it could have failed to open, so
+  // its password is proven and "My files" takes it as every first drive
+  // always has; and if it ever weren't, the drive would not be made with it.
+  final driveUnlocker = context.read<DriveUnlocker>();
+
+  return () => makeMyFiles(DriveCreateCubit(
+        driveUnlocker: driveUnlocker,
         privacy: DrivePrivacy.private,
         arweave: arweave,
         turboUploadService: turboUploadService,
@@ -224,8 +229,15 @@ FirstDriveAttempt createMyFiles(BuildContext context) {
       ));
 }
 
-Future<FirstDriveOutcome> _createMyFiles(DriveCreateCubit cubit) async {
+@visibleForTesting
+Future<FirstDriveOutcome> makeMyFiles(DriveCreateCubit cubit) async {
   try {
+    // Never keyed with an unproven password: no first drive rather than one
+    // that opens with something the user may not know.
+    if (cubit.needsDrivePassword) {
+      return FirstDriveOutcome.failed;
+    }
+
     // Closed only once submit is done: closing it sooner would make the
     // success emit throw, and the cubit undoes a drive whose creation threw.
     await cubit.submit(firstDriveName);

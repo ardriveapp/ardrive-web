@@ -82,6 +82,7 @@ void main() {
     WidgetTester tester,
     ArDriveThemeData theme, {
     ArDriveDataTableItem? selected,
+    double textScale = 1,
   }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -98,6 +99,12 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [Locale('en', '')],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: child!,
+          ),
           home: BlocProvider<DriveDetailCubit>.value(
             value: cubit,
             child: Scaffold(
@@ -188,6 +195,32 @@ void main() {
       });
     });
   }
+
+  // A row's lines are one short line each at a small text size, and its
+  // icons are what decide its height: today the 34 px menu button and the
+  // padding make 50. That is an accident of the menu button, not a rule, so
+  // the row holds the table's row height itself. Both are checked: the
+  // height a reader gets, and that it comes from the row's own minimum
+  // rather than from whatever its tallest child happens to be.
+  testWidgets("a row of short lines is still the table's row height",
+      (tester) async {
+    await pump(tester, lightTheme(), textScale: 0.5);
+
+    for (final item in items) {
+      expect(tester.getSize(row(item)).height,
+          greaterThanOrEqualTo(ArDriveDataTable.rowHeight),
+          reason: item.name);
+
+      final ownMinimum = tester
+          .widgetList<Container>(
+            find.descendant(of: row(item), matching: find.byType(Container)),
+          )
+          .where((box) =>
+              box.constraints?.minHeight == ArDriveDataTable.rowHeight);
+      expect(ownMinimum, hasLength(1),
+          reason: '${item.name} holds the row height itself');
+    }
+  });
 
   testWidgets('a tap opens a folder and selects a file', (tester) async {
     await pump(tester, lightTheme());

@@ -576,7 +576,7 @@ void main() {
     await openMenu(tester);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Your drives'), findsOneWidget);
+    expect(find.text('Stop syncing'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -747,12 +747,13 @@ void main() {
       expect(find.text('12 items changed'), findsOneWidget);
 
       // A finished sync is not a running one, so it has nothing to add to the
-      // header. While the result shows, the menu is the way to the drives
-      // list, where the record now lives.
+      // header, and nothing failed, so there is nothing to act on. The pill
+      // says it all; there is no menu to open, empty or otherwise.
+      expect(find.byType(ArDriveDropdown), findsNothing);
       await openMenu(tester);
 
       expect(find.byKey(syncStatusHeaderKey), findsNothing);
-      expect(find.text('Your drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsNothing);
 
       // And once its few seconds are up it is history: nothing is running and
       // nothing is waiting to be read, so the indicator goes, menu and all.

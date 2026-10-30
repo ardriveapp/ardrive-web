@@ -48,11 +48,15 @@ jobs:
       - name: Install script_runner
         run: flutter pub global activate script_runner
 
+      # O2 is O1 plus minification, and nothing else: it keeps every type
+      # check (O3 and O4 drop them). It cuts main.dart.js from about 29 MB to
+      # 9 MB (4.3 MB to 2.6 MB gzipped). No code compares class names; see
+      # docs/WEB_LOAD_TIME.md before adding any that does.
       - name: Build app
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=staging --release --pwa-strategy=none --no-web-resources-cdn --source-maps --dart2js-optimization=O1
+          flutter build web --dart-define=environment=staging --release --pwa-strategy=none --no-web-resources-cdn --source-maps --dart2js-optimization=O2
 
       - name: Upload the built web app
         uses: actions/upload-artifact@v4

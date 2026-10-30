@@ -150,6 +150,31 @@ class DriveUnlockSession {
   void setSignInPasswordProven(String ownerAddress, bool proven) =>
       _signInPasswordProven[ownerAddress] = proven;
 
+  final _newDrivePassword = <String, String>{};
+  final _provenDrivePassword = <String, String>{};
+
+  /// The password new private drives are made with while the sign-in
+  /// password is unproven: only what the user typed into Create drive's
+  /// "Enter your drive password", once it opened one of their drives. So it
+  /// is asked once, not for every new drive. Unlocking a drive never sets
+  /// it: an old drive's password (a CLI drive's, say) is not the drive
+  /// password.
+  String? newDrivePassword(String ownerAddress) =>
+      _newDrivePassword[ownerAddress];
+
+  void setNewDrivePassword(String ownerAddress, String password) =>
+      _newDrivePassword[ownerAddress] = password;
+
+  /// The last password that opened one of [ownerAddress]'s drives this
+  /// session, from Create drive or Unlock. Discovery tries it while the
+  /// sign-in password is unproven: each attempt is proven by opening a drive.
+  /// Never used to make a drive.
+  String? provenDrivePassword(String ownerAddress) =>
+      _provenDrivePassword[ownerAddress];
+
+  void rememberProvenDrivePassword(String ownerAddress, String password) =>
+      _provenDrivePassword[ownerAddress] = password;
+
   /// The password bytes that last opened [driveId] this session, if any.
   List<int>? provenPasswordInfo(String driveId) => _provenPasswordInfo[driveId];
 
@@ -162,6 +187,8 @@ class DriveUnlockSession {
     _walletDeclined.clear();
     _provenPasswordInfo.clear();
     _signInPasswordProven.clear();
+    _newDrivePassword.clear();
+    _provenDrivePassword.clear();
     _unlockedAt.clear();
     _lockedDrives.add(const []);
   }

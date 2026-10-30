@@ -205,8 +205,12 @@ class _FlexIfBounded extends StatelessWidget {
       bounded ? Flexible(child: child) : child;
 }
 
-/// Whether the viewer asked for less motion: nothing then moves on its own.
-bool _still(BuildContext context) => MediaQuery.of(context).disableAnimations;
+/// Whether nothing moves on its own: the viewer asked for less motion, or
+/// the page has stopped its animations (`TickerMode`), as the sign-in page
+/// does while the database opens. Timers check this too, so a page that is
+/// held still draws no frames of its own.
+bool _still(BuildContext context) =>
+    MediaQuery.of(context).disableAnimations || !TickerMode.of(context);
 
 bool _isLight(BuildContext context) =>
     ArDriveTheme.of(context).themeData.name == 'light';
@@ -941,6 +945,20 @@ class _HeroTileState extends State<_HeroTile>
   }
 }
 
+/// The feature slides' art, in slide order, for a light or a dark tile. Also
+/// what `preCacheLaterLoginAssets` loads ahead of the slides that follow the
+/// first.
+List<String> bentoFeatureArt({required bool light}) => [
+      for (final name in const [
+        'encrypted_key',
+        'cant_be_changed',
+        'proof_of_time',
+        'share_link',
+        'open_source',
+      ])
+        Resources.images.login.bentoBox.featureArt(name, light: light),
+    ];
+
 class _Slide {
   const _Slide(this.title, this.art);
   final String title;
@@ -963,15 +981,13 @@ class _FeatureSlidesState extends State<_FeatureSlides> with _Stepper {
 
   List<_Slide> _slides(BuildContext context) {
     final s = appLocalizationsOf(context);
-    final light = _isLight(context);
-    String art(String name) =>
-        Resources.images.login.bentoBox.featureArt(name, light: light);
+    final art = bentoFeatureArt(light: _isLight(context));
     return [
-      _Slide(s.bentoPrivate, art('encrypted_key')),
-      _Slide(s.bentoUnchangeable, art('cant_be_changed')),
-      _Slide(s.bentoProofOfTime, art('proof_of_time')),
-      _Slide(s.bentoShareLink, art('share_link')),
-      _Slide(s.bentoOpenSource, art('open_source')),
+      _Slide(s.bentoPrivate, art[0]),
+      _Slide(s.bentoUnchangeable, art[1]),
+      _Slide(s.bentoProofOfTime, art[2]),
+      _Slide(s.bentoShareLink, art[3]),
+      _Slide(s.bentoOpenSource, art[4]),
     ];
   }
 
