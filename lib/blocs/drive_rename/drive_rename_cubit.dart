@@ -107,7 +107,10 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(DriveRenameFailure(isPaymentError: isTurboPaymentError(error)));
+    // Emitting after close throws, and that throw comes back here.
+    if (!isClosed) {
+      emit(DriveRenameFailure(isPaymentError: isTurboPaymentError(error)));
+    }
 
     super.onError(error, stackTrace);
   }

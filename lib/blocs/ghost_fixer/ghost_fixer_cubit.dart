@@ -173,7 +173,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(GhostFixerFailure(isPaymentError: isTurboPaymentError(error)));
+    // Emitting after close throws, and that throw comes back here.
+    if (!isClosed) {
+      emit(GhostFixerFailure(isPaymentError: isTurboPaymentError(error)));
+    }
     super.onError(error, stackTrace);
 
     logger.e('Failed to create folder', error, stackTrace);
