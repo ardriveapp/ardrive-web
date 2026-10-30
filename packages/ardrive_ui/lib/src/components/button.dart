@@ -150,7 +150,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
       defaultColor = colorTokens.buttonDisabled;
       hoverColor = colorTokens.buttonDisabled;
       pressedColor = colorTokens.buttonDisabled;
-      foregroundColor = colorTokens.textLow;
+      foregroundColor = colorTokens.textXLow;
     } else if (widget.variant == ButtonVariant.primary) {
       defaultColor = colorTokens.buttonPrimaryDefault;
       hoverColor = colorTokens.buttonPrimaryHover;

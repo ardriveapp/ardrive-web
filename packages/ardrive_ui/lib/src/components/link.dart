@@ -76,7 +76,7 @@ class _ArDriveLinkState extends State<ArDriveLink> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final enabled = widget.onTap != null;
     final color = !enabled
-        ? colorTokens.textLow
+        ? colorTokens.textXLow
         : _hovering || _focused
             ? colorTokens.textHigh
             : widget.color ?? colorTokens.textMid;

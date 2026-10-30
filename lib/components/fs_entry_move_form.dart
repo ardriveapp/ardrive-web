@@ -385,5 +385,5 @@ class FsEntryMoveForm extends StatelessWidget {
   }
 
   Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colorTokens.textLow;
+      ArDriveTheme.of(context).themeData.colorTokens.textXLow;
 }

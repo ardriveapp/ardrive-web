@@ -446,8 +446,10 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
     return AnimatedTextFieldLabelNew(
       text: err,
       showing: err != null,
+      // The error text colour, not the red of the field's edge: that one is
+      // for a border and measures under 3:1 as text.
       style: typography.paragraphNormal(
-        color: colorTokens.strokeRed,
+        color: colorTokens.statusErrorFg,
         fontWeight: ArFontWeight.semiBold,
       ),
       useLabelOffset: widget.useErrorMessageOffset,

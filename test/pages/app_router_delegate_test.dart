@@ -11,7 +11,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../test_utils/mocks.dart';
+import '../test_utils/utils.dart';
 
 /// How a folder link survives the drive being attached under it.
 ///
@@ -838,6 +838,81 @@ void main() {
       await delegate.setNewRoutePath(AppRoutePath.unknown());
       PublicationMode.debugSet('publication.json');
       expect(delegate.signsInWhileChecking(checking), isFalse);
+    });
+  });
+
+  // A share page, then `#/` typed into the same tab: the route names nothing
+  // a visitor can see, the profile does not change, so nothing sent them to
+  // sign in and the builder had nothing to draw. The splash stayed up.
+  group('an address changed in an open tab', () {
+    ProfileCubit profileIn(ProfileState state) {
+      final cubit = MockProfileCubit();
+      when(() => cubit.state).thenReturn(state);
+      return cubit;
+    }
+
+    final visitors = <String, ProfileState>{
+      'with no account on the device': ProfilePromptAdd(),
+      'with a remembered account': ProfilePromptLogIn(),
+    };
+
+    for (final MapEntry(key: who, value: state) in visitors.entries) {
+      test('sends a visitor $who from a share page at / to sign in', () async {
+        delegate.profileCubit = profileIn(state);
+        await delegate.setNewRoutePath(
+          AppRoutePath.sharedFile(sharedFileId: driveId),
+        );
+        expect(delegate.signingIn, isFalse);
+
+        await delegate.setNewRoutePath(AppRoutePath.unknown());
+
+        expect(delegate.signingIn, isTrue);
+        expect(delegate.currentConfiguration.signingIn, isTrue);
+      });
+
+      test('sends a visitor $who to sign in for a page that needs an account',
+          () async {
+        for (final path in [
+          AppRoutePath.drivesList(),
+          AppRoutePath.names(),
+          AppRoutePath.webPages(),
+        ]) {
+          delegate = AppRouterDelegate()..profileCubit = profileIn(state);
+          await delegate.setNewRoutePath(path);
+          expect(delegate.signingIn, isTrue, reason: '$path');
+        }
+      });
+    }
+
+    test('leaves a visitor on a page a visitor can see', () async {
+      for (final path in [
+        AppRoutePath.sharedFile(sharedFileId: driveId),
+        AppRoutePath.rawTransaction(txId: 'tx'),
+        AppRoutePath.driveDetail(driveId: driveId),
+        AppRoutePath.getStarted(),
+      ]) {
+        delegate = AppRouterDelegate()
+          ..profileCubit = profileIn(ProfilePromptAdd());
+        await delegate.setNewRoutePath(path);
+        expect(delegate.signingIn, isFalse, reason: '$path');
+      }
+    });
+
+    test('leaves a signed-in user in the app', () async {
+      delegate.profileCubit =
+          profileIn(ProfileLoggedIn(user: getTestUser(), useTurbo: false));
+      await delegate.setNewRoutePath(AppRoutePath.unknown());
+      expect(delegate.signingIn, isFalse);
+    });
+
+    test('waits while the check for an account or a login runs', () async {
+      for (final state in [ProfileCheckingAvailability(), ProfileLoggingIn()]) {
+        delegate = AppRouterDelegate()..profileCubit = profileIn(state);
+        await delegate.setNewRoutePath(
+          AppRoutePath.driveDetail(driveId: driveId),
+        );
+        expect(delegate.signingIn, isFalse, reason: '$state');
+      }
     });
   });
 }

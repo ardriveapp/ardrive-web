@@ -77,10 +77,10 @@ void main() {
 
   testWidgets('a failure is an empty state that can try again', (tester) async {
     when(() => cubit.refresh()).thenAnswer((_) async {});
-    await pump(tester, const FsEntrySnapshotsFailure(errorMessage: 'timeout'));
+    await pump(tester, const FsEntrySnapshotsFailure());
 
     expect(find.byType(ArDriveEmptyState), findsOneWidget);
-    expect(find.text('timeout'), findsOneWidget);
+    expect(find.text('Error loading snapshots'), findsOneWidget);
 
     await tester.tap(find.byType(ArDriveButtonNew));
     verify(() => cubit.refresh()).called(1);

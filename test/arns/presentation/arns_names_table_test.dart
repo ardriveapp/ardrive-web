@@ -280,6 +280,37 @@ void main() {
     expect(find.textContaining('what each points to'), findsNothing);
     expect(find.text('Get a name'), findsOneWidget);
   });
+
+  testWidgets('Get a name says it opens a new window', (tester) async {
+    // It opens the ar.io Console, outside the app: the new-window icon goes
+    // after the label, as on every other link that leaves the app.
+    await pump(tester);
+
+    final button = find.ancestor(
+      of: find.text('Get a name'),
+      matching: find.byType(ArDriveButtonNew),
+    );
+    expect(button, findsOneWidget);
+    expect(
+      find.descendant(
+        of: button,
+        matching: find.byWidgetPredicate(
+          (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.new_window,
+        ),
+      ),
+      findsOneWidget,
+    );
+    // After the label, not before it.
+    expect(
+      tester.getCenter(find.text('Get a name')).dx,
+      lessThan(tester
+          .getCenter(find.descendant(
+            of: button,
+            matching: find.byType(ArDriveIcon),
+          ))
+          .dx),
+    );
+  });
   group('a name the wallet controls but does not own', () {
     // Said once, in the name's details, not as a tag on every row: the row
     // tag ("Managed for its owner") was clutter, and it read oddly.

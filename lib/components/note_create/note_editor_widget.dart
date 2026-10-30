@@ -452,7 +452,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         contentPadding: const EdgeInsets.all(ArDriveSpacing.md),
         border: InputBorder.none,
         hintText: appLocalizationsOf(context).markdownEditorPlaceholder,
-        hintStyle: typography.paragraphNormal(color: colorTokens.textLow),
+        hintStyle: typography.paragraphNormal(color: colorTokens.textXLow),
       ),
       keyboardType: TextInputType.multiline,
     );

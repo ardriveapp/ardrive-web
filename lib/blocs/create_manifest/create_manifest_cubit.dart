@@ -427,7 +427,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   void onError(Object error, StackTrace stackTrace) {
     logger.e('Failed to create manifest', error, stackTrace);
     final wrapped = error is ManifestCreationException ? error.error : error;
-    emit(CreateManifestFailure(isPaymentError: isTurboPaymentError(wrapped)));
+    // Emitting after close throws, and that throw comes back here.
+    if (!isClosed) {
+      emit(CreateManifestFailure(isPaymentError: isTurboPaymentError(wrapped)));
+    }
     super.onError(error, stackTrace);
   }
 }

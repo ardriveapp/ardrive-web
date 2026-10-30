@@ -29,7 +29,7 @@ void main() {
         const ArDriveDropdownItemTile(name: 'Rename', isDisabled: true),
         theme: theme,
       ));
-      expect(labelColour(tester, 'Rename'), theme.colorTokens.textLow);
+      expect(labelColour(tester, 'Rename'), theme.colorTokens.textXLow);
     });
   }
 
@@ -54,6 +54,6 @@ void main() {
     final icons = tester.widgetList<Icon>(find.byType(Icon)).toList();
     expect(icons[0].color, tokens.textHigh);
     expect(icons[1].color, red, reason: 'a red delete stays red');
-    expect(icons[2].color, tokens.textLow, reason: 'disabled greys it');
+    expect(icons[2].color, tokens.textXLow, reason: 'disabled greys it');
   });
 }

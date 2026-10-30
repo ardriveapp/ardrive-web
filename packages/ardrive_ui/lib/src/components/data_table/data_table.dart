@@ -1747,7 +1747,8 @@ class _ArrowFace extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: icon(
-        color: enabled ? theme.colorTokens.textHigh : theme.colorTokens.textLow,
+        color:
+            enabled ? theme.colorTokens.textHigh : theme.colorTokens.textXLow,
       ),
     );
   }

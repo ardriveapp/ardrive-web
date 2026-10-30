@@ -37,6 +37,40 @@
   }
 
   /**
+   * Load a UMD script so that it sets its global. A UMD bundle registers
+   * itself as an AMD module instead, setting no global, whenever require.js is
+   * on the page, as it is in debug builds and under `flutter test`; clearing
+   * define/require across the load forces the global branch.
+   *
+   * Loads can overlap (the EML bundles, PST, the wallet), so the real values
+   * are saved by the first and put back by the last. When each saved its own
+   * copy, the second saved the undefined the first had set, and the page was
+   * left without them.
+   */
+  let _amdHidden = 0;
+  let _savedDefine;
+  let _savedRequire;
+
+  async function loadGlobalScript(url) {
+    if (_amdHidden++ === 0) {
+      _savedDefine = window.define;
+      _savedRequire = window.require;
+      window.define = undefined;
+      window.require = undefined;
+    }
+    try {
+      await loadScript(url);
+    } finally {
+      if (--_amdHidden === 0) {
+        window.define = _savedDefine;
+        window.require = _savedRequire;
+        _savedDefine = undefined;
+        _savedRequire = undefined;
+      }
+    }
+  }
+
+  /**
    * Load an ES module by URL and expose its exports on window.
    */
   function loadModule(url, exportMap) {
@@ -98,8 +132,8 @@
    * Load EML parser (704 KB) — only when viewing .eml files.
    */
   async function loadEmlParser() {
-    await loadScript('./js/js-base64.min.js');
-    await loadScript('./js/eml-parse-js.min.js');
+    await loadGlobalScript('./js/js-base64.min.js');
+    await loadGlobalScript('./js/eml-parse-js.min.js');
     await loadScript('./js/eml_parser.js');
     console.log('EML parser lazy-loaded');
   }
@@ -108,7 +142,7 @@
    * Load PST library (319 KB) — only when PST features accessed.
    */
   async function loadPst() {
-    await loadScript('./js/pst.min.js');
+    await loadGlobalScript('./js/pst.min.js');
     console.log('PST library lazy-loaded');
   }
 
@@ -127,16 +161,7 @@
     console.log('[LazyLoader] window.define exists:', typeof window.define !== 'undefined');
     console.log('[LazyLoader] window.require exists:', typeof window.require !== 'undefined');
 
-    const savedDefine = window.define;
-    const savedRequire = window.require;
-    window.define = undefined;
-    window.require = undefined;
-    try {
-      await loadScript('./js/arweave-wallet.js');
-    } finally {
-      window.define = savedDefine;
-      window.require = savedRequire;
-    }
+    await loadGlobalScript('./js/arweave-wallet.js');
 
     if (window.ArweaveWallet) {
       console.log('[LazyLoader] ArweaveWallet loaded successfully, has generateJWKStringFromMnemonic:', typeof window.ArweaveWallet.generateJWKStringFromMnemonic);
@@ -147,6 +172,7 @@
 
   window.LazyLoader = {
     loadScript,
+    loadGlobalScript,
     loadModule,
     loadTurboSDK,
     loadArioSDK,

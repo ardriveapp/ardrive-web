@@ -32,10 +32,5 @@ class FsEntrySnapshotsSuccess extends FsEntrySnapshotsState {
 }
 
 class FsEntrySnapshotsFailure extends FsEntrySnapshotsState {
-  final String? errorMessage;
-
-  const FsEntrySnapshotsFailure({this.errorMessage});
-
-  @override
-  List<Object?> get props => [errorMessage];
+  const FsEntrySnapshotsFailure();
 }

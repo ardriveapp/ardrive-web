@@ -304,7 +304,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.hover:
         return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
       case CheckBoxState.disabled:
-        return ArDriveTheme.of(context).themeData.colorTokens.textLow;
+        return ArDriveTheme.of(context).themeData.colorTokens.textXLow;
       case CheckBoxState.normal:
         return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
     }
@@ -331,7 +331,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.hover:
         return ArDriveTheme.of(context).themeData.colorTokens.containerL0;
       case CheckBoxState.disabled:
-        return ArDriveTheme.of(context).themeData.colorTokens.textLow;
+        return ArDriveTheme.of(context).themeData.colorTokens.textXLow;
       case CheckBoxState.normal:
         return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
     }
@@ -345,7 +345,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.normal:
         return ArDriveTheme.of(context).themeData.colorTokens.textHigh;
       case CheckBoxState.disabled:
-        return ArDriveTheme.of(context).themeData.colorTokens.textLow;
+        return ArDriveTheme.of(context).themeData.colorTokens.textXLow;
     }
   }
 }

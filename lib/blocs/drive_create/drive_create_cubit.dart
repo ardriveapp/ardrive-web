@@ -387,11 +387,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(DriveCreateFailure(
-      privacy: state.privacy,
-      isPaymentError: isTurboPaymentError(error),
-      walletCantMakeDriveKeys: error is WalletCantMakeDriveKeysException,
-    ));
+    // Emitting after close throws, and that throw comes back here.
+    if (!isClosed) {
+      emit(DriveCreateFailure(
+        privacy: state.privacy,
+        isPaymentError: isTurboPaymentError(error),
+        walletCantMakeDriveKeys: error is WalletCantMakeDriveKeysException,
+      ));
+    }
     super.onError(error, stackTrace);
 
     logger.e('Failed to create drive', error, stackTrace);

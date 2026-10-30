@@ -225,6 +225,16 @@ class ArDriveColorTokens {
     const containerRaised = Color(0xff1f1f1f);
     final textHigh = primitives.solidGrey100;
     final strokeHigh = primitives.transparent100_16;
+    // Text must read at 4.5:1 (WCAG AA) on every surface it can sit on, up to
+    // a selected table row (#2C2C2C), the lightest. text-low was #7D7D7D
+    // (3.39:1 there, 4.36:1 on a dialog) and the reds were #D42C35 and
+    // #DF565D (2.80:1 and 3.74:1). One red for all text: errors, failures
+    // and destructive actions alike.
+    const textLow = Color(0xff939393);
+    final textRed = primitives.solidRed1000;
+    // Placeholders and disabled text: dimmer than text-low, but still read
+    // on a disabled button (2.4:1). #424241 was 1.35:1 there.
+    const textXLow = Color(0xff666666);
 
     return ArDriveColorTokens(
       primitives: primitives,
@@ -238,11 +248,11 @@ class ArDriveColorTokens {
       scrim: const Color(0x80000000),
       textHigh: textHigh,
       textMid: primitives.solidGrey200,
-      textLow: primitives.solidGrey300,
-      textXLow: primitives.solidGrey500,
+      textLow: textLow,
+      textXLow: textXLow,
       textLink: primitives.solidGrey200,
       textOnPrimary: primitives.solidGrey50,
-      textRed: primitives.solidRed800,
+      textRed: textRed,
       strokeLow: primitives.transparent100_8,
       strokeMid: primitives.transparent100_12,
       strokeHigh: strokeHigh,
@@ -273,7 +283,7 @@ class ArDriveColorTokens {
       statusWarningFg: textHigh,
       statusWarningContainer: containerRaised,
       statusWarningStroke: strokeHigh,
-      statusErrorFg: primitives.solidRed900,
+      statusErrorFg: textRed,
       statusErrorContainer: primitives.solidRed200,
       statusErrorStroke: primitives.solidRed400,
       statusSuccessFg: _brandSuccess,
@@ -287,6 +297,12 @@ class ArDriveColorTokens {
     const containerRaised = Color(0xffffffff);
     final textHigh = primitives.solidGrey800;
     final strokeHigh = primitives.solidGrey300;
+    // Text must read at 4.5:1 (WCAG AA) on every surface it can sit on, down
+    // to a dialog or a selected row (#E0DCDE), the darkest. text-low was
+    // #666666 (4.23:1 there) and text-red #D42C35 (3.67:1). One red for all
+    // text: errors, failures and destructive actions alike.
+    const textLow = Color(0xff616161);
+    final textRed = primitives.solidRed900;
 
     return ArDriveColorTokens(
       primitives: primitives,
@@ -300,11 +316,11 @@ class ArDriveColorTokens {
       scrim: const Color(0x80000000),
       textHigh: textHigh,
       textMid: primitives.solidGrey700,
-      textLow: primitives.solidGrey600,
+      textLow: textLow,
       textXLow: primitives.solidGrey500,
       textLink: primitives.solidGrey700,
       textOnPrimary: primitives.solidGrey50,
-      textRed: primitives.solidRed800,
+      textRed: textRed,
       strokeLow: primitives.transparent900_12,
       strokeMid: primitives.transparent900_16,
       strokeHigh: strokeHigh,
@@ -333,7 +349,7 @@ class ArDriveColorTokens {
       statusWarningFg: textHigh,
       statusWarningContainer: containerRaised,
       statusWarningStroke: strokeHigh,
-      statusErrorFg: primitives.solidRed900,
+      statusErrorFg: textRed,
       statusErrorContainer: primitives.solidRed100,
       statusErrorStroke: primitives.solidRed300,
       // A darker shade of the brand Success hue: the brand value itself is

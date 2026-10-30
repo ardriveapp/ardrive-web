@@ -281,8 +281,8 @@ ArDriveLoginModal _openDriveCard({
         Text(
           strings.openDriveDescription,
           style: typography.paragraphNormal(
-            fontWeight: ArFontWeight.semiBold,
-            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.book,
+            color: colorTokens.textMid,
           ),
           textAlign: TextAlign.center,
         ),
@@ -325,8 +325,8 @@ ArDriveLoginModal _privateDrivesCard({
         Text(
           'Encrypted. Only you and the people you share it with can see what is in it.',
           style: typography.paragraphNormal(
-            fontWeight: ArFontWeight.semiBold,
-            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.book,
+            color: colorTokens.textMid,
           ),
           textAlign: TextAlign.center,
         ),
@@ -373,8 +373,8 @@ ArDriveLoginModal _publicDrivesCard({
         Text(
           'Anyone can find it and see what is in it.',
           style: typography.paragraphNormal(
-            fontWeight: ArFontWeight.semiBold,
-            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.book,
+            color: colorTokens.textMid,
           ),
           textAlign: TextAlign.center,
         ),

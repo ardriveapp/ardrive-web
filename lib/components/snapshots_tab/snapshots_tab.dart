@@ -31,7 +31,7 @@ class SnapshotsTab extends StatelessWidget {
         }
 
         if (state is FsEntrySnapshotsFailure) {
-          return _buildErrorState(context, state.errorMessage);
+          return _buildErrorState(context);
         }
 
         if (state is FsEntrySnapshotsSuccess) {
@@ -50,11 +50,10 @@ class SnapshotsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String? errorMessage) {
+  Widget _buildErrorState(BuildContext context) {
     return ArDriveEmptyState(
       icon: ArDriveIcons.triangle(),
       title: appLocalizationsOf(context).errorLoadingSnapshots,
-      message: errorMessage,
       actionLabel: appLocalizationsOf(context).tryAgain,
       onAction: () => context.read<FsEntrySnapshotsCubit>().refresh(),
     );

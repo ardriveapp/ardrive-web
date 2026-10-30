@@ -120,7 +120,7 @@ class ArDriveThemeData {
           backgroundOffDisabled: colorTokens.buttonDisabled,
           backgroundOffColor: colorTokens.containerL0,
           backgroundOnColor: const Color(0xff139310),
-          indicatorColorDisabled: colorTokens.textLow,
+          indicatorColorDisabled: colorTokens.textXLow,
           indicatorColorOff: colorTokens.iconMid,
         );
     this.tableTheme = tableTheme ??
@@ -155,12 +155,14 @@ class ArDriveThemeData {
             fontWeight: FontWeight.w500,
             height: 1.5,
           ),
-          inputPlaceholderColor: colorTokens.textLow,
-          disabledTextColor: colorTokens.textLow,
+          inputPlaceholderColor: colorTokens.textXLow,
+          disabledTextColor: colorTokens.textXLow,
           requiredLabelColor: colorTokens.textHigh,
         );
 
-    this.backgroundColor = backgroundColor ?? const Color(0xff010905);
+    // The page ground is container-l0, as the surface tokens say: the
+    // literal #010905 it was is a dark green no other surface shares.
+    this.backgroundColor = backgroundColor ?? colorTokens.containerL0;
     this.primaryColor = primaryColor ?? colorTokens.buttonPrimaryDefault;
     this.materialThemeData =
         materialThemeData ?? darkMaterialTheme(colorTokens);
@@ -236,7 +238,9 @@ ArDriveThemeData lightTheme() {
   final colorTokens = ArDriveColorTokens.lightMode();
 
   return ArDriveThemeData(
-      backgroundColor: colorTokens.containerRaised,
+      // container-l0, not white: raised cards and the table panel sit above
+      // the page, which they could not on white.
+      backgroundColor: colorTokens.containerL0,
       // Warm light greys, like the surface tokens: the 2021 styleguide's
       // Gallery (#F1EFF0), and a page-level grey at the same tint.
       tableTheme: ArDriveTableTheme(

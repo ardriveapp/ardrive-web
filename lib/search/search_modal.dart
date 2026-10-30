@@ -253,7 +253,7 @@ class _FileSearchModalState extends State<FileSearchModal> {
                   ),
                   matchStyle: typography.paragraphXLarge(
                     color: colorTokens.textHigh,
-                    fontWeight: ArFontWeight.bold,
+                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
               ),

@@ -14,6 +14,7 @@ import 'package:ardrive/turbo/topup/models/pending_transaction.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/opaque_error_text.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -450,8 +451,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         isUserRejected: e.isUserRejected,
         isNotInstalled: e.isNoProvider,
       ));
-    } catch (e) {
-      add(CryptoTopupWalletConnectionFailed(error: e.toString()));
+    } catch (e, s) {
+      logger.e('Could not connect the wallet', e, s);
+      add(CryptoTopupWalletConnectionFailed(
+        error: _readableOr(e, _couldNotConnectWallet),
+      ));
     }
   }
 
@@ -588,8 +592,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         error: e.userMessage,
         isUserRejected: e.isUserRejected,
       ));
-    } catch (e) {
-      add(CryptoTopupAOConnectSignatureFailed(error: e.toString()));
+    } catch (e, s) {
+      logger.e('Could not sign for AO', e, s);
+      add(CryptoTopupAOConnectSignatureFailed(
+        error: _readableOr(e, _couldNotSign),
+      ));
     }
   }
 
@@ -975,8 +982,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       } else {
         add(CryptoTopupNetworkSwitchFailed(e.userMessage));
       }
-    } catch (e) {
-      add(CryptoTopupNetworkSwitchFailed(e.toString()));
+    } catch (e, s) {
+      logger.e('Could not switch the network', e, s);
+      add(CryptoTopupNetworkSwitchFailed(
+        _readableOr(e, _couldNotSwitchNetwork),
+      ));
     }
   }
 
@@ -1057,8 +1067,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     try {
       await _ethereumWalletService.addChain(event.token);
       add(const CryptoTopupNetworkAddCompleted());
-    } catch (e) {
-      add(CryptoTopupNetworkAddFailed(e.toString()));
+    } on EthereumWalletException catch (e) {
+      add(CryptoTopupNetworkAddFailed(e.userMessage));
+    } catch (e, s) {
+      logger.e('Could not add the network', e, s);
+      add(CryptoTopupNetworkAddFailed(_readableOr(e, _couldNotAddNetwork)));
     }
   }
 
@@ -1211,12 +1224,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           isUserRejected: result.status == CryptoPaymentStatus.userRejected,
         ));
       }
-    } catch (e) {
-      logger.e('Payment error: $e');
-      add(CryptoTopupPaymentFailed(
-        error: e.toString(),
-        canRetry: true,
-      ));
+    } catch (e, s) {
+      logger.e('Payment error', e, s);
+      // The screen's own notice says the payment failed; the details line
+      // shows the error only when it can be read.
+      add(CryptoTopupPaymentFailed(error: _readableOr(e, ''), canRetry: true));
     }
   }
 
@@ -1334,9 +1346,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           canRetry: true,
         ));
       }
-    } catch (e) {
+    } catch (e, s) {
+      logger.e('Payment retry error', e, s);
       add(CryptoTopupPaymentFailed(
-        error: e.toString(),
+        error: _readableOr(e, ''),
         txId: event.txId,
         canRetry: true,
       ));
@@ -1777,4 +1790,23 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     await _transactionStorage.releaseSessionLock();
     return super.close();
   }
+}
+
+// What the top-up shows when something other than the wallet failed and its
+// error can't be read: in a release build an exception without its own
+// toString reads "Instance of 'minified:Xy'".
+const _couldNotConnectWallet = 'Could not connect your wallet. Try again.';
+const _couldNotSign = 'Could not sign. Try again.';
+const _couldNotSwitchNetwork = 'Could not switch networks. Try again.';
+const _couldNotAddNetwork = 'Could not add the network. Try again.';
+
+/// [error]'s own message when a person can read it, else [fallback].
+String _readableOr(Object error, String fallback) {
+  final text = error.toString();
+  if (isOpaqueErrorText(text)) return fallback;
+  return withoutOpaqueParts(
+    text.startsWith('Exception: ')
+        ? text.substring('Exception: '.length)
+        : text,
+  );
 }
