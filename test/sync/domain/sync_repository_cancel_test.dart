@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -28,6 +28,30 @@ class _MockUserPreferencesRepository extends Mock
 
 class _MockWallet extends Mock implements Wallet {}
 
+/// The real DAO, with a way to make a commit wait its turn. On the web every
+/// drive's batch commits through one database worker, one transaction at a
+/// time; the test database does not queue transactions, so the queue is
+/// stood in for here.
+class _QueuedDriveDao extends DriveDao {
+  _QueuedDriveDao(super.db);
+
+  /// When set, a commit waits for it before it starts.
+  Future<void>? turn;
+
+  /// Completes when a commit is waiting for [turn].
+  Completer<void> waiting = Completer<void>();
+
+  @override
+  Future<void> runTransaction(Future<void> Function() transaction) async {
+    final turn = this.turn;
+    if (turn != null) {
+      if (!waiting.isCompleted) waiting.complete();
+      await turn;
+    }
+    return super.runTransaction(transaction);
+  }
+}
+
 /// Stop, pressed during a full sync, through the real repository over a real
 /// database with only the gateway mocked.
 ///
@@ -47,6 +71,7 @@ void main() {
   late MockArweaveService arweave;
   late _MockWallet wallet;
   late SyncRepository syncRepository;
+  late _QueuedDriveDao driveDao;
 
   /// Completes when the stopped drive's batch has started reading metadata.
   late Completer<void> stoppedBatchStarted;
@@ -183,9 +208,10 @@ void main() {
     await insertDrive(finished);
     await insertDrive(stopped);
 
+    driveDao = _QueuedDriveDao(db);
     syncRepository = SyncRepository(
       arweave: arweave,
-      driveDao: db.driveDao,
+      driveDao: driveDao,
       configService: configService,
       batchProcessor: BatchProcessor(),
       snapshotValidationService: _MockSnapshotValidationService(),
@@ -298,6 +324,36 @@ void main() {
     final ghost =
         await db.driveDao.folderById(folderId: ghostParent).getSingleOrNull();
     expect(ghost?.isGhost, isTrue);
+  });
+
+  // Every drive's batch commits through the one database, one at a time, so
+  // a batch can be ready and waiting its turn when Stop lands. It used to
+  // commit anyway, and Stop waited for each such drive in turn.
+  test('a batch still waiting to commit when Stop lands writes nothing',
+      () async {
+    final token = SyncCancellationToken();
+    final errors = <Object>[];
+    final ended = Completer<void>();
+    final turn = Completer<void>();
+    driveDao.turn = turn.future;
+
+    syncRepository.syncAllDrives(
+      wallet: wallet,
+      cancellationToken: token,
+      onlyDriveIds: [finished],
+    ).listen((_) {}, onError: errors.add, onDone: ended.complete);
+
+    // The batch is read, past its last stop check, and waiting its turn.
+    await driveDao.waiting.future.timeout(const Duration(seconds: 2));
+    token.cancel();
+    turn.complete();
+    await ended.future.timeout(const Duration(seconds: 2));
+
+    expect(errors, [isA<SyncCancelledException>()]);
+    expect(
+        await db.driveDao.fileById(fileId: 'kept').getSingleOrNull(), isNull);
+    final drive = await db.driveDao.driveById(driveId: finished).getSingle();
+    expect(drive.lastBlockHeight, oldHeight);
   });
 
   test('the drive that was stopped is left for the next sync to redo',

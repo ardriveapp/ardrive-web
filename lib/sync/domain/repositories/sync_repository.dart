@@ -3323,6 +3323,13 @@ class _SyncRepository implements SyncRepository {
           var committed = false;
           try {
             await _driveDao.runTransaction(() async {
+              // Every drive's batch commits through the one database, one at
+              // a time. A stop that lands while this one waits its turn
+              // writes nothing: the drive keeps its old watermark and the next
+              // sync reads the batch again. Without this each drive queued
+              // behind another committed anyway, and Stop waited for them all
+              // in turn.
+              cancellationToken?.checkCancellation();
               final latestDriveRevision = await _addNewDriveEntityRevisions(
                 newEntities: newEntities.whereType<DriveEntity>(),
               );
