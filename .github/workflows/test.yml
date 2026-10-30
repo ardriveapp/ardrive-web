@@ -1,45 +1,178 @@
 on:
   workflow_call:
 
+# One job generates the code everything else needs (build_runner, the GraphQL
+# client, the database worker); lint, the app's tests in four shards, the
+# packages' tests and the browser tests then run side by side from it. They
+# used to run one after another on one runner, about 15 minutes a push.
+#
+# `test-and-lint` stays as the last job, green only when every other one is,
+# so the check name people and scripts look for keeps its meaning.
 jobs:
-  test-and-lint:
+  generate:
     runs-on: ubuntu-22.04
     steps:
-      # Install native SQLite3 library (required by drift tests)
-      - name: Install SQLite3
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-
-      # Checkout
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
 
-      # Set Flutter version from fvm
       - uses: kuhnroyal/flutter-fvm-config-action@v1
 
-      # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
-      - name: Install script_runner
-        run: flutter pub global activate script_runner
+      # build_runner's own cache, so a run regenerates only what changed. A
+      # stale entry only costs time: build_runner checks every input itself.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .dart_tool/build
+            packages/ario_sdk/.dart_tool/build
+          key: build-runner-${{ hashFiles('pubspec.lock', 'packages/ario_sdk/pubspec.lock', 'build.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            build-runner-${{ hashFiles('pubspec.lock', 'packages/ario_sdk/pubspec.lock', 'build.yaml') }}-
 
-      - name: Build app
+      # `scr setup` without its `flutter clean`, which on a fresh checkout only
+      # threw away the cache restored above.
+      - name: Generate code
         run: |
-          scr setup
+          flutter pub get
+          (cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs)
+          flutter pub run build_runner build --delete-conflicting-outputs
+          bash tool/build_db_worker.sh
 
+      # Every generated file git ignores, for the jobs below.
+      - name: Collect the generated files
+        run: |
+          git ls-files --others --ignored --exclude-standard -- lib packages web \
+            | grep -E '\.g\.dart$|graphql_api.*\.dart$|^web/db_worker\.js$' > generated.txt
+          wc -l < generated.txt
+          tar -czf generated.tgz -T generated.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated
+          path: generated.tgz
+          retention-days: 1
+
+  lint:
+    needs: generate
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
       - name: Lint
-        run: flutter analyze
+        run: |
+          tar -xzf generated.tgz && rm generated.tgz
+          flutter pub get
+          (cd packages/ario_sdk && flutter pub get)
+          flutter analyze
 
-      - name: Test app
-        run: scr test
+  test-app:
+    needs: generate
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    name: test-app (${{ matrix.shard }})
+    steps:
+      # Native SQLite, for the drift tests.
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
+      - name: Test app (shard ${{ matrix.shard }} of 4)
+        run: |
+          tar -xzf generated.tgz && rm generated.tgz
+          flutter pub get
+          bash tool/ci_test_shard.sh ${{ matrix.shard }} 4
 
-      # The browser-only tests (`@TestOn('browser')`), which `scr test` skips
-      # because it runs on the VM: the web database migration, and SQLite
-      # running in the browser for the drive state artifact. They need Chrome,
-      # which this runner has, and sqlite3.wasm served locally, which the
-      # script does.
+  test-packages:
+    needs: generate
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
+      - name: Test packages
+        env:
+          SKIP_APP: '1'
+        run: |
+          tar -xzf generated.tgz && rm generated.tgz
+          bash scripts/run_tests.sh
+
+  # The browser-only tests (`@TestOn('browser')`), which the VM shards skip:
+  # the web database migration, and SQLite running in the browser for the
+  # drive state artifact. They need Chrome, which this runner has, and
+  # sqlite3.wasm served locally, which the script does.
+  test-browser:
+    needs: generate
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
       - name: Test in the browser
-        run: bash tool/browser_tests.sh
+        run: |
+          tar -xzf generated.tgz && rm generated.tgz
+          flutter pub get
+          (cd packages/ario_sdk && flutter pub get)
+          bash tool/browser_tests.sh
+
+  test-and-lint:
+    if: always()
+    needs: [generate, lint, test-app, test-packages, test-browser]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Every check passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done

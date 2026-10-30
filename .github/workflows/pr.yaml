@@ -6,6 +6,12 @@ on:
       - gh-pages
       - master
 
+# A new push to a pull request makes the run for the push before it pointless:
+# stop it rather than let both hold runners.
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
@@ -37,6 +43,7 @@ jobs:
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -89,7 +96,11 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          expires: 7d
+          # The site holds a limited number of preview channels, and with
+          # several PRs a day a week's expiry filled it ("channel quota
+          # reached"). A closed PR's channel is also deleted at once
+          # (pr-closed.yaml); a redeploy renews the expiry.
+          expires: 3d
 
   build-ios:
     # skipped for now

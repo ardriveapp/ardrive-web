@@ -317,7 +317,7 @@ only in `~/.config/ardrive-e2e/env`. Never commit, print or upload them, or any 
 password.
 
 ### CI Pipeline
-CI (`.github/workflows/test.yml`) runs `scr setup` → `flutter analyze` → `scr test` → `bash tool/browser_tests.sh`. Ensure these all pass locally before pushing.
+CI (`.github/workflows/test.yml`) generates code once (`generate`), then runs `flutter analyze`, the app's tests in four shards (`tool/ci_test_shard.sh`), the packages' tests (`SKIP_APP=1 scripts/run_tests.sh`) and `bash tool/browser_tests.sh` in parallel. The final `test-and-lint` job is green only when all of them are. Locally, `scr test` and `bash tool/browser_tests.sh` cover the same ground. A new push to a PR cancels the run for the push before it, and a closed PR's Firebase preview is deleted (`pr-closed.yaml`).
 
 ### Git Hooks (Lefthook)
 - **Pre-commit**: Validates Flutter version matches 3.19.6

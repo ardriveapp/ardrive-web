@@ -287,12 +287,18 @@ void main() {
       'starts',
       build: build,
       act: (bloc) async {
+        // Each change waits for the count it causes: a recount is restarted
+        // by the next change, so sending them back to back counted two or
+        // three times depending on how loaded the machine was.
+        Future<void> counted() => untilCalled(() => repository.coverage(
+              includeHiddenDrives: any(named: 'includeHiddenDrives'),
+            ));
         drivesChanges.add(null);
-        await Future.delayed(settle * 2);
+        await counted();
         hideStates.add(const ShowingHiddenItems(userHasHiddenDrive: false));
-        await Future.delayed(Duration.zero);
+        await counted();
         syncStates.add(SyncInProgress());
-        await Future.delayed(Duration.zero);
+        await counted();
       },
       verify: (_) {
         verify(() => repository.coverage(
