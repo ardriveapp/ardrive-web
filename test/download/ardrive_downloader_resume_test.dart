@@ -129,8 +129,7 @@ void main() {
   });
 
   group('AES-CTR resume', () {
-    test(
-        'an interrupted download resumes from the aligned offset and is '
+    test('an interrupted download resumes from the aligned offset and is '
         'byte identical to an uninterrupted one', () async {
       final uninterruptedSource = FakeDownloadSource(ciphertext);
       final uninterrupted = build(uninterruptedSource);
@@ -151,8 +150,7 @@ void main() {
       expect(resumingSource.requestedOffsets, [0, alignedResumeOffset]);
     });
 
-    test(
-        'the overlap is dropped rather than written twice, at every '
+    test('the overlap is dropped rather than written twice, at every '
         'misalignment', () async {
       for (final interruption in [16, 17, 31, 255, 4097, fileSize - 1]) {
         final source = FakeDownloadSource(
@@ -174,8 +172,7 @@ void main() {
       }
     });
 
-    test(
-        'a public download resumes at the exact byte, with no cipher '
+    test('a public download resumes at the exact byte, with no cipher '
         'alignment', () async {
       final source = FakeDownloadSource(
         ciphertext,
@@ -211,8 +208,7 @@ void main() {
       expect(source.requestedOffsets, [0]);
     });
 
-    test(
-        'a chunk-verified (L1) download restarts instead of resuming, so the '
+    test('a chunk-verified (L1) download restarts instead of resuming, so the '
         'verification it asked for is never quietly dropped', () async {
       final source = FakeDownloadSource(
         ciphertext,
@@ -223,16 +219,15 @@ void main() {
       final errors =
           await downloadPrivate(harness.downloader, verifyDownload: true);
 
-      expect(
-          errors.whereType<DownloadResumeNotSupportedException>(), isNotEmpty);
+      expect(errors.whereType<DownloadResumeNotSupportedException>(),
+          isNotEmpty);
       expect(source.requestedOffsets, [0]);
       expect(source.verifyDownloadFlags, [true]);
     });
   });
 
   group('a gateway that ignores Range', () {
-    test(
-        'answering 200 to a Range request restarts instead of splicing '
+    test('answering 200 to a Range request restarts instead of splicing '
         'corrupt bytes', () async {
       final source = FakeDownloadSource(
         ciphertext,
@@ -377,8 +372,7 @@ void main() {
         );
       });
 
-      test(
-          'a 200 answer to a Range request is reported as byte 0, and its '
+      test('a 200 answer to a Range request is reported as byte 0, and its '
           'body is never read', () async {
         final body = countedBody(ciphertext);
         final harness = buildSource(
@@ -411,8 +405,7 @@ void main() {
         expect(harness.clients.single.closeCount, greaterThan(0));
       });
 
-      test(
-          'a 206 whose content-range disagrees with the request is refused, '
+      test('a 206 whose content-range disagrees with the request is refused, '
           'and the header is what decides', () async {
         final body = countedBody(ciphertext);
         final harness = buildSource(
@@ -586,8 +579,7 @@ void main() {
         verifierFactory: (id) async => realShapedVerifier(id),
       );
 
-      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true),
-          isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
 
       final verdict = await harness.downloader.integrity;
 
@@ -605,8 +597,7 @@ void main() {
         verifierFactory: (id) async => verifier,
       );
 
-      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true),
-          isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
 
       // The signature covers the bytes as they were posted. Tapping after
       // decryption instead would hash the plaintext - the same *length*, so
@@ -630,8 +621,7 @@ void main() {
         verifierFactory: (id) async => realShapedVerifier(id),
       );
 
-      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true),
-          isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
 
       final verdict = await harness.downloader.integrity;
 
@@ -651,8 +641,7 @@ void main() {
         verifierFactory: (id) async => GatedVerifier(gate),
       );
 
-      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true),
-          isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
       expect(harness.io.savedBytes, expectedPlaintext);
 
       // Bound *after* the download, deliberately: `downloadFile` resets the
@@ -677,8 +666,7 @@ void main() {
       expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
     });
 
-    test(
-        'aborting a download in flight settles the verdict, and says it was '
+    test('aborting a download in flight settles the verdict, and says it was '
         'cancelled rather than that nothing ran', () async {
       final source = StallingDownloadSource(ciphertext);
       final harness = build(source);

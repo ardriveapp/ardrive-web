@@ -349,4 +349,110 @@ void main() {
           const TextSelection(baseOffset: 0, extentOffset: 4));
     });
   });
+
+  // Leaving this wallet must never forget an account stored on this device.
+  // The way out was a round X beside the address that read as "close" and
+  // led to "Forget wallet"; the dialog's corner held only settings.
+  group('leaving this wallet', () {
+    setUpAll(() => registerFallbackValue(const ShowLanding()));
+
+    Future<void> pumpAsRoute(WidgetTester tester,
+        {bool checkingPassword = false}) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            navigatorKey: navigator,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            builder: (context, child) => MultiBlocProvider(
+              providers: [
+                BlocProvider<LoginBloc>.value(value: loginBloc),
+                BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+                RepositoryProvider<UserPreferencesRepository>.value(
+                  value: userPreferences,
+                ),
+                RepositoryProvider<ArDriveAuth>.value(value: auth),
+                RepositoryProvider<BiometricAuthentication>.value(
+                  value: biometrics,
+                ),
+              ],
+              child: child!,
+            ),
+            home: const Scaffold(body: Text('Log in')),
+          ),
+        ),
+      );
+      navigator.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          body: EnterYourPasswordWidget(
+            loginBloc: loginBloc,
+            showWalletCreated: false,
+            wallet: wallet,
+            checkingPassword: checkingPassword,
+            passwordFailed: false,
+          ),
+        ),
+      ));
+      // A check shows a spinner that never settles.
+      if (checkingPassword) {
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      } else {
+        await tester.pumpAndSettle();
+      }
+    }
+
+    List<LoginEvent> added() =>
+        verify(() => loginBloc.add(captureAny())).captured.cast<LoginEvent>();
+
+    testWidgets('offers a close in the corner and "Use a different wallet"',
+        (tester) async {
+      await pumpAsRoute(tester);
+      expect(find.byKey(const Key('useDifferentWallet')), findsOneWidget);
+      expect(find.text('Use a different wallet'), findsOneWidget);
+      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(find.byIcon(Icons.settings), findsOneWidget,
+          reason: 'settings stays beside the close, not in its place');
+      expect(find.byTooltip('Forget wallet'), findsNothing,
+          reason: 'the round X beside the address is gone');
+    });
+
+    testWidgets(
+        'cannot be left while the password is checked: the check would '
+        'still sign in behind Log in', (tester) async {
+      await pumpAsRoute(tester, checkingPassword: true);
+      expect(find.byTooltip('Close'), findsNothing);
+      await tester.tap(find.byKey(const Key('useDifferentWallet')),
+          warnIfMissed: false);
+      await tester.pump(const Duration(seconds: 1));
+      verifyNever(() => loginBloc.add(any()));
+      expect(find.byType(EnterYourPasswordWidget), findsOneWidget);
+    });
+
+    for (final (how, finder) in [
+      ('"Use a different wallet"', find.byKey(const Key('useDifferentWallet'))),
+      ('the close', find.byTooltip('Close')),
+    ]) {
+      testWidgets('$how goes back to Log in and forgets nothing stored',
+          (tester) async {
+        await pumpAsRoute(tester);
+        await tester.tap(finder);
+        await tester.pumpAndSettle();
+
+        expect(added().single, const LeaveWallet(toLogIn: true));
+        expect(find.byType(EnterYourPasswordWidget), findsNothing);
+        expect(find.text('Log in'), findsOneWidget);
+      });
+    }
+  });
 }

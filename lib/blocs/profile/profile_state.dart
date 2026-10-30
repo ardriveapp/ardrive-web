@@ -55,3 +55,8 @@ class ProfileLoggedIn extends ProfileAvailable {
 class ProfilePromptAdd extends ProfileUnavailable {}
 
 class ProfileLoggingOut extends ProfileUnavailable {}
+
+/// Signed out because Wander is on another wallet than the saved account;
+/// see [ProfileCubit.signOutForOtherWallet]. The account is gone from this
+/// device, and the sign-in screen says why.
+class ProfileSignedOutForOtherWallet extends ProfileLoggingOut {}

@@ -349,5 +349,37 @@ void main() {
       expect(ask.only, ['drive-a']);
       await cubit.close();
     });
+
+    // Try again after some drives failed. A drive whose prompt was cancelled
+    // but which did not fail is not part of what the user asked for, so its
+    // prompt stays away: no wallet spam.
+    test('retrying the drives that failed asks again for those only', () async {
+      allDrivesSyncAtOnce();
+      final cubit = buildCubit();
+      await settled();
+
+      await cubit.retryFailedDrives(['failed-a', 'failed-b']);
+
+      final ask = lastAsk();
+      expect(ask.all, isFalse,
+          reason: 'every cancelled prompt, failed or not, would come back');
+      expect(ask.only, ['failed-a', 'failed-b']);
+      expect(ask.only, isNot(contains('cancelled-not-failed')));
+      await cubit.close();
+    });
+
+    test('and a sync the user starts with no drives named still asks for all',
+        () async {
+      allDrivesSyncAtOnce();
+      final cubit = buildCubit();
+      await settled();
+
+      await cubit.startSync(onlyDriveIds: ['a', 'b']);
+
+      final ask = lastAsk();
+      expect(ask.all, isTrue);
+      expect(ask.only, isNull);
+      await cubit.close();
+    });
   });
 }

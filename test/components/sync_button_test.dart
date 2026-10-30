@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/app_top_bar.dart';
-import 'package:ardrive/drives_list/domain/drive_scope.dart';
-import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -80,7 +79,11 @@ void main() {
     await progressController.close();
   });
 
-  Widget host(Widget body, {ArDriveThemeData? theme}) {
+  Widget host(
+    Widget body, {
+    ArDriveThemeData? theme,
+    DrivesListCubit? drivesList,
+  }) {
     return Portal(
       child: ArDriveTheme(
         themeData: theme ?? lightTheme(),
@@ -90,6 +93,10 @@ void main() {
           providers: [
             BlocProvider<SyncCubit>.value(value: syncCubit),
             BlocProvider<DrivesCubit>.value(value: drivesCubit),
+            // The drives list route provides this above the shell; no other
+            // route does.
+            if (drivesList != null)
+              BlocProvider<DrivesListCubit>.value(value: drivesList),
           ],
           child: MaterialApp(
             localizationsDelegates: const [
@@ -106,8 +113,11 @@ void main() {
     );
   }
 
-  Widget wrap({ArDriveThemeData? theme}) =>
-      host(const Row(children: [SyncButton()]), theme: theme);
+  Widget wrap({ArDriveThemeData? theme, DrivesListCubit? drivesList}) => host(
+        const Row(children: [SyncButton()]),
+        theme: theme,
+        drivesList: drivesList,
+      );
 
   /// The button as `MobileAppBar` places it: against the trailing edge, with
   /// the rest of the bar's chrome to its right.
@@ -282,6 +292,43 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(turns(), isNot(before));
+  });
+
+  // On the HTML renderer, which phones get, a repaint rebuilds the DOM of
+  // everything it covers, so the ring that turns on every frame of a sync
+  // repaints alone, and not the top bar around it.
+  testWidgets('the turning ring repaints nothing but itself', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+    await startSyncing(
+      tester,
+      reporting: SyncProgress.initial().copyWith(progress: 0.5),
+    );
+
+    final glyph = <RenderObject>{};
+    void collect(RenderObject o) {
+      glyph.add(o);
+      o.visitChildren(collect);
+    }
+
+    collect(tester.renderObject(find.byType(ArDriveIcon)));
+    final painted = <RenderObject>{};
+    debugOnProfilePaint = painted.add;
+    try {
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    } finally {
+      debugOnProfilePaint = null;
+    }
+    expect(
+      painted,
+      contains(tester.renderObject(find.byKey(syncIndicatorMotionKey))),
+      reason: 'the ring turns',
+    );
+    // The glyph inside the ring stands still, and so does the bar.
+    expect(painted.intersection(glyph), isEmpty);
+    expect(painted.whereType<RenderParagraph>(), isEmpty);
   });
 
   testWidgets('hovering the running indicator names the phase', (tester) async {
@@ -620,40 +667,6 @@ void main() {
     expect(find.byType(ArDriveDropdown), findsOneWidget);
   });
 
-  /// The sidebar's Your drives row is a house; the menu item for the same
-  /// place was an arrow, a second icon for one destination.
-  testWidgets("the menu's Your drives is the sidebar's, lined up with Stop",
-      (tester) async {
-    await tester.pumpWidget(wrap());
-    await tester.pump();
-    await startSyncing(tester);
-
-    await tester.tap(find.byType(SyncButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    Finder iconOf(String item) => find.descendant(
-          of: find.ancestor(
-            of: find.text(item),
-            matching: find.byType(ArDriveDropdownItemTile),
-          ),
-          matching: find.byType(Icon),
-        );
-
-    final drives = iconOf('Your drives');
-    final stop = iconOf('Stop syncing');
-    expect(
-      tester.widget<Icon>(drives).icon,
-      DriveScopeRail.iconFor(DriveScope.all),
-    );
-    expect(tester.getSize(drives), tester.getSize(stop));
-    expect(tester.getTopLeft(drives).dx, tester.getTopLeft(stop).dx);
-    expect(
-      tester.getTopLeft(find.text('Your drives')).dx,
-      tester.getTopLeft(find.text('Stop syncing')).dx,
-    );
-  });
-
   /// A sync that ended with drives it could not read, as the cubit reports it.
   SyncCompleteWithErrors failed({
     SyncTrigger trigger = SyncTrigger.background,
@@ -674,6 +687,15 @@ void main() {
     // The menu enters the navigator's overlay on the frame after the tap.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  /// Opens the menu far enough for an item to take a tap: it reveals through
+  /// an offstage transition, and the ring never lets the tree settle.
+  Future<void> openMenuToTap(WidgetTester tester) async {
+    await tester.tap(find.byType(SyncButton));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
   }
 
   // The groups that tested Resync, Deep Resync, Retry and the record moved with
@@ -747,13 +769,21 @@ void main() {
       expect(find.text('Sync incomplete: errors detected'), findsNothing,
           reason: 'precondition: the announcement has had its few seconds');
 
-      await openMenu(tester);
+      await openMenuToTap(tester);
 
-      // Retry lives on the drives list now - see
-      // `test/drives_list/drives_sync_menu_test.dart`. What this menu owes is
-      // the way to the page that carries it.
-      expect(find.text('Retry failed'), findsNothing);
-      expect(find.text('Your drives'), findsOneWidget);
+      // The way to run it again is where the failure is reported, and it
+      // runs again exactly the drives that failed - the drives list's own
+      // retry, through the same two calls.
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Your drives'), findsNothing);
+
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+
+      verify(() => syncCubit.clearErrorState()).called(1);
+      verify(() => syncCubit.retryFailedDrives(['drive-a', 'drive-b']))
+          .called(1);
+      verifyNever(() => syncCubit.syncMetadataOnly());
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -777,7 +807,7 @@ void main() {
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
 
       await openMenu(tester);
-      expect(find.text('Your drives'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -832,7 +862,63 @@ void main() {
       // menu the indicator opens, and the indicator's own red triangle.
       await openMenu(tester);
 
-      expect(find.text('Your drives'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Your drives'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('Try again runs the drive-list refresh again, and only that',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
+
+      await openMenuToTap(tester);
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+
+      // The request that failed: no drive is walked, and no cancelled wallet
+      // prompt is asked again.
+      verify(() => syncCubit.syncMetadataOnly()).called(1);
+      verifyNever(() => syncCubit.retryFailedDrives(any()));
+      verifyNever(() => syncCubit.clearErrorState());
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets(
+        "Try again goes through the drives list's own retry when it is the "
+        'page saying so', (tester) async {
+      // Its retry holds the page on "still looking" for the length of the
+      // request. A refresh it did not start would flash Getting Started over
+      // an empty table.
+      final drivesList = _MockDrivesListCubit();
+      whenListen(
+        drivesList,
+        const Stream<DrivesListState>.empty(),
+        initialState: DrivesListUnavailable(),
+      );
+      when(() => drivesList.retryLoadingDrives()).thenAnswer((_) async {});
+
+      await tester.pumpWidget(wrap(drivesList: drivesList));
+      await tester.pump();
+
+      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
+
+      await openMenuToTap(tester);
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+
+      verify(() => drivesList.retryLoadingDrives()).called(1);
+      verifyNever(() => syncCubit.syncMetadataOnly());
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -892,10 +978,180 @@ void main() {
           findsNothing);
 
       await openMenu(tester);
-      expect(find.text('Your drives'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  /// What the menu carries: the status, and only what acts on it. Your
+  /// drives went: the sidebar is always the way there.
+  group('the menu', () {
+    /// The labels of the menu's actions, top to bottom.
+    List<String> actions(WidgetTester tester) => tester
+        .widgetList<ArDriveDropdownItemTile>(
+            find.byType(ArDriveDropdownItemTile))
+        .map((tile) => tile.name)
+        .toList();
+
+    Future<void> enter(WidgetTester tester, SyncState state) async {
+      stateController.add(state);
+      await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
+    }
+
+    testWidgets('while a sync runs it offers Stop syncing alone',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+      await startSyncing(tester);
+      await openMenu(tester);
+
+      expect(actions(tester), ['Stop syncing']);
+    });
+
+    for (final (name, state) in [
+      ('some drives', () => failed()),
+      ('the drive list', () => SyncFailure(error: Exception('no'))),
+    ]) {
+      testWidgets('after $name failed it offers Try again alone',
+          (tester) async {
+        await tester.pumpWidget(wrap());
+        await tester.pump();
+        await enter(tester, state());
+        await openMenu(tester);
+
+        expect(actions(tester), ['Try again']);
+
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets('Your drives is in no state', (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      final states = <String, SyncState Function()>{
+        'running': () => SyncInProgress(trigger: SyncTrigger.background),
+        'loading the drive list': () => SyncLoadingDrives(),
+        'some drives failed': () => failed(),
+        'the drive list failed': () => SyncFailure(error: Exception('no')),
+        'the wallet changed': () => SyncWalletMismatch(),
+        'cancelled': () => SyncCancelled(
+              drivesCompleted: 1,
+              totalDrives: 3,
+              cancelledAt: clock.now(),
+            ),
+      };
+
+      for (final MapEntry(key: name, value: state) in states.entries) {
+        await enter(tester, state());
+        await openMenu(tester);
+
+        expect(find.byKey(syncStatusHeaderKey), findsOneWidget, reason: name);
+        expect(find.text('Your drives'), findsNothing, reason: name);
+
+        // Closed again by a tap on the barrier, away from the menu.
+        await tester.tapAt(const Offset(5, 500));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a state with nothing to act on opens the status alone',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+      await enter(tester, SyncLoadingDrives());
+      await openMenu(tester);
+
+      expect(find.byKey(syncStatusHeaderKey), findsOneWidget);
+      expect(find.text('Loading your drives...'), findsOneWidget);
+      expect(actions(tester), isEmpty);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a result with only its pill to show opens no empty menu',
+        (tester) async {
+      // A clean result has no status to read and nothing to act on. A menu
+      // here would open as an empty card.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+      await enter(tester, finished(entitiesSynced: 3));
+
+      expect(find.text('3 items changed'), findsOneWidget,
+          reason: 'precondition: the result is on screen');
+      expect(find.byType(ArDriveDropdown), findsNothing);
+
+      await tester.tap(find.byType(SyncButton), warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ArDriveCard), findsNothing);
+      expect(find.byType(ArDriveDropdownItemTile), findsNothing);
+    });
+
+    for (final (name, theme) in [
+      ('light', lightTheme()),
+      ('dark', ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())),
+    ]) {
+      testWidgets('Try again is drawn as Stop syncing is, $name',
+          (tester) async {
+        // One menu item, ardrive_ui's: the same tile, an icon of the same
+        // size in the same token, and the icon and label at the same insets.
+        Finder tileOf(String item) => find.ancestor(
+              of: find.text(item),
+              matching: find.byType(ArDriveDropdownItemTile),
+            );
+        Finder iconOf(String item) => find.descendant(
+              of: tileOf(item),
+              matching: find.byType(ArDriveIcon),
+            );
+
+        ({ArDriveIcon icon, Size size, double iconInset, double labelInset})
+            measure(String item) {
+          final tileLeft = tester.getTopLeft(tileOf(item)).dx;
+          return (
+            icon: tester.widget<ArDriveIcon>(iconOf(item)),
+            size: tester.getSize(iconOf(item)),
+            iconInset: tester.getTopLeft(iconOf(item)).dx - tileLeft,
+            labelInset: tester.getTopLeft(find.text(item)).dx - tileLeft,
+          );
+        }
+
+        await tester.pumpWidget(wrap(theme: theme));
+        await tester.pump();
+
+        await startSyncing(tester);
+        await openMenu(tester);
+        final stop = measure('Stop syncing');
+
+        await tester.tapAt(const Offset(5, 500));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await enter(tester, failed());
+        await openMenu(tester);
+        final tryAgain = measure('Try again');
+
+        expect(tryAgain.icon.icon, ArDriveIcons.refresh().icon);
+        expect(tryAgain.icon.color, theme.colorTokens.textHigh);
+        expect(tryAgain.icon.color, stop.icon.color);
+        expect(tryAgain.size, stop.size);
+        expect(tryAgain.iconInset, stop.iconInset);
+        expect(tryAgain.labelInset, stop.labelInset);
+        expect(
+          tester.widget<Text>(find.text('Try again')).style?.color,
+          theme.colorTokens.textHigh,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 
   /// The two states the app used to emit and render nowhere at all.
@@ -1033,3 +1289,6 @@ Drive _drive({required String id, required String name}) => Drive(
       dateCreated: DateTime(2026),
       lastUpdated: DateTime(2026),
     );
+
+class _MockDrivesListCubit extends MockCubit<DrivesListState>
+    implements DrivesListCubit {}

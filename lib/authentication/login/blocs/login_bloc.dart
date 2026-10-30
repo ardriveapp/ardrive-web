@@ -33,6 +33,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -61,6 +62,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   String? _signUpWalletAddress;
 
   bool ignoreNextWaletSwitch = false;
+
+  /// Stops listening for Wander's account switches when this bloc closes.
+  Function()? _forgetWalletSwitch;
 
   @visibleForTesting
   String? lastKnownWalletAddress;
@@ -149,6 +153,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleAddWalletFromArConnectEvent(event, emit);
     } else if (event is ForgetWallet) {
       await _handleForgetWalletEvent(event, emit);
+    } else if (event is LeaveWallet) {
+      await _handleLeaveWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
       await _handleFinishOnboardingEvent(event, emit);
     } else if (event is RetrySignUpPassword) {
@@ -282,9 +288,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// Whether a wallet extension is in this browser, looking again for up to
   /// [_walletInjectionWait] when there is none yet.
   Future<bool> _walletDetectedSoon() async {
-    final until = DateTime.now().add(_walletInjectionWait);
+    final until = clock.now().add(_walletInjectionWait);
     while (!anyWalletDetected) {
-      if (!DateTime.now().isBefore(until)) return false;
+      if (!clock.now().isBefore(until)) return false;
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
     return true;
@@ -432,7 +438,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// pages through every drive transaction the wallet has, and a real wallet
   /// took 30 pages and 18.5 s on a fast link. A wallet that big on a slow
   /// phone still logs in; a gateway that stops answering still fails here.
-  static const defaultWalletLookupTimeout = Duration(seconds: 45);
+  ///
+  /// Longer than a stalled page's first two GraphQL attempts (20 s, then
+  /// 40 s, see [GraphQLRetry.attemptTimeoutFor]) and the pause between them,
+  /// so a page that times out once is retried before the dialog gives up.
+  static const defaultWalletLookupTimeout = Duration(seconds: 65);
 
   final Duration _keyfileReadTimeout;
   final Duration _walletLookupTimeout;
@@ -1074,12 +1084,68 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           .then((value) => _profileCubit.logoutProfile());
     }
 
+    await _resetWalletFlow();
+
+    emit(const LoginLanding());
+  }
+
+  Future<void> _handleLeaveWalletEvent(
+    LeaveWallet event,
+    Emitter<LoginState> emit,
+  ) async {
+    // Whatever is stored here stays, unless this flow stored it: a returning
+    // user's account must survive a sign-up or sign-in they abandon.
+    final saved = _savedByThisFlow;
+    if (saved != null && await _storedAccountIs(saved)) {
+      await _arDriveAuth
+          .logout()
+          .then((value) => _profileCubit.logoutProfile());
+    }
+
+    await _resetWalletFlow();
+
+    emit(event.toLogIn ? _logInPanel : const LoginLanding());
+  }
+
+  /// Whether the account stored on this device is [address]. False when
+  /// nothing is stored, and when it can't be told: keeping an account is
+  /// never the dangerous choice.
+  Future<bool> _storedAccountIs(String address) async =>
+      await _storedAddress() == address;
+
+  /// The address of the account stored on this device; null when there is
+  /// none or it can't be read.
+  Future<String?> _storedAddress() async {
+    try {
+      return await _arDriveAuth.getWalletAddress();
+    } catch (e) {
+      logger.w('Could not tell whose account is stored here: $e');
+      return null;
+    }
+  }
+
+  /// The address of the account this sign-in or sign-up saved on this
+  /// device, while it hasn't finished: a sign-up whose password step failed
+  /// after the save. [LeaveWallet] forgets it, and nothing else.
+  String? _savedByThisFlow;
+
+  @visibleForTesting
+  set savedByThisFlowForTesting(String? address) => _savedByThisFlow = address;
+
+  @override
+  void onChange(Change<LoginState> change) {
+    super.onChange(change);
+    // Signed in: the account is the user's now, not this flow's to forget.
+    if (change.nextState is LoginSuccess) _savedByThisFlow = null;
+  }
+
+  /// Drops what a sign-in or sign-up held for the wallet it loaded.
+  Future<void> _resetWalletFlow() async {
+    _savedByThisFlow = null;
     usingSeedphrase = false;
     _sourceWalletAddress = null;
     _signUpToRetry = null;
     await _solanaProviderService.disconnect();
-
-    emit(const LoginLanding());
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -1130,6 +1196,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     }
 
+    final storedBefore = await _storedAddress();
     final User user;
     try {
       user = skipDriveCheck
@@ -1146,6 +1213,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
               profileType,
               sourceWalletAddress: _sourceWalletAddress,
             );
+      // Saved on this device from here on: a step after this can fail and
+      // reopen the password, and leaving then forgets this account only.
+      _savedByThisFlow = user.walletAddress;
     } on PasswordOpensNoDriveException {
       // Not a wrong password: the user may correct it or continue with
       // those drives locked. Sign-in is never blocked by its drives.
@@ -1162,6 +1232,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       );
       emit(const LoginPasswordOpensNoDrives());
       return;
+    } catch (_) {
+      // login() saves the profile before reading it back, so it can fail
+      // with this wallet already stored. Saved by this flow only if it
+      // wasn't stored here before.
+      final address = await wallet.getAddress();
+      if (storedBefore != address && await _storedAddress() == address) {
+        _savedByThisFlow = address;
+      }
+      rethrow;
     }
 
     if (showWalletCreated) {
@@ -1169,6 +1248,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else {
       emit(LoginSuccess(user));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _forgetWalletSwitch?.call();
+    return super.close();
   }
 
   bool _isArConnectWallet() {
@@ -1180,16 +1265,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    onArConnectWalletSwitch(() async {
+    _forgetWalletSwitch = onArConnectWalletSwitch(() async {
+      if (isClosed) return;
       logger.d('Wallet switch detected on LoginBloc');
-      final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
-      if (isUserLoggedIng && !_isArConnectWallet()) {
-        logger.d(
-          'Wallet switch detected for non-arconnect wallet'
-          ' ($profileType) - ignoring',
-        );
-        return;
-      }
+      // A saved account is ProfileCubit's to sign out (see
+      // ProfileCubit.signOutForOtherWallet); this only covers a Wander
+      // sign-in that has not saved one yet.
+      if (await _arDriveAuth.isUserLoggedIn()) return;
 
       if (ignoreNextWaletSwitch) {
         ignoreNextWaletSwitch = false;

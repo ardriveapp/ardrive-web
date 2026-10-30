@@ -31,6 +31,10 @@ Function() onWalletSwitch(Function onSwitch) {
   return () => null;
 }
 
+Function() onWalletSwitchTo(void Function(String? address) onSwitch) {
+  return () => null;
+}
+
 void reload() {
   return;
 }

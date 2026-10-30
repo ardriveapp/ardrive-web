@@ -17,6 +17,10 @@ query DriveActivityProbe(
     }
     edges {
       node {
+        id
+        block {
+          height
+        }
         tags {
           name
           value

@@ -14,7 +14,8 @@ void main() {
 
   /// The part of [location] a server would be sent - everything before the
   /// fragment.
-  String serverVisiblePartOf(String location) => location.split('#').first;
+  String serverVisiblePartOf(String location) =>
+      location.split('#').first;
 
   group('rewriteLegacyShareLink', () {
     test('moves a legacy key out of the query and into the fragment', () {

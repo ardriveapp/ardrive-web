@@ -107,8 +107,7 @@ void main() {
       UrlLauncherPlatform.instance = launcher;
     });
 
-    test(
-        'does not launch a scheme it will not open, and does not throw '
+    test('does not launch a scheme it will not open, and does not throw '
         'either', () async {
       // Nearly every call site fires this and forgets it - `onTap: () =>
       // openUrl(...)` - so a throw from here is an unhandled asynchronous

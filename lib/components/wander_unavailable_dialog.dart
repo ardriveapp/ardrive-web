@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Says Wander could not be reached for a write or a private drive key, and
-/// offers Try again. Resolves true to try again; Cancel, or closing the
-/// dialog, resolves false.
+/// offers Try again, or Reconnect when Wander has lost ArDrive's
+/// permissions. Resolves true to try again (or reconnect); Cancel, or
+/// closing the dialog, resolves false.
 ///
 /// If Wander answers after all while it is open, [answered] completes: the
 /// dialog closes itself and this resolves true. It resolves then even if
@@ -79,16 +80,27 @@ class _WanderUnavailableDialogState extends State<WanderUnavailableDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
-    final notInstalled =
-        widget.reason == ArConnectUnavailableReason.notInstalled;
+    final (title, description, retry) = switch (widget.reason) {
+      ArConnectUnavailableReason.notInstalled => (
+          l10n.wanderNotInstalledTitle,
+          l10n.wanderNotInstalledDescription,
+          l10n.tryAgainEmphasized,
+        ),
+      ArConnectUnavailableReason.noAnswer => (
+          l10n.wanderNoAnswerTitle,
+          l10n.wanderNoAnswerDescription,
+          l10n.tryAgainEmphasized,
+        ),
+      ArConnectUnavailableReason.noPermission => (
+          l10n.wanderNoPermissionTitle,
+          null,
+          l10n.wanderReconnect,
+        ),
+    };
 
     return ArDriveStandardModalNew(
-      title: notInstalled
-          ? l10n.wanderNotInstalledTitle
-          : l10n.wanderNoAnswerTitle,
-      description: notInstalled
-          ? l10n.wanderNotInstalledDescription
-          : l10n.wanderNoAnswerDescription,
+      title: title,
+      description: description,
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(false),
@@ -96,7 +108,7 @@ class _WanderUnavailableDialogState extends State<WanderUnavailableDialog> {
         ),
         ModalAction(
           action: () => Navigator.of(context).pop(true),
-          title: l10n.tryAgainEmphasized,
+          title: retry,
         ),
       ],
     );

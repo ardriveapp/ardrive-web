@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
@@ -24,6 +25,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stash_memory/stash_memory.dart';
 
+import '../test_utils/locked_drive_fixtures.dart' show MemoryKeyValueStore;
 import '../test_utils/utils.dart';
 
 class TransactionCommonMixinFake extends Fake
@@ -97,6 +99,9 @@ void main() {
   late MockDeviceTabs mockDeviceTabs;
   late MockDriveDao mockDriveDao;
   late MockDriveUnlocker mockDriveUnlocker;
+  late MemoryKeyValueStore deviceStore;
+  late SignInPasswordProofStore proofStore;
+  late DriveUnlockSession unlockSession;
 
   final wallet = getTestWallet();
 
@@ -135,6 +140,8 @@ void main() {
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
     mockDriveUnlocker = MockDriveUnlocker();
+    deviceStore = MemoryKeyValueStore();
+    proofStore = SignInPasswordProofStore(store: () async => deviceStore);
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
@@ -149,6 +156,9 @@ void main() {
         .thenAnswer((_) async => []);
     when(() => mockDatabaseHelpers.clearOlderCopies())
         .thenAnswer((_) async => false);
+    // A profile is saved unless a test says otherwise: logout does nothing
+    // without one.
+    when(() => mockUserRepository.hasUser()).thenAnswer((_) async => true);
 
     arDriveAuth = ArDriveAuthImpl(
       arweave: mockArweaveService,
@@ -161,11 +171,13 @@ void main() {
       metadataCache: metadataCache,
       driveUnlocker: mockDriveUnlocker,
       deviceTabs: mockDeviceTabs,
+      signInPasswordProofStore: proofStore,
     );
 
     registerFallbackValue(wallet);
     registerFallbackValue(fakePrivateDriveV1);
-    when(() => mockDriveUnlocker.session).thenReturn(DriveUnlockSession());
+    when(() => mockDriveUnlocker.session)
+        .thenReturn(unlockSession = DriveUnlockSession());
     registerFallbackValue(Uint8List(0));
     registerFallbackValue(DriveEntity(
       id: 'some_id',
@@ -673,6 +685,29 @@ void main() {
         verify(() => mockDriveDao.detachForgottenDrives()).called(1);
       });
 
+      test(
+          'Welcome back and biometrics: a sign-in password this device left '
+          'unproven is unproven in the new session too', () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((_) async => unlockedUser);
+        when(() => mockUserRepository.getARIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
+        await arDriveAuth.unlockUser(password: 'password');
+        expect(unlockSession.signInPasswordProven('walletAddress'), isNull,
+            reason: 'nothing recorded: nothing known');
+
+        await proofStore.markUnproven('walletAddress');
+        await arDriveAuth.unlockUser(password: 'password');
+        expect(unlockSession.signInPasswordProven('walletAddress'), isFalse);
+        expect(deviceStore.values.values, everyElement(isA<bool>()),
+            reason: 'only the fact is stored, never a password');
+      });
+
       test('should throw when password is not correct', () async {
         when(() => mockUserRepository.getUser('password'))
             .thenThrow(ProfilePasswordIncorrectException());
@@ -754,6 +789,19 @@ void main() {
         ]);
       });
 
+      test(
+          'with no account saved and nobody signed in, signing out does '
+          'nothing: no tables, no wipe, no other tab told', () async {
+        when(() => mockUserRepository.hasUser()).thenAnswer((_) async => false);
+
+        await arDriveAuth.logout();
+
+        verifyNever(() => mockUserRepository.deleteUser());
+        verifyNever(() => mockDatabaseHelpers.deleteAllTables());
+        verifyNever(() => mockDatabaseHelpers.wipeAfterSignOut());
+        verifyNever(() => mockDeviceTabs.announceSignedOut());
+      });
+
       test('a sign-out that fails wipes nothing and tells no other tab',
           () async {
         when(() => mockUserRepository.deleteUser())
@@ -795,6 +843,31 @@ void main() {
 
         verifyNever(() => mockDeviceTabs.announceSignedOut());
         verify(() => mockDatabaseHelpers.wipeAfterSignOut()).called(1);
+      });
+
+      test('signing out forgets that the sign-in password was unproven',
+          () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((_) async => unlockedUser);
+        when(() => mockUserRepository.getARIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockSecureKeyValueStore.remove(any()))
+            .thenAnswer((_) async => true);
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+        await proofStore.markUnproven('walletAddress');
+        await arDriveAuth.unlockUser(password: 'password');
+
+        await arDriveAuth.logout();
+
+        expect(await proofStore.isUnproven('walletAddress'), isFalse);
       });
 
       test('signs out even when Wander never answers', () async {
@@ -884,6 +957,7 @@ void main() {
           openStore: () async => _KeptValues(kept),
         );
         final auth = ArDriveAuthImpl(
+          signInPasswordProofStore: proofStore,
           arweave: mockArweaveService,
           userRepository: mockUserRepository,
           crypto: mockArDriveCrypto,
@@ -911,6 +985,7 @@ void main() {
           'somethingElse': 'stays',
         };
         final auth = ArDriveAuthImpl(
+          signInPasswordProofStore: proofStore,
           arweave: mockArweaveService,
           userRepository: mockUserRepository,
           crypto: mockArDriveCrypto,
@@ -939,8 +1014,9 @@ void main() {
 
       test('says it failed when drive keys could not be cleared from memory',
           () async {
+        // A saved account, not unlocked: there is something to sign out.
         when(() => mockUserRepository.hasUser())
-            .thenAnswer((invocation) => Future.value(false));
+            .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
         when(() => mockDatabaseHelpers.deleteAllTables())
@@ -961,8 +1037,9 @@ void main() {
       test(
           'should delete the current user and delete it when user is not logged',
           () async {
+        // As the comment above says: an account is saved, nobody unlocked it.
         when(() => mockUserRepository.hasUser())
-            .thenAnswer((invocation) => Future.value(false));
+            .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
         when(() => mockDatabaseHelpers.clearSessionMemory())

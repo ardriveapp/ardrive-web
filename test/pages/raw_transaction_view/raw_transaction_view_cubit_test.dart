@@ -273,8 +273,8 @@ void main() {
   /// A `File-Name` tag with [value] on it, and bytes behind it.
   void transactionNamed(String value) {
     when(() => arweave.getInfoOfTxToBePinned(any())).thenAnswer(
-      (_) async => InfoOfTransactionToBePinned$Query$Transaction
-          .fromJson(<String, dynamic>{
+      (_) async =>
+          InfoOfTransactionToBePinned$Query$Transaction.fromJson(<String, dynamic>{
         'owner': <String, dynamic>{
           'address': 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e',
         },

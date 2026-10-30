@@ -687,8 +687,8 @@ void main() {
           expect(routePath.sharedFileLinkPayload?.dataTxId, dataTxId);
           expect(routePath.sharedFileLinkPayload?.name, 'Q3 Report.pdf');
           expect(routePath.sharedFileLinkPayload?.size, 4821133);
-          expect(
-              routePath.sharedFileLinkPayload?.contentType, 'application/pdf');
+          expect(routePath.sharedFileLinkPayload?.contentType,
+              'application/pdf');
           expect(routePath.sharedRawFileKey, validFileKey);
         });
 
@@ -814,11 +814,11 @@ void main() {
         pathParser.restoreRouteInformation(routePath).uri.toString();
 
     setUp(() {
-      pathParser = AppRouteInformationParser(urlStrategy: AppUrlStrategy.path);
+      pathParser =
+          AppRouteInformationParser(urlStrategy: AppUrlStrategy.path);
     });
 
-    test(
-        'a legacy link is written back as /share with the key in the '
+    test('a legacy link is written back as /share with the key in the '
         'fragment', () async {
       final routePath = await parse(
         '/file/$fileId/view?$fileKeyQueryParamName=$validFileKey',
@@ -863,8 +863,7 @@ void main() {
     });
 
     test('a raw transaction link restores with its hints', () async {
-      final routePath =
-          await parse('/view/$dataTxId?n=talk.mp4&ct=video%2Fmp4');
+      final routePath = await parse('/view/$dataTxId?n=talk.mp4&ct=video%2Fmp4');
 
       expect(
         restore(routePath),

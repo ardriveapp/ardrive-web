@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -189,6 +191,23 @@ class FakeWander extends Fake implements ArConnectService {
   /// Throws as a wallet that can't sign at all.
   bool fail = false;
 
+  /// Throws what ArDrive's own "Wander didn't answer" prompt ends in when
+  /// the person picks Cancel.
+  bool gaveUp = false;
+
+  /// Throws what a reconnect onto another wallet ends in.
+  bool otherWallet = false;
+
+  /// Throws what Wander throws once ArDrive has lost its permissions.
+  bool missingPermission = false;
+
+  /// The saved account's wallet, which asks through [ArConnectPrompt].
+  Future<ArConnectWallet> savedWallet() async =>
+      ArConnectWallet(this, publicKey: await inner.getOwner());
+
+  @override
+  bool isExtensionPresent() => true;
+
   /// Answers every v2 (data item) signature with fresh random bytes.
   bool varyV2 = false;
 
@@ -196,6 +215,15 @@ class FakeWander extends Fake implements ArConnectService {
     prompts++;
     if (cancel) throw Exception('User cancelled the auth');
     if (fail) throw Exception('Wallet is locked');
+    if (otherWallet) throw const ArConnectWalletMismatchException();
+    if (missingPermission) {
+      throw Exception(
+          'Missing permission(s) for "signDataItem": SIGN_TRANSACTION');
+    }
+    if (gaveUp) {
+      throw const ArConnectUnavailableException(
+          ArConnectUnavailableReason.noAnswer);
+    }
   }
 
   @override
@@ -220,4 +248,33 @@ class FakeWander extends Fake implements ArConnectService {
     await dataItem.sign(ArweaveSigner(inner));
     return utils.decodeBase64ToBytes(dataItem.signature);
   }
+}
+
+/// A [KeyValueStore] in memory: this device's preferences, for one test.
+class MemoryKeyValueStore implements KeyValueStore {
+  final values = <String, Object>{};
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => values[key] as String?;
+
+  @override
+  Future<bool> putBool(String key, bool value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  bool? getBool(String key) => values[key] as bool?;
+
+  @override
+  Future<bool> remove(String key) async => values.remove(key) != null;
+
+  @override
+  Set<String> getKeys() => values.keys.toSet();
 }

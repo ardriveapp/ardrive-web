@@ -1409,9 +1409,6 @@ class ProfileCardHeader extends StatelessWidget {
   final String walletAddress;
   final VoidCallback onPressed;
   final bool isExpanded;
-  final bool hasLogoutButton;
-  final Function()? onClickLogout;
-  final String? logoutTooltip;
 
   /// Colored indicator dot for wallet type.
   final Color? walletIndicatorColor;
@@ -1421,9 +1418,6 @@ class ProfileCardHeader extends StatelessWidget {
     required this.walletAddress,
     required this.onPressed,
     this.isExpanded = false,
-    this.hasLogoutButton = false,
-    this.onClickLogout,
-    this.logoutTooltip,
     this.walletIndicatorColor,
   });
 
@@ -1484,13 +1478,12 @@ class ProfileCardHeader extends StatelessWidget {
 
     // Never narrower than the address under the name: it scales down to fit,
     // so a button sized to a short name squeezed it to about 6 px. The
-    // button's padding (10 a side), the avatar and its gap (34 + 8), the
-    // address at 12 px, and the close button when there is one (8 + 21).
+    // button's padding (10 a side), the avatar and its gap (34 + 8), and the
+    // address at 12 px.
     final addressRow = 20 +
         42 +
         ArDriveMonospace.widthOf(address, 12,
-            textScaler: MediaQuery.textScalerOf(context)) +
-        (hasLogoutButton ? 29 : 0);
+            textScaler: MediaQuery.textScalerOf(context));
     final forName = (primaryName.length * 20.0).clamp(110.0, 230.0);
 
     return math.max(forName, addressRow);
@@ -1547,53 +1540,33 @@ class ProfileCardHeader extends StatelessWidget {
                   ringColor: walletIndicatorColor,
                 ),
               ),
+              // The address's one short form, in a sign-in dialog too, where
+              // the whole address used to run on and lose its end to "...".
+              // Already shortened to its start and its end, so it is scaled
+              // down rather than cut: an address of wide letters overran the
+              // button and lost its end. At Roboto Mono's width from the
+              // first frame, so the button doesn't change size when the face
+              // arrives.
               Flexible(
-                child: isExpanded
-                    ? Text(
-                        walletAddress,
-                        softWrap: true,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: typography.code(color: colorTokens.textLow),
-                      )
-                    // Already shortened to its start and its end, so an
-                    // ellipsis here shortened it a second time: an address of
-                    // wide letters overran the button and lost its end to
-                    // "...". Scaled down instead, so the end always shows.
-                    // At Roboto Mono's width from the first frame, so the
-                    // button doesn't change size when the face arrives.
-                    : FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: SizedBox(
-                          width: ArDriveMonospace.widthOf(
-                              truncatedWalletAddress, 14,
-                              textScaler: MediaQuery.textScalerOf(context)),
-                          child: Text(
-                            truncatedWalletAddress,
-                            maxLines: 1,
-                            softWrap: false,
-                            style: typography.code(
-                              fontSize: 14,
-                              color: colorTokens.textHigh,
-                            ),
-                          ),
-                        ),
-                      ),
-              ),
-              if (hasLogoutButton)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: GestureDetector(
-                    onTap: onClickLogout,
-                    child: ArDriveClickArea(
-                      tooltip: logoutTooltip,
-                      child: ArDriveIcons.closeCircle(
-                        size: 21,
-                        color: colorTokens.iconLow,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SizedBox(
+                    width: ArDriveMonospace.widthOf(truncatedWalletAddress, 14,
+                        textScaler: MediaQuery.textScalerOf(context)),
+                    child: Text(
+                      truncatedWalletAddress,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: typography.code(
+                        fontSize: 14,
+                        color: isExpanded
+                            ? colorTokens.textLow
+                            : colorTokens.textHigh,
                       ),
                     ),
                   ),
                 ),
+              ),
             ],
           ),
         ),
@@ -1689,20 +1662,6 @@ class ProfileCardHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (hasLogoutButton)
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: GestureDetector(
-                onTap: onClickLogout,
-                child: ArDriveClickArea(
-                  tooltip: logoutTooltip,
-                  child: ArDriveIcons.closeCircle(
-                    size: 21,
-                    color: colorTokens.iconLow,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

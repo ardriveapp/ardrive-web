@@ -5,6 +5,7 @@ import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entity.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
@@ -134,6 +135,12 @@ class ArDriveCrypto {
         }
       } catch (e, stackTrace) {
         logger.e('v2 signing failed', e, stackTrace);
+        // Kept as they are: they say the person chose Cancel, or Wander is
+        // on another wallet, which an unlock tells apart from a failure.
+        if (e is ArConnectUnavailableException ||
+            e is ArConnectWalletMismatchException) {
+          rethrow;
+        }
         throw Exception('Failed to sign data item: $e');
       }
     } else {

@@ -339,6 +339,28 @@ void main() {
       expect(cubit.state, isA<ProfileLoggingOut>());
     });
 
+    test(
+        'while this tab signs out for a Wander switch, the other tabs are not '
+        'followed', () async {
+      final user = _user(balance: 1);
+      await cubit.unlockDefaultProfile(user, ProfileType.json);
+      final switchedOut = Completer<void>();
+      when(() => auth.logout()).thenAnswer((_) => switchedOut.future);
+
+      final signingOut = cubit.signOutForOtherWallet();
+      await pumpEventQueue();
+      messages.add(const SignedOutInAnotherTab());
+      messages.add(const ForgottenInAnotherTab(['drive-a']));
+      await pumpEventQueue();
+
+      verifyNever(() => auth.logout(fromAnotherTab: true));
+      verifyNever(() => driveDao.forgetDriveKey(any(), any()));
+      verifyNever(() => driveDao.forgetStoredDriveKeyUnread(any()));
+
+      switchedOut.complete();
+      await signingOut;
+    });
+
     test('nobody signed in here: nothing to sign out', () async {
       messages.add(const SignedOutInAnotherTab());
       await pumpEventQueue();

@@ -48,12 +48,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a locked Wander says to unlock it, and Try again tries again',
-      (tester) async {
+  testWidgets(
+      'a Wander that did not answer says to check it, and Try again tries '
+      'again', (tester) async {
     await open(tester, ArConnectUnavailableReason.noAnswer);
 
     expect(find.text("Wander didn't answer"), findsOneWidget);
-    expect(find.text('Unlock Wander, then try again.'), findsOneWidget);
+    expect(
+        find.text("Open Wander to check it's unlocked, then try again. "
+            'If nothing opens, restart your browser.'),
+        findsOneWidget);
 
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
@@ -68,6 +72,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(answer, isFalse);
+  });
+
+  testWidgets('a Wander without ArDrive\'s permissions offers Reconnect',
+      (tester) async {
+    await open(tester, ArConnectUnavailableReason.noPermission);
+
+    expect(find.text('Wander needs your permission again'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+
+    await tester.tap(find.text('Reconnect'));
+    await tester.pumpAndSettle();
+
+    expect(answer, isTrue);
   });
 
   testWidgets('a missing Wander says so', (tester) async {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show PointMode;
 
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -302,6 +303,58 @@ void main() {
     await done(tester);
   });
 
+  // The sign-in page holds the bento still while the database opens: every
+  // frame it drew there was main-thread time the database's worker waited
+  // for.
+  testWidgets('held still by the page, it draws nothing until let go',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(696, 868);
+    addTearDown(tester.view.reset);
+    var moving = false;
+    late StateSetter setMoving;
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: StatefulBuilder(builder: (context, setState) {
+            setMoving = setState;
+            return TickerMode(
+              enabled: moving,
+              child: Scaffold(
+                body: SizedBox.fromSize(
+                  size: const Size(696, 868),
+                  child: TilesView(loadPricePerGb: () async => 23.69),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('bentoTypedName'))).data,
+      'maya',
+      reason: 'the whole name, not typed out',
+    );
+    await tester.pump(const Duration(seconds: 12));
+    expect(find.text('Private files stay private'), findsOneWidget);
+    expect(tester.binding.hasScheduledFrame, isFalse,
+        reason: 'nothing asks for another frame');
+
+    setMoving(() => moving = true);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Private files stay private'), findsNothing,
+        reason: 'let go, the slides move on');
+    await done(tester);
+  });
+
   testWidgets('the price shows when Turbo answers', (tester) async {
     await pumpBento(tester, size: const Size(696, 868));
     expect(find.text('\$23.69'), findsOneWidget);
@@ -343,4 +396,150 @@ void main() {
     expect(tester.takeException(), isNull);
     await done(tester);
   });
+
+  // The bento animates all the time: the drifting backdrop, the filling dots,
+  // the typed name and its caret. Each runs in a layer of its own, so a frame
+  // repaints the animation and not the tiles around it. On the HTML renderer,
+  // which phones get, a repaint rebuilds the DOM of everything it covers; the
+  // whole bento repainting on every frame stalled phones until the browser
+  // reloaded the tab.
+  group('repaints', () {
+    /// The bill's leaders, as render objects.
+    List<RenderObject> leaders(WidgetTester tester) => tester
+        .renderObjectList(find.byWidgetPredicate((w) =>
+            w is CustomPaint &&
+            w.painter.runtimeType.toString() == '_LeaderPainter'))
+        .toList();
+
+    for (final (name, size, scrolling) in const [
+      ('a phone', Size(390, 844), true),
+      ('two columns', Size(496, 816), false),
+      ('three columns', Size(696, 868), false),
+    ]) {
+      testWidgets('$name: the animations leave the bill unpainted',
+          (tester) async {
+        await pumpBento(tester, size: size, scrolling: scrolling);
+        await tester.pump(const Duration(seconds: 1));
+        final bill = <RenderObject>{
+          tester.renderObject(find.text('Subscription')),
+          tester.renderObject(find.text('What it costs')),
+          ...leaders(tester),
+        };
+        expect(bill, hasLength(5));
+
+        final painted = <RenderObject>{};
+        var paints = 0;
+        debugOnProfilePaint = (o) {
+          paints++;
+          painted.add(o);
+        };
+        try {
+          // Ten and a half seconds of frames: the drift and the filling dots
+          // on every one, the name typing every 120 ms, the caret blinking
+          // every 500 ms, the slides moving on at five and ten seconds, and
+          // the people cross-fading to the next group at ten.
+          for (var i = 0; i < 660; i++) {
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+        } finally {
+          debugOnProfilePaint = null;
+        }
+        expect(paints, greaterThan(0), reason: 'the animations paint');
+        expect(find.byKey(const ValueKey('bentoPeople-1')), findsOneWidget,
+            reason: 'the people moved on to the next group');
+        expect(find.byKey(const ValueKey('bentoPeople-0')), findsNothing,
+            reason: 'the cross-fade finished');
+        expect(painted.intersection(bill), isEmpty);
+        await done(tester);
+      });
+    }
+
+    // On the HTML renderer, a circle drawn into a picture that also holds
+    // text becomes a DOM element of its own, wrapped in the tile's SVG clip:
+    // over a thousand nodes for three leaders. In a layer of their own the
+    // dots go to one canvas.
+    testWidgets('a leader shares its picture with no text', (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final found = leaders(tester);
+      expect(found, hasLength(3));
+      for (final leader in found) {
+        var boundary = leader;
+        while (!boundary.isRepaintBoundary) {
+          boundary = boundary.parent!;
+        }
+        final text = <RenderObject>[];
+        void visit(RenderObject o) {
+          if (o is RenderParagraph) text.add(o);
+          if (!o.isRepaintBoundary) o.visitChildren(visit);
+        }
+
+        boundary.visitChildren(visit);
+        expect(text, isEmpty);
+      }
+      await done(tester);
+    });
+
+    // On the HTML renderer the typed name's ShaderMask is an SVG filter over
+    // an image of the gradient, made again whenever the mask's shader or
+    // bounds change. Flutter 3.19 draws that image on a shared canvas that
+    // keeps its width while the height stays the same, so a mask that grew
+    // with the name cut the name off at its first width. Typing changes
+    // neither now.
+    testWidgets('typing leaves the name\'s gradient as it is', (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final mask = tester.renderObject(find.byType(ShaderMask));
+      final typed = <String>{};
+      final shaders = <Shader>{};
+      final rects = <Rect>{};
+      // Long enough to type a whole name, hold it and delete it.
+      for (var i = 0; i < 300; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        typed.add(
+            tester.widget<Text>(find.byKey(const Key('bentoTypedName'))).data!);
+        final layer = mask.debugLayer! as ShaderMaskLayer;
+        shaders.add(layer.shader!);
+        rects.add(layer.maskRect!);
+      }
+      expect(typed.length, greaterThan(4), reason: 'the name typed');
+      expect(rects, hasLength(1));
+      expect(shaders, hasLength(1));
+      await done(tester);
+    });
+
+    // The HTML renderer reads the first point of any drawPoints call, so a
+    // leader squeezed too narrow for a dot, by a long label or a large text
+    // size, threw there if it drew an empty list.
+    testWidgets('a leader too narrow for a dot draws nothing', (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final painter = tester
+          .widget<CustomPaint>(find
+              .byWidgetPredicate((w) =>
+                  w is CustomPaint &&
+                  w.painter.runtimeType.toString() == '_LeaderPainter')
+              .first)
+          .painter!;
+      for (final width in [0.0, 0.5, 1.0]) {
+        final canvas = _HtmlPointsCanvas();
+        painter.paint(canvas, Size(width, 20));
+        expect(canvas.points, isEmpty, reason: '$width px');
+      }
+      // Wide enough for dots, the same canvas gets them.
+      final canvas = _HtmlPointsCanvas();
+      painter.paint(canvas, const Size(30, 20));
+      expect(canvas.points, hasLength(10));
+      await done(tester);
+    });
+  });
+}
+
+/// Draws points the way the HTML renderer's recording canvas does: it reads
+/// the first one to start the paint bounds.
+class _HtmlPointsCanvas extends Fake implements Canvas {
+  final points = <Offset>[];
+
+  @override
+  void drawPoints(PointMode pointMode, List<Offset> points, Paint paint) {
+    points[0];
+    this.points.addAll(points);
+  }
 }

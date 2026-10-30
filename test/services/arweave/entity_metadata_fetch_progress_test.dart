@@ -2,6 +2,7 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
+import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
@@ -99,6 +100,31 @@ void main() {
     );
 
     expect(fetched, 0);
+  });
+
+  // Stop, pressed during a sync. The batch in hand used to read every one of
+  // its entities first - a hundred or more round trips per drive - so Stop
+  // took ten to twenty seconds to do anything.
+  test('a stop takes no further reads and hands back nothing', () async {
+    final token = SyncCancellationToken();
+    var fetched = 0;
+
+    final batch = arweave.createDriveEntityHistoryFromTransactions(
+      [for (var i = 0; i < 40; i++) snapshotTransaction(i)],
+      null,
+      0,
+      driveId: driveId,
+      ownerAddress: ownerAddress,
+      cancellationToken: token,
+      onEntityFetched: () {
+        fetched++;
+        if (fetched == 4) token.cancel();
+      },
+    );
+
+    await expectLater(batch, throwsA(isA<SyncCancelledException>()));
+    // The three workers each finish the read they are on, and start no other.
+    expect(fetched, lessThanOrEqualTo(4 + 3));
   });
 
   test('is optional - a caller that wants no count still gets its history',

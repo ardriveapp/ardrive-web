@@ -373,8 +373,8 @@ void main() {
             wallet: any(named: 'wallet'),
             password: any(named: 'password'),
             cipherKey: any(named: 'cipherKey'),
-            askWalletAgain: any(named: 'askWalletAgain'),
-            askWalletAgainFor: any(named: 'askWalletAgainFor'),
+          askWalletAgain: any(named: 'askWalletAgain'),
+          askWalletAgainFor: any(named: 'askWalletAgainFor'),
           )).thenThrow(Exception('the gateway said no'));
 
       final cubit = buildCubit();

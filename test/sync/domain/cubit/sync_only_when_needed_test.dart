@@ -338,8 +338,8 @@ void main() {
             wallet: any(named: 'wallet'),
             password: any(named: 'password'),
             cipherKey: any(named: 'cipherKey'),
-            askWalletAgain: any(named: 'askWalletAgain'),
-            askWalletAgainFor: any(named: 'askWalletAgainFor'),
+          askWalletAgain: any(named: 'askWalletAgain'),
+          askWalletAgainFor: any(named: 'askWalletAgainFor'),
             onDriveRead: any(named: 'onDriveRead'),
             onDriveUnlocked: any(named: 'onDriveUnlocked'),
           )).thenAnswer((_) async {
@@ -399,8 +399,8 @@ void main() {
             wallet: any(named: 'wallet'),
             password: any(named: 'password'),
             cipherKey: any(named: 'cipherKey'),
-            askWalletAgain: any(named: 'askWalletAgain'),
-            askWalletAgainFor: any(named: 'askWalletAgainFor'),
+          askWalletAgain: any(named: 'askWalletAgain'),
+          askWalletAgainFor: any(named: 'askWalletAgainFor'),
             onDriveRead: any(named: 'onDriveRead'),
             onDriveUnlocked: any(named: 'onDriveUnlocked'),
           )).thenAnswer((_) async => throw Exception('the gateway said no'));

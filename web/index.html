@@ -309,7 +309,44 @@
       <!-- This script adds the flutter initialization JS code -->
     <script src="flutter.js" defer></script>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+    <!--
+      The splash takes the theme the app will open in: the one the user chose
+      in the app if there is one (UserPreferencesRepository's `currentTheme`,
+      which shared_preferences keeps JSON-encoded under `flutter.`), else the
+      system's. Its colours are the app's page background in each theme
+      (ardrive_ui's themes.dart), so the first frame does not flash.
+    -->
+    <script>
+      try {
+        var savedTheme = JSON.parse(localStorage.getItem('flutter.currentTheme'));
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+      } catch (e) {}
+    </script>
     <style id="splash-screen-style">
+    :root {
+      --splash-bg: #FFFFFF;
+      --splash-track: rgba(0, 0, 0, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --splash-bg: #010905;
+        --splash-track: rgba(255, 255, 255, 0.14);
+      }
+    }
+
+    html[data-theme="light"] {
+      --splash-bg: #FFFFFF;
+      --splash-track: rgba(0, 0, 0, 0.08);
+    }
+
+    html[data-theme="dark"] {
+      --splash-bg: #010905;
+      --splash-track: rgba(255, 255, 255, 0.14);
+    }
+
     html {
       height: 100%
     }
@@ -317,22 +354,34 @@
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #ffffff;
+      background-color: var(--splash-bg);
       background-size: 100% 100%;
     }
 
-    /* Light mode */
-    @media (prefers-color-scheme: light) {
-      body {
-        background-color: #F7F7F7; /* Light background color */
-      }
+    /*
+      Below the logo, which is 184 px tall at the centre of splash.svg. Moved
+      by transform only, so it costs no layout, and absolutely positioned, so
+      nothing moves when Flutter's view arrives.
+    */
+    #splash-progress {
+      position: absolute;
+      top: calc(50% + 120px);
+      left: 50%;
+      width: 160px;
+      height: 3px;
+      margin-left: -80px;
+      border-radius: 2px;
+      overflow: hidden;
+      background-color: var(--splash-track);
+      transition: opacity 0.3s ease-out;
     }
 
-    /* Dark mode */
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: #080808; /* Dark background color */
-      }
+    #splash-progress > div {
+      width: 100%;
+      height: 100%;
+      background-color: #FE0230;
+      transform: scaleX(0.04);
+      transform-origin: left center;
     }
 
     .center {
@@ -396,8 +445,62 @@
         media="(prefers-color-scheme: dark)">
       <img class="center" aria-hidden="true" alt="" src="splash/img/splash.svg">
     </picture>
+    <div id="splash-progress" role="progressbar" aria-label="Loading ArDrive"><div></div></div>
     <script>
+      // The splash's progress bar, moved on by the load as it happens: the
+      // page and its scripts, main.dart.js running, the engine, the app, its
+      // first frame. Between two of those it keeps creeping towards the next,
+      // more slowly the closer it gets, so a long download still shows life.
+      // It never goes back, and goes once Flutter has drawn: Flutter's pages
+      // cover the splash from then on.
+      var splashProgress = (function() {
+        var track = document.getElementById('splash-progress');
+        var bar = track && track.firstElementChild;
+        var shown = 0.04;
+        var creep;
+        var still = window.matchMedia &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function set(value, seconds, easing) {
+          if (!bar || value < shown) return;
+          shown = value;
+          bar.style.transition = still || !seconds ? 'none'
+            : 'transform ' + seconds + 's ' + easing;
+          bar.style.transform = 'scaleX(' + value + ')';
+          if (track) track.setAttribute('aria-valuenow', Math.round(value * 100));
+        }
+        // Reached: [value] at once, then on towards [next] over [seconds].
+        function reached(value, next, seconds) {
+          clearTimeout(creep);
+          set(value, 0.3, 'ease-out');
+          creep = setTimeout(function() {
+            set(next, seconds, 'cubic-bezier(0.1, 0.6, 0.3, 1)');
+          }, 300);
+        }
+        function done() {
+          clearTimeout(creep);
+          set(1, 0.2, 'ease-out');
+          setTimeout(function() {
+            if (!track) return;
+            track.style.opacity = '0';
+            setTimeout(function() {
+              if (track.parentNode) track.parentNode.removeChild(track);
+            }, 300);
+          }, 200);
+        }
+        if (track) {
+          track.setAttribute('aria-valuemin', '0');
+          track.setAttribute('aria-valuemax', '100');
+        }
+        window.addEventListener('flutter-first-frame', done, { once: true });
+        return { reached: reached };
+      })();
+
+      // The page is parsed; main.dart.js (preloaded above) and the scripts
+      // are on their way.
+      splashProgress.reached(0.08, 0.5, 40);
+
       window.addEventListener('load', function(ev) {
+        splashProgress.reached(0.55, 0.65, 8);
         // Download main.dart.js
         _flutter.loader
           .loadEntrypoint({
@@ -406,10 +509,15 @@
             },
           })
           .then(function(engineInitializer) {
+            splashProgress.reached(0.7, 0.82, 10);
             return engineInitializer.initializeEngine();
           })
           .then(function(appRunner) {
+            splashProgress.reached(0.85, 0.92, 10);
             return appRunner.runApp();
+          })
+          .then(function() {
+            splashProgress.reached(0.93, 0.98, 30);
           });
       });
     </script>

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 /// a face/shield/icon that users can recognize at a glance.
 ///
 /// A subtle breathing animation gently pulses the colors for a living quality.
+/// Under reduced motion the colors hold still.
 class WalletGradientAvatar extends StatefulWidget {
   final String address;
   final double size;
@@ -25,15 +26,21 @@ class WalletGradientAvatar extends StatefulWidget {
 
 class _WalletGradientAvatarState extends State<WalletGradientAvatar>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller = AnimationController(
+    duration: const Duration(seconds: 4),
+    vsync: this,
+  );
 
   @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 4),
-      vsync: this,
-    )..repeat(reverse: true);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Under reduced motion the colors hold still, halfway through a breath.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      _controller.value = 0.5;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override
@@ -48,34 +55,36 @@ class _WalletGradientAvatarState extends State<WalletGradientAvatar>
 
     final ringWidth = widget.size > 40 ? 2.5 : 2.0;
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final avatar = ClipOval(
-          child: CustomPaint(
-            size: Size(widget.size, widget.size),
-            painter: _PixelAvatarPainter(
-              data: data,
-              breathe: _controller.value,
-            ),
+    // The breath repaints the avatar on every frame, and nothing else: its
+    // own layer, and a painter that listens to the animation, so a frame
+    // neither rebuilds the avatar nor repaints the top bar around it. On the
+    // HTML renderer, which phones get, a repaint rebuilds the DOM of
+    // everything it covers.
+    final avatar = RepaintBoundary(
+      child: ClipOval(
+        child: CustomPaint(
+          size: Size(widget.size, widget.size),
+          painter: _PixelAvatarPainter(
+            data: data,
+            breathe: _controller,
           ),
-        );
+        ),
+      ),
+    );
 
-        if (widget.ringColor == null) return avatar;
+    if (widget.ringColor == null) return avatar;
 
-        return Container(
-          width: widget.size + ringWidth * 2,
-          height: widget.size + ringWidth * 2,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: widget.ringColor!,
-              width: ringWidth,
-            ),
-          ),
-          child: avatar,
-        );
-      },
+    return Container(
+      width: widget.size + ringWidth * 2,
+      height: widget.size + ringWidth * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: widget.ringColor!,
+          width: ringWidth,
+        ),
+      ),
+      child: avatar,
     );
   }
 }
@@ -173,19 +182,21 @@ class _AvatarData {
 
 class _PixelAvatarPainter extends CustomPainter {
   final _AvatarData data;
-  final double breathe; // 0.0 to 1.0
+
+  /// 0.0 to 1.0, read when painting.
+  final Animation<double> breathe;
 
   _PixelAvatarPainter({
     required this.data,
     required this.breathe,
-  });
+  }) : super(repaint: breathe);
 
   @override
   void paint(Canvas canvas, Size size) {
     final cellSize = size.width / 5;
 
     // Breathing effect: subtle lightness shift
-    final breatheOffset = (breathe - 0.5) * 0.08;
+    final breatheOffset = (breathe.value - 0.5) * 0.08;
 
     // Draw background
     final bgColor = data.bgColor
@@ -196,25 +207,29 @@ class _PixelAvatarPainter extends CustomPainter {
       Paint()..color = bgColor,
     );
 
-    // Draw filled cells
+    // The filled cells, one path per color. On the HTML renderer a picture
+    // of rectangles alone becomes a DOM element per rectangle, made again on
+    // every frame; a path puts the avatar on one canvas, which each frame
+    // draws on again.
+    final cells = <HSLColor, Path>{};
     for (var row = 0; row < 5; row++) {
       for (var col = 0; col < 5; col++) {
         if (!data.isFilled(row, col)) continue;
-
-        final hsl = data.getCellColor(row, col);
-        final color = hsl
-            .withLightness((hsl.lightness + breatheOffset).clamp(0.3, 0.75))
-            .toColor();
-
-        final rect = Rect.fromLTWH(
-          col * cellSize,
-          row * cellSize,
-          cellSize,
-          cellSize,
+        (cells[data.getCellColor(row, col)] ??= Path()).addRect(
+          Rect.fromLTWH(
+            col * cellSize,
+            row * cellSize,
+            cellSize,
+            cellSize,
+          ),
         );
-
-        canvas.drawRect(rect, Paint()..color = color);
       }
+    }
+    for (final MapEntry(key: hsl, value: path) in cells.entries) {
+      final color = hsl
+          .withLightness((hsl.lightness + breatheOffset).clamp(0.3, 0.75))
+          .toColor();
+      canvas.drawPath(path, Paint()..color = color);
     }
   }
 

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
@@ -77,10 +78,12 @@ abstract class ArDriveAuth {
     ArNSPendingActionStore? arnsPendingActionStore,
     DriveUnlocker? driveUnlocker,
     DeviceTabs? deviceTabs,
+    SignInPasswordProofStore? signInPasswordProofStore,
   }) =>
       ArDriveAuthImpl(
         deviceTabs: deviceTabs,
         driveUnlocker: driveUnlocker,
+        signInPasswordProofStore: signInPasswordProofStore,
         arweave: arweave,
         userRepository: userRepository,
         crypto: crypto,
@@ -109,9 +112,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
     ArNSPendingActionStore? arnsPendingActionStore,
     DriveUnlocker? driveUnlocker,
     DeviceTabs? deviceTabs,
+    SignInPasswordProofStore? signInPasswordProofStore,
   })  : _arweave = arweave,
         _deviceTabs = deviceTabs ?? DeviceTabs.instance,
         _injectedDriveUnlocker = driveUnlocker,
+        _proofStore = signInPasswordProofStore ?? SignInPasswordProofStore(),
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
         _arConnectService = arConnectService,
@@ -131,6 +136,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
   final DeviceTabs _deviceTabs;
 
   final DriveUnlocker? _injectedDriveUnlocker;
+
+  /// Whether this device's sign-in password for a wallet was left unproven,
+  /// across reloads. See [SignInPasswordProofStore].
+  final SignInPasswordProofStore _proofStore;
 
   /// Tries the sign-in password on the wallet's private drives. The app
   /// passes its shared one, whose session drive discovery uses too, so a
@@ -276,6 +285,14 @@ class ArDriveAuthImpl implements ArDriveAuth {
       currentUser = await _userRepository.getUser(password);
 
       await _startSession();
+      // Welcome back and biometrics unlock the profile without trying any
+      // drive. If the password was left unproven on an earlier visit, the
+      // session must know before the drive list is read: discovery spends no
+      // wallet prompts on it, and Create drive asks for the drive password.
+      if (await _proofStore.isUnproven(currentUser.walletAddress)) {
+        _driveUnlocker.session
+            .setSignInPasswordProven(currentUser.walletAddress, false);
+      }
 
       unawaited(_updateBalance());
 
@@ -367,12 +384,22 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> logout({bool fromAnotherTab = false}) async {
+    // Nobody signed in and no account saved: nothing to sign out, and
+    // nothing for the wipe or the other tabs to hear about. A Wander switch
+    // during a sign-in that saved nothing lands here, as can a second
+    // sign-out racing the first.
+    if (_currentUser == null && !await _hasSavedAccount()) {
+      logger.i('No account to sign out');
+      return;
+    }
+
     logger.i('Logging out user');
 
     try {
       await _userRepository.deleteUser();
 
       if (_currentUser != null) {
+        await _proofStore.clear(_currentUser!.walletAddress);
         await _disconnectFromArConnect();
         (await _metadataCache).clear();
         await _secureKeyValueStore.remove('password');
@@ -398,6 +425,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
     // that a tab working on a session copy reaches the database that lasts.
     if (!fromAnotherTab) _deviceTabs.announceSignedOut();
     await _databaseHelpers.wipeAfterSignOut();
+  }
+
+  /// Whether an account is saved on this device. One that can't be told is
+  /// taken as saved, so a sign-out still runs.
+  Future<bool> _hasSavedAccount() async {
+    try {
+      return await _userRepository.hasUser();
+    } catch (e) {
+      logger.w('Could not tell whether an account is saved: $e');
+      return true;
+    }
   }
 
   /// How long signing out waits for each of Wander's answers: a short wait,
@@ -491,7 +529,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     final session = _driveUnlocker.session;
 
     if (privateDriveTxs.isEmpty) {
-      session.setSignInPasswordProven(address, true);
+      await _markSignInPassword(address, proven: true);
       return;
     }
 
@@ -573,7 +611,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       switch (attempt.failure) {
         case null:
-          session.setSignInPasswordProven(address, true);
+          await _markSignInPassword(address, proven: true);
           return;
         case DriveUnlockFailure.wrongPassword:
         case DriveUnlockFailure.notTried:
@@ -581,7 +619,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         case DriveUnlockFailure.walletDeclined:
         case DriveUnlockFailure.walletFailed:
           // The user said no to their wallet: stop asking it.
-          session.setSignInPasswordProven(address, false);
+          await _markSignInPassword(address, proven: false);
           throw const PasswordOpensNoDriveException();
         case DriveUnlockFailure.unavailable:
           unreadable ??= const AuthenticationGatewayException();
@@ -597,8 +635,23 @@ class ArDriveAuthImpl implements ArDriveAuth {
       throw const AuthenticationGatewayException();
     }
 
-    session.setSignInPasswordProven(address, false);
+    await _markSignInPassword(address, proven: false);
     throw const PasswordOpensNoDriveException();
+  }
+
+  /// Records whether the sign-in password opened a drive: in the session,
+  /// and - when it didn't - on this device, so a later visit that only
+  /// unlocks the profile still knows. Recorded at the check rather than at
+  /// Continue: Try again with the right password records the opposite.
+  Future<void> _markSignInPassword(String address,
+      {required bool proven}) async {
+    _driveUnlocker.session.setSignInPasswordProven(address, proven);
+
+    if (proven) {
+      await _proofStore.clear(address);
+    } else {
+      await _proofStore.markUnproven(address);
+    }
   }
 
   Future<User> _addUser(

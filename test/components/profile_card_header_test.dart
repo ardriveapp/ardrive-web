@@ -26,7 +26,8 @@ void main() {
         .thenReturn(const ProfileNameLoadedWithWalletAddress(address));
   });
 
-  Future<void> pumpHeader(WidgetTester tester) => tester.pumpWidget(
+  Future<void> pumpHeader(WidgetTester tester, {bool isExpanded = false}) =>
+      tester.pumpWidget(
         ArDriveTheme(
           themeData: lightTheme(),
           child: MaterialApp(
@@ -37,6 +38,7 @@ void main() {
                   child: ProfileCardHeader(
                     walletAddress: address,
                     onPressed: () {},
+                    isExpanded: isExpanded,
                   ),
                 ),
               ),
@@ -58,6 +60,17 @@ void main() {
     expect(paragraph.didExceedMaxLines, isFalse);
     expect(tester.takeException(), isNull);
   });
+
+  // The sign-in dialogs' wide header printed the whole address and cut it
+  // with an ellipsis at the end, losing what tells two addresses apart.
+  testWidgets('shortens the address in the wide header too', (tester) async {
+    await pumpHeader(tester, isExpanded: true);
+
+    expect(find.text('iKryOe...oRjA'), findsOneWidget);
+    expect(find.text(address), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   // With a name, the button took its width from the name alone, so a short
   // name squeezed the six-and-four address under it to about 6 px.
   for (final name in ['ab', 'phil', 'arweave', 'a-much-longer-primary-name']) {

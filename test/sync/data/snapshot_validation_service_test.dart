@@ -69,7 +69,8 @@ void main() {
       expect(service, isA<SnapshotValidationService>());
     });
 
-    test('rejects a snapshot without ever asking for a gateway list', () async {
+    test('rejects a snapshot without ever asking for a gateway list',
+        () async {
       final arioSDK = _MockArioSDK();
       // Zero delays: this asserts the GAR is never consulted, not the backoff,
       // and the real delays are measured in seconds.

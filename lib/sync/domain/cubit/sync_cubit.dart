@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -35,6 +36,11 @@ part 'sync_state.dart';
 // TODO: PE-2782: Abstract auto-generated GQL types
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
+/// What the sync reports between Stop being pressed and the run having
+/// stopped: the drives in flight finish the request they are on, and nothing
+/// else starts.
+const syncStoppingStatus = 'Stopping...';
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -180,6 +186,21 @@ class SyncCubit extends Cubit<SyncState> {
   /// asynchronous error from a cubit nothing owns any more.
   void _publishProgress() {
     if (syncProgressController.isClosed) return;
+
+    // Once Stop has been pressed, every report says so until the run has
+    // actually stopped. The drives still in flight go on reporting their own
+    // phase for the second or two they take to reach a point where they can
+    // stop, and without this the header went back to "Reading 412 files..."
+    // as if the press had not registered.
+    // The fetch count goes with it: the header puts a running count ahead of
+    // any status, so left set it would go on reading "Reading 346 files...".
+    if (_currentSyncToken?.isCancelled ?? false) {
+      _syncProgress = _syncProgress.copyWith(
+        statusMessage: syncStoppingStatus,
+        metadataFetchesCompleted: 0,
+        metadataFetchesTotal: 0,
+      );
+    }
 
     syncProgressController.add(_syncProgress);
   }
@@ -1039,6 +1060,12 @@ class SyncCubit extends Cubit<SyncState> {
     /// that follows an unlock passes false, because the user acted on the
     /// drives they unlocked, not on every other one.
     bool? askWalletAgain,
+
+    /// Asks again for these drives only, as syncing one drive does. Retrying
+    /// the drives that failed passes them: the user asked for those, not for
+    /// every drive whose prompt they cancelled. Given this, the default for
+    /// [askWalletAgain] is false.
+    Iterable<String>? askWalletAgainFor,
   }) async {
     if (PublicationMode.isOn) return false;
     logger.i('Starting Sync');
@@ -1050,6 +1077,10 @@ class SyncCubit extends Cubit<SyncState> {
 
     _syncProgress = SyncProgress.initial();
     _syncGeneration++;
+
+    // A sync the person started may ask them to reconnect Wander again after
+    // an earlier Cancel.
+    if (trigger == SyncTrigger.userInitiated) ArConnectPrompt.personActed();
 
     // What this run covers, for every surface that has to tell a drive in the
     // run from one merely sitting beside it. Null means all of them.
@@ -1157,8 +1188,10 @@ class SyncCubit extends Cubit<SyncState> {
           wallet: wallet,
           password: password,
           cipherKey: profile.user.cipherKey,
-          askWalletAgain:
-              askWalletAgain ?? trigger == SyncTrigger.userInitiated,
+          askWalletAgain: askWalletAgain ??
+              (askWalletAgainFor == null &&
+                  trigger == SyncTrigger.userInitiated),
+          askWalletAgainFor: askWalletAgainFor,
         );
 
         // Clear status message after discovery completes
@@ -1673,6 +1706,8 @@ class SyncCubit extends Cubit<SyncState> {
     if (state is SyncInProgress && _currentSyncToken != null) {
       logger.i('Requesting sync cancellation');
       _currentSyncToken!.cancel();
+      // Said at once, not when the next report happens to arrive.
+      _publishProgress();
     }
   }
 
@@ -1695,7 +1730,9 @@ class SyncCubit extends Cubit<SyncState> {
     if (driveIds.isEmpty) return;
 
     logger.i('Retrying ${driveIds.length} failed drives');
-    await startSync(onlyDriveIds: driveIds);
+    // A cancelled wallet prompt comes back for these drives only: the user
+    // asked to retry what failed, not to be asked about every other drive.
+    await startSync(onlyDriveIds: driveIds, askWalletAgainFor: driveIds);
   }
 
   /// Sync a chosen few drives, in one run.

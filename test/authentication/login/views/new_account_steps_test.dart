@@ -289,6 +289,87 @@ void main() {
       verify(() => loginBloc.add(any(that: isA<FinishOnboarding>()))).called(1);
     });
   });
+
+  // Closing a sign-up's password step, or "Use a different wallet", must
+  // never forget an account already stored here: a returning user who
+  // wandered into Sign up lost their own account to this close.
+  group('leaving the wallet from Choose a password', () {
+    Future<void> pumpAsRoute(WidgetTester tester, Widget dialog) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1200, 1600);
+      addTearDown(tester.view.reset);
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            navigatorKey: navigator,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MultiBlocProvider(
+              providers: [
+                BlocProvider<LoginBloc>.value(value: loginBloc),
+                BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+              ],
+              child: child!,
+            ),
+            home: const Scaffold(body: Text('Landing')),
+          ),
+        ),
+      );
+      navigator.currentState!.push(MaterialPageRoute<void>(
+          builder: (_) => Scaffold(body: Center(child: dialog))));
+      await tester.pumpAndSettle();
+    }
+
+    List<LoginEvent> added() =>
+        verify(() => loginBloc.add(captureAny())).captured.cast<LoginEvent>();
+
+    testWidgets('closing a new account forgets nothing stored here',
+        (tester) async {
+      final wallet = getTestWallet();
+      await pumpAsRoute(
+        tester,
+        SecureYourWalletWidget(
+          loginBloc: loginBloc,
+          wallet: wallet,
+          mnemonic: _mnemonic,
+          isNewUser: true,
+          showWalletCreated: true,
+          // As the bloc emits it for a generated wallet: no fromSignUp.
+          breachCheck: _FakeBreachCheck(false),
+        ),
+      );
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+
+      expect(added().single, const LeaveWallet(),
+          reason: 'ForgetWallet signed out whatever account was stored; '
+              'a sign-up goes back to the first panel, as it always did');
+      expect(find.byType(SecureYourWalletWidget), findsNothing);
+    });
+
+    testWidgets(
+        'a wallet that has used ArDrive offers "Use a different wallet", '
+        'not a round X', (tester) async {
+      final wallet = getTestWallet();
+      await pumpAsRoute(
+        tester,
+        SecureYourWalletWidget(
+          loginBloc: loginBloc,
+          wallet: wallet,
+          isNewUser: false,
+          showWalletCreated: false,
+          breachCheck: _FakeBreachCheck(false),
+        ),
+      );
+      expect(find.byTooltip('Forget wallet'), findsNothing);
+      await tester.tap(find.byKey(const Key('useDifferentWallet')));
+      await tester.pumpAndSettle();
+
+      expect(added().single, const LeaveWallet(),
+          reason: 'back to the first panel, as leaving always went');
+    });
+  });
 }
 
 class _FakeBreachCheck implements BreachedPasswordCheck {

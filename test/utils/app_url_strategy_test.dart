@@ -28,7 +28,8 @@ void main() {
       expect(AppUrlStrategy.hash.linkPrefix, '/#');
     });
 
-    test('path routing writes links on /share, with the key in a fragment', () {
+    test('path routing writes links on /share, with the key in a fragment',
+        () {
       expect(AppUrlStrategy.path.sharedFileRoute, SharedFileLinkRoute.share);
       expect(
         AppUrlStrategy.path.fileKeyPlacement,
@@ -71,7 +72,8 @@ void main() {
       expect(indexHtml, contains(jsPattern));
     });
 
-    test('rewrites onto the canonical route, with the key in the fragment', () {
+    test('rewrites onto the canonical route, with the key in the fragment',
+        () {
       expect(indexHtml, contains("'/share/'"));
       expect(indexHtml, contains("'#k='"));
       expect(indexHtml, contains('history.replaceState'));

@@ -1,7 +1,6 @@
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
-import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/password/breached_password.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/components/profile_card.dart';
@@ -156,6 +155,16 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
         'somewhere safe.';
   }
 
+  /// Leaves this wallet, back to the first panel as it always went. Nothing
+  /// stored on this device is forgotten unless this flow stored it
+  /// ([LeaveWallet]): closing a sign-up a returning user had reached used to
+  /// sign them out and delete their own account.
+  void _leave() {
+    if (_isProcessing) return;
+    Navigator.of(context).pop();
+    widget.loginBloc.add(const LeaveWallet());
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -164,11 +173,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     return SingleChildScrollView(
       child: ArDriveLoginModal(
         width: 450,
-        onClose: () {
-          if (_isProcessing) return;
-          Navigator.of(context).pop();
-          widget.loginBloc.add(const ForgetWallet());
-        },
+        onClose: _leave,
         content: ArDriveFormNew(
           key: _formKey,
           child: Column(
@@ -219,13 +224,6 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                               isArweave: widget.sourceWalletAddress == null);
                         },
                         isExpanded: true,
-                        hasLogoutButton: true,
-                        logoutTooltip: 'Forget wallet',
-                        onClickLogout: () {
-                          showArDriveDialog(context,
-                              content: ForgetWalletDialog(
-                                  loginBloc: widget.loginBloc));
-                        },
                       );
                     }
 
@@ -238,15 +236,19 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                         }
                       },
                       isExpanded: true,
-                      hasLogoutButton: true,
-                      logoutTooltip: 'Forget wallet',
-                      onClickLogout: () {
-                        showArDriveDialog(context,
-                            content: ForgetWalletDialog(
-                                loginBloc: widget.loginBloc));
-                      },
                     );
                   },
+                ),
+                const SizedBox(height: ArDriveSpacing.sm),
+                // Leaving this wallet forgets nothing stored on this device:
+                // it was a round X beside the address, read as "close".
+                Center(
+                  child: ArDriveLink(
+                    key: const Key('useDifferentWallet'),
+                    text: appLocalizationsOf(context).useDifferentWallet,
+                    isAction: true,
+                    onTap: _leave,
+                  ),
                 ),
               ],
               const SizedBox(height: 32),

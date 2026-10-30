@@ -6,7 +6,9 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart' hide Cipher;
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -258,14 +260,29 @@ class DriveUnlocker {
       }
 
       try {
-        signature =
-            await _crypto.walletSignatureForDrive(wallet, driveId, signingType);
+        // A pass over several drives stays quiet after the person cancelled
+        // "Wander needs your permission again"; see
+        // [ArConnectPrompt.quietAfterCancel].
+        final Uint8List signed = promptBudget != null
+            ? await ArConnectPrompt.quietAfterCancel(() =>
+                _crypto.walletSignatureForDrive(wallet, driveId, signingType))
+            : await _crypto.walletSignatureForDrive(
+                wallet, driveId, signingType);
+        signature = signed;
       } catch (e) {
         logger.w('The wallet did not sign for $driveId: $e');
         // Either way a background pass does not ask again this session.
         _session.markWalletDeclined(owner, driveId);
+        // Cancel on ArDrive's own "Wander didn't answer" prompt: the person
+        // gave up on Wander for now, so the rest of this pass asks it nothing
+        // either, rather than a Cancel per drive.
+        // A Wander reconnected on another wallet ends the pass the same way:
+        // nothing more may be signed with it.
+        final gaveUp = e is ArConnectUnavailableException ||
+            e is ArConnectWalletMismatchException;
+        if (gaveUp) promptBudget?.remaining = 0;
         return DriveKeyAttempt.failed(
-          isWalletCancellation(e)
+          gaveUp || isWalletCancellation(e)
               ? DriveUnlockFailure.walletDeclined
               : DriveUnlockFailure.walletFailed,
         );
@@ -478,6 +495,107 @@ class DriveUnlocker {
     }
 
     return DriveUnlockResult.opened(opened);
+  }
+
+  /// Whether [password] opens one of [ownerAddress]'s existing private
+  /// drives: the check before a new private drive is made with a password
+  /// the sign-in didn't prove. Null when it opens one, or why not.
+  ///
+  /// Locked drives first, oldest first: one that opens stays unlocked, kept
+  /// as [unlock] keeps it. A wallet that prompts is asked at most
+  /// [WalletPromptBudget.perPass] times. With no locked drive, the first of
+  /// [knownPrivateDriveIds] is read and decrypted, and nothing is kept.
+  Future<DriveUnlockFailure?> verifyDrivePassword({
+    required Wallet wallet,
+    required SecretKey? profileKey,
+    required String password,
+    List<String> knownPrivateDriveIds = const [],
+  }) async {
+    final owner = await wallet.getAddress();
+    final budget = wallet is ArConnectWallet
+        ? WalletPromptBudget(WalletPromptBudget.perPass)
+        : null;
+    // Oldest by creation first, as at sign-in: the drive most likely made
+    // with the account's password.
+    final createdAt = _arweave.cachedUserDriveCreationTimes(owner);
+    DateTime created(LockedDrive drive) =>
+        createdAt[drive.driveId] ?? drive.lastUpdated;
+    // A drive this device was told not to keep a key for is not tried:
+    // opening it here would store its key and undo "Forget on this device".
+    final forgotten = await _driveDao.forgottenDriveIds();
+    final locked = [
+      for (final drive in _session.currentLockedDrives)
+        if (drive.ownerAddress == owner && !forgotten.contains(drive.driveId))
+          drive,
+    ]..sort((a, b) => created(a).compareTo(created(b)));
+
+    var unavailable = false;
+
+    for (final drive in locked) {
+      // Out of prompts: only drives whose signature is already held are
+      // still tried.
+      if (budget != null &&
+          budget.remaining == 0 &&
+          !_session.holdsSignatureFor(owner, drive.driveId)) {
+        continue;
+      }
+
+      final attempt = await _unlockOne(
+        wallet: wallet,
+        ownerAddress: owner,
+        profileKey: profileKey,
+        driveId: drive.driveId,
+        password: password,
+        mayAskWallet: true,
+        promptBudget: budget,
+        remember: true,
+      );
+
+      switch (attempt.failure) {
+        case null:
+          return null;
+        case DriveUnlockFailure.wrongPassword:
+        case DriveUnlockFailure.notTried:
+          continue;
+        case DriveUnlockFailure.unavailable:
+          unavailable = true;
+          continue;
+        case DriveUnlockFailure.walletDeclined:
+        case DriveUnlockFailure.walletFailed:
+          return attempt.failure;
+      }
+    }
+
+    if (locked.isEmpty && knownPrivateDriveIds.isNotEmpty) {
+      final driveId = knownPrivateDriveIds.first;
+      try {
+        final driveTx = await _arweave.getLatestDriveTx(driveId, owner,
+            maxRetries: unlockMaxRetries);
+        if (driveTx == null) {
+          return DriveUnlockFailure.unavailable;
+        }
+        final data = await _arweave.getEntityDataBytes(driveTx.id);
+        final attempt = await tryPassword(
+          wallet: wallet,
+          driveTx: driveTx,
+          data: data,
+          password: password,
+          promptBudget: budget,
+        );
+        return attempt.failure;
+      } catch (e) {
+        logger.w('Could not read $driveId to check a drive password: $e');
+        return DriveUnlockFailure.unavailable;
+      }
+    }
+
+    // Nothing to check it on yet (the drive list hasn't loaded): not a
+    // verdict on the password.
+    if (locked.isEmpty) return DriveUnlockFailure.unavailable;
+
+    return unavailable
+        ? DriveUnlockFailure.unavailable
+        : DriveUnlockFailure.wrongPassword;
   }
 
   Future<DriveKeyAttempt> _unlockOne({
