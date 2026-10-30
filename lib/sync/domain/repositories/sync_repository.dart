@@ -853,6 +853,7 @@ class _SyncRepository implements SyncRepository {
         }
 
         for (final entry in snapshotDrivesByOwner.entries) {
+          token.checkCancellation();
           final ownerDrives = entry.value;
           // Use only previously-synced drives for minBlock so never-synced
           // drives (lastBlockHeight=0) don't drag the query back to genesis.
@@ -872,6 +873,8 @@ class _SyncRepository implements SyncRepository {
           );
 
           await for (final snapshot in snapshotsStream) {
+            // The largest download of a sync: a stop must not wait it out.
+            token.checkCancellation();
             final driveIdTag = snapshot.tags
                 .where((t) => t.name == 'Drive-Id')
                 .firstOrNull
@@ -1051,6 +1054,10 @@ class _SyncRepository implements SyncRepository {
         if (wasCancelled) {
           logger.d(
               'Sync was cancelled during drive sync, adding error to stream');
+          await _createGhostsForFinishedDrives(
+            syncProgress.syncedDriveIds,
+            ownerAddress: walletAddress,
+          );
           // Clear the maps on cancellation to prevent state issues
           _ghostFolders.clear();
           _folderIds.clear();
@@ -1269,6 +1276,12 @@ class _SyncRepository implements SyncRepository {
         // Handle cancellation during post-sync operations
         if (e is SyncCancelledException) {
           logger.i('Sync cancelled during post-sync operations');
+          // Every drive in the walk finished, so each keeps its ghosts. A
+          // no-op when they were already written before the stop.
+          await _createGhostsForFinishedDrives(
+            syncProgress.syncedDriveIds,
+            ownerAddress: walletAddress,
+          );
           // Clear the maps on cancellation to prevent state issues
           _ghostFolders.clear();
           _folderIds.clear();
@@ -3076,6 +3089,41 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  /// Writes the ghost folders of the drives that finished before a stop.
+  ///
+  /// A drive that finished has raised its watermark, so the next sync reads
+  /// only what came after it and never meets the files that called for these
+  /// ghosts again. Dropping them on a stop left those files with no folder to
+  /// sit in for good. A drive that did not finish keeps its old watermark and
+  /// finds its ghosts again when the next sync redoes it, so its own are left.
+  ///
+  /// Best effort: a stop must end as a stop, whatever happens here.
+  Future<void> _createGhostsForFinishedDrives(
+    Iterable<String> finishedDriveIds, {
+    String? ownerAddress,
+  }) async {
+    final finished = finishedDriveIds.toSet();
+    final ghosts = {
+      for (final entry in _ghostFolders.entries)
+        if (finished.contains(entry.value.driveId)) entry.key: entry.value,
+    };
+    if (ghosts.isEmpty) return;
+
+    try {
+      await createGhosts(
+        driveDao: _driveDao,
+        ghostFolders: ghosts,
+        ownerAddress: ownerAddress,
+      );
+      for (final folderId in ghosts.keys) {
+        _ghostFolders.remove(folderId);
+      }
+    } catch (e) {
+      logger.w('Could not write the ghost folders of drives that finished '
+          'before the stop: $e');
+    }
+  }
+
   /// Process a chunk of transactions through the entity parsing pipeline.
   /// This helper method is used by streaming sync to process transactions in batches.
   Future<void> _processTransactionChunk({
@@ -3120,6 +3168,7 @@ class _SyncRepository implements SyncRepository {
       snapshotDriveHistory: snapshotDriveHistory,
       ownerAddress: ownerAddress,
       onMetadataFetchProgress: onMetadataFetchProgress,
+      cancellationToken: cancellationToken,
     )) {
       // Progress is handled in the main loop; what this consumes it for is the
       // chance to stop.
@@ -3155,6 +3204,12 @@ class _SyncRepository implements SyncRepository {
     /// only the sync that is running owns the sink these numbers go out on -
     /// and `syncDriveById` walks a drive with no sink at all.
     void Function()? onMetadataFetchProgress,
+
+    /// Stops the batch's metadata fetches as well as the batches after it.
+    /// Checking only between batches left a stop waiting for every fetch of
+    /// the batch in hand - a hundred or more round trips per drive, which was
+    /// most of the ten to twenty seconds Stop used to take.
+    SyncCancellationToken? cancellationToken,
   }) async* {
     final numberOfDriveEntitiesToParse = transactions.length;
     var numberOfDriveEntitiesParsed = 0;
@@ -3240,6 +3295,7 @@ class _SyncRepository implements SyncRepository {
               _metadataFetchesCompleted++;
               onMetadataFetchProgress?.call();
             },
+            cancellationToken: cancellationToken,
           );
 
           _recordSkippedEntities(drive.id, entityHistory.skippedTxIds);

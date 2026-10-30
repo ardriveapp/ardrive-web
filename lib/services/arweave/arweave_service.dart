@@ -19,6 +19,7 @@ import 'package:ardrive/services/arweave/fragment_free_graphql.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
+import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
@@ -773,6 +774,12 @@ class ArweaveService {
     required int itemCount,
     required Future<void> Function(int index) task,
     void Function()? onItemDone,
+
+    /// Read before each item is claimed. Once it says stop, no worker starts
+    /// another item; those already running finish. A request in flight cannot
+    /// be aborted (the http client can't), so this is as soon as the pool can
+    /// stop.
+    bool Function()? shouldStop,
   }) async {
     if (itemCount <= 0) return;
 
@@ -786,6 +793,7 @@ class ArweaveService {
 
     Future<void> worker() async {
       while (true) {
+        if (shouldStop?.call() ?? false) return;
         final i = nextIndex;
         if (i >= itemCount) return;
         nextIndex++;
@@ -817,6 +825,12 @@ class ArweaveService {
     required DriveID driveId,
     int? currentBlockHeight,
     void Function()? onEntityFetched,
+
+    /// The sync this batch belongs to. Once it is cancelled no further
+    /// metadata is fetched, and the batch throws [SyncCancelledException]
+    /// rather than hand back a history with holes in it: a batch either
+    /// arrives whole or not at all.
+    SyncCancellationToken? cancellationToken,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
     //
@@ -844,6 +858,7 @@ class ArweaveService {
       // has to land. Without that the count would stop short of the total on
       // any batch holding a snapshot or a broken private entity.
       onItemDone: onEntityFetched,
+      shouldStop: () => cancellationToken?.isCancelled ?? false,
       task: (i) async {
         final entity = entityTxs[i].transactionCommonMixin;
         final tags = HashMap.fromIterable(
@@ -876,6 +891,10 @@ class ArweaveService {
         entityDatas[i] = data;
       },
     );
+
+    // Entities the pool never reached are still empty here, and parsing them
+    // would record them as skipped. Nothing of a stopped batch is used.
+    cancellationToken?.checkCancellation();
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),

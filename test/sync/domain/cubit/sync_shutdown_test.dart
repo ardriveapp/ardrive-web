@@ -258,6 +258,44 @@ void main() {
     });
   });
 
+  /// What the reader sees between pressing Stop and the run having stopped.
+  /// The drives in flight finish the request they are on, and each goes on
+  /// reporting its own phase meanwhile - which read as Stop not having been
+  /// pressed at all.
+  group('between Stop and stopped', () {
+    test('the sync says it is stopping at once, and keeps saying it', () async {
+      anAllDrivesSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final reported = <String?>[];
+      final subscription = cubit.syncProgressController.stream
+          .listen((p) => reported.add(p.statusMessage));
+      addTearDown(subscription.cancel);
+
+      final sync = cubit.startSync();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      cubit.cancelSync();
+      await Future<void>.delayed(Duration.zero);
+      expect(reported.last, syncStoppingStatus,
+          reason: 'said when Stop is pressed, not at the next report');
+      expect(cubit.state, isA<SyncInProgress>(),
+          reason: 'precondition: the run has not stopped yet');
+
+      // One more report from a drive still in flight, as the real one makes.
+      nextCheckpoint.complete();
+      await sync;
+      await settled();
+
+      expect(reported.last, syncStoppingStatus,
+          reason: 'a drive still reporting its own phase took it back');
+      expect(cubit.state, isA<SyncCancelled>());
+    });
+  });
+
   group('closing the cubit stops the sync', () {
     /// Pressing Stop, as against logging out.
     ///

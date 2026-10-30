@@ -36,6 +36,11 @@ part 'sync_state.dart';
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
+/// What the sync reports between Stop being pressed and the run having
+/// stopped: the drives in flight finish the request they are on, and nothing
+/// else starts.
+const syncStoppingStatus = 'Stopping...';
+
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
@@ -180,6 +185,15 @@ class SyncCubit extends Cubit<SyncState> {
   /// asynchronous error from a cubit nothing owns any more.
   void _publishProgress() {
     if (syncProgressController.isClosed) return;
+
+    // Once Stop has been pressed, every report says so until the run has
+    // actually stopped. The drives still in flight go on reporting their own
+    // phase for the second or two they take to reach a point where they can
+    // stop, and without this the header went back to "Reading 412 files..."
+    // as if the press had not registered.
+    if (_currentSyncToken?.isCancelled ?? false) {
+      _syncProgress = _syncProgress.copyWith(statusMessage: syncStoppingStatus);
+    }
 
     syncProgressController.add(_syncProgress);
   }
@@ -1673,6 +1687,8 @@ class SyncCubit extends Cubit<SyncState> {
     if (state is SyncInProgress && _currentSyncToken != null) {
       logger.i('Requesting sync cancellation');
       _currentSyncToken!.cancel();
+      // Said at once, not when the next report happens to arrive.
+      _publishProgress();
     }
   }
 
