@@ -146,7 +146,6 @@ localization despite the name — it holds validation message helpers.
 | `pst` | Profit Sharing Token operations |
 | `file_saver` | File saving abstraction |
 | `flutter_file_picker` | File picker fork |
-| `build` | Build utilities |
 
 Note: The `ario_sdk` package requires separate code generation - `scr setup` handles this automatically.
 

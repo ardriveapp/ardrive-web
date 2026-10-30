@@ -89,3 +89,14 @@ packages/ario_sdk/web/package-lock.json
 # Compiled by tool/build_db_worker.sh
 web/db_worker.js
 web/db_worker.js.deps
+
+# Build caches, build outputs and coverage. Each of these was committed once
+# by mistake; none is read by the app, the tests or CI.
+.parcel-cache/
+coverage/
+build/
+.last_build_id
+/node_modules/
+/package-lock.json
+packages/ario_sdk/web/dist/
+web-pst/dist/
