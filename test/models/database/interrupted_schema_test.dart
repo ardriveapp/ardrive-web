@@ -200,6 +200,56 @@ void main() {
         }
       }
     });
+
+    test('a version 28 database an earlier build half upgraded finishes it',
+        () async {
+      // What 2.90 ran, one statement at a time and outside any transaction,
+      // to take version 28 to 31: a cut after the column left it in place
+      // with the version at 28, and every later start failed on the
+      // duplicate column.
+      final reference = Database(NativeDatabase(newFile()));
+      Future<String> sqlOf(String name) async => (await reference.customSelect(
+              'SELECT sql FROM sqlite_master WHERE name = ?',
+              variables: [Variable(name)]).getSingle())
+          .read<String>('sql');
+      final earlierUpgrade = [
+        'CREATE INDEX IF NOT EXISTS idx_file_revisions_data_tx_id '
+            'ON file_revisions(dataTxId)',
+        'CREATE INDEX IF NOT EXISTS idx_network_transactions_status '
+            'ON network_transactions(status)',
+        'ALTER TABLE drives ADD COLUMN importedArtifactTxId TEXT',
+        'DROP TABLE IF EXISTS arns_records',
+        'DROP TABLE IF EXISTS ant_records',
+        await sqlOf('arns_records'),
+        await sqlOf('ant_records'),
+      ];
+      await reference.close();
+
+      for (var k = 3; k <= earlierUpgrade.length; k++) {
+        final file = await version28();
+        final half = raw.sqlite3.open(file.path);
+        earlierUpgrade.take(k).forEach(half.execute);
+        expect(half.userVersion, 28);
+        half.dispose();
+
+        final db = Database(NativeDatabase(file));
+        try {
+          expect(await db.openFailure(), isNull, reason: 'after $k statements');
+          expect(await userVersion(db), db.schemaVersion);
+          expect((await db.select(db.drives).getSingle()).id, 'drive-id');
+          await db.into(db.antRecords).insert(AntRecordsCompanion.insert(
+                domain: 'acme',
+                processId: 'ant',
+                arnsAddress: 'sol',
+                role: 'owner',
+                nameType: 'lease',
+                undernameLimit: 10,
+              ));
+        } finally {
+          await db.close();
+        }
+      }
+    });
   });
 }
 

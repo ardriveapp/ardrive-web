@@ -32,10 +32,6 @@ class Database extends _$Database {
   /// A publication's database: in memory, kept nowhere (`PublicationMode`).
   Database.forPublication() : this(openPublicationConnection());
 
-  /// Deletes this device's database, for a start that cannot open it. The
-  /// next start creates a new one. Returns false if any of it would not go.
-  static Future<bool> deleteLocalData() => deleteLocalDatabase();
-
   /// Opens the database, running any migration, and returns why it failed,
   /// or null once it is open.
   Future<Object?> openFailure() async {
@@ -82,33 +78,38 @@ class Database extends _$Database {
                 // Then we're adding the pin and custom fields columns
                 logger.d('Migrating schema from v16 to v17');
 
-                await m.addColumn(
+                await _addColumn(
+                  m,
                   driveRevisions,
                   driveRevisions.customJsonMetadata,
                 );
-                await m.addColumn(driveRevisions, driveRevisions.customGQLTags);
-                await m.addColumn(drives, drives.customJsonMetadata);
-                await m.addColumn(drives, drives.customGQLTags);
+                await _addColumn(
+                    m, driveRevisions, driveRevisions.customGQLTags);
+                await _addColumn(m, drives, drives.customJsonMetadata);
+                await _addColumn(m, drives, drives.customGQLTags);
 
-                await m.addColumn(
+                await _addColumn(
+                  m,
                   folderRevisions,
                   folderRevisions.customJsonMetadata,
                 );
-                await m.addColumn(
-                    folderRevisions, folderRevisions.customGQLTags);
-                await m.addColumn(
-                    folderEntries, folderEntries.customJsonMetadata);
-                await m.addColumn(folderEntries, folderEntries.customGQLTags);
+                await _addColumn(
+                    m, folderRevisions, folderRevisions.customGQLTags);
+                await _addColumn(
+                    m, folderEntries, folderEntries.customJsonMetadata);
+                await _addColumn(m, folderEntries, folderEntries.customGQLTags);
 
-                await m.addColumn(
-                    fileRevisions, fileRevisions.customJsonMetadata);
-                await m.addColumn(fileRevisions, fileRevisions.customGQLTags);
-                await m.addColumn(fileEntries, fileEntries.customJsonMetadata);
-                await m.addColumn(fileEntries, fileEntries.customGQLTags);
+                await _addColumn(
+                    m, fileRevisions, fileRevisions.customJsonMetadata);
+                await _addColumn(m, fileRevisions, fileRevisions.customGQLTags);
+                await _addColumn(
+                    m, fileEntries, fileEntries.customJsonMetadata);
+                await _addColumn(m, fileEntries, fileEntries.customGQLTags);
 
-                await m.addColumn(
-                    fileEntries, fileEntries.pinnedDataOwnerAddress);
-                await m.addColumn(
+                await _addColumn(
+                    m, fileEntries, fileEntries.pinnedDataOwnerAddress);
+                await _addColumn(
+                  m,
                   fileRevisions,
                   fileRevisions.pinnedDataOwnerAddress,
                 );
@@ -118,11 +119,11 @@ class Database extends _$Database {
                 // Then we're adding the isHidden column
                 logger.i('Migrating schema from v17 to v18');
 
-                await m.addColumn(folderRevisions, folderRevisions.isHidden);
-                await m.addColumn(fileRevisions, fileRevisions.isHidden);
+                await _addColumn(m, folderRevisions, folderRevisions.isHidden);
+                await _addColumn(m, fileRevisions, fileRevisions.isHidden);
 
-                await m.addColumn(folderEntries, folderEntries.isHidden);
-                await m.addColumn(fileEntries, fileEntries.isHidden);
+                await _addColumn(m, folderEntries, folderEntries.isHidden);
+                await _addColumn(m, fileEntries, fileEntries.isHidden);
               }
 
               if (from < 19) {
@@ -131,16 +132,16 @@ class Database extends _$Database {
 
                 await m.createTable(licenses);
 
-                await m.addColumn(fileEntries, fileEntries.licenseTxId);
-                await m.addColumn(fileRevisions, fileRevisions.licenseTxId);
+                await _addColumn(m, fileEntries, fileEntries.licenseTxId);
+                await _addColumn(m, fileRevisions, fileRevisions.licenseTxId);
               }
 
               if (from < 20) {
                 // Adding snapshot entries
                 logger.d('Migrating schema from v19 to v20');
 
-                await m.addColumn(fileEntries, fileEntries.thumbnail);
-                await m.addColumn(fileRevisions, fileRevisions.thumbnail);
+                await _addColumn(m, fileEntries, fileEntries.thumbnail);
+                await _addColumn(m, fileRevisions, fileRevisions.thumbnail);
               }
             }
 
@@ -148,8 +149,8 @@ class Database extends _$Database {
               // Adding assigned names
               logger.d('Migrating schema from v20 to v21');
 
-              await m.addColumn(fileRevisions, fileRevisions.assignedNames);
-              await m.addColumn(fileEntries, fileEntries.assignedNames);
+              await _addColumn(m, fileRevisions, fileRevisions.assignedNames);
+              await _addColumn(m, fileEntries, fileEntries.assignedNames);
 
               await m.createTable(arnsRecords);
               await m.createTable(antRecords);
@@ -169,14 +170,14 @@ class Database extends _$Database {
             if (from < 23) {
               logger.d('Migrating schema from v22 to v23');
 
-              await m.addColumn(drives, drives.isHidden);
-              await m.addColumn(driveRevisions, driveRevisions.isHidden);
+              await _addColumn(m, drives, drives.isHidden);
+              await _addColumn(m, driveRevisions, driveRevisions.isHidden);
             }
             if (from < 24) {
               logger.d('Migrating schema from v23 to v24');
 
-              await m.addColumn(fileEntries, fileEntries.fallbackTxId);
-              await m.addColumn(fileRevisions, fileRevisions.fallbackTxId);
+              await _addColumn(m, fileEntries, fileEntries.fallbackTxId);
+              await _addColumn(m, fileRevisions, fileRevisions.fallbackTxId);
             }
             if (from < 25) {
               logger.d('Migrating schema from v24 to v25');
@@ -194,24 +195,24 @@ class Database extends _$Database {
             if (from < 26) {
               logger.d('Migrating schema from v25 to v26');
 
-              await m.addColumn(fileEntries, fileEntries.originalOwner);
-              await m.addColumn(fileRevisions, fileRevisions.originalOwner);
+              await _addColumn(m, fileEntries, fileEntries.originalOwner);
+              await _addColumn(m, fileRevisions, fileRevisions.originalOwner);
 
-              await m.addColumn(fileEntries, fileEntries.importSource);
-              await m.addColumn(fileRevisions, fileRevisions.importSource);
+              await _addColumn(m, fileEntries, fileEntries.importSource);
+              await _addColumn(m, fileRevisions, fileRevisions.importSource);
             }
 
             if (from < 27) {
               logger.d('Migrating schema from v26 to v27');
 
-              await m.addColumn(drives, drives.signatureType);
-              await m.addColumn(drives, drives.driveKeyGenerated);
+              await _addColumn(m, drives, drives.signatureType);
+              await _addColumn(m, drives, drives.driveKeyGenerated);
             }
 
             if (from < 28) {
               logger.d('Migrating schema from v27 to v28');
 
-              await m.addColumn(profiles, profiles.sourceWalletAddress);
+              await _addColumn(m, profiles, profiles.sourceWalletAddress);
             }
 
             if (from < 29) {
@@ -229,7 +230,7 @@ class Database extends _$Database {
             if (from < 30) {
               logger.d('Migrating schema from v29 to v30');
 
-              await m.addColumn(drives, drives.importedArtifactTxId);
+              await _addColumn(m, drives, drives.importedArtifactTxId);
             }
 
             if (from < 31) {
@@ -254,6 +255,24 @@ class Database extends _$Database {
           }
         }),
       );
+
+  /// Adds [column] to [table] unless it is already there.
+  ///
+  /// Builds before the transaction above ran each upgrade statement on its
+  /// own, so an upgrade cut short could add a column and leave the version
+  /// where it was; the step then ran again on every start and failed on the
+  /// duplicate. Skipping a column that exists lets those databases finish
+  /// their upgrade on their own.
+  Future<void> _addColumn(
+    Migrator m,
+    TableInfo table,
+    GeneratedColumn column,
+  ) async {
+    final quoted = table.actualTableName.replaceAll('"', '""');
+    final columns = await customSelect('PRAGMA table_info("$quoted")').get();
+    if (columns.any((c) => c.read<String>('name') == column.name)) return;
+    await m.addColumn(table, column);
+  }
 
   /// Writes [schemaVersion] inside the migration's transaction, so the schema
   /// and the version that describes it commit together. drift writes it again
@@ -290,10 +309,7 @@ class Database extends _$Database {
         'SELECT EXISTS (SELECT 1 FROM $quoted) AS has_rows',
       ).getSingle();
       if (hasRows.read<bool>('has_rows')) {
-        throw StateError(
-          'the database has no schema version but $table holds rows; '
-          'not clearing it',
-        );
+        throw UnexpectedDatabaseContents(table);
       }
     }
 
@@ -307,4 +323,16 @@ class Database extends _$Database {
       }
     }
   }
+}
+
+/// Thrown by `onCreate` for a database at schema version 0 that holds rows:
+/// not an unfinished first start, so it is refused rather than cleared.
+class UnexpectedDatabaseContents implements Exception {
+  UnexpectedDatabaseContents(this.table);
+
+  final String table;
+
+  @override
+  String toString() => 'UnexpectedDatabaseContents: the database has no '
+      'schema version but $table holds rows; not clearing it';
 }

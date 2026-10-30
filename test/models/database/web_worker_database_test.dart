@@ -515,72 +515,94 @@ void main() {
     name = base;
   }, timeout: const Timeout(Duration(minutes: 4)));
 
-  test('deleting the local database removes every store, keeping a copy',
+  /// Opens [bytes] on their own, in memory, without drift or a migration.
+  Future<CommonDatabase> inspect(Uint8List bytes) async {
+    final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse(sqlite3Url));
+    final memory = InMemoryFileSystem(name: 'inspect-${counter++}');
+    sqlite3.registerVirtualFileSystem(memory);
+    memory.fileData['/inspect'] = bytes;
+    return sqlite3.open('/inspect', vfs: memory.name);
+  }
+
+  test('a worker killed inside an upgrade leaves the database as it was',
       () async {
-    final worker = startWorker();
-    final db = await openWriter(worker);
-    await addDrive(db, 'before-the-reset');
-    webDatabaseWorker = worker;
+    // A version 28 database holding a drive: what schema 29 to 31 changed,
+    // taken back out of a fresh one.
+    final first = await openWriter(startWorker());
+    await addDrive(first, 'drive-id');
+    for (final statement in [
+      'DROP INDEX idx_file_revisions_data_tx_id',
+      'DROP INDEX idx_network_transactions_status',
+      'ALTER TABLE drives DROP COLUMN importedArtifactTxId',
+      'DROP TABLE arns_records',
+      'DROP TABLE ant_records',
+      'CREATE TABLE arns_records (transaction_id TEXT NOT NULL, '
+          'file_id TEXT NOT NULL, ttl INTEGER NOT NULL, name TEXT NOT NULL, '
+          'domain TEXT NOT NULL, id TEXT NOT NULL PRIMARY KEY, '
+          'is_active BOOLEAN)',
+      'CREATE TABLE ant_records (domain TEXT NOT NULL PRIMARY KEY, '
+          'process_id TEXT NOT NULL)',
+      'PRAGMA user_version = 28',
+    ]) {
+      await first.customStatement(statement);
+    }
+    await first.close();
+    databases.remove(first);
 
-    final idbName = '$name-idb';
-    final legacyName = '$name-legacy';
-    for (final store in [idbName, legacyName]) {
-      final fs = await IndexedDbFileSystem.open(dbName: store);
-      fs
-          .xOpen(Sqlite3Filename('/db.sqlite'),
-              SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE)
-          .file
-          .xClose();
-      await fs.flush();
-      await fs.close();
+    Future<({DatabaseConnection connection, WebDatabaseWorker worker})>
+        reopen() async {
+      final opened = await openThroughWorker(
+        scriptUrl: workerUrl(),
+        name: name,
+        sqlite3Url: sqlite3Url,
+        isWriter: true,
+        readMigrationSource: () async => null,
+      );
+      expect(opened, isNotNull);
+      workers.add(opened!.worker);
+      return (connection: opened.connection, worker: opened.worker);
     }
 
-    final deleted = await deleteLocalDatabase(
-      opfsName: name,
-      indexedDbName: idbName,
-      legacyIndexedDbName: legacyName,
-    );
-    databases.remove(db);
-    expect(deleted, isTrue);
-    expect(webDatabaseWorker, isNull);
+    // Statements 1 to 3 are the two indexes and the new column; the worker
+    // goes before statement 4, the first DROP TABLE, reaches it.
+    final upgrading = await reopen();
+    final killed = Completer<void>();
+    final cut = Database(upgrading.connection.interceptWith(SchemaStatements(
+      at: 4,
+      instead: (_) {
+        upgrading.worker.terminate();
+        killed.complete();
+        return Completer<void>().future;
+      },
+    )));
+    unawaited(cut.customSelect('SELECT 1').get().then((_) {}, onError: (_) {}));
+    await killed.future.timeout(const Duration(seconds: 30));
+    await Future<void>.delayed(const Duration(milliseconds: 200));
 
-    final left = await IndexedDbFileSystem.databases();
-    if (left != null) {
-      expect(left, isNot(contains(idbName)));
-      expect(left, isNot(contains(legacyName)));
-    }
+    // The file as the cut left it, before any start migrates it again.
+    final left = await inspect((await readOpfsCopy(name))!);
+    expect(left.userVersion, 28);
+    expect(
+        left
+            .select('PRAGMA table_info(drives)')
+            .map((r) => r['name'])
+            .contains('importedArtifactTxId'),
+        isFalse,
+        reason: 'the column went with the rest of the upgrade');
+    expect(left.select('SELECT id FROM drives').single['id'], 'drive-id');
+    left.dispose();
 
-    // The copy kept beside it, then removed by this test.
-    final storage =
-        js_util.getProperty<Object>(html.window.navigator, 'storage');
-    final root = await js_util.promiseToFuture<Object>(
-        js_util.callMethod(storage, 'getDirectory', []));
-    final parent = await js_util.promiseToFuture<Object>(
-        js_util.callMethod(root, 'getDirectoryHandle', ['ardrive-db']));
-    final names = <String>[];
-    final entries = js_util.callMethod<Object>(parent, 'keys', []);
-    while (true) {
-      final next = await js_util
-          .promiseToFuture<Object>(js_util.callMethod(entries, 'next', []));
-      if (js_util.getProperty<bool>(next, 'done')) break;
-      names.add(js_util.getProperty<String>(next, 'value'));
-    }
-    expect(names, isNot(contains(name)));
-    final copies = names.where((n) => n.startsWith('$name-reset-')).toList();
-    expect(copies, hasLength(1));
-    for (final copy in copies) {
-      await js_util.promiseToFuture<Object?>(
-          js_util.callMethod(parent, 'removeEntry', [copy]));
-    }
-
-    final fresh = startWorker();
-    final reopened = await fresh.openWriter(name: name, sqlite3Url: sqlite3Url);
-    expect(reopened.needsMigration, isTrue, reason: 'it starts fresh');
-    await fresh.migrate(null);
-    final empty = Database(await fresh.serve());
-    databases.add(empty);
-    expect(await driveCount(empty), 0);
-  }, timeout: const Timeout(Duration(minutes: 2)));
+    final again = Database((await reopen()).connection);
+    databases.add(again);
+    expect(await again.openFailure(), isNull);
+    expect(await driveCount(again), 1);
+    expect(
+        (await again.customSelect('PRAGMA user_version').getSingle())
+            .data
+            .values
+            .single,
+        again.schemaVersion);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('a worker script that does not load leaves the IndexedDB path',
       () async {

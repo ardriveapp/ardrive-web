@@ -1,73 +1,60 @@
-import 'dart:async';
-
 import 'package:ardrive/pages/database_unavailable/database_unavailable_app.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const resetFailed =
-      'Some data is still in use. Close other ArDrive tabs, then try again.';
+  var tried = 0;
+  var helped = 0;
+  final shared = <LogExportInfo>[];
 
-  Future<void> pump(
-    WidgetTester tester, {
-    VoidCallback? onTryAgain,
-    Future<bool> Function()? onReset,
-  }) async {
+  Future<void> pump(WidgetTester tester) async {
+    tried = 0;
+    helped = 0;
+    shared.clear();
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(DatabaseUnavailableApp(
-      onTryAgain: onTryAgain ?? () {},
-      onReset: onReset ?? () async => true,
+      onTryAgain: () => tried++,
+      onHelpCenter: () => helped++,
+      onShareLogs: (info) async => shared.add(info),
     ));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('says what failed, that files are safe, and what a reset costs',
+  testWidgets('says what failed and that files on Arweave are safe',
       (tester) async {
     await pump(tester);
 
     expect(find.text('ArDrive could not start'), findsOneWidget);
-    expect(find.textContaining('Your files on Arweave are safe'),
-        findsOneWidget);
-    expect(find.textContaining('keyfile or recovery phrase'), findsOneWidget);
+    expect(
+        find.textContaining('Your files on Arweave are safe'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
-    expect(find.text('Reset local data'), findsOneWidget);
-    expect(find.text(resetFailed), findsNothing);
+    expect(find.text('Help center'), findsOneWidget);
+    expect(find.text('Share logs'), findsOneWidget);
   });
 
-  testWidgets('Try again calls back', (tester) async {
-    var tried = 0;
-    await pump(tester, onTryAgain: () => tried++);
+  testWidgets('offers nothing that deletes data', (tester) async {
+    await pump(tester);
+
+    expect(
+        find.textContaining(RegExp('reset|delete|clear', caseSensitive: false)),
+        findsNothing);
+  });
+
+  testWidgets('each button does its one thing', (tester) async {
+    await pump(tester);
 
     await tester.tap(find.text('Try again'));
-    expect(tried, 1);
-  });
+    expect((tried, helped, shared.length), (1, 0, 0));
 
-  testWidgets('Reset local data resets, and says so when it could not',
-      (tester) async {
-    var resets = 0;
-    final answer = Completer<bool>();
-    await pump(tester, onReset: () {
-      resets++;
-      return answer.future;
-    });
+    await tester.tap(find.text('Help center'));
+    expect((tried, helped, shared.length), (1, 1, 0));
 
-    await tester.tap(find.text('Reset local data'));
+    await tester.tap(find.text('Share logs'));
     await tester.pump();
-    expect(resets, 1);
-
-    answer.complete(false);
-    await tester.pumpAndSettle();
-    expect(find.text(resetFailed), findsOneWidget);
-  });
-
-  testWidgets('a reset that throws reads as one that could not finish',
-      (tester) async {
-    await pump(tester, onReset: () async => throw StateError('held'));
-
-    await tester.tap(find.text('Reset local data'));
-    await tester.pumpAndSettle();
-    expect(find.text(resetFailed), findsOneWidget);
+    expect((tried, helped, shared.length), (1, 1, 1));
+    expect(shared.single.emailSupport, 'support@ardrive.io');
   });
 }

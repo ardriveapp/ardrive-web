@@ -235,9 +235,12 @@ this machine lacks.
   (already exists), behind the splash, until site data was cleared. An
   upgrade cut short had the same shape (a re-run `ADD COLUMN` fails). Both
   now run in one transaction that also writes the version, so a cut start
-  leaves the database as it was; `onCreate` first clears what an earlier
-  build left half made, if no table holds rows. If the database still will
-  not open or migrate, the app shows "ArDrive could not start" with Try again
-  and Reset local data instead of the splash; the reset removes the OPFS,
-  #2197 IndexedDB and sql.js stores and keeps the OPFS file beside the new
-  one as `ardrive-reset-<time>`.
+  leaves the database as it was. What earlier builds already left behind
+  heals on the next start: `onCreate` first clears a half-made first
+  creation, if no table holds rows (a version-0 database with rows is
+  refused, not cleared), and each `ADD COLUMN` step skips a column that is
+  already there, so a half-upgraded database finishes its upgrade. If the
+  database still will not open or migrate, the app shows "ArDrive could not
+  start" with Try again, Help center and Share logs instead of the splash.
+  Nothing there deletes data: no reset is offered, and the older stores stay
+  as §4 keeps them.
