@@ -151,6 +151,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleAddWalletFromArConnectEvent(event, emit);
     } else if (event is ForgetWallet) {
       await _handleForgetWalletEvent(event, emit);
+    } else if (event is LeaveWallet) {
+      await _handleLeaveWalletEvent(event, emit);
     } else if (event is FinishOnboarding) {
       await _handleFinishOnboardingEvent(event, emit);
     } else if (event is RetrySignUpPassword) {
@@ -1070,12 +1072,68 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           .then((value) => _profileCubit.logoutProfile());
     }
 
+    await _resetWalletFlow();
+
+    emit(const LoginLanding());
+  }
+
+  Future<void> _handleLeaveWalletEvent(
+    LeaveWallet event,
+    Emitter<LoginState> emit,
+  ) async {
+    // Whatever is stored here stays, unless this flow stored it: a returning
+    // user's account must survive a sign-up or sign-in they abandon.
+    final saved = _savedByThisFlow;
+    if (saved != null && await _storedAccountIs(saved)) {
+      await _arDriveAuth
+          .logout()
+          .then((value) => _profileCubit.logoutProfile());
+    }
+
+    await _resetWalletFlow();
+
+    emit(event.toLogIn ? _logInPanel : const LoginLanding());
+  }
+
+  /// Whether the account stored on this device is [address]. False when
+  /// nothing is stored, and when it can't be told: keeping an account is
+  /// never the dangerous choice.
+  Future<bool> _storedAccountIs(String address) async =>
+      await _storedAddress() == address;
+
+  /// The address of the account stored on this device; null when there is
+  /// none or it can't be read.
+  Future<String?> _storedAddress() async {
+    try {
+      return await _arDriveAuth.getWalletAddress();
+    } catch (e) {
+      logger.w('Could not tell whose account is stored here: $e');
+      return null;
+    }
+  }
+
+  /// The address of the account this sign-in or sign-up saved on this
+  /// device, while it hasn't finished: a sign-up whose password step failed
+  /// after the save. [LeaveWallet] forgets it, and nothing else.
+  String? _savedByThisFlow;
+
+  @visibleForTesting
+  set savedByThisFlowForTesting(String? address) => _savedByThisFlow = address;
+
+  @override
+  void onChange(Change<LoginState> change) {
+    super.onChange(change);
+    // Signed in: the account is the user's now, not this flow's to forget.
+    if (change.nextState is LoginSuccess) _savedByThisFlow = null;
+  }
+
+  /// Drops what a sign-in or sign-up held for the wallet it loaded.
+  Future<void> _resetWalletFlow() async {
+    _savedByThisFlow = null;
     usingSeedphrase = false;
     _sourceWalletAddress = null;
     _signUpToRetry = null;
     await _solanaProviderService.disconnect();
-
-    emit(const LoginLanding());
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -1126,6 +1184,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
     }
 
+    final storedBefore = await _storedAddress();
     final User user;
     try {
       user = skipDriveCheck
@@ -1142,6 +1201,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
               profileType,
               sourceWalletAddress: _sourceWalletAddress,
             );
+      // Saved on this device from here on: a step after this can fail and
+      // reopen the password, and leaving then forgets this account only.
+      _savedByThisFlow = user.walletAddress;
     } on PasswordOpensNoDriveException {
       // Not a wrong password: the user may correct it or continue with
       // those drives locked. Sign-in is never blocked by its drives.
@@ -1158,6 +1220,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       );
       emit(const LoginPasswordOpensNoDrives());
       return;
+    } catch (_) {
+      // login() saves the profile before reading it back, so it can fail
+      // with this wallet already stored. Saved by this flow only if it
+      // wasn't stored here before.
+      final address = await wallet.getAddress();
+      if (storedBefore != address && await _storedAddress() == address) {
+        _savedByThisFlow = address;
+      }
+      rethrow;
     }
 
     if (showWalletCreated) {

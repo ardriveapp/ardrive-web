@@ -119,6 +119,16 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     );
   }
 
+  /// Back to Log in with this wallet dropped. Nothing stored on this
+  /// device is forgotten unless this sign-in stored it ([LeaveWallet]). Not
+  /// while the password is being checked: that check would still finish and
+  /// sign in behind Log in.
+  void _leave() {
+    if (widget.checkingPassword) return;
+    Navigator.of(context).pop();
+    widget.loginBloc.add(const LeaveWallet(toLogIn: true));
+  }
+
   Widget _buildContent({
     required double width,
     required BuildContext context,
@@ -129,13 +139,13 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     return ArDriveLoginModal(
       width: width,
       hasSettingsButton: true,
-      hasCloseButton: false,
+      // Hidden while the password is checked, as the link is off then.
+      hasCloseButton: !widget.checkingPassword,
       onClose: () {
         PlausibleEventTracker.trackClickDismissLoginModalIcon(
           _getPlausiblePageView(),
         );
-        Navigator.of(context).pop();
-        widget.loginBloc.add(const ForgetWallet());
+        _leave();
       },
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -173,13 +183,6 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                         isArweave: widget.sourceWalletAddress == null);
                   },
                   isExpanded: true,
-                  hasLogoutButton: true,
-                  logoutTooltip: 'Forget wallet',
-                  onClickLogout: () {
-                    showArDriveDialog(context,
-                        content:
-                            ForgetWalletDialog(loginBloc: widget.loginBloc));
-                  },
                 );
               }
 
@@ -192,16 +195,21 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   }
                 },
                 isExpanded: true,
-                hasLogoutButton: true,
-                logoutTooltip: 'Forget wallet',
-                onClickLogout: () {
-                  showArDriveDialog(context,
-                      content: ForgetWalletDialog(loginBloc: widget.loginBloc));
-                },
               );
             },
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: ArDriveSpacing.sm),
+          // Leaving this wallet forgets nothing stored on this device: it
+          // was a round X beside the address, read as "close" or "clear".
+          Center(
+            child: ArDriveLink(
+              key: const Key('useDifferentWallet'),
+              text: appLocalizationsOf(context).useDifferentWallet,
+              isAction: true,
+              onTap: widget.checkingPassword ? null : _leave,
+            ),
+          ),
+          const SizedBox(height: ArDriveSpacing.xl),
           Text('Password',
               style: typography.paragraphNormal(
                   color: colorTokens.textLow,
