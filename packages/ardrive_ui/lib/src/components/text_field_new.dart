@@ -458,14 +458,18 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
       ArdriveTypographyNew typography) {
     return Row(
       children: [
-        TextFieldLabelNew(
-          text: message,
-          style: typography.paragraphNormal(
-            // color: widget.isFieldRequired
-            //     ? theme.requiredLabelColor
-            //     : theme.labelColor,
-            color: colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
+        // Flexible, so a label longer than the field (a narrow dialog, a
+        // long translation) wraps instead of overflowing.
+        Flexible(
+          child: TextFieldLabelNew(
+            text: message,
+            style: typography.paragraphNormal(
+              // color: widget.isFieldRequired
+              //     ? theme.requiredLabelColor
+              //     : theme.labelColor,
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
           ),
         ),
         if (widget.isFieldRequired)

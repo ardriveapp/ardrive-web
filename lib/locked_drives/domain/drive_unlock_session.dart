@@ -150,6 +150,16 @@ class DriveUnlockSession {
   void setSignInPasswordProven(String ownerAddress, bool proven) =>
       _signInPasswordProven[ownerAddress] = proven;
 
+  final _drivePassword = <String, String>{};
+
+  /// A drive password the user typed this session and that opened one of
+  /// [ownerAddress]'s private drives - asked for when the sign-in password
+  /// was unproven - so it is asked once, not for every new drive.
+  String? drivePassword(String ownerAddress) => _drivePassword[ownerAddress];
+
+  void rememberDrivePassword(String ownerAddress, String password) =>
+      _drivePassword[ownerAddress] = password;
+
   /// The password bytes that last opened [driveId] this session, if any.
   List<int>? provenPasswordInfo(String driveId) => _provenPasswordInfo[driveId];
 
@@ -162,6 +172,7 @@ class DriveUnlockSession {
     _walletDeclined.clear();
     _provenPasswordInfo.clear();
     _signInPasswordProven.clear();
+    _drivePassword.clear();
     _unlockedAt.clear();
     _lockedDrives.add(const []);
   }

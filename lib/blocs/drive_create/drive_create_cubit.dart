@@ -4,7 +4,8 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/folder_entity.dart';
-import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/services.dart';
@@ -30,7 +31,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
-  final DriveUnlockSession? _unlockSession;
+  final DriveUnlocker? _driveUnlocker;
+  final SignInPasswordProofStore _proofStore;
   final DrivePrivacy privacy;
 
   DriveCreateCubit({
@@ -41,11 +43,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     required DrivesCubit drivesCubit,
     this.privacy = DrivePrivacy.private,
 
-    /// Where it learns whether the sign-in password was proven. The first
-    /// drive of a new account passes none: that account has just chosen its
-    /// password, and has no private drive for it to have failed on.
-    DriveUnlockSession? unlockSession,
-  })  : _unlockSession = unlockSession,
+    /// Where it learns whether the sign-in password was proven, and checks a
+    /// drive password. The first drive of a new account passes none: that
+    /// account has just chosen its password, and has no private drive for it
+    /// to have failed on.
+    DriveUnlocker? driveUnlocker,
+    SignInPasswordProofStore? proofStore,
+  })  : _driveUnlocker = driveUnlocker,
+        _proofStore = proofStore ?? SignInPasswordProofStore(),
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
@@ -55,22 +60,41 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     form.control('privacy').value = privacy.name;
   }
 
-  /// Whether a new private drive needs its own password typed here.
+  /// Whether a new private drive needs the drive password typed here.
   ///
-  /// A private drive's key is made from a password. Normally that is the
-  /// sign-in password. But if the sign-in password opened none of the
-  /// wallet's private drives and the user continued anyway, it may be a typo,
-  /// and a drive made with it would open with nothing the user knows. So the
-  /// drive asks for its own. Only then: a proven sign-in password, or a
-  /// wallet with no private drives (whose check never fails), changes
-  /// nothing.
+  /// A private drive's key is made from the drive password - one for all of
+  /// the user's private drives. Normally the sign-in password is it. But if
+  /// the sign-in password opened none of the wallet's private drives and the
+  /// user continued anyway, it may be a typo, and a drive made with it would
+  /// open with nothing the user knows. So the drive password is asked for,
+  /// and checked by opening one of their existing private drives first. Only
+  /// then: a proven sign-in password, a drive password already checked this
+  /// session, or a wallet with no private drives (whose check never fails)
+  /// changes nothing.
   bool get needsDrivePassword {
     final profile = _profileCubit.state;
+    final session = _driveUnlocker?.session;
 
     return state.privacy == DrivePrivacy.private &&
         profile is ProfileLoggedIn &&
-        _unlockSession?.signInPasswordProven(profile.user.walletAddress) ==
-            false;
+        session != null &&
+        session.signInPasswordProven(profile.user.walletAddress) == false &&
+        session.drivePassword(profile.user.walletAddress) == null;
+  }
+
+  /// The password a new private drive's key is made from.
+  String _keyPassword(ProfileLoggedIn profile) =>
+      _driveUnlocker?.session.drivePassword(profile.user.walletAddress) ??
+      profile.user.password;
+
+  /// The user's private drives with rows, oldest first: what a drive password
+  /// is checked on when none is locked.
+  List<String> get _knownPrivateDriveIds {
+    final drives = _drivesCubit.state;
+    if (drives is! DrivesLoadSuccess) return const [];
+    final private = drives.userDrives.where((d) => d.isPrivate).toList()
+      ..sort((a, b) => a.dateCreated.compareTo(b.dateCreated));
+    return [for (final drive in private) drive.id];
   }
 
   void onPrivacyChanged() {
@@ -80,17 +104,46 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     emit(state.copyWith(privacy: privacy));
   }
 
-  /// Creates the drive. [drivePassword] is the new drive's own password,
-  /// required when [needsDrivePassword].
+  /// Creates the drive. [drivePassword] is the user's drive password,
+  /// required when [needsDrivePassword]: it must open one of their existing
+  /// private drives first, or nothing is created.
   Future<void> submit(
     String driveName, {
     String? drivePassword,
   }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    if (needsDrivePassword &&
-        (drivePassword == null || drivePassword.isEmpty)) {
-      throw ArgumentError('A drive password is needed', 'drivePassword');
+    if (needsDrivePassword) {
+      if (drivePassword == null || drivePassword.isEmpty) {
+        throw ArgumentError('A drive password is needed', 'drivePassword');
+      }
+
+      final failure = await _driveUnlocker!.verifyDrivePassword(
+        wallet: profile.user.wallet,
+        profileKey: profile.user.cipherKey,
+        password: drivePassword,
+        knownPrivateDriveIds: _knownPrivateDriveIds,
+      );
+
+      if (failure != null) {
+        emit(failure == DriveUnlockFailure.walletDeclined
+            ? DriveCreateInitial(privacy: state.privacy)
+            : DriveCreateDrivePasswordRejected(
+                privacy: state.privacy,
+                reason: failure,
+              ));
+        return;
+      }
+
+      // Checked: it opened one of their drives, which stays unlocked. The
+      // rest of this session uses it too. If it is the sign-in password after
+      // all, that is now proven, here and on this device.
+      final address = profile.user.walletAddress;
+      _driveUnlocker.session.rememberDrivePassword(address, drivePassword);
+      if (drivePassword == profile.user.password) {
+        _driveUnlocker.session.setSignInPasswordProven(address, true);
+        await _proofStore.clear(address);
+      }
     }
     try {
       if (await _profileCubit.logoutIfWalletMismatch()) {
@@ -124,7 +177,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         ownerAddress: walletAddress,
         privacy: drivePrivacy,
         wallet: profile.user.wallet,
-        password: needsDrivePassword ? drivePassword! : profile.user.password,
+        password: _keyPassword(profile),
         profileKey: profile.user.cipherKey,
         signatureType: drivePrivacy == DrivePrivacyTag.private ? '2' : null,
       );

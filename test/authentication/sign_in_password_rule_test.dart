@@ -6,6 +6,7 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:arweave/arweave.dart';
@@ -27,6 +28,7 @@ void main() {
   late MockArweaveService arweave;
   late ArDriveAuthImpl auth;
   late DriveUnlockSession session;
+  late SignInPasswordProofStore proofStore;
 
   void onChain(List<PrivateDriveFixture> drives) {
     when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
@@ -49,7 +51,10 @@ void main() {
     signer = SignatureCounter(json.decode(getWalletString));
     wallet = signer.wallet;
     arweave = MockArweaveService();
+    final deviceStore = MemoryKeyValueStore();
+    proofStore = SignInPasswordProofStore(store: () async => deviceStore);
     auth = ArDriveAuthImpl(
+      signInPasswordProofStore: proofStore,
       arweave: arweave,
       userRepository: MockUserRepository(),
       crypto: ArDriveCrypto(),
@@ -270,6 +275,7 @@ void main() {
     when(() => userRepository.getARIOTokens(any()))
         .thenAnswer((_) async => '0');
     final auth = ArDriveAuthImpl(
+      signInPasswordProofStore: proofStore,
       arweave: arweave,
       userRepository: userRepository,
       crypto: ArDriveCrypto(),
@@ -318,5 +324,38 @@ void main() {
     session.setSignInPasswordProven(address, false);
     await auth.validateUser(wallet, 'anything');
     expect(session.signInPasswordProven(address), isTrue);
+  });
+
+  test(
+      'a cancelled Wander prompt at sign-in leaves the password unproven, in '
+      'the session and on this device', () async {
+    final address = await wallet.getAddress();
+    final wander = FakeWander(wallet)..cancel = true;
+    onChain([
+      await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
+    ]);
+
+    await expectLater(auth.validateUser(wander.wallet, 'a'),
+        throwsA(isA<PasswordOpensNoDriveException>()));
+
+    expect(wander.prompts, 1);
+    expect(session.signInPasswordProven(address), isFalse);
+    expect(await proofStore.isUnproven(address), isTrue);
+  });
+
+  test(
+      'this device remembers an unproven sign-in password until a later '
+      'sign-in proves it', () async {
+    final address = await wallet.getAddress();
+    onChain([
+      await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
+    ]);
+
+    await expectLater(auth.validateUser(wallet, 'typo'),
+        throwsA(isA<PasswordOpensNoDriveException>()));
+    expect(await proofStore.isUnproven(address), isTrue);
+
+    await auth.validateUser(wallet, 'a');
+    expect(await proofStore.isUnproven(address), isFalse);
   });
 }

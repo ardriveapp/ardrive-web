@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -52,7 +53,11 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
     required Wallet wallet,
     required SecretKey? profileKey,
     required Future<void> Function(List<String> driveIds) syncDrives,
+    String? signInPassword,
+    SignInPasswordProofStore? proofStore,
   })  : _unlocker = unlocker,
+        _signInPassword = signInPassword,
+        _proofStore = proofStore,
         _wallet = wallet,
         _profileKey = profileKey,
         _syncDrives = syncDrives,
@@ -63,6 +68,8 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   final Wallet _wallet;
   final SecretKey? _profileKey;
   final Future<void> Function(List<String> driveIds) _syncDrives;
+  final String? _signInPassword;
+  final SignInPasswordProofStore? _proofStore;
 
   /// Whether there are other locked drives to try the password on, which is
   /// whether the dialog offers to.
@@ -97,6 +104,8 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
     }
 
     if (result.opened) {
+      await _notePasswordOpened(password);
+
       // Not awaited: the sync outlives the dialog, which closes now.
       unawaited(_syncDrives(result.openedDriveIds));
     }
@@ -124,6 +133,23 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
         emit(const UnlockDriveState(status: UnlockDriveStatus.walletFailed));
       case DriveUnlockFailure.unavailable:
         emit(const UnlockDriveState(status: UnlockDriveStatus.networkError));
+    }
+  }
+
+  /// A password that opened a drive is a drive password. If it is the
+  /// sign-in password, that is now proven, in the session and on this
+  /// device. If the sign-in password is unproven and this is another one,
+  /// the session uses it as the drive password: for discovery, and so Create
+  /// drive doesn't ask for it again.
+  Future<void> _notePasswordOpened(String password) async {
+    final owner = await _wallet.getAddress();
+    final session = _unlocker.session;
+
+    if (password == _signInPassword) {
+      session.setSignInPasswordProven(owner, true);
+      await (_proofStore ?? SignInPasswordProofStore()).clear(owner);
+    } else if (session.signInPasswordProven(owner) == false) {
+      session.rememberDrivePassword(owner, password);
     }
   }
 
