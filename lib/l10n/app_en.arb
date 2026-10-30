@@ -3523,7 +3523,7 @@
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
   },
-  "syncingDriveWithName": "Syncing '{driveName}'...",
+  "syncingDriveWithName": "Syncing {driveName}",
   "@syncingDriveWithName": {
     "description": "Show the message when syncing a specific drive by name",
     "placeholders": {
@@ -3585,7 +3585,7 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
-  "syncCancelled": "Sync cancelled",
+  "syncCancelled": "Sync stopped",
   "@syncCancelled": {
     "description": "Sync operation was cancelled"
   },
@@ -3762,7 +3762,7 @@
   "@syncWalletChangedDetail": {
     "description": "Why the app bounced the user to login. Without it the sync layer noticed the wallet change and said nothing"
   },
-  "syncCancelledDrives": "Completed {completed} of {total} drives",
+  "syncCancelledDrives": "Completed {completed} of {total, plural, =1{1 drive} other{{total} drives}}",
   "@syncCancelledDrives": {
     "description": "What a cancelled sync got through, short enough for the top bar's announcement. The long warning belongs elsewhere",
     "placeholders": {
@@ -3776,7 +3776,7 @@
       }
     }
   },
-  "syncDrivesFailed": "{failed} of {total} drives could not be synced",
+  "syncDrivesFailed": "{failed} of {total, plural, =1{1 drive} other{{total} drives}} could not be synced",
   "@syncDrivesFailed": {
     "description": "How a sync nobody asked for reports its failures at the top bar. Short on purpose: the long warning belongs in the modal a user-initiated sync is already holding",
     "placeholders": {
@@ -3923,7 +3923,7 @@
       }
     }
   },
-  "syncHistoryFoundItems": "{count, plural, =0{Nothing new} one{1 new item} other{{count} new items}}",
+  "syncHistoryFoundItems": "{count, plural, =0{No changes} =1{1 item changed} other{{count} items changed}}",
   "@syncHistoryFoundItems": {
     "description": "What a finished sync wrote. An item is a file or a folder, here and everywhere else the word is used. Zero is a result and says so rather than being left out",
     "placeholders": {
@@ -3934,7 +3934,7 @@
       }
     }
   },
-  "syncHistoryFailedDetail": "This sync could not be done, so nothing was read.",
+  "syncHistoryFailedDetail": "This sync stopped with an error. Try syncing again.",
   "@syncHistoryFailedDetail": {
     "description": "What a history entry says about a sync that threw before it could walk any drive"
   },
@@ -3953,7 +3953,7 @@
       }
     }
   },
-  "syncReadingMetadata": "Reading {completed} files...",
+  "syncReadingMetadata": "{completed, plural, =1{Read 1 update} other{Read {completed} updates}}",
   "@syncReadingMetadata": {
     "description": "Shown while a drive’s history is being read, counting the entries that have come back. Deliberately has no total: the denominator was only ever \"what has been asked for so far\", which the count meets at every batch boundary, so \"N of N\" was all anyone ever saw.",
     "placeholders": {
@@ -5790,5 +5790,29 @@
   "showPassword": "Show password",
   "@showPassword": {"description": "Screen reader name of the eye that shows a new password and its confirmation."},
   "hidePassword": "Hide password",
-  "@hidePassword": {"description": "Screen reader name of the eye that hides a new password and its confirmation."}
+  "@hidePassword": {"description": "Screen reader name of the eye that hides a new password and its confirmation."},
+  "syncDriveListCheckFailed": "Couldn't check for new drives",
+  "@syncDriveListCheckFailed": {"description": "Top bar title when the drive list could not be refreshed but drives read earlier are on screen. Says what failed, not that the drives could not be loaded"},
+  "syncDriveListCheckFailedDetail": "The drives shown are from this device.",
+  "@syncDriveListCheckFailedDetail": {"description": "Under syncDriveListCheckFailed: the list on screen is what this device last read"},
+  "syncStoppedWithError": "Sync stopped with an error",
+  "@syncStoppedWithError": {"description": "Top bar title for a sync that read the drive list but stopped with an error while reading drive contents"},
+  "syncStoppedWithErrorDrive": "{driveName} was not fully synced.",
+  "@syncStoppedWithErrorDrive": {"description": "Under syncStoppedWithError when the sync was for one drive", "placeholders": {"driveName": {"type": "String", "example": "My Drive"}}},
+  "syncAllDrivesFailed": "{total, plural, =1{Your drive could not be synced} other{Your drives could not be synced}}",
+  "@syncAllDrivesFailed": {"description": "Top bar title when every drive a sync covered failed, so nothing synced", "placeholders": {"total": {"type": "int", "example": "5"}}},
+  "syncDismiss": "Dismiss",
+  "@syncDismiss": {"description": "Sync indicator menu item that clears the last sync result from the top bar"},
+  "syncingSomeDrives": "{count, plural, =1{Syncing 1 drive} other{Syncing {count} drives}}",
+  "@syncingSomeDrives": {"description": "Top bar title while a sync covers some of the drives, such as the ticked ones or the ones that failed", "placeholders": {"count": {"type": "int", "example": "3"}}},
+  "syncElapsedTimeMinutes": "{minutes}m {seconds}s elapsed",
+  "@syncElapsedTimeMinutes": {"description": "How long a running sync has taken, a minute or more", "placeholders": {"minutes": {"type": "String", "example": "2"}, "seconds": {"type": "String", "example": "14"}}},
+  "syncHistorySomeDrives": "{count, plural, =1{1 drive} other{{count} drives}}",
+  "@syncHistorySomeDrives": {"description": "What a history entry is titled when the sync covered some drives but not all of them", "placeholders": {"count": {"type": "int", "example": "3"}}},
+  "syncHistoryShowDetails": "Show details",
+  "@syncHistoryShowDetails": {"description": "Opens the error text of a sync history entry, for support"},
+  "syncHistoryHideDetails": "Hide details",
+  "@syncHistoryHideDetails": {"description": "Closes the error text of a sync history entry"},
+  "driveSyncStopped": "Sync stopped",
+  "@driveSyncStopped": {"description": "Sync state of a drive whose last sync was stopped or ended with an error before the drive was fully read"}
 }

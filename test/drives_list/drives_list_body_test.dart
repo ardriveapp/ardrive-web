@@ -1,3 +1,4 @@
+import 'package:ardrive/components/list_page/list_page_state_card.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
@@ -176,6 +177,18 @@ void main() {
       expect(find.text('Loading your drives...'), findsOneWidget);
       expect(find.text('Getting started'), findsNothing);
       expect(find.text('Create new public drive'), findsNothing);
+    });
+
+    testWidgets('waits the way setting up My files waits', (tester) async {
+      await pumpBody(tester, const DrivesListLoading());
+
+      // One layout for both waits on this page, with the spinner at its size
+      // on its own (README, Loaders), not a logo loader the system has no
+      // size for.
+      expect(find.byType(ListPageWaiting), findsOneWidget);
+      final spinner =
+          tester.widget<ArDriveSpinner>(find.byType(ArDriveSpinner));
+      expect(spinner.size, ArDriveSpinnerSize.large);
     });
   });
 

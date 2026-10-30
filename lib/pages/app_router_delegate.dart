@@ -47,7 +47,6 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:ardrive/upload_entry/presentation/start_upload.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -939,22 +938,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       ),
                     ),
                   ],
-                  child: BlocListener<SyncCubit, SyncState>(
-                    listener: (context, state) {
-                      if (state is SyncFailure) {
-                        showArDriveToast(
-                          ScaffoldMessenger.of(context),
-                          text: appLocalizationsOf(context).failedToSyncDrive,
-                          type: ArDriveStatusType.error,
-                          actionLabel:
-                              appLocalizationsOf(context).tryAgainEmphasized,
-                          onAction: () => context.read<SyncCubit>().startSync(),
-                        );
-                      }
-                    },
-                    child: ArNSResumeScope(
-                      child: SearchScope(child: navigator),
-                    ),
+                  // A failed sync is reported once, at the top bar's sync
+                  // indicator, with a Try again that repeats what failed. A
+                  // toast here said the same failure a second time, in other
+                  // words, and its Try again synced every drive.
+                  child: ArNSResumeScope(
+                    child: SearchScope(child: navigator),
                   ),
                 );
               } else {

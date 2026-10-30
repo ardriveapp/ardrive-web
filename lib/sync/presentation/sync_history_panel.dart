@@ -117,57 +117,83 @@ class _NothingYet extends StatelessWidget {
 /// One finished sync.
 ///
 /// Four lines at most, and each of them is a different fact: what was synced,
-/// when and for how long, what it found, and - only when there is one - what
-/// went wrong, in the words the sync layer used.
-class SyncRunTile extends StatelessWidget {
+/// when and for how long, what it found, and what to do when it went wrong.
+/// The words the sync layer used for a failure are behind "Show details",
+/// verbatim, for support: raw exception text is not something a reader can
+/// act on, and printed in red it read as the whole message.
+class SyncRunTile extends StatefulWidget {
   const SyncRunTile({super.key, required this.run, this.now});
 
   final SyncRun run;
   final DateTime? now;
 
   @override
+  State<SyncRunTile> createState() => _SyncRunTileState();
+}
+
+class _SyncRunTileState extends State<SyncRunTile> {
+  bool _showDetails = false;
+
+  @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final localizations = appLocalizationsOf(context);
+    final run = widget.run;
 
-    final isProblem = run.outcome != SyncRunOutcome.completed;
+    // A run that failed is an error. One that was stopped, or that finished
+    // with items it could not read, is a warning: it did work, with holes in
+    // it. A clean run carries no icon.
+    final ArDriveStatusType? status = switch (run.outcome) {
+      SyncRunOutcome.failed ||
+      SyncRunOutcome.completedWithErrors =>
+        ArDriveStatusType.error,
+      SyncRunOutcome.cancelled => ArDriveStatusType.warning,
+      SyncRunOutcome.completed =>
+        run.skippedEntityCount > 0 ? ArDriveStatusType.warning : null,
+    };
+
+    // Except what says nothing, which an older version could have saved:
+    // "minified:Xy" is searchable by nobody. A message that is nothing else is
+    // left out; one with a drive's name keeps the name.
+    final messages = [
+      for (final message in run.errorMessages.values)
+        if (!isOpaqueErrorText(message)) withoutOpaqueParts(message),
+    ];
+
+    final title = run.driveName ??
+        (run.scopedDriveCount != null
+            ? localizations.syncHistorySomeDrives(run.scopedDriveCount!)
+            : localizations.syncHistoryAllDrives);
+    final titleStyle = typography.paragraphNormal(
+      fontWeight: ArFontWeight.semiBold,
+      color: colorTokens.textHigh,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (isProblem) ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: ArDriveIcons.triangle(
-                  size: 14,
-                  color: colorTokens.statusErrorFg,
-                ),
-              ),
-              const SizedBox(width: ArDriveSpacing.xxs),
-            ],
-            Expanded(
-              child: Text(
-                // The drive it was for, by name, or the fact that it was all
-                // of them. Never a drive id: an id is not a thing a user
-                // recognises.
-                run.driveName ?? localizations.syncHistoryAllDrives,
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textHigh,
-                ),
-              ),
-            ),
-          ],
-        ),
+        // The drive it was for, by name, how many when it was some of them, or
+        // the fact that it was all of them. Never a drive id: an id is not a
+        // thing a user recognises.
+        if (status != null)
+          ArDriveStatusText(
+            text: title,
+            type: status,
+            style: titleStyle,
+            // The title stays in the text colour; the icon says the status.
+            color: colorTokens.textHigh,
+            iconColor: status == ArDriveStatusType.error
+                ? colorTokens.statusErrorFg
+                : colorTokens.statusWarningFg,
+          )
+        else
+          Text(title, style: titleStyle),
         const SizedBox(height: 2),
         Text(
           localizations.syncHistoryRunSummary(
-            formatSyncRunStartedAt(context, run, now: now),
+            formatSyncRunStartedAt(context, run, now: widget.now),
             formatSyncRunTrigger(context, run),
             formatSyncRunDuration(context, run),
           ),
@@ -178,26 +204,36 @@ class SyncRunTile extends StatelessWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Text(
               line,
-              style: typography.paragraphSmall(
-                color: isProblem ? colorTokens.textRed : colorTokens.textMid,
-              ),
+              style: typography.paragraphSmall(color: colorTokens.textMid),
             ),
           ),
         // Verbatim, and never shortened. The user reading this is one button
         // away from sending the logs beside it to support, and a message this
         // panel paraphrased is a message support cannot search for.
-        // Except what says nothing, which an older version could have saved:
-        // "minified:Xy" is searchable by nobody. A message that is nothing
-        // else is left out; one with a drive's name keeps the name.
-        for (final message
-            in run.errorMessages.values.where((m) => !isOpaqueErrorText(m)))
+        if (messages.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              withoutOpaqueParts(message),
-              style: typography.paragraphSmall(color: colorTokens.textRed),
+            child: ArDriveLink(
+              text: _showDetails
+                  ? localizations.syncHistoryHideDetails
+                  : localizations.syncHistoryShowDetails,
+              isAction: true,
+              style: typography.paragraphSmall(
+                fontWeight: ArFontWeight.semiBold,
+              ),
+              onTap: () => setState(() => _showDetails = !_showDetails),
             ),
           ),
+          if (_showDetails)
+            for (final message in messages)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: SelectableText(
+                  message,
+                  style: typography.paragraphSmall(color: colorTokens.textMid),
+                ),
+              ),
+        ],
       ],
     );
   }

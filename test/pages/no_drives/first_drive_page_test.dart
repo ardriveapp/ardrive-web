@@ -4,7 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/pages/no_drives/first_drive_page.dart';
-import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
+import 'package:ardrive/components/list_page/list_page_state_card.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -88,7 +88,10 @@ void main() {
 
     expect(asked, 1);
     expect(find.text('Setting up My files'), findsOneWidget);
-    expect(find.byType(SyncLoadingIndicator), findsOneWidget);
+    // The same wait as Loading your drives, drawn the same way: the large
+    // spinner, not the logo loader the system has no size for.
+    expect(find.byType(ArDriveSpinner), findsOneWidget);
+    expect(find.byType(ListPageWaiting), findsOneWidget);
     expect(find.text('Getting started'), findsNothing);
 
     // Made: selecting it opens it, so this page waits to be replaced.

@@ -57,6 +57,7 @@ void main() {
     // for the whole of a real session until it does - and forever when it
     // cannot. Every one of these expectations must hold in that state.
     when(() => syncCubit.drivesWithUnreadChanges).thenReturn(const {});
+    when(() => syncCubit.stoppedDriveIds).thenReturn(const {});
     when(() => syncCubit.unreadChangesStream)
         .thenAnswer((_) => const Stream<Set<String>>.empty());
     when(() => preferences.currentPreferences).thenReturn(prefs());
@@ -64,23 +65,39 @@ void main() {
 
   tearDown(() async => db.close());
 
+  /// [read] gives the drive's root folder a revision, which is what this
+  /// device having read the drive means: the explorer's and the details
+  /// panel's own test, and so the row's.
   Future<void> addDrive(
     String id, {
     String? name,
     int lastBlockHeight = 0,
     String owner = 'me',
     String privacy = DrivePrivacyTag.public,
-  }) =>
-      db.into(db.drives).insert(
-            DrivesCompanion.insert(
-              id: id,
-              rootFolderId: '$id-root',
-              ownerAddress: owner,
+    bool read = false,
+  }) async {
+    await db.into(db.drives).insert(
+          DrivesCompanion.insert(
+            id: id,
+            rootFolderId: '$id-root',
+            ownerAddress: owner,
+            name: name ?? id,
+            privacy: privacy,
+            lastBlockHeight: Value(lastBlockHeight),
+          ),
+        );
+    if (read) {
+      await db.into(db.folderRevisions).insert(
+            FolderRevisionsCompanion.insert(
+              folderId: '$id-root',
+              driveId: id,
               name: name ?? id,
-              privacy: privacy,
-              lastBlockHeight: Value(lastBlockHeight),
+              metadataTxId: '$id-root-tx',
+              action: 'create',
             ),
           );
+    }
+  }
 
   Future<void> addFile(String driveId, String fileId, int size) =>
       db.into(db.fileEntries).insert(
@@ -249,7 +266,7 @@ void main() {
 
   group('what each row is told', () {
     test('a walked drive publishes its count and its size', () async {
-      await addDrive('drive-a', lastBlockHeight: 100);
+      await addDrive('drive-a', lastBlockHeight: 100, read: true);
       await addFile('drive-a', 'f1', 200);
       await addFile('drive-a', 'f2', 150);
 
@@ -273,9 +290,9 @@ void main() {
       expect(state.drives.single.totalSize, isNull);
     });
 
-    test('a recorded sync counts as having walked it, block height or not',
+    test('a read drive with a recorded sync says when, block height or not',
         () async {
-      await addDrive('drive-a');
+      await addDrive('drive-a', read: true);
       when(() => preferences.currentPreferences).thenReturn(
         prefs(lastSynced: {'drive-a': DateTime(2026, 8, 1)}),
       );
@@ -287,6 +304,54 @@ void main() {
       expect(state.drives.single.hasBeenWalked, isTrue);
       expect(state.drives.single.fileCount, 0);
       expect(state.drives.single.lastSyncedAt, DateTime(2026, 8, 1));
+    });
+
+    // The details panel says a drive whose root was never read has not been
+    // synced on this device, whatever its block height or recorded time. The
+    // row said "Synced 7 hours ago" with 0 files beside it.
+    test('a recorded sync of a drive whose root was never read is not synced',
+        () async {
+      await addDrive('drive-a', lastBlockHeight: 100);
+      when(() => preferences.currentPreferences).thenReturn(
+        prefs(lastSynced: {'drive-a': DateTime(2026, 8, 1)}),
+      );
+
+      final state = await settle(loaded(await drivesNamed(['drive-a'])))
+          as DrivesListLoaded;
+
+      expect(state.drives.single.hasBeenWalked, isFalse);
+      expect(state.drives.single.fileCount, isNull);
+      expect(state.drives.single.totalSize, isNull);
+      expect(state.drives.single.lastSyncedAt, isNull);
+    });
+
+    test('files on a drive whose root was never read are not counted',
+        () async {
+      // Files with no read root: whatever wrote them, the row may not put a
+      // count beside "Not synced on this device".
+      await addDrive('drive-a');
+      await addFile('drive-a', 'f1', 200);
+
+      final state = await settle(loaded(await drivesNamed(['drive-a'])))
+          as DrivesListLoaded;
+
+      expect(state.drives.single.hasBeenWalked, isFalse);
+      expect(state.drives.single.fileCount, isNull);
+      expect(state.drives.single.totalSize, isNull);
+    });
+
+    test('a drive a stopped sync did not finish says so', () async {
+      await addDrive('drive-a', read: true);
+      await addDrive('drive-b', read: true);
+      when(() => syncCubit.stoppedDriveIds).thenReturn({'drive-a'});
+
+      final state = await settle(
+        loaded(await drivesNamed(['drive-a', 'drive-b'])),
+      ) as DrivesListLoaded;
+
+      final byId = {for (final d in state.drives) d.id: d};
+      expect(byId['drive-a']!.lastSyncStopped, isTrue);
+      expect(byId['drive-b']!.lastSyncStopped, isFalse);
     });
 
     test('a drive somebody else owns is marked, not filed separately',
@@ -647,7 +712,9 @@ void main() {
   /// user who had just uploaded that nothing had happened.
   group('a drive the device filled itself', () {
     test('shows what was uploaded to it, unwalked or not', () async {
-      await addDrive('drive-new');
+      // Creating a drive writes its root folder's revision, so a drive made
+      // here has been read by the row's test as by the explorer's.
+      await addDrive('drive-new', read: true);
       await addFile('drive-new', 'photo-1', 1024);
       await addFile('drive-new', 'photo-2', 2048);
 
@@ -664,9 +731,10 @@ void main() {
       expect(state.drives.single.fileCount, 2);
       expect(state.drives.single.totalSize, 3072);
 
-      // Still true, and still said: nothing has read this drive from chain.
-      // It is the figures that were wrong to withhold, not the label.
-      expect(state.drives.single.hasBeenWalked, isFalse);
+      // Nothing has read this drive from chain, but this device wrote its
+      // root, so the row, the details panel and the explorer all count it as
+      // synced here.
+      expect(state.drives.single.hasBeenWalked, isTrue);
     });
 
     test('withholds figures for an unwalked drive it knows nothing about',
@@ -689,7 +757,7 @@ void main() {
     });
 
     test('reports a walked drive that really is empty as empty', () async {
-      await addDrive('drive-empty', lastBlockHeight: 42);
+      await addDrive('drive-empty', lastBlockHeight: 42, read: true);
 
       final state = await settle(
         DrivesLoadSuccess(

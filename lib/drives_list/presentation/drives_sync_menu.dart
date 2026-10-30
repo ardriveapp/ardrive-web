@@ -112,8 +112,11 @@ class DrivesSyncMenu extends StatelessWidget {
               // taller than the rest, and the menu, which sizes itself from a
               // single item height, is told the total instead.
               maxHeight: ((offersRetry ? 3 : 2) * describedDropdownItemHeight +
-                      (offersChanged ? 2 : 1) * 48) *
-                  MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+                          (offersChanged ? 2 : 1) * 48) *
+                      MediaQuery.textScalerOf(context)
+                          .scale(1)
+                          .clamp(1.0, 2.0) +
+                  ArDriveDropdownItem.dividerHeight,
               anchor: const Aligned(
                 follower: Alignment.topRight,
                 target: Alignment.bottomRight,
@@ -207,6 +210,9 @@ class DrivesSyncMenu extends StatelessWidget {
                       isDisabled: isSyncing,
                     ),
                   ),
+                // The actions, then the record: a line between doing and
+                // reading, as every other menu groups its items.
+                const ArDriveDropdownItem.divider(),
                 ArDriveDropdownItem(
                   onClick: () => showSyncHistoryModal(context),
                   content: ArDriveDropdownItemTile(

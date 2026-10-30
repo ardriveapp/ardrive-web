@@ -6,7 +6,21 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Seconds since the running sync started.
+/// How long the running sync has taken: seconds under a minute, minutes and
+/// seconds above, the way the sync history says how long a sync took. "1200s"
+/// is not a number anybody reads.
+String formatSyncElapsed(BuildContext context, Duration elapsed) {
+  final seconds = elapsed.inSeconds;
+  if (seconds < 60) {
+    return appLocalizationsOf(context).syncElapsedTime(seconds.toString());
+  }
+  return appLocalizationsOf(context).syncElapsedTimeMinutes(
+    (seconds ~/ 60).toString(),
+    (seconds % 60).toString(),
+  );
+}
+
+/// Time since the running sync started.
 ///
 /// Shown wherever a running sync reports itself - the status header inside the
 /// sync indicator's menu, and the explorer panel a drive click lands on -
@@ -42,9 +56,7 @@ class _SyncElapsedTimeState extends State<SyncElapsedTime> {
             DateTime.now().difference(context.read<SyncCubit>().syncStartTime);
 
         return Text(
-          appLocalizationsOf(context).syncElapsedTime(
-            elapsed.inSeconds.toString(),
-          ),
+          formatSyncElapsed(context, elapsed),
           // `textMid`, not `textLow`. The quieter token is #7d7d7d, and the
           // darkest surface this is drawn on is #191919: 4.27:1, under WCAG
           // AA's 4.5:1 for body text. This is the only place elapsed time is

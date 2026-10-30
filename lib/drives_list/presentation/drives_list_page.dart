@@ -5,10 +5,10 @@ import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
-import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 
 import 'package:ardrive/components/list_page/list_page_layout.dart';
+import 'package:ardrive/components/list_page/list_page_state_card.dart';
 import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
@@ -458,60 +458,6 @@ class DrivesListBody extends StatelessWidget {
   }
 }
 
-/// The centred, width-capped column the three non-list states share.
-class _CentredMessage extends StatelessWidget {
-  const _CentredMessage({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              // The page's own margin, so this panel stops where the table's
-              // panel stops rather than running into the window edge.
-              // The table's own edges, so this card is exactly as wide as the
-              // table it stands in for, and the title row above already
-              // leaves the gap the table has.
-              padding: const EdgeInsets.only(bottom: _sectionGap),
-              child: Container(
-                // The ground every other full-panel state sits on. These two -
-                // the drives loading, and the drive list that could not be
-                // read - were drawn straight onto the page, so the words
-                // floated on black while the same states in the explorer had a
-                // card behind them.
-                decoration: BoxDecoration(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .tableTheme
-                      .backgroundColor,
-                  borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
-                ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(_sectionGap),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: children,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
 /// Still looking. It never says the user has none.
 class _DrivesListLoading extends StatelessWidget {
   const _DrivesListLoading({this.state});
@@ -521,32 +467,12 @@ class _DrivesListLoading extends StatelessWidget {
   final DrivesListLoading? state;
 
   @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return _CentredMessage(
-      children: [
-        Text(
-          syncLoadingDrivesLabel(appLocalizationsOf(context), state?.syncState),
-          // Tabular figures, so "2 of 4" doesn't shift as it counts.
-          style: typography
-              .heading4(
-            color: colorTokens.textHigh,
-            fontWeight: ArFontWeight.bold,
-          )
-              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          textAlign: TextAlign.center,
+  Widget build(BuildContext context) => ListPageWaiting(
+        title: syncLoadingDrivesLabel(
+          appLocalizationsOf(context),
+          state?.syncState,
         ),
-        const SizedBox(height: _sectionGap),
-        // Nothing to measure, so nothing is claimed - it moves and says no
-        // more than that. The same mark every other sync surface shows while
-        // it works; this used to be a red bar here and a white one in the
-        // explorer, for the same wait.
-        const SyncLoadingIndicator(),
-      ],
-    );
-  }
+      );
 }
 
 /// We asked and could not find out.
@@ -563,7 +489,7 @@ class _DrivesListUnavailable extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return _CentredMessage(
+    return ListPageStateCard(
       children: [
         Text(
           appLocalizationsOf(context).driveListUnavailable,

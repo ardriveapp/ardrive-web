@@ -1398,6 +1398,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     };
   }
 
+  /// The drives whose root folder has a revision on this device: the drives
+  /// this device has read, by the explorer's own test.
+  ///
+  /// Reading the drive list stores only a placeholder for a drive's root, so a
+  /// drive nothing has read has none. The drives list asks this rather than
+  /// the drive's block height or a recorded sync time, so its rows, the
+  /// details panel and the explorer all agree on whether a drive is synced.
+  Future<Set<String>> driveIdsWithReadRoot() async {
+    final rows = await customSelect(
+      '''
+      SELECT d.id AS id FROM drives d
+      WHERE EXISTS (
+        SELECT 1 FROM folder_revisions r
+        WHERE r.driveId = d.id AND r.folderId = d.rootFolderId
+      )
+      ''',
+      readsFrom: {drives, folderRevisions},
+    ).get();
+
+    return {for (final row in rows) row.read<String>('id')};
+  }
+
   /// What [driveIds] hold permanently, by the year it was uploaded, oldest
   /// first.
   ///

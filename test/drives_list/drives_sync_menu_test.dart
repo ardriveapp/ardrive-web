@@ -287,6 +287,23 @@ void main() {
       expect(find.text('Sync history'), findsOneWidget);
     });
 
+    testWidgets('a line sets the record apart from the actions',
+        (tester) async {
+      await openMenu(tester);
+
+      // The actions, a divider, then Sync history: doing, then reading.
+      final items =
+          tester.widget<ArDriveDropdown>(find.byType(ArDriveDropdown)).items;
+      final divider = items.indexWhere((item) => item.isDivider);
+      expect(divider, greaterThan(0));
+      expect(items.where((item) => item.isDivider), hasLength(1));
+      expect(
+        items.indexOf(entryNamed(tester, 'Sync history')),
+        divider + 1,
+      );
+      expect(divider + 2, items.length, reason: 'the record comes last');
+    });
+
     testWidgets('names syncing everything one way, synced before or not',
         (tester) async {
       // One name for one action. The menu used to say "Resync" after a first

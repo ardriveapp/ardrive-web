@@ -799,6 +799,12 @@ class _SyncRepository implements SyncRepository {
           syncProgress = syncProgress.copyWith(
             firstTimeSyncDriveCount: neverSyncedDrives.length,
             skippedDriveCount: skipped,
+            // Only what the probe answered for: when it could not answer for
+            // every owner, every previously synced drive is walked instead.
+            unchangedDriveIds: {
+              for (final drive in previouslySyncedDrives)
+                if (!activeDriveIds.contains(drive.id)) drive.id,
+            },
           );
         }
       } on SyncCancelledException {
@@ -838,6 +844,7 @@ class _SyncRepository implements SyncRepository {
         SyncProgress.emptySyncCompleted().copyWith(
           firstTimeSyncDriveCount: syncProgress.firstTimeSyncDriveCount,
           skippedDriveCount: syncProgress.skippedDriveCount,
+          unchangedDriveIds: syncProgress.unchangedDriveIds,
         ),
       );
       _lastSync = DateTime.now();

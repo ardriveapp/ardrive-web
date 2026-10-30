@@ -27,6 +27,7 @@ void main() {
     DateTime? lastSyncedAt,
     bool isSyncing = false,
     bool lastSyncFailed = false,
+    bool lastSyncStopped = false,
   }) =>
       DriveListItem(
         id: 'drive-id',
@@ -41,6 +42,7 @@ void main() {
         lastSyncedAt: lastSyncedAt,
         isSyncing: isSyncing,
         lastSyncFailed: lastSyncFailed,
+        lastSyncStopped: lastSyncStopped,
       );
 
   Widget rowUnder(
@@ -230,6 +232,53 @@ void main() {
       );
 
       expect(find.text('Synced 2 hours ago'), findsOneWidget);
+    });
+
+    testWidgets('"Synced just now" ages while the page stays open',
+        (tester) async {
+      // Just under a minute ago, by the wall clock the row reads.
+      await pumpRow(
+        tester,
+        drive(
+          lastSyncedAt: DateTime.now().subtract(
+            const Duration(seconds: 59, milliseconds: 500),
+          ),
+        ),
+        width: 1200,
+      );
+
+      expect(find.text('Synced just now'), findsOneWidget);
+
+      // Nothing about the drive changes; only time passes: a real second for
+      // the wall clock, then the row's own timer.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(seconds: 1)),
+      );
+      await tester.pump(const Duration(seconds: 30));
+
+      expect(find.text('Synced just now'), findsNothing);
+      expect(find.text('Synced 1 minute ago'), findsOneWidget);
+    });
+
+    testWidgets('a stopped sync says so, ahead of the time before it',
+        (tester) async {
+      await pumpRow(
+        tester,
+        drive(
+          lastSyncStopped: true,
+          lastSyncedAt: DateTime.now().subtract(const Duration(hours: 2)),
+        ),
+        width: 1200,
+      );
+
+      expect(find.text('Sync stopped'), findsOneWidget);
+      expect(find.text('Synced 2 hours ago'), findsNothing);
+      // As a warning: the figures beside it are of a half-read drive.
+      final status = tester.widget<ArDriveStatusText>(find.ancestor(
+        of: find.text('Sync stopped'),
+        matching: find.byType(ArDriveStatusText),
+      ));
+      expect(status.type, ArDriveStatusType.warning);
     });
 
     testWidgets('a running sync outranks whatever was recorded before it',

@@ -150,8 +150,18 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       // that failed made every walked drive report 0 files and 0 B. A figure
       // nobody could produce is exactly the confident wrong answer the dash
       // exists to avoid.
-      _emitDrives(drivesState, null, const {}, sequence);
+      _emitDrives(drivesState, null, const {}, null, sequence);
       return;
+    }
+
+    // Which drives this device has read, by the explorer's own test. Null when
+    // it could not be asked, and then the row falls back to what it used
+    // before: a block height or a recorded sync time.
+    Set<String>? readDriveIds;
+    try {
+      readDriveIds = await _driveDao.driveIdsWithReadRoot();
+    } catch (e, stackTrace) {
+      logger.e('Could not read which drives have been synced', e, stackTrace);
     }
 
     Map<String, DateTime> lastSyncedAt = const {};
@@ -164,7 +174,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
           'Could not read when the drives were last synced', e, stackTrace);
     }
 
-    _emitDrives(drivesState, summaries, lastSyncedAt, sequence);
+    _emitDrives(drivesState, summaries, lastSyncedAt, readDriveIds, sequence);
   }
 
   /// Whether the local table holds any drive at all.
@@ -194,6 +204,10 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     /// drive reporting itself as empty.
     Map<String, DriveContentSummary>? summaries,
     Map<String, DateTime> lastSyncedAt,
+
+    /// The drives whose root folder has been read on this device, or null
+    /// when that could not be asked. See [DriveDao.driveIdsWithReadRoot].
+    Set<String>? readDriveIds,
     int sequence,
   ) {
     if (isClosed || sequence != _sequence) {
@@ -215,6 +229,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     final runDriveIds = _syncCubit.syncingDriveIds;
     final completedDriveIds = _syncCubit.completedDriveIds.toSet();
     final unreadChanges = _syncCubit.drivesWithUnreadChanges;
+    final stoppedDriveIds = _syncCubit.stoppedDriveIds;
 
     // The top bar says "1 of 5 drives failed" and the list is where a reader
     // goes to find out which. The state has always carried the ids; nothing on
@@ -224,13 +239,22 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         : const <String>{};
 
     final items = drives.map((drive) {
-      final syncedAt = lastSyncedAt[drive.id];
+      // Whether this device has read the drive. One answer for the row, the
+      // details panel and the explorer: its root folder has a revision. A
+      // block height or a recorded sync time could each say "synced" of a
+      // drive whose root was never read, so the row said "Synced 7 hours ago"
+      // with 0 files while the details panel said it had never been synced.
+      //
+      // Before the drive has been read, every number derived from the local
+      // tables is a zero standing in for "we have not looked".
+      final hasBeenWalked = readDriveIds != null
+          ? readDriveIds.contains(drive.id)
+          : (drive.lastBlockHeight ?? 0) > 0 || lastSyncedAt[drive.id] != null;
 
-      // Either the history was walked - which is what a block height means -
-      // or we watched a sync of it finish. Before either, every number derived
-      // from the local tables is a zero standing in for "we have not looked".
-      final hasBeenWalked =
-          (drive.lastBlockHeight ?? 0) > 0 || syncedAt != null;
+      // A time is only shown for a drive that has been read: "Synced 7 hours
+      // ago" beside a drive this device has not read is the claim the details
+      // panel contradicts.
+      final syncedAt = hasBeenWalked ? lastSyncedAt[drive.id] : null;
 
       // Unknown when the read failed; empty when it succeeded and this drive
       // simply has nothing in it.
@@ -252,7 +276,13 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       // A zero from a walked drive still means empty, and a zero from an
       // unwalked one still means unknown. Only a non-zero count proves the
       // device knows something, which is why this asks for one.
-      final hasLocalContent = (summary?.fileCount ?? 0) > 0;
+      //
+      // Only when the read-root test could not be asked. Creating a drive
+      // writes its root's revision, so that test already counts a drive made
+      // here; with it, files beside "Not synced on this device" would be the
+      // contradiction the row must not make.
+      final hasLocalContent =
+          readDriveIds == null && (summary?.fileCount ?? 0) > 0;
 
       final figuresAreKnown = hasBeenWalked || hasLocalContent;
 
@@ -284,6 +314,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
             // over, because its walk finishing is not the run finishing.
             (syncingDriveId != null || !completedDriveIds.contains(drive.id)),
         lastSyncFailed: failedDriveIds.contains(drive.id),
+        lastSyncStopped: stoppedDriveIds.contains(drive.id),
       );
     }).toList();
 

@@ -13,6 +13,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -72,6 +73,8 @@ void main() {
     when(() => syncCubit.retryFailedDrives(any())).thenAnswer((_) async {});
     when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {});
     when(() => syncCubit.clearCancelledState()).thenReturn(null);
+    when(() => syncCubit.retryFailure()).thenAnswer((_) async {});
+    when(() => syncCubit.dismissSyncResult()).thenReturn(null);
   });
 
   tearDown(() async {
@@ -271,13 +274,31 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('the ring keeps moving while progress stands still',
+  testWidgets('a ring with nothing to measure turns', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    // No figure yet: turning is what says the sync is working.
+    await startSyncing(tester);
+
+    double turns() => tester
+        .widget<RotationTransition>(find.byKey(syncIndicatorMotionKey))
+        .turns
+        .value;
+
+    final before = turns();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(turns(), isNot(before));
+  });
+
+  testWidgets('a ring that shows progress holds still, so it can be read',
       (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
 
-    // A determinate arc is the case that can go still: sync progress plateaus
-    // for long stretches and a frozen arc reads as a hang.
+    // A ring that turns while it fills cannot be read: how full it is moves
+    // round the circle with it.
     await startSyncing(
       tester,
       reporting: SyncProgress.initial().copyWith(progress: 0.5),
@@ -291,7 +312,19 @@ void main() {
     final before = turns();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(turns(), isNot(before));
+    expect(turns(), before);
+    expect(before, 0, reason: 'upright, with the fill starting at the top');
+
+    // And it turns again once the phase cannot measure itself.
+    progressController.add(SyncProgress.initial().copyWith(
+      progress: 0.5,
+      isIndeterminate: true,
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+    final again = turns();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(turns(), isNot(again));
   });
 
   // On the HTML renderer, which phones get, a repaint rebuilds the DOM of
@@ -300,10 +333,8 @@ void main() {
   testWidgets('the turning ring repaints nothing but itself', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
-    await startSyncing(
-      tester,
-      reporting: SyncProgress.initial().copyWith(progress: 0.5),
-    );
+    // Nothing measured, so the ring turns.
+    await startSyncing(tester);
 
     final glyph = <RenderObject>{};
     void collect(RenderObject o) {
@@ -435,27 +466,126 @@ void main() {
     expect(find.text('Up to date, nothing new'), findsNothing);
   });
 
-  testWidgets('the indicator leaves with the result', (tester) async {
+  testWidgets('the indicator keeps the result after the pill has gone',
+      (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
 
-    stateController.add(finished());
+    stateController.add(finished(entitiesSynced: 12));
     await tester.pump(const Duration(milliseconds: 10));
     // The overlay shows what changed on the frame after.
     await tester.pump();
 
-    // While the result is showing, the glyph it hangs off is there too.
     expect(find.byType(ArDriveIcon), findsOneWidget);
 
-    // Nothing else rebuilds the bar here: no sync, no drive change. The glyph
-    // has to take itself away when its time is up, as the pill does. It used
-    // to stay until something unrelated rebuilt the top bar.
+    // The pill's few seconds are too short to read (WCAG 2.2.1), so the
+    // result stays on the indicator, and in its menu, until the next sync or
+    // until it is dismissed.
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+    await tester.pump();
+    expect(find.text('12 items changed'), findsNothing);
+    expect(find.byType(ArDriveIcon), findsOneWidget);
+    expect(
+      tester.widget<Tooltip>(find.byType(Tooltip)).message,
+      '12 items changed',
+    );
 
-    // The overlay lets go of it on the frame after.
+    await tester.tap(find.byType(SyncButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.descendant(
+        of: find.byKey(syncStatusHeaderKey),
+        matching: find.text('12 items changed'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Dismiss puts the result away', (tester) async {
+    when(() => syncCubit.dismissSyncResult()).thenReturn(null);
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished(entitiesSynced: 12));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+    await tester.pump();
+
+    await tester.tap(find.byType(SyncButton));
+    // Until the menu has finished opening and its items take a tap.
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+    await tester.tap(find.text('Dismiss'));
+    await tester.pump();
+
+    verify(() => syncCubit.dismissSyncResult()).called(1);
+
+    // The cubit returns to rest, and the slot is empty again.
+    stateController.add(SyncIdle());
+    await tester.pump(const Duration(milliseconds: 10));
     await tester.pump();
     expect(find.byType(ArDriveIcon), findsNothing);
-    expect(find.byType(Tooltip), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the result is told to a screen reader when it shows',
+      (tester) async {
+    final spoken = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<dynamic>(
+      SystemChannels.accessibility,
+      (message) async {
+        final data = (message as Map)['data'] as Map;
+        if (message['type'] == 'announce') {
+          spoken.add(data['message'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<dynamic>(
+            SystemChannels.accessibility, null));
+
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished(entitiesSynced: 12, skippedEntityCount: 3));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+
+    expect(spoken, ['12 items changed. 3 updates could not be read']);
+
+    // Once: a rebuild does not say it again.
+    await tester.pump(const Duration(seconds: 1));
+    expect(spoken, hasLength(1));
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a result with items it could not read is drawn as a warning',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished(entitiesSynced: 12, skippedEntityCount: 3));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+
+    final warning = tester.widget<ArDriveStatusText>(find.ancestor(
+      of: find.text('3 updates could not be read'),
+      matching: find.byType(ArDriveStatusText),
+    ));
+    expect(warning.type, ArDriveStatusType.warning);
+
+    // And the indicator says so after the pill: the warning's triangle.
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+    await tester.pump();
+    final glyph = tester.widget<ArDriveIcon>(find.byType(ArDriveIcon));
+    expect(glyph.icon, ArDriveIcons.triangle().icon);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -585,9 +715,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('12 items changed'), findsNothing);
-    // And nothing is drawn at all: a result this old is not worth reporting,
-    // and there is no sync running to report on.
-    expect(find.byType(ArDriveIcon), findsNothing);
+    // Not flashed again, but still on the indicator: it is the last result,
+    // and it stays readable until the next sync or until it is dismissed.
+    expect(find.byType(ArDriveIcon), findsOneWidget);
   });
 
   testWidgets('a sync the user asked for reports here too', (tester) async {
@@ -646,8 +776,9 @@ void main() {
       ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
     );
 
-    expect(light, lightTheme().colorTokens.containerL1);
-    expect(dark, ArDriveColorTokens.darkMode().containerL1);
+    // The raised surface: it floats over the page, as a menu does.
+    expect(light, lightTheme().colorTokens.containerRaised);
+    expect(dark, ArDriveColorTokens.darkMode().containerRaised);
     // Which is the point: a colour written into the widget would be the same
     // one in both, and unreadable in one of them.
     expect(light, isNot(dark));
@@ -828,16 +959,20 @@ void main() {
       await tester.pumpWidget(wrap());
       await tester.pump();
 
-      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      stateController.add(SyncFailure(
+        error: Exception('the gateway said no'),
+        wasDriveListRefresh: true,
+      ));
       await tester.pump(const Duration(milliseconds: 10));
       // The overlay shows what changed on the frame after.
       await tester.pump();
 
-      expect(find.text('Drives could not be loaded'), findsOneWidget);
+      expect(find.text("Couldn't check for new drives"), findsOneWidget);
+      // The drives are listed, so it says what failed - the check for new
+      // ones - rather than that the drives could not be loaded.
       expect(
-          find.text(
-              'The network could not be reached to read your drive list.'),
-          findsOneWidget);
+          find.text('The drives shown are from this device.'), findsOneWidget);
+      expect(find.text('Drives could not be loaded'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -847,7 +982,10 @@ void main() {
       await tester.pumpWidget(wrap());
       await tester.pump();
 
-      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      stateController.add(SyncFailure(
+        error: Exception('the gateway said no'),
+        wasDriveListRefresh: true,
+      ));
       await tester.pump(const Duration(milliseconds: 10));
       // The overlay shows what changed on the frame after.
       await tester.pump();
@@ -855,7 +993,7 @@ void main() {
 
       // The overlay lets go of it on the frame after.
       await tester.pump();
-      expect(find.text('Drives could not be loaded'), findsNothing,
+      expect(find.text("Couldn't check for new drives"), findsNothing,
           reason: 'precondition: the announcement has had its few seconds');
 
       // The failure outlives it, in the surface a partial failure uses: the
@@ -864,6 +1002,9 @@ void main() {
 
       expect(find.text('Try again'), findsOneWidget);
       expect(find.text('Your drives'), findsNothing);
+      // A drive list that could not be read stays reported: the drives page
+      // reads this state to avoid saying the account has no drives.
+      expect(find.text('Dismiss'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -873,7 +1014,10 @@ void main() {
       await tester.pumpWidget(wrap());
       await tester.pump();
 
-      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      stateController.add(SyncFailure(
+        error: Exception('the gateway said no'),
+        wasDriveListRefresh: true,
+      ));
       await tester.pump(const Duration(milliseconds: 10));
       // The overlay shows what changed on the frame after.
       await tester.pump();
@@ -882,9 +1026,10 @@ void main() {
       await tester.tap(find.text('Try again'));
       await tester.pump();
 
-      // The request that failed: no drive is walked, and no cancelled wallet
-      // prompt is asked again.
-      verify(() => syncCubit.syncMetadataOnly()).called(1);
+      // The request that failed, through the cubit, which knows it was the
+      // drive-list refresh: no drive is walked, and no cancelled wallet prompt
+      // is asked again.
+      verify(() => syncCubit.retryFailure()).called(1);
       verifyNever(() => syncCubit.retryFailedDrives(any()));
       verifyNever(() => syncCubit.clearErrorState());
 
@@ -908,7 +1053,10 @@ void main() {
       await tester.pumpWidget(wrap(drivesList: drivesList));
       await tester.pump();
 
-      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      stateController.add(SyncFailure(
+        error: Exception('the gateway said no'),
+        wasDriveListRefresh: true,
+      ));
       await tester.pump(const Duration(milliseconds: 10));
       // The overlay shows what changed on the frame after.
       await tester.pump();
@@ -919,6 +1067,7 @@ void main() {
 
       verify(() => drivesList.retryLoadingDrives()).called(1);
       verifyNever(() => syncCubit.syncMetadataOnly());
+      verifyNever(() => syncCubit.retryFailure());
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -927,11 +1076,14 @@ void main() {
       await tester.pumpWidget(wrap());
       await tester.pump();
 
-      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      stateController.add(SyncFailure(
+        error: Exception('the gateway said no'),
+        wasDriveListRefresh: true,
+      ));
       await tester.pump(const Duration(milliseconds: 10));
       // The overlay shows what changed on the frame after.
       await tester.pump();
-      expect(find.text('Drives could not be loaded'), findsOneWidget,
+      expect(find.text("Couldn't check for new drives"), findsOneWidget,
           reason: 'precondition: the failure is on screen');
 
       // The retry runs and this time the drive list arrives.
@@ -944,7 +1096,7 @@ void main() {
       // The overlay shows what changed on the frame after.
       await tester.pump();
 
-      expect(find.text('Drives could not be loaded'), findsNothing);
+      expect(find.text("Couldn't check for new drives"), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
       // And the indicator goes with it: the failure is resolved, nothing is
@@ -964,6 +1116,7 @@ void main() {
 
       stateController.add(SyncFailure(
         error: Exception('the gateway said no'),
+        wasDriveListRefresh: true,
         failedAt: clock.now().subtract(const Duration(minutes: 5)),
       ));
       await tester.pump(const Duration(milliseconds: 10));
@@ -979,6 +1132,35 @@ void main() {
 
       await openMenu(tester);
       expect(find.text('Try again'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a sync that stopped with an error is not a load failure',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncFailure(
+        error: Exception('a parse error'),
+        kind: SyncFailureKind.sync,
+        singleDriveId: 'drive-a',
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+
+      expect(find.text('Sync stopped with an error'), findsOneWidget);
+      expect(find.text('Family Photos was not fully synced.'), findsOneWidget);
+      expect(find.text('Drives could not be loaded'), findsNothing);
+
+      await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+      await tester.pump();
+      await openMenuToTap(tester);
+      // It can be put away, and Try again repeats that sync.
+      expect(find.text('Dismiss'), findsOneWidget);
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+      verify(() => syncCubit.retryFailure()).called(1);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -1011,18 +1193,24 @@ void main() {
       expect(actions(tester), ['Stop syncing']);
     });
 
-    for (final (name, state) in [
-      ('some drives', () => failed()),
-      ('the drive list', () => SyncFailure(error: Exception('no'))),
+    // Some drives failing is a result, so it can be put away; a drive list
+    // that could not be read stays reported, because the drives page reads
+    // it to avoid saying the account has no drives.
+    for (final (name, state, expected) in [
+      ('some drives', () => failed(), ['Try again', 'Dismiss']),
+      (
+        'the drive list',
+        () => SyncFailure(error: Exception('no')),
+        ['Try again'],
+      ),
     ]) {
-      testWidgets('after $name failed it offers Try again alone',
-          (tester) async {
+      testWidgets('after $name failed it offers $expected', (tester) async {
         await tester.pumpWidget(wrap());
         await tester.pump();
         await enter(tester, state());
         await openMenu(tester);
 
-        expect(actions(tester), ['Try again']);
+        expect(actions(tester), expected);
 
         await tester.pumpWidget(const SizedBox());
       });
@@ -1075,24 +1263,25 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a result with only its pill to show opens no empty menu',
+    testWidgets('a result opens its status and a way to put it away',
         (tester) async {
-      // A clean result has no status to read and nothing to act on. A menu
-      // here would open as an empty card.
+      // It used to have only its pill to show, so a tap opened nothing. The
+      // result is now read here once the pill has gone.
       await tester.pumpWidget(wrap());
       await tester.pump();
       await enter(tester, finished(entitiesSynced: 3));
+      await openMenu(tester);
 
-      expect(find.text('3 items changed'), findsOneWidget,
-          reason: 'precondition: the result is on screen');
-      expect(find.byType(ArDriveDropdown), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(syncStatusHeaderKey),
+          matching: find.text('3 items changed'),
+        ),
+        findsOneWidget,
+      );
+      expect(actions(tester), ['Dismiss']);
 
-      await tester.tap(find.byType(SyncButton), warnIfMissed: false);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(ArDriveCard), findsNothing);
-      expect(find.byType(ArDriveDropdownItemTile), findsNothing);
+      await tester.pumpWidget(const SizedBox());
     });
 
     for (final (name, theme) in [
@@ -1233,11 +1422,13 @@ void main() {
       // The overlay shows what changed on the frame after.
       await tester.pump();
 
-      expect(find.text('Sync cancelled'), findsOneWidget);
+      // "Stopped", the word on the button that stops it and on the drives it
+      // did not finish.
+      expect(find.text('Sync stopped'), findsOneWidget);
       expect(find.text('Completed 1 of 3 drives'), findsOneWidget);
 
       final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
-      expect(tooltip.message, contains('Sync cancelled'));
+      expect(tooltip.message, contains('Sync stopped'));
       expect(tooltip.message, contains('Completed 1 of 3 drives'));
 
       await tester.pumpWidget(const SizedBox());
@@ -1270,7 +1461,38 @@ void main() {
       verify(() => syncCubit.clearCancelledState()).called(1);
       // The overlay lets go of it on the frame after.
       await tester.pump();
-      expect(find.text('Sync cancelled'), findsNothing);
+      expect(find.text('Sync stopped'), findsNothing);
+
+      // The cubit moves on to rest, and the indicator still says the sync was
+      // stopped, in its tooltip and menu, until the next one.
+      stateController.add(SyncStopped(
+        drivesCompleted: 1,
+        totalDrives: 3,
+        stoppedAt: clock.now(),
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      expect(
+        tester.widget<Tooltip>(find.byType(Tooltip)).message,
+        'Sync stopped\nCompleted 1 of 3 drives',
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('one drive is singular', (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncCancelled(
+        drivesCompleted: 0,
+        totalDrives: 1,
+        cancelledAt: clock.now(),
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+
+      expect(find.text('Completed 0 of 1 drive'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
