@@ -642,6 +642,24 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return DriveKey(SecretKey(driveKeyData), drive.driveKeyGenerated!);
   }
 
+  /// The key this device stored for [driveId], or null when it has no row
+  /// for the drive or the row holds no key.
+  ///
+  /// [getDriveKey] throws for a drive with no row; drive discovery asks about
+  /// drives that may not have one yet.
+  Future<DriveKey?> getStoredDriveKey(
+    String driveId,
+    SecretKey profileKey,
+  ) async {
+    final drive = await driveById(driveId: driveId).getSingleOrNull();
+
+    if (drive == null || drive.encryptedKey == null) {
+      return null;
+    }
+
+    return getDriveKey(driveId, profileKey);
+  }
+
   /// Returns the encryption key for the specified file.
   ///
   /// `null` if the file is public and unencrypted.

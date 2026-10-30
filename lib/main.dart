@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
+import 'package:ardrive/components/drive_fingerprint.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
@@ -91,12 +94,18 @@ late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 late Database db;
+
+/// The session's private-drive state - locked drives, wallet signatures - and
+/// what opens them. One of each, shared by sign-in, drive discovery and the
+/// unlock dialog. See `lib/locked_drives/`.
+late DriveUnlocker driveUnlocker;
 late final LocalKeyValueStore localKeyValueStore;
 
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     registerWordlistLicense();
+    FingerprintEmojiFont.registerLicense();
 
     // Before anything can read a route. Hash routing (the default) leaves the
     // engine's own strategy in place, so this is a no-op today - see
@@ -217,6 +226,13 @@ Future<void> _initializeServices() async {
     ArDriveCrypto(),
     db.driveDao,
     configService,
+  );
+
+  driveUnlocker = DriveUnlocker(
+    crypto: ArDriveCrypto(),
+    arweave: arweave,
+    driveDao: db.driveDao,
+    session: DriveUnlockSession(),
   );
   // A publication uploads nothing, and a live service would ask Turbo for
   // its limits as soon as it is built.
@@ -476,6 +492,10 @@ class AppState extends State<App> {
         // real delegate in a test without standing up the whole app.
         ListenableProvider<AppRouterDelegate>.value(value: _routerDelegate),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
+        RepositoryProvider<DriveUnlocker>.value(value: driveUnlocker),
+        RepositoryProvider<DriveUnlockSession>.value(
+          value: driveUnlocker.session,
+        ),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileSizeChecker>(
           create: (_) => UploadFileSizeChecker(
@@ -547,6 +567,7 @@ class AppState extends State<App> {
             userRepository: context.read<UserRepository>(),
             arnsWalletStore: context.read<ArNSWalletStore>(),
             arnsPendingActionStore: context.read<ArNSPendingActionStore>(),
+            driveUnlocker: driveUnlocker,
           ),
         ),
         RepositoryProvider(
@@ -579,6 +600,7 @@ class AppState extends State<App> {
               configService: configService,
             ),
             userPreferencesRepository: _.read<UserPreferencesRepository>(),
+            driveUnlocker: driveUnlocker,
           ),
         ),
         RepositoryProvider(

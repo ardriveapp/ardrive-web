@@ -87,9 +87,15 @@ class DrivesListLoaded extends DrivesListState {
   /// been fetched yet" over a drive whose contents they had just put there
   /// themselves. The card's own words are the test: a drive whose figures are
   /// on screen has had its contents fetched, whoever fetched them.
-  bool get nothingHasEverBeenSynced =>
-      drives.isNotEmpty &&
-      drives.every((drive) => !drive.hasBeenWalked && drive.fileCount == null);
+  ///
+  /// Locked drives say nothing either way: no sync can read them.
+  bool get nothingHasEverBeenSynced {
+    final readable = drives.where((drive) => !drive.isLocked);
+
+    return readable.isNotEmpty &&
+        readable
+            .every((drive) => !drive.hasBeenWalked && drive.fileCount == null);
+  }
 
   /// The drives the network has moved on without.
   ///

@@ -362,7 +362,13 @@ class ListTableRow extends StatelessWidget {
     this.selection,
     this.chosen,
     this.onChoose,
+    this.selectable = true,
   });
+
+  /// False for a row that can't be ticked while the others can: its box's
+  /// column stays, empty, so its columns line up with theirs, and it takes no
+  /// long press or Space.
+  final bool selectable;
 
   /// What a screen reader calls the row's button.
   final String semanticLabel;
@@ -407,7 +413,7 @@ class ListTableRow extends StatelessWidget {
       // The explorer's own colour for a chosen row.
       selectedColour:
           ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
-      selected: selection?.ticked ?? false,
+      selected: selectable && (selection?.ticked ?? false),
       chosen: chosen,
       onFocusGained: onChoose,
       child: Container(
@@ -434,10 +440,10 @@ class ListTableRow extends StatelessWidget {
                   child: ListSelectOrOpen(
                     onOpen: onOpen,
                     onChoose: onChoose,
-                    onLongPress: selection?.onLongPress,
-                    onSpace: selection?.onTickChanged,
+                    onLongPress: selectable ? selection?.onLongPress : null,
+                    onSpace: selectable ? selection?.onTickChanged : null,
                     child: _yieldLongPress(
-                      selection?.onLongPress != null,
+                      selectable && selection?.onLongPress != null,
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: listRowHorizontalPadding,
@@ -449,10 +455,13 @@ class ListTableRow extends StatelessWidget {
                         child: hasCheckbox
                             ? Row(
                                 children: [
-                                  _RowCheckbox(
-                                    selection: selection,
-                                    semanticLabel: semanticLabel,
-                                  ),
+                                  if (selectable)
+                                    _RowCheckbox(
+                                      selection: selection,
+                                      semanticLabel: semanticLabel,
+                                    )
+                                  else
+                                    const SizedBox(width: listCheckboxColumn),
                                   Expanded(child: child),
                                 ],
                               )

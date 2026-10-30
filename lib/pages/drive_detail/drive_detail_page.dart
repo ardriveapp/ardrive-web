@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/locked_drives/presentation/locked_drive_view.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -571,6 +572,42 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               hasFiles,
                               hideState,
                             ),
+                          ),
+                        ),
+                      );
+                    } else if (driveDetailState is DriveDetailLoadNotFound &&
+                        context.read<AppRouterDelegate>().sharedDriveKey ==
+                            null) {
+                      // A private drive of the user's that this session
+                      // can't open. A link that brought its key goes on to
+                      // attach as it always has.
+                      // Only that: anyone else - a visitor without the
+                      // key, a drive that doesn't exist - gets what they
+                      // always got here, nothing, with the attach dialog
+                      // over it. The shell is drawn only for a locked drive.
+                      return LockedDriveView(
+                        driveId:
+                            context.read<DriveDetailCubit>().currentDriveId,
+                        otherwise: const SizedBox(),
+                        frame: (panel) => ScreenTypeLayout.builder(
+                          mobile: (context) => Scaffold(
+                            drawerScrimColor: Colors.transparent,
+                            drawer: PublicationMode.isOn
+                                ? null
+                                : const AppSideBar(),
+                            appBar: const MobileAppBar(),
+                            body: panel,
+                          ),
+                          desktop: (context) => Column(
+                            children: [
+                              const AppTopBar(),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 16),
+                                  child: panel,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );

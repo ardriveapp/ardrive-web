@@ -1,5 +1,8 @@
+import 'dart:typed_data';
 import 'dart:async';
 
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -25,6 +28,9 @@ import '../test_utils/utils.dart';
 class TransactionCommonMixinFake extends Fake
     implements TransactionCommonMixin {
   final Map<String, String> _tags = {};
+
+  @override
+  String get id => 'fake-drive-tx';
 
   void setTag(String name, String value) {
     _tags[name] = value;
@@ -74,6 +80,8 @@ class _KeptValues implements KeyValueStore {
   bool? getBool(String key) => null;
 }
 
+class MockDriveUnlocker extends Mock implements DriveUnlocker {}
+
 void main() {
   late ArDriveAuthImpl arDriveAuth;
   late MockArweaveService mockArweaveService;
@@ -83,8 +91,35 @@ void main() {
   late MockSecureKeyValueStore mockSecureKeyValueStore;
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
+  late MockDriveUnlocker mockDriveUnlocker;
 
   final wallet = getTestWallet();
+
+  /// The wallet's private drives, and what trying the password on them
+  /// answers: opened, unless [failure] says otherwise.
+  void privateDrivesAre(
+    List<TransactionCommonMixin> txs, {
+    DriveUnlockFailure? failure,
+  }) {
+    when(() => mockArweaveService.getUniqueUserDriveEntityTxs(any(),
+        maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => txs);
+    when(() => mockArweaveService.cachedUserDriveCreationTimes(any()))
+        .thenReturn({});
+    when(() => mockArweaveService.getEntityDataBytes(any(),
+            configuredGatewayOnly: any(named: 'configuredGatewayOnly')))
+        .thenAnswer((_) async => Uint8List(0));
+    when(() => mockDriveUnlocker.tryPassword(
+          wallet: any(named: 'wallet'),
+          driveTx: any(named: 'driveTx'),
+          data: any(named: 'data'),
+          password: any(named: 'password'),
+        )).thenAnswer((_) async => failure == null
+        ? DriveKeyAttempt.opened(
+            key: DriveKey(SecretKey([]), true),
+            entity: DriveEntity(id: 'some_id', rootFolderId: 'some_id'),
+          )
+        : DriveKeyAttempt.failed(failure));
+  }
 
   setUp(() async {
     mockArweaveService = MockArweaveService();
@@ -94,6 +129,7 @@ void main() {
     mockSecureKeyValueStore = MockSecureKeyValueStore();
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
+    mockDriveUnlocker = MockDriveUnlocker();
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
@@ -108,8 +144,13 @@ void main() {
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
+      driveUnlocker: mockDriveUnlocker,
     );
 
+    registerFallbackValue(wallet);
+    registerFallbackValue(fakePrivateDriveV1);
+    when(() => mockDriveUnlocker.session).thenReturn(DriveUnlockSession());
+    registerFallbackValue(Uint8List(0));
     registerFallbackValue(DriveEntity(
       id: 'some_id',
       rootFolderId: 'some_id',
@@ -167,6 +208,7 @@ void main() {
         when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                 maxRetries: any(named: 'maxRetries')))
             .thenAnswer((_) async => fakePrivateDriveV1);
+        privateDrivesAre([fakePrivateDriveV1]);
         final hasPassword = await arDriveAuth.userHasPassword(wallet);
 
         expect(hasPassword, true);
@@ -178,6 +220,7 @@ void main() {
         when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                 maxRetries: any(named: 'maxRetries')))
             .thenAnswer((_) async => null);
+        privateDrivesAre([]);
         final hasPassword = await arDriveAuth.userHasPassword(wallet);
 
         expect(hasPassword, false);
@@ -200,6 +243,7 @@ void main() {
           when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                   maxRetries: any(named: 'maxRetries')))
               .thenAnswer((_) async => fakePrivateDriveV1);
+          privateDrivesAre([fakePrivateDriveV1]);
           when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
@@ -267,6 +311,7 @@ void main() {
               maxRetries: any(named: 'maxRetries'),
             ),
           ).thenAnswer((_) async => fakePrivateDriveV1);
+          privateDrivesAre([fakePrivateDriveV1]);
 
           when(() => mockBiometricAuthentication.isEnabled())
               .thenAnswer((_) async => true);
@@ -339,6 +384,7 @@ void main() {
           when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                   maxRetries: any(named: 'maxRetries')))
               .thenAnswer((_) async => null);
+          privateDrivesAre([]);
 
           when(() => mockBiometricAuthentication.isEnabled())
               .thenAnswer((_) async => false);
@@ -380,6 +426,7 @@ void main() {
           when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                   maxRetries: any(named: 'maxRetries')))
               .thenAnswer((_) async => null);
+          privateDrivesAre([]);
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
@@ -427,13 +474,12 @@ void main() {
           when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                   maxRetries: any(named: 'maxRetries')))
               .thenAnswer((_) async => fakePrivateDriveV1);
+          privateDrivesAre([fakePrivateDriveV1]);
           when(() =>
                   mockArweaveService.getDriveSignatureForDrive(wallet, any()))
               .thenAnswer((_) async => Future.value(null));
-          when(
-            () => mockArDriveCrypto.deriveDriveKey(
-                wallet, any(), any(), DriveSignatureType.v1, any()),
-          ).thenThrow(Exception('wrong password'));
+          privateDrivesAre([fakePrivateDriveV1],
+              failure: DriveUnlockFailure.wrongPassword);
 
           expectLater(
               () => arDriveAuth.login(wallet, 'password', ProfileType.json),
@@ -861,6 +907,7 @@ void main() {
             maxRetries: any(named: 'maxRetries'),
           ),
         ).thenAnswer((_) async => fakePrivateDriveV1);
+        privateDrivesAre([fakePrivateDriveV1]);
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
         when(() => mockUserRepository.getARIOTokens(wallet))
@@ -942,6 +989,7 @@ void main() {
         when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
                 maxRetries: any(named: 'maxRetries')))
             .thenAnswer((_) async => fakePrivateDriveV1);
+        privateDrivesAre([fakePrivateDriveV1]);
         when(
           () => mockArDriveCrypto.deriveDriveKey(
               wallet, any(), any(), DriveSignatureType.v1, any()),

@@ -1033,6 +1033,12 @@ class SyncCubit extends Cubit<SyncState> {
     bool skipTabVisibilityCheck = false,
     List<String>? onlyDriveIds,
     SyncTrigger trigger = SyncTrigger.userInitiated,
+
+    /// Whether drives whose wallet prompt was cancelled this session are
+    /// asked again. By default only a sync the user started asks; the sync
+    /// that follows an unlock passes false, because the user acted on the
+    /// drives they unlocked, not on every other one.
+    bool? askWalletAgain,
   }) async {
     if (PublicationMode.isOn) return false;
     logger.i('Starting Sync');
@@ -1142,10 +1148,17 @@ class SyncCubit extends Cubit<SyncState> {
         );
         _publishProgress();
 
+        // One drive's trouble no longer fails this: a cancelled wallet
+        // prompt or an unreadable signature leaves that drive locked or
+        // skipped and the rest sync. A sync the user started may ask the
+        // wallet again for drives whose prompt was cancelled earlier; a
+        // background one never brings a dismissed prompt back.
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
           cipherKey: profile.user.cipherKey,
+          askWalletAgain:
+              askWalletAgain ?? trigger == SyncTrigger.userInitiated,
         );
 
         // Clear status message after discovery completes
@@ -1398,11 +1411,15 @@ class SyncCubit extends Cubit<SyncState> {
           return false;
         }
 
-        // Load drive keys so private drives can be decrypted
+        // Load drive keys so private drives can be decrypted. The user asked
+        // for this drive, so its wallet prompt may come back if it was
+        // cancelled - this drive's only.
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
           cipherKey: cipherKey,
+          askWalletAgainFor:
+              trigger == SyncTrigger.userInitiated ? [driveId] : null,
         );
       }
 
@@ -1688,7 +1705,13 @@ class SyncCubit extends Cubit<SyncState> {
   /// only thing missing was a way to say which. One run, not several: the
   /// standing rule that a second sync is refused rather than queued is
   /// unchanged, and four drives in one run is one run.
-  Future<bool> syncDrives(List<String> driveIds, {bool deep = false}) async {
+  Future<bool> syncDrives(
+    List<String> driveIds, {
+    bool deep = false,
+
+    /// See [startSync]'s `askWalletAgain`.
+    bool? askWalletAgain,
+  }) async {
     if (driveIds.isEmpty) {
       return false;
     }
@@ -1700,7 +1723,11 @@ class SyncCubit extends Cubit<SyncState> {
     // and the subset decides *which* drives are walked at all. Neither changes
     // the completion bookkeeping, so everything built on syncedDriveIds holds
     // for a deep run too.
-    return startSync(onlyDriveIds: driveIds, deepSync: deep);
+    return startSync(
+      onlyDriveIds: driveIds,
+      deepSync: deep,
+      askWalletAgain: askWalletAgain,
+    );
   }
 
   /// Get the current sync progress

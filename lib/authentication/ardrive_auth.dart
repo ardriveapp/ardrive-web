@@ -3,13 +3,15 @@ import 'dart:convert';
 
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
-import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -59,8 +61,10 @@ abstract class ArDriveAuth {
     MetadataCache? metadataCache,
     ArNSWalletStore? arnsWalletStore,
     ArNSPendingActionStore? arnsPendingActionStore,
+    DriveUnlocker? driveUnlocker,
   }) =>
       ArDriveAuthImpl(
+        driveUnlocker: driveUnlocker,
         arweave: arweave,
         userRepository: userRepository,
         crypto: crypto,
@@ -87,7 +91,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
     PermanenceCache? permanenceCache,
     ArNSWalletStore? arnsWalletStore,
     ArNSPendingActionStore? arnsPendingActionStore,
+    DriveUnlocker? driveUnlocker,
   })  : _arweave = arweave,
+        _injectedDriveUnlocker = driveUnlocker,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
         _arConnectService = arConnectService,
@@ -102,6 +108,19 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
+
+  final DriveUnlocker? _injectedDriveUnlocker;
+
+  /// Tries the sign-in password on the wallet's private drives. The app
+  /// passes its shared one, whose session drive discovery uses too, so a
+  /// drive the sign-in opened is not signed for again straight after.
+  late final DriveUnlocker _driveUnlocker = _injectedDriveUnlocker ??
+      DriveUnlocker(
+        crypto: _crypto,
+        arweave: _arweave,
+        driveDao: _databaseHelpers.driveDao,
+        session: DriveUnlockSession(),
+      );
   final ArDriveCrypto _crypto;
   final BiometricAuthentication _biometricAuthentication;
   final SecureKeyValueStore _secureKeyValueStore;
@@ -305,6 +324,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
       await _databaseHelpers.clearSessionMemory();
+      // Locked drives, wallet signatures and proven passwords: memory only,
+      // and none of it may outlive the session.
+      _injectedDriveUnlocker?.session.clear();
       await _permanenceCache.clear();
       await _arnsWalletStore.clear();
       await _arnsPendingActionStore.clear();
@@ -351,59 +373,164 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return _biometricAuthentication.isEnabled();
   }
 
+  /// Checks the sign-in password against the wallet's private drives.
+  ///
+  /// The rule: the password is accepted if it opens **any** private drive
+  /// this wallet owns, or if the wallet owns none. Drives it doesn't open are
+  /// not an error - they show as locked, each with its own Unlock.
+  ///
+  /// Why not "must open the first private drive", as it was: drives can have
+  /// different passwords (the CLI, desktop and core-js make them), and a
+  /// wallet whose first drive used another password could never sign in.
+  ///
+  /// Why not "accept anything": the password still guards this device's
+  /// profile and is tried on every drive, so a typo must not be taken as a
+  /// password that opens nothing. If the wallet has private drives and this
+  /// password opens none of them, it is still "Wrong password".
+  ///
+  /// Bounded: at most [signInMaxDrives] drives and [signInTimeBudget], and a
+  /// wallet that prompts is asked at most [signInMaxNewPrompts] times, oldest
+  /// drive first after the drives whose signature is already held. A drive
+  /// beyond those bounds is not tried; if none tried opens, the answer is
+  /// still "Wrong password", and the drives it does open later show locked.
+  ///
+  /// Only an AES-GCM authentication failure counts against the password. A
+  /// drive that can't be read leaves the question open: if no drive opened
+  /// and one couldn't be read, the sign-in reports the gateway, not "Wrong
+  /// password". A wallet prompt that is cancelled ends the check
+  /// as "Wrong password", as it always has.
+  @visibleForTesting
+  Future<void> validateUser(Wallet wallet, String password) =>
+      _validateUser(wallet, password);
+
+  /// The most new wallet prompts one sign-in may cost a wallet that asks the
+  /// user for each signature (Wander). The drive check at sign-in used to
+  /// cost one; a typo must not cost one per private drive.
+  static const signInMaxNewPrompts = 3;
+
+  /// The most private drives one sign-in tries, whatever the wallet.
+  static const signInMaxDrives = 20;
+
+  /// How long one sign-in spends trying drives before it gives its answer.
+  static const signInTimeBudget = Duration(seconds: 20);
+
   Future<void> _validateUser(
     Wallet wallet,
     String password,
   ) async {
-    final firstPrivateDriveTx = await _getFirstPrivateDriveTx(wallet);
+    final address = await wallet.getAddress();
+    final privateDriveTxs = (await _arweave.getUniqueUserDriveEntityTxs(
+      address,
+      maxRetries: profileQueryMaxRetries,
+    ))
+        .where((tx) =>
+            tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private)
+        .toList();
 
-    // Try and decrypt one of the user's private drive entities to check if they are entering the
-    // right password.
-    if (firstPrivateDriveTx != null) {
-      final driveId = firstPrivateDriveTx.getTag(EntityTag.driveId)!;
-      final sigTypeTag = firstPrivateDriveTx.getTag(EntityTag.signatureType);
-      final sigType = DriveSignatureType.fromString(sigTypeTag ?? '1');
+    if (privateDriveTxs.isEmpty) {
+      return;
+    }
 
-      final driveSignature = sigType == DriveSignatureType.v1
-          ? await _arweave.getDriveSignatureForDrive(wallet, driveId)
-          : null;
-
-      late DriveKey checkDriveKey;
+    // Which drives, in what order: those whose signature this session already
+    // holds first, since trying them asks the wallet nothing; then the rest,
+    // oldest first, the drive most likely made with the account's password.
+    // A wallet that prompts gets at most [signInMaxNewPrompts] of the rest.
+    final createdAt = _arweave.cachedUserDriveCreationTimes(address);
+    DateTime created(TransactionCommonMixin tx) {
+      final known = createdAt[tx.getTag(EntityTag.driveId)];
+      if (known != null) return known;
       try {
-        logger.d(
-            'Attempting to derive drive key for drive: $driveId, sigType: $sigType');
-        checkDriveKey = await _crypto.deriveDriveKey(
-            wallet, driveId, password, sigType, driveSignature);
-        logger.d('Successfully derived drive key');
-      } catch (e, stackTrace) {
-        logger.e(
-            'Failed to derive drive key - this may be a signing failure, not wrong password',
-            e,
-            stackTrace);
-        throw WrongPasswordException('Password is incorrect');
-      }
-
-      try {
-        final privateDrive = await _arweave.getLatestDriveEntityWithId(
-          driveId,
-          driveKey: checkDriveKey.key,
-          driveOwner: await wallet.getAddress(),
-          maxRetries: profileQueryMaxRetries,
-          // Login, not a user-initiated fetch: read the configured gateway
-          // twice rather than walking the GAR waterfall behind a spinner.
-          configuredGatewayOnly: true,
-        );
-
-        if (privateDrive == null) {
-          throw WrongPasswordException('Password is incorrect');
-        }
-      } catch (e) {
-        if (e is TransactionNotFound) {
-          throw const PrivateDriveNotFoundException();
-        }
-        rethrow;
+        return tx.getCommitTime();
+      } catch (_) {
+        return DateTime.fromMillisecondsSinceEpoch(0);
       }
     }
+
+    final session = _driveUnlocker.session;
+    bool held(TransactionCommonMixin tx) =>
+        session.holdsSignatureFor(address, tx.getTag(EntityTag.driveId)!);
+    int oldestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
+        created(a).compareTo(created(b));
+
+    final heldTxs = privateDriveTxs.where(held).toList()..sort(oldestFirst);
+    final rest = privateDriveTxs.where((tx) => !held(tx)).toList()
+      ..sort(oldestFirst);
+    final prompts = wallet is ArConnectWallet;
+
+    final candidates = [
+      ...heldTxs,
+      ...(prompts ? rest.take(signInMaxNewPrompts) : rest),
+    ].take(signInMaxDrives).toList();
+
+    // Their metadata, a few at a time rather than one after another.
+    final data = List<Uint8List?>.filled(candidates.length, null);
+    final readErrors = List<Object?>.filled(candidates.length, null);
+
+    await ArweaveService.runPooled(
+      concurrency: 6,
+      itemCount: candidates.length,
+      task: (i) async {
+        try {
+          // Login, not a user-initiated fetch: read the configured gateway
+          // rather than walking the GAR waterfall behind a spinner.
+          data[i] = await _arweave.getEntityDataBytes(
+            candidates[i].id,
+            configuredGatewayOnly: true,
+          );
+        } catch (e) {
+          readErrors[i] = e;
+        }
+      },
+    );
+
+    final deadline = DateTime.now().add(signInTimeBudget);
+    Object? unreadable;
+
+    for (var i = 0; i < candidates.length; i++) {
+      if (DateTime.now().isAfter(deadline)) {
+        logger.w('Stopped trying drives at sign-in: out of time');
+        break;
+      }
+
+      final driveData = data[i];
+
+      if (driveData == null) {
+        logger.w('Could not read a private drive to check the password: '
+            '${readErrors[i]}');
+        unreadable ??= readErrors[i];
+        continue;
+      }
+
+      final attempt = await _driveUnlocker.tryPassword(
+        wallet: wallet,
+        driveTx: candidates[i],
+        data: driveData,
+        password: password,
+      );
+
+      switch (attempt.failure) {
+        case null:
+          return;
+        case DriveUnlockFailure.wrongPassword:
+          continue;
+        case DriveUnlockFailure.walletDeclined:
+        case DriveUnlockFailure.walletFailed:
+          throw WrongPasswordException('Password is incorrect');
+        case DriveUnlockFailure.unavailable:
+          unreadable ??= const AuthenticationGatewayException();
+          continue;
+      }
+    }
+
+    if (unreadable is TransactionNotFound) {
+      throw const PrivateDriveNotFoundException();
+    }
+
+    if (unreadable != null) {
+      throw const AuthenticationGatewayException();
+    }
+
+    throw WrongPasswordException('Password is incorrect');
   }
 
   Future<User> _addUser(

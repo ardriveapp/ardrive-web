@@ -5,6 +5,8 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -27,6 +29,7 @@ class DrivesCubit extends Cubit<DrivesState> {
   final ArDriveAuth _auth;
   final UserPreferencesRepository _userPreferencesRepository;
   final SyncCubit _syncCubit;
+  final DriveUnlockSession? _unlockSession;
 
   late StreamSubscription _drivesSubscription;
   String? initialSelectedDriveId;
@@ -39,7 +42,12 @@ class DrivesCubit extends Cubit<DrivesState> {
     required ActivityTracker activityTracker,
     required UserPreferencesRepository userPreferencesRepository,
     required SyncCubit syncCubit,
+
+    /// Where the locked drives come from. Optional so a caller with no
+    /// private-drive session - a test, a visitor - lists none.
+    DriveUnlockSession? unlockSession,
   })  : _profileCubit = profileCubit,
+        _unlockSession = unlockSession,
         _promptToSnapshotBloc = promptToSnapshotBloc,
         _driveDao = driveDao,
         _auth = auth,
@@ -53,8 +61,8 @@ class DrivesCubit extends Cubit<DrivesState> {
       }
     });
 
-    _drivesSubscription =
-        Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
+    _drivesSubscription = Rx.combineLatest4<List<Drive>, List<FolderEntry>,
+        void, List<LockedDrive>, List<Drive>>(
       _driveDao.allDrives(
         order: (drives) {
           return OrderBy([OrderingTerm.asc(drives.name)]);
@@ -62,7 +70,10 @@ class DrivesCubit extends Cubit<DrivesState> {
       ).watch(),
       _driveDao.ghostFolders().watch(),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
-      (drives, _, __) => drives,
+      // Only so a drive locking or unlocking redraws the lists; the value is
+      // read below with the rest.
+      _unlockSession?.lockedDrives ?? Stream<List<LockedDrive>>.value(const []),
+      (drives, _, __, ___) => drives,
     ).listen((drives) async {
       final state = this.state;
 
@@ -85,7 +96,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       //
       // Only when it is empty. A returning user whose drives are already local
       // gets the same immediate answer they always did, and never waits.
-      if (drives.isEmpty) {
+      if (drives.isEmpty && _lockedDrivesFor(profileState, drives).isEmpty) {
         try {
           await _waitForDriveListRefresh();
         } catch (e, stackTrace) {
@@ -159,11 +170,35 @@ class DrivesCubit extends Cubit<DrivesState> {
           // If the user is not logged in, all drives are considered shared ones.
           userDrives: userDrives,
           sharedDrives: sharedDrives,
+          lockedDrives: _lockedDrivesFor(profileState, drives),
           drivesWithAlerts: ghostFolders.map((e) => e.driveId).toList(),
           canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
         ),
       );
     });
+  }
+
+  /// The signed-in wallet's locked drives, less any that have a row.
+  ///
+  /// A drive with a row has a key on this device: it was opened by a link,
+  /// attached, or unlocked a moment ago and the list has not caught up. Either
+  /// way it is readable, and listing it twice - once readable, once locked -
+  /// would be two claims about one drive.
+  List<LockedDrive> _lockedDrivesFor(ProfileState profile, List<Drive> rows) {
+    final session = _unlockSession;
+
+    if (session == null || profile is! ProfileLoggedIn) {
+      return const [];
+    }
+
+    final withRows = rows.map((drive) => drive.id).toSet();
+
+    return [
+      for (final locked in session.currentLockedDrives)
+        if (locked.ownerAddress == profile.user.walletAddress &&
+            !withRows.contains(locked.driveId))
+          locked,
+    ];
   }
 
   /// The single in-flight wait on the drive-list refresh.

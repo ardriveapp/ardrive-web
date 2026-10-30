@@ -101,6 +101,8 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          askWalletAgain: any(named: 'askWalletAgain'),
+          askWalletAgainFor: any(named: 'askWalletAgainFor'),
         )).thenAnswer((_) async {});
     when(() => tabVisibility.isTabFocused()).thenReturn(true);
     when(() => tabVisibility.onTabGetsFocused(any()))
