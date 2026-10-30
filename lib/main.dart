@@ -15,6 +15,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
+import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
@@ -61,7 +62,6 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -102,6 +102,7 @@ late Database db;
 /// unlock dialog. See `lib/locked_drives/`.
 late DriveUnlocker driveUnlocker;
 late final LocalKeyValueStore localKeyValueStore;
+late final ProfilePresenceHint _profilePresenceHint;
 
 void main() async {
   await runZonedGuarded(() async {
@@ -161,12 +162,18 @@ Future<void> _replaceAppIfDatabaseFails() async {
 }
 
 Future<void> _initializeServices() async {
-  // Run independent initializations in parallel
-  final results = await Future.wait([
-    LocalKeyValueStore.getInstance(),
-    AppInfoServices().loadAppInfo(),
-  ]);
-  localKeyValueStore = results[0] as LocalKeyValueStore;
+  // The app's version, a fetch of version.json on the web. Not awaited: only
+  // uploads, licences and Help read it, all well after the first frame, and
+  // the sign-in page should not wait a round trip for it.
+  unawaited(AppInfoServices().loadAppInfo().catchError(
+      (Object e, StackTrace s) =>
+          logger.e('Could not read the app version', e, s)));
+
+  localKeyValueStore = await LocalKeyValueStore.getInstance();
+
+  // Before the config below writes to the store: an empty store is a
+  // browser that has never run the app.
+  _profilePresenceHint = ProfilePresenceHint(localKeyValueStore);
 
   // Mobile UI setup (non-blocking, fire-and-forget)
   MobileStatusBar.show();
@@ -269,15 +276,6 @@ class App extends StatefulWidget {
 class AppState extends State<App> {
   final AppRouterDelegate _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
-
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      preCacheLoginAssets(context);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -391,6 +389,7 @@ class AppState extends State<App> {
             db: context.read<Database>(),
             tabVisibilitySingleton: TabVisibilitySingleton(),
             arDriveAuth: context.read<ArDriveAuth>(),
+            presenceHint: _profilePresenceHint,
           ),
         ),
         BlocProvider(

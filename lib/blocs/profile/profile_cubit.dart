@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/models.dart';
@@ -25,6 +26,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   final TabVisibilitySingleton _tabVisibilitySingleton;
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnect;
+  final ProfilePresenceHint? _presenceHint;
+  final ProfilePresence _presenceAtStart;
   StreamSubscription<User?>? _authSubscription;
 
   ProfileCubit({
@@ -34,12 +37,17 @@ class ProfileCubit extends Cubit<ProfileState> {
     required TabVisibilitySingleton tabVisibilitySingleton,
     required ArDriveAuth arDriveAuth,
     ArConnectService? arConnectService,
+    ProfilePresenceHint? presenceHint,
   })  : _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
         _tabVisibilitySingleton = tabVisibilitySingleton,
         _arDriveAuth = arDriveAuth,
         _arConnect = arConnectService ?? ArConnectService(),
+        _presenceHint = PublicationMode.isOn ? null : presenceHint,
+        _presenceAtStart = PublicationMode.isOn
+            ? ProfilePresence.unknown
+            : presenceHint?.atStart ?? ProfilePresence.unknown,
         super(ProfileCheckingAvailability()) {
     // ArDriveAuth publishes the user again whenever it changes, notably when
     // the background balance refresh after login lands. Without following it,
@@ -48,6 +56,26 @@ class ProfileCubit extends Cubit<ProfileState> {
     _authSubscription =
         _arDriveAuth.onAuthStateChanged().listen(_followAuthUser);
     promptToAuthenticate();
+  }
+
+  /// Whether this device holds an account, for the sign-in panel to draw
+  /// before the database has answered: what the last start recorded while
+  /// the check runs, and the answer once it is in.
+  ProfilePresence get presence => switch (state) {
+        ProfileCheckingAvailability() => _presenceAtStart,
+        ProfileAvailable() => ProfilePresence.present,
+        _ => ProfilePresence.absent,
+      };
+
+  @override
+  void onChange(Change<ProfileState> change) {
+    super.onChange(change);
+    final next = change.nextState;
+    if (next is ProfileAvailable) {
+      unawaited(_presenceHint?.record(present: true));
+    } else if (next is ProfileUnavailable) {
+      unawaited(_presenceHint?.record(present: false));
+    }
   }
 
   Future<bool> isCurrentProfileArConnect() async {
@@ -72,10 +100,13 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
     // Profile unavailable - route to new profile screen
     if (profile == null) {
+      // The sign-in panel first, then the clean-up, which no one waits for.
+      // Started before anything can react to the panel, so whatever a
+      // visitor writes from it queues behind the deletion and is kept.
+      emit(ProfilePromptAdd());
       // A publication has no account, and its in-memory database holds only
       // the publication it imported: forgetting "visitor drives" would delete it.
       if (!PublicationMode.isOn) await _forgetVisitorDrives();
-      emit(ProfilePromptAdd());
       return;
     }
 
@@ -87,7 +118,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// link, with their folder and file names decrypted. Nobody signed in to
   /// keep them, and the next person to use this browser must not inherit
   /// them, so a start without a profile begins empty. A drive a visitor opens
-  /// now and carries into sign-in is written after this, and kept.
+  /// now and carries into sign-in is written after this, and kept: the
+  /// deletion is one transaction, started as [ProfilePromptAdd] goes out, and
+  /// drift runs every later statement after it.
   ///
   /// Never throws: the sign-in screen must open either way.
   Future<void> _forgetVisitorDrives() async {

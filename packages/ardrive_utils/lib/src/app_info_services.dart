@@ -33,8 +33,19 @@ class AppInfoServices {
   }
 
   AppInfo? _appInfo;
+  Future<void>? _loading;
 
-  Future<void> loadAppInfo() async {
+  /// Loads [appInfo] once; a call while it loads joins that load, and a
+  /// failed load is tried again by the next call.
+  Future<void> loadAppInfo() => _loading ??= _load().then(
+        (_) {},
+        onError: (Object e, StackTrace s) {
+          _loading = null;
+          return Future<void>.error(e, s);
+        },
+      );
+
+  Future<void> _load() async {
     final packageInfo = await PackageInfo.fromPlatform();
     final appPlatform = AppPlatform.getPlatform().name;
 

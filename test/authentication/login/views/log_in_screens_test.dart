@@ -11,6 +11,8 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -199,6 +201,93 @@ void main() {
     });
   });
 
+  group('before the check for an account is in', () {
+    test('draws the panel the hint expects, not yet usable', () {
+      final welcomeBack = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.present);
+      expect(welcomeBack, isA<WelcomeBackView>());
+      expect((welcomeBack as WelcomeBackView).ready, isFalse);
+
+      final landing = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.absent);
+      expect(landing, isA<LandingView>());
+      expect((landing as LandingView).ready, isFalse);
+
+      expect(
+          loginPanelFor(LoginLoading(), loginBloc,
+              presence: ProfilePresence.unknown),
+          isA<CheckingForAccountPanel>(),
+          reason: 'no guess: a returning user must not see the landing');
+    });
+
+    test('under the key of the panel it stands in for, which is ready', () {
+      final early = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.present) as WelcomeBackView;
+      final real =
+          loginPanelFor(const PromptPassword(alreadyLoggedIn: true), loginBloc)
+              as WelcomeBackView;
+      expect(early.key, real.key);
+      expect(real.ready, isTrue);
+
+      final earlyLanding = loginPanelFor(LoginLoading(), loginBloc,
+          presence: ProfilePresence.absent) as LandingView;
+      final realLanding =
+          loginPanelFor(const LoginLanding(), loginBloc) as LandingView;
+      expect(earlyLanding.key, realLanding.key);
+      expect(realLanding.ready, isTrue);
+    });
+
+    test('is ready once the check is in', () {
+      expect(loginPanelIsReady(LoginLoading()), isFalse);
+      expect(loginPanelIsReady(const LoginLanding()), isTrue);
+      expect(loginPanelIsReady(const PromptPassword(alreadyLoggedIn: true)),
+          isTrue);
+    });
+
+    testWidgets('a landing drawn early sends nothing', (tester) async {
+      await pump(tester, const LandingView(ready: false));
+      await tester.tap(find.text('Log in'));
+      await tester.tap(find.text('Sign up'));
+      await tester.tap(find.byKey(const Key('openDriveLandingLink')));
+      await tester.pump();
+      verifyNever(() => loginBloc.add(any()));
+      expect(find.text('Open a drive'), findsNothing,
+          reason: 'no dialog either');
+    });
+
+    testWidgets(
+        'Welcome back drawn early takes the password, and sends it once the '
+        'check is in', (tester) async {
+      var ready = false;
+      late StateSetter setReady;
+      await pump(
+        tester,
+        StatefulBuilder(builder: (context, setState) {
+          setReady = setState;
+          return WelcomeBackView(
+              key: const Key('welcomeBackView'), ready: ready);
+        }),
+      );
+      bool disabled() => tester
+          .widget<ArDriveButtonNew>(find.byKey(const Key('welcomeBackLogIn')))
+          .isDisabled;
+
+      await tester.enterText(find.byType(EditableText), 'secret');
+      await tester.pump();
+      expect(disabled(), isTrue);
+      await tester.tap(find.byKey(const Key('welcomeBackLogIn')));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      verifyNever(() => loginBloc.add(any()));
+
+      setReady(() => ready = true);
+      await tester.pump();
+      expect(disabled(), isFalse, reason: 'the typed password is kept');
+      await tester.tap(find.byKey(const Key('welcomeBackLogIn')));
+      expect(added().single, const UnlockUserWithPassword(password: 'secret'));
+    });
+  });
+
   group('Log in', () {
     Widget logIn({bool ar = false, bool eth = false, bool sol = false}) =>
         LogInView(
@@ -352,6 +441,8 @@ void main() {
       when(() => loginBloc.isSolanaAvailable).thenReturn(false);
       when(() => loginBloc.existingUserFlow).thenReturn(false);
       when(() => loginBloc.signUpFromLogIn).thenReturn(false);
+      final profile = MockProfileCubit();
+      when(() => profile.presence).thenReturn(ProfilePresence.absent);
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(390, 844);
       addTearDown(tester.view.reset);
@@ -360,6 +451,7 @@ void main() {
           providers: [
             BlocProvider<LoginBloc>.value(value: loginBloc),
             BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+            BlocProvider<ProfileCubit>.value(value: profile),
             RepositoryProvider<UserPreferencesRepository>.value(
                 value: preferences),
             BlocProvider<ThemeSwitcherBloc>(

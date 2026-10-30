@@ -43,17 +43,8 @@ class ArIOGatewayDetector {
 
       logger.d('AR.IO gateway detection: Checking host $hostGateway');
 
-      // Extract domain from hostname
-      final parts = hostGateway.split('.');
-      final domain = parts.length > 1 ? parts.sublist(1).join('.') : parts[0];
-
-      // A domain with no dot is a top-level domain (`com` above
-      // `turbo-gateway.com`), never a gateway: probing it only sends a
-      // request nowhere.
-      for (final candidate in {
-        if (domain.contains('.')) domain,
-        if (alsoTryHost) hostGateway,
-      }) {
+      for (final candidate
+          in candidateGateways(hostGateway, alsoTryHost: alsoTryHost)) {
         logger.d('AR.IO gateway detection: Testing domain $candidate');
 
         // Test if the domain is an AR.IO gateway
@@ -74,6 +65,32 @@ class ArIOGatewayDetector {
       return null;
     }
   }
+
+  /// The domains worth asking whether they are an AR.IO gateway, for a page
+  /// served from [host]: the domain above it, and with [alsoTryHost] the
+  /// host itself.
+  ///
+  /// Never a parent domain with no dot, which is a top-level domain (`com`
+  /// above `turbo-gateway.com`); and never [notGateways], ArDrive's
+  /// own domain, which serves app.ardrive.io and staging.ardrive.io and is no
+  /// gateway: asking it cost every first visit there a request that 404s
+  /// before the app could start.
+  @visibleForTesting
+  static List<String> candidateGateways(
+    String host, {
+    bool alsoTryHost = false,
+  }) {
+    final parts = host.split('.');
+    final domain = parts.length > 1 ? parts.sublist(1).join('.') : parts[0];
+    return {
+      if (domain.contains('.') && !notGateways.contains(domain)) domain,
+      if (alsoTryHost && !notGateways.contains(host)) host,
+    }.toList();
+  }
+
+  /// Domains known not to be AR.IO gateways. See [candidateGateways].
+  @visibleForTesting
+  static const notGateways = {'ardrive.io'};
 
   /// Tests if a domain is an AR.IO gateway by checking the /ar-io/info endpoint.
   static Future<bool> _testArIOGateway(String domain) async {

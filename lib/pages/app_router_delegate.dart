@@ -301,6 +301,25 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// it, so the two cannot disagree.
   static bool canShowDrivesList(ProfileState profileState) =>
       profileState is ProfileLoggedIn;
+
+  /// Whether the sign-in page shows while the app is still checking for an
+  /// account on this device.
+  ///
+  /// Every start without a link ends on the sign-in page, whatever the check
+  /// finds: Welcome back for an account, the landing for none. So the page
+  /// comes up at once, its panel drawn from [ProfileCubit.presence] and
+  /// usable once the check is in, rather than a blank page for as long as
+  /// the database takes to open. A link (a drive, a shared file, a raw
+  /// transaction) still waits: for a visitor it ends somewhere else. Built
+  /// under [signingIn]'s key, so the page and its state carry over when the
+  /// check ends.
+  @visibleForTesting
+  bool signsInWhileChecking(ProfileState profileState) =>
+      profileState is ProfileCheckingAvailability &&
+      !PublicationMode.isOn &&
+      !gettingStarted &&
+      !hasARouteToHonour;
+
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
@@ -592,7 +611,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   name: rawTransactionName,
                   contentType: rawTransactionContentType,
                 );
-              } else if (signingIn) {
+              } else if (signingIn || signsInWhileChecking(state)) {
                 shellKey = 'signIn';
                 shell = const LoginPage();
               } else if (gettingStarted) {

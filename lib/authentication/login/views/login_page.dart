@@ -9,11 +9,13 @@ import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_mod
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -27,6 +29,7 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
+import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -59,6 +62,8 @@ class _LoginPageState extends State<LoginPage> {
   bool didGettingStartedLoadedAlready = false;
   bool get isGettingStartedLoading =>
       widget.gettingStarted && !didGettingStartedLoadedAlready;
+
+  bool _panelReady = false;
 
   @override
   void initState() {
@@ -103,6 +108,13 @@ class _LoginPageState extends State<LoginPage> {
             setState(() {
               didGettingStartedLoadedAlready = true;
             });
+          }
+
+          if (!_panelReady && loginPanelIsReady(loginState)) {
+            _panelReady = true;
+            logger.d('login: panel ready');
+            // Pictures for later in the page, now that it has painted.
+            preCacheLaterLoginAssets(context);
           }
 
           handleLoginState(context, loginState);
@@ -436,13 +448,15 @@ class _PhoneView extends StatelessWidget {
                 // screen, so the bento is for the first panel only.
                 BlocBuilder<LoginBloc, LoginState>(
                   buildWhen: (_, current) => loginPanelRebuildsOn(current),
-                  builder: (context, state) =>
-                      state is LoginLanding || state is LoginLoading
-                          ? const Padding(
-                              padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
-                              child: TilesView(),
-                            )
-                          : const SizedBox.shrink(),
+                  builder: (context, state) => state is LoginLanding ||
+                          (state is LoginLoading &&
+                              context.read<ProfileCubit>().presence !=
+                                  ProfilePresence.present)
+                      ? const Padding(
+                          padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                          child: TilesView(),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -653,17 +667,53 @@ Widget _buildContent(
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
     buildWhen: (previous, current) => loginPanelRebuildsOn(current),
-    builder: (context, loginState) =>
-        loginPanelFor(loginState, context.read<LoginBloc>()),
+    builder: (context, loginState) => loginPanelFor(
+      loginState,
+      context.read<LoginBloc>(),
+      presence: loginState is LoginLoading
+          ? context.read<ProfileCubit>().presence
+          : ProfilePresence.unknown,
+    ),
   );
 }
 
-/// The sign-in panel for [loginState].
+/// Whether the sign-in panel is usable: the check for an account on this
+/// device ([CheckIfUserIsLoggedIn]) is in. Until then the panel is drawn
+/// from [ProfileCubit.presence] and waits.
 @visibleForTesting
-Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
+bool loginPanelIsReady(LoginState state) => state is! LoginLoading;
+
+/// The sign-in panel for [loginState].
+///
+/// While the app is still checking for an account ([LoginLoading]), the
+/// panel the check is expected to end on, from [presence], not yet usable:
+/// Welcome back for an account, the landing for none, and a plain card when
+/// there is no telling. Each is the same widget, under the same key, as the
+/// panel it stands in for, so a right guess carries straight on. A wrong one
+/// is replaced, never used.
+@visibleForTesting
+Widget loginPanelFor(
+  LoginState loginState,
+  LoginBloc loginBloc, {
+  ProfilePresence presence = ProfilePresence.unknown,
+}) {
   late Widget content;
 
-  if (loginState is PromptPassword && loginState.alreadyLoggedIn) {
+  if (loginState is LoginLoading) {
+    content = switch (presence) {
+      ProfilePresence.present => const WelcomeBackView(
+          key: Key('welcomeBackView'),
+          ready: false,
+        ),
+      ProfilePresence.absent => const LandingView(
+          key: Key('landingPageView'),
+          ready: false,
+        ),
+      ProfilePresence.unknown => const CheckingForAccountPanel(
+          key: Key('checkingForAccountPanel'),
+        ),
+    };
+  } else if (loginState is PromptPassword && loginState.alreadyLoggedIn) {
     content = const WelcomeBackView(key: Key('welcomeBackView'));
   } else if (loginState is LoginEnterRecoveryPhrase) {
     content = const EnterRecoveryPhraseView(
@@ -695,7 +745,7 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
       key: const Key('creatingAccountView'),
       noWalletFound: loginState.noWalletFound,
     );
-  } else if (loginState is LoginLoading || loginState is LoginLanding) {
+  } else if (loginState is LoginLanding) {
     content = const LandingView(
       key: Key('landingPageView'),
     );
@@ -716,6 +766,35 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
   }
 
   return content;
+}
+
+/// The sign-in panel while the app checks for an account on this device and
+/// has no hint which way it will go: the card and the logo the next panel
+/// has too.
+@visibleForTesting
+class CheckingForAccountPanel extends StatelessWidget {
+  const CheckingForAccountPanel({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 381,
+      child: LoginCard(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArDriveImage(
+              image: AssetImage(Resources.images.brand.logo1),
+              height: 50,
+            ),
+            const SizedBox(height: 48),
+            const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            const SizedBox(height: 48),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 Widget _roundedBorderContainer({
