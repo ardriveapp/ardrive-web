@@ -597,13 +597,17 @@ void handleLoginState(BuildContext context, LoginState loginState) {
           context, loginState.error as BiometricException, () {});
       return;
     } else if (loginState.error is EthereumWalletSignsDifferently ||
-        loginState.error is EthereumAccountMarkerUnreadable) {
+        loginState.error is EthereumAccountMarkerUnreadable ||
+        loginState.error is EthereumAccountLookupFailed) {
+      final s = appLocalizationsOf(context);
       showErrorDialog(
         context: context,
-        title: appLocalizationsOf(context).loginFailed,
-        message: loginState.error is EthereumWalletSignsDifferently
-            ? appLocalizationsOf(context).metaMaskSignsDifferently
-            : appLocalizationsOf(context).metaMaskMarkerUnreadable,
+        title: s.loginFailed,
+        message: switch (loginState.error) {
+          EthereumWalletSignsDifferently() => s.metaMaskSignsDifferently,
+          EthereumAccountLookupFailed() => s.metaMaskLookupFailed,
+          _ => s.metaMaskMarkerUnreadable,
+        },
       );
       return;
     } else if (loginState.error is ArConnectVersionNotSupportedException) {

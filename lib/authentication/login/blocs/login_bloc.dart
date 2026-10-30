@@ -1522,14 +1522,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       record = await _arweaveService
           .findEthereumAccountRecord(arweaveNativeAddressForEth);
     } catch (e) {
+      logger.w('Could not look up the MetaMask account: ${e.runtimeType}');
       emit(LoginCloseBlockingDialog());
-
-      if (e is GraphQLException) {
-        emit(GatewayLoginFailure(e, _getGatewayUrl()));
-        return;
-      }
-
-      emit(LoginFailure(e));
+      emit(_logInPanel);
+      emit(const LoginFailure(EthereumAccountLookupFailed()));
       return;
     }
 
@@ -2253,4 +2249,10 @@ class EthereumWalletSignsDifferently implements UntrackedException {
 /// it holds couldn't be read, so the wallet derived can't be checked.
 class EthereumAccountMarkerUnreadable implements UntrackedException {
   const EthereumAccountMarkerUnreadable();
+}
+
+/// A MetaMask account's records couldn't be read on every index they must
+/// be checked on. Never taken for "no account".
+class EthereumAccountLookupFailed implements UntrackedException {
+  const EthereumAccountLookupFailed();
 }

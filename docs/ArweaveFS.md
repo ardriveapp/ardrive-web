@@ -316,13 +316,13 @@ At sign-up the message is signed twice and the two signatures must be equal; a w
 | Tag `ArDrive-Account-Address` | the account's Arweave address |
 | Data | the same Arweave address, UTF-8 |
 
-**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and reads the transactions of the auth key's Arweave address, first on the configured GraphQL endpoint, then on turbo-gateway.com, then on Goldsky.
+**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and reads the transactions of the auth key's Arweave address, first on the configured GraphQL endpoint, then on the turbo-gateway index (turbo-gateway.com, or ardrive.net, another name for the same index, if turbo-gateway.com can't be reached). When the configured endpoint is one of those, only the index is asked.
 
 - A **marker** (`ArDrive-Account-Version: 2`): version 2. The account message is signed and the wallet derived from it must have the marker's address; if it doesn't, the wallet signs differently than it did at sign-up, and sign-in stops with an error rather than opening another, empty account.
 - An **untagged transaction**: a version 1 verification record. The password is asked.
-- **Nothing on any of the three:** the person is asked whether they have used ArDrive with this MetaMask before. *No* makes a version 2 account as above. *Yes* asks the version 1 password; with no record to check it against, it is accepted only if the wallet it derives owns ArFS drives, and the account's two verification records are then posted again.
+- **Nothing on either:** the person is asked whether they have used ArDrive with this MetaMask before. *No* makes a version 2 account as above. *Yes* asks the version 1 password; with no record to check it against, it is accepted only if the wallet it derives owns ArFS drives, and the account's two verification records are then posted again.
 
-A lookup that fails on any endpoint is an error, never "nothing". Version 1 sign-up posted its record, so a version 1 account normally has one; one whose sign-up stopped before the record was posted, or whose record no index has, takes the *Yes* path.
+A lookup that fails is an error, never "nothing": a 429 or 5xx from the configured endpoint, or the index unreachable on both domains. No other index is asked in their place. Version 1 sign-up posted its record, so a version 1 account normally has one; one whose sign-up stopped before the record was posted, or whose record no index has, takes the *Yes* path.
 
 Builds from before the marker don't know it. Signing in there with a version 2 account finds the marker as the auth key's first transaction, takes the account for version 1, asks a password, and reports every password as wrong (the marker is not the signature it compares against). They post nothing.
 

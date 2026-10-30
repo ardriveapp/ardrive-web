@@ -277,7 +277,10 @@ void main() {
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 200),
         verify: (bloc) {
-          expect(bloc.state, isA<LoginFailure>());
+          expect(
+              bloc.state,
+              isA<LoginFailure>().having(
+                  (s) => s.error, 'error', isA<EthereumAccountLookupFailed>()));
           expect(derivedFrom, isNull);
           neverSignedIn();
         },

@@ -108,7 +108,9 @@ void main() {
       expect(classifyAccountRecords([v1, marker]), isA<EthereumV2Marker>());
     });
 
-    test('"no record" only when every endpoint answers with none', () async {
+    test(
+        '"no record" only when the configured endpoint and the turbo-gateway '
+        'index both answer with none', () async {
       final asked = <String>[];
       Future<List<AccountRecordTx>> Function() endpoint(
               String name, List<AccountRecordTx> answer) =>
@@ -120,18 +122,19 @@ void main() {
       expect(
         await findAccountRecordAcross([
           endpoint('configured', []),
-          endpoint('turbo-gateway', []),
-          endpoint('goldsky', []),
+          () => firstReachable([
+                endpoint('turbo-gateway.com', []),
+                endpoint('ardrive.net', []),
+              ]),
         ]),
         isNull,
       );
-      expect(asked, ['configured', 'turbo-gateway', 'goldsky']);
+      expect(asked, ['configured', 'turbo-gateway.com']);
     });
 
-    test('a record only the last endpoint has is found', () async {
+    test('a record only the turbo-gateway index has is found', () async {
       expect(
         await findAccountRecordAcross([
-          () async => [],
           () async => [],
           () async => [v1],
         ]),
@@ -153,21 +156,52 @@ void main() {
       expect(later, 0);
     });
 
-    test('an endpoint that fails is a failure, never "no record"', () async {
+    test(
+        'the configured endpoint failing (a 429, say) is a failure, never '
+        '"no record"', () async {
       await expectLater(
         findAccountRecordAcross([
-          () async => [],
-          () async => throw Exception('turbo-gateway down'),
+          () async => throw Exception('429 Too Many Requests'),
           () async => [],
         ]),
         throwsException,
       );
     });
 
-    test('the endpoints asked besides the configured one', () {
-      expect(ArweaveService.ethereumAccountRecordEndpoints, [
+    test('turbo-gateway.com unreachable: ardrive.net answers for the index',
+        () async {
+      expect(
+        await findAccountRecordAcross([
+          () async => [],
+          () => firstReachable([
+                () async => throw Exception('blocked'),
+                () async => [v1],
+              ]),
+        ]),
+        isA<EthereumV1Record>(),
+      );
+    });
+
+    test(
+        'the index unreachable on both domains is a failure, never '
+        '"no record"', () async {
+      await expectLater(
+        findAccountRecordAcross([
+          () async => [],
+          () => firstReachable<List<AccountRecordTx>>([
+                () async => throw Exception('blocked'),
+                () async => throw Exception('503'),
+              ]),
+        ]),
+        throwsA(isA<AccountLookupUnavailable>()),
+      );
+    });
+
+    test('the turbo-gateway index, by its domains: no Goldsky, no arweave.net',
+        () {
+      expect(ArweaveService.turboGatewayIndexDomains, [
         'https://turbo-gateway.com/graphql',
-        'https://arweave-search.goldsky.com/graphql',
+        'https://ardrive.net/graphql',
       ]);
     });
 

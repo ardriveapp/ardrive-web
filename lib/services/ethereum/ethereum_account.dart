@@ -122,13 +122,17 @@ EthereumAccountRecord? classifyAccountRecords(List<AccountRecordTx> txs) {
   return null;
 }
 
-/// An auth key's account record, looked for on each of [endpoints] in turn.
+/// An auth key's account record, looked for on each of [endpoints] in turn:
+/// the configured GraphQL endpoint, then the turbo-gateway index (see
+/// [firstReachable]).
 ///
 /// A record any endpoint has is the answer. "No record" is only the answer
 /// once every endpoint has answered and none has one: an index can lag or
 /// miss items, and a wrong "no record" would make an existing account a new,
-/// empty one. Any endpoint failing throws, so a failed lookup is never read
-/// as "no record".
+/// empty one. Any endpoint failing (a 429 or 5xx included) throws, so a
+/// failed lookup is never read as "no record". The question "Have you used
+/// ArDrive with this MetaMask before?" is the safety net for an index that
+/// answers but misses the record.
 Future<EthereumAccountRecord?> findAccountRecordAcross(
   List<Future<List<AccountRecordTx>> Function()> endpoints,
 ) async {
@@ -137,4 +141,30 @@ Future<EthereumAccountRecord?> findAccountRecordAcross(
     if (found != null) return found;
   }
   return null;
+}
+
+/// The answer of the first of [domains] that answers: the same index
+/// reached through another domain, for people blocked from one of them.
+/// Throws [AccountLookupUnavailable] when none answers.
+Future<T> firstReachable<T>(List<Future<T> Function()> domains) async {
+  Object? last;
+  for (final domain in domains) {
+    try {
+      return await domain();
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw AccountLookupUnavailable(last);
+}
+
+/// An index an account lookup needs couldn't be reached on any of its
+/// domains. Never "no record".
+class AccountLookupUnavailable implements Exception {
+  const AccountLookupUnavailable(this.cause);
+
+  final Object? cause;
+
+  @override
+  String toString() => 'AccountLookupUnavailable($cause)';
 }

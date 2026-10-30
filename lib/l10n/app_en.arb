@@ -5799,5 +5799,7 @@
   "metaMaskSignsDifferently": "This MetaMask signs differently each time, so ArDrive can't use it. Use a standard MetaMask account.",
   "@metaMaskSignsDifferently": {"description": "The account message was signed twice with different results, or the wallet derived isn't the account's: a smart-contract or MPC wallet."},
   "metaMaskMarkerUnreadable": "We couldn't read your account's record. Try again.",
-  "@metaMaskMarkerUnreadable": {"description": "The version 2 marker was found but its address couldn't be read."}
+  "@metaMaskMarkerUnreadable": {"description": "The version 2 marker was found but its address couldn't be read."},
+  "metaMaskLookupFailed": "Couldn't check your account. Try again or change gateway.",
+  "@metaMaskLookupFailed": {"description": "A MetaMask account's records couldn't be read on the configured gateway or the turbo-gateway index."}
 }

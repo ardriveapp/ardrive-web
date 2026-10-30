@@ -153,6 +153,9 @@ class _Pages implements GraphQLRetry {
   _Pages(this._pages);
 
   final List<Map<String, dynamic>> _pages;
+
+  @override
+  String get fallbackGraphqlUrl => GraphQLRetry.defaultFallbackGraphqlUrl;
   int _index = 0;
 
   @override
