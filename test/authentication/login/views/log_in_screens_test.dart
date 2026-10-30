@@ -10,6 +10,8 @@ import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
+import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
+import 'package:ardrive/authentication/login/views/used_metamask_before_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
@@ -165,6 +167,51 @@ void main() {
       expect(find.byType(EnterYourPasswordWidget), findsOneWidget);
     });
 
+    testWidgets(
+        'a wallet chosen from Sign up gets the new-account password step '
+        '(fromSignUp reaches the dialog)', (tester) async {
+      when(() => profileNameBloc.state)
+          .thenReturn(const ProfileNameInitial(null));
+      await pump(
+        tester,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => handleLoginState(
+              context,
+              CreateNewPassword(
+                wallet: getTestWallet(),
+                isNewUser: false,
+                showWalletCreated: false,
+                fromSignUp: true,
+              ),
+            ),
+            child: const Text('sign up'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('sign up'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final dialog = tester
+          .widget<SecureYourWalletWidget>(find.byType(SecureYourWalletWidget));
+      expect(dialog.fromSignUp, isTrue);
+      // A new account here, so its title says so, not "Welcome back".
+      expect(find.text('Choose a password'), findsOneWidget);
+      expect(find.text('Welcome back'), findsNothing);
+    });
+
+    test('an account a browser wallet opens is opened in the panel too', () {
+      expect(
+          loginPanelFor(const PromptWalletUnlock(wallet: BrowserWallet.wander),
+              loginBloc),
+          isA<WelcomeBackView>());
+      expect(
+          loginPanelRebuildsOn(
+              const PromptWalletUnlock(wallet: BrowserWallet.wander)),
+          isTrue);
+    });
+
     test('a password for a wallet just chosen leaves the panel as it was', () {
       expect(loginPanelRebuildsOn(const PromptPassword()), isFalse);
     });
@@ -203,6 +250,93 @@ void main() {
               const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
               loginBloc),
           isA<WalletWaitView>());
+    });
+  });
+
+  testWidgets(
+      'asks whether this MetaMask was used before, and says which answer '
+      'was picked', (tester) async {
+    await pump(tester, const UsedMetaMaskBeforeView());
+
+    expect(find.text('Have you used ArDrive with this MetaMask before?'),
+        findsOneWidget);
+    expect(
+        find.text('Accounts made with MetaMask before ArDrive 3.0 have a '
+            'password. If you set one, choose Yes. No makes a new, empty '
+            'account.'),
+        findsOneWidget);
+    // Equal weight: neither answer is the primary one.
+    ButtonVariant variant(String key) =>
+        tester.widget<ArDriveButtonNew>(find.byKey(Key(key))).variant;
+    expect(variant('usedMetaMaskBeforeYes'), variant('usedMetaMaskBeforeNo'));
+    expect(variant('usedMetaMaskBeforeNo'), isNot(ButtonVariant.primary));
+    await tester.tap(find.text("No, I'm new"));
+    await tester.tap(find.text('Yes'));
+    expect(added(), [
+      const AnswerUsedArDriveBefore(usedBefore: false),
+      const AnswerUsedArDriveBefore(usedBefore: true),
+    ]);
+    expect(loginPanelFor(const LoginAskUsedMetaMaskBefore(), loginBloc),
+        isA<UsedMetaMaskBeforeView>());
+  });
+
+  group('Welcome back with a wallet', () {
+    Future<void> show(WidgetTester tester, PromptWalletUnlock state) async {
+      whenListen(loginBloc, const Stream<LoginState>.empty(),
+          initialState: state);
+      when(() => profileNameBloc.state)
+          .thenReturn(const ProfileNameInitial(null));
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+    }
+
+    testWidgets('asks for one approval, with no password field',
+        (tester) async {
+      await show(
+          tester, const PromptWalletUnlock(wallet: BrowserWallet.wander));
+
+      expect(find.text('Continue with Wander'), findsOneWidget);
+      expect(find.byKey(const Key('welcomeBackPassword')), findsNothing);
+      await tester.tap(find.text('Continue with Wander'));
+      expect(added(), contains(const UnlockWithWallet()));
+    });
+
+    testWidgets('says the drives lock again for a profile from before 3.0',
+        (tester) async {
+      await show(
+          tester,
+          const PromptWalletUnlock(
+              wallet: BrowserWallet.wander, relocks: true));
+
+      expect(find.byKey(const Key('welcomeBackRelocks')), findsOneWidget);
+    });
+
+    testWidgets('says why the last try opened nothing', (tester) async {
+      await show(
+          tester,
+          const PromptWalletUnlock(
+            wallet: BrowserWallet.metamask,
+            problem: WalletUnlockProblem.otherAccount,
+          ));
+
+      expect(find.text('Continue with MetaMask'), findsOneWidget);
+      expect(
+          find.text('Your wallet is on another account. Switch to this one, '
+              'or use a different account.'),
+          findsOneWidget);
+    });
+
+    testWidgets('the wait says what the approval opens', (tester) async {
+      await pump(
+        tester,
+        const WalletWaitView(
+          wallet: BrowserWallet.wander,
+          request: BrowserWalletRequest.openDrives,
+        ),
+      );
+
+      expect(
+          find.text('Approve in Wander to open your drives'), findsOneWidget);
     });
   });
 
@@ -445,11 +579,8 @@ void main() {
               isArConnectAvailable: true, existingUserFlow: true),
           loginBloc) as LogInView;
       expect(logIn.signUp, isFalse);
-      expect(
-          (loginPanelFor(const LoginCreatingAccount(noWalletFound: true),
-                  loginBloc) as CreatingAccountView)
-              .noWalletFound,
-          isTrue);
+      expect(loginPanelFor(const LoginCreatingAccount(), loginBloc),
+          isA<CreatingAccountView>());
     });
   });
 
@@ -590,16 +721,15 @@ void main() {
       expect(find.text('Wander'), findsOneWidget);
     });
 
-    testWidgets('goes to Creating, with the line, when none is',
+    testWidgets('goes to Creating, with no word about wallets, when none is',
         (tester) async {
-      const creating = LoginCreatingAccount(noWalletFound: true);
+      const creating = LoginCreatingAccount();
       whenListen(loginBloc, const Stream<LoginState>.empty(),
           initialState: creating);
       await pumpPage(tester, creating);
       expect(
-          find.text("No wallet found in this browser, so we're making one "
-              'for you.'),
-          findsOneWidget);
+          find.textContaining('This can take up to a minute'), findsOneWidget);
+      expect(find.textContaining('No wallet found'), findsNothing);
     });
 
     test('waits only while the account check runs', () {
@@ -611,20 +741,16 @@ void main() {
     });
   });
 
-  group('Creating your account', () {
-    const line =
-        "No wallet found in this browser, so we're making one for you.";
-
-    testWidgets('says why when no wallet was found', (tester) async {
-      await pump(tester, const CreatingAccountView(noWalletFound: true));
-      expect(find.text(line), findsOneWidget);
-    });
-
-    testWidgets('says nothing of wallets when a new account was chosen',
-        (tester) async {
-      await pump(tester, const CreatingAccountView());
-      expect(find.text(line), findsNothing);
-    });
+  testWidgets(
+      'Creating your account says how long and why it is safe, and nothing '
+      'about wallets', (tester) async {
+    await pump(tester, const CreatingAccountView());
+    expect(
+        find.text('This can take up to a minute. Your account key is made '
+            'here on your device, so it never leaves it.'),
+        findsOneWidget);
+    expect(find.text('Keep this tab open.'), findsOneWidget);
+    expect(find.textContaining('No wallet found'), findsNothing);
   });
 
   testWidgets('Sign up on the first panel starts sign-up', (tester) async {

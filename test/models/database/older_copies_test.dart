@@ -168,4 +168,63 @@ void main() {
 
     expect(deleted, 0);
   });
+
+  group('VACUUM always', () {
+    Future<int> freePages(Database db) async =>
+        (await db.customSelect('PRAGMA freelist_count').getSingle())
+            .data
+            .values
+            .first as int;
+
+    Future<_CountingDatabase> withCurrentProfile() async {
+      driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+      final db = _CountingDatabase(NativeDatabase(File(
+          '${dir.path}/db-${DateTime.now().microsecondsSinceEpoch}.sqlite')));
+      addTearDown(db.close);
+      await db.profileDao
+          .addProfile('user.username', password, wallet, ProfileType.json);
+      return db;
+    }
+
+    test(
+        'even with no free pages: bytes deleted before secure_delete can sit '
+        'in a live page while the free list reads 0. Still marked done',
+        () async {
+      final db = await withCurrentProfile();
+      expect(await freePages(db), 0);
+
+      final cleared = await DatabaseHelpers(db).clearOlderCopies(
+          deleteStores: () async => const [], ownsDatabase: true);
+
+      expect(cleared, isTrue);
+      expect(db.vacuums, 1);
+      expect(await db.profileDao.needsOlderCopiesCleared(), isFalse);
+    });
+
+    test('with free pages, VACUUM drops them', () async {
+      final db = await withCurrentProfile();
+      await db.customStatement('PRAGMA secure_delete = OFF');
+      await addFormat1Profile(db, id: 'earlier');
+      await (db.delete(db.profiles)..where((p) => p.id.equals('earlier'))).go();
+      expect(await freePages(db), greaterThan(0));
+
+      await DatabaseHelpers(db).clearOlderCopies(
+          deleteStores: () async => const [], ownsDatabase: true);
+
+      expect(db.vacuums, 1);
+      expect(await freePages(db), 0);
+    });
+  });
+}
+
+class _CountingDatabase extends Database {
+  _CountingDatabase(super.e);
+
+  var vacuums = 0;
+
+  @override
+  Future<void> vacuum() {
+    vacuums++;
+    return super.vacuum();
+  }
 }

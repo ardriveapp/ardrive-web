@@ -24,6 +24,7 @@ import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/services/ethereum/ethereum_account.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -99,6 +100,9 @@ class ArweaveService {
   final ArDriveCrypto _crypto;
   final ConfigService _configService;
   late ArtemisClient _gql;
+
+  /// The GraphQL endpoint [_gql] asks.
+  late String _graphqlUrl;
   late DataGatewayFallback _gatewayFallback;
   DataGatewayFallback get gatewayFallback => _gatewayFallback;
 
@@ -133,11 +137,10 @@ class ArweaveService {
     this._configService, {
     ArtemisClient? artemisClient,
     Client? httpClient,
-  })  : _httpClient = httpClient ?? Client(),
-        _gql = artemisClient ??
-            fragmentFreeArtemisClient(_graphqlUrlFromGateway(
-                _configService.config.arweaveGatewayUrl ??
-                    defaultGraphqlGateway)) {
+  }) : _httpClient = httpClient ?? Client() {
+    _graphqlUrl = _graphqlUrlFromGateway(
+        _configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway);
+    _gql = artemisClient ?? fragmentFreeArtemisClient(_graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -180,6 +183,7 @@ class ArweaveService {
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
+    _graphqlUrl = graphqlUrl;
     _gql = fragmentFreeArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
@@ -2534,6 +2538,79 @@ class ArweaveService {
       rows: transactions.edges.length,
       unbundledRows: unbundled,
     );
+  }
+
+  /// The turbo-gateway index, by the domains it answers on: ardrive.net is
+  /// another name for the same index, for anyone who can't reach
+  /// turbo-gateway.com. See [findEthereumAccountRecord].
+  /// The retries an account lookup at [url] gets: its own endpoint again on
+  /// a 429 or 5xx, never another index (the app-wide fallback is Goldsky,
+  /// which no longer serves these records).
+  @visibleForTesting
+  static GraphQLRetry accountLookupRetry(ArtemisClient client, String url) =>
+      GraphQLRetry(
+        client,
+        internetChecker: InternetChecker(connectivity: Connectivity()),
+        fallbackGraphqlUrl: url,
+      );
+
+  /// The HTTP client account lookups use, in tests.
+  @visibleForTesting
+  Client? accountLookupHttpClient;
+
+  static const turboGatewayIndexDomains = [
+    'https://turbo-gateway.com/graphql',
+    'https://ardrive.net/graphql',
+  ];
+
+  /// The account record of the Ethereum auth key whose Arweave address is
+  /// [authAddress]: its version 2 marker or its version 1 verification
+  /// record.
+  ///
+  /// Asked of the configured endpoint, then of the turbo-gateway index
+  /// (turbo-gateway.com, or ardrive.net if that can't be reached; just the
+  /// index when the configured endpoint is one of those). Null only when
+  /// both answer with none. Any failure throws, a 429 or 5xx included, and
+  /// no other endpoint is asked in its place: these lookups never fall back
+  /// to another index. See [findAccountRecordAcross].
+  Future<EthereumAccountRecord?> findEthereumAccountRecord(
+    String authAddress,
+  ) {
+    Future<List<AccountRecordTx>> lookupAt(String url) async {
+      final client =
+          fragmentFreeArtemisClient(url, httpClient: accountLookupHttpClient);
+      try {
+        final result = await accountLookupRetry(client, url).execute(
+          AccountRecordsQuery(
+            variables: AccountRecordsArguments(owner: authAddress),
+          ),
+          maxAttempts: 3,
+        );
+        return [
+          for (final edge in result.data!.transactions.edges)
+            // Asked for [authAddress]'s transactions only, and checked: a
+            // gateway that answers with someone else's can't forge a record.
+            if (edge.node.owner.address == authAddress)
+              AccountRecordTx(
+                id: edge.node.id,
+                tags: {for (final tag in edge.node.tags) tag.name: tag.value},
+                height: edge.node.block?.height,
+              ),
+        ];
+      } finally {
+        // An injected client is the test's to close.
+        if (accountLookupHttpClient == null) client.dispose();
+      }
+    }
+
+    return findAccountRecordAcross([
+      if (!turboGatewayIndexDomains.contains(_graphqlUrl))
+        () => lookupAt(_graphqlUrl),
+      () => firstReachable([
+            for (final domain in turboGatewayIndexDomains)
+              () => lookupAt(domain),
+          ]),
+    ]);
   }
 
   Future<String?> getFirstTxForWallet(String owner) async {

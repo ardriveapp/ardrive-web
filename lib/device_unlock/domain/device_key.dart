@@ -22,8 +22,17 @@ enum DeviceUnlockMethod {
   /// The Phantom or Solflare sign-in signature.
   solana('solana'),
 
-  /// A MetaMask `personal_sign` of [ethereumDeviceUnlockMessage].
-  ethereum('ethereum');
+  /// A MetaMask `personal_sign` of [ethereumDeviceUnlockMessage]: a version
+  /// 1 MetaMask account (made before 3.0, with a password), whose wallet
+  /// signature depends on the password.
+  ethereum('ethereum'),
+
+  /// A version 2 MetaMask account's signature of its account message
+  /// (`ethereumAccountMessage`), the one its wallet comes from, as Solana's
+  /// sign-in signature is: no extra approval at sign-up or on reload. Not
+  /// the generic "verify wallet address" signature, which any site can ask
+  /// for.
+  ethereumAccount('ethereum-account');
 
   const DeviceUnlockMethod(this.value);
 

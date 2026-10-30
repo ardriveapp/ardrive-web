@@ -3,6 +3,7 @@ import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/password/breached_password.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
+import 'package:ardrive/authentication/password/new_password_fields.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
@@ -15,7 +16,6 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SecureYourWalletWidget extends StatefulWidget {
@@ -63,6 +63,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
 
   /// The passphrase last suggested, while it is what the field holds.
   String? _suggestion;
+
+  /// Whether both fields hide what they hold. One eye, on the password
+  /// field, controls both. A suggestion fills them in shown, as Chrome and
+  /// Safari do; typing a password of one's own hides them again.
+  bool _obscured = true;
   PasswordStrength? _strength;
 
   /// An account being made now, whose password locks everything it will
@@ -95,6 +100,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     // suggestion is strong and the same in both fields.
     setState(() {
       _suggestion = phrase;
+      _obscured = false;
       _strength = PasswordStrength.strong;
       _isPasswordValid = true;
       _confirmPasswordIsValid = true;
@@ -190,7 +196,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  widget.isNewUser
+                  // A wallet chosen from Sign up is making an account here,
+                  // under the new-account rules, even if it has drives.
+                  widget.isNewUser || widget.fromSignUp
                       ? appLocalizationsOf(context).newPasswordTitle
                       : 'Welcome back',
                   style: typography.heading2(
@@ -204,6 +212,17 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
+              if (_isFreshAccount) ...[
+                const SizedBox(height: 8),
+                Text(
+                  appLocalizationsOf(context).newPasswordRecoveryNote,
+                  key: const Key('newPasswordRecoveryNote'),
+                  textAlign: TextAlign.center,
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold),
+                ),
+              ],
               if (widget.retrying) ...[
                 const SizedBox(height: 16),
                 ArDriveNotice(
@@ -259,11 +278,16 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
                 controller: _passwordController,
+                key: const Key('signUpPassword'),
                 hintText: 'Enter your password',
-                showObfuscationToggle: true,
-                obscureText: true,
+                obscureText: _obscured,
+                suffixIcon: PasswordRevealToggle(
+                  key: const Key('signUpPasswordReveal'),
+                  obscured: _obscured,
+                  onToggle: () => setState(() => _obscured = !_obscured),
+                ),
                 autofocus: true,
-                autofillHints: const [AutofillHints.password],
+                autofillHints: const [AutofillHints.newPassword],
                 textInputAction: TextInputAction.next,
                 isEnabled: !_isProcessing,
                 validator: (value) {
@@ -281,7 +305,10 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                     setState(() {
                       _strength = strength;
                       _isPasswordValid = strong;
-                      if (value != _suggestion) _suggestion = null;
+                      if (_suggestion != null && value != _suggestion) {
+                        _suggestion = null;
+                        _obscured = true;
+                      }
                     });
                     final s = appLocalizationsOf(context);
                     if (strong && value == _breachedPassword) {
@@ -305,7 +332,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ),
               if (_rulesApply && _strength != null) ...[
                 const SizedBox(height: 8),
-                _StrengthMeter(strength: _strength!),
+                PasswordStrengthMeter(strength: _strength!),
               ],
               if (_rulesApply) ...[
                 const SizedBox(height: 12),
@@ -323,7 +350,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                     ),
                   )
                 else
-                  _SuggestedPassphrase(
+                  SuggestedPassphrase(
                     phrase: _suggestion!,
                     onAnother: _isProcessing ? null : _suggest,
                   ),
@@ -336,11 +363,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
                   controller: _confirmPasswordController,
+                  key: const Key('signUpConfirmPassword'),
                   hintText: 'Re-enter your password',
-                  showObfuscationToggle: true,
-                  obscureText: true,
+                  obscureText: _obscured,
                   autofocus: true,
-                  autofillHints: const [AutofillHints.password],
+                  autofillHints: const [AutofillHints.newPassword],
                   textInputAction: TextInputAction.done,
                   isEnabled: !_isProcessing,
                   validator: (value) {
@@ -489,111 +516,4 @@ void showSecureYourPasswordDialog(
               retrying: retrying);
         },
       ));
-}
-
-/// Four bars and a word: how strong the new password looks.
-class _StrengthMeter extends StatelessWidget {
-  const _StrengthMeter({required this.strength});
-
-  final PasswordStrength strength;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final type = ArDriveTypographyNew.of(context);
-    final s = appLocalizationsOf(context);
-    final (bars, colour, label) = switch (strength) {
-      PasswordStrength.tooShort => (1, colors.statusErrorFg, s.passwordWeak),
-      PasswordStrength.weak => (1, colors.statusErrorFg, s.passwordWeak),
-      PasswordStrength.fair => (2, colors.textMid, s.passwordFair),
-      PasswordStrength.strong => (4, colors.statusSuccessFg, s.passwordStrong),
-    };
-    return Semantics(
-      label: label,
-      excludeSemantics: true,
-      child: Row(
-        children: [
-          for (var i = 0; i < 4; i++) ...[
-            if (i > 0) const SizedBox(width: 4),
-            Expanded(
-              child: Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  color: i < bars ? colour : colors.strokeMid,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: type.paragraphSmall(
-              color: colour,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The suggested passphrase, readable, with Copy and another suggestion.
-/// It is made on the device and kept nowhere; saving it is up to the user.
-class _SuggestedPassphrase extends StatelessWidget {
-  const _SuggestedPassphrase({required this.phrase, required this.onAnother});
-
-  final String phrase;
-  final VoidCallback? onAnother;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final type = ArDriveTypographyNew.of(context);
-    final s = appLocalizationsOf(context);
-    return Container(
-      key: const Key('suggestedPassphrase'),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.containerRaised,
-        border: Border.all(color: colors.strokeMid),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SelectableText(
-            phrase,
-            style: type.paragraphLarge(
-              color: colors.textHigh,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            s.newPasswordSaveIt,
-            style: type.paragraphSmall(color: colors.textMid),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 16,
-            children: [
-              ArDriveLink(
-                text: s.newPasswordCopy,
-                isAction: true,
-                onTap: () => Clipboard.setData(ClipboardData(text: phrase)),
-              ),
-              if (onAnother != null)
-                ArDriveLink(
-                  text: s.newPasswordSuggestAnother,
-                  isAction: true,
-                  onTap: onAnother!,
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

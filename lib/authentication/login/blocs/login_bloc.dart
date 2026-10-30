@@ -9,6 +9,12 @@ import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive_logger/ardrive_logger.dart' show UntrackedException;
+import 'package:ardrive/device_unlock/domain/device_key.dart';
+import 'package:ardrive/device_unlock/domain/device_secret_source.dart';
+import 'package:ardrive/device_unlock/domain/device_unlocker.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart'
+    show isWalletCancellation;
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -16,6 +22,7 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/models/daos/profile_dao.dart'
     show ProfileFormatTooNewException;
+import 'package:ardrive/services/ethereum/ethereum_account.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
@@ -49,8 +56,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArConnectService _arConnectService;
   final EthereumProviderService _ethereumProviderService;
   final SolanaProviderService _solanaProviderService;
-  final TurboUploadService _turboUploadService;
   final ArweaveService _arweaveService;
+  final TurboUploadService _turboUploadService;
   final DownloadService _downloadService;
   final ProfileCubit _profileCubit;
   final ConfigService _configService;
@@ -194,6 +201,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleCancelWalletLoginEvent(emit);
     } else if (event is RetrySignInPassword) {
       _handleRetrySignInPassword(emit);
+    } else if (event is AnswerUsedArDriveBefore) {
+      await _handleAnswerUsedArDriveBefore(event, emit);
+    } else if (event is UnlockWithWallet) {
+      await _handleUnlockWithWallet(emit);
     } else if (event is ContinueSignInWithLockedDrives) {
       await _handleContinueSignInWithLockedDrives(emit);
     }
@@ -240,6 +251,27 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     emit(LoginCheckingPassword());
+
+    final ethDeviceWallet = pending.ethDeviceWallet;
+    if (ethDeviceWallet != null) {
+      try {
+        await _signInExistingEthereumAccount(
+          emit,
+          wallet: pending.wallet,
+          ethWallet: ethDeviceWallet,
+          derivedEthWallet: pending.derivedEthWallet!,
+          password: pending.password,
+          previousState: pending.previousState,
+          skipDriveCheck: true,
+        );
+      } catch (e) {
+        logger.e('Failed to sign in with the drives locked', e);
+        emit(e is AuthenticationGatewayException
+            ? GatewayLoginFailure(e, _getGatewayUrl())
+            : LoginUnknownFailure(e));
+      }
+      return;
+    }
 
     try {
       await _verifyArConnectWalletAddressAndLogIn(
@@ -304,6 +336,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     signUpFromLogIn = fromLogIn;
     final walletFound =
         waitForWallets ? await _walletDetectedSoon() : anyWalletDetected;
+    // The poll can outlast the event: a newer one may have taken the panel.
+    if (emit.isDone) return;
     if (walletFound) {
       existingUserFlow = false;
       // Every way in (the Sign up button, Log in's link, the get-started
@@ -312,18 +346,22 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(_logInPanel);
     } else {
       await _handleCreateNewWalletEvent(
-          const CreateNewWallet(noWalletFound: true), emit);
+          const CreateNewWallet(), emit);
     }
   }
 
   /// Shows the panel that waits on [wallet] and returns what Cancel
   /// completes.
-  Completer<void> _askWallet(Emitter<LoginState> emit, BrowserWallet wallet) {
+  Completer<void> _askWallet(
+    Emitter<LoginState> emit,
+    BrowserWallet wallet, {
+    BrowserWalletRequest request = BrowserWalletRequest.connect,
+  }) {
     final previous = _walletCancel;
     if (previous != null && !previous.isCompleted) previous.complete();
     final cancel = Completer<void>();
     _walletCancel = cancel;
-    emit(LoginWaitingOnWallet(wallet: wallet));
+    emit(LoginWaitingOnWallet(wallet: wallet, request: request));
     return cancel;
   }
 
@@ -353,6 +391,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     _walletCancel = null;
     cancel.complete();
     ignoreNextWaletSwitch = false;
+
+    // Welcome back's approval: back to Welcome back, the account untouched.
+    final unlocking = _unlockingWith;
+    if (unlocking != null) {
+      _unlockingWith = null;
+      emit(unlocking);
+      return;
+    }
+
     _sourceWalletAddress = null;
     emit(_logInPanel);
 
@@ -646,48 +693,129 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     emit(LoginShowLoader());
-    wallet = await generateWalletFromMnemonic(mnemonic);
+    wallet = await _walletFromMnemonic(mnemonic);
     emit(LoginCloseBlockingDialog());
 
-    try {
-      if (!await _verifyEthereumSignature(
-        wallet: wallet,
-        derivedEthWallet: derivedEthWallet,
-        fullEntropy: fullEntropy,
-      )) {
+    if (_ethNoRecord) {
+      // No record to check the password against (Yes to "Have you used
+      // ArDrive with this MetaMask before?"): it is right only if the wallet
+      // it derives has ArDrive history. Its missing records go up again.
+      final bool hasHistory;
+      try {
+        // It owns drives, or at least its own verification record: its
+        // sign-up posted one from this wallet, even if it made no drive.
+        hasHistory = await _arDriveAuth.isExistingUser(wallet) ||
+            await _arweaveService
+                    .getFirstTxForWallet(await wallet.getAddress()) !=
+                null;
+      } catch (e) {
+        emit(e is AuthenticationGatewayException || e is GraphQLException
+            ? GatewayLoginFailure(e, _getGatewayUrl())
+            : LoginFailure(e));
+        return;
+      }
+      if (!hasHistory) {
         emit(PromptPassword(
-            wallet: event.wallet,
-            derivedEthWallet: event.derivedEthWallet,
-            showWalletCreated: false,
-            isPasswordInvalid: true));
+          wallet: event.wallet,
+          derivedEthWallet: event.derivedEthWallet,
+          sourceWalletAddress: _sourceWalletAddress,
+          showWalletCreated: false,
+          isPasswordInvalid: true,
+          noAccountFound: true,
+        ));
         return;
       }
-    } catch (e) {
-      if (e is GraphQLException) {
-        emit(GatewayLoginFailure(e, _getGatewayUrl()));
-        return;
-      }
+      _ethNoRecord = false;
+      _pendingEthereum = null;
+      unawaited(_repostV1Records(wallet, derivedEthWallet, fullEntropy));
+    } else {
+      try {
+        if (!await _verifyEthereumSignature(
+          wallet: wallet,
+          derivedEthWallet: derivedEthWallet,
+          fullEntropy: fullEntropy,
+        )) {
+          emit(PromptPassword(
+              wallet: event.wallet,
+              derivedEthWallet: event.derivedEthWallet,
+              showWalletCreated: false,
+              isPasswordInvalid: true));
+          return;
+        }
+      } catch (e) {
+        if (e is GraphQLException) {
+          emit(GatewayLoginFailure(e, _getGatewayUrl()));
+          return;
+        }
 
-      emit(LoginFailure(e));
-      return;
+        emit(LoginFailure(e));
+        return;
+      }
     }
 
     profileType = ProfileType.json;
 
     emit(LoginLoading());
 
-    await _verifyArConnectWalletAddressAndLogIn(
+    await _signInExistingEthereumAccount(
+      emit,
       wallet: wallet,
-      password: event.password,
-      emit: emit,
-      previousState: previousState,
-      profileType: profileType!,
-      mnemonic: mnemonic,
-      isNewUser: false,
-      showWalletCreated: false,
-      promptWallet: event.wallet,
+      ethWallet: event.wallet as EthereumWallet,
       derivedEthWallet: derivedEthWallet,
+      password: event.password,
+      previousState: previousState,
     );
+  }
+
+  /// An existing MetaMask account, its password just proven to pick its
+  /// wallet: saved on this device under MetaMask's device key, so later
+  /// visits need one approval and no password. The password is still its
+  /// drive password, so it is tried on its private drives first, with the
+  /// soft "didn't open your private drives" check.
+  Future<void> _signInExistingEthereumAccount(
+    Emitter<LoginState> emit, {
+    required Wallet wallet,
+    required EthereumWallet ethWallet,
+    required EthereumProviderWallet derivedEthWallet,
+    required String password,
+    required LoginState previousState,
+    bool skipDriveCheck = false,
+  }) async {
+    emit(const LoginShowBlockingDialog(
+        message: 'Please approve the request in your Ethereum wallet.'));
+    try {
+      final user = await _loginWithWallet(
+        wallet,
+        ProfileType.json,
+        EthereumDeviceSecret(ethWallet),
+        password: password,
+        skipDriveCheck: skipDriveCheck,
+      );
+      emit(LoginCloseBlockingDialog());
+      emit(LoginSuccess(user));
+    } on PasswordOpensNoDriveException {
+      emit(LoginCloseBlockingDialog());
+      _pendingSignIn = _PendingSignIn(
+        wallet: wallet,
+        password: password,
+        profileType: ProfileType.json,
+        previousState: previousState,
+        mnemonic: null,
+        isNewUser: false,
+        showWalletCreated: false,
+        promptWallet: ethWallet,
+        derivedEthWallet: derivedEthWallet,
+        ethDeviceWallet: ethWallet,
+      );
+      emit(const LoginPasswordOpensNoDrives());
+    } on DeviceUnlockRefusedException catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(_logInPanel);
+      if (e.status != DeviceUnlockStatus.declined) emit(LoginFailure(e));
+    } catch (_) {
+      emit(LoginCloseBlockingDialog());
+      rethrow;
+    }
   }
 
   Future<bool> _verifyEthereumSignature({
@@ -712,8 +840,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
 
-    final String? ethFirstTxId =
-        await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
+    final record =
+        await _arweaveService.findEthereumAccountRecord(arweaveNativeAddressForEth);
+    final String? ethFirstTxId = switch (record) {
+      EthereumV1Record(:final txId) => txId,
+      EthereumV2Marker(:final laterV1RecordId) => laterV1RecordId,
+      null => null,
+    };
 
     if (firstBlockTxsFilteredBySize != null && ethFirstTxId != null) {
       final ethRecordedSignature =
@@ -770,6 +903,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     if (await _arDriveAuth.isUserLoggedIn()) {
       logger.d('User is logged in');
+
+      // An account a browser wallet opens: one approval, never a password,
+      // and never asked before the person presses Continue (no wallet call
+      // at startup).
+      final prompt = await _walletUnlockPrompt();
+      if (prompt != null) {
+        emit(prompt);
+        return;
+      }
 
       if (await _arDriveAuth.isBiometricsEnabled()) {
         logger.d('Biometrics is enabled');
@@ -858,11 +1000,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginLoading());
 
     try {
-      if (event.wallet is EthereumWallet) {
-        await _handleCreateEthereumPassword(event, emit, previousState);
-      } else {
-        await _handleCreateArweavePassword(event, emit, previousState);
-      }
+      // MetaMask accounts no longer choose a password: a new one has none
+      // (see [_signInEthereumV2]). Making a password-derived one,
+      // with its verification records, was retired in 3.0.
+      await _handleCreateArweavePassword(event, emit, previousState);
 
       emit(LoginCreatePasswordComplete());
     } catch (e, stackTrace) {
@@ -878,84 +1019,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
       emit(LoginFailure(e));
     }
-  }
-
-  Future<void> _handleCreateEthereumPassword(
-    CreatePassword event,
-    Emitter<LoginState> emit,
-    LoginState previousState,
-  ) async {
-    if (event.derivedEthWallet == null) {
-      emit(previousState);
-      emit(const LoginFailure('Derived ETH wallet is null'));
-      return;
-    }
-
-    final derivedEthWallet = event.derivedEthWallet!;
-    var wallet = event.wallet;
-    var mnemonic = event.mnemonic;
-
-    late Uint8List fullEntropy;
-    emit(const LoginShowBlockingDialog(
-        message: 'Please approve the request in your Ethereum wallet.'));
-
-    const chainId = 1; // Ethereum mainnet
-    logger.d('[ETH-CREATE] Step 1: Requesting MetaMask signature...');
-    try {
-      (mnemonic, fullEntropy) = await (wallet as EthereumWallet)
-          .deriveArdriveSeedphrase(chainId, event.password);
-      logger.d('[ETH-CREATE] Step 1 complete: mnemonic derived');
-    } catch (e) {
-      logger.e('[ETH-CREATE] Step 1 FAILED: derive seedphrase', e);
-      emit(LoginCloseBlockingDialog());
-      rethrow;
-    }
-    emit(LoginCloseBlockingDialog());
-
-    logger.d('[ETH-CREATE] Step 2: Generating Arweave wallet from mnemonic...');
-    emit(LoginShowLoader());
-    wallet = await generateWalletFromMnemonic(mnemonic);
-    logger.d('[ETH-CREATE] Step 2 complete: wallet generated');
-
-    logger.d('[ETH-CREATE] Step 3: Signing verification data...');
-    final verifySignature = await wallet.sign(fullEntropy);
-    logger.d('[ETH-CREATE] Step 3 complete: verification signed');
-
-    // upload verification signature with derived Arweave wallet
-    logger.d('[ETH-CREATE] Step 4: Uploading Arweave verification...');
-    final dataItem = DataItem.withBlobData(
-      data: verifySignature,
-      owner: await wallet.getOwner(),
-    );
-    await dataItem.sign(ArweaveSigner(wallet));
-
-    await _turboUploadService.postDataItem(dataItem: dataItem, wallet: wallet);
-    logger.d('[ETH-CREATE] Step 4 complete: Arweave verification uploaded');
-
-    // upload verification signature with derived ETH wallet
-    logger.d('[ETH-CREATE] Step 5: Uploading ETH verification...');
-    final ethSignedDataItem = DataItem.withBlobData(
-      data: verifySignature,
-      owner: await derivedEthWallet.getOwner(),
-    );
-
-    await ethSignedDataItem.sign(EthereumSigner(derivedEthWallet.credentials));
-
-    await _turboUploadService.postDataItem(
-        dataItem: ethSignedDataItem, wallet: derivedEthWallet);
-    logger.d('[ETH-CREATE] Step 5 complete: ETH verification uploaded');
-
-    emit(LoginCloseBlockingDialog());
-
-    await _verifyArConnectWalletAddressAndLogIn(
-        wallet: wallet,
-        password: event.password,
-        emit: emit,
-        previousState: previousState,
-        profileType: profileType!,
-        mnemonic: mnemonic,
-        isNewUser: event.isNewUser,
-        showWalletCreated: event.showWalletCreated);
   }
 
   Future<void> _handleCreateArweavePassword(
@@ -1043,35 +1106,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     profileType = ProfileType.arConnect;
 
-    // 2. Server-side check (user waits — show blocking dialog)
-    emit(_logInPanel);
-    emit(const LoginShowBlockingDialog(
-        message: 'Setting up your account.\nThis may take a moment.'));
-
-    try {
-      if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginCloseBlockingDialog());
-        emit(PromptPassword(wallet: wallet, showWalletCreated: false));
-      } else {
-        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-        emit(LoginCloseBlockingDialog());
-        emit(
-          CreateNewPassword(
-            wallet: wallet,
-            isNewUser: !hasDrives,
-            showWalletCreated: false,
-            fromSignUp: !existingUserFlow,
-          ),
-        );
-      }
-    } catch (e) {
-      emit(LoginCloseBlockingDialog());
-      if (e is AuthenticationGatewayException) {
-        emit(GatewayLoginFailure(e, _getGatewayUrl()));
-      } else {
-        emit(LoginFailure(e));
-      }
-    }
+    // 2. One approval, for this device's key. No password and no drive
+    // check: private drives open from what this device remembers, or with
+    // Unlock (the 3.0 password design).
+    final unlock = _askWallet(
+      emit,
+      BrowserWallet.wander,
+      request: BrowserWalletRequest.signIn,
+    );
+    await _signInWithWallet(
+      emit,
+      cancel: unlock,
+      wallet: wallet,
+      profileType: ProfileType.arConnect,
+      source: WanderDeviceSecret(wallet),
+    );
   }
 
   Future<void> _handleForgetWalletEvent(
@@ -1142,6 +1191,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// Drops what a sign-in or sign-up held for the wallet it loaded.
   Future<void> _resetWalletFlow() async {
     _savedByThisFlow = null;
+    _pendingEthereum = null;
+    _ethNoRecord = false;
     usingSeedphrase = false;
     _sourceWalletAddress = null;
     _signUpToRetry = null;
@@ -1363,7 +1414,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
-    emit(LoginCreatingAccount(noWalletFound: event.noWalletFound));
+    emit(const LoginCreatingAccount());
 
     try {
       final wallet = await _walletFromMnemonic(mnemonic);
@@ -1438,7 +1489,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         wallet: BrowserWallet.metamask,
         request: BrowserWalletRequest.signIn,
       ));
-      const signMessage = 'Sign message to verify wallet address.';
+      const signMessage = ethereumVerifyMessage;
 
       try {
         final signature = await _walletAnswer(
@@ -1472,38 +1523,275 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
 
-    String? ethFirstTxId;
+    // Which account this is, from the auth key's records: a version 2
+    // marker, a version 1 verification record, or, only once every endpoint
+    // has said so, none. A lookup that fails is a failure, never "none": a
+    // wrong "none" would make an existing account a new, empty one.
+    final EthereumAccountRecord? record;
     try {
-      ethFirstTxId =
-          await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
+      record = await _arweaveService
+          .findEthereumAccountRecord(arweaveNativeAddressForEth);
     } catch (e) {
+      logger.w('Could not look up the MetaMask account: ${e.runtimeType}');
       emit(LoginCloseBlockingDialog());
-
-      if (e is GraphQLException) {
-        emit(GatewayLoginFailure(e, _getGatewayUrl()));
-        return;
-      }
-
-      emit(LoginFailure(e));
+      emit(_logInPanel);
+      emit(const LoginFailure(EthereumAccountLookupFailed()));
       return;
     }
 
     emit(LoginCloseBlockingDialog());
 
-    if (ethFirstTxId != null) {
+    switch (record) {
+      case EthereumV1Record():
+        _ethNoRecord = false;
+        emit(PromptPassword(
+            wallet: ethWallet,
+            derivedEthWallet: derivedEthWallet,
+            sourceWalletAddress: _sourceWalletAddress,
+            showWalletCreated: false));
+      case EthereumV2Marker(
+          :final txId,
+          :final accountAddress,
+          :final laterV1RecordId
+        ):
+        await _signInEthereumV2(
+          emit,
+          ethWallet: ethWallet,
+          authWallet: derivedEthWallet,
+          expectedAddress:
+              accountAddress ?? await _markerAddressFromData(txId),
+          passwordAccountToo: laterV1RecordId != null,
+        );
+      case null:
+        // Nothing anywhere: a new account, or one made before 3.0 whose
+        // record never reached an index. Only the person knows which.
+        _pendingEthereum = (ethWallet, derivedEthWallet);
+        emit(const LoginAskUsedMetaMaskBefore());
+    }
+  }
+
+  /// The MetaMask a "Have you used ArDrive with this MetaMask before?" is
+  /// asked for, and its auth key.
+  (EthereumWallet, EthereumProviderWallet)? _pendingEthereum;
+
+  /// The password asked for an account with no record found: it is checked
+  /// against the wallet's ArDrive history rather than a record. See
+  /// [_handleLoginWithEthereumPassword].
+  bool _ethNoRecord = false;
+
+  /// "Have you used ArDrive with this MetaMask before?"
+  /// - No: a new account, made from the account message signed twice (the
+  ///   two must match), with its marker posted.
+  /// - Yes: an account made before 3.0 whose record wasn't found. Its
+  ///   password is asked, and accepted only if the wallet it derives has
+  ///   ArDrive history; its missing records are then posted again.
+  Future<void> _handleAnswerUsedArDriveBefore(
+    AnswerUsedArDriveBefore event,
+    Emitter<LoginState> emit,
+  ) async {
+    final pending = _pendingEthereum;
+    if (pending == null) {
+      emit(_logInPanel);
+      return;
+    }
+    final (ethWallet, authWallet) = pending;
+
+    if (event.usedBefore) {
+      _ethNoRecord = true;
+      emit(_logInPanel);
       emit(PromptPassword(
+        wallet: ethWallet,
+        derivedEthWallet: authWallet,
+        sourceWalletAddress: _sourceWalletAddress,
+        showWalletCreated: false,
+      ));
+      return;
+    }
+
+    _pendingEthereum = null;
+    await _signInEthereumV2(
+      emit,
+      ethWallet: ethWallet,
+      authWallet: authWallet,
+      newAccount: true,
+    );
+  }
+
+  /// The Arweave address a version 2 marker [txId] holds as its data.
+  Future<String?> _markerAddressFromData(String txId) async {
+    try {
+      final data = await _downloadService.download(txId, false);
+      return utf8.decode(data).trim();
+    } catch (e) {
+      logger.w('Could not read the account marker: ${e.runtimeType}');
+      return null;
+    }
+  }
+
+  /// A version 2 MetaMask account: its wallet comes from a signature of the
+  /// fixed [ethereumAccountMessage], with no password, and one more approval
+  /// is this device's key. See docs/ArweaveFS.md, "Browser wallet
+  /// identities".
+  ///
+  /// - An existing one ([expectedAddress], from its marker): the wallet
+  ///   derived must be that address. A MetaMask that signs differently each
+  ///   time (a smart-contract or MPC wallet) derives another one, and is
+  ///   refused loudly rather than opening an empty account.
+  /// - A new one ([newAccount]): the message is signed twice and the
+  ///   signatures must match, for the same reason, and the marker is posted
+  ///   before anything is saved here.
+  Future<void> _signInEthereumV2(
+    Emitter<LoginState> emit, {
+    required EthereumWallet ethWallet,
+    required EthereumProviderWallet authWallet,
+    String? expectedAddress,
+    bool newAccount = false,
+    bool passwordAccountToo = false,
+  }) async {
+    if (!newAccount && expectedAddress == null) {
+      emit(_logInPanel);
+      emit(const LoginFailure(EthereumAccountMarkerUnreadable()));
+      return;
+    }
+
+    final cancel = _askWallet(
+      emit,
+      BrowserWallet.metamask,
+      request: BrowserWalletRequest.signIn,
+    );
+    final message = Uint8List.fromList(
+        utf8.encode(ethereumAccountMessage(await ethWallet.getAddress())));
+
+    final Uint8List signature;
+    try {
+      signature = await _walletAnswer(cancel, ethWallet.sign(message));
+      if (newAccount) {
+        final again = await _walletAnswer(cancel, ethWallet.sign(message));
+        if (!listEquals(signature, again)) {
+          throw const EthereumWalletSignsDifferently();
+        }
+      }
+    } on WalletLoginCancelled {
+      return;
+    } on EthereumWalletSignsDifferently catch (e) {
+      _walletAnswered(cancel);
+      emit(_logInPanel);
+      emit(LoginFailure(e));
+      return;
+    } catch (e) {
+      // Refused, or the extension failed: back to Log in.
+      logger.w('MetaMask did not sign the account message');
+      _sourceWalletAddress = null;
+      _walletAnswered(cancel);
+      emit(_logInPanel);
+      return;
+    }
+
+    profileType = ProfileType.json;
+    final Wallet wallet;
+    try {
+      wallet = await _walletAnswer(
+        cancel,
+        deriveMnemonicFromEthereumAccountSignature(signature)
+            .then(_walletFromMnemonic),
+      );
+    } on WalletLoginCancelled {
+      return;
+    }
+
+    final address = await wallet.getAddress();
+    if (!newAccount && address != expectedAddress) {
+      _walletAnswered(cancel);
+      emit(_logInPanel);
+      if (passwordAccountToo) {
+        // A password account was made on this auth key after the marker
+        // (an old build, after a rollback): its password is the way in.
+        _ethNoRecord = false;
+        emit(PromptPassword(
           wallet: ethWallet,
-          derivedEthWallet: derivedEthWallet,
+          derivedEthWallet: authWallet,
           sourceWalletAddress: _sourceWalletAddress,
-          showWalletCreated: false));
-    } else {
-      emit(CreateNewPassword(
-          wallet: ethWallet,
-          derivedEthWallet: derivedEthWallet,
-          sourceWalletAddress: _sourceWalletAddress,
-          isNewUser: true,
           showWalletCreated: false,
-          fromSignUp: !existingUserFlow));
+        ));
+        return;
+      }
+      emit(const LoginFailure(EthereumWalletSignsDifferently()));
+      return;
+    }
+
+    if (newAccount) {
+      try {
+        await _walletAnswer(cancel, _postAccountMarker(authWallet, address));
+      } on WalletLoginCancelled {
+        return;
+      } catch (e) {
+        logger.w('Could not post the account marker: ${e.runtimeType}');
+        _walletAnswered(cancel);
+        emit(_logInPanel);
+        emit(LoginFailure(e));
+        return;
+      }
+    }
+
+    // The account-message signature is also this device's key, as Solana's
+    // sign-in signature is: no extra approval.
+    await _signInWithWallet(
+      emit,
+      cancel: cancel,
+      wallet: wallet,
+      profileType: ProfileType.json,
+      source: DeviceSecretSource.fromSecret(
+          DeviceUnlockMethod.ethereumAccount, signature),
+    );
+  }
+
+  /// Posts a version 2 account's marker: a free Turbo data item signed by
+  /// the auth key, tagged [ethereumAccountMarkerTags], whose data is the
+  /// account's Arweave address.
+  Future<void> _postAccountMarker(
+    EthereumProviderWallet authWallet,
+    String arweaveAddress,
+  ) async {
+    final item = DataItem.withBlobData(
+      data: Uint8List.fromList(utf8.encode(arweaveAddress)),
+      owner: await authWallet.getOwner(),
+    );
+    ethereumAccountMarkerTags(arweaveAddress).forEach(item.addTag);
+    await item.sign(EthereumSigner(authWallet.credentials));
+    await _turboUploadService.postDataItem(dataItem: item, wallet: authWallet);
+  }
+
+  /// Posts a version 1 account's verification records again, as its sign-up
+  /// did: the Arweave wallet's signature of [fullEntropy], once from that
+  /// wallet and once from the auth key. For an account made before 3.0
+  /// whose records no index has. Best effort: signing in doesn't wait on it.
+  Future<void> _repostV1Records(
+    Wallet wallet,
+    EthereumProviderWallet authWallet,
+    Uint8List fullEntropy,
+  ) async {
+    try {
+      final verifySignature = await wallet.sign(fullEntropy);
+
+      final arweaveItem = DataItem.withBlobData(
+        data: verifySignature,
+        owner: await wallet.getOwner(),
+      );
+      await arweaveItem.sign(ArweaveSigner(wallet));
+      await _turboUploadService.postDataItem(
+          dataItem: arweaveItem, wallet: wallet);
+
+      final authItem = DataItem.withBlobData(
+        data: verifySignature,
+        owner: await authWallet.getOwner(),
+      );
+      await authItem.sign(EthereumSigner(authWallet.credentials));
+      await _turboUploadService.postDataItem(
+          dataItem: authItem, wallet: authWallet);
+      logger.i('Posted the missing verification records again');
+    } catch (e) {
+      logger.w('Could not post the verification records again: '
+          '${e.runtimeType}');
     }
   }
 
@@ -1590,25 +1878,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // 4. From here, it's a standard JWK wallet
       profileType = ProfileType.json;
 
-      // 5. Check if user has existing drives
-      if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginCloseBlockingDialog());
-        emit(PromptPassword(
-          wallet: wallet,
-          showWalletCreated: false,
-          sourceWalletAddress: _sourceWalletAddress,
-        ));
-      } else {
-        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-        emit(LoginCloseBlockingDialog());
-        emit(CreateNewPassword(
-          wallet: wallet,
-          isNewUser: !hasDrives,
-          showWalletCreated: false,
-          sourceWalletAddress: _sourceWalletAddress,
-          fromSignUp: !existingUserFlow,
-        ));
-      }
+      // 5. No password and no drive check. The sign-in signature is also
+      // this device's key, so there is nothing more to approve.
+      final user = await _loginWithWallet(
+        wallet,
+        ProfileType.json,
+        DeviceSecretSource.fromSecret(DeviceUnlockMethod.solana, signature),
+      );
+      emit(LoginCloseBlockingDialog());
+      emit(LoginSuccess(user));
     } catch (e) {
       _walletAnswered(cancel);
       await _solanaProviderService.disconnect();
@@ -1625,6 +1903,319 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         emit(LoginFailure(e));
       }
+    }
+  }
+
+  /// The Welcome back an approval is under way for, so Cancel goes back
+  /// there.
+  PromptWalletUnlock? _unlockingWith;
+
+  /// Welcome back for the saved account, if a browser wallet opens it; null
+  /// for an account its password opens.
+  Future<PromptWalletUnlock?> _walletUnlockPrompt({
+    WalletUnlockProblem? problem,
+  }) async {
+    final SavedAccount? account;
+    try {
+      account = await _arDriveAuth.savedAccount();
+    } catch (e) {
+      logger.w('Could not read the saved account: ${e.runtimeType}');
+      return null;
+    }
+    final method = account?.walletMethod;
+    if (account == null || method == null) return null;
+    return PromptWalletUnlock(
+      wallet: _browserWalletFor(method),
+      relocks: account.isLegacyWalletProfile,
+      problem: problem,
+    );
+  }
+
+  BrowserWallet _browserWalletFor(DeviceUnlockMethod method) {
+    switch (method) {
+      case DeviceUnlockMethod.wander:
+        return BrowserWallet.wander;
+      case DeviceUnlockMethod.ethereum:
+      case DeviceUnlockMethod.ethereumAccount:
+        return BrowserWallet.metamask;
+      case DeviceUnlockMethod.solana:
+      case DeviceUnlockMethod.password:
+        final found = _solanaProviderService.detectProviders();
+        if (found.hasPhantom && !found.hasSolflare) {
+          return BrowserWallet.phantom;
+        }
+        if (found.hasSolflare && !found.hasPhantom) {
+          return BrowserWallet.solflare;
+        }
+        return BrowserWallet.otherSolana;
+    }
+  }
+
+  /// Continue on Welcome back for an account a browser wallet opens: the
+  /// wallet is connected, checked to be this account, and asked once for
+  /// this device's key, which opens the account and the drives it
+  /// remembers.
+  ///
+  /// A profile saved before 3.0 under a password (Wander, Phantom, Solflare)
+  /// is replaced by one the wallet opens; the drive keys it remembered go,
+  /// and those drives start locked ([ArDriveAuth.loginWithWallet]).
+  Future<void> _handleUnlockWithWallet(Emitter<LoginState> emit) async {
+    final account = await _arDriveAuth.savedAccount();
+    final method = account?.walletMethod;
+    final prompt = await _walletUnlockPrompt();
+    if (account == null || method == null || prompt == null) {
+      emit(const LoginLanding());
+      return;
+    }
+
+    final cancel = _askWallet(
+      emit,
+      prompt.wallet,
+      request: BrowserWalletRequest.openDrives,
+    );
+    _unlockingWith = prompt;
+
+    void problem(WalletUnlockProblem problem) {
+      _walletAnswered(cancel);
+      _unlockingWith = null;
+      emit(prompt.withProblem(problem));
+    }
+
+    try {
+      final User user;
+      switch (method) {
+        case DeviceUnlockMethod.wander:
+          final wallet =
+              await _connectSavedWander(cancel, account, onOtherAccount: () {
+            problem(WalletUnlockProblem.otherAccount);
+          });
+          if (wallet == null) return;
+          final source = _CancellableSecret(WanderDeviceSecret(wallet), cancel);
+          user = account.isLegacyWalletProfile
+              ? await _arDriveAuth.loginWithWallet(
+                  wallet, ProfileType.arConnect, source)
+              : await _arDriveAuth.unlockWithWallet(source);
+          profileType = ProfileType.arConnect;
+          lastKnownWalletAddress = account.address;
+        case DeviceUnlockMethod.solana:
+          final provider = switch (prompt.wallet) {
+            BrowserWallet.phantom => 'phantom',
+            BrowserWallet.solflare => 'solflare',
+            _ => null,
+          };
+          final connection = await _walletAnswer(
+              cancel, _solanaProviderService.connect(provider: provider));
+          if (connection == null) {
+            // Said no to connecting.
+            problem(WalletUnlockProblem.declined);
+            return;
+          }
+          if (connection.address != account.sourceWalletAddress) {
+            problem(WalletUnlockProblem.otherAccount);
+            return;
+          }
+          final signature = await _walletAnswer(cancel,
+              _solanaProviderService.signMessage(solanaIdentityMessage));
+          final source = DeviceSecretSource.fromSecret(
+              DeviceUnlockMethod.solana, signature);
+          if (account.isLegacyWalletProfile) {
+            final wallet = await _walletAnswer(
+              cancel,
+              deriveMnemonicFromSolanaSignature(signature)
+                  .then(_walletFromMnemonic),
+            );
+            // The profile from before 3.0 is replaced only by the account it
+            // holds: another one (a wallet that signs differently, say)
+            // would delete what may be its only copy.
+            if (await wallet.getAddress() != account.address) {
+              problem(WalletUnlockProblem.notThisAccount);
+              return;
+            }
+            user = await _arDriveAuth.loginWithWallet(
+              wallet,
+              ProfileType.json,
+              source,
+              sourceWalletAddress: connection.address,
+            );
+          } else {
+            user = await _arDriveAuth.unlockWithWallet(source);
+          }
+          profileType = ProfileType.json;
+        case DeviceUnlockMethod.ethereum:
+        case DeviceUnlockMethod.ethereumAccount:
+          final ethWallet =
+              await _walletAnswer(cancel, _ethereumProviderService.connect());
+          final address = ethWallet == null
+              ? null
+              : await _walletAnswer(cancel, ethWallet.getAddress());
+          if (ethWallet == null ||
+              address?.toLowerCase() !=
+                  account.sourceWalletAddress?.toLowerCase()) {
+            problem(WalletUnlockProblem.otherAccount);
+            return;
+          }
+          final DeviceSecretSource source;
+          if (method == DeviceUnlockMethod.ethereumAccount) {
+            // A version 2 account: its account message, the signature its
+            // wallet comes from, is also its device key.
+            final Uint8List signature;
+            try {
+              signature = await _walletAnswer(
+                cancel,
+                ethWallet.sign(Uint8List.fromList(
+                    utf8.encode(ethereumAccountMessage(address!)))),
+              );
+            } on WalletLoginCancelled {
+              rethrow;
+            } catch (e) {
+              // Said no to the signature: a refusal, like any wallet's.
+              throw DeviceUnlockRefusedException(isWalletCancellation(e)
+                  ? DeviceUnlockStatus.declined
+                  : DeviceUnlockStatus.failed);
+            }
+            source = DeviceSecretSource.fromSecret(
+                DeviceUnlockMethod.ethereumAccount, signature);
+          } else {
+            source = _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel);
+          }
+          user = await _arDriveAuth.unlockWithWallet(source);
+          profileType = ProfileType.json;
+        case DeviceUnlockMethod.password:
+          // Not a wallet's: [SavedAccount.walletMethod] never says this.
+          return;
+      }
+      _walletAnswered(cancel);
+      _unlockingWith = null;
+      emit(LoginSuccess(user));
+    } on WalletLoginCancelled {
+      return;
+    } on DeviceUnlockRefusedException catch (e) {
+      if (cancel.isCompleted) return;
+      problem(switch (e.status) {
+        DeviceUnlockStatus.declined => WalletUnlockProblem.declined,
+        DeviceUnlockStatus.mismatch => WalletUnlockProblem.mismatch,
+        _ => WalletUnlockProblem.failed,
+      });
+    } catch (e) {
+      if (cancel.isCompleted) return;
+      logger.w('Could not open the saved account with its wallet: '
+          '${e.runtimeType}');
+      if (e is ProfileFormatTooNewException) {
+        _walletAnswered(cancel);
+        _unlockingWith = null;
+        emit(const LoginProfileFromNewerVersion());
+        return;
+      }
+      problem(WalletUnlockProblem.failed);
+    }
+  }
+
+  /// Wander, connected and on the saved account, as the wallet that signs
+  /// for it. Null after [onOtherAccount] when Wander is on another account,
+  /// or when it said no to connecting.
+  Future<ArConnectWallet?> _connectSavedWander(
+    Completer<void> cancel,
+    SavedAccount account, {
+    required VoidCallback onOtherAccount,
+  }) async {
+    if (!await _walletAnswer(
+        cancel, _arConnectService.isWalletVersionSupported())) {
+      throw const ArConnectVersionNotSupportedException();
+    }
+    var permitted =
+        await _walletAnswer(cancel, _arConnectService.checkPermissions());
+    if (!permitted) {
+      ignoreNextWaletSwitch = true;
+      try {
+        await _walletAnswer(cancel, _arConnectService.connect());
+      } on WalletLoginCancelled {
+        rethrow;
+      } catch (_) {
+        // Said no: nothing more is asked.
+      } finally {
+        ignoreNextWaletSwitch = false;
+      }
+      permitted =
+          await _walletAnswer(cancel, _arConnectService.checkPermissions());
+      if (!permitted) {
+        throw const DeviceUnlockRefusedException(DeviceUnlockStatus.declined);
+      }
+    }
+    final address =
+        await _walletAnswer(cancel, _arConnectService.getWalletAddress());
+    if (address != account.address) {
+      onOtherAccount();
+      return null;
+    }
+    // Knows its key, so it asks Wander only to sign.
+    return ArConnectWallet(_arConnectService, publicKey: account.publicKey);
+  }
+
+  /// [ArDriveAuth.loginWithWallet], noting what this flow saved on this
+  /// device, as [LeaveWallet] needs.
+  Future<User> _loginWithWallet(
+    Wallet wallet,
+    ProfileType profileType,
+    DeviceSecretSource source, {
+    String password = '',
+    bool skipDriveCheck = false,
+  }) async {
+    final storedBefore = await _storedAddress();
+    try {
+      final user = await _arDriveAuth.loginWithWallet(
+        wallet,
+        profileType,
+        source,
+        sourceWalletAddress: _sourceWalletAddress,
+        password: password,
+        skipDriveCheck: skipDriveCheck,
+      );
+      _savedByThisFlow = user.walletAddress;
+      return user;
+    } catch (_) {
+      // Saved by this flow only if it wasn't stored here before.
+      final address = await wallet.getAddress();
+      if (storedBefore != address && await _storedAddress() == address) {
+        _savedByThisFlow = address;
+      }
+      rethrow;
+    }
+  }
+
+  /// Signs in an account a browser wallet opens, with no password, while
+  /// the panel waits on the wallet's one approval for this device's key.
+  /// Cancel ([cancel]) ends the wait and saves nothing.
+  Future<void> _signInWithWallet(
+    Emitter<LoginState> emit, {
+    required Completer<void> cancel,
+    required Wallet wallet,
+    required ProfileType profileType,
+    required DeviceSecretSource source,
+  }) async {
+    try {
+      final user = await _loginWithWallet(
+        wallet,
+        profileType,
+        _CancellableSecret(source, cancel),
+      );
+      _walletAnswered(cancel);
+      emit(LoginSuccess(user));
+    } on DeviceUnlockRefusedException catch (e) {
+      // After Cancel the panel is back at Log in already.
+      if (cancel.isCompleted) return;
+      _walletAnswered(cancel);
+      ignoreNextWaletSwitch = false;
+      emit(_logInPanel);
+      // Saying no to the wallet is not an error.
+      if (e.status != DeviceUnlockStatus.declined) emit(LoginFailure(e));
+    } catch (e) {
+      if (cancel.isCompleted) return;
+      _walletAnswered(cancel);
+      ignoreNextWaletSwitch = false;
+      emit(_logInPanel);
+      emit(e is AuthenticationGatewayException
+          ? GatewayLoginFailure(e, _getGatewayUrl())
+          : LoginFailure(e));
     }
   }
 
@@ -1656,7 +2247,12 @@ class _PendingSignIn {
     required this.showWalletCreated,
     required this.promptWallet,
     required this.derivedEthWallet,
+    this.ethDeviceWallet,
   });
+
+  /// An existing MetaMask account: saved under MetaMask's device key, which
+  /// this wallet gives, rather than under the password.
+  final EthereumWallet? ethDeviceWallet;
 
   /// The Arweave wallet signing in.
   final Wallet wallet;
@@ -1670,4 +2266,49 @@ class _PendingSignIn {
   /// The wallet the password was asked for: for MetaMask, the Ethereum one.
   final Wallet promptWallet;
   final EthereumProviderWallet? derivedEthWallet;
+}
+
+/// A device secret that gives up when Cancel is pressed: the wait ends as
+/// if the person had said no to the wallet, and nothing is saved.
+class _CancellableSecret implements DeviceSecretSource {
+  _CancellableSecret(this._inner, this._cancel);
+
+  final DeviceSecretSource _inner;
+  final Completer<void> _cancel;
+
+  @override
+  DeviceUnlockMethod get method => _inner.method;
+
+  @override
+  Future<Uint8List> secret(Uint8List deviceSalt) async {
+    if (_cancel.isCompleted) throw const DeviceUnlockDeclined();
+    final answer = await Future.any<Uint8List?>([
+      _inner.secret(deviceSalt),
+      _cancel.future.then((_) => null),
+    ]);
+    if (answer == null || _cancel.isCompleted) {
+      throw const DeviceUnlockDeclined();
+    }
+    return answer;
+  }
+}
+
+/// A MetaMask signed the account message differently from one time to the
+/// next (a smart-contract or MPC wallet), or differently than when its
+/// account was made. ArDrive can't make or open an account from it: the
+/// wallet would be another, empty one each time.
+class EthereumWalletSignsDifferently implements UntrackedException {
+  const EthereumWalletSignsDifferently();
+}
+
+/// A version 2 MetaMask account's marker was found, but the Arweave address
+/// it holds couldn't be read, so the wallet derived can't be checked.
+class EthereumAccountMarkerUnreadable implements UntrackedException {
+  const EthereumAccountMarkerUnreadable();
+}
+
+/// A MetaMask account's records couldn't be read on every index they must
+/// be checked on. Never taken for "no account".
+class EthereumAccountLookupFailed implements UntrackedException {
+  const EthereumAccountLookupFailed();
 }

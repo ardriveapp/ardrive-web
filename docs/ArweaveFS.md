@@ -279,6 +279,59 @@ Drives that have been updated many times can have a long entity timeline which c
 
 Clients that want to provide users with a quick view of a single folder can simply query for an entity timeline for a particular folder by its id. Clients with multi-owner permissions will additionally have to query for the folder's parent drive entity for permission based filtering of the timeline.
 
+### Browser wallet identities
+
+ArDrive web signs Ethereum and Solana wallet users in with an Arweave wallet derived from a signature, so the same browser wallet always gets the same Arweave wallet. Each derivation is fixed forever: changing one byte of a message gives every account made with it another wallet. Drive keys are then derived from that Arweave wallet exactly as for any other wallet.
+
+All three turn a signature into a 12-word BIP-39 phrase the same way: the first 16 bytes of the signature's SHA-256 are the entropy. The phrase becomes an RSA wallet the way a recovery phrase does.
+
+**Solana (Phantom, Solflare).** The wallet signs this message as UTF-8, and its Ed25519 signature (deterministic, RFC 8032) gives the phrase:
+
+```
+ArDrive wants to access your account. Only approve this on a gateway you trust (e.g. app.ardrive.io). ArDrive Identity v1
+```
+
+**Ethereum, accounts made before ArDrive 3.0 (version 1, with a password).** The password picks the wallet: another password gives another wallet.
+
+1. The wallet signs `Sign message to verify wallet address.` with `personal_sign`. SHA-256 of that signature is the private key of the account's *auth* Ethereum key.
+2. The wallet signs, with `personal_sign`, the UTF-8 bytes of the lowercase hex of SHA-256(`1:<address>:<password>`), where `1` is the chain ID and `<address>` is as the wallet reports it. That signature gives the phrase.
+3. At sign-up the Arweave wallet signs the SHA-256 of the step 2 signature, and that signature is posted twice, from the Arweave wallet and from the auth key, as each one's first transaction. Sign-in compares both with a fresh one to tell a right password from a wrong one.
+
+**Ethereum, accounts made from ArDrive 3.0 (version 2, no password).** The wallet signs, with `personal_sign`, the UTF-8 bytes of this message, with the address in lowercase. That signature gives the phrase.
+
+```
+ArDrive account
+Signing this opens your ArDrive account. Only sign it in ArDrive.
+It is free and sends no transaction.
+Account: 0x<address in lowercase>
+Version: 2
+```
+
+At sign-up the message is signed twice and the two signatures must be equal; a wallet that signs differently each time gets no account. Then the auth key (step 1 above) posts the account's **marker**, an ANS-104 data item signed with the auth key (Ethereum signature type):
+
+| | |
+|---|---|
+| Tag `App-Name` | `ArDrive` |
+| Tag `ArDrive-Account-Version` | `2` |
+| Tag `ArDrive-Account-Address` | the account's Arweave address |
+| Data | the same Arweave address, UTF-8 |
+
+**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and reads the transactions of the auth key's Arweave address, first on the configured GraphQL endpoint, then on the turbo-gateway index (turbo-gateway.com, or ardrive.net, another name for the same index, if turbo-gateway.com can't be reached). When the configured endpoint is one of those, only the index is asked.
+
+- A **marker** (`ArDrive-Account-Version: 2`) first: version 2. The account message is signed and the wallet derived from it must have the marker's address; if it doesn't, the wallet signs differently than it did at sign-up, and sign-in stops with an error rather than opening another, empty account (unless a version 1 record came after the marker: then its password is asked).
+- An **untagged transaction** first: a version 1 verification record. The password is asked.
+- **Nothing on either:** the person is asked whether they have used ArDrive with this MetaMask before. *No* makes a version 2 account as above. *Yes* asks the version 1 password; with no record to check it against, it is accepted only if the wallet it derives owns ArFS drives or has any transaction (its sign-up posted one), and the account's two verification records are then posted again.
+
+A lookup that fails is an error, never "nothing": a 429 or 5xx from the configured endpoint, or the index unreachable on both domains. No other index is asked in their place. Version 1 sign-up posted its record, so a version 1 account normally has one; one whose sign-up stopped before the record was posted, or whose record no index has, takes the *Yes* path.
+
+**Older builds.** A build from before the marker doesn't know it. v2.88.x, which reads turbo-gateway.com by default, finds the marker as the auth key's first transaction, takes the account for version 1, asks a password and calls every password wrong; it posts nothing. Builds that read arweave.net or Goldsky by default (v2.40.0 to about June 2026) may find no record, offer to create a password and post version 1 records under the auth key, after the marker. Because the earliest record decides, this build still reads such an account as version 2; if its wallet doesn't match the marker, the password made there is offered.
+
+**The earliest record decides.** The auth key's transactions are read earliest first, across the endpoints asked. A real version 1 record (2024 to 2026) always predates any marker, so a marker posted later, by someone who phished the verify signature, can't take a version 1 account over. When the configured endpoint shows a record, the turbo-gateway index is still asked for an earlier one; if the index can't be reached, the configured endpoint's answer stands. Transactions are ordered by block, and a pending one (no block yet) always comes after every mined one. Records whose owner isn't the auth key's address are ignored, whatever a gateway returns.
+
+A version 2 account's device key on a device comes from its account-message signature, the one its wallet comes from (unlock method `ethereum-account`). A version 1 account's comes from a separate device-unlock message, because its wallet signature depends on its password.
+
+`personal_sign` from an ordinary Ethereum account is deterministic (RFC 6979). Smart-contract and MPC wallets may not be, under either version.
+
 ## Future Work
 
 ### GraphQL

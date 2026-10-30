@@ -293,6 +293,16 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
 
   late bool _isObscureText;
 
+  @override
+  void didUpdateWidget(covariant ArDriveTextFieldNew oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A parent that hides or shows the text itself (one eye for a password
+    // and its confirmation, say) is followed.
+    if (oldWidget.obscureText != widget.obscureText) {
+      _isObscureText = widget.obscureText;
+    }
+  }
+
   String? _errorMessage;
   String? _currentText;
 

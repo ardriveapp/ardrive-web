@@ -5,6 +5,8 @@ import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/components/login_card.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
+import 'package:ardrive/device_unlock/domain/device_key.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -24,6 +26,7 @@ bool welcomeBackHears(LoginState state) =>
     state is LoginUnknownFailure ||
     state is LoginFailure ||
     state is PromptPassword ||
+    state is PromptWalletUnlock ||
     state is LoginProfileFromNewerVersion;
 
 /// The sign-in panel after a reload, for the account already on this
@@ -56,6 +59,11 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
   String? _address;
   bool _addressAsked = false;
 
+  /// For an account a browser wallet opens: what Welcome back asks, from
+  /// the bloc, or read from the device while the check for the account is
+  /// still running, so no password field shows for a moment first.
+  PromptWalletUnlock? _walletPrompt;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -63,10 +71,25 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
     _addressAsked = true;
     // Taken now: the panel can be gone by the time the address arrives.
     final profileName = context.read<ProfileNameBloc>();
-    context.read<ArDriveAuth>().getWalletAddress().then((address) {
+    final auth = context.read<ArDriveAuth>();
+    auth.getWalletAddress().then((address) {
       if (address == null || address.isEmpty) return;
       profileName.add(LoadProfileNameBeforeLogin(address));
       if (mounted) setState(() => _address = address);
+    }).catchError((Object _) {});
+    Future<SavedAccount?>.sync(auth.savedAccount).then((account) {
+      final method = account?.walletMethod;
+      if (!mounted || method == null || _walletPrompt != null) return;
+      setState(() => _walletPrompt = PromptWalletUnlock(
+            wallet: switch (method) {
+              DeviceUnlockMethod.wander => BrowserWallet.wander,
+              DeviceUnlockMethod.ethereum ||
+              DeviceUnlockMethod.ethereumAccount =>
+                BrowserWallet.metamask,
+              _ => BrowserWallet.otherSolana,
+            },
+            relocks: account!.isLegacyWalletProfile,
+          ));
     }).catchError((Object _) {});
   }
 
@@ -113,6 +136,7 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
         content: BlocConsumer<LoginBloc, LoginState>(
           listenWhen: (_, current) => welcomeBackHears(current),
           listener: (context, state) => setState(() {
+            if (state is PromptWalletUnlock) _walletPrompt = state;
             _wrong = state is LoginPasswordFailed;
             _savedByNewer =
                 _savedByNewer || state is LoginProfileFromNewerVersion;
@@ -121,6 +145,22 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
           builder: (context, state) {
             if (_savedByNewer || state is LoginProfileFromNewerVersion) {
               return _SavedByNewerVersion(address: _address);
+            }
+            final walletPrompt =
+                state is PromptWalletUnlock ? state : _walletPrompt;
+            if (walletPrompt != null) {
+              return _WalletUnlock(
+                prompt: walletPrompt,
+                address: _address,
+                ready: widget.ready,
+                onDifferentAccount: () => showArDriveDialog(
+                  context,
+                  content: ForgetWalletDialog(
+                    loginBloc: loginBloc,
+                    closesDialogBelow: false,
+                  ),
+                ),
+              );
             }
             final checking = state is LoginCheckingPassword;
             final wrong = _wrong && !checking;
@@ -344,6 +384,111 @@ class _Account extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Welcome back for an account a browser wallet opens: one approval in
+/// that wallet, never a password.
+class _WalletUnlock extends StatelessWidget {
+  const _WalletUnlock({
+    required this.prompt,
+    required this.address,
+    required this.ready,
+    required this.onDifferentAccount,
+  });
+
+  final PromptWalletUnlock prompt;
+  final String? address;
+  final bool ready;
+  final VoidCallback onDifferentAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final name = WalletWaitView.nameOf(prompt.wallet);
+    final problem = switch (prompt.problem) {
+      null => null,
+      WalletUnlockProblem.declined => s.welcomeBackDeclined,
+      WalletUnlockProblem.mismatch => s.welcomeBackMismatch,
+      WalletUnlockProblem.otherAccount => s.welcomeBackOtherAccount,
+      WalletUnlockProblem.notThisAccount => s.welcomeBackNotThisAccount,
+      WalletUnlockProblem.failed => s.welcomeBackFailed,
+    };
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: ArDriveImage(
+            image: AssetImage(Resources.images.brand.logo1),
+            height: 50,
+          ),
+        ),
+        const SizedBox(height: ArDriveSpacing.lg),
+        Text(
+          s.welcomeBackTitle,
+          textAlign: TextAlign.center,
+          style: type.heading1(
+            color: colors.textHigh,
+            fontWeight: ArFontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: ArDriveSpacing.xs),
+        if (address != null) ...[
+          _Account(address: address!),
+          const SizedBox(height: ArDriveSpacing.xs),
+        ],
+        Text(
+          s.welcomeBackWalletBody,
+          textAlign: TextAlign.center,
+          style: type.paragraphLarge(color: colors.textMid),
+        ),
+        if (prompt.relocks) ...[
+          const SizedBox(height: ArDriveSpacing.md),
+          ArDriveNotice(
+            key: const Key('welcomeBackRelocks'),
+            type: ArDriveNoticeType.info,
+            message: s.welcomeBackRelocks,
+          ),
+        ],
+        if (problem != null) ...[
+          const SizedBox(height: ArDriveSpacing.md),
+          ArDriveStatusText(
+            key: const Key('welcomeBackWalletProblem'),
+            text: problem,
+            type: ArDriveStatusType.error,
+          ),
+        ],
+        const SizedBox(height: ArDriveSpacing.lg),
+        ArDriveButtonNew(
+          key: const Key('welcomeBackContinueWithWallet'),
+          size: ArDriveButtonSize.large,
+          maxWidth: double.infinity,
+          typography: type,
+          text: name == null
+              ? s.welcomeBackContinueGeneric
+              : s.welcomeBackContinueWith(name),
+          variant: ButtonVariant.primary,
+          isDisabled: !ready,
+          onPressed: () {
+            PlausibleEventTracker.trackClickContinueReturnUserButton();
+            context.read<LoginBloc>().add(const UnlockWithWallet());
+          },
+        ),
+        const SizedBox(height: ArDriveSpacing.lg),
+        Center(
+          child: ArDriveLink(
+            key: const Key('welcomeBackDifferentAccount'),
+            text: s.welcomeBackDifferentAccount,
+            isAction: true,
+            onTap: ready ? onDifferentAccount : null,
+          ),
+        ),
+      ],
     );
   }
 }

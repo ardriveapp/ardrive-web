@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart' show IterableExtension;
+
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -457,6 +459,14 @@ class DriveUnlocker {
     bool mayAskWallet = true,
     WalletPromptBudget? promptBudget,
   }) async {
+    // No password, as for someone who signed in with a browser wallet and
+    // hasn't given one this session: nothing to try, and the wallet is not
+    // asked for a signature that could open nothing. No drive is made with
+    // an empty password.
+    if (password.isEmpty) {
+      return const DriveKeyAttempt.failed(DriveUnlockFailure.wrongPassword);
+    }
+
     final driveId = driveTx.getTag(EntityTag.driveId)!;
     final signatureType = DriveSignatureType.fromString(
         driveTx.getTag(EntityTag.signatureType) ?? '1');
@@ -856,8 +866,20 @@ class DriveUnlocker {
       }
     }
 
-    if (locked.isEmpty && knownPrivateDriveIds.isNotEmpty) {
-      final driveId = knownPrivateDriveIds.first;
+    // Nothing to unlock with it: it is checked on one drive, and nothing is
+    // kept. An open drive first; otherwise a drive this device was told to
+    // forget, so it stays forgotten ([tryPassword] keeps no key).
+    final forgottenLocked = [
+      for (final drive in _session.currentLockedDrives)
+        if (drive.ownerAddress == owner && forgotten.contains(drive.driveId))
+          drive,
+    ]..sort((a, b) => created(a).compareTo(created(b)));
+    final checkOn = knownPrivateDriveIds.isNotEmpty
+        ? knownPrivateDriveIds.first
+        : forgottenLocked.firstOrNull?.driveId;
+
+    if (locked.isEmpty && checkOn != null) {
+      final driveId = checkOn;
       try {
         final driveTx = await _arweave.getLatestDriveTx(driveId, owner,
             maxRetries: unlockMaxRetries);

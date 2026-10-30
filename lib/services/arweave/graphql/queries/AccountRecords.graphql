@@ -1,0 +1,19 @@
+query AccountRecords($owner: String!) {
+  transactions(owners: [$owner], first: 20, sort: HEIGHT_ASC) {
+    edges {
+      node {
+        id
+        owner {
+          address
+        }
+        block {
+          height
+        }
+        tags {
+          name
+          value
+        }
+      }
+    }
+  }
+}

@@ -4,6 +4,9 @@ import 'dart:convert';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
+import 'package:ardrive/device_unlock/domain/device_key.dart';
+import 'package:ardrive/device_unlock/domain/device_secret_source.dart';
+import 'package:ardrive/device_unlock/domain/device_unlocker.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
@@ -56,6 +59,40 @@ abstract class ArDriveAuth {
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
 
+  /// Signs in with a browser wallet (Wander, Phantom, Solflare, MetaMask)
+  /// with no ArDrive password: the profile is kept on this device under a
+  /// device key from [source], the wallet's one approval.
+  ///
+  /// No drive is tried: private drives open from the keys this device
+  /// remembers, or with Unlock. [password] is only for an existing MetaMask
+  /// account, whose password picks its wallet and is its drive password:
+  /// it is tried on the private drives first, as [login] does, and kept for
+  /// this session only.
+  ///
+  /// A profile of the same account saved before 3.0 is locked by a password
+  /// this sign-in doesn't have, so the drive keys it remembered are dropped,
+  /// and those drives start locked.
+  ///
+  /// Throws [DeviceUnlockRefusedException] when the wallet doesn't give the
+  /// device key; nothing is saved then.
+  Future<User> loginWithWallet(
+    Wallet wallet,
+    ProfileType profileType,
+    DeviceSecretSource source, {
+    String? sourceWalletAddress,
+    String password = '',
+    bool skipDriveCheck = false,
+  });
+
+  /// Opens the account saved on this device with its wallet's one approval
+  /// ([source]), for a profile saved by [loginWithWallet]. Throws
+  /// [DeviceUnlockRefusedException] when the wallet says no or signs
+  /// differently than before; nothing is opened then.
+  Future<User> unlockWithWallet(DeviceSecretSource source);
+
+  /// The account saved on this device, for Welcome back; null when none.
+  Future<SavedAccount?> savedAccount();
+
   /// Signs out and clears this device of the account: the profile, every
   /// remembered drive key, and the copies older builds left. Unless
   /// [fromAnotherTab], the other ArDrive tabs are told to sign out too.
@@ -81,8 +118,10 @@ abstract class ArDriveAuth {
     DriveUnlocker? driveUnlocker,
     DeviceTabs? deviceTabs,
     SignInPasswordProofStore? signInPasswordProofStore,
+    DeviceUnlocker? deviceUnlocker,
   }) =>
       ArDriveAuthImpl(
+        deviceUnlocker: deviceUnlocker,
         deviceTabs: deviceTabs,
         driveUnlocker: driveUnlocker,
         signInPasswordProofStore: signInPasswordProofStore,
@@ -115,7 +154,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
     DriveUnlocker? driveUnlocker,
     DeviceTabs? deviceTabs,
     SignInPasswordProofStore? signInPasswordProofStore,
+    DeviceUnlocker? deviceUnlocker,
   })  : _arweave = arweave,
+        _deviceUnlocker = deviceUnlocker ?? DeviceUnlocker(),
         _deviceTabs = deviceTabs ?? DeviceTabs.instance,
         _injectedDriveUnlocker = driveUnlocker,
         _proofStore = signInPasswordProofStore ?? SignInPasswordProofStore(),
@@ -136,6 +177,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   /// The other ArDrive tabs, told when this one signs out.
   final DeviceTabs _deviceTabs;
+
+  /// The session's device key for an account a browser wallet opens: asked
+  /// of the wallet once per sign-in or reload.
+  final DeviceUnlocker _deviceUnlocker;
 
   final DriveUnlocker? _injectedDriveUnlocker;
 
@@ -325,6 +370,139 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   @override
+  Future<User> loginWithWallet(
+    Wallet wallet,
+    ProfileType profileType,
+    DeviceSecretSource source, {
+    String? sourceWalletAddress,
+    String password = '',
+    bool skipDriveCheck = false,
+  }) async {
+    assert(source.method != DeviceUnlockMethod.password);
+    try {
+      if (password.isNotEmpty && !skipDriveCheck) {
+        await _validateUser(wallet, password);
+      }
+
+      final address = await wallet.getAddress();
+      final deviceSalt = newDeviceSalt();
+      Uint8List? keyCheck;
+
+      // A new sign-in: whatever an earlier attempt in this tab was told is
+      // not this one's answer.
+      _deviceUnlocker.clear();
+      final outcome = await _deviceUnlocker.unlockToRemember(
+        record: DeviceRecord(method: source.method, deviceSalt: deviceSalt),
+        source: source,
+        saveKeyCheck: (check) async => keyCheck = check,
+      );
+      final deviceKey = outcome.key;
+      if (deviceKey == null || keyCheck == null) {
+        throw DeviceUnlockRefusedException(outcome.status);
+      }
+
+      await _replaceSavedProfile(address);
+      await _userRepository.saveUserWithDeviceKey(
+        wallet: wallet,
+        profileType: profileType,
+        record: DeviceRecord(
+          method: source.method,
+          deviceSalt: deviceSalt,
+          keyCheck: keyCheck,
+        ),
+        deviceKey: deviceKey,
+        sourceWalletAddress: sourceWalletAddress,
+      );
+
+      currentUser = await _userRepository.getUserWithDeviceKey(
+        deviceKey,
+        password: password,
+      );
+      await _startSession();
+      unawaited(_updateBalance());
+      _userStreamController.add(_currentUser);
+
+      return currentUser;
+    } catch (e) {
+      if (e is GraphQLException) {
+        throw const AuthenticationGatewayException();
+      }
+
+      rethrow;
+    }
+  }
+
+  /// Before a browser wallet's profile is saved: the profile already here
+  /// goes. If it is this account's, saved before 3.0 under its password, the
+  /// drive keys it remembered were wrapped by that password, which this
+  /// sign-in doesn't have, so they go too and those drives start locked:
+  /// their password opens them again.
+  Future<void> _replaceSavedProfile(String address) async {
+    final saved = await _userRepository.getSavedProfile();
+    if (saved == null) return;
+    if (saved.id == address) {
+      final dropped = await _databaseHelpers.driveDao
+          .discardStoredDriveKeys(ownerAddress: address);
+      if (dropped.own + dropped.shared > 0) {
+        logger.i('Dropped drive keys remembered under the old password: '
+            '${dropped.own} own drives start locked, ${dropped.shared} '
+            'shared drives need their link again');
+      }
+    }
+    await _userRepository.deleteUser();
+  }
+
+  @override
+  Future<User> unlockWithWallet(DeviceSecretSource source) async {
+    final record = await _userRepository.getDeviceRecord();
+    if (record == null || record.method != source.method) {
+      throw const DeviceUnlockRefusedException(DeviceUnlockStatus.failed);
+    }
+
+    // Each press of Continue asks again: a "no" a moment ago is not this
+    // one's answer.
+    _deviceUnlocker.clear();
+    final outcome = await _deviceUnlocker.unlockToRead(
+      record: record,
+      source: source,
+      // The profile itself needs the key, remembered drives or not.
+      hasRemembered: () async => true,
+    );
+    final deviceKey = outcome.key;
+    if (deviceKey == null) {
+      throw DeviceUnlockRefusedException(outcome.status);
+    }
+
+    try {
+      currentUser = await _userRepository.getUserWithDeviceKey(deviceKey);
+    } on DeviceKeyMismatchException {
+      _deviceUnlocker.clear();
+      throw const DeviceUnlockRefusedException(DeviceUnlockStatus.mismatch);
+    }
+
+    await _startSession();
+    unawaited(_updateBalance());
+    _userStreamController.add(_currentUser);
+
+    return currentUser;
+  }
+
+  @override
+  Future<SavedAccount?> savedAccount() async {
+    final profile = await _userRepository.getSavedProfile();
+    if (profile == null) return null;
+    return SavedAccount(
+      address: profile.id,
+      profileType: ProfileType.values[profile.profileType],
+      unlockMethod: profile.formatVersion == 1
+          ? DeviceUnlockMethod.password
+          : DeviceUnlockMethod.fromValue(profile.unlockMethod),
+      sourceWalletAddress: profile.sourceWalletAddress,
+      publicKey: profile.walletPublicKey,
+    );
+  }
+
+  @override
   Future<User> unlockWithBiometrics({
     required String localizedReason,
   }) async {
@@ -392,6 +570,15 @@ class ArDriveAuthImpl implements ArDriveAuth {
     // sign-out racing the first.
     if (_currentUser == null && !await _hasSavedAccount()) {
       logger.i('No account to sign out');
+      // Still nothing of a sign-in that was abandoned may stay in memory:
+      // drive keys and wallet signatures it held before a Wander switch.
+      try {
+        await _databaseHelpers.clearSessionMemory();
+      } catch (e) {
+        logger.w('Could not clear session memory: ${e.runtimeType}');
+      }
+      _injectedDriveUnlocker?.session.clear();
+      _deviceUnlocker.clear();
       return;
     }
 
@@ -413,6 +600,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       // Locked drives, wallet signatures and proven passwords: memory only,
       // and none of it may outlive the session.
       _injectedDriveUnlocker?.session.clear();
+      _deviceUnlocker.clear();
       await _permanenceCache.clear();
       await _arnsWalletStore.clear();
       await _arnsPendingActionStore.clear();
@@ -857,6 +1045,63 @@ class ArDriveAuthImpl implements ArDriveAuth {
   /// can read it straight after.
   @override
   Future<void> refreshBalance() => _updateBalance();
+}
+
+/// The account saved on this device, unopened.
+class SavedAccount {
+  const SavedAccount({
+    required this.address,
+    required this.profileType,
+    required this.unlockMethod,
+    required this.sourceWalletAddress,
+    required this.publicKey,
+  });
+
+  final String address;
+  final ProfileType profileType;
+
+  /// How it opens; null for a method this build doesn't know.
+  final DeviceUnlockMethod? unlockMethod;
+
+  /// The Ethereum or Solana address it was derived from, if any.
+  final String? sourceWalletAddress;
+  final String publicKey;
+
+  /// Which browser wallet signs this account in, or null for an account its
+  /// password opens (keyfile, recovery phrase, generated).
+  ///
+  /// A profile saved before 3.0, under a password, by an account a browser
+  /// wallet now signs in to without one (Wander, Phantom, Solflare), counts
+  /// as that wallet's: see [isLegacyWalletProfile]. A MetaMask account
+  /// saved that way keeps its password: its password picks its wallet.
+  DeviceUnlockMethod? get walletMethod {
+    final method = unlockMethod;
+    if (method != null && method != DeviceUnlockMethod.password) return method;
+    if (method == null) return null;
+    if (profileType == ProfileType.arConnect) return DeviceUnlockMethod.wander;
+    final source = sourceWalletAddress;
+    if (source != null && !source.startsWith('0x')) {
+      return DeviceUnlockMethod.solana;
+    }
+    return null;
+  }
+
+  /// Saved before 3.0 under a password that a browser wallet now replaces:
+  /// opening it with the wallet makes a new profile, and the drive keys the
+  /// old one remembered are dropped.
+  bool get isLegacyWalletProfile =>
+      unlockMethod == DeviceUnlockMethod.password && walletMethod != null;
+}
+
+/// The wallet didn't give the device key: [status] says why. Nothing was
+/// saved or opened.
+class DeviceUnlockRefusedException implements UntrackedException {
+  const DeviceUnlockRefusedException(this.status);
+
+  final DeviceUnlockStatus status;
+
+  @override
+  String toString() => 'DeviceUnlockRefusedException(${status.name})';
 }
 
 class AuthenticationGatewayException implements Exception {

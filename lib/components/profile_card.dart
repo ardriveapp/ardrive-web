@@ -1886,15 +1886,12 @@ class _ForgetAllOnThisDeviceRow extends StatelessWidget {
                       ForgetAllOnThisDeviceDialog(count: count),
                 );
                 onDone();
-                if (confirmed != true) return;
-                final user = auth.currentUser;
-                final ids = await driveDao.rememberedDriveIds(
-                    ownerAddress: user.walletAddress);
-                await driveDao.forgetAllDriveKeys(
-                  user.cipherKey,
-                  ownerAddress: user.walletAddress,
+                await forgetAllIfConfirmed(
+                  confirmed: confirmed,
+                  driveDao: driveDao,
+                  user: auth.currentUser,
+                  tabs: DeviceTabs.instance,
                 );
-                DeviceTabs.instance.announceForgotten(ids);
               },
             ),
           ],
@@ -1902,6 +1899,26 @@ class _ForgetAllOnThisDeviceRow extends StatelessWidget {
       },
     );
   }
+}
+
+/// "Forget all on this device" once the confirmation is in: only
+/// [confirmed] true forgets [user]'s remembered drive keys, and tells the
+/// other tabs which.
+@visibleForTesting
+Future<void> forgetAllIfConfirmed({
+  required bool? confirmed,
+  required DriveDao driveDao,
+  required User user,
+  required DeviceTabs tabs,
+}) async {
+  if (confirmed != true) return;
+  final ids =
+      await driveDao.rememberedDriveIds(ownerAddress: user.walletAddress);
+  await driveDao.forgetAllDriveKeys(
+    user.cipherKey,
+    ownerAddress: user.walletAddress,
+  );
+  tabs.announceForgotten(ids);
 }
 
 /// "Forget N drives on this device?": Forget pops true, Cancel false.

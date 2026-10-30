@@ -46,6 +46,10 @@ class GraphQLRetry {
   final ArtemisClient _client;
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
+
+  /// Where a query goes when the primary endpoint won't serve it.
+  @visibleForTesting
+  String get fallbackGraphqlUrl => _fallbackGraphqlUrl;
   final Duration _attemptTimeout;
   final Duration _maxAttemptTimeout;
 

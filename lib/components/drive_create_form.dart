@@ -2,6 +2,7 @@ import 'package:ardrive/components/password_autofill.dart';
 import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/locked_drives/presentation/set_drive_password_dialog.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -64,9 +65,38 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
   bool _rejectionSeen = false;
 
   Future<void> _create(DriveCreateCubit cubit) async {
-    if (!cubit.needsDrivePassword) {
-      await cubit.submit(_driveNameController.text);
-      return;
+    // Arweave is asked before a drive password is set: the list here may
+    // not show drives the user has. If it finds one, the field to enter the
+    // drive password appears instead.
+    if (cubit.drivePasswordAsk == DrivePasswordAsk.set) {
+      setState(() => _checking = true);
+      try {
+        await cubit.confirmDrivePasswordAsk();
+      } finally {
+        if (mounted) setState(() => _checking = false);
+      }
+      if (!mounted) return;
+      if (cubit.drivePasswordAsk == DrivePasswordAsk.enter) return;
+    }
+    switch (cubit.drivePasswordAsk) {
+      case null:
+        await cubit.submit(_driveNameController.text);
+        return;
+      case DrivePasswordAsk.set:
+        // A browser wallet account's first private drive: it sets the drive
+        // password every private drive of theirs will use.
+        final profile = context.read<ProfileCubit>().state;
+        if (profile is! ProfileLoggedIn) return;
+        final password = await showSetDrivePasswordDialog(
+          context,
+          walletAddress: profile.user.walletAddress,
+        );
+        if (password == null || !mounted) return;
+        await cubit.submit(_driveNameController.text,
+            newDrivePassword: password);
+        return;
+      case DrivePasswordAsk.enter:
+        break;
     }
 
     setState(() {
@@ -194,7 +224,10 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             final typography = ArDriveTypographyNew.of(context);
             final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
             final cubit = context.read<DriveCreateCubit>();
-            final needsPassword = cubit.needsDrivePassword;
+            // Only an existing drive password is typed here; setting one
+            // has its own dialog (see [_create]).
+            final needsPassword =
+                cubit.drivePasswordAsk == DrivePasswordAsk.enter;
 
             return ArDriveStandardModalNew(
               title: appLocalizationsOf(context).createDriveEmphasized,

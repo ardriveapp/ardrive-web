@@ -188,13 +188,7 @@ class GenerateWallet extends LoginEvent {
 }
 
 class CreateNewWallet extends LoginEvent {
-  const CreateNewWallet({this.noWalletFound = false});
-
-  /// Made because no wallet extension was found to offer instead.
-  final bool noWalletFound;
-
-  @override
-  List<Object> get props => [noWalletFound];
+  const CreateNewWallet();
 }
 
 /// Sign up on the first panel: offers the browser wallets found, if any,
@@ -231,4 +225,21 @@ class LoginWithSolana extends LoginEvent {
 
   @override
   List<Object> get props => [provider ?? ''];
+}
+
+/// Continue on Welcome back for an account a browser wallet opens: one
+/// approval in that wallet.
+class UnlockWithWallet extends LoginEvent {
+  const UnlockWithWallet();
+}
+
+/// The answer to "Have you used ArDrive with this MetaMask before?", asked
+/// when no record of the account was found anywhere.
+class AnswerUsedArDriveBefore extends LoginEvent {
+  const AnswerUsedArDriveBefore({required this.usedBefore});
+
+  final bool usedBefore;
+
+  @override
+  List<Object> get props => [usedBefore];
 }

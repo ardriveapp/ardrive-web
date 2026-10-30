@@ -33,7 +33,14 @@ class LoginEnterRecoveryPhrase extends LoginState {
 enum BrowserWallet { wander, metamask, phantom, solflare, otherSolana }
 
 /// What a browser wallet has been asked for.
-enum BrowserWalletRequest { connect, signIn }
+enum BrowserWalletRequest {
+  connect,
+  signIn,
+
+  /// The one approval that opens the saved account and the drives this
+  /// device remembers.
+  openDrives,
+}
 
 /// A browser wallet has been asked to connect or sign, and its answer is
 /// awaited. The sign-in panel says where to approve it and offers Cancel.
@@ -59,14 +66,7 @@ class LoginShowLoader extends LoginState {}
 /// A new account's key is being made on this device, which can take up to a
 /// minute. Shown in the sign-in panel rather than over it.
 class LoginCreatingAccount extends LoginState {
-  const LoginCreatingAccount({this.noWalletFound = false});
-
-  /// Sign up found no wallet extension to offer, so it went straight here,
-  /// and the panel says so.
-  final bool noWalletFound;
-
-  @override
-  List<Object?> get props => [noWalletFound];
+  const LoginCreatingAccount();
 }
 
 class LoginShowBlockingDialog extends LoginState {
@@ -87,7 +87,12 @@ class PromptPassword extends LoginState {
     this.showWalletCreated = false,
     this.isPasswordInvalid = false,
     this.hasGraphQLException = false,
+    this.noAccountFound = false,
   });
+
+  /// The password typed for a MetaMask with no record found opened no
+  /// ArDrive account.
+  final bool noAccountFound;
 
   final String? mnemonic;
   final Wallet? wallet;
@@ -109,6 +114,7 @@ class PromptPassword extends LoginState {
         showWalletCreated,
         isPasswordInvalid,
         hasGraphQLException,
+        noAccountFound,
       ];
 }
 
@@ -204,3 +210,54 @@ class LoginPasswordRetry extends LoginState {
 class LoginPasswordFailedWithPrivateDriveNotFound extends LoginState {}
 
 class LoginCreatePasswordComplete extends LoginState {}
+
+/// Why Welcome back's approval didn't open the account.
+enum WalletUnlockProblem {
+  /// The person said no in the wallet, or it didn't answer.
+  declined,
+
+  /// The wallet signed, but not as it did when the account was saved here,
+  /// so nothing saved opens. Signing in again makes a new profile.
+  mismatch,
+
+  /// The wallet is on another account than the one saved here.
+  otherAccount,
+
+  /// The wallet derives another ArDrive account than the one saved here
+  /// (a profile from before 3.0). Nothing was changed.
+  notThisAccount,
+
+  /// Anything else.
+  failed,
+}
+
+/// Welcome back for an account a browser wallet opens ([wallet]): Continue
+/// asks it for one approval. No password.
+class PromptWalletUnlock extends LoginState {
+  const PromptWalletUnlock({
+    required this.wallet,
+    this.relocks = false,
+    this.problem,
+  });
+
+  final BrowserWallet wallet;
+
+  /// Saved before 3.0 under a password: opening it with the wallet locks the
+  /// private drives this device remembered, until they are unlocked again.
+  final bool relocks;
+
+  /// What went wrong with the last Continue, if anything.
+  final WalletUnlockProblem? problem;
+
+  PromptWalletUnlock withProblem(WalletUnlockProblem problem) =>
+      PromptWalletUnlock(wallet: wallet, relocks: relocks, problem: problem);
+
+  @override
+  List<Object?> get props => [wallet, relocks, problem];
+}
+
+/// No record of this MetaMask's ArDrive account was found anywhere: asks
+/// whether it was used with ArDrive before. See [AnswerUsedArDriveBefore].
+class LoginAskUsedMetaMaskBefore extends LoginState {
+  const LoginAskUsedMetaMaskBefore();
+}

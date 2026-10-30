@@ -10,6 +10,7 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:ardrive/upload_entry/domain/upload_start.dart';
 import 'package:ardrive/upload_entry/domain/drive_wait.dart';
+import 'package:ardrive/upload_entry/presentation/first_upload.dart';
 import 'package:ardrive/upload_entry/presentation/upload_destination_dialog.dart';
 import 'package:ardrive/upload_entry/presentation/upload_ready_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -107,21 +108,17 @@ Future<void> startUpload(
       );
 
     case UploadNeedsDrive():
-      await showArDriveDialog(
+      // No drive at all: the files go into a private "My files", made now.
+      await uploadIntoFirstDrive(
         context,
-        content: UploadNeedsDriveDialog(
-          onCreateDrive: () {
-            if (context.mounted) {
-              unawaited(
-                _createDriveForUpload(
-                  context,
-                  router,
-                  drivesCubit,
-                  isFolderUpload,
-                ),
-              );
-            }
-          },
+        router: router,
+        drivesCubit: drivesCubit,
+        isFolderUpload: isFolderUpload,
+        openCreateDrive: () => _createDriveForUpload(
+          context,
+          router,
+          drivesCubit,
+          isFolderUpload,
         ),
       );
 

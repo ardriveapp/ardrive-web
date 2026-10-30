@@ -551,6 +551,33 @@ void main() {
       expect(attempts[2].failure, DriveUnlockFailure.wrongPassword);
     });
 
+    test('a drive forgotten on this device is not signed for', () async {
+      final drives = await drivesWith(['pw', 'pw', 'pw']);
+      await db.driveDao.forgetStoredDriveKeyUnread(drives[0].driveId);
+
+      await unlocker.signForDiscovery(
+          wallet: wander.wallet, drives: metadataOf(drives));
+
+      expect(wander.lastBatchSize, 2);
+      expect(session.holdsSignatureFor(owner, drives[0].driveId), isFalse);
+    });
+
+    test(
+        'no password at all (a browser wallet sign-in) asks the wallet nothing, '
+        'and opens nothing', () async {
+      final drives = await drivesWith(['pw']);
+
+      final attempt = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: drives[0].tx,
+        data: drives[0].data,
+        password: '',
+      );
+
+      expect(attempt.opened, isFalse);
+      expect(wander.prompts, 0);
+    });
+
     test('an unproven password has no prompts to spend: nothing is asked',
         () async {
       final drives = await drivesWith(['pw', 'pw']);

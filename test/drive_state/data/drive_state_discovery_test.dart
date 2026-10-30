@@ -28,6 +28,9 @@ class _ScriptedGraphQLRetry implements GraphQLRetry {
   /// response that carries no data, or an `Object` to throw.
   final List<Object?> _answers;
 
+  @override
+  String get fallbackGraphqlUrl => GraphQLRetry.defaultFallbackGraphqlUrl;
+
   final List<DriveStateEntityHistoryArguments> calls = [];
   int _index = 0;
 

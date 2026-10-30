@@ -603,6 +603,46 @@ void main() {
       });
 
       test(
+          'signed in with no password (P3): discovery asks Wander nothing, '
+          'even in a sync the user starts, and every private drive is locked',
+          () async {
+        await drives(['right', 'right', 'other']);
+
+        await discoverAs(password: '');
+        await discoverAs(password: '', again: true);
+
+        expect(wander.prompts, 0);
+        expect(wander.batches, 0);
+        expect(session.currentLockedDrives, hasLength(3));
+        expect(await db.driveDao.allDrives().get(), isEmpty);
+      });
+
+      test(
+          'signed in with no password, then the first Unlock: one approval '
+          'opens every drive that shares the password, and later discovery '
+          'tries it on new drives', () async {
+        await drives(['right', 'right', 'right', 'other']);
+        await discoverAs(password: '');
+        for (final drive in onChain) {
+          when(() => arweave.getLatestDriveTx(drive.driveId, owner,
+                  maxRetries: any(named: 'maxRetries')))
+              .thenAnswer((_) async => drive.tx);
+        }
+
+        final result = await unlocker.unlock(
+          wallet: wander.wallet,
+          profileKey: profileKey,
+          driveId: onChain[0].driveId,
+          password: 'right',
+        );
+
+        expect(result.openedDriveIds, hasLength(3));
+        expect(wander.prompts, 1);
+        expect(wander.batches, 1);
+        expect(session.currentLockedDrives, hasLength(1));
+      });
+
+      test(
           'Welcome back, with nothing held: discovery costs one prompt for '
           'every drive', () async {
         await drives(['right', 'right', 'right', 'other']);

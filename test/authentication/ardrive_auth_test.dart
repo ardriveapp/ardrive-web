@@ -728,6 +728,42 @@ void main() {
       );
 
       test(
+          'with nothing saved and nobody signed in, deletes nothing but still '
+          'clears what an abandoned sign-in left in memory', () async {
+        when(() => mockUserRepository.hasUser()).thenAnswer((_) async => false);
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+        unlockSession.rememberSignature(
+            'owner', 'drive', DriveSignatureType.v2, Uint8List.fromList([1]));
+
+        await arDriveAuth.logout();
+
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+        expect(
+            unlockSession.signature('owner', 'drive', DriveSignatureType.v2),
+            isNull);
+        verifyNever(() => mockUserRepository.deleteUser());
+        verifyNever(() => mockDatabaseHelpers.deleteAllTables());
+      });
+
+      test(
+          'when it can\'t tell whether an account is saved, signs out as if '
+          'one were', () async {
+        when(() => mockUserRepository.hasUser())
+            .thenThrow(Exception('database closed'));
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.logout();
+
+        verify(() => mockUserRepository.deleteUser()).called(1);
+        verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+      });
+
+      test(
           'should delete the current user and delete it when user is logged in',
           () async {
         when(() => mockBiometricAuthentication.isEnabled())

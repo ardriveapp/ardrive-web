@@ -54,7 +54,7 @@ class DatabaseHelpers {
   /// 1. The older database stores and `ardrive-reset-<time>` copies, each of
   ///    which holds a format 1 profile ([Database.deleteLegacyStores]).
   /// 2. `VACUUM`, which drops the free pages the rewritten profile row left,
-  ///    and any from before `secure_delete` was on.
+  ///    and any from before `secure_delete` was on, live pages included.
   ///
   /// A format 1 profile leaks the start of the wallet's JSON to anyone who
   /// reads it (see [currentProfileFormat]), so this gives up the rollback
@@ -70,6 +70,9 @@ class DatabaseHelpers {
       if (!(ownsDatabase ?? Database.ownsDatabase)) return false;
       if (!await _db.profileDao.needsOlderCopiesCleared()) return false;
       await (deleteStores ?? Database.deleteLegacyStores)();
+      // Always: bytes deleted before secure_delete was on can survive in a
+      // live page while the free list reads 0, and only VACUUM rewrites
+      // every page.
       await _db.vacuum();
       await _db.profileDao.markOlderCopiesCleared();
       logger.i('Cleared the older copies of the profile on this device');
