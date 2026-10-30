@@ -263,7 +263,10 @@ class DriveUnlocker {
         // Cancel on ArDrive's own "Wander didn't answer" prompt: the person
         // gave up on Wander for now, so the rest of this pass asks it nothing
         // either, rather than a Cancel per drive.
-        final gaveUp = e is ArConnectUnavailableException;
+        // A Wander reconnected on another wallet ends the pass the same way:
+        // nothing more may be signed with it.
+        final gaveUp = e is ArConnectUnavailableException ||
+            e is ArConnectWalletMismatchException;
         if (gaveUp) promptBudget?.remaining = 0;
         return DriveKeyAttempt.failed(
           gaveUp || isWalletCancellation(e)

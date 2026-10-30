@@ -11,6 +11,7 @@ import 'package:arweave/utils.dart' show ownerToAddress;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../test_utils/fake_user.dart';
 import '../test_utils/utils.dart';
 
 /// A saved Wander (ArConnect) account: unlocking it is a local password
@@ -296,6 +297,32 @@ void main() {
       expect(cubit!.takeOtherWalletNotice(), isTrue);
       expect(cubit!.takeOtherWalletNotice(), isFalse);
       verifyNever(() => wander.getWalletAddress());
+    });
+
+    test(
+        'nothing more is asked of Wander for the saved account until the '
+        'next sign-in', () async {
+      buildCubit();
+      await pumpEventQueue();
+
+      await cubit!.onWanderSwitch('another-address');
+
+      // A drive unlock pass still running when the switch landed.
+      var signed = 0;
+      await expectLater(
+        ArConnectPrompt.ask(wander, () async => signed++,
+            savedPublicKey: savedPublicKey),
+        throwsA(isA<ArConnectWalletMismatchException>()),
+      );
+      expect(signed, 0);
+
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      await cubit!.unlockDefaultProfile(fakeUserJson, ProfileType.arConnect);
+      expect(
+        await ArConnectPrompt.ask(wander, () async => 'signed',
+            savedPublicKey: savedPublicKey),
+        'signed',
+      );
     });
 
     test('back to the saved wallet changes nothing', () async {

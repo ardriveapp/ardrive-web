@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -1050,6 +1051,10 @@ class SyncCubit extends Cubit<SyncState> {
 
     _syncProgress = SyncProgress.initial();
     _syncGeneration++;
+
+    // A sync the person started may ask them to reconnect Wander again after
+    // an earlier Cancel.
+    if (trigger == SyncTrigger.userInitiated) ArConnectPrompt.personActed();
 
     // What this run covers, for every surface that has to tell a drive in the
     // run from one merely sitting beside it. Null means all of them.

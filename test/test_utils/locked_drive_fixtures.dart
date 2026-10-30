@@ -194,6 +194,9 @@ class FakeWander extends Fake implements ArConnectService {
   /// the person picks Cancel.
   bool gaveUp = false;
 
+  /// Throws what a reconnect onto another wallet ends in.
+  bool otherWallet = false;
+
   /// Answers every v2 (data item) signature with fresh random bytes.
   bool varyV2 = false;
 
@@ -201,6 +204,7 @@ class FakeWander extends Fake implements ArConnectService {
     prompts++;
     if (cancel) throw Exception('User cancelled the auth');
     if (fail) throw Exception('Wallet is locked');
+    if (otherWallet) throw const ArConnectWalletMismatchException();
     if (gaveUp) {
       throw const ArConnectUnavailableException(
           ArConnectUnavailableReason.noAnswer);

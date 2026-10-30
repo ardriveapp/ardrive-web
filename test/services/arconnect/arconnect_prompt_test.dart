@@ -403,7 +403,10 @@ void main() {
     });
 
     test('reconnected on another wallet is a mismatch, and says so', () async {
-      pick = () => true;
+      // One Reconnect only: without the address check this ends in Cancel
+      // rather than asking forever.
+      final picks = [true];
+      pick = () => picks.isEmpty ? false : picks.removeAt(0);
       var told = 0;
       ArConnectPrompt.registerOtherWalletHandler(() => told++);
       when(() => wander.connect()).thenAnswer((_) async {});
@@ -420,6 +423,113 @@ void main() {
       );
       expect(told, 1);
       expect(calls, 1, reason: 'nothing is signed for another wallet');
+    });
+
+    test('after a mismatch, nothing more is asked for that account', () async {
+      final picks = [true];
+      pick = () => picks.isEmpty ? false : picks.removeAt(0);
+      when(() => wander.connect()).thenAnswer((_) async {});
+      when(() => wander.getWalletAddress())
+          .thenAnswer((_) async => ownerToAddress('other-public-key'));
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing(),
+            savedPublicKey: 'saved-public-key'),
+        throwsA(isA<ArConnectWalletMismatchException>()),
+      );
+
+      // The rest of an unlock pass: Wander is not asked to sign.
+      var calls = 0;
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async {
+          calls++;
+          return 'signed';
+        }, savedPublicKey: 'saved-public-key'),
+        throwsA(isA<ArConnectWalletMismatchException>()),
+      );
+      expect(calls, 0);
+
+      // Until the next sign-in.
+      ArConnectPrompt.signedIn();
+      expect(
+        await ArConnectPrompt.ask(wander, () async => 'signed',
+            savedPublicKey: 'saved-public-key'),
+        'signed',
+      );
+    });
+
+    test('after Cancel, a missing permission asks nobody until they act',
+        () async {
+      pick = () => false;
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing()),
+        throwsA(isA<ArConnectUnavailableException>()),
+      );
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing()),
+        throwsA(isA<ArConnectUnavailableException>().having((e) => e.reason,
+            'reason', ArConnectUnavailableReason.noPermission)),
+      );
+      expect(shown, [ArConnectUnavailableReason.noPermission]);
+
+      ArConnectPrompt.personActed();
+      await expectLater(
+        ArConnectPrompt.ask<String>(wander, () async => throw missing()),
+        throwsA(isA<ArConnectUnavailableException>()),
+      );
+      expect(shown, hasLength(2));
+    });
+
+    test('a failure while a reconnect runs waits for it, with no new prompt',
+        () async {
+      pick = () => true;
+      final connected = Completer<void>();
+      var allowed = false;
+      when(() => wander.connect()).thenAnswer((_) async {
+        await connected.future;
+        allowed = true;
+      });
+      Future<String> sign() async {
+        if (!allowed) throw missing();
+        return 'signed';
+      }
+
+      final first = ArConnectPrompt.ask(wander, sign);
+      await pumpEventQueue();
+      expect(shown, hasLength(1), reason: 'Reconnect chosen, connecting');
+
+      // Another request fails while Wander's connect window is open.
+      final second = ArConnectPrompt.ask(wander, sign);
+      await pumpEventQueue();
+      expect(shown, hasLength(1));
+
+      connected.complete();
+      expect(await first, 'signed');
+      expect(await second, 'signed');
+      verify(() => wander.connect()).called(1);
+    });
+
+    test('a failure to a request sent before a reconnect just asks again',
+        () async {
+      pick = () => true;
+      var allowed = false;
+      when(() => wander.connect()).thenAnswer((_) async => allowed = true);
+      final early = Completer<String>();
+      var calls = 0;
+
+      // Sent before the reconnect; Wander fails it after.
+      final second = ArConnectPrompt.ask(wander, () {
+        calls++;
+        return calls == 1 ? early.future : Future.value('signed');
+      });
+      final first = ArConnectPrompt.ask(wander, () async {
+        if (!allowed) throw missing();
+        return 'signed';
+      });
+      expect(await first, 'signed');
+
+      early.completeError(missing());
+      expect(await second, 'signed');
+      expect(shown, hasLength(1));
     });
 
     test('reconnected on the saved wallet signs', () async {

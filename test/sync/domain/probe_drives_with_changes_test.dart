@@ -1,10 +1,11 @@
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -68,8 +69,9 @@ void main() {
     );
   });
 
-  test('asks from just past each drive\'s read height, with no look-back',
-      () async {
+  test(
+      'looks back from the lowest read height, and passes each drive\'s '
+      'height and what this device holds', () async {
     when(() => driveDao.allDrives()).thenReturn(_FakeSelectable([
       _drive('a', 1000),
       _drive('b', 2000),
@@ -79,6 +81,7 @@ void main() {
               minBlockHeight: any(named: 'minBlockHeight'),
               ownerAddress: any(named: 'ownerAddress'),
               readUpTo: any(named: 'readUpTo'),
+              knownTxIds: any(named: 'knownTxIds'),
             ))
         .thenAnswer(
             (_) async => (activeDriveIds: <String>{}, isComplete: true));
@@ -90,8 +93,11 @@ void main() {
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           ownerAddress: 'owner',
           readUpTo: captureAny(named: 'readUpTo'),
+          knownTxIds: captureAny(named: 'knownTxIds'),
         )).captured;
-    expect(asked[0], 1001);
+    // No sync has run in this repository: a sync would look back too.
+    expect(asked[0], 1000 - kBlockHeightLookBack);
     expect(asked[1], {'a': 1000, 'b': 2000});
+    expect(asked[2], isNotNull);
   });
 }

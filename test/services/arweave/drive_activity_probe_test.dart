@@ -18,8 +18,10 @@ class _ProbeRetry extends GraphQLRetry {
   _ProbeRetry(this._edges)
       : super(_MockArtemisClient(), internetChecker: _MockInternetChecker());
 
-  /// Each one a transaction: its Drive-Id and block height (null: pending).
+  /// Each one a transaction: its Drive-Id, block height (null: pending),
+  /// Entity-Type and id.
   final List<(String driveId, int? height)> _edges;
+  final Map<int, (String entityType, String id)> extra = {};
 
   DriveActivityProbeArguments? asked;
 
@@ -34,12 +36,14 @@ class _ProbeRetry extends GraphQLRetry {
       'transactions': {
         'pageInfo': {'hasNextPage': false},
         'edges': [
-          for (final (driveId, height) in _edges)
+          for (final (i, (driveId, height)) in _edges.indexed)
             {
               'node': {
+                'id': extra[i]?.$2 ?? 'tx-$i',
                 'block': height == null ? null : {'height': height},
                 'tags': [
                   {'name': 'Drive-Id', 'value': driveId},
+                  {'name': 'Entity-Type', 'value': extra[i]?.$1 ?? 'snapshot'},
                 ],
               },
             },
@@ -99,5 +103,42 @@ void main() {
     );
 
     expect(result.activeDriveIds, {'a', 'b'});
+  });
+
+  test('what this device already holds never counts', () async {
+    final retry = _ProbeRetry([('a', 1500), ('b', 1600)])
+      ..extra[0] = ('folder', 'written-here')
+      ..extra[1] = ('folder', 'read-already');
+
+    final result = await serviceWith(retry).probeActiveDriveIds(
+      driveIds: ['a', 'b'],
+      minBlockHeight: 1000,
+      ownerAddress: 'owner',
+      readUpTo: {'a': 1200, 'b': 1200},
+      knownTxIds: (ids) async => {'written-here', 'read-already'},
+    );
+
+    expect(result.activeDriveIds, isEmpty);
+  });
+
+  // A gateway can index a transaction after the drive was read up to a
+  // height above it. Metadata this device doesn't hold counts; other
+  // entities at or below the height (snapshots, drive signatures) are never
+  // kept as rows, so they would count after every reload.
+  test('late-indexed metadata at or below the read height still counts',
+      () async {
+    final retry = _ProbeRetry([('late', 1500), ('snap', 1500)])
+      ..extra[0] = ('file', 'late-file')
+      ..extra[1] = ('snapshot', 'old-snapshot');
+
+    final result = await serviceWith(retry).probeActiveDriveIds(
+      driveIds: ['late', 'snap'],
+      minBlockHeight: 1000,
+      ownerAddress: 'owner',
+      readUpTo: {'late': 2000, 'snap': 2000},
+      knownTxIds: (ids) async => const {},
+    );
+
+    expect(result.activeDriveIds, {'late'});
   });
 }

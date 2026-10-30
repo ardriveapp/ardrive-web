@@ -104,6 +104,13 @@ class ProfileCubit extends Cubit<ProfileState> {
     return _signingOutForOtherWallet ??= () async {
       try {
         _otherWalletNotice = true;
+        // Nothing still running, such as a drive unlock pass, may sign with
+        // the other wallet while this signs out.
+        final profile = await _profileDao.defaultProfile().getSingleOrNull();
+        if (profile != null &&
+            profile.profileType == ProfileType.arConnect.index) {
+          ArConnectPrompt.refuseFor(profile.walletPublicKey);
+        }
         await _arDriveAuth.logout();
         if (!isClosed) emit(ProfileSignedOutForOtherWallet());
       } catch (e, stackTrace) {
@@ -183,8 +190,13 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Asked before a write. Wander is asked through [ArConnectPrompt], so a
   /// locked Wander, or one whose prompt was closed, ends in Try again rather
   /// than a wait; Cancel throws [ArConnectUnavailableException].
-  Future<bool> checkIfWalletMismatch() =>
-      _checkIfWalletMismatch(askPerson: true);
+  ///
+  /// A write is the person acting, so it may ask them to reconnect again
+  /// after an earlier Cancel; see [ArConnectPrompt.personActed].
+  Future<bool> checkIfWalletMismatch() {
+    ArConnectPrompt.personActed();
+    return _checkIfWalletMismatch(askPerson: true);
+  }
 
   Future<bool> _checkIfWalletMismatch({required bool askPerson}) async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
@@ -273,6 +285,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     ProfileType profileType,
   ) async {
     emit(ProfileLoggingIn());
+
+    // Wander may be asked again for this account, and the person asked to
+    // reconnect, whatever an earlier session decided.
+    ArConnectPrompt.signedIn();
 
     // Before anyone hears the user is in: the first sync after login reads a
     // private drive's key from its row, and a drive opened as a visitor has

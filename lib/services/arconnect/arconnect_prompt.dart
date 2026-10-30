@@ -137,9 +137,41 @@ class ArConnectPrompt {
   /// the same prompt waits on, so Wander shows one connect window.
   static Future<bool>? _reconnecting;
 
+  /// How many reconnects have succeeded. A missing-permission failure to a
+  /// request sent before the latest one is stale: the request is sent again
+  /// rather than the person asked again.
+  static int _reconnects = 0;
+
   /// Told when a reconnect finds Wander on another wallet than the saved
   /// account's; see [registerOtherWalletHandler].
   static VoidCallback? _onOtherWallet;
+
+  /// The saved account found to be on another wallet than Wander's. Nothing
+  /// more is asked of Wander for it until the next sign-in ([signedIn]): a
+  /// pass still running would otherwise sign with the other wallet.
+  static String? _elsewhereFor;
+
+  /// Whether the person chose Cancel on "Wander needs your permission
+  /// again". Until they act again ([personActed]), a missing permission
+  /// ends a request without asking, so a pass, or the next one, doesn't
+  /// bring the prompt back for each drive.
+  static bool _permissionDeclined = false;
+
+  /// The person did something that needs Wander: Unlock, a sync they
+  /// started, a write. A missing permission may ask them again.
+  static void personActed() => _permissionDeclined = false;
+
+  /// A sign-in starts over: Wander may be asked again for the account, and
+  /// the person may be asked to reconnect.
+  static void signedIn() {
+    _elsewhereFor = null;
+    _permissionDeclined = false;
+  }
+
+  /// Nothing more is asked of Wander for [savedPublicKey] until the next
+  /// sign-in, because Wander is on another wallet.
+  static void refuseFor(String savedPublicKey) =>
+      _elsewhereFor = savedPublicKey;
 
   /// Whether Wander has answered a request made through [ask] since the page
   /// loaded, which means it was unlocked at the time.
@@ -179,13 +211,21 @@ class ArConnectPrompt {
   }) async {
     var requests = _Requests<T>();
     var send = true;
+    var sentAfter = _reconnects;
 
     while (true) {
+      if (savedPublicKey != null && savedPublicKey == _elsewhereFor) {
+        throw const ArConnectWalletMismatchException();
+      }
+
       ArConnectUnavailableReason reason;
       if (!wander.isExtensionPresent()) {
         reason = ArConnectUnavailableReason.notInstalled;
       } else {
-        if (send) requests.send(request);
+        if (send) {
+          sentAfter = _reconnects;
+          requests.send(request);
+        }
         send = true;
         if (!requests.hasSettled) {
           await _waitForAnswer(
@@ -218,8 +258,24 @@ class ArConnectPrompt {
       }
 
       if (reason == ArConnectUnavailableReason.noPermission) {
+        // Sent before a reconnect that has since succeeded: send it again.
+        if (_reconnects != sentAfter) continue;
+
+        // A reconnect is already running, from the person's click on an
+        // earlier prompt: wait for it rather than prompting again.
+        final running = _reconnecting;
+        if (running != null) {
+          if (await running && savedPublicKey != null) {
+            await _checkSameWallet(wander, savedPublicKey);
+          }
+          continue;
+        }
+
+        if (_permissionDeclined) throw ArConnectUnavailableException(reason);
+
         // Nothing is waiting on Wander here, so only the person closes this.
         if (!await _show(prompt, reason, null)) {
+          _permissionDeclined = true;
           throw ArConnectUnavailableException(reason);
         }
         if (await _reconnect(wander) && savedPublicKey != null) {
@@ -265,6 +321,7 @@ class ArConnectPrompt {
     try {
       await wander.connect().timeout(signTimeout);
       _answered = true;
+      _reconnects++;
       return true;
     } catch (e) {
       logger.w('Wander did not reconnect: $e');
@@ -290,6 +347,7 @@ class ArConnectPrompt {
     if (connected == await ownerToAddress(savedPublicKey)) return;
 
     logger.w('Wander reconnected on another wallet');
+    refuseFor(savedPublicKey);
     _onOtherWallet?.call();
     throw const ArConnectWalletMismatchException();
   }
@@ -364,7 +422,10 @@ class ArConnectPrompt {
     _shownPrompt = null;
     _answered = false;
     _reconnecting = null;
+    _reconnects = 0;
     _onOtherWallet = null;
+    _elsewhereFor = null;
+    _permissionDeclined = false;
   }
 }
 

@@ -565,6 +565,7 @@ class ArweaveService {
     required int minBlockHeight,
     required String ownerAddress,
     Map<String, int>? readUpTo,
+    Future<Set<String>> Function(List<String> txIds)? knownTxIds,
   }) async {
     final query = await graphQLRetry.execute(
       DriveActivityProbeQuery(
@@ -581,17 +582,38 @@ class ArweaveService {
       return (activeDriveIds: <String>{}, isComplete: false);
     }
 
+    final edges = query.data!.transactions.edges;
+
+    // What this device holds already: read by a sync, or written here and
+    // not yet read back. Neither is a change nobody has seen.
+    final known = knownTxIds == null
+        ? const <String>{}
+        : await knownTxIds([for (final edge in edges) edge.node.id]);
+
     final activeDriveIds = <String>{};
-    for (final edge in query.data!.transactions.edges) {
+    for (final edge in edges) {
+      if (known.contains(edge.node.id)) continue;
       final height = edge.node.block?.height;
-      for (final tag in edge.node.tags) {
-        if (tag.name != 'Drive-Id') continue;
-        // One query covers drives read up to different heights, from the
-        // lowest of them; a drive counts only for what is past its own.
-        final readTo = readUpTo?[tag.value];
-        if (readTo != null && height != null && height <= readTo) continue;
-        activeDriveIds.add(tag.value);
+      final tags = {for (final tag in edge.node.tags) tag.name: tag.value};
+      final driveId = tags['Drive-Id'];
+      if (driveId == null) continue;
+
+      // One query covers drives read up to different heights, from below
+      // the lowest of them. Past a drive's own height anything new counts;
+      // at or below it, only drive, folder and file metadata this device
+      // doesn't hold, which a gateway indexed after the drive was read.
+      // Other entities there (snapshots, drive signatures) are never kept
+      // as rows, so they would count again after every reload.
+      final readTo = readUpTo?[driveId];
+      if (readTo != null && height != null && height <= readTo) {
+        final entityType = tags['Entity-Type'];
+        if (entityType != 'drive' &&
+            entityType != 'folder' &&
+            entityType != 'file') {
+          continue;
+        }
       }
+      activeDriveIds.add(driveId);
     }
 
     final isComplete = !query.data!.transactions.pageInfo.hasNextPage;
