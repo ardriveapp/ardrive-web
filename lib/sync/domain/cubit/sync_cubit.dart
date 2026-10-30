@@ -1833,6 +1833,15 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
+  List<String> get _drivesWithSkippedItems => [
+        for (final entry in _skipsByExaminedDrive.entries)
+          if (entry.value.isNotEmpty) entry.key,
+      ];
+
+  /// How many drives [retrySkippedItems] would resync, for the confirmation
+  /// that asks first.
+  int get drivesWithSkippedItemsCount => _drivesWithSkippedItems.length;
+
   /// Reads again the items the last sync could not read: a full resync of
   /// the drives they are in, and of no other drive.
   ///
@@ -1841,10 +1850,7 @@ class SyncCubit extends Cubit<SyncState> {
   /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`). Returns false when nothing is
   /// waiting to be read again.
   Future<bool> retrySkippedItems() async {
-    final driveIds = [
-      for (final entry in _skipsByExaminedDrive.entries)
-        if (entry.value.isNotEmpty) entry.key,
-    ];
+    final driveIds = _drivesWithSkippedItems;
     if (driveIds.isEmpty) return false;
     return startSync(onlyDriveIds: driveIds, deepSync: true);
   }

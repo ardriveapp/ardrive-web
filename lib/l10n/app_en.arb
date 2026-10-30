@@ -536,6 +536,11 @@
     "description": "Confirmation body before a full resync of one drive",
     "placeholders": { "driveName": { "type": "String" } }
   },
+  "fullResyncConfirmUnreadDrives": "This rereads the entire history of {count, plural, =1{the drive} other{the {count} drives}} with items that could not be read, from Arweave, without using snapshots. It can take a long time for large drives. Nothing on this device is deleted.",
+  "@fullResyncConfirmUnreadDrives": {
+    "description": "Asks before Try again rereads, in full, the drives whose items a sync could not read.",
+    "placeholders": {"count": {"type": "int"}}
+  },
   "fullResyncConfirmAction": "Full resync",
   "@fullResyncConfirmAction": {
     "description": "Button that starts a full resync after confirmation"

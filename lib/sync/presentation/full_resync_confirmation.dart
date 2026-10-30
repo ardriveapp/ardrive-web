@@ -8,14 +8,25 @@ import 'package:flutter/material.dart';
 class FullResyncScope {
   const FullResyncScope.allDrives()
       : driveName = null,
+        selectedCount = null,
+        unreadCount = null;
+
+  const FullResyncScope.drive(String this.driveName)
+      : selectedCount = null,
+        unreadCount = null;
+
+  const FullResyncScope.selected(int this.selectedCount)
+      : driveName = null,
+        unreadCount = null;
+
+  /// The drives a sync could not read every item of, for its Try again.
+  const FullResyncScope.unread(int this.unreadCount)
+      : driveName = null,
         selectedCount = null;
-
-  const FullResyncScope.drive(String this.driveName) : selectedCount = null;
-
-  const FullResyncScope.selected(int this.selectedCount) : driveName = null;
 
   final String? driveName;
   final int? selectedCount;
+  final int? unreadCount;
 }
 
 /// Asks before a full resync starts, and returns whether the user agreed.
@@ -54,11 +65,13 @@ class _FullResyncModal extends StatelessWidget {
 
     final body = scope.driveName != null
         ? localizations.fullResyncConfirmDrive(scope.driveName!)
-        : scope.selectedCount != null
-            ? localizations.fullResyncConfirmSelectedDrives(
-                scope.selectedCount!,
-              )
-            : localizations.fullResyncConfirmAllDrives;
+        : scope.unreadCount != null
+            ? localizations.fullResyncConfirmUnreadDrives(scope.unreadCount!)
+            : scope.selectedCount != null
+                ? localizations.fullResyncConfirmSelectedDrives(
+                    scope.selectedCount!,
+                  )
+                : localizations.fullResyncConfirmAllDrives;
 
     return ArDriveStandardModalNew(
       title: localizations.fullResyncConfirmTitle,

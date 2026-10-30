@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
@@ -15,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
@@ -75,6 +77,7 @@ void main() {
     when(() => syncCubit.clearCancelledState()).thenReturn(null);
     when(() => syncCubit.retryFailure()).thenAnswer((_) async {});
     when(() => syncCubit.retrySkippedItems()).thenAnswer((_) async => true);
+    when(() => syncCubit.drivesWithSkippedItemsCount).thenReturn(1);
   });
 
   tearDown(() async {
@@ -101,15 +104,19 @@ void main() {
             if (drivesList != null)
               BlocProvider<DrivesListCubit>.value(value: drivesList),
           ],
-          child: MaterialApp(
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('en', '')],
-            home: Scaffold(body: body),
+          // Above the navigator too, as in the app: dialogs read it.
+          child: ChangeNotifierProvider<ActivityTracker>(
+            create: (_) => ActivityTracker(),
+            child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en', '')],
+              home: Scaffold(body: body),
+            ),
           ),
         ),
       ),
@@ -529,7 +536,14 @@ void main() {
       findsOneWidget,
     );
     await tester.tap(find.text('Try again'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    // A full resync of that drive, so it asks first, as every full resync
+    // does.
+    verifyNever(() => syncCubit.retrySkippedItems());
+    expect(find.textContaining('with items that could not be read'),
+        findsOneWidget);
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Full resync'));
+    await tester.pumpAndSettle();
     verify(() => syncCubit.retrySkippedItems()).called(1);
 
     await tester.pumpWidget(const SizedBox());

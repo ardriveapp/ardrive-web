@@ -10,6 +10,7 @@ import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_box.dart';
+import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
@@ -1133,7 +1134,15 @@ class _SyncButtonMenu extends StatelessWidget {
     final failure = this.failure;
 
     if (retriesSkippedItems) {
-      syncCubit.retrySkippedItems();
+      // A full resync of those drives, which can run long on a large one:
+      // asked first, as every full resync is.
+      () async {
+        final count = syncCubit.drivesWithSkippedItemsCount;
+        if (count == 0) return;
+        if (await confirmFullResync(context, FullResyncScope.unread(count))) {
+          await syncCubit.retrySkippedItems();
+        }
+      }();
       return;
     }
 
