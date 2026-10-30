@@ -115,9 +115,16 @@ class AppVersionHelpLine extends StatelessWidget {
                   ? typography.paragraphSmall(fontWeight: ArFontWeight.semiBold)
                   : null,
               color: quiet ? colorTokens.textLow : null,
-              onTap: () => openUrl(
-                url: whatsNewUrl(info.version, flavor ?? appFlavorOf(context)),
-              ),
+              onTap: () {
+                openUrl(
+                  url:
+                      whatsNewUrl(info.version, flavor ?? appFlavorOf(context)),
+                );
+                // In the sign-in settings menu the line is not an action of
+                // the menu's, so the menu does not close for it; the link
+                // closes it, as every other item there does.
+                ArDriveSubmenu.maybeCloseOf(context)?.call();
+              },
             ),
           ],
         );

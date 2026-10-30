@@ -42,10 +42,12 @@ enum NavSection {
 class NavSectionsCubit extends Cubit<Set<NavSection>> {
   NavSectionsCubit({UserPreferencesRepository? preferences})
       : _preferences = preferences,
+        _unknown = _unknownIn(preferences?.currentPreferences),
         super(_read(preferences?.currentPreferences)) {
     // Preferences load after the app starts, again on login, and are
     // cleared on logout; each of those is followed.
     _subscription = preferences?.watch().listen((prefs) {
+      _unknown = _unknownIn(prefs);
       final stored = _read(prefs);
       if (!setEquals(stored, state)) emit(stored);
     });
@@ -54,9 +56,20 @@ class NavSectionsCubit extends Cubit<Set<NavSection>> {
   final UserPreferencesRepository? _preferences;
   StreamSubscription<UserPreferences>? _subscription;
 
+  /// Saved names this build does not know: headings a newer build added.
+  /// Saved back with every fold, so going back to that build finds them as
+  /// they were left.
+  Set<String> _unknown;
+
+  static Set<String> _unknownIn(UserPreferences? prefs) => {
+        for (final name in prefs?.foldedNavSections ?? const <String>{})
+          if (NavSection.values.every((s) => s.name != name)) name,
+      };
+
   static Set<NavSection> _read(UserPreferences? prefs) => {
         for (final name in prefs?.foldedNavSections ?? const <String>{})
-          // A name this build does not know is ignored, not an error.
+          // A name this build does not know is ignored, not an error, and
+          // kept: see [_unknown].
           ...NavSection.values.where((s) => s.name == name),
       };
 
@@ -67,7 +80,10 @@ class NavSectionsCubit extends Cubit<Set<NavSection>> {
         ? ({...state}..remove(section))
         : {...state, section};
     emit(next);
-    _preferences?.saveFoldedNavSections({for (final s in next) s.name});
+    _preferences?.saveFoldedNavSections({
+      ..._unknown,
+      for (final s in next) s.name,
+    });
   }
 
   @override
