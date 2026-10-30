@@ -334,8 +334,8 @@ class _ProgressDotsState extends State<_ProgressDots>
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     // The bar fills on every frame: its own layer, so only the dots repaint.
-    // At the row's own fixed size, so a dot that grows or shrinks lays out
-    // only the dots and not the tile around them.
+    // Each dot sits in a fixed 24 px square, which is what keeps a dot that
+    // grows or shrinks from laying out more than itself.
     return SizedBox(
       width: double.infinity,
       height: 24,
@@ -434,14 +434,33 @@ class _Person {
   final String line;
 }
 
-class _PeopleTile extends StatefulWidget {
+class _PeopleTile extends StatelessWidget {
   const _PeopleTile();
 
   @override
-  State<_PeopleTile> createState() => _PeopleTileState();
+  Widget build(BuildContext context) {
+    // The LayoutBuilder sits above the state that moves the people on, so
+    // moving on rebuilds the people and not the LayoutBuilder. Rebuilding it
+    // would lay out the tile, and the whole bento with it, again.
+    return _Tile(
+      child: LayoutBuilder(
+        builder: (context, constraints) => _People(constraints: constraints),
+      ),
+    );
+  }
 }
 
-class _PeopleTileState extends State<_PeopleTile> with _Stepper {
+class _People extends StatefulWidget {
+  const _People({required this.constraints});
+
+  /// The tile's, inside its padding.
+  final BoxConstraints constraints;
+
+  @override
+  State<_People> createState() => _PeopleState();
+}
+
+class _PeopleState extends State<_People> with _Stepper {
   _Person? _hovered;
 
   @override
@@ -475,94 +494,95 @@ class _PeopleTileState extends State<_PeopleTile> with _Stepper {
     final type = ArDriveTypographyNew.of(context);
     final groups = _groups(context);
     final hovered = _hovered;
-    return _Tile(
-      child: LayoutBuilder(
-        builder: (context, constraints) => Column(
+    final constraints = widget.constraints;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      // Heading at the top, dots at the bottom, the people centred
+      // between them, however tall the tile.
+      mainAxisSize:
+          constraints.hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          // Heading at the top, dots at the bottom, the people centred
-          // between them, however tall the tile.
-          mainAxisSize: constraints.hasBoundedHeight
-              ? MainAxisSize.max
-              : MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: '${s.bentoIsFor} '),
-                    TextSpan(
-                      text: hovered?.name ?? s.bentoEveryone,
-                      style: TextStyle(
-                        color: hovered == null
-                            ? colors.textHigh
-                            : _brandRed(context),
-                      ),
-                    ),
-                  ]),
-                  key: const Key('bentoPeopleHeading'),
-                  style: type.heading6(
-                    color: colors.textHigh,
-                    fontWeight: ArFontWeight.semiBold,
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(text: '${s.bentoIsFor} '),
+                TextSpan(
+                  text: hovered?.name ?? s.bentoEveryone,
+                  style: TextStyle(
+                    color:
+                        hovered == null ? colors.textHigh : _brandRed(context),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  hovered?.line ?? s.bentoEveryoneLine,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: type.paragraphNormal(color: colors.textMid),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _FlexIfBounded(
-              bounded: constraints.hasBoundedHeight,
-              // Its own layer, so the cross-fade between groups repaints the
-              // pictures alone.
-              child: RepaintBoundary(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  child: Row(
-                    key: ValueKey('bentoPeople-$index'),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final (i, person) in groups[index].indexed) ...[
-                        if (i > 0) const SizedBox(width: 8),
-                        Expanded(
-                          child: _PersonPicture(
-                            person: person,
-                            onHover: (on) {
-                              if (!mounted) return;
-                              setState(() {
-                                _hovered = on ? person : null;
-                                held = on;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+              ]),
+              key: const Key('bentoPeopleHeading'),
+              style: type.heading6(
+                color: colors.textHigh,
+                fontWeight: ArFontWeight.semiBold,
               ),
             ),
-            const SizedBox(height: 8),
-            _ProgressDots(
-              count: groups.length,
-              index: index,
-              interval: interval,
-              running: !held && !_still(context),
-              groupLabel: s.bentoPeopleDots,
-              labels: [
-                for (final g in groups) g.map((p) => p.name).join(', '),
-              ],
-              onPick: pick,
+            const SizedBox(height: 4),
+            Text(
+              hovered?.line ?? s.bentoEveryoneLine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: type.paragraphNormal(color: colors.textMid),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 16),
+        _FlexIfBounded(
+          bounded: constraints.hasBoundedHeight,
+          // Its own layer, so the cross-fade between groups repaints the
+          // pictures alone. At the pictures' own fixed size, so adding
+          // and removing a group as they cross-fade lays out the pictures
+          // alone too, rather than the tile and the whole bento with it.
+          child: SizedBox(
+            width: double.infinity,
+            height: _PersonPicture.heightIn(constraints.maxWidth),
+            child: RepaintBoundary(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                child: Row(
+                  key: ValueKey('bentoPeople-$index'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final (i, person) in groups[index].indexed) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: _PersonPicture(
+                          person: person,
+                          onHover: (on) {
+                            if (!mounted) return;
+                            setState(() {
+                              _hovered = on ? person : null;
+                              held = on;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _ProgressDots(
+          count: groups.length,
+          index: index,
+          interval: interval,
+          running: !held && !_still(context),
+          groupLabel: s.bentoPeopleDots,
+          labels: [
+            for (final g in groups) g.map((p) => p.name).join(', '),
+          ],
+          onPick: pick,
+        ),
+      ],
     );
   }
 }
@@ -573,6 +593,14 @@ class _PersonPicture extends StatelessWidget {
   final _Person person;
   final ValueChanged<bool> onHover;
 
+  /// The tallest a picture gets.
+  static const maxHeight = 140.0;
+
+  /// How tall a row of three pictures, 8 apart, is in [width]: square, up to
+  /// [maxHeight]. A bounded tile can make the row shorter still.
+  static double heightIn(double width) =>
+      math.max(0.0, math.min((width - 2 * 8) / 3, maxHeight));
+
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
@@ -581,7 +609,7 @@ class _PersonPicture extends StatelessWidget {
       onEnter: (_) => onHover(true),
       onExit: (_) => onHover(false),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 140),
+        constraints: const BoxConstraints(maxHeight: maxHeight),
         child: AspectRatio(
           aspectRatio: 1,
           child: Container(
@@ -750,19 +778,11 @@ class _OnlineTileState extends State<_OnlineTile> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  ShaderMask(
-                                    blendMode: BlendMode.srcIn,
-                                    shaderCallback: (bounds) => LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [_brandPeach, _brandRed(context)],
-                                      stops: const [0, 0.45],
-                                    ).createShader(bounds),
-                                    child: Text(
-                                      _names[_example].substring(0, _chars),
-                                      key: const Key('bentoTypedName'),
-                                      style: address,
-                                    ),
+                                  _GradientName(
+                                    names: _names,
+                                    typed:
+                                        _names[_example].substring(0, _chars),
+                                    style: address,
                                   ),
                                   Opacity(
                                     opacity: !still && _caretOn ? 1 : 0,
@@ -810,6 +830,92 @@ class _OnlineTileState extends State<_OnlineTile> {
 }
 
 /// The art's sparkles and dots, drawn behind a tile that has no picture.
+/// [typed], in the brand gradient, taking its own width in a row.
+///
+/// The gradient is a [ShaderMask] as wide as the widest of [names] and in a
+/// layer of its own, and its shader is made once, so typing changes neither.
+/// On the HTML renderer, which phones get, a ShaderMask is an SVG filter
+/// over an image of the gradient. Flutter 3.19 draws that image on a canvas
+/// it shares between gradients and resizes only when both its width and its
+/// height change. A mask the width of the typed name changed width alone, so
+/// every image after the first was as wide as the first and the rest of the
+/// name was cut off: "recip    |.ar.io".
+class _GradientName extends StatefulWidget {
+  const _GradientName({
+    required this.names,
+    required this.typed,
+    required this.style,
+  });
+
+  final List<String> names;
+  final String typed;
+  final TextStyle style;
+
+  @override
+  State<_GradientName> createState() => _GradientNameState();
+}
+
+class _GradientNameState extends State<_GradientName> {
+  Shader? _shader;
+  Rect? _shaderBounds;
+  Color? _shaderRed;
+
+  /// The same shader for the same bounds and theme, so the mask's layer is
+  /// left as it is.
+  Shader _gradient(Rect bounds, Color red) {
+    if (_shader == null || bounds != _shaderBounds || red != _shaderRed) {
+      _shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [_brandPeach, red],
+        stops: const [0, 0.45],
+      ).createShader(bounds);
+      _shaderBounds = bounds;
+      _shaderRed = red;
+    }
+    return _shader!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final red = _brandRed(context);
+    Widget hidden(String text) => Visibility(
+          visible: false,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: Text(text, style: widget.style),
+        );
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Holds the typed name's place in the row.
+        hidden(widget.typed),
+        Positioned(
+          left: 0,
+          top: 0,
+          child: RepaintBoundary(
+            child: ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (bounds) => _gradient(bounds, red),
+              child: Stack(
+                children: [
+                  for (final name in widget.names) hidden(name),
+                  Text(
+                    widget.typed,
+                    key: const Key('bentoTypedName'),
+                    style: widget.style,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _Sparkles extends StatelessWidget {
   const _Sparkles();
 
@@ -913,9 +1019,9 @@ class _HeroTileState extends State<_HeroTile>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // The backdrop drifts on every frame. In a layer of its own, and
-          // the picture in another, each frame moves the picture rather than
-          // repainting the bento around it.
+          // The backdrop drifts on every frame. Its own layer keeps that
+          // frame from repainting the bento around it. The inner one only
+          // caches the picture, so a frame moves it without drawing it again.
           RepaintBoundary(
             child: ExcludeSemantics(
               child: AnimatedBuilder(
@@ -1349,16 +1455,17 @@ class _LeaderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // 1.5 px dots, 1.5 px apart, in one call rather than one per dot.
+    final points = [
+      for (var x = 0.75; x <= size.width - 0.75; x += 3) Offset(x, y),
+    ];
+    // Too narrow for a dot. The HTML renderer reads the first point of any
+    // drawPoints call, so an empty one throws there.
+    if (points.isEmpty) return;
     final dot = Paint()
       ..color = color
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;
-    canvas.drawPoints(
-        PointMode.points,
-        [
-          for (var x = 0.75; x <= size.width - 0.75; x += 3) Offset(x, y),
-        ],
-        dot);
+    canvas.drawPoints(PointMode.points, points, dot);
   }
 
   @override
