@@ -27,9 +27,12 @@ import 'package:collection/collection.dart';
 /// 2. The password bytes used are the ones that, with a fresh v1 signature,
 ///    reproduce [currentKey] exactly. A password that opens some other drive
 ///    does not.
-/// 3. The record is read back the way a reader would - decrypted with the v2
-///    key, the v1 key derived from what comes out - and that key must equal
-///    [currentKey] and open the drive.
+/// 3. The wallet's v2 signature must be the same twice: every reader signs v2
+///    afresh, so one that varies would make a record nobody can open.
+/// 4. The record is read back - decrypted with the v2 key, the v1 key derived
+///    from what comes out - and that key must equal [currentKey] and open the
+///    drive. This catches an encryption mistake; it is step 3 that stands in
+///    for a reader's own fresh signature.
 ///
 /// Any check that fails, or throws, returns null, and nothing is posted.
 class DriveSignatureRecordBuilder {
@@ -120,9 +123,23 @@ class DriveSignatureRecordBuilder {
       return null;
     }
 
-    // 3. Encrypt the v1 signature under that password's v2 key.
+    // 3. Encrypt the v1 signature under that password's v2 key - but only if
+    //    the wallet's v2 signature is the same every time. Every reader signs
+    //    v2 afresh to open the record, so a wallet whose v2 signature varies
+    //    (some hardware and smart-contract setups) would post a record no
+    //    reader can ever open. Checked against the one this session already
+    //    holds for the drive, or against a second signature.
     final v2Signature = await _crypto.walletSignatureForDrive(
         wallet, driveId, DriveSignatureType.v2);
+    final v2Again =
+        _unlocker.session.signature(owner, driveId, DriveSignatureType.v2) ??
+            await _crypto.walletSignatureForDrive(
+                wallet, driveId, DriveSignatureType.v2);
+
+    if (!_same(v2Signature, v2Again)) {
+      logger.w('Not migrating $driveId: the wallet\'s v2 signature varies');
+      return null;
+    }
     final driveKeyV2 = await _crypto.driveKeyFromSignature(v2Signature, info,
         generated: false);
     final box = await _crypto.encrypt(v1Signature, driveKeyV2.key);
@@ -135,7 +152,7 @@ class DriveSignatureRecordBuilder {
       data: Uint8List.fromList(box.concatenation(nonce: false)),
     );
 
-    // 4. Read it back as a reader would, from the record alone.
+    // 5. Read it back from the record alone.
     final readerKeyV2 = await _crypto.driveKeyFromSignature(v2Signature, info,
         generated: false);
     final readBack =

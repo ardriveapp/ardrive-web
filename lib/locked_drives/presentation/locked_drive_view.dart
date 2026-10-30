@@ -18,10 +18,15 @@ class LockedDriveView extends StatelessWidget {
     super.key,
     required this.driveId,
     required this.otherwise,
+    this.frame,
   });
 
   final String driveId;
   final Widget otherwise;
+
+  /// Puts the page's chrome around the panel. Only ever called for a drive
+  /// that is locked, so [otherwise] is drawn bare.
+  final Widget Function(Widget panel)? frame;
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +40,12 @@ class LockedDriveView extends StatelessWidget {
           return otherwise;
         }
 
-        return LockedDrivePanel(
+        final panel = LockedDrivePanel(
           driveId: driveId,
           onUnlock: () => showUnlockDriveDialog(context, driveId: driveId),
         );
+
+        return frame?.call(panel) ?? panel;
       },
     );
   }

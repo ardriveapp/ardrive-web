@@ -5,7 +5,11 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/domain/drive_password_info.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:collection/collection.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/drive_signature_record_builder.dart';
 import 'package:ardrive/user/user.dart';
@@ -41,6 +45,14 @@ class PrivateDriveMigrationBloc
   /// Posts a record. Injectable so tests can watch what would be posted.
   final Future<void> Function(DataItem dataItem, Wallet wallet) _postRecord;
 
+  /// Whether signing asks the user each time (Wander). Such a wallet is
+  /// never asked just to decide whether to show the banner.
+  final bool Function(Wallet wallet) _isPromptingWallet;
+
+  /// Drives already checked and found unprovable with the sign-in password,
+  /// so a wallet that signs locally isn't asked again on every list refresh.
+  final Set<String> _unprovable = {};
+
   List<Drive> drivesRequiringMigration = [];
   Set<Drive> completedMigration = {};
 
@@ -54,7 +66,10 @@ class PrivateDriveMigrationBloc
     required this.driveUnlocker,
     DriveSignatureRecordBuilder? recordBuilder,
     Future<void> Function(DataItem dataItem, Wallet wallet)? postRecord,
-  })  : recordBuilder = recordBuilder ??
+    bool Function(Wallet wallet)? isPromptingWallet,
+  })  : _isPromptingWallet =
+            isPromptingWallet ?? ((wallet) => wallet is ArConnectWallet),
+        recordBuilder = recordBuilder ??
             DriveSignatureRecordBuilder(
               crypto: crypto,
               arweave: arweave,
@@ -81,16 +96,49 @@ class PrivateDriveMigrationBloc
     add(const PrivateDriveMigrationCheck());
   }
 
-  void _checkDrivesForMigration(PrivateDriveMigrationCheck event,
-      Emitter<PrivateDriveMigrationState> emit) {
+  /// Lists the v1 drives that need migrating and can be migrated safely.
+  ///
+  /// A drive is listed only when this session knows a password proven to make
+  /// its key: one proven on it this session (sign-in or unlock), or, for a
+  /// wallet that signs without asking, the sign-in password checked here. A
+  /// drive opened from a key stored on this device or attached by key has no
+  /// proven password, and the record builder would refuse it - so offering it
+  /// made a banner that came back on every load, asked the wallet twice per
+  /// click and ended in an error. It is offered once the user unlocks it with
+  /// its password.
+  Future<void> _checkDrivesForMigration(PrivateDriveMigrationCheck event,
+      Emitter<PrivateDriveMigrationState> emit) async {
+    final done = Completer<void>();
+    _lastCheck = done.future;
+    try {
+      await _check(emit);
+    } finally {
+      done.complete();
+    }
+  }
+
+  /// The check in flight, which a migration started meanwhile waits for: it
+  /// decides which drives are on the list.
+  Future<void>? _lastCheck;
+
+  Future<void> _check(Emitter<PrivateDriveMigrationState> emit) async {
     if (drivesCubit.state is DrivesLoadSuccess) {
       final drives = (drivesCubit.state as DrivesLoadSuccess).userDrives;
-      drivesRequiringMigration = drives
+      final candidates = drives
           .where((drive) =>
               drive.privacy == 'private' &&
               (drive.signatureType == '1' || drive.signatureType == null) &&
               drive.driveKeyGenerated == true)
           .toList();
+
+      final provable = <Drive>[];
+      for (final drive in candidates) {
+        if (await _passwordIsProvenFor(drive)) {
+          provable.add(drive);
+        }
+      }
+
+      drivesRequiringMigration = provable;
       completedMigration = {};
 
       if (drivesRequiringMigration.isNotEmpty) {
@@ -101,12 +149,70 @@ class PrivateDriveMigrationBloc
     }
   }
 
+  Future<bool> _passwordIsProvenFor(Drive drive) async {
+    final session = driveUnlocker.session;
+
+    if (session.isLocked(drive.id)) {
+      return false;
+    }
+
+    if (session.provenPasswordInfo(drive.id) != null) {
+      return true;
+    }
+
+    if (_unprovable.contains(drive.id)) {
+      return false;
+    }
+
+    try {
+      if (!(await ardriveAuth.isUserLoggedIn())) {
+        return false;
+      }
+
+      final user = ardriveAuth.currentUser;
+
+      if (_isPromptingWallet(user.wallet)) {
+        return false;
+      }
+
+      final currentKey = await driveDao.getDriveKeyFromMemory(drive.id) ??
+          await driveDao.getStoredDriveKey(drive.id, user.cipherKey);
+
+      if (currentKey == null) {
+        return false;
+      }
+
+      final keyBytes = await currentKey.key.extractBytes();
+      final v1Signature = await crypto.walletSignatureForDrive(
+          user.wallet, drive.id, DriveSignatureType.v1);
+
+      for (final info in drivePasswordInfos(user.password)) {
+        final derived = await crypto.driveKeyFromSignature(v1Signature, info,
+            generated: true);
+
+        if (const ListEquality<int>()
+            .equals(await derived.key.extractBytes(), keyBytes)) {
+          session.rememberProvenPasswordInfo(drive.id, info);
+          return true;
+        }
+      }
+    } catch (e) {
+      logger.w('Could not check whether ${drive.id} can be migrated: $e');
+      return false;
+    }
+
+    _unprovable.add(drive.id);
+    return false;
+  }
+
   Future<void> _performDriveMigration(PrivateDriveMigrationStartEvent event,
       Emitter<PrivateDriveMigrationState> emit) async {
     // stop listening to drivesCubit stream here
     // to ensure no more events are processed while performing migration
     _drivesSubscription?.cancel();
     _drivesSubscription = null;
+
+    await _lastCheck;
 
     if (!(await ardriveAuth.isUserLoggedIn())) {
       emit(const PrivateDriveMigrationFailed(error: 'User is not logged in'));

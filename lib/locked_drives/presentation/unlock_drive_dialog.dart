@@ -47,16 +47,20 @@ Future<void> showUnlockDriveDialog(
 ///
 /// A sync is refused while another runs - one at a time, never queued - so
 /// this waits for the running one once and asks again.
+///
+/// It never asks the wallet again for other drives whose prompt was
+/// cancelled: unlocking one drive is not a request to be prompted for the
+/// rest.
 Future<void> syncUnlockedDrives(
   SyncCubit syncCubit,
   List<String> driveIds,
 ) async {
-  if (await syncCubit.syncDrives(driveIds)) {
+  if (await syncCubit.syncDrives(driveIds, askWalletAgain: false)) {
     return;
   }
 
   await syncCubit.waitCurrentSync();
-  await syncCubit.syncDrives(driveIds);
+  await syncCubit.syncDrives(driveIds, askWalletAgain: false);
 }
 
 void _sayHowManyOpened(ScaffoldMessengerState? messenger, int count) {
@@ -145,6 +149,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
             Navigator.of(context).pop();
           case UnlockDriveStatus.wrongPassword:
           case UnlockDriveStatus.networkError:
+          case UnlockDriveStatus.walletFailed:
           case UnlockDriveStatus.idle:
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _refocus();
@@ -203,11 +208,14 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   },
                   onFieldSubmitted: (_) => _submit(),
                 ),
-                if (state.status == UnlockDriveStatus.networkError) ...[
+                if (state.status == UnlockDriveStatus.networkError ||
+                    state.status == UnlockDriveStatus.walletFailed) ...[
                   const SizedBox(height: ArDriveSpacing.xs),
                   ArDriveStatusText(
                     key: const Key('unlockDriveNetworkError'),
-                    text: strings.unlockNetworkError,
+                    text: state.status == UnlockDriveStatus.walletFailed
+                        ? strings.unlockWalletFailed
+                        : strings.unlockNetworkError,
                     type: ArDriveStatusType.error,
                   ),
                 ],

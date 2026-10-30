@@ -5677,5 +5677,7 @@
   "driveFingerprintTooltip": "These identify this drive. They should look the same every time.",
   "@driveFingerprintTooltip": {"description": "Tooltip on a drive's three-emoji fingerprint."},
   "driveFingerprintLabel": "Drive emoji: {names}",
-  "@driveFingerprintLabel": {"description": "Screen reader name of a drive's three-emoji fingerprint.", "placeholders": {"names": {"type": "String"}}}
+  "@driveFingerprintLabel": {"description": "Screen reader name of a drive's three-emoji fingerprint.", "placeholders": {"names": {"type": "String"}}},
+  "unlockWalletFailed": "Your wallet couldn't sign. Try again.",
+  "@unlockWalletFailed": {"description": "The wallet refused to sign for a reason other than the user cancelling its prompt."}
 }

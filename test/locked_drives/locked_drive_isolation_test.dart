@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -54,6 +55,11 @@ void main() {
   late DriveUnlocker unlocker;
   late SyncRepository syncRepository;
   late List<PrivateDriveFixture> onChain;
+
+  /// When set, discovery holds its answer until it completes, and says when
+  /// it has got there through [reachedHold].
+  Completer<void>? holdDiscovery;
+  late Completer<void> reachedHold;
   final profileKey = SecretKey(List.filled(32, 9));
 
   setUpAll(() {
@@ -63,6 +69,7 @@ void main() {
   });
 
   setUp(() async {
+    holdDiscovery = null;
     signer = SignatureCounter(json.decode(getWalletString));
     wallet = signer.wallet;
     owner = await wallet.getAddress();
@@ -115,6 +122,10 @@ void main() {
         }
       }
 
+      if (holdDiscovery != null) {
+        reachedHold.complete();
+        await holdDiscovery!.future;
+      }
       return UserDriveDiscovery(drives: drives, lockedDrives: locked);
     });
     when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
@@ -259,5 +270,26 @@ void main() {
     expect(session.isLocked(_locked), isFalse);
     expect((await db.driveDao.allDrives().get()).map((d) => d.id).toSet(),
         {_opens, _locked});
+  });
+
+  test(
+      'a drive unlocked while a discovery pass runs is not locked again by '
+      'that pass', () async {
+    // The pass reads the drive as locked; the user unlocks it before the
+    // pass writes its answer.
+    holdDiscovery = Completer<void>();
+    reachedHold = Completer<void>();
+    final sync = discover();
+    await reachedHold.future;
+    await unlocker.unlock(
+      wallet: wallet,
+      profileKey: profileKey,
+      driveId: _locked,
+      password: 'cli',
+    );
+    holdDiscovery!.complete();
+    await sync;
+
+    expect(session.isLocked(_locked), isFalse);
   });
 }

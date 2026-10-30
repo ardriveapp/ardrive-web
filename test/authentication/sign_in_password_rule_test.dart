@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:arweave/arweave.dart';
@@ -24,6 +25,7 @@ void main() {
   late ArDriveAuthImpl auth;
 
   void onChain(List<PrivateDriveFixture> drives) {
+    when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
     when(() => arweave.getUniqueUserDriveEntityTxs(any(),
             maxRetries: any(named: 'maxRetries')))
         .thenAnswer((_) async => [for (final drive in drives) drive.tx]);
@@ -116,5 +118,120 @@ void main() {
 
     await expectLater(
         auth.validateUser(wallet, 'a'), throwsA(isA<WrongPasswordException>()));
+  });
+
+  test(
+      'a cancelled wallet prompt ends the check at once: no second prompt '
+      'for the next drive', () async {
+    onChain([
+      await makeWebPrivateDrive(wallet: wallet, driveId: _first, password: 'a'),
+      await makeWebPrivateDrive(
+          wallet: wallet, driveId: _second, password: 'a'),
+    ]);
+    signer
+      ..signatures = 0
+      ..refuse = true;
+
+    await expectLater(
+        auth.validateUser(wallet, 'a'), throwsA(isA<WrongPasswordException>()));
+    expect(signer.signatures, 1);
+  });
+
+  test(
+      'a v1 drive whose signature record can\'t be read is a gateway error, '
+      'not "Wrong password"', () async {
+    final drive = await makeWebPrivateDrive(
+        wallet: wallet,
+        driveId: _first,
+        password: 'a',
+        signatureType: DriveSignatureType.v1);
+    onChain([drive]);
+    when(() => arweave.getDriveSignatureForDrive(any(), _first))
+        .thenThrow(Exception('gateway down'));
+
+    await expectLater(auth.validateUser(wallet, 'a'),
+        throwsA(isA<AuthenticationGatewayException>()));
+  });
+
+  group('how much one sign-in may ask', () {
+    String id(int i) =>
+        '00000000-0000-4000-8000-${i.toRadixString(16).padLeft(12, '0')}';
+
+    /// [count] private drives, oldest first, all with [password].
+    Future<void> drivesWith(int count, String password) async => onChain([
+          for (var i = 0; i < count; i++)
+            await makeWebPrivateDrive(
+              wallet: wallet,
+              driveId: id(i),
+              password: password,
+              unixTime: 1700000000 + i,
+            ),
+        ]);
+
+    for (final count in [5, 20]) {
+      test(
+          'Wander, $count drives: a typo costs at most 3 prompts, and the '
+          'right password then costs none', () async {
+        await drivesWith(count, 'right');
+        final wander = FakeWander(wallet);
+
+        await expectLater(auth.validateUser(wander.wallet, 'typo'),
+            throwsA(isA<WrongPasswordException>()));
+        expect(wander.prompts, 3);
+
+        await auth.validateUser(wander.wallet, 'right');
+        expect(wander.prompts, 3, reason: 'held signatures are tried first');
+      });
+    }
+
+    test(
+        'Wander: the oldest drive is tried first, and the first that opens '
+        'ends it', () async {
+      onChain([
+        await makeWebPrivateDrive(
+            wallet: wallet,
+            driveId: id(2),
+            password: 'b',
+            unixTime: 1700000002),
+        await makeWebPrivateDrive(
+            wallet: wallet,
+            driveId: id(1),
+            password: 'b',
+            unixTime: 1700000001),
+        await makeWebPrivateDrive(
+            wallet: wallet,
+            driveId: id(0),
+            password: 'a',
+            unixTime: 1700000000),
+      ]);
+      final wander = FakeWander(wallet);
+
+      await auth.validateUser(wander.wallet, 'a');
+
+      expect(wander.prompts, 1);
+    });
+
+    test(
+        'a local wallet, 20 drives: no prompt cap, every drive tried, and '
+        'the right password then signs nothing new', () async {
+      await drivesWith(20, 'right');
+      signer.signatures = 0;
+
+      await expectLater(auth.validateUser(wallet, 'typo'),
+          throwsA(isA<WrongPasswordException>()));
+      expect(signer.signatures, 20);
+
+      await auth.validateUser(wallet, 'right');
+      expect(signer.signatures, 20);
+    });
+
+    test('a local wallet tries at most 20 drives', () async {
+      await drivesWith(25, 'right');
+      signer.signatures = 0;
+
+      await expectLater(auth.validateUser(wallet, 'typo'),
+          throwsA(isA<WrongPasswordException>()));
+      expect(signer.signatures, ArDriveAuthImpl.signInMaxDrives);
+    });
   });
 }

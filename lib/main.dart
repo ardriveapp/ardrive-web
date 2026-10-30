@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
+import 'package:ardrive/components/drive_fingerprint.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
@@ -104,6 +105,7 @@ void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     registerWordlistLicense();
+    FingerprintEmojiFont.registerLicense();
 
     // Before anything can read a route. Hash routing (the default) leaves the
     // engine's own strategy in place, so this is a no-op today - see

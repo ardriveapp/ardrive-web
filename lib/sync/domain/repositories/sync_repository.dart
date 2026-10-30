@@ -292,6 +292,9 @@ abstract class SyncRepository {
     /// earlier this session. Only when the user asked for this sync: a
     /// background pass must not bring back a prompt they just dismissed.
     bool askWalletAgain = false,
+
+    /// Asks again for these drives only: the user synced one drive.
+    Iterable<String>? askWalletAgainFor,
   });
 
   Future<void> createGhosts({
@@ -2054,12 +2057,19 @@ class _SyncRepository implements SyncRepository {
     void Function(int read, int found)? onDriveRead,
     void Function(int unlocked, int total)? onDriveUnlocked,
     bool askWalletAgain = false,
+    Iterable<String>? askWalletAgainFor,
   }) async {
     // The user asked for this sync: every drive whose wallet prompt they
     // cancelled earlier may ask again. Before joining a fetch in flight, so
     // the request is honoured on the next pass even if this one is shared.
     if (askWalletAgain) {
       _driveUnlocker.session.forgetWalletDeclined();
+    } else if (askWalletAgainFor != null) {
+      final owner = await wallet.getAddress();
+      for (final driveId in askWalletAgainFor) {
+        _driveUnlocker.session
+            .forgetWalletDeclined(ownerAddress: owner, driveId: driveId);
+      }
     }
 
     // Two callers that overlap share one fetch. A caller that arrives after
@@ -2121,6 +2131,9 @@ class _SyncRepository implements SyncRepository {
     // sign-in password is tried, which may ask the wallet. A drive whose
     // prompt was cancelled this session is not asked again here; see
     // [updateUserDrives]'s `askWalletAgain`.
+    // A drive unlocked while this pass runs was read as locked by it.
+    final unlockGeneration = _driveUnlocker.session.unlockGeneration;
+
     final discovery = await _arweave.getUniqueUserDriveEntities(
       wallet,
       password,
@@ -2152,8 +2165,11 @@ class _SyncRepository implements SyncRepository {
     // Listed, never written: a locked drive has no name or root folder to
     // write, and a row without them is a drive everything else would read.
     // See [LockedDrive].
-    _driveUnlocker.session
-        .setLockedDrives(walletAddress, discovery.lockedDrives);
+    _driveUnlocker.session.setLockedDrives(
+      walletAddress,
+      discovery.lockedDrives,
+      since: unlockGeneration,
+    );
   }
 
   @override

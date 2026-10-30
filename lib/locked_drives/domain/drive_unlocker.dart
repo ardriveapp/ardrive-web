@@ -21,8 +21,12 @@ enum DriveUnlockFailure {
   /// The only failure the app may call "Wrong password".
   wrongPassword,
 
-  /// The wallet didn't sign: its prompt was cancelled, or it refused.
+  /// The wallet's prompt was cancelled: the user said no.
   walletDeclined,
+
+  /// The wallet couldn't sign for another reason (it is locked, disconnected,
+  /// or errored).
+  walletFailed,
 
   /// Anything else: the drive's metadata or its signature record couldn't be
   /// read, or what decrypted couldn't be read as a drive.
@@ -81,6 +85,17 @@ class DriveUnreadableException implements Exception {
   @override
   String toString() => 'DriveUnreadableException($driveId)';
 }
+
+/// Whether [error], thrown by a wallet asked to sign, means the user said no.
+///
+/// Wallets report a cancelled prompt as an error with no shared type: Wander
+/// says "User cancelled the auth", others "User rejected the request" or
+/// "denied". A heuristic, so anything it doesn't recognise is reported as a
+/// wallet that couldn't sign, which at worst shows a message for a cancel.
+bool isWalletCancellation(Object error) => RegExp(
+      r'cancel|reject|denied|declin|closed|dismiss|abort',
+      caseSensitive: false,
+    ).hasMatch(error.toString());
 
 /// How many times the unlock dialog's metadata read is tried.
 const unlockMaxRetries = 3;
@@ -210,8 +225,13 @@ class DriveUnlocker {
             await _crypto.walletSignatureForDrive(wallet, driveId, signingType);
       } catch (e) {
         logger.w('The wallet did not sign for $driveId: $e');
+        // Either way a background pass does not ask again this session.
         _session.markWalletDeclined(owner, driveId);
-        return const DriveKeyAttempt.failed(DriveUnlockFailure.walletDeclined);
+        return DriveKeyAttempt.failed(
+          isWalletCancellation(e)
+              ? DriveUnlockFailure.walletDeclined
+              : DriveUnlockFailure.walletFailed,
+        );
       }
 
       _session.rememberSignature(owner, driveId, signingType, signature);

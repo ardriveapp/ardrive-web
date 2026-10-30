@@ -126,6 +126,19 @@ void main() {
     });
   });
 
+  test(
+      'an AES error that is not an authentication failure is unreadable, '
+      'never a wrong password', () async {
+    final drive = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveA, password: 'pw');
+
+    // Too short to hold a GCM tag: not a wrong key, a broken entity.
+    await expectLater(
+      unlocker.openWithKey(drive.tx, Uint8List(5), drive.key),
+      throwsA(isA<DriveUnreadableException>()),
+    );
+  });
+
   group('tryPassword', () {
     test('the right password opens a v2 drive and is remembered for it',
         () async {
@@ -267,6 +280,64 @@ void main() {
     });
   });
 
+  test(
+      'a core-js v1 drive with a stored signature and a non-ASCII password '
+      'opens through the double encoding', () async {
+    final drive = await makePrivateDrive(
+      wallet: wallet,
+      driveId: _driveA,
+      passwordInfo: coreJsPasswordInfo('pässwörd ä'),
+      signatureType: DriveSignatureType.v1,
+      withRecord: true,
+    );
+    onChain([drive]);
+
+    final attempt = await unlocker.tryPassword(
+        wallet: wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pässwörd ä');
+
+    expect(attempt.opened, isTrue);
+    expect(await _bytes(attempt.key!), await _bytes(drive.key));
+  });
+
+  test(
+      'a wallet that cancels is walletDeclined; one that fails otherwise is '
+      'walletFailed; neither is asked again in the background', () async {
+    final wander = FakeWander(wallet);
+    final drive = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveA, password: 'pw');
+    final other = await makeWebPrivateDrive(
+        wallet: wallet, driveId: _driveB, password: 'pw');
+
+    wander.cancel = true;
+    final cancelled = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw');
+    wander
+      ..cancel = false
+      ..fail = true;
+    final failed = await unlocker.tryPassword(
+        wallet: wander.wallet,
+        driveTx: other.tx,
+        data: other.data,
+        password: 'pw');
+
+    expect(cancelled.failure, DriveUnlockFailure.walletDeclined);
+    expect(failed.failure, DriveUnlockFailure.walletFailed);
+    expect(session.walletDeclined(owner, _driveB), isTrue);
+  });
+
+  test('isWalletCancellation reads the usual wallet messages', () {
+    expect(isWalletCancellation(Exception('User cancelled the auth')), isTrue);
+    expect(
+        isWalletCancellation(Exception('User rejected the request')), isTrue);
+    expect(isWalletCancellation(Exception('Wallet is locked')), isFalse);
+  });
+
   group('resolveForDiscovery', () {
     test('a key in memory that opens the drive is used without signing',
         () async {
@@ -300,6 +371,42 @@ void main() {
       expect(signer.signatures, 0);
       expect(await _bytes((await db.driveDao.getDriveKeyFromMemory(_driveA))!),
           await _bytes(drive.key));
+    });
+
+    test('a wrong stored key is not kept, and the password is still tried',
+        () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'pw');
+
+      final attempt = await unlocker.resolveForDiscovery(
+        wallet: wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw',
+        storedKey: (_) async => DriveKey(SecretKey(List.filled(32, 2)), true),
+      );
+
+      expect(attempt.opened, isTrue);
+      expect(await _bytes(attempt.key!), await _bytes(drive.key));
+      expect(await _bytes((await db.driveDao.getDriveKeyFromMemory(_driveA))!),
+          await _bytes(drive.key));
+    });
+
+    test('a wrong stored key is not kept even when the password fails too',
+        () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet, driveId: _driveA, password: 'other');
+
+      final attempt = await unlocker.resolveForDiscovery(
+        wallet: wallet,
+        driveTx: drive.tx,
+        data: drive.data,
+        password: 'pw',
+        storedKey: (_) async => DriveKey(SecretKey(List.filled(32, 2)), true),
+      );
+
+      expect(attempt.opened, isFalse);
+      expect(await db.driveDao.getDriveKeyFromMemory(_driveA), isNull);
     });
 
     test(

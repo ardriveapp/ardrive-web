@@ -44,13 +44,30 @@ class DriveUnlockSession {
     return null;
   }
 
+  /// Counts unlocks, so a discovery pass can tell which happened after it
+  /// started. See [setLockedDrives].
+  int _unlockGeneration = 0;
+  final _unlockedAt = <String, int>{};
+
+  /// Read when a discovery pass starts, and handed back to [setLockedDrives].
+  int get unlockGeneration => _unlockGeneration;
+
   /// Replaces [ownerAddress]'s locked drives with [drives], as found by the
   /// newest drive discovery.
-  void setLockedDrives(String ownerAddress, Iterable<LockedDrive> drives) {
+  ///
+  /// [since] is the [unlockGeneration] the pass started at. A drive unlocked
+  /// after that was read as locked by a pass that didn't know yet, and is
+  /// left unlocked.
+  void setLockedDrives(
+    String ownerAddress,
+    Iterable<LockedDrive> drives, {
+    int? since,
+  }) {
     final next = [
       for (final drive in _lockedDrives.value)
         if (drive.ownerAddress != ownerAddress) drive,
-      ...drives,
+      for (final drive in drives)
+        if (since == null || (_unlockedAt[drive.driveId] ?? 0) <= since) drive,
     ]..sort((a, b) => a.driveId.compareTo(b.driveId));
 
     _lockedDrives.add(List.unmodifiable(next));
@@ -58,6 +75,8 @@ class DriveUnlockSession {
 
   /// Takes [driveId] off the locked list, once a key has opened it.
   void markUnlocked(String driveId) {
+    _unlockedAt[driveId] = ++_unlockGeneration;
+
     if (!isLocked(driveId)) {
       return;
     }
@@ -92,6 +111,12 @@ class DriveUnlockSession {
     _walletDeclined.remove(_key(ownerAddress, driveId));
   }
 
+  /// Whether a wallet signature for [driveId], of either type, is held: so
+  /// trying a password on it asks the wallet nothing.
+  bool holdsSignatureFor(String ownerAddress, String driveId) =>
+      DriveSignatureType.values
+          .any((type) => signature(ownerAddress, driveId, type) != null);
+
   bool walletDeclined(String ownerAddress, String driveId) =>
       _walletDeclined.contains(_key(ownerAddress, driveId));
 
@@ -120,6 +145,7 @@ class DriveUnlockSession {
     _signatures.clear();
     _walletDeclined.clear();
     _provenPasswordInfo.clear();
+    _unlockedAt.clear();
     _lockedDrives.add(const []);
   }
 }

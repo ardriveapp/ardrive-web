@@ -1,4 +1,6 @@
+import 'package:ardrive/components/drive_fingerprint.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
@@ -18,6 +20,8 @@ import 'package:mocktail/mocktail.dart';
 import '../test_utils/utils.dart';
 
 class _MockDriveUnlocker extends Mock implements DriveUnlocker {}
+
+class _MockSyncCubit extends Mock implements SyncCubit {}
 
 const _driveId = '6939b9e0-cc98-42cb-bae0-5888eca78885';
 const _otherId = '2c1d4b5e-0f3a-4c8b-9d7e-6a5b4c3d2e1f';
@@ -370,6 +374,20 @@ void main() {
       expect(field(tester).focusNode.hasFocus, isTrue);
     });
 
+    testWidgets(
+        'a wallet that couldn\'t sign, not cancelled, says so and keeps the '
+        'dialog', (tester) async {
+      answers(const DriveUnlockResult.failed(DriveUnlockFailure.walletFailed));
+      await open(tester);
+
+      await typeAndPressEnter(tester, 'secret');
+
+      expect(
+          find.text("Your wallet couldn't sign. Try again."), findsOneWidget);
+      expect(find.text('Wrong password'), findsNothing);
+      expect(field(tester).focusNode.hasFocus, isTrue);
+    });
+
     testWidgets('typing again clears the error', (tester) async {
       answers(const DriveUnlockResult.failed(DriveUnlockFailure.wrongPassword));
       await open(tester);
@@ -397,5 +415,66 @@ void main() {
             tryOthers: any(named: 'tryOthers'),
           ));
     });
+  });
+
+  testWidgets(
+      'a not-found drive that isn\'t locked - a visitor\'s link with no key '
+      '- gets no locked page and no shell', (tester) async {
+    final session = DriveUnlockSession();
+    var framed = 0;
+
+    Widget view() => _app(
+          RepositoryProvider.value(
+            value: session,
+            child: LockedDriveView(
+              driveId: _driveId,
+              otherwise: const SizedBox(key: Key('nothing')),
+              frame: (panel) {
+                framed++;
+                return panel;
+              },
+            ),
+          ),
+          dark: false,
+        );
+
+    await tester.pumpWidget(view());
+    expect(find.byKey(const Key('nothing')), findsOneWidget);
+    expect(find.text('This drive is locked'), findsNothing);
+    expect(framed, 0);
+
+    session.setLockedDrives('owner', [
+      LockedDrive(
+        driveId: _driveId,
+        ownerAddress: 'owner',
+        signatureType: DriveSignatureType.v2,
+        lastUpdated: DateTime(2026),
+      ),
+    ]);
+    await tester.pump();
+    expect(find.text('This drive is locked'), findsOneWidget);
+    expect(framed, greaterThan(0));
+  });
+
+  test('the sync after an unlock never asks the wallet again for others',
+      () async {
+    final syncCubit = _MockSyncCubit();
+    when(() => syncCubit.syncDrives(any(),
+            askWalletAgain: any(named: 'askWalletAgain')))
+        .thenAnswer((_) async => true);
+
+    await syncUnlockedDrives(syncCubit, [_driveId]);
+
+    verify(() => syncCubit.syncDrives([_driveId], askWalletAgain: false))
+        .called(1);
+  });
+
+  testWidgets('the fingerprint is drawn in its own colour emoji face',
+      (tester) async {
+    await tester.pumpWidget(
+        _app(const DriveFingerprint(driveId: _driveId), dark: false));
+
+    final text = tester.widget<Text>(find.byType(Text).first);
+    expect(text.style?.fontFamily, FingerprintEmojiFont.family);
   });
 }

@@ -143,6 +143,28 @@ void main() {
       );
     });
 
+    test(
+        'a wallet whose v2 signature varies builds nothing: no reader could '
+        'ever open the record', () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: _driveId,
+          password: 'drive pw',
+          signatureType: DriveSignatureType.v1);
+      onChain(drive);
+      final wander = FakeWander(wallet)..varyV2 = true;
+
+      expect(
+        await builder.build(
+          wallet: wander.wallet,
+          driveId: _driveId,
+          currentKey: drive.key,
+          passwordInfos: [utf8.encode('drive pw')],
+        ),
+        isNull,
+      );
+    });
+
     test('a key that does not open the drive builds nothing', () async {
       final drive = await makeWebPrivateDrive(
           wallet: wallet,
@@ -237,7 +259,10 @@ void main() {
       return db.driveDao.driveById(driveId: drive.driveId).getSingle();
     }
 
-    PrivateDriveMigrationBloc buildBloc(List<Drive> rows) {
+    PrivateDriveMigrationBloc buildBloc(
+      List<Drive> rows, {
+      bool promptingWallet = false,
+    }) {
       when(() => drivesCubit.state).thenReturn(DrivesLoadSuccess(
         selectedDriveId: null,
         userDrives: rows,
@@ -254,6 +279,7 @@ void main() {
         arweave: arweave,
         driveUnlocker: unlocker,
         postRecord: (dataItem, _) async => posted.add(dataItem),
+        isPromptingWallet: (_) => promptingWallet,
       );
     }
 
@@ -333,9 +359,16 @@ void main() {
       await bloc.close();
     });
 
+    /// The banner's answer after the check the bloc runs on start.
+    Future<PrivateDriveMigrationState> offered(
+            PrivateDriveMigrationBloc bloc) =>
+        bloc.stream.firstWhere((state) =>
+            state is PrivateDriveMigrationVisible ||
+            state is PrivateDriveMigrationHidden);
+
     test(
-        'a drive whose password is not known this session posts nothing: the '
-        'sign-in password would have written a record that breaks it',
+        'a drive whose password is not known this session is not offered: '
+        'the sign-in password would have written a record that breaks it',
         () async {
       final drive = await makeWebPrivateDrive(
           wallet: wallet,
@@ -345,15 +378,54 @@ void main() {
       onChain(drive);
       final bloc = buildBloc([await v1DriveRow(drive)]);
 
+      expect(await offered(bloc), isA<PrivateDriveMigrationHidden>());
+      expect(bloc.drivesRequiringMigration, isEmpty);
+
       bloc.add(const PrivateDriveMigrationStartEvent());
       await expectLater(
-          bloc.stream, emitsThrough(isA<PrivateDriveMigrationFailed>()));
-
+          bloc.stream, emitsThrough(isA<PrivateDriveMigrationComplete>()));
       expect(posted, isEmpty);
       await bloc.close();
     });
 
-    test('never migrates a locked drive', () async {
+    test(
+        'a wallet that signs locally gets the drives its sign-in password '
+        'made offered, proven on the spot', () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: _driveId,
+          password: 'login pw',
+          signatureType: DriveSignatureType.v1);
+      onChain(drive);
+      final bloc = buildBloc([await v1DriveRow(drive)]);
+
+      expect(await offered(bloc), isA<PrivateDriveMigrationVisible>());
+      expect(session.provenPasswordInfo(_driveId), utf8.encode('login pw'));
+      await bloc.close();
+    });
+
+    test(
+        'Wander is never asked just to decide on the banner: a drive opened '
+        'from a stored key is offered once it is unlocked with its password',
+        () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: _driveId,
+          password: 'login pw',
+          signatureType: DriveSignatureType.v1);
+      onChain(drive);
+      final bloc = buildBloc([await v1DriveRow(drive)], promptingWallet: true);
+
+      expect(await offered(bloc), isA<PrivateDriveMigrationHidden>());
+
+      session.rememberProvenPasswordInfo(_driveId, utf8.encode('login pw'));
+      bloc.add(const PrivateDriveMigrationCheck());
+
+      expect(await offered(bloc), isA<PrivateDriveMigrationVisible>());
+      await bloc.close();
+    });
+
+    test('a locked drive is never offered', () async {
       final drive = await makeWebPrivateDrive(
           wallet: wallet,
           driveId: _driveId,
@@ -371,6 +443,28 @@ void main() {
       ]);
       final bloc = buildBloc([row]);
 
+      expect(await offered(bloc), isA<PrivateDriveMigrationHidden>());
+      await bloc.close();
+    });
+
+    test('a drive locked after it was offered is still not migrated', () async {
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: _driveId,
+          password: 'login pw',
+          signatureType: DriveSignatureType.v1);
+      onChain(drive);
+      final bloc = buildBloc([await v1DriveRow(drive)]);
+      expect(await offered(bloc), isA<PrivateDriveMigrationVisible>());
+
+      session.setLockedDrives(owner, [
+        LockedDrive(
+          driveId: _driveId,
+          ownerAddress: owner,
+          signatureType: DriveSignatureType.v1,
+          lastUpdated: DateTime(2026),
+        ),
+      ]);
       bloc.add(const PrivateDriveMigrationStartEvent());
       await expectLater(
           bloc.stream, emitsThrough(isA<PrivateDriveMigrationFailed>()));
@@ -379,7 +473,8 @@ void main() {
       await bloc.close();
     });
 
-    test('a failed drive does not stop the others', () async {
+    test('a drive whose record can\'t be proven does not stop the others',
+        () async {
       final unknown = await makeWebPrivateDrive(
           wallet: wallet,
           driveId: _otherId,
@@ -392,8 +487,13 @@ void main() {
           signatureType: DriveSignatureType.v1);
       onChain(unknown);
       onChain(known);
+      // Offered on a password that is not this drive's: the builder must
+      // still refuse it.
+      session.rememberProvenPasswordInfo(_otherId, utf8.encode('not it'));
       final bloc =
           buildBloc([await v1DriveRow(unknown), await v1DriveRow(known)]);
+      expect(await offered(bloc), isA<PrivateDriveMigrationVisible>());
+      expect(bloc.drivesRequiringMigration, hasLength(2));
 
       bloc.add(const PrivateDriveMigrationStartEvent());
       await expectLater(

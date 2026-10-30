@@ -581,30 +581,34 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       // A private drive of the user's that this session
                       // can't open. A link that brought its key goes on to
                       // attach as it always has.
-                      final lockedDrive = LockedDriveView(
+                      // Only that: anyone else - a visitor without the
+                      // key, a drive that doesn't exist - gets what they
+                      // always got here, nothing, with the attach dialog
+                      // over it. The shell is drawn only for a locked drive.
+                      return LockedDriveView(
                         driveId:
                             context.read<DriveDetailCubit>().currentDriveId,
                         otherwise: const SizedBox(),
-                      );
-
-                      return ScreenTypeLayout.builder(
-                        mobile: (context) => Scaffold(
-                          drawerScrimColor: Colors.transparent,
-                          drawer:
-                              PublicationMode.isOn ? null : const AppSideBar(),
-                          appBar: const MobileAppBar(),
-                          body: lockedDrive,
-                        ),
-                        desktop: (context) => Column(
-                          children: [
-                            const AppTopBar(),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 16),
-                                child: lockedDrive,
+                        frame: (panel) => ScreenTypeLayout.builder(
+                          mobile: (context) => Scaffold(
+                            drawerScrimColor: Colors.transparent,
+                            drawer: PublicationMode.isOn
+                                ? null
+                                : const AppSideBar(),
+                            appBar: const MobileAppBar(),
+                            body: panel,
+                          ),
+                          desktop: (context) => Column(
+                            children: [
+                              const AppTopBar(),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 16),
+                                  child: panel,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     } else {

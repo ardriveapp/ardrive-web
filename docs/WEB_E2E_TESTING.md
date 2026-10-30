@@ -340,10 +340,12 @@ It needs its own wallet, so it runs in its own profile and credentials:
    Login* (the login password), *E2E Locked A* and *E2E Locked B* (a second
    password) and *E2E Locked Unicode* (a non-ASCII password, made with
    core-js, whose encoding of it differs from web's). Each is free metadata
-   on Turbo. Keep everything in `~/.config/ardrive-e2e/locked-drives/`,
-   chmod 600: `wallet.json`, `env` (login.js's credentials for it),
-   `passwords.json` (`login`, `other`, `unicode`) and `drives.json`
-   (`name`, `password`, `driveId`).
+   on Turbo. Keep `env` (login.js's credentials for it), `passwords.json`
+   (`login`, `other`, `unicode`) and `drives.json` (`name`, `password`,
+   `driveId`) in `~/.config/ardrive-e2e/locked-drives/`, and the keyfile in
+   `~/.config/ardrive-e2e/locked-drives-wallet/wallet.json`, all chmod 600.
+   The keyfile has to be outside the credentials folder: `launch.js` never
+   hands a file from that folder to a file chooser, the login's included.
 2. Start the browser and log in with them, in a profile of their own:
    `export E2E_DIR=~/.cache/ardrive-e2e-locked CREDENTIALS=~/.config/ardrive-e2e/locked-drives/env`,
    then `node launch.js` and `node login.js` as usual.

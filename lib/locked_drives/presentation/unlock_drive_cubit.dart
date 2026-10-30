@@ -17,6 +17,9 @@ enum UnlockDriveStatus {
   /// Anything else that stopped the check.
   networkError,
 
+  /// The wallet couldn't sign, and not because the user cancelled it.
+  walletFailed,
+
   /// The drive opened. [UnlockDriveState.openedDriveIds] says which others
   /// opened with it.
   unlocked,
@@ -117,6 +120,8 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
         // The user said no to their wallet. Nothing went wrong, so nothing is
         // said: the dialog is back where it was.
         emit(const UnlockDriveState());
+      case DriveUnlockFailure.walletFailed:
+        emit(const UnlockDriveState(status: UnlockDriveStatus.walletFailed));
       case DriveUnlockFailure.unavailable:
         emit(const UnlockDriveState(status: UnlockDriveStatus.networkError));
     }
@@ -125,7 +130,8 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   /// Typing again clears what the last attempt said.
   void edited() {
     if (state.status == UnlockDriveStatus.wrongPassword ||
-        state.status == UnlockDriveStatus.networkError) {
+        state.status == UnlockDriveStatus.networkError ||
+        state.status == UnlockDriveStatus.walletFailed) {
       emit(const UnlockDriveState());
     }
   }

@@ -30,6 +30,26 @@ void main() {
       expect(session.currentLockedDrives.map((d) => d.driveId), ['c', 'd']);
     });
 
+    test(
+        'a discovery pass that started before an unlock does not lock the '
+        'drive again', () {
+      final session = DriveUnlockSession()
+        ..setLockedDrives('me', [_locked('a', 'me', 2024)]);
+      final passStartedAt = session.unlockGeneration;
+
+      session.markUnlocked('a');
+      session.setLockedDrives('me', [_locked('a', 'me', 2024)],
+          since: passStartedAt);
+
+      expect(session.isLocked('a'), isFalse);
+
+      // A pass that started after the unlock and still finds it locked is
+      // believed.
+      session.setLockedDrives('me', [_locked('a', 'me', 2024)],
+          since: session.unlockGeneration);
+      expect(session.isLocked('a'), isTrue);
+    });
+
     test('markUnlocked takes a drive off the list', () {
       final session = DriveUnlockSession()
         ..setLockedDrives('me', [_locked('a', 'me', 2024)])

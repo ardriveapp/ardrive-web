@@ -377,7 +377,7 @@ class DriveListRow extends StatelessWidget {
     // one, the same three desktop shows.
     if (drive.isLocked) {
       return ListNameCell(
-        icon: Tooltip(
+        icon: ArDriveTooltip(
           message: appLocalizationsOf(context).driveLocked,
           child: ArDriveIcons.lock(
             size: _iconSize,

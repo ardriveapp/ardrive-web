@@ -11,6 +11,7 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -387,6 +388,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
   /// password that opens nothing. If the wallet has private drives and this
   /// password opens none of them, it is still "Wrong password".
   ///
+  /// Bounded: at most [signInMaxDrives] drives and [signInTimeBudget], and a
+  /// wallet that prompts is asked at most [signInMaxNewPrompts] times, oldest
+  /// drive first after the drives whose signature is already held. A drive
+  /// beyond those bounds is not tried; if none tried opens, the answer is
+  /// still "Wrong password", and the drives it does open later show locked.
+  ///
   /// Only an AES-GCM authentication failure counts against the password. A
   /// drive that can't be read leaves the question open: if no drive opened
   /// and one couldn't be read, the sign-in reports the gateway, not "Wrong
@@ -396,12 +403,24 @@ class ArDriveAuthImpl implements ArDriveAuth {
   Future<void> validateUser(Wallet wallet, String password) =>
       _validateUser(wallet, password);
 
+  /// The most new wallet prompts one sign-in may cost a wallet that asks the
+  /// user for each signature (Wander). The drive check at sign-in used to
+  /// cost one; a typo must not cost one per private drive.
+  static const signInMaxNewPrompts = 3;
+
+  /// The most private drives one sign-in tries, whatever the wallet.
+  static const signInMaxDrives = 20;
+
+  /// How long one sign-in spends trying drives before it gives its answer.
+  static const signInTimeBudget = Duration(seconds: 20);
+
   Future<void> _validateUser(
     Wallet wallet,
     String password,
   ) async {
+    final address = await wallet.getAddress();
     final privateDriveTxs = (await _arweave.getUniqueUserDriveEntityTxs(
-      await wallet.getAddress(),
+      address,
       maxRetries: profileQueryMaxRetries,
     ))
         .where((tx) =>
@@ -412,28 +431,80 @@ class ArDriveAuthImpl implements ArDriveAuth {
       return;
     }
 
+    // Which drives, in what order: those whose signature this session already
+    // holds first, since trying them asks the wallet nothing; then the rest,
+    // oldest first, the drive most likely made with the account's password.
+    // A wallet that prompts gets at most [signInMaxNewPrompts] of the rest.
+    final createdAt = _arweave.cachedUserDriveCreationTimes(address);
+    DateTime created(TransactionCommonMixin tx) {
+      final known = createdAt[tx.getTag(EntityTag.driveId)];
+      if (known != null) return known;
+      try {
+        return tx.getCommitTime();
+      } catch (_) {
+        return DateTime.fromMillisecondsSinceEpoch(0);
+      }
+    }
+
+    final session = _driveUnlocker.session;
+    bool held(TransactionCommonMixin tx) =>
+        session.holdsSignatureFor(address, tx.getTag(EntityTag.driveId)!);
+    int oldestFirst(TransactionCommonMixin a, TransactionCommonMixin b) =>
+        created(a).compareTo(created(b));
+
+    final heldTxs = privateDriveTxs.where(held).toList()..sort(oldestFirst);
+    final rest = privateDriveTxs.where((tx) => !held(tx)).toList()
+      ..sort(oldestFirst);
+    final prompts = wallet is ArConnectWallet;
+
+    final candidates = [
+      ...heldTxs,
+      ...(prompts ? rest.take(signInMaxNewPrompts) : rest),
+    ].take(signInMaxDrives).toList();
+
+    // Their metadata, a few at a time rather than one after another.
+    final data = List<Uint8List?>.filled(candidates.length, null);
+    final readErrors = List<Object?>.filled(candidates.length, null);
+
+    await ArweaveService.runPooled(
+      concurrency: 6,
+      itemCount: candidates.length,
+      task: (i) async {
+        try {
+          // Login, not a user-initiated fetch: read the configured gateway
+          // rather than walking the GAR waterfall behind a spinner.
+          data[i] = await _arweave.getEntityDataBytes(
+            candidates[i].id,
+            configuredGatewayOnly: true,
+          );
+        } catch (e) {
+          readErrors[i] = e;
+        }
+      },
+    );
+
+    final deadline = DateTime.now().add(signInTimeBudget);
     Object? unreadable;
 
-    for (final driveTx in privateDriveTxs) {
-      final Uint8List data;
+    for (var i = 0; i < candidates.length; i++) {
+      if (DateTime.now().isAfter(deadline)) {
+        logger.w('Stopped trying drives at sign-in: out of time');
+        break;
+      }
 
-      try {
-        // Login, not a user-initiated fetch: read the configured gateway
-        // rather than walking the GAR waterfall behind a spinner.
-        data = await _arweave.getEntityDataBytes(
-          driveTx.id,
-          configuredGatewayOnly: true,
-        );
-      } catch (e) {
-        logger.w('Could not read a private drive to check the password: $e');
-        unreadable ??= e;
+      final driveData = data[i];
+
+      if (driveData == null) {
+        logger.w('Could not read a private drive to check the password: '
+            '${readErrors[i]}');
+        unreadable ??= readErrors[i];
         continue;
       }
 
       final attempt = await _driveUnlocker.tryPassword(
         wallet: wallet,
-        driveTx: driveTx,
-        data: data,
+        driveTx: candidates[i],
+        data: driveData,
         password: password,
       );
 
@@ -443,6 +514,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         case DriveUnlockFailure.wrongPassword:
           continue;
         case DriveUnlockFailure.walletDeclined:
+        case DriveUnlockFailure.walletFailed:
           throw WrongPasswordException('Password is incorrect');
         case DriveUnlockFailure.unavailable:
           unreadable ??= const AuthenticationGatewayException();

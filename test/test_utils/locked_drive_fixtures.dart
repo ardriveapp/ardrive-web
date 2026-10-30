@@ -1,13 +1,17 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
+import 'package:flutter_test/flutter_test.dart';
 
 /// A drive transaction as the gateway lists it, built in memory.
 class FakeDriveTx with TransactionCommonMixin {
@@ -137,6 +141,7 @@ Future<PrivateDriveFixture> makeWebPrivateDrive({
   DriveSignatureType signatureType = DriveSignatureType.v2,
   bool withRecord = false,
   String name = 'Drive',
+  int unixTime = 1790000000,
 }) =>
     makePrivateDrive(
       wallet: wallet,
@@ -145,6 +150,7 @@ Future<PrivateDriveFixture> makeWebPrivateDrive({
       signatureType: signatureType,
       withRecord: withRecord,
       name: name,
+      unixTime: unixTime,
     );
 
 /// Counts a wallet's signatures, and can make it refuse them the way a
@@ -163,4 +169,55 @@ class SignatureCounter {
 
   int signatures = 0;
   bool refuse = false;
+}
+
+/// Wander, as far as signing goes: every signature is a prompt, counted, and
+/// it can be made to cancel them, fail them, or answer v2 differently each
+/// time. Signs with [inner], so its keys are the JWK wallet's. Use [wallet].
+class FakeWander extends Fake implements ArConnectService {
+  FakeWander(this.inner);
+
+  final Wallet inner;
+
+  late final ArConnectWallet wallet = ArConnectWallet(this);
+
+  int prompts = 0;
+
+  /// Throws what Wander throws when its prompt is cancelled.
+  bool cancel = false;
+
+  /// Throws as a wallet that can't sign at all.
+  bool fail = false;
+
+  /// Answers every v2 (data item) signature with fresh random bytes.
+  bool varyV2 = false;
+
+  void _prompt() {
+    prompts++;
+    if (cancel) throw Exception('User cancelled the auth');
+    if (fail) throw Exception('Wallet is locked');
+  }
+
+  @override
+  Future<String> getWalletAddress() => inner.getAddress();
+
+  @override
+  Future<String> getPublicKey() => inner.getOwner();
+
+  @override
+  Future<Uint8List> getSignature(Uint8List message) async {
+    _prompt();
+    return inner.sign(message);
+  }
+
+  @override
+  Future<Uint8List> signDataItem(DataItem dataItem) async {
+    _prompt();
+    if (varyV2) {
+      final random = Random.secure();
+      return Uint8List.fromList(List.generate(512, (_) => random.nextInt(256)));
+    }
+    await dataItem.sign(ArweaveSigner(inner));
+    return utils.decodeBase64ToBytes(dataItem.signature);
+  }
 }

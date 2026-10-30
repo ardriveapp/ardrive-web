@@ -406,10 +406,7 @@
             },
           })
           .then(function(engineInitializer) {
-            // Colour emoji for the drive fingerprints (lib/components/drive_fingerprint.dart).
-            // Without it CanvasKit falls back to a monochrome symbol font. The
-            // colour font is fetched only when text first needs an emoji.
-            return engineInitializer.initializeEngine({ useColorEmoji: true });
+            return engineInitializer.initializeEngine();
           })
           .then(function(appRunner) {
             return appRunner.runApp();

@@ -82,8 +82,11 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     .filter((n) => n.label.includes('Private drive, Locked') && n.w > 200)
     .sort((a, b) => a.y - b.y);
   const lockedIds = (ids) => [...ids].sort();
+  // The row's Unlock: beside the status in the table, on the card's last
+  // line at phone width - the nearest one, either way.
   const unlockButtonOf = async (row) => (await labels())
-    .filter((n) => n.label === 'Unlock' && Math.abs(n.y - row.y) < 20)[0];
+    .filter((n) => n.label === 'Unlock' && Math.abs(n.y - row.y) < 60)
+    .sort((a, b) => Math.abs(a.y - row.y) - Math.abs(b.y - row.y))[0];
   // The field has focus whenever the dialog is waiting: it opens focused, and
   // every answer but success hands focus back with the text selected. A click
   // is not needed, and a click on a label node outside the field would land

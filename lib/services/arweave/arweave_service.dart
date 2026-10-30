@@ -758,7 +758,8 @@ class ArweaveService {
   /// It must not throw and it must not await: it runs between a slot being
   /// released and the next index being claimed, so anything slow here is
   /// concurrency taken away from the fetches.
-  @visibleForTesting
+  ///
+  /// Also how sign-in reads the private drives it checks the password on.
   static Future<void> runPooled({
     required int concurrency,
     required int itemCount,

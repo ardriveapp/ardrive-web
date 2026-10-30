@@ -103,6 +103,8 @@ void main() {
   }) {
     when(() => mockArweaveService.getUniqueUserDriveEntityTxs(any(),
         maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => txs);
+    when(() => mockArweaveService.cachedUserDriveCreationTimes(any()))
+        .thenReturn({});
     when(() => mockArweaveService.getEntityDataBytes(any(),
             configuredGatewayOnly: any(named: 'configuredGatewayOnly')))
         .thenAnswer((_) async => Uint8List(0));
