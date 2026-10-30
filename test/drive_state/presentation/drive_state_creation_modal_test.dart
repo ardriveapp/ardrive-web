@@ -202,7 +202,8 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Uploads this small are free with Turbo.'), findsOneWidget);
+    expect(find.textContaining('Uploads this small are free with Turbo.'),
+        findsOneWidget);
     expect(find.byType(PaymentMethodSelector), findsNothing);
     expect(publishButton(tester).isDisabled, isFalse);
   });
@@ -403,7 +404,14 @@ void main() {
       expect(rect.right, lessThanOrEqualTo(surface.width));
       expect(rect.top, greaterThanOrEqualTo(0));
       expect(rect.bottom, lessThanOrEqualTo(surface.height));
-      expect(rect.width, lessThanOrEqualTo(modalStandardMaxWidthSize));
+      // Under the tablet breakpoint (834) a dialog fills the width less a
+      // 16 px gutter (design system,
+      // Dialogs); anywhere wider the cap holds.
+      if (surface.width < 834 && surface.height >= 600) {
+        expect(rect.width, surface.width - 32);
+      } else {
+        expect(rect.width, lessThanOrEqualTo(modalStandardMaxWidthSize));
+      }
     }
 
     for (final surface in {

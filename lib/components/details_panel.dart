@@ -1410,10 +1410,12 @@ class _FileRevisionOptions extends StatelessWidget {
       drive: drive,
       isFileRevision: true,
       withInfo: false,
-      // bottom right to top left
+      // Under its button, right edges aligned, like every row menu; it opens
+      // up from the button's top when there is no room below. Hung from the
+      // button's top-left it sat over the revision it belongs to.
       alignment: const Aligned(
-        follower: Alignment.bottomRight,
-        target: Alignment.topLeft,
+        follower: Alignment.topRight,
+        target: Alignment.bottomRight,
       ),
     );
   }

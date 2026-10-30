@@ -15,6 +15,7 @@ import 'package:ardrive/upload_entry/presentation/upload_ready_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -211,9 +212,7 @@ void readDriveForAction(BuildContext context, {required DriveWait wait}) {
 }
 
 void _say(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message)),
-  );
+  showArDriveToast(ScaffoldMessenger.of(context), text: message);
 }
 
 /// Reads the drive [driveId] needs for an action pressed in its own menu.

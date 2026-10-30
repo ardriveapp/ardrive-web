@@ -459,18 +459,15 @@ class _WebPageActions {
     final url = await _url();
     await Clipboard.setData(ClipboardData(text: url));
     if (!context.mounted) return;
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text(
-          appLocalizationsOf(context).webPagesLinkCopied,
-          style: ArDriveTypographyNew.of(context)
-              .paragraphNormal(color: colors.textHigh),
-        ),
-        backgroundColor: colors.containerL3,
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger != null) {
+      showArDriveToast(
+        messenger,
+        text: appLocalizationsOf(context).webPagesLinkCopied,
+        type: ArDriveStatusType.success,
         duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+    }
   }
 
   bool get canUpdate => page.publication != null;

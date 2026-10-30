@@ -77,6 +77,8 @@ class ArNSNoNames extends StatelessWidget {
       message: strings.arnsNoNamesBody,
       actionLabel: strings.arnsGetANameInConsole,
       onAction: () => openUrl(url: arnsGetNameUrl),
+      // The ar.io Console, in a new window.
+      actionIsExternal: true,
     );
   }
 }

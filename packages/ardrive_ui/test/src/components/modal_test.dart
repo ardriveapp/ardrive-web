@@ -277,6 +277,62 @@ void main() {
     expect(closed, 1);
     handle.dispose();
   });
+
+  Future<double> dialogWidthAt(WidgetTester tester, Size screen) async {
+    tester.view.physicalSize = screen;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showAnimatedDialog(
+                  context,
+                  content: const ArDriveStandardModalNew(
+                    title: 'Rename',
+                    description: 'A new name for the file.',
+                  ),
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    return tester.getSize(find.byType(ArDriveModalNew)).width;
+  }
+
+  // Under the tablet breakpoint a dialog fills the width less a 16 px
+  // gutter. It was a 310 px card on a 390 px phone: Flutter's 40 px inset
+  // and the 350 cap.
+  testWidgets('on a phone a dialog fills the width less 16 a side',
+      (tester) async {
+    expect(await dialogWidthAt(tester, const Size(390, 844)), 390 - 32);
+  });
+
+  testWidgets('a small phone gives the card its full width, no gutter',
+      (tester) async {
+    // A 320 by 568 phone has no room for one: the drive state dialog's
+    // content overflowed at 288.
+    expect(await dialogWidthAt(tester, const Size(320, 568)),
+        greaterThan(320 - 32));
+  });
+
+  testWidgets('a phone on its side keeps the standard card', (tester) async {
+    // It doesn't stretch a dialog across an 800 px wide, 375 high screen.
+    expect(await dialogWidthAt(tester, const Size(812, 375)),
+        lessThanOrEqualTo(350));
+  });
+
+  testWidgets('on a desktop a dialog keeps its width', (tester) async {
+    expect(await dialogWidthAt(tester, const Size(1440, 900)),
+        lessThanOrEqualTo(350));
+  });
 }
 
 class _TestWidget extends StatelessWidget {

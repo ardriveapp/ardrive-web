@@ -56,6 +56,17 @@ abstract class FileTypeHelper {
     return _docTypes.contains(contentType) || contentType.startsWith('text/');
   }
 
+  /// JSON data, a wallet keyfile among it, with or without parameters
+  /// (`; charset=utf-8`) and in its `+json` forms (`application/ld+json`).
+  /// Not a manifest, which is JSON too but stands for the files it lists.
+  static bool isJson(String contentType) {
+    final type = contentType.split(';').first.trim().toLowerCase();
+    if (isManifest(type)) return false;
+    return type == 'application/json' ||
+        type == 'text/json' ||
+        type.endsWith('+json');
+  }
+
   static bool isCode(String contentType) {
     return _codeTypes.any((type) => contentType.startsWith(type));
   }

@@ -49,6 +49,8 @@ class ArDriveBottomSheet extends StatelessWidget {
       horizontal: ArDriveSpacing.lg,
     ),
     this.fillsHeight = false,
+    this.hasCloseButton = true,
+    this.closeLabel = 'Close',
   });
 
   final String? title;
@@ -63,6 +65,14 @@ class ArDriveBottomSheet extends StatelessWidget {
   /// title and actions leave. For content that scrolls itself, such as a list
   /// of results, which can't sit inside the sheet's own scroll view.
   final bool fillsHeight;
+
+  /// A close button beside the title, as on a dialog: a sheet could only be
+  /// dragged or tapped away. Off for a sheet that must not be left mid-way,
+  /// which is shown with `isDismissible: false` too.
+  final bool hasCloseButton;
+
+  /// What a screen reader calls the close button.
+  final String closeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -100,15 +110,40 @@ class ArDriveBottomSheet extends StatelessWidget {
                 ArDriveSpacing.lg,
                 ArDriveSpacing.md,
               ),
-              child: Semantics(
-                header: true,
-                child: Text(
-                  title!,
-                  style: typography.heading3(
-                    color: colorTokens.textHigh,
-                    fontWeight: ArFontWeight.bold,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      container: true,
+                      header: true,
+                      child: Text(
+                        title!,
+                        style: typography.heading3(
+                          color: colorTokens.textHigh,
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  if (hasCloseButton)
+                    // Its own node: without it, it merged into the title's.
+                    Semantics(
+                      container: true,
+                      button: true,
+                      label: closeLabel,
+                      excludeSemantics: true,
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).maybePop(),
+                          child: const ArDriveIcon(
+                            icon: ArDriveIconsData.x,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           if (fillsHeight)

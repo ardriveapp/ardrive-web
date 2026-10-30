@@ -254,7 +254,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       // told less.
                       return ScreenTypeLayout.builder(
                         mobile: (context) => Scaffold(
-                          drawerScrimColor: Colors.transparent,
                           drawer:
                               PublicationMode.isOn ? null : const AppSideBar(),
                           appBar: const MobileAppBar(),
@@ -289,7 +288,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       // be.
                       return ScreenTypeLayout.builder(
                         mobile: (context) => Scaffold(
-                          drawerScrimColor: Colors.transparent,
                           drawer:
                               PublicationMode.isOn ? null : const AppSideBar(),
                           appBar: const MobileAppBar(),
@@ -327,7 +325,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         child: ScreenTypeLayout.builder(
                           mobile: (context) {
                             return Scaffold(
-                              drawerScrimColor: Colors.transparent,
                               drawer: PublicationMode.isOn
                                   ? null
                                   : const AppSideBar(),
@@ -347,7 +344,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             );
                           },
                           desktop: (context) => Scaffold(
-                            drawerScrimColor: Colors.transparent,
                             body: Column(
                               children: [
                                 const AppTopBar(),
@@ -407,7 +403,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               );
                             }
                             return Scaffold(
-                              drawerScrimColor: Colors.transparent,
                               drawer: PublicationMode.isOn
                                   ? null
                                   : const AppSideBar(),
@@ -546,7 +541,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           ),
                           mobile: (context) => Scaffold(
                             resizeToAvoidBottomInset: false,
-                            drawerScrimColor: Colors.transparent,
                             drawer: PublicationMode.isOn
                                 ? null
                                 : const AppSideBar(),
@@ -591,7 +585,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         otherwise: const SizedBox(),
                         frame: (panel) => ScreenTypeLayout.builder(
                           mobile: (context) => Scaffold(
-                            drawerScrimColor: Colors.transparent,
                             drawer: PublicationMode.isOn
                                 ? null
                                 : const AppSideBar(),
@@ -1111,11 +1104,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     }
 
     return Scaffold(
-      drawerScrimColor: ArDriveTheme.of(context)
-          .themeData
-          .colorTokens
-          .primitives
-          .transparent900_32,
       drawer: PublicationMode.isOn ? null : const AppSideBar(),
       appBar: MobileAppBar(
         showSearch: true,

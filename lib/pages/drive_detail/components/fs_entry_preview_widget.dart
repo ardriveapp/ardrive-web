@@ -627,10 +627,12 @@ Widget _playerTitle(BuildContext context, String filename) {
 
   return Tooltip(
     message: filename,
+    // One line, cut with an ellipsis: a long name without spaces wrapped
+    // mid-word over two. The tooltip has it whole.
     child: Text(
       filename,
       overflow: TextOverflow.ellipsis,
-      maxLines: 2,
+      maxLines: 1,
       textAlign: TextAlign.center,
       style: ArDriveTypographyNew.of(context).paragraphLarge(
         color: colorTokens.textHigh,
@@ -2157,10 +2159,12 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               children: [
                 Tooltip(
                   message: fileNameWithoutExtension,
+                  // One line, cut with an ellipsis: a long name without spaces
+                  // wrapped mid-word over two. The tooltip has it whole.
                   child: Text(
                     fileNameWithoutExtension,
                     overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+                    maxLines: 1,
                     style: typography.paragraphLarge(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold,
@@ -2731,6 +2735,7 @@ void _displaySpeedOptionsModal(
 
       return ArDriveBottomSheet(
         title: appLocalizationsOf(context).previewPlaybackSpeed,
+        closeLabel: appLocalizationsOf(context).close,
         contentPadding: EdgeInsets.zero,
         content: Column(
           mainAxisSize: MainAxisSize.min,

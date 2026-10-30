@@ -214,6 +214,11 @@ ThemeData lightMaterialTheme(ArDriveColorTokens colorTokens) {
 
   return ThemeData(
     fontFamily: _fontFamily,
+    // One scrim behind every drawer and bottom sheet, as behind dialogs.
+    // Screens set their own and differed: none, a lightening wash, a tint.
+    drawerTheme: DrawerThemeData(scrimColor: colorTokens.scrim),
+    bottomSheetTheme:
+        BottomSheetThemeData(modalBarrierColor: colorTokens.scrim),
     primaryColor: colorTokens.buttonPrimaryDefault,
     primaryColorLight: colorTokens.buttonPrimaryDefault,
     colorScheme: theme.colorScheme.copyWith(
@@ -345,6 +350,11 @@ ThemeData darkMaterialTheme(ArDriveColorTokens colorTokens) {
 
   return ThemeData(
     fontFamily: _fontFamily,
+    // One scrim behind every drawer and bottom sheet, as behind dialogs.
+    // Screens set their own and differed: none, a lightening wash, a tint.
+    drawerTheme: DrawerThemeData(scrimColor: colorTokens.scrim),
+    bottomSheetTheme:
+        BottomSheetThemeData(modalBarrierColor: colorTokens.scrim),
     primaryColor: colorTokens.buttonPrimaryDefault,
     primaryColorLight: colorTokens.buttonPrimaryDefault,
     colorScheme: theme.colorScheme.copyWith(

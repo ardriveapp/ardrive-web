@@ -40,7 +40,7 @@ class _HoverWidgetState extends State<HoverWidget> {
           transform: Matrix4.identity()
             ..scale(_isHovering ? widget.hoverScale : 1.0),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(5.0),
+            borderRadius: BorderRadius.circular(ArDriveRadius.control),
           ),
           child: Container(
             padding: widget.padding ?? const EdgeInsets.all(5.0),
@@ -52,7 +52,7 @@ class _HoverWidgetState extends State<HoverWidget> {
                           .colorTokens
                           .buttonSecondaryHover
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(5.0),
+              borderRadius: BorderRadius.circular(ArDriveRadius.control),
             ),
             child: widget.child,
           ),

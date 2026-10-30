@@ -123,17 +123,11 @@ void showVideoPreview(
 
 /// Said when the browser could not set up an attachment's player.
 void _showPreviewFailed(BuildContext context) {
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      backgroundColor: colorTokens.containerL3,
-      content: Text(
-        appLocalizationsOf(context).emailAttachmentPreviewFailed,
-        style: ArDriveTypographyNew.of(context)
-            .paragraphNormal(color: colorTokens.textHigh),
-      ),
-      duration: const Duration(seconds: 3),
-    ),
+  showArDriveToast(
+    ScaffoldMessenger.of(context),
+    text: appLocalizationsOf(context).emailAttachmentPreviewFailed,
+    type: ArDriveStatusType.error,
+    duration: const Duration(seconds: 3),
   );
 }

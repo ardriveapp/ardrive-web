@@ -430,6 +430,14 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// A JSON file, keyfiles included: braces, as code editors draw one. The
+  /// icon font has no JSON or code glyph.
+  static ArDriveIcon json({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.data_object,
+        size: size,
+        color: color,
+      );
+
   static ArDriveIcon cloudSync({double? size, Color? color}) => ArDriveIcon(
         icon: Icons.cloud_sync,
         size: size,

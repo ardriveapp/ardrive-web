@@ -1,5 +1,36 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_ui/src/components/breakpoint_layout_builder.dart';
 import 'package:flutter/material.dart';
+
+/// Under the tablet breakpoint a dialog fills the width less this gutter on
+/// each side: a phone gave it Flutter's 40, and with the 350 cap a standard
+/// dialog was a 310 px card on a 390 px screen.
+const double _phoneGutter = ArDriveSpacing.md;
+
+bool _onPhone(BuildContext context) =>
+    MediaQuery.of(context).size.width < TABLET;
+
+/// A screen under 600 high keeps the dialog as it always was: no inset, and
+/// the standard card's own width, so a 320 by 568 phone loses no room to a
+/// gutter and a phone on its side doesn't stretch a dialog across 800 px.
+bool _shortScreen(BuildContext context) =>
+    MediaQuery.of(context).size.height < 600;
+
+/// Whether the standard dialog fills the width less the gutter.
+bool _fillsPhone(BuildContext context) =>
+    _onPhone(context) && !_shortScreen(context);
+
+/// The space around a dialog: [given], or on a phone the 16 px gutter.
+EdgeInsets? _insetFor(BuildContext context, EdgeInsets? given) {
+  if (_shortScreen(context)) {
+    return const EdgeInsets.symmetric(horizontal: 0, vertical: 8);
+  }
+  if (_onPhone(context)) {
+    return given ??
+        const EdgeInsets.symmetric(horizontal: _phoneGutter, vertical: 24);
+  }
+  return given;
+}
 
 class ArDriveModalNew extends StatelessWidget {
   const ArDriveModalNew({
@@ -121,8 +152,6 @@ Future<void> showAnimatedDialog(
   Color? barrierColor,
   EdgeInsets? insetPadding,
 }) {
-  final lowScreenWarning = MediaQuery.of(context).size.height < 600;
-
   return showGeneralDialog(
     context: context,
     barrierColor:
@@ -142,9 +171,7 @@ Future<void> showAnimatedDialog(
     useRootNavigator: useRootNavigator,
     pageBuilder: (context, a1, a2) {
       return Dialog(
-        insetPadding: lowScreenWarning
-            ? const EdgeInsets.symmetric(horizontal: 0, vertical: 8)
-            : insetPadding,
+        insetPadding: _insetFor(context, insetPadding),
         elevation: 0,
         backgroundColor: Colors.transparent,
         child: content,
@@ -159,8 +186,6 @@ Future<T?> showAnimatedDialogWithBuilder<T>(
   required WidgetBuilder builder,
   Color? barrierColor,
 }) {
-  final lowScreenWarning = MediaQuery.of(context).size.height < 600;
-
   return showGeneralDialog<T>(
     context: context,
     barrierColor:
@@ -179,9 +204,7 @@ Future<T?> showAnimatedDialogWithBuilder<T>(
     barrierLabel: '',
     pageBuilder: (context, a1, a2) {
       return Dialog(
-        insetPadding: lowScreenWarning
-            ? const EdgeInsets.symmetric(horizontal: 0, vertical: 8)
-            : null,
+        insetPadding: _insetFor(context, null),
         elevation: 0,
         backgroundColor: Colors.transparent,
         child: builder(context),
@@ -286,6 +309,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
               // Named, so a screen reader says what it does; it was an
               // unlabelled icon.
               Semantics(
+                container: true,
                 button: true,
                 label: closeLabel,
                 excludeSemantics: true,
@@ -357,12 +381,21 @@ class ArDriveStandardModalNew extends StatelessWidget {
       ]
     ];
 
+    // On a phone the dialog fills the width less the gutter, whatever width
+    // it asked for (README, Dialogs).
+    final phoneWidth = deviceWidth - 2 * _phoneGutter;
     return ArDriveModalNew(
-      constraints: BoxConstraints(
-        minHeight: 100,
-        maxWidth: width ?? maxWidth,
-        minWidth: 250,
-      ),
+      constraints: _fillsPhone(context)
+          ? BoxConstraints(
+              minHeight: 100,
+              minWidth: phoneWidth,
+              maxWidth: phoneWidth,
+            )
+          : BoxConstraints(
+              minHeight: 100,
+              maxWidth: width ?? maxWidth,
+              minWidth: 250,
+            ),
       contentPadding: scrollableContent
           ? const EdgeInsets.symmetric(vertical: 16)
           : const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

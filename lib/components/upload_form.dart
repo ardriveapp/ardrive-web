@@ -3305,59 +3305,13 @@ void showUploadSavedToast(
   required String shareLabel,
   VoidCallback? onShare,
 }) {
-  final colors = ArDriveTheme.of(messenger.context).themeData.colorTokens;
-  final screenWidth = MediaQuery.sizeOf(messenger.context).width;
-  messenger.showSnackBar(
-    SnackBar(
-      behavior: SnackBarBehavior.floating,
-      width: min(screenWidth - 32, 400),
-      elevation: 0,
-      backgroundColor: colors.statusSuccessContainer,
-      duration: const Duration(seconds: 10),
-      padding: const EdgeInsets.symmetric(
-        horizontal: ArDriveSpacing.md,
-        vertical: ArDriveSpacing.sm,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(ArDriveRadius.md),
-        side: BorderSide(color: colors.statusSuccessStroke),
-      ),
-      // Typography reads the screen width, known where the snackbar shows.
-      content: Builder(
-        builder: (context) {
-          final typography = ArDriveTypographyNew.of(context);
-          return Row(
-            children: [
-              ArDriveIcons.checkmark(size: 20, color: colors.statusSuccessFg),
-              const SizedBox(width: ArDriveSpacing.sm),
-              Expanded(
-                child: Text(
-                  text,
-                  style: typography.paragraphNormal(color: colors.textHigh),
-                ),
-              ),
-              if (onShare != null) ...[
-                const SizedBox(width: ArDriveSpacing.xs),
-                ArDriveLink(
-                  text: shareLabel,
-                  isAction: true,
-                  style: typography
-                      .paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colors.textHigh,
-                      )
-                      .copyWith(decoration: TextDecoration.underline),
-                  onTap: () {
-                    messenger.hideCurrentSnackBar();
-                    onShare();
-                  },
-                ),
-              ],
-            ],
-          );
-        },
-      ),
-    ),
+  showArDriveToast(
+    messenger,
+    text: text,
+    type: ArDriveStatusType.success,
+    duration: const Duration(seconds: 10),
+    actionLabel: shareLabel,
+    onAction: onShare,
   );
 }
 

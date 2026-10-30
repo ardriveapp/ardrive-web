@@ -15,6 +15,7 @@ class ArDriveEmptyState extends StatelessWidget {
     this.message,
     this.actionLabel,
     this.onAction,
+    this.actionIsExternal = false,
     this.secondaryActionLabel,
     this.onSecondaryAction,
     this.framed = false,
@@ -30,6 +31,9 @@ class ArDriveEmptyState extends StatelessWidget {
   /// [onAction] draws the button as unavailable.
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// The main action opens a page outside the app ([ArDriveButtonNew.external]).
+  final bool actionIsExternal;
 
   /// A second, less important action, as a secondary button. Unavailable,
   /// like the main one, when [onSecondaryAction] is null.
@@ -106,6 +110,7 @@ class ArDriveEmptyState extends StatelessWidget {
                         variant: ButtonVariant.primary,
                         isDisabled: onAction == null,
                         onPressed: onAction,
+                        external: actionIsExternal,
                       ),
                   ],
                 ),

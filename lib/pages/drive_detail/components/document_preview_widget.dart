@@ -496,8 +496,6 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
 Future<void> copyPreviewText(BuildContext context, String text) async {
   final l10n = appLocalizationsOf(context);
   final messenger = ScaffoldMessenger.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  final typography = ArDriveTypographyNew.of(context);
 
   // Asked for at once, inside the tap, then waited on.
   final write = Clipboard.setData(ClipboardData(text: text));
@@ -509,16 +507,10 @@ Future<void> copyPreviewText(BuildContext context, String text) async {
     copied = false;
   }
 
-  messenger.showSnackBar(
-    SnackBar(
-      backgroundColor: colorTokens.containerL3,
-      content: Text(
-        copied ? l10n.copied : l10n.couldNotCopy,
-        style: typography.paragraphNormal(
-          color: copied ? colorTokens.textHigh : colorTokens.statusErrorFg,
-        ),
-      ),
-      duration: const Duration(seconds: 2),
-    ),
+  showArDriveToast(
+    messenger,
+    text: copied ? l10n.copied : l10n.couldNotCopy,
+    type: copied ? ArDriveStatusType.success : ArDriveStatusType.error,
+    duration: const Duration(seconds: 2),
   );
 }

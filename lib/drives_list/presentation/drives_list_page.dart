@@ -508,10 +508,13 @@ class _DrivesListLoading extends StatelessWidget {
       children: [
         Text(
           syncLoadingDrivesLabel(appLocalizationsOf(context), state?.syncState),
-          style: typography.heading4(
+          // Tabular figures, so "2 of 4" doesn't shift as it counts.
+          style: typography
+              .heading4(
             color: colorTokens.textHigh,
             fontWeight: ArFontWeight.bold,
-          ),
+          )
+              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: _sectionGap),

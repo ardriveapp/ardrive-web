@@ -320,6 +320,10 @@ void main() {
   // the standard dialog's shadow.
   testWidgets('every result opens in the standard dialog, which closes',
       (tester) async {
+    // The search box and its dialog are the desktop layout's.
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(host());
     await typeQuery(tester, 'rep');
     await enter(tester);
@@ -343,6 +347,68 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.byType(FileSearchModal), findsNothing);
+  });
+
+  testWidgets(
+      'resized to the phone layout, the dialog reopens as the sheet with the '
+      'same query', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await enter(tester);
+    await tester.pumpAndSettle();
+    expect(tester.widget<FileSearchModal>(find.byType(FileSearchModal)).inSheet,
+        isFalse);
+
+    tester.view.physicalSize = const Size(400, 800);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FileSearchModal), findsOneWidget);
+    expect(tester.widget<FileSearchModal>(find.byType(FileSearchModal)).inSheet,
+        isTrue);
+    expect(find.byType(ArDriveBottomSheet), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(FileSearchModal),
+        matching: find.byWidgetPredicate(
+            (w) => w is EditableText && w.controller.text == 'rep'),
+      ),
+      findsOneWidget,
+      reason: 'the session keeps what was typed',
+    );
+  });
+
+  testWidgets(
+      'a dialog over the search is not closed by a resize; search switches '
+      'once it is on top again', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await enter(tester);
+    await tester.pumpAndSettle();
+
+    // As the search's download prompt does.
+    final navigator =
+        Navigator.of(tester.element(find.byType(FileSearchModal)));
+    navigator.push(DialogRoute<void>(
+      context: navigator.context,
+      builder: (_) => const Material(child: Text('Downloading')),
+    ));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(400, 800);
+    await tester.pumpAndSettle();
+    expect(find.text('Downloading'), findsOneWidget,
+        reason: 'the resize must not close the dialog on top');
+
+    navigator.pop();
+    await tester.pumpAndSettle();
+    expect(tester.widget<FileSearchModal>(find.byType(FileSearchModal)).inSheet,
+        isTrue);
   });
 
   testWidgets('the dialog says when nothing matches, and what to try',
