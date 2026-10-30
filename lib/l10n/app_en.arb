@@ -5726,6 +5726,8 @@
   "@onThisDevice": {"description": "Drive details: the row about whether this device remembers the drive's key."},
   "forgetOnThisDevice": "Forget on this device",
   "@forgetOnThisDevice": {"description": "Drive details button: delete this drive's remembered key. The drive stays open now and is locked next time."},
+  "rememberedOnThisDevice": "Remembered",
+  "@rememberedOnThisDevice": {"description": "Drive details: this device keeps the drive's key, so it opens without its password."},
   "notRememberedOnThisDevice": "Not remembered",
   "@notRememberedOnThisDevice": {"description": "Drive details: this device keeps no key for the drive; it will be locked next time."},
   "forgetAllOnThisDevice": "Forget all on this device",

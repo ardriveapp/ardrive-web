@@ -1,6 +1,5 @@
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
@@ -11,6 +10,7 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/components/remembered_on_this_device.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -530,10 +530,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         if (_ownsSignedIn(state.drive.ownerAddress)) ...[
           sizedBoxHeight16px,
-          DetailsPanelItem(
-            leading: _RememberedOnThisDevice(driveId: state.drive.id),
-            itemTitle: appLocalizationsOf(context).onThisDevice,
-          ),
+          RememberedOnThisDevice(driveId: state.drive.id),
         ],
       ],
     ];
@@ -1847,53 +1844,6 @@ class DetailsPanelTitleCard extends StatelessWidget {
           ...trailing,
         ],
       ),
-    );
-  }
-}
-
-/// Whether this device remembers a private drive's key, and the way to make
-/// it forget: "Forget on this device". The drive stays open for the session
-/// (its key moves to memory) and is locked the next time.
-class _RememberedOnThisDevice extends StatelessWidget {
-  const _RememberedOnThisDevice({required this.driveId});
-
-  final String driveId;
-
-  @override
-  Widget build(BuildContext context) {
-    final driveDao = context.read<DriveDao>();
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final strings = appLocalizationsOf(context);
-
-    return StreamBuilder<bool>(
-      stream: driveDao.watchDriveKeyRemembered(driveId),
-      builder: (context, snapshot) {
-        final remembered = snapshot.data;
-        if (remembered == null) return const SizedBox.shrink();
-        if (!remembered) {
-          return Text(
-            strings.notRememberedOnThisDevice,
-            key: const Key('driveNotRememberedOnThisDevice'),
-            style: typography.paragraphNormal(color: colors.textMid),
-            textAlign: TextAlign.right,
-          );
-        }
-        return ArDriveButtonNew(
-          key: const Key('forgetDriveOnThisDevice'),
-          text: strings.forgetOnThisDevice,
-          typography: typography,
-          variant: ButtonVariant.secondary,
-          size: ArDriveButtonSize.compact,
-          maxWidth: 220,
-          onPressed: () async {
-            final user = context.read<ArDriveAuth>().currentUser;
-            if (await driveDao.forgetDriveKey(driveId, user.cipherKey)) {
-              DeviceTabs.instance.announceForgotten([driveId]);
-            }
-          },
-        );
-      },
     );
   }
 }

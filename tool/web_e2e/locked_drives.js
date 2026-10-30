@@ -17,7 +17,7 @@
 // menus, which is what the tree breaks), and exits non-zero on the first
 // check that fails.
 const { chromium } = require('playwright-core');
-const { execFileSync } = require('child_process');
+const { spawn } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -144,8 +144,16 @@ const OFFLINE = "Couldn't reach the network. Try again.";
   const loginDrive = drives.find((d) => d.password === 'login');
   const shared = drives.filter((d) => d.password === 'other');
   const unicodeDrive = drives.find((d) => d.password === 'unicode');
-  const run = (args) => execFileSync('node', [path.join(__dirname, 'login.js'), ...args],
-    { stdio: ['ignore', 'inherit', 'inherit'], env: process.env });
+  // login.js, without blocking this process: a tab it opens waits for
+  // every CDP client attached to the browser, this one included, to let it
+  // start, so a synchronous call would leave that tab hanging.
+  const run = (args) => new Promise((resolve, reject) => {
+    const child = spawn('node', [path.join(__dirname, 'login.js'), ...args],
+      { stdio: ['ignore', 'inherit', 'inherit'], env: process.env });
+    child.on('error', reject);
+    child.on('exit', (code) => (code === 0 ? resolve()
+      : reject(new Error(`login.js ${args.join(' ')} exited ${code}`))));
+  });
   // A reload is a new session: Welcome back, the device password, then the
   // drive list as discovery leaves it.
   // A start whose OPFS open timed out falls back to an empty IndexedDB
@@ -174,13 +182,21 @@ const OFFLINE = "Couldn't reach the network. Try again.";
   };
   const reloadAndUnlock = async () => {
     await reload();
-    run(['unlock']);
+    await run(['unlock']);
     await enableTree();
     await until(() => has(loginDrive.name), 90000);
     await wait(8000);
   };
   const signInFresh = async () => {
-    run(['fresh']);
+    try {
+      await run(['fresh']);
+    } catch (e) {
+      // login.js reads the landing page's labels in a second tab, whose
+      // load can outlast its 30 s on a loaded machine. Once more.
+      console.log('NOTE login.js fresh failed once; trying again');
+      await reload();
+      await run(['fresh']);
+    }
     await enableTree();
     await until(() => has(loginDrive.name), 120000);
     await wait(8000);
@@ -270,7 +286,7 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     const before = await storageReport();
     await check('(the older stores are planted)',
       before.names.includes('moor_databases') && before.resets.length > 0);
-    await openProfileMenu();
+    await profileMenu();
     await check('the profile menu offers "Forget all on this device"',
       await until(() => has('Forget all on this device'), 10000));
     await shot('r4-profile-menu');
@@ -296,8 +312,7 @@ const OFFLINE = "Couldn't reach the network. Try again.";
     const session = await page.context().newCDPSession(page);
     await session.send('Storage.clearDataForOrigin', { origin: new URL(APP_URL).origin, storageTypes: 'all' });
     await session.detach();
-    await page.reload();
-    await wait(6000);
+    await reload();
     await signInFresh();
     await check('R5: with site storage cleared, the drives are locked',
       await until(async () => await lockedCount() === drives.length - 1, 60000));
@@ -313,12 +328,12 @@ const OFFLINE = "Couldn't reach the network. Try again.";
 
     // Forget all on this device: every drive, the sign-in password's own
     // included, is locked next session.
-    await openProfileMenu();
+    await profileMenu();
     await until(() => has('Forget all on this device'), 10000);
     await activate('Forget all on this device');
     await check('Forget all says how many it forgot', await until(() => has('Forgot '), 10000));
     await reload();
-    run(['unlock']);
+    await run(['unlock']);
     await enableTree();
     await check('after Forget all, every private drive is locked',
       await until(async () => await lockedCount() === drives.length, 90000));
@@ -345,7 +360,16 @@ const OFFLINE = "Couldn't reach the network. Try again.";
       return true;
     });
     if (!opened) await page.mouse.click(1320, 57);
-    await wait(1000);
+    await wait(1500);
+  };
+  const profileMenu = async () => {
+    await page.mouse.move(1, 1);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await openProfileMenu();
+      if (await until(() => has('Log out'), 5000)) return true;
+      console.log(`NOTE the profile menu did not open (try ${attempt})`);
+    }
+    return false;
   };
 
   await page.setViewportSize({ width: 1440, height: 900 });
