@@ -26,7 +26,11 @@ class EnterYourPasswordWidget extends StatefulWidget {
     required this.checkingPassword,
     required this.passwordFailed,
     this.selectPassword = false,
+    this.failureMessage,
   });
+
+  /// What a failed password says, when not "Invalid password".
+  final String? failureMessage;
 
   /// The wallet just chosen. The account already on this device is
   /// unlocked in the sign-in panel instead, Welcome back.
@@ -250,7 +254,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 _isPasswordFailed = false;
               });
             },
-            errorMessage: 'Invalid password. Please try again.',
+            errorMessage:
+                widget.failureMessage ?? 'Invalid password. Please try again.',
             showErrorMessage: _isPasswordFailed,
           ),
           Align(
@@ -347,6 +352,7 @@ void showEnterYourPasswordDialog(
     EthereumProviderWallet? derivedEthWallet,
     String? sourceWalletAddress,
     bool showWalletCreated = false,
+    String? failureMessage,
     required bool isPasswordInvalid}) {
   showArDriveDialog(context,
       barrierDismissible: false,
@@ -380,6 +386,7 @@ void showEnterYourPasswordDialog(
             showWalletCreated: showWalletCreated,
             checkingPassword: checkingPassword,
             passwordFailed: passwordFailed,
+            failureMessage: failureMessage,
             selectPassword: state is LoginPasswordRetry,
           );
         },

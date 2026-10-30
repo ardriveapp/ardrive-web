@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/ethereum/ethereum_account.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,8 +58,8 @@ void main() {
 
     test('signs the account message, not the password scheme', () async {
       final address = await wallet.getAddress();
-      final signature = await wallet.sign(Uint8List.fromList(
-          utf8.encode(ethereumAccountMessage(address))));
+      final signature = await wallet.sign(
+          Uint8List.fromList(utf8.encode(ethereumAccountMessage(address))));
 
       expect(
         await deriveMnemonicFromEthereumAccountSignature(signature),
@@ -81,6 +82,101 @@ void main() {
         () => deriveMnemonicFromEthereumAccountSignature(Uint8List(64)),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('finding the account record', () {
+    const marker = AccountRecordTx(id: 'marker', tags: {
+      'App-Name': 'ArDrive',
+      'ArDrive-Account-Version': '2',
+      'ArDrive-Account-Address': 'arweave-address',
+    });
+    const v1 = AccountRecordTx(id: 'v1');
+
+    test('a marker is version 2, with its address', () {
+      final found = classifyAccountRecords([marker]);
+      expect(found, isA<EthereumV2Marker>());
+      expect((found as EthereumV2Marker).accountAddress, 'arweave-address');
+    });
+
+    test('an untagged record is version 1', () {
+      expect(classifyAccountRecords([v1]), isA<EthereumV1Record>());
+      expect(classifyAccountRecords([]), isNull);
+    });
+
+    test('a marker wins over a version 1 record', () {
+      expect(classifyAccountRecords([v1, marker]), isA<EthereumV2Marker>());
+    });
+
+    test('"no record" only when every endpoint answers with none', () async {
+      final asked = <String>[];
+      Future<List<AccountRecordTx>> Function() endpoint(
+              String name, List<AccountRecordTx> answer) =>
+          () async {
+            asked.add(name);
+            return answer;
+          };
+
+      expect(
+        await findAccountRecordAcross([
+          endpoint('configured', []),
+          endpoint('turbo-gateway', []),
+          endpoint('goldsky', []),
+        ]),
+        isNull,
+      );
+      expect(asked, ['configured', 'turbo-gateway', 'goldsky']);
+    });
+
+    test('a record only the last endpoint has is found', () async {
+      expect(
+        await findAccountRecordAcross([
+          () async => [],
+          () async => [],
+          () async => [v1],
+        ]),
+        isA<EthereumV1Record>(),
+      );
+    });
+
+    test('the first record found is the answer; later endpoints are not asked',
+        () async {
+      var later = 0;
+      final found = await findAccountRecordAcross([
+        () async => [marker],
+        () async {
+          later++;
+          return [];
+        },
+      ]);
+      expect(found, isA<EthereumV2Marker>());
+      expect(later, 0);
+    });
+
+    test('an endpoint that fails is a failure, never "no record"', () async {
+      await expectLater(
+        findAccountRecordAcross([
+          () async => [],
+          () async => throw Exception('turbo-gateway down'),
+          () async => [],
+        ]),
+        throwsException,
+      );
+    });
+
+    test('the endpoints asked besides the configured one', () {
+      expect(ArweaveService.ethereumAccountRecordEndpoints, [
+        'https://turbo-gateway.com/graphql',
+        'https://arweave-search.goldsky.com/graphql',
+      ]);
+    });
+
+    test('the marker\'s tags', () {
+      expect(ethereumAccountMarkerTags('arweave-address'), {
+        'App-Name': 'ArDrive',
+        'ArDrive-Account-Version': '2',
+        'ArDrive-Account-Address': 'arweave-address',
+      });
     });
   });
 }

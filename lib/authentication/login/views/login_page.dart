@@ -45,6 +45,7 @@ import 'log_in_view.dart';
 import 'recovery_phrase_view.dart';
 import 'modals/enter_your_password_modal.dart';
 import 'wallet_wait_view.dart';
+import 'used_metamask_before_view.dart';
 import 'welcome_back_view.dart';
 
 class LoginPage extends StatefulWidget {
@@ -553,6 +554,9 @@ void handleLoginState(BuildContext context, LoginState loginState) {
       wallet: wallet,
       derivedEthWallet: loginState.derivedEthWallet,
       isPasswordInvalid: loginState.isPasswordInvalid,
+      failureMessage: loginState.noAccountFound
+          ? appLocalizationsOf(context).metaMaskNoAccountFound
+          : null,
       sourceWalletAddress: loginState.sourceWalletAddress,
     );
     return;
@@ -591,6 +595,16 @@ void handleLoginState(BuildContext context, LoginState loginState) {
     } else if (loginState.error is BiometricException) {
       showBiometricExceptionDialogForException(
           context, loginState.error as BiometricException, () {});
+      return;
+    } else if (loginState.error is EthereumWalletSignsDifferently ||
+        loginState.error is EthereumAccountMarkerUnreadable) {
+      showErrorDialog(
+        context: context,
+        title: appLocalizationsOf(context).loginFailed,
+        message: loginState.error is EthereumWalletSignsDifferently
+            ? appLocalizationsOf(context).metaMaskSignsDifferently
+            : appLocalizationsOf(context).metaMaskMarkerUnreadable,
+      );
       return;
     } else if (loginState.error is ArConnectVersionNotSupportedException) {
       showErrorDialog(
@@ -756,6 +770,10 @@ Widget loginPanelFor(
           key: Key('checkingForAccountPanel'),
         ),
     };
+  } else if (loginState is LoginAskUsedMetaMaskBefore) {
+    content = const UsedMetaMaskBeforeView(
+      key: Key('usedMetaMaskBeforeView'),
+    );
   } else if (loginState is PromptWalletUnlock) {
     content = const WelcomeBackView(key: Key('welcomeBackView'));
   } else if (loginState is PromptPassword && loginState.alreadyLoggedIn) {

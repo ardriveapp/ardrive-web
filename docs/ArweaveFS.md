@@ -297,7 +297,7 @@ ArDrive wants to access your account. Only approve this on a gateway you trust (
 2. The wallet signs, with `personal_sign`, the UTF-8 bytes of the lowercase hex of SHA-256(`1:<address>:<password>`), where `1` is the chain ID and `<address>` is as the wallet reports it. That signature gives the phrase.
 3. At sign-up the Arweave wallet signs the SHA-256 of the step 2 signature, and that signature is posted twice, from the Arweave wallet and from the auth key, as each one's first transaction. Sign-in compares both with a fresh one to tell a right password from a wrong one.
 
-**Ethereum, accounts made from ArDrive 3.0 (version 2, no password).** The wallet signs, with `personal_sign`, the UTF-8 bytes of this message, with the address in lowercase. That signature gives the phrase. Nothing is posted.
+**Ethereum, accounts made from ArDrive 3.0 (version 2, no password).** The wallet signs, with `personal_sign`, the UTF-8 bytes of this message, with the address in lowercase. That signature gives the phrase.
 
 ```
 ArDrive account
@@ -307,7 +307,24 @@ Account: 0x<address in lowercase>
 Version: 2
 ```
 
-**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and looks for a transaction from the auth key's Arweave address. If there is one, the account is version 1 and its password is asked; if there is none, it is version 2. A lookup that fails is an error, never "none". Version 1 sign-up posted that record, so a version 1 account normally has it; one whose sign-up stopped before the record was posted, or whose record a gateway can't find, would be taken for version 2 and get another wallet.
+At sign-up the message is signed twice and the two signatures must be equal; a wallet that signs differently each time gets no account. Then the auth key (step 1 above) posts the account's **marker**, an ANS-104 data item signed with the auth key (Ethereum signature type):
+
+| | |
+|---|---|
+| Tag `App-Name` | `ArDrive` |
+| Tag `ArDrive-Account-Version` | `2` |
+| Tag `ArDrive-Account-Address` | the account's Arweave address |
+| Data | the same Arweave address, UTF-8 |
+
+**Telling them apart.** Sign-in always asks for the step 1 signature, which needs no password, and reads the transactions of the auth key's Arweave address, first on the configured GraphQL endpoint, then on turbo-gateway.com, then on Goldsky.
+
+- A **marker** (`ArDrive-Account-Version: 2`): version 2. The account message is signed and the wallet derived from it must have the marker's address; if it doesn't, the wallet signs differently than it did at sign-up, and sign-in stops with an error rather than opening another, empty account.
+- An **untagged transaction**: a version 1 verification record. The password is asked.
+- **Nothing on any of the three:** the person is asked whether they have used ArDrive with this MetaMask before. *No* makes a version 2 account as above. *Yes* asks the version 1 password; with no record to check it against, it is accepted only if the wallet it derives owns ArFS drives, and the account's two verification records are then posted again.
+
+A lookup that fails on any endpoint is an error, never "nothing". Version 1 sign-up posted its record, so a version 1 account normally has one; one whose sign-up stopped before the record was posted, or whose record no index has, takes the *Yes* path.
+
+Builds from before the marker don't know it. Signing in there with a version 2 account finds the marker as the auth key's first transaction, takes the account for version 1, asks a password, and reports every password as wrong (the marker is not the signature it compares against). They post nothing.
 
 `personal_sign` from an ordinary Ethereum account is deterministic (RFC 6979). Smart-contract and MPC wallets may not be, under either version.
 

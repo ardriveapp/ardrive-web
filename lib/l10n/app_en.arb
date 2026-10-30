@@ -5787,5 +5787,17 @@
   "welcomeBackFailed": "We couldn't reach your wallet. Try again.",
   "@welcomeBackFailed": {"description": "Welcome back: the wallet failed for another reason."},
   "welcomeBackNotThisAccount": "This wallet doesn't open the account saved here. Use the wallet you signed in with, or use a different account.",
-  "@welcomeBackNotThisAccount": {"description": "Welcome back, for a profile from before 3.0: the connected wallet derives another ArDrive account than the one saved on this device. Nothing was changed."}
+  "@welcomeBackNotThisAccount": {"description": "Welcome back, for a profile from before 3.0: the connected wallet derives another ArDrive account than the one saved on this device. Nothing was changed."},
+  "usedMetaMaskBeforeTitle": "Have you used ArDrive with this MetaMask before?",
+  "@usedMetaMaskBeforeTitle": {"description": "Asked when no record of this MetaMask's ArDrive account was found."},
+  "usedMetaMaskBeforeNo": "No, I'm new",
+  "@usedMetaMaskBeforeNo": {"description": "Makes a new ArDrive account for this MetaMask, with no password."},
+  "usedMetaMaskBeforeYes": "Yes",
+  "@usedMetaMaskBeforeYes": {"description": "An account made before 3.0: its password is asked."},
+  "metaMaskNoAccountFound": "That password didn't find an ArDrive account. Try again, or go back.",
+  "@metaMaskNoAccountFound": {"description": "The MetaMask password typed derives a wallet with no ArDrive history."},
+  "metaMaskSignsDifferently": "This MetaMask signs differently each time, so ArDrive can't use it. Use a standard MetaMask account.",
+  "@metaMaskSignsDifferently": {"description": "The account message was signed twice with different results, or the wallet derived isn't the account's: a smart-contract or MPC wallet."},
+  "metaMaskMarkerUnreadable": "We couldn't read your account's record. Try again.",
+  "@metaMaskMarkerUnreadable": {"description": "The version 2 marker was found but its address couldn't be read."}
 }

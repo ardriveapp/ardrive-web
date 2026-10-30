@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -11,6 +12,9 @@ import 'package:ardrive/services/ethereum/ethereum_account.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
+import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
@@ -32,6 +36,7 @@ void main() {
   late MockEthereumProviderService ethereum;
   late MockSolanaProviderService solana;
   late MockArweaveService arweave;
+  late MockTurboUploadService turbo;
   final wallet = getTestWallet();
   late User user;
   final ethWallet = EthereumProviderWallet(EthPrivateKey.fromHex(
@@ -42,6 +47,7 @@ void main() {
     registerFallbackValue(wallet);
     registerFallbackValue(ProfileType.json);
     registerFallbackValue(_FakeSource());
+    registerFallbackValue(DataItem());
   });
 
   setUp(() async {
@@ -50,6 +56,10 @@ void main() {
     ethereum = MockEthereumProviderService();
     solana = MockSolanaProviderService();
     arweave = MockArweaveService();
+    turbo = MockTurboUploadService();
+    when(() => turbo.postDataItem(
+        dataItem: any(named: 'dataItem'),
+        wallet: any(named: 'wallet'))).thenAnswer((_) async {});
     derivedFrom = null;
     user = User(
       password: '',
@@ -86,7 +96,7 @@ void main() {
         arConnectService: arconnect,
         ethereumProviderService: ethereum,
         solanaProviderService: solana,
-        turboUploadService: MockTurboUploadService(),
+        turboUploadService: turbo,
         arweaveService: arweave,
         downloadService: MockDownloadService(),
         userRepository: MockUserRepository(),
@@ -177,18 +187,42 @@ void main() {
     );
 
     group('MetaMask', () {
-      setUp(() {
+      late String accountAddress;
+
+      setUp(() async {
         when(() => ethereum.connect()).thenAnswer((_) async => ethWallet);
+        when(() => auth.isExistingUser(any())).thenAnswer((_) async => true);
+        accountAddress = await wallet.getAddress();
       });
 
+      void records(EthereumAccountRecord? record) =>
+          when(() => arweave.findEthereumAccountRecord(any()))
+              .thenAnswer((_) async => record);
+
+      void neverSignedIn() =>
+          verifyNever(() => auth.loginWithWallet(any(), any(), any(),
+              sourceWalletAddress: any(named: 'sourceWalletAddress'),
+              password: any(named: 'password'),
+              skipDriveCheck: any(named: 'skipDriveCheck')));
+
+      List<DataItem> posted() => verify(() => turbo.postDataItem(
+          dataItem: captureAny(named: 'dataItem'),
+          wallet: any(named: 'wallet'))).captured.cast<DataItem>();
+
+      Map<String, String> tagsOf(DataItem item) => {
+            for (final tag in item.tags)
+              utf8.decode(decodeBase64ToBytes(tag.name)):
+                  utf8.decode(decodeBase64ToBytes(tag.value)),
+          };
+
       blocTest<LoginBloc, LoginState>(
-        'no verification record: a new account from the account message, '
-        'with no password',
+        'a version 2 marker whose address the account message derives: '
+        'signed in with no password, and no marker posted again',
         build: bloc,
-        setUp: () => when(() => arweave.getFirstTxForWallet(any()))
-            .thenAnswer((_) async => null),
+        setUp: () =>
+            records(EthereumV2Marker('marker', accountAddress: accountAddress)),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
-        wait: const Duration(milliseconds: 200),
+        wait: const Duration(milliseconds: 300),
         verify: (bloc) async {
           expect(bloc.state, isA<LoginSuccess>());
           expect(derivedFrom, await deriveEthereumAccountMnemonic(ethWallet));
@@ -199,42 +233,197 @@ void main() {
               skipDriveCheck: any(named: 'skipDriveCheck'))).captured;
           expect((captured[0] as DeviceSecretSource).method,
               DeviceUnlockMethod.ethereum);
-          final password = captured[1];
-          expect(password, isEmpty);
+          expect(captured[1], isEmpty);
+          verifyNever(() => turbo.postDataItem(
+              dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')));
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a version 2 marker for another address: the wallet signs '
+        'differently, and nothing opens',
+        build: bloc,
+        setUp: () =>
+            records(const EthereumV2Marker('marker', accountAddress: 'other')),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(
+              bloc.state,
+              isA<LoginFailure>().having((s) => s.error, 'error',
+                  isA<EthereumWalletSignsDifferently>()));
+          neverSignedIn();
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a version 1 record: an existing account, whose password is asked',
+        build: bloc,
+        setUp: () => records(const EthereumV1Record('first-tx')),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 200),
+        verify: (bloc) {
+          expect(bloc.state, isA<PromptPassword>());
+          expect(derivedFrom, isNull);
+          neverSignedIn();
         },
       );
 
       blocTest<LoginBloc, LoginState>(
         'a record lookup that fails is never taken for a new account',
         build: bloc,
-        setUp: () => when(() => arweave.getFirstTxForWallet(any()))
+        setUp: () => when(() => arweave.findEthereumAccountRecord(any()))
             .thenThrow(Exception('gateway unreachable')),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 200),
         verify: (bloc) {
           expect(bloc.state, isA<LoginFailure>());
           expect(derivedFrom, isNull);
-          verifyNever(() => auth.loginWithWallet(any(), any(), any(),
-              sourceWalletAddress: any(named: 'sourceWalletAddress'),
-              password: any(named: 'password'),
-              skipDriveCheck: any(named: 'skipDriveCheck')));
+          neverSignedIn();
         },
       );
 
       blocTest<LoginBloc, LoginState>(
-        'a verification record: an existing account, whose password is asked',
+        'nothing found anywhere: asks whether it was used before, and '
+        'signs nothing yet',
         build: bloc,
-        setUp: () => when(() => arweave.getFirstTxForWallet(any()))
-            .thenAnswer((_) async => 'first-tx'),
+        setUp: () => records(null),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 200),
         verify: (bloc) {
-          expect(bloc.state, isA<PromptPassword>());
+          expect(bloc.state, isA<LoginAskUsedMetaMaskBefore>());
           expect(derivedFrom, isNull);
-          verifyNever(() => auth.loginWithWallet(any(), any(), any(),
+          neverSignedIn();
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'nothing found, No: the message signed twice alike, the marker posted '
+        'by the auth key, then signed in with no password',
+        build: bloc,
+        setUp: () => records(null),
+        act: (bloc) async {
+          bloc.add(const LoginWithMetamask());
+          await bloc.stream.firstWhere((s) => s is LoginAskUsedMetaMaskBefore);
+          bloc.add(const AnswerUsedArDriveBefore(usedBefore: false));
+        },
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) async {
+          expect(bloc.state, isA<LoginSuccess>());
+          final marker = posted().single;
+          expect(tagsOf(marker), {
+            'App-Name': 'ArDrive',
+            'ArDrive-Account-Version': '2',
+            'ArDrive-Account-Address': accountAddress,
+          });
+          expect(utf8.decode(marker.data), accountAddress);
+          expect(marker.signatureConfig?.signatureType,
+              SignatureConfig.ethereum.signatureType);
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'nothing found, No, with a MetaMask that signs differently each time: '
+        'no account, no marker',
+        build: bloc,
+        setUp: () {
+          records(null);
+          when(() => ethereum.connect())
+              .thenAnswer((_) async => _ChangingSigner(ethWallet));
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithMetamask());
+          await bloc.stream.firstWhere((s) => s is LoginAskUsedMetaMaskBefore);
+          bloc.add(const AnswerUsedArDriveBefore(usedBefore: false));
+        },
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(
+              bloc.state,
+              isA<LoginFailure>().having((s) => s.error, 'error',
+                  isA<EthereumWalletSignsDifferently>()));
+          neverSignedIn();
+          verifyNever(() => turbo.postDataItem(
+              dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')));
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'nothing found, No, and the marker can\'t be posted: nothing saved',
+        build: bloc,
+        setUp: () {
+          records(null);
+          when(() => turbo.postDataItem(
+              dataItem: any(named: 'dataItem'),
+              wallet: any(named: 'wallet'))).thenThrow(Exception('turbo down'));
+        },
+        act: (bloc) async {
+          bloc.add(const LoginWithMetamask());
+          await bloc.stream.firstWhere((s) => s is LoginAskUsedMetaMaskBefore);
+          bloc.add(const AnswerUsedArDriveBefore(usedBefore: false));
+        },
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginFailure>());
+          neverSignedIn();
+        },
+      );
+
+      Future<void> yesThenPassword(LoginBloc bloc) async {
+        bloc.add(const LoginWithMetamask());
+        await bloc.stream.firstWhere((s) => s is LoginAskUsedMetaMaskBefore);
+        bloc.add(const AnswerUsedArDriveBefore(usedBefore: true));
+        final asked = await bloc.stream.firstWhere((s) => s is PromptPassword)
+            as PromptPassword;
+        bloc.add(LoginWithPassword(
+          password: 'their password',
+          wallet: asked.wallet!,
+          derivedEthWallet: asked.derivedEthWallet,
+          showWalletCreated: false,
+        ));
+      }
+
+      blocTest<LoginBloc, LoginState>(
+        'nothing found, Yes: a password whose wallet has ArDrive history signs '
+        'in, and its two verification records go up again',
+        build: bloc,
+        setUp: () => records(null),
+        act: yesThenPassword,
+        wait: const Duration(milliseconds: 500),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginSuccess>());
+          final password = verify(() => auth.loginWithWallet(
+              any(), any(), any(),
               sourceWalletAddress: any(named: 'sourceWalletAddress'),
-              password: any(named: 'password'),
-              skipDriveCheck: any(named: 'skipDriveCheck')));
+              password: captureAny(named: 'password'),
+              skipDriveCheck: any(named: 'skipDriveCheck'))).captured.single;
+          expect(password, 'their password');
+          final items = posted();
+          expect(items, hasLength(2));
+          expect(items.every((i) => tagsOf(i).isEmpty), isTrue,
+              reason: 'version 1 records carry no tags');
+          verifyNever(() => arweave.getFirstTxForWallet(any()));
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'nothing found, Yes: a password whose wallet has no history found no '
+        'account, and nothing is posted or saved',
+        build: bloc,
+        setUp: () {
+          records(null);
+          when(() => auth.isExistingUser(any())).thenAnswer((_) async => false);
+        },
+        act: yesThenPassword,
+        wait: const Duration(milliseconds: 500),
+        verify: (bloc) {
+          expect(
+              bloc.state,
+              isA<PromptPassword>()
+                  .having((s) => s.noAccountFound, 'noAccountFound', isTrue));
+          neverSignedIn();
+          verifyNever(() => turbo.postDataItem(
+              dataItem: any(named: 'dataItem'), wallet: any(named: 'wallet')));
         },
       );
     });
@@ -503,7 +692,7 @@ void main() {
           arConnectService: arconnect,
           ethereumProviderService: ethereum,
           solanaProviderService: solana,
-          turboUploadService: MockTurboUploadService(),
+          turboUploadService: turbo,
           arweaveService: arweave,
           downloadService: MockDownloadService(),
           userRepository: MockUserRepository(),
@@ -548,4 +737,32 @@ void main() {
           isFalse),
     );
   });
+}
+
+/// A MetaMask whose signatures change every time, as a smart-contract or
+/// MPC wallet's may.
+class _ChangingSigner extends EthereumWallet {
+  _ChangingSigner(this._inner);
+
+  final EthereumProviderWallet _inner;
+  var _n = 0;
+
+  @override
+  Future<Uint8List> sign(Uint8List message, [String? context]) async {
+    final signature = await _inner.sign(message);
+    signature[64] ^= ++_n;
+    return signature;
+  }
+
+  @override
+  Future<String> getAddress() => _inner.getAddress();
+
+  @override
+  Future<String> getOwner() => _inner.getOwner();
+
+  @override
+  SignatureConfig getSignatureConfig() => SignatureConfig.ethereum;
+
+  @override
+  Map<String, dynamic> toJwk() => throw UnimplementedError();
 }

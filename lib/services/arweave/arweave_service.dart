@@ -24,6 +24,7 @@ import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/services/ethereum/ethereum_account.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -99,6 +100,9 @@ class ArweaveService {
   final ArDriveCrypto _crypto;
   final ConfigService _configService;
   late ArtemisClient _gql;
+
+  /// The GraphQL endpoint [_gql] asks.
+  late String _graphqlUrl;
   late DataGatewayFallback _gatewayFallback;
   DataGatewayFallback get gatewayFallback => _gatewayFallback;
 
@@ -133,11 +137,10 @@ class ArweaveService {
     this._configService, {
     ArtemisClient? artemisClient,
     Client? httpClient,
-  })  : _httpClient = httpClient ?? Client(),
-        _gql = artemisClient ??
-            fragmentFreeArtemisClient(_graphqlUrlFromGateway(
-                _configService.config.arweaveGatewayUrl ??
-                    defaultGraphqlGateway)) {
+  })  : _httpClient = httpClient ?? Client() {
+    _graphqlUrl = _graphqlUrlFromGateway(
+        _configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway);
+    _gql = artemisClient ?? fragmentFreeArtemisClient(_graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -180,6 +183,7 @@ class ArweaveService {
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
+    _graphqlUrl = graphqlUrl;
     _gql = fragmentFreeArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
@@ -2534,6 +2538,60 @@ class ArweaveService {
       rows: transactions.edges.length,
       unbundledRows: unbundled,
     );
+  }
+
+  /// The endpoints an Ethereum account's record is looked for on, besides
+  /// the configured one: an ar.io gateway that indexes bundled items, and
+  /// Goldsky. See [findEthereumAccountRecord].
+  static const ethereumAccountRecordEndpoints = [
+    'https://turbo-gateway.com/graphql',
+    GraphQLRetry.defaultFallbackGraphqlUrl,
+  ];
+
+  /// The account record of the Ethereum auth key whose Arweave address is
+  /// [authAddress]: its version 2 marker or its version 1 verification
+  /// record. Null only when the configured endpoint, turbo-gateway.com and
+  /// Goldsky all answer with none; any of them failing throws. See
+  /// [findAccountRecordAcross].
+  Future<EthereumAccountRecord?> findEthereumAccountRecord(
+    String authAddress,
+  ) {
+    Future<List<AccountRecordTx>> lookup(GraphQLRetry retry) async {
+      final result = await retry.execute(
+        AccountRecordsQuery(
+          variables: AccountRecordsArguments(owner: authAddress),
+        ),
+      );
+      return [
+        for (final edge in result.data!.transactions.edges)
+          AccountRecordTx(
+            id: edge.node.id,
+            tags: {for (final tag in edge.node.tags) tag.name: tag.value},
+          ),
+      ];
+    }
+
+    final others = [
+      for (final url in ethereumAccountRecordEndpoints)
+        if (url != _graphqlUrl) url,
+    ];
+
+    return findAccountRecordAcross([
+      () => lookup(graphQLRetry),
+      for (final url in others)
+        () async {
+          final client = fragmentFreeArtemisClient(url);
+          try {
+            return await lookup(GraphQLRetry(
+              client,
+              internetChecker: InternetChecker(connectivity: Connectivity()),
+              fallbackGraphqlUrl: url,
+            ));
+          } finally {
+            client.dispose();
+          }
+        },
+    ]);
   }
 
   Future<String?> getFirstTxForWallet(String owner) async {

@@ -56,3 +56,85 @@ Future<String> deriveEthereumAccountMnemonic(EthereumWallet wallet) async {
   final signature = await wallet.sign(Uint8List.fromList(utf8.encode(message)));
   return deriveMnemonicFromEthereumAccountSignature(signature);
 }
+
+/// The tag that marks an auth key's record as a version 2 account's marker.
+const ethereumAccountVersionTag = 'ArDrive-Account-Version';
+
+/// The tag that carries the account's Arweave address on its marker, beside
+/// the same address as the item's data.
+const ethereumAccountAddressTag = 'ArDrive-Account-Address';
+
+/// The tags of a version 2 account's marker: posted once, at sign-up, by
+/// the account's auth key, so the next sign-in, on any device, knows the
+/// account is version 2 and which Arweave address its wallet must derive.
+/// The item's data is [arweaveAddress] as UTF-8.
+Map<String, String> ethereumAccountMarkerTags(String arweaveAddress) => {
+      'App-Name': 'ArDrive',
+      ethereumAccountVersionTag: '2',
+      ethereumAccountAddressTag: arweaveAddress,
+    };
+
+/// A transaction an auth key made, as an account lookup reads it.
+class AccountRecordTx {
+  const AccountRecordTx({required this.id, this.tags = const {}});
+
+  final String id;
+  final Map<String, String> tags;
+}
+
+/// What an auth key's records say about its account. See
+/// [classifyAccountRecords].
+sealed class EthereumAccountRecord {
+  const EthereumAccountRecord(this.txId);
+
+  final String txId;
+}
+
+/// A version 1 account (made before 3.0, with a password): an untagged
+/// verification record.
+class EthereumV1Record extends EthereumAccountRecord {
+  const EthereumV1Record(super.txId);
+}
+
+/// A version 2 account (no password): its marker, and the Arweave address
+/// its wallet derives, when the marker carries it as a tag.
+class EthereumV2Marker extends EthereumAccountRecord {
+  const EthereumV2Marker(super.txId, {this.accountAddress});
+
+  final String? accountAddress;
+}
+
+/// Which account an auth key's transactions [txs] are for: a version 2
+/// marker wins, then the first untagged record (version 1). Null when there
+/// are none.
+EthereumAccountRecord? classifyAccountRecords(List<AccountRecordTx> txs) {
+  for (final tx in txs) {
+    if (tx.tags[ethereumAccountVersionTag] == '2') {
+      return EthereumV2Marker(tx.id,
+          accountAddress: tx.tags[ethereumAccountAddressTag]);
+    }
+  }
+  for (final tx in txs) {
+    if (!tx.tags.containsKey(ethereumAccountVersionTag)) {
+      return EthereumV1Record(tx.id);
+    }
+  }
+  return null;
+}
+
+/// An auth key's account record, looked for on each of [endpoints] in turn.
+///
+/// A record any endpoint has is the answer. "No record" is only the answer
+/// once every endpoint has answered and none has one: an index can lag or
+/// miss items, and a wrong "no record" would make an existing account a new,
+/// empty one. Any endpoint failing throws, so a failed lookup is never read
+/// as "no record".
+Future<EthereumAccountRecord?> findAccountRecordAcross(
+  List<Future<List<AccountRecordTx>> Function()> endpoints,
+) async {
+  for (final lookup in endpoints) {
+    final found = classifyAccountRecords(await lookup());
+    if (found != null) return found;
+  }
+  return null;
+}

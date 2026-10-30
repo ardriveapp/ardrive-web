@@ -11,6 +11,7 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
+import 'package:ardrive/authentication/login/views/used_metamask_before_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
@@ -202,8 +203,7 @@ void main() {
 
     test('an account a browser wallet opens is opened in the panel too', () {
       expect(
-          loginPanelFor(
-              const PromptWalletUnlock(wallet: BrowserWallet.wander),
+          loginPanelFor(const PromptWalletUnlock(wallet: BrowserWallet.wander),
               loginBloc),
           isA<WelcomeBackView>());
       expect(
@@ -253,6 +253,23 @@ void main() {
     });
   });
 
+  testWidgets(
+      'asks whether this MetaMask was used before, and says which answer '
+      'was picked', (tester) async {
+    await pump(tester, const UsedMetaMaskBeforeView());
+
+    expect(find.text('Have you used ArDrive with this MetaMask before?'),
+        findsOneWidget);
+    await tester.tap(find.text("No, I'm new"));
+    await tester.tap(find.text('Yes'));
+    expect(added(), [
+      const AnswerUsedArDriveBefore(usedBefore: false),
+      const AnswerUsedArDriveBefore(usedBefore: true),
+    ]);
+    expect(loginPanelFor(const LoginAskUsedMetaMaskBefore(), loginBloc),
+        isA<UsedMetaMaskBeforeView>());
+  });
+
   group('Welcome back with a wallet', () {
     Future<void> show(WidgetTester tester, PromptWalletUnlock state) async {
       whenListen(loginBloc, const Stream<LoginState>.empty(),
@@ -265,7 +282,8 @@ void main() {
 
     testWidgets('asks for one approval, with no password field',
         (tester) async {
-      await show(tester, const PromptWalletUnlock(wallet: BrowserWallet.wander));
+      await show(
+          tester, const PromptWalletUnlock(wallet: BrowserWallet.wander));
 
       expect(find.text('Continue with Wander'), findsOneWidget);
       expect(find.byKey(const Key('welcomeBackPassword')), findsNothing);
@@ -307,7 +325,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Approve in Wander to open your drives'), findsOneWidget);
+      expect(
+          find.text('Approve in Wander to open your drives'), findsOneWidget);
     });
   });
 

@@ -238,3 +238,14 @@ class LoginWithSolana extends LoginEvent {
 class UnlockWithWallet extends LoginEvent {
   const UnlockWithWallet();
 }
+
+/// The answer to "Have you used ArDrive with this MetaMask before?", asked
+/// when no record of the account was found anywhere.
+class AnswerUsedArDriveBefore extends LoginEvent {
+  const AnswerUsedArDriveBefore({required this.usedBefore});
+
+  final bool usedBefore;
+
+  @override
+  List<Object> get props => [usedBefore];
+}

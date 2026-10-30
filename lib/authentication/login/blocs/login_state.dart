@@ -94,7 +94,12 @@ class PromptPassword extends LoginState {
     this.showWalletCreated = false,
     this.isPasswordInvalid = false,
     this.hasGraphQLException = false,
+    this.noAccountFound = false,
   });
+
+  /// The password typed for a MetaMask with no record found opened no
+  /// ArDrive account.
+  final bool noAccountFound;
 
   final String? mnemonic;
   final Wallet? wallet;
@@ -116,6 +121,7 @@ class PromptPassword extends LoginState {
         showWalletCreated,
         isPasswordInvalid,
         hasGraphQLException,
+        noAccountFound,
       ];
 }
 
@@ -255,4 +261,10 @@ class PromptWalletUnlock extends LoginState {
 
   @override
   List<Object?> get props => [wallet, relocks, problem];
+}
+
+/// No record of this MetaMask's ArDrive account was found anywhere: asks
+/// whether it was used with ArDrive before. See [AnswerUsedArDriveBefore].
+class LoginAskUsedMetaMaskBefore extends LoginState {
+  const LoginAskUsedMetaMaskBefore();
 }
