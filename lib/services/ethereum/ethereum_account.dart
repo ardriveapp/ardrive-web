@@ -53,7 +53,6 @@ Future<String> deriveMnemonicFromEthereumAccountSignature(
 /// account's recovery phrase.
 Future<String> deriveEthereumAccountMnemonic(EthereumWallet wallet) async {
   final message = ethereumAccountMessage(await wallet.getAddress());
-  final signature =
-      await wallet.sign(Uint8List.fromList(utf8.encode(message)));
+  final signature = await wallet.sign(Uint8List.fromList(utf8.encode(message)));
   return deriveMnemonicFromEthereumAccountSignature(signature);
 }

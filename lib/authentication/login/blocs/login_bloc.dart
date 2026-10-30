@@ -1694,7 +1694,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       case DeviceUnlockMethod.solana:
       case DeviceUnlockMethod.password:
         final found = _solanaProviderService.detectProviders();
-        if (found.hasPhantom && !found.hasSolflare) return BrowserWallet.phantom;
+        if (found.hasPhantom && !found.hasSolflare) {
+          return BrowserWallet.phantom;
+        }
         if (found.hasSolflare && !found.hasPhantom) {
           return BrowserWallet.solflare;
         }
@@ -1761,10 +1763,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             problem(WalletUnlockProblem.otherAccount);
             return;
           }
-          final signature = await _walletAnswer(
-              cancel, _solanaProviderService.signMessage(solanaIdentityMessage));
-          final source =
-              DeviceSecretSource.fromSecret(DeviceUnlockMethod.solana, signature);
+          final signature = await _walletAnswer(cancel,
+              _solanaProviderService.signMessage(solanaIdentityMessage));
+          final source = DeviceSecretSource.fromSecret(
+              DeviceUnlockMethod.solana, signature);
           if (account.isLegacyWalletProfile) {
             final wallet = await _walletAnswer(
               cancel,

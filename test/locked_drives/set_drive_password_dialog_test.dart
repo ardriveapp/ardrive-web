@@ -3,11 +3,10 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/locked_drives/presentation/set_drive_password_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 class _Breaches extends Fake implements BreachedPasswordCheck {
   final breached = <String>{};
@@ -20,27 +19,23 @@ class _Breaches extends Fake implements BreachedPasswordCheck {
   }
 }
 
-class _MockActivityTracker extends Mock implements ActivityTracker {}
-
 const _strong = 'Velvet harbour 47 lanterns drift';
 
 /// "Keep your files private": the drive password a browser wallet account
 /// sets before its first private drive.
 void main() {
   late _Breaches breaches;
-  late _MockActivityTracker tracker;
 
   setUp(() {
     breaches = _Breaches();
-    tracker = _MockActivityTracker();
   });
 
   Future<Future<String?>> open(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1000, 1100));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     late Future<String?> result;
-    await tester.pumpWidget(RepositoryProvider<ActivityTracker>.value(
-      value: tracker,
+    await tester.pumpWidget(ChangeNotifierProvider<ActivityTracker>(
+      create: (_) => ActivityTracker(),
       child: ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
@@ -76,20 +71,25 @@ void main() {
 
   Finder setButton() => find.text('Set password');
 
-  testWidgets('says it cannot be recovered, and offers the browser a new '
+  testWidgets(
+      'says it cannot be recovered, and offers the browser a new '
       'password for this account', (tester) async {
     await open(tester);
 
     expect(find.text('Keep your files private'), findsOneWidget);
-    expect(find.textContaining("We can't recover this password"),
-        findsOneWidget);
-    final password =
-        tester.widget<EditableText>(field('newPassword')).autofillHints;
-    expect(password, [AutofillHints.newPassword]);
     expect(
-        tester.widget<EditableText>(field('confirmNewPassword')).autofillHints,
-        [AutofillHints.newPassword]);
-    expect(find.byKey(const Key('passwordAutofillUsername')), findsOneWidget);
+        find.textContaining("We can't recover this password"), findsOneWidget);
+    // The TextField is the autofill client; EditableText only draws.
+    List<String>? hints(String key) => tester
+        .widget<TextField>(find.descendant(
+            of: find.byKey(Key(key)), matching: find.byType(TextField)))
+        .autofillHints
+        ?.toList();
+    expect(hints('newPassword'), [AutofillHints.newPassword]);
+    expect(hints('confirmNewPassword'), [AutofillHints.newPassword]);
+    final username = tester.widget<TextField>(
+        find.byKey(const Key('passwordAutofillUsername'), skipOffstage: false));
+    expect(username.controller!.text, 'wallet-address');
   });
 
   testWidgets('follows the new-account rules before it returns the password',

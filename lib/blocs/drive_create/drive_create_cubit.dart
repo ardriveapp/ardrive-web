@@ -126,6 +126,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     final drives = _drivesCubit.state;
     if (drives is! DrivesLoadSuccess) return true;
     return drives.userDrives.any((d) => d.isPrivate) ||
+        drives.lockedDrives.isNotEmpty ||
         (_driveUnlocker?.session.currentLockedDrives
                 .any((drive) => drive.ownerAddress == address) ??
             false);

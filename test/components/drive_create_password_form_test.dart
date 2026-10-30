@@ -30,6 +30,7 @@ void main() {
       'privacy': FormControl<String>(value: DrivePrivacy.private.name),
     }));
     when(() => cubit.needsDrivePassword).thenReturn(true);
+    when(() => cubit.drivePasswordAsk).thenReturn(DrivePasswordAsk.enter);
     when(() => cubit.submit(any(), drivePassword: any(named: 'drivePassword')))
         .thenAnswer((_) async {});
   });
@@ -139,6 +140,7 @@ void main() {
   testWidgets('with the sign-in password proven, no password is asked',
       (tester) async {
     when(() => cubit.needsDrivePassword).thenReturn(false);
+    when(() => cubit.drivePasswordAsk).thenReturn(null);
     await pump(tester);
 
     expect(find.byKey(const Key('drivePassword')), findsNothing);

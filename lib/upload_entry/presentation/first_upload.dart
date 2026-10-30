@@ -87,19 +87,22 @@ Future<void> uploadIntoFirstDrive(
   required DrivesCubit drivesCubit,
   required bool isFolderUpload,
   required Future<void> Function() openCreateDrive,
+  @visibleForTesting DriveCreateCubit Function()? newCubit,
+  @visibleForTesting Future<String?> Function()? askNewDrivePassword,
 }) async {
   final profile = context.read<ProfileCubit>().state;
   if (profile is! ProfileLoggedIn) return;
 
-  final cubit = DriveCreateCubit(
-    privacy: DrivePrivacy.private,
-    arweave: context.read<ArweaveService>(),
-    turboUploadService: context.read<TurboUploadService>(),
-    driveDao: context.read<DriveDao>(),
-    profileCubit: context.read<ProfileCubit>(),
-    drivesCubit: drivesCubit,
-    driveUnlocker: context.read<DriveUnlocker>(),
-  );
+  final cubit = newCubit?.call() ??
+      DriveCreateCubit(
+        privacy: DrivePrivacy.private,
+        arweave: context.read<ArweaveService>(),
+        turboUploadService: context.read<TurboUploadService>(),
+        driveDao: context.read<DriveDao>(),
+        profileCubit: context.read<ProfileCubit>(),
+        drivesCubit: drivesCubit,
+        driveUnlocker: context.read<DriveUnlocker>(),
+      );
 
   // Creating the drive selects it, and the selection opens it with the
   // upload waiting, as any first drive's does.
@@ -115,10 +118,11 @@ Future<void> uploadIntoFirstDrive(
   try {
     final outcome = await makeFirstPrivateDrive(
       cubit: cubit,
-      askNewDrivePassword: () => showSetDrivePasswordDialog(
-        context,
-        walletAddress: profile.user.walletAddress,
-      ),
+      askNewDrivePassword: askNewDrivePassword ??
+          () => showSetDrivePasswordDialog(
+                context,
+                walletAddress: profile.user.walletAddress,
+              ),
       onCreating: () {
         if (!context.mounted) return;
         progressShown = true;

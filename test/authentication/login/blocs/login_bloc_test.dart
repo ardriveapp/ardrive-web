@@ -7,6 +7,8 @@ import 'package:ardrive/models/daos/profile_dao.dart'
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/device_unlock/domain/device_key.dart';
+import 'package:ardrive/device_unlock/domain/device_secret_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/services.dart';
@@ -23,6 +25,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../test_utils/locked_drive_fixtures.dart'
+    show MemoryKeyValueStore;
 import '../../../test_utils/utils.dart';
 
 void main() {
@@ -1013,101 +1017,6 @@ void main() {
     });
 
     blocTest(
-      'should get the wallet from arconnect and emit prompt password',
-      build: () {
-        return createBloc();
-      },
-      setUp: () {
-        when(() => mockArConnectService.connect())
-            .thenAnswer((invocation) => Future.value(null));
-        when(() => mockArConnectService.checkPermissions())
-            .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArConnectService.getWalletAddress())
-            .thenAnswer((invocation) => Future.value('walletAddress'));
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((invocation) => Future.value(true));
-      },
-      act: (bloc) async {
-        bloc.add(const AddWalletFromArConnect());
-      },
-      expect: () => [
-        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
-        const TypeMatcher<LoginInitial>(),
-        const TypeMatcher<LoginShowBlockingDialog>(),
-        LoginCloseBlockingDialog(),
-        const TypeMatcher<PromptPassword>()
-      ],
-    );
-
-    blocTest(
-      'should emit a state to create new password when user never logged on ardrive',
-      build: () {
-        return createBloc();
-      },
-      setUp: () {
-        when(() => mockArConnectService.connect())
-            .thenAnswer((invocation) => Future.value(null));
-        when(() => mockArConnectService.checkPermissions())
-            .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArConnectService.getWalletAddress())
-            .thenAnswer((invocation) => Future.value('walletAddress'));
-        // new user but has public drives
-        when(() => mockArDriveAuth.isExistingUser(any()))
-            .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((invocation) => Future.value(false));
-      },
-      act: (bloc) async {
-        bloc.add(const AddWalletFromArConnect());
-      },
-      expect: () => [
-        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
-        const TypeMatcher<LoginInitial>(),
-        const TypeMatcher<LoginShowBlockingDialog>(),
-        LoginCloseBlockingDialog(),
-        predicate<CreateNewPassword>((cnp) {
-          return cnp.showWalletCreated == false &&
-              cnp.mnemonic == null &&
-              cnp.isNewUser == false;
-        })
-      ],
-    );
-
-    blocTest(
-      'should emit a state to create new password when user never logged on ardrive and show tutorials if user has no drives',
-      build: () {
-        return createBloc();
-      },
-      setUp: () {
-        when(() => mockArConnectService.connect())
-            .thenAnswer((invocation) => Future.value(null));
-        when(() => mockArConnectService.checkPermissions())
-            .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArConnectService.getWalletAddress())
-            .thenAnswer((invocation) => Future.value('walletAddress'));
-        // new user and no drives
-        when(() => mockArDriveAuth.isExistingUser(any()))
-            .thenAnswer((invocation) => Future.value(false));
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((invocation) => Future.value(false));
-      },
-      act: (bloc) async {
-        bloc.add(const AddWalletFromArConnect());
-      },
-      expect: () => [
-        const LoginWaitingOnWallet(wallet: BrowserWallet.wander),
-        const TypeMatcher<LoginInitial>(),
-        const TypeMatcher<LoginShowBlockingDialog>(),
-        LoginCloseBlockingDialog(),
-        predicate<CreateNewPassword>((cnp) {
-          return cnp.showWalletCreated == false &&
-              cnp.mnemonic == null &&
-              cnp.isNewUser == true;
-        })
-      ],
-    );
-
-    blocTest(
       'should return silently when user doesnt grant permissions',
       build: () {
         return createBloc();
@@ -1453,7 +1362,6 @@ void main() {
   });
 
   group('testing LoginBloc LoginWithSolana event', () {
-    final mockSignature = Uint8List.fromList(List.filled(64, 42));
 
     LoginBloc createSolanaBloc() {
       return LoginBloc(
@@ -1479,107 +1387,6 @@ void main() {
       when(() => mockSolanaProviderService.disconnect())
           .thenAnswer((_) => Future.value());
     });
-
-    blocTest(
-      'should emit prompt password when Solana user is an existing one',
-      build: () => createSolanaBloc(),
-      setUp: () {
-        when(() => mockSolanaProviderService.connect(
-                provider: any(named: 'provider')))
-            .thenAnswer((_) async => const SolanaConnection(
-                  address: 'SoLAddr123',
-                  providerType: 'phantom',
-                ));
-        when(() => mockSolanaProviderService.signMessage(any()))
-            .thenAnswer((_) async => mockSignature);
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((_) async => true);
-      },
-      act: (bloc) async {
-        bloc.add(const LoginWithSolana());
-      },
-      expect: () => [
-        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
-        const LoginWaitingOnWallet(
-          wallet: BrowserWallet.otherSolana,
-          request: BrowserWalletRequest.signIn,
-        ),
-        const TypeMatcher<LoginInitial>(),
-        const TypeMatcher<LoginShowBlockingDialog>(),
-        LoginCloseBlockingDialog(),
-        const TypeMatcher<PromptPassword>(),
-      ],
-    );
-
-    blocTest(
-      'should emit create new password with tutorials when Solana user is brand new',
-      build: () => createSolanaBloc(),
-      setUp: () {
-        when(() => mockSolanaProviderService.connect(
-                provider: any(named: 'provider')))
-            .thenAnswer((_) async => const SolanaConnection(
-                  address: 'SoLAddr123',
-                  providerType: 'phantom',
-                ));
-        when(() => mockSolanaProviderService.signMessage(any()))
-            .thenAnswer((_) async => mockSignature);
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((_) async => false);
-        when(() => mockArDriveAuth.isExistingUser(any()))
-            .thenAnswer((_) async => false);
-      },
-      act: (bloc) async {
-        bloc.add(const LoginWithSolana());
-      },
-      expect: () => [
-        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
-        const LoginWaitingOnWallet(
-          wallet: BrowserWallet.otherSolana,
-          request: BrowserWalletRequest.signIn,
-        ),
-        const TypeMatcher<LoginInitial>(),
-        const TypeMatcher<LoginShowBlockingDialog>(),
-        LoginCloseBlockingDialog(),
-        predicate<CreateNewPassword>((cnp) {
-          return cnp.isNewUser == true && cnp.showWalletCreated == false;
-        }),
-      ],
-    );
-
-    blocTest(
-      'should emit create new password without tutorials when Solana user has public drives',
-      build: () => createSolanaBloc(),
-      setUp: () {
-        when(() => mockSolanaProviderService.connect(
-                provider: any(named: 'provider')))
-            .thenAnswer((_) async => const SolanaConnection(
-                  address: 'SoLAddr123',
-                  providerType: 'phantom',
-                ));
-        when(() => mockSolanaProviderService.signMessage(any()))
-            .thenAnswer((_) async => mockSignature);
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((_) async => false);
-        when(() => mockArDriveAuth.isExistingUser(any()))
-            .thenAnswer((_) async => true);
-      },
-      act: (bloc) async {
-        bloc.add(const LoginWithSolana());
-      },
-      expect: () => [
-        const LoginWaitingOnWallet(wallet: BrowserWallet.otherSolana),
-        const LoginWaitingOnWallet(
-          wallet: BrowserWallet.otherSolana,
-          request: BrowserWalletRequest.signIn,
-        ),
-        const TypeMatcher<LoginInitial>(),
-        const TypeMatcher<LoginShowBlockingDialog>(),
-        LoginCloseBlockingDialog(),
-        predicate<CreateNewPassword>((cnp) {
-          return cnp.isNewUser == false && cnp.showWalletCreated == false;
-        }),
-      ],
-    );
 
     blocTest(
       'should emit failure when no Solana wallet is detected',
@@ -1921,21 +1728,60 @@ void main() {
         expect(bloc.signUpFromLogIn, isFalse);
       });
 
-      group('a wallet from the choice is a new account, from Log in not', () {
-        void wanderWithoutPassword() {
+      group(
+          'a wallet from the choice or from Log in signs in with no password '
+          'step, and no drive is made', () {
+        late User signedIn;
+        late MemoryKeyValueStore firstDriveStore;
+
+        setUp(() async {
+          firstDriveStore = MemoryKeyValueStore();
+          signedIn = User(
+            password: '',
+            wallet: wallet,
+            walletAddress: await wallet.getAddress(),
+            walletBalance: BigInt.zero,
+            cipherKey: SecretKey(List.filled(32, 1)),
+            profileType: ProfileType.arConnect,
+            errorFetchingIOTokens: false,
+          );
+          registerFallbackValue(ProfileType.json);
+          registerFallbackValue(DeviceSecretSource.fromSecret(
+              DeviceUnlockMethod.wander, Uint8List(1)));
+          when(() => mockArDriveAuth.getWalletAddress())
+              .thenAnswer((_) async => null);
+          when(() => mockArDriveAuth.loginWithWallet(any(), any(), any(),
+                  sourceWalletAddress: any(named: 'sourceWalletAddress'),
+                  password: any(named: 'password'),
+                  skipDriveCheck: any(named: 'skipDriveCheck')))
+              .thenAnswer((_) async => signedIn);
+        });
+
+        LoginBloc bloc() => LoginBloc(
+              arDriveAuth: mockArDriveAuth,
+              arConnectService: mockArConnectService,
+              ethereumProviderService: mockEthereumProviderService,
+              solanaProviderService: mockSolanaProviderService,
+              turboUploadService: mockTurboUploadService,
+              arweaveService: mockArweaveService,
+              downloadService: mockDownloadService,
+              userRepository: mockUserRepository,
+              profileCubit: mockProfileCubit,
+              configService: mockConfigService,
+              walletFromMnemonic: (_) async => wallet,
+              firstDrive: FirstDrive(openStore: () async => firstDriveStore),
+            );
+
+        void wander() {
           when(() => mockArConnectService.isWalletVersionSupported())
               .thenAnswer((_) async => true);
           when(() => mockArConnectService.checkPermissions())
               .thenAnswer((_) async => true);
           when(() => mockArConnectService.getWalletAddress())
-              .thenAnswer((_) async => 'walletAddress');
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) async => false);
-          when(() => mockArDriveAuth.isExistingUser(any()))
-              .thenAnswer((_) async => false);
+              .thenAnswer((_) async => signedIn.walletAddress);
         }
 
-        void solanaWithoutPassword() {
+        void phantom() {
           when(() => mockSolanaProviderService.connect(
                   provider: any(named: 'provider')))
               .thenAnswer((_) async => const SolanaConnection(
@@ -1944,24 +1790,16 @@ void main() {
               .thenAnswer((_) async => Uint8List(64));
           when(() => mockSolanaProviderService.disconnect(
               provider: any(named: 'provider'))).thenAnswer((_) async {});
-          when(() => mockArDriveAuth.userHasPassword(any()))
-              .thenAnswer((_) async => false);
-          when(() => mockArDriveAuth.isExistingUser(any()))
-              .thenAnswer((_) async => true);
         }
 
         for (final (name, setUpWallet, login) in [
-          ('Wander', wanderWithoutPassword, const AddWalletFromArConnect()),
-          (
-            'Phantom',
-            solanaWithoutPassword,
-            const LoginWithSolana(provider: 'phantom')
-          ),
+          ('Wander', wander, const AddWalletFromArConnect()),
+          ('Phantom', phantom, const LoginWithSolana(provider: 'phantom')),
         ]) {
           for (final fromSignUp in [true, false]) {
             blocTest<LoginBloc, LoginState>(
               '$name from ${fromSignUp ? 'Sign up' : 'Log in'}',
-              build: logInBloc,
+              build: bloc,
               setUp: () {
                 wallets(ar: true, sol: true);
                 setUpWallet();
@@ -1972,11 +1810,17 @@ void main() {
                     : const SelectLoginFlow(existingUser: true));
                 await Future<void>.delayed(Duration.zero);
                 bloc.add(login);
-                await bloc.stream.firstWhere((s) => s is CreateNewPassword);
+                await bloc.stream.firstWhere((s) => s is LoginSuccess);
               },
-              verify: (bloc) {
-                final asked = bloc.state as CreateNewPassword;
-                expect(asked.fromSignUp, fromSignUp);
+              verify: (bloc) async {
+                expect(bloc.state, isA<LoginSuccess>());
+                verifyNever(() => mockArDriveAuth.userHasPassword(any()));
+                verifyNever(() => mockArDriveAuth.isExistingUser(any()));
+                // Just in time instead: My files is made at the first upload.
+                expect(
+                    await FirstDrive(openStore: () async => firstDriveStore)
+                        .claim(signedIn.walletAddress),
+                    isFalse);
               },
             );
           }

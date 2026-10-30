@@ -77,7 +77,7 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
       profileName.add(LoadProfileNameBeforeLogin(address));
       if (mounted) setState(() => _address = address);
     }).catchError((Object _) {});
-    auth.savedAccount().then((account) {
+    Future<SavedAccount?>.sync(auth.savedAccount).then((account) {
       final method = account?.walletMethod;
       if (!mounted || method == null || _walletPrompt != null) return;
       setState(() => _walletPrompt = PromptWalletUnlock(
