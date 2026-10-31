@@ -5203,8 +5203,6 @@
   "@arnsConnected": {"description": "The ArNS wallet is connected."},
   "arnsOtherAccount": "Other account",
   "@arnsOtherAccount": {"description": "The wallet is connected on another account than the linked one."},
-  "arnsReconnect": "Reconnect",
-  "@arnsReconnect": {"description": "Action that reconnects the ArNS wallet."},
   "arnsUnlink": "Unlink",
   "@arnsUnlink": {"description": "Action that forgets the ArNS wallet."},
   "arnsNoNamesTitle": "No names yet",
@@ -5718,8 +5716,6 @@
   "@rememberedOnThisDevice": {"description": "Drive details: this device keeps the drive's key, so it opens without its password."},
   "notRememberedOnThisDevice": "Not remembered",
   "@notRememberedOnThisDevice": {"description": "Drive details: this device keeps no key for the drive; it will be locked next time."},
-  "forgetAllOnThisDevice": "Forget all on this device",
-  "@forgetAllOnThisDevice": {"description": "Profile menu: delete every remembered drive key. Drives stay open now and are locked next time."},
   "approveToOpenDrives": "Approve in {wallet} to open your drives",
   "@approveToOpenDrives": {"description": "Welcome back, while the browser wallet is asked for the one approval that opens the account and the drives remembered on this device.", "placeholders": {"wallet": {"type": "String"}}},
   "approveToOpenDrivesGeneric": "Approve in your wallet to open your drives",
@@ -5863,5 +5859,7 @@
   "accountDrivesRemembered": "{count, plural, =1{1 drive remembered} other{{count} drives remembered}}",
   "@accountDrivesRemembered": {"description": "Account and security: how many private drives this device opens without their password.", "placeholders": {"count": {"type": "int"}}},
   "accountSolanaForSignIn": "Solana, for sign-in",
-  "@accountSolanaForSignIn": {"description": "Account and security: a Phantom or Solflare account's own address, while names are off."}
+  "@accountSolanaForSignIn": {"description": "Account and security: a Phantom or Solflare account's own address, while names are off."},
+  "accountEthereumWallet": "Ethereum wallet",
+  "@accountEthereumWallet": {"description": "The sign-in wallet of an Ethereum account when ArDrive can't tell that it is MetaMask."}
 }

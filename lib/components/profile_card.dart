@@ -806,7 +806,7 @@ class _ProfileCardState extends State<ProfileCard> {
             children: [
               // The copy button's width on the left too, so the address
               // stays centred under the avatar.
-              const SizedBox(width: 28),
+              const SizedBox(width: AddressCopyButton.targetSize),
               Flexible(
                 child: BlocBuilder<ProfileNameBloc, ProfileNameState>(
                   builder: (context, nameState) {
@@ -841,14 +841,11 @@ class _ProfileCardState extends State<ProfileCard> {
                   },
                 ),
               ),
-              const SizedBox(width: 4),
-              SizedBox(
-                width: 24,
-                child: AddressCopyButton(
-                  key: const Key('profileCopyAddress'),
-                  address: state.user.displayAddress,
-                  label: appLocalizationsOf(context).accountCopyShortAddress,
-                ),
+              // A 40 px target, however small the icon.
+              AddressCopyButton(
+                key: const Key('profileCopyAddress'),
+                address: state.user.displayAddress,
+                label: appLocalizationsOf(context).accountCopyShortAddress,
               ),
             ],
           ),

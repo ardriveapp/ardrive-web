@@ -573,22 +573,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
               // Redirect the user away from sign in if they are already signed in.
               if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
-                signingIn = false;
-                gettingStarted = false;
-
-                // And land on the list of drives rather than inside one the
-                // app has not looked at yet. Only when there is nothing else
-                // to honour: a deep link - a drive, a folder, a shared file, a
-                // raw transaction - has already set its target in
-                // `setNewRoutePath`, and is left exactly as it was.
-                if (!hasARouteToHonour &&
-                    !showingNames &&
-                    !showingWebPages &&
-                    !showingAccount) {
-                  showingDrivesList = true;
-                }
-
-                notifyListeners();
+                landAfterSignIn();
               }
             },
             builder: (context, state) {
@@ -644,7 +629,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               } else if (gettingStarted) {
                 shellKey = 'getStarted';
                 shell = const LoginPage(gettingStarted: true);
-              } else if (showingAccount && canShowDrivesList(state)) {
+              } else if (showsAccount(state)) {
                 shellKey = 'account';
                 // The Names page's shape: the sidebar reads an explorer
                 // cubit, and a drive chosen in it opens that drive.
@@ -1275,6 +1260,33 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingNames = false;
     _leaveForAPage();
   }
+
+  /// Off the sign-in page once signed in. It lands on the list of drives
+  /// rather than inside one the app has not looked at yet, but only when
+  /// there is nothing else to honour: a deep link (a drive, a folder, a
+  /// shared file, a raw transaction, or the Names, Web pages or Account and
+  /// security page) has already set its target in `setNewRoutePath`, and is
+  /// left exactly as it was.
+  @visibleForTesting
+  void landAfterSignIn() {
+    signingIn = false;
+    gettingStarted = false;
+
+    if (!hasARouteToHonour &&
+        !showingNames &&
+        !showingWebPages &&
+        !showingAccount) {
+      showingDrivesList = true;
+    }
+
+    notifyListeners();
+  }
+
+  /// Whether the Account and security page is what [build] shows: asked for,
+  /// and somebody signed in to show it to.
+  @visibleForTesting
+  bool showsAccount(ProfileState profileState) =>
+      showingAccount && canShowDrivesList(profileState);
 
   /// The Account and security page, from the profile menu.
   void showAccount() {

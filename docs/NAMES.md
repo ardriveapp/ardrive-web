@@ -150,9 +150,11 @@ This follows the ar.io console.
   from the remembered address.
 - **Account and security.** Under Addresses, "Solana, for names": Link when
   none is linked, otherwise the shortened address in monospace with Copy and
-  Unlink. A Phantom or Solflare account has no Link: its sign-in address,
-  "Solana, for sign-in and names", is the ArNS wallet already. The Names
-  page keeps its own Link.
+  Unlink. A Phantom or Solflare account's sign-in address is its ArNS
+  wallet by default, shown as "Solana, for sign-in and names", with no
+  Link. If another wallet was linked since (the name dialog's Change
+  wallet), the sign-in address reads "Solana, for sign-in" and the linked
+  one gets its own row with Unlink. The Names page keeps its own Link.
 
 ## Flows
 

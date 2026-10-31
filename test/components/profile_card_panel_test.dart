@@ -18,6 +18,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -233,6 +234,47 @@ void main() {
       await takeDown(tester);
     });
     semantics.dispose();
+  });
+
+  testWidgets('copy takes the address shown: a Phantom account\'s Solana one',
+      (tester) async {
+    const solana = '7xKpQd2aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567Qd2a';
+    final phantomUser = user.copyWith(sourceWalletAddress: solana);
+    whenListen(
+      profileCubit,
+      const Stream<ProfileState>.empty(),
+      initialState: ProfileLoggedIn(user: phantomUser, useTurbo: false),
+    );
+    when(() => auth.currentUser).thenReturn(phantomUser);
+
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    await tester.runAsync(() async {
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.byKey(const Key('profileCopyAddress')));
+
+      // The whole 40 px square takes the tap, not only the icon.
+      final button = find.byKey(const Key('profileCopyAddress'));
+      expect(tester.getSize(button), const Size(40, 40));
+      await tester.tapAt(tester.getTopLeft(button) + const Offset(2, 2));
+      await tester.pump();
+
+      expect(copied, solana);
+
+      await takeDown(tester);
+    });
   });
 
   testWidgets('Account and security opens the page and closes the panel',

@@ -1,4 +1,6 @@
+import 'package:ardrive/account/data/ethereum_wallet_detection.dart';
 import 'package:ardrive/app_shell.dart';
+import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -132,15 +134,43 @@ class AddressCopyButton extends StatelessWidget {
   /// What a screen reader and the tooltip call it: "Copy Arweave address".
   final String label;
 
+  /// The tap target's side, whatever the icon's size.
+  static const double targetSize = 40;
+
   @override
   Widget build(BuildContext context) {
-    return ArDriveIconButton(
-      tooltip: label,
-      icon: ArDriveIcons.copy(
-        size: 20,
-        color: ArDriveTheme.of(context).themeData.colorTokens.iconMid,
+    void copy() => copyWithToast(context, address);
+
+    // An icon button's own tap area is its 20 px icon: this one takes taps
+    // across the whole 40 px square. A button to a screen reader, named by
+    // [label]; Tab reaches it.
+    return Semantics(
+      button: true,
+      label: label,
+      onTap: copy,
+      excludeSemantics: true,
+      child: ArDriveFocusable(
+        onActivate: copy,
+        radius: ArDriveRadius.control,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: copy,
+          child: HoverWidget(
+            tooltip: label,
+            hoverScale: 1.0,
+            padding: EdgeInsets.zero,
+            child: SizedBox.square(
+              dimension: targetSize,
+              child: Center(
+                child: ArDriveIcons.copy(
+                  size: 20,
+                  color: ArDriveTheme.of(context).themeData.colorTokens.iconMid,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
-      onPressed: () => copyWithToast(context, address),
     );
   }
 }
@@ -265,13 +295,26 @@ class _PhonePage extends StatelessWidget {
 
 /// The page's three sections, for the signed-in user.
 class AccountSections extends StatelessWidget {
-  const AccountSections({super.key, this.solanaProvider, this.ioUtils});
+  const AccountSections({
+    super.key,
+    this.solanaProvider,
+    this.ioUtils,
+    this.tabs,
+    this.metaMask,
+  });
 
   /// See [AccountPage.solanaProvider].
   final String? solanaProvider;
 
   /// Saves the keyfile; a test passes its own.
   final ArDriveIOUtils? ioUtils;
+
+  /// Told which drives Forget forgot, for the other tabs;
+  /// [DeviceTabs.instance] unless a test passes its own.
+  final DeviceTabs? tabs;
+
+  /// Whether MetaMask is the browser's Ethereum wallet. Detected when null.
+  final bool? metaMask;
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +326,11 @@ class AccountSections extends StatelessWidget {
         final strings = appLocalizationsOf(context);
         final walletName = switch (kind) {
           AccountSignInKind.wander => 'Wander',
-          AccountSignInKind.ethereum => 'MetaMask',
+          // Named only when MetaMask is positively there: other Ethereum
+          // wallets sign in the same way.
+          AccountSignInKind.ethereum => (metaMask ?? metaMaskDetected())
+              ? 'MetaMask'
+              : strings.accountEthereumWallet,
           AccountSignInKind.solana =>
             solanaWalletName(solanaProvider ?? _detectSolanaProvider()) ??
                 strings.accountSolanaWallet,
@@ -321,7 +368,7 @@ class AccountSections extends StatelessWidget {
             ),
             _Section(
               title: strings.accountThisDeviceSection,
-              rows: const [_RememberedDrivesRow()],
+              rows: [_RememberedDrivesRow(tabs: tabs ?? DeviceTabs.instance)],
             ),
             _Section(
               title: strings.accountAddressesSection,
@@ -349,17 +396,23 @@ class AccountSections extends StatelessWidget {
 
     switch (kind) {
       case AccountSignInKind.solana:
-        // That wallet is the names wallet already, so there is no Link.
+        // By default the sign-in wallet is the names wallet, so there is no
+        // Link. Another one linked since (the name dialog's Change wallet),
+        // or none, gets its own row, with Unlink or Link.
+        final namesWallet = _namesWalletOf(context);
+        final signInIsNames =
+            namesWallet.on && namesWallet.linked?.address == source;
         return [
           _AddressRow(
             key: const Key('accountSolanaAddress'),
-            title: _namesOn(context)
+            title: signInIsNames
                 ? strings.accountSolanaForSignInAndNames
                 : strings.accountSolanaForSignIn,
             address: source!,
             copyLabel: strings.accountCopyAddress('Solana'),
           ),
           arweave,
+          if (namesWallet.on && !signInIsNames) const NamesWalletRow(),
         ];
       case AccountSignInKind.ethereum:
         return [
@@ -376,6 +429,21 @@ class AccountSections extends StatelessWidget {
       case AccountSignInKind.wander:
         return [arweave, const NamesWalletRow()];
     }
+  }
+}
+
+/// Whether names are on here, and the names wallet linked, if any. Watched,
+/// so the rows follow a link or an unlink.
+({bool on, LinkedArNSWallet? linked}) _namesWalletOf(BuildContext context) {
+  if (!_namesOn(context)) return (on: false, linked: null);
+  try {
+    final state = context.watch<ArNSWalletCubit>().state;
+    if (state.status == ArNSWalletStatus.unavailable) {
+      return (on: false, linked: null);
+    }
+    return (on: true, linked: state.linked);
+  } on ProviderNotFoundException {
+    return (on: false, linked: null);
   }
 }
 
@@ -440,7 +508,9 @@ class NamesWalletRow extends StatelessWidget {
 
 /// "2 drives remembered · Forget", or "No drives remembered".
 class _RememberedDrivesRow extends StatelessWidget {
-  const _RememberedDrivesRow();
+  const _RememberedDrivesRow({required this.tabs});
+
+  final DeviceTabs tabs;
 
   @override
   Widget build(BuildContext context) {
@@ -480,7 +550,7 @@ class _RememberedDrivesRow extends StatelessWidget {
                 confirmed: confirmed,
                 driveDao: driveDao,
                 user: auth.currentUser,
-                tabs: DeviceTabs.instance,
+                tabs: tabs,
               );
             },
           ),

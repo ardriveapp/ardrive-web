@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
@@ -28,6 +29,8 @@ import 'package:provider/provider.dart';
 import '../test_utils/utils.dart';
 
 class _MockIOUtils extends Mock implements ArDriveIOUtils {}
+
+class _MockDeviceTabs extends Mock implements DeviceTabs {}
 
 class _MockWalletCubit extends MockCubit<ArNSWalletState>
     implements ArNSWalletCubit {}
@@ -59,6 +62,8 @@ void main() {
   late MockProfileCubit profileCubit;
   late AppRouterDelegate router;
   late _MockIOUtils ioUtils;
+  late _MockDeviceTabs tabs;
+  late _MockWalletCubit walletCubit;
 
   setUpAll(() {
     registerFallbackValue(SecretKey([0]));
@@ -70,6 +75,7 @@ void main() {
     profileCubit = MockProfileCubit();
     router = AppRouterDelegate();
     ioUtils = _MockIOUtils();
+    tabs = _MockDeviceTabs();
   });
 
   Future<void> pumpPage(
@@ -79,6 +85,7 @@ void main() {
     bool namesOn = true,
     ArNSWalletState? wallet,
     String? solanaProvider,
+    bool metaMask = false,
     Size size = const Size(390, 900),
     bool dark = false,
   }) async {
@@ -103,7 +110,7 @@ void main() {
       enableArNS: namesOn,
     ));
 
-    final walletCubit = _MockWalletCubit();
+    walletCubit = _MockWalletCubit();
     whenListen(
       walletCubit,
       const Stream<ArNSWalletState>.empty(),
@@ -141,6 +148,8 @@ void main() {
                   child: AccountSections(
                     solanaProvider: solanaProvider,
                     ioUtils: ioUtils,
+                    tabs: tabs,
+                    metaMask: metaMask,
                   ),
                 ),
               ),
@@ -216,8 +225,8 @@ void main() {
       expect(find.text('Solana wallet'), findsOneWidget);
     });
 
-    testWidgets('MetaMask', (tester) async {
-      await pumpPage(tester, user: _user(source: _ethereum));
+    testWidgets('MetaMask, when MetaMask is there', (tester) async {
+      await pumpPage(tester, user: _user(source: _ethereum), metaMask: true);
 
       expect(find.text('MetaMask'), findsOneWidget);
       expect(
@@ -226,6 +235,18 @@ void main() {
       );
       expect(find.text('Download'), findsNothing);
     });
+  });
+
+  testWidgets('another Ethereum wallet is not called MetaMask', (tester) async {
+    await pumpPage(tester, user: _user(source: _ethereum));
+
+    expect(find.text('MetaMask'), findsNothing);
+    expect(find.text('Ethereum wallet'), findsOneWidget);
+    expect(
+      find.text(
+          'Ethereum wallet signs you in. Your files stay with this wallet.'),
+      findsOneWidget,
+    );
   });
 
   group('this device', () {
@@ -252,6 +273,7 @@ void main() {
             any(),
             ownerAddress: any(named: 'ownerAddress'),
           ));
+      verifyNever(() => tabs.announceForgotten(any()));
 
       await tester.tap(find.byKey(const Key('accountForgetDrives')));
       await tester.pumpAndSettle();
@@ -261,6 +283,8 @@ void main() {
             any(),
             ownerAddress: _arweave,
           )).called(1);
+      // The other tabs are told which drives went.
+      verify(() => tabs.announceForgotten(['a', 'b'])).called(1);
     });
 
     testWidgets('one drive is one drive', (tester) async {
@@ -304,6 +328,10 @@ void main() {
       expect(find.text('CBsEKd...HHsv'), findsOneWidget);
       expect(find.byKey(const Key('accountNamesUnlink')), findsOneWidget);
       expect(find.bySemanticsLabel('Copy Solana address'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('accountNamesUnlink')));
+      await tester.pump();
+      verify(() => walletCubit.unlink()).called(1);
     });
 
     testWidgets('names off: no names row', (tester) async {
@@ -317,12 +345,55 @@ void main() {
         tester,
         user: _user(source: _solana),
         solanaProvider: 'phantom',
+        wallet: const ArNSWalletState(
+          enabled: true,
+          profileAddress: _arweave,
+          linked: LinkedArNSWallet(address: _solana),
+        ),
       );
 
       expect(find.text('Solana, for sign-in and names'), findsOneWidget);
       expect(find.text('Arweave, for your files'), findsOneWidget);
       expect(find.text('Solana, for names'), findsNothing);
       expect(find.byKey(const Key('accountNamesLink')), findsNothing);
+    });
+
+    testWidgets(
+        'Phantom with another names wallet linked: that wallet, with Unlink',
+        (tester) async {
+      await pumpPage(
+        tester,
+        user: _user(source: _solana),
+        solanaProvider: 'phantom',
+        wallet: const ArNSWalletState(
+          enabled: true,
+          profileAddress: _arweave,
+          linked: LinkedArNSWallet(address: _linkedSolana),
+        ),
+      );
+
+      expect(find.text('Solana, for sign-in'), findsOneWidget);
+      expect(find.text('Solana, for sign-in and names'), findsNothing);
+      expect(find.text('7xKpQd...Qd2a'), findsOneWidget);
+      expect(find.text('Solana, for names'), findsOneWidget);
+      expect(find.text('CBsEKd...HHsv'), findsOneWidget);
+      expect(find.byKey(const Key('accountNamesUnlink')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('accountNamesUnlink')));
+      await tester.pump();
+      verify(() => walletCubit.unlink()).called(1);
+    });
+
+    testWidgets('Phantom with no names wallet linked: Link to get one back',
+        (tester) async {
+      await pumpPage(
+        tester,
+        user: _user(source: _solana),
+        solanaProvider: 'phantom',
+      );
+
+      expect(find.text('Solana, for sign-in'), findsOneWidget);
+      expect(find.byKey(const Key('accountNamesLink')), findsOneWidget);
     });
 
     testWidgets('MetaMask: Ethereum, Arweave, then Link for names',
@@ -394,6 +465,45 @@ void main() {
       router.closeAccount();
       expect(router.showingAccount, isFalse);
       expect(router.showingDrivesList, isTrue);
+    });
+
+    test('is shown only to somebody signed in', () {
+      final router = AppRouterDelegate()..showAccount();
+      expect(
+        router.showsAccount(ProfileLoggedIn(user: _user(), useTurbo: false)),
+        isTrue,
+      );
+      for (final state in [
+        ProfilePromptAdd(),
+        ProfilePromptLogIn(),
+        ProfileCheckingAvailability(),
+      ]) {
+        expect(router.showsAccount(state), isFalse, reason: '$state');
+      }
+      expect(
+        AppRouterDelegate().showsAccount(
+          ProfileLoggedIn(user: _user(), useTurbo: false),
+        ),
+        isFalse,
+      );
+    });
+
+    test('a link to it is honoured after sign-in', () async {
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(AppRoutePath.account());
+      router.signingIn = true;
+
+      router.landAfterSignIn();
+
+      expect(router.signingIn, isFalse);
+      expect(router.showingAccount, isTrue);
+      expect(router.showingDrivesList, isFalse);
+      expect(router.currentConfiguration.account, isTrue);
+
+      // With no link, sign-in lands on the drives list.
+      final plain = AppRouterDelegate()..signingIn = true;
+      plain.landAfterSignIn();
+      expect(plain.showingDrivesList, isTrue);
     });
 
     test('opening a drive or another page leaves it', () {
