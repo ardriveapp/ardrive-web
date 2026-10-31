@@ -1,17 +1,15 @@
-import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_profile_row.dart';
+import 'package:ardrive/account/presentation/account_page.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/turbo_url_dialog.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/wallet_gradient_avatar.dart';
-import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
@@ -25,14 +23,11 @@ import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
-import 'package:ardrive/components/help_info_modals.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/user/balance/user_balance_bloc.dart';
-import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
@@ -266,56 +261,25 @@ class _ProfileCardState extends State<ProfileCard> {
             _buildBalanceSection(context, state),
             const SizedBox(height: 8),
             const Divider(height: 1, indent: 16, endIndent: 16),
+            _ProfileMenuRow(
+              key: const Key('profileAccountAndSecurity'),
+              label: appLocalizationsOf(context).accountAndSecurity,
+              icon: ArDriveIcons.carretRight(
+                size: 21,
+                color: colorTokens.iconMid,
+              ),
+              onTap: () {
+                setState(() {
+                  _showProfileCard = false;
+                });
+                context.read<AppRouterDelegate>().showAccount();
+              },
+            ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
             ArDriveAccordion(
               backgroundColor: Colors.transparent,
               automaticallyCloseWhenOpenAnotherItem: true,
               children: [
-                ArDriveAccordionItem(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        state.user.sourceWalletAddress != null
-                            ? 'Wallets'
-                            : 'Wallet',
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                      if (state.user.sourceWalletAddress != null) ...[
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _showProfileCard = false;
-                            });
-                            showArDriveDialog(
-                              context,
-                              content: ArDriveStandardModalNew(
-                                hasCloseButton: true,
-                                title: 'About your wallets',
-                                description:
-                                    'Your ${state.user.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet is used to sign in. '
-                                    'A unique Arweave wallet is automatically derived from it to store your data permanently on the Arweave network.\n\n'
-                                    'Your Arweave wallet is deterministic — it will always be the same when you sign in with the same ${state.user.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet.\n\n'
-                                    'Never share your wallet private keys with anyone.',
-                              ),
-                            );
-                          },
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: Icon(
-                              Icons.info_outline,
-                              size: 14,
-                              color: colorTokens.textLow,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  _buildWalletSettingsItems(context, state),
-                ),
                 ArDriveAccordionItem(
                   Text(
                     'Settings',
@@ -485,17 +449,9 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
               ],
             ),
-            // Help, then logout — the two things that are about the account
-            // rather than about a drive. Help moved here from the top bar,
-            // whose slot the way home now holds: that slot is the only one
-            // present on both breakpoints, and the drives list had no door at
-            // all on a phone once the sidebar entry came out.
-            _ForgetAllOnThisDeviceRow(
-              onDone: () {
-                _showProfileCard = false;
-                setState(() {});
-              },
-            ),
+            // Help, then logout: about the account rather than a drive. Help
+            // moved here from the top bar, whose slot the way home now holds.
+            // Forget all on this device moved to Account and security.
             const Divider(height: 1, indent: 16, endIndent: 16),
             _ProfileMenuRow(
               label: appLocalizationsOf(context).help,
@@ -845,105 +801,61 @@ class _ProfileCardState extends State<ProfileCard> {
             ),
           ),
           const SizedBox(height: 8),
-          Center(
-            child: BlocBuilder<ProfileNameBloc, ProfileNameState>(
-              builder: (context, nameState) {
-                if (nameState is ProfileNameLoaded) {
-                  return Text(
-                    nameState.primaryNameDetails.primaryName,
-                    style: typography.paragraphLarge(
-                      fontWeight: ArFontWeight.bold,
-                      color: colorTokens.textHigh,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  );
-                }
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // The copy button's width on the left too, so the address
+              // stays centred under the avatar.
+              const SizedBox(width: 28),
+              Flexible(
+                child: BlocBuilder<ProfileNameBloc, ProfileNameState>(
+                  builder: (context, nameState) {
+                    if (nameState is ProfileNameLoaded) {
+                      return Text(
+                        nameState.primaryNameDetails.primaryName,
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.bold,
+                          color: colorTokens.textHigh,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }
 
-                // An address, so monospace, at its final width from the
-                // first frame: the face loads on demand.
-                final address = shortenId(state.user.displayAddress);
-                return SizedBox(
-                  width: ArDriveMonospace.widthOf(address, 15,
-                      textScaler: MediaQuery.textScalerOf(context)),
-                  child: Text(
-                    address,
-                    maxLines: 1,
-                    softWrap: false,
-                    textAlign: TextAlign.center,
-                    style: typography.code(
-                      fontSize: 15,
-                      color: colorTokens.textHigh,
-                    ),
-                  ),
-                );
-              },
-            ),
+                    // An address, so monospace, at its final width from the
+                    // first frame: the face loads on demand.
+                    final address = shortenId(state.user.displayAddress);
+                    return SizedBox(
+                      width: ArDriveMonospace.widthOf(address, 15,
+                          textScaler: MediaQuery.textScalerOf(context)),
+                      child: Text(
+                        address,
+                        maxLines: 1,
+                        softWrap: false,
+                        textAlign: TextAlign.center,
+                        style: typography.code(
+                          fontSize: 15,
+                          color: colorTokens.textHigh,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 24,
+                child: AddressCopyButton(
+                  key: const Key('profileCopyAddress'),
+                  address: state.user.displayAddress,
+                  label: appLocalizationsOf(context).accountCopyShortAddress,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
         ],
       ),
     );
-  }
-
-  /// Builds wallet address rows for the Settings accordion.
-  List<Widget> _buildWalletSettingsItems(
-      BuildContext context, ProfileLoggedIn state) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final sourceAddress = state.user.sourceWalletAddress;
-    final arweaveAddress = state.user.walletAddress;
-
-    return [
-      const SizedBox(height: 8),
-      if (sourceAddress != null) ...[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _WalletAddressLine(
-            label: sourceAddress.startsWith('0x') ? 'ETH' : 'SOL',
-            address: sourceAddress,
-            explorerUrl: sourceAddress.startsWith('0x')
-                ? 'https://etherscan.io/address/$sourceAddress'
-                : 'https://solscan.io/account/$sourceAddress',
-          ),
-        ),
-        const SizedBox(height: 4),
-      ],
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _WalletAddressLine(
-          label: 'AR',
-          address: arweaveAddress,
-          explorerUrl: 'https://viewblock.io/arweave/address/$arweaveAddress',
-        ),
-      ),
-      // The ArNS wallet, under the wallet (docs/NAMES.md, "Profile card").
-      ArNSWalletProfileRow(
-        onNavigate: () => setState(() => _showProfileCard = false),
-      ),
-      if (state.user.profileType != ProfileType.arConnect &&
-          state.user.sourceWalletAddress == null) ...[
-        const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => showDownloadWalletModal(context),
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Text(
-                  'Download wallet backup',
-                  style: typography.paragraphSmall(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ];
   }
 
   Widget _buildBalanceSection(BuildContext context, ProfileLoggedIn state) {
@@ -964,92 +876,100 @@ class _ProfileCardState extends State<ProfileCard> {
               : turboState is TurboBalanceLoading
                   ? '...'
                   : '0.0000';
+          // No credits: the one thing to do about it, said in words. A new
+          // account has no balance at all, which is the same thing.
+          final hasNoCredits = (turboState is TurboBalanceSuccessState &&
+                  turboState.balance == BigInt.zero) ||
+              turboState is NewTurboUserState;
+
+          void openTopUp() {
+            setState(() {
+              _showProfileCard = false;
+            });
+            showTurboTopupModal(
+              context,
+              onSuccess: () {
+                // Refresh AR balance (in case user paid with AR)
+                if (context.mounted) {
+                  context.read<ProfileCubit>().refreshBalance();
+                }
+              },
+            );
+          }
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
-                // Credits row — always visible
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Credits',
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.textMid,
-                          ),
+                    Flexible(
+                      child: Text(
+                        'Credits',
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
                         ),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _showProfileCard = false;
-                            });
-                            showTurboInfoModal(context: context);
-                          },
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: Icon(
-                              Icons.info_outline,
-                              size: 14,
-                              color: colorTokens.textLow,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (hasNoCredits)
+                      ArDriveButtonNew(
+                        key: const Key('profileAddCredits'),
+                        text: appLocalizationsOf(context).addCredits,
+                        typography: typography,
+                        variant: ButtonVariant.primary,
+                        size: ArDriveButtonSize.compact,
+                        onPressed: openTopUp,
+                      )
+                    else
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            creditsText,
+                            key: const Key('profileCreditsBalance'),
+                            style: typography.paragraphNormal(
+                              color: colorTokens.textHigh,
+                              fontWeight: ArFontWeight.bold,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          creditsText,
-                          style: typography.paragraphNormal(
-                            color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _showProfileCard = false;
-                            });
-                            showTurboTopupModal(
-                              context,
-                              onSuccess: () {
-                                // Refresh AR balance (in case user paid with AR)
-                                if (context.mounted) {
-                                  context.read<ProfileCubit>().refreshBalance();
-                                }
-                              },
-                            );
-                          },
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colorTokens.textMid,
-                                  width: 1,
+                          const SizedBox(width: 8),
+                          Semantics(
+                            button: true,
+                            label: appLocalizationsOf(context).addCredits,
+                            onTap: openTopUp,
+                            excludeSemantics: true,
+                            child: ArDriveFocusable(
+                              onActivate: openTopUp,
+                              radius: ArDriveRadius.control,
+                              child: GestureDetector(
+                                onTap: openTopUp,
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colorTokens.textMid,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.add,
+                                      size: 12,
+                                      color: colorTokens.textMid,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: Icon(
-                                Icons.add,
-                                size: 12,
-                                color: colorTokens.textMid,
-                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
                 // AR Balance — only if non-zero
@@ -1271,32 +1191,39 @@ class _ProfileMenuRowState extends State<_ProfileMenuRow> {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return MouseRegion(
-      onExit: (_) => setState(() => _isHovering = false),
-      onHover: (_) => setState(() => _isHovering = true),
-      child: InkWell(
-        onTap: widget.onTap,
-        child: Container(
-          color: _isHovering
-              ? ArDriveTheme.of(context)
-                  .themeData
-                  .colorTokens
-                  .buttonSecondaryHover
-              : Colors.transparent,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
-            child: Row(
-              children: [
-                Text(
-                  widget.label,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                    fontWeight: ArFontWeight.semiBold,
+    // A button to a screen reader, named by its label; Tab reaches it.
+    return Semantics(
+      button: true,
+      child: MouseRegion(
+        onExit: (_) => setState(() => _isHovering = false),
+        onHover: (_) => setState(() => _isHovering = true),
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Container(
+            color: _isHovering
+                ? ArDriveTheme.of(context)
+                    .themeData
+                    .colorTokens
+                    .buttonSecondaryHover
+                : Colors.transparent,
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
                   ),
-                ),
-                const Spacer(),
-                widget.icon,
-              ],
+                  const SizedBox(width: 8),
+                  ExcludeSemantics(child: widget.icon),
+                ],
+              ),
             ),
           ),
         ),
@@ -1673,131 +1600,6 @@ class ProfileCardHeader extends StatelessWidget {
   }
 }
 
-class _ArweaveWalletDisclosure extends StatefulWidget {
-  final String arweaveAddress;
-  final bool isEthereum;
-
-  const _ArweaveWalletDisclosure({
-    required this.arweaveAddress,
-    required this.isEthereum,
-  });
-
-  @override
-  State<_ArweaveWalletDisclosure> createState() =>
-      _ArweaveWalletDisclosureState();
-}
-
-class _ArweaveWalletDisclosureState extends State<_ArweaveWalletDisclosure> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final chainName = widget.isEthereum ? 'Ethereum' : 'Solana';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 32,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Icon(
-                      _expanded
-                          ? Icons.keyboard_arrow_down
-                          : Icons.keyboard_arrow_right,
-                      size: 16,
-                      color: colorTokens.textLow,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Arweave wallet',
-                  style: typography.paragraphSmall(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_expanded) ...[
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6),
-            child: Text(
-              'Your $chainName wallet derives a unique Arweave '
-              'wallet used to store your data permanently.',
-              style: typography.caption(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.book,
-              ),
-            ),
-          ),
-          _WalletAddressLine(
-            label: 'AR',
-            address: widget.arweaveAddress,
-            explorerUrl:
-                'https://viewblock.io/arweave/address/${widget.arweaveAddress}',
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _WalletAddressLine extends StatelessWidget {
-  final String label;
-  final String address;
-  final String explorerUrl;
-
-  const _WalletAddressLine({
-    required this.label,
-    required this.address,
-    required this.explorerUrl,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Row(
-      children: [
-        SizedBox(
-          width: 32,
-          child: Text(
-            label,
-            style: typography.paragraphSmall(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-        ),
-        Expanded(
-          child: TruncatedAddress(
-            walletAddress: address,
-            explorerUrl: explorerUrl,
-          ),
-        ),
-        CopyButton(
-          size: 18,
-          text: address,
-          showCopyText: false,
-        ),
-      ],
-    );
-  }
-}
-
 /// Returns the wallet indicator color based on the user's profile.
 /// Purple for Solana and blue for Ethereum, their brand colours; an Arweave
 /// wallet takes the text colour, which shows in both themes (white vanished
@@ -1846,65 +1648,9 @@ class _AccountStats {
   });
 }
 
-/// "Forget all on this device": every drive key this device remembers is
-/// deleted. The drives stay open for this session (their keys move to
-/// memory) and are locked the next time. Shown only while something is
-/// remembered.
-class _ForgetAllOnThisDeviceRow extends StatelessWidget {
-  const _ForgetAllOnThisDeviceRow({required this.onDone});
-
-  final VoidCallback onDone;
-
-  @override
-  Widget build(BuildContext context) {
-    final driveDao = context.read<DriveDao>();
-    final auth = context.read<ArDriveAuth>();
-    final String owner;
-    try {
-      owner = auth.currentUser.walletAddress;
-    } on AuthenticationUserIsNotLoggedInException {
-      return const SizedBox.shrink();
-    }
-
-    return StreamBuilder<int>(
-      stream: driveDao.watchRememberedDriveKeyCount(ownerAddress: owner),
-      builder: (context, snapshot) {
-        final count = snapshot.data ?? 0;
-        if (count == 0) return const SizedBox.shrink();
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Divider(height: 1, indent: 16, endIndent: 16),
-            _ProfileMenuRow(
-              key: const Key('forgetAllOnThisDevice'),
-              label: appLocalizationsOf(context).forgetAllOnThisDevice,
-              icon: ArDriveIcons.lock(size: 21),
-              onTap: () async {
-                final confirmed = await showArDriveDialogWithBuilder<bool>(
-                  context,
-                  builder: (dialogContext) =>
-                      ForgetAllOnThisDeviceDialog(count: count),
-                );
-                onDone();
-                await forgetAllIfConfirmed(
-                  confirmed: confirmed,
-                  driveDao: driveDao,
-                  user: auth.currentUser,
-                  tabs: DeviceTabs.instance,
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 /// "Forget all on this device" once the confirmation is in: only
 /// [confirmed] true forgets [user]'s remembered drive keys, and tells the
 /// other tabs which.
-@visibleForTesting
 Future<void> forgetAllIfConfirmed({
   required bool? confirmed,
   required DriveDao driveDao,
@@ -1922,7 +1668,6 @@ Future<void> forgetAllIfConfirmed({
 }
 
 /// "Forget N drives on this device?": Forget pops true, Cancel false.
-@visibleForTesting
 class ForgetAllOnThisDeviceDialog extends StatelessWidget {
   const ForgetAllOnThisDeviceDialog({super.key, required this.count});
 

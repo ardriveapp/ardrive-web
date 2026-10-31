@@ -27,6 +27,12 @@ class SolanaProviderService {
     return implementation.disconnect(provider: provider);
   }
 
+  /// 'phantom' or 'solflare': the wallet this session connected, or null
+  /// before one has.
+  String? activeProvider() {
+    return implementation.activeProvider();
+  }
+
   /// Returns which Solana wallet providers are available.
   SolanaLoginProviderDetection detectProviders() {
     return implementation.detectProviders();

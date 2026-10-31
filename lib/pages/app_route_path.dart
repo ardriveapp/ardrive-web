@@ -30,6 +30,10 @@ class AppRoutePath {
   /// it.
   final bool webPages;
 
+  /// Whether the app is showing the Account and security page - `/account`:
+  /// how the account signs in, what this device remembers, its addresses.
+  final bool account;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -94,6 +98,7 @@ class AppRoutePath {
     this.names = false,
     this.arnsName,
     this.webPages = false,
+    this.account = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -125,6 +130,9 @@ class AppRoutePath {
 
   /// The Web pages page.
   factory AppRoutePath.webPages() => const AppRoutePath(webPages: true);
+
+  /// The Account and security page.
+  factory AppRoutePath.account() => const AppRoutePath(account: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({

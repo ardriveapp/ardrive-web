@@ -98,6 +98,13 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
           return AppRoutePath.webPages();
         }
         return AppRoutePath.unknown();
+      case 'account':
+        // Handle '/account' - the Account and security page. New, like
+        // '/names'.
+        if (uri.pathSegments.length == 1) {
+          return AppRoutePath.account();
+        }
+        return AppRoutePath.unknown();
       case 'drives':
         // Handle '/drives' - the list of the user's drives. Only the bare
         // segment: every longer shape below addresses a particular drive and
@@ -273,6 +280,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       );
     } else if (configuration.webPages) {
       return RouteInformation(uri: Uri.parse('/web-pages'));
+    } else if (configuration.account) {
+      return RouteInformation(uri: Uri.parse('/account'));
     } else if (configuration.driveId != null) {
       final path = configuration.driveFolderId == null
           ? '/drives/${configuration.driveId}'

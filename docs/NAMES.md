@@ -73,7 +73,7 @@ Names appear at three levels, each with one job.
 |---|---|---|
 | Item | The item's menu (Add name, Change name, Remove name), the details panel's **Name** section, and a name chip (the ArNS name icon) on explorer rows | Name this thing, see its name, copy its link |
 | Flow | An optional step in Publish, Create deployment and uploading a single public file | Name it while making it |
-| Account | **Names** in the left nav, each name with its own page; the ArNS wallet row in the profile card | See every name and undername, what each points to and its cache time; link the wallet |
+| Account | **Names** in the left nav, each name with its own page; the "Solana, for names" row on Account and security | See every name and undername, what each points to and its cache time; link the wallet |
 
 Settings is not a level: names aren't preferences. Buying, renewing,
 ownership, controllers and primary names stay in the ar.io console
@@ -148,8 +148,11 @@ This follows the ar.io console.
   inject inside their own app browsers: "No Solana wallet found", with links to
   open ArDrive in Phantom or Solflare, or to install one. Names stay readable
   from the remembered address.
-- **Profile card.** A second row under the wallet: "ArNS wallet", the
-  shortened address in monospace, and Connected or Reconnect, Change, Unlink.
+- **Account and security.** Under Addresses, "Solana, for names": Link when
+  none is linked, otherwise the shortened address in monospace with Copy and
+  Unlink. A Phantom or Solflare account has no Link: its sign-in address,
+  "Solana, for sign-in and names", is the ArNS wallet already. The Names
+  page keeps its own Link.
 
 ## Flows
 
@@ -234,7 +237,7 @@ fails, the flow says so; the upload stands.
 ### The Names page
 
 Every name and undername you own or manage, with no wallet address in the
-header (the profile card has it, where the ArNS wallet is linked), and:
+header (Account and security has it, where the ArNS wallet is linked), and:
 
 - what each points to: the ArDrive item when recognised, "Empty page" for a
   main name on the empty page, otherwise "Points elsewhere" (Q22), which you
@@ -417,7 +420,7 @@ behind `enableArNS` after that.
    cost line and the approval flow; the metadata hint; the details panel's
    Name section, the row chip and search by name.
 3. **Placement.** The On the web group and the Names page; the ArNS wallet
-   row in the profile card.
+   row on Account and security.
 4. **Flows.** The name step in Publish, Create deployment and single-file
    upload; names moving with new versions; the empty page;
    visitor checks.
@@ -459,7 +462,7 @@ undername slots.
 |---|---|
 | Q1 | Naming actions and a Names page in ArDrive; buying, renewing, ownership and controllers link to the console. |
 | Q2 | Buying with credits is phase 2. |
-| Q3 | The console's wallet model: one linked ArNS wallet, remembered, asked for at commit, automatic for Solana sign-in, shown in the profile card. |
+| Q3 | The console's wallet model: one linked ArNS wallet, remembered, asked for at commit, automatic for Solana sign-in, shown on Account and security. |
 | Q4 | Credits only, cost shown before the wallet prompt. One exception: controllers (Q23). |
 | Q5 | Nameable: deployments, public files, publications (public or private). Never private files. |
 | Q6 | Keep writing names into metadata as a hint; the owner sees the chain, visitors see a name only after the gateway confirms it. |
