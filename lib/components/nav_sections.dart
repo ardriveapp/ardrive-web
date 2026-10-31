@@ -75,10 +75,18 @@ class NavSectionsCubit extends Cubit<Set<NavSection>> {
 
   bool isFolded(NavSection section) => state.contains(section);
 
-  void toggle(NavSection section) {
-    final next = state.contains(section)
-        ? ({...state}..remove(section))
-        : {...state, section};
+  void toggle(NavSection section) => _save(state.contains(section)
+      ? ({...state}..remove(section))
+      : {...state, section});
+
+  /// Opens [section] and folds every other heading: the page the reader just
+  /// opened from the nav is the one they are looking at, so its items are the
+  /// only ones worth the room.
+  void focus(NavSection section) =>
+      _save({...NavSection.values}..remove(section));
+
+  void _save(Set<NavSection> next) {
+    if (setEquals(next, state)) return;
     emit(next);
     _preferences?.saveFoldedNavSections({
       ..._unknown,
@@ -121,6 +129,10 @@ mixin FoldsNavSections<T extends StatefulWidget> on State<T> {
 
   void toggleFolded(NavSection section) =>
       setState(() => _sections!.toggle(section));
+
+  /// See [NavSectionsCubit.focus].
+  void focusSection(NavSection section) =>
+      setState(() => _sections!.focus(section));
 
   @override
   void dispose() {

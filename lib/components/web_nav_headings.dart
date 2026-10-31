@@ -98,7 +98,12 @@ class _WebNavSectionState extends State<_WebNavSection> with FoldsNavSections {
           icon: widget.icon,
           label: widget.label,
           isCurrent: widget.isCurrent,
-          onTap: widget.onOpen,
+          // Opening the page folds every other heading, so the sidebar shows
+          // where the reader is and what is under it.
+          onTap: () {
+            focusSection(widget.section);
+            widget.onOpen();
+          },
           isExpanded: hasItems ? isExpanded : null,
           onToggle: hasItems ? () => toggleFolded(widget.section) : null,
         ),
