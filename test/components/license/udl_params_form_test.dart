@@ -58,4 +58,37 @@ void main() {
     final fee = tester.getRect(find.byType(ArDriveTextFieldNew));
     expect(tester.getTopLeft(find.text('Currency')).dy, lessThan(fee.bottom));
   });
+
+  testWidgets('an invalid fee shows the message, and a reset clears the text',
+      (tester) async {
+    final form = createUdlParamsForm();
+    await tester.pumpWidget(
+      ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: UdlParamsForm(formGroup: form, onChangeLicenseFee: () {}),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).first, 'abc');
+    await tester.pump();
+    expect(find.text('This field is invalid.'), findsOneWidget);
+    expect(find.textContaining('requiredPattern'), findsNothing);
+    expect(find.textContaining('actualValue'), findsNothing);
+
+    form.control('licenseFeeAmount').value = '';
+    await tester.pump();
+    expect(find.text('abc'), findsNothing);
+  });
 }

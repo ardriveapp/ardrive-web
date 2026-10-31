@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
@@ -30,9 +32,22 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
       widget.formGroup.control('licenseFeeAmount') as AbstractControl<String>;
   late final TextEditingController _feeController =
       TextEditingController(text: _feeControl.value);
+  StreamSubscription<String?>? _feeSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Keep the field in step with a reset or a value set from outside.
+    _feeSub = _feeControl.valueChanges.listen((value) {
+      if ((value ?? '') != _feeController.text) {
+        _feeController.text = value ?? '';
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _feeSub?.cancel();
     _feeController.dispose();
     super.dispose();
   }
@@ -58,7 +73,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                     keyboardType: TextInputType.number,
                     showErrorMessage: _feeControl.dirty && _feeControl.invalid,
                     errorMessage: _feeControl.dirty && _feeControl.invalid
-                        ? _feeControl.errors.values.first.toString()
+                        ? appLocalizationsOf(context).validationInvalid
                         : null,
                     onChanged: (s) {
                       _feeControl.value = s;
