@@ -169,4 +169,24 @@ void main() {
     expect(find.textContaining(keepTabOpen), findsNothing);
     expect(find.text('Not enough AR, 1.0619 available'), findsOneWidget);
   });
+
+  /// The unselected circle was drawn in a divider colour, about 1.1:1 on the
+  /// row, so the second way to pay looked absent.
+  testWidgets('the unselected circle stands out from the row', (tester) async {
+    await pump(tester, info());
+
+    final tokens = ArDriveTheme.of(tester.element(find.byType(Scaffold)))
+        .themeData
+        .colorTokens;
+    final rings = tester
+        .widgetList<Container>(find.byType(Container))
+        .map((c) => c.decoration)
+        .whereType<BoxDecoration>()
+        .where((d) => d.shape == BoxShape.circle && d.border != null)
+        .map((d) => (d.border! as Border).top.color)
+        .toList();
+
+    expect(rings, contains(tokens.textLow));
+    expect(rings, isNot(contains(tokens.strokeHigh)));
+  });
 }

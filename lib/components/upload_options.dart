@@ -69,39 +69,44 @@ class _UploadOptionsState extends State<UploadOptions> {
         Semantics(
           button: true,
           expanded: _open,
-          child: ArDriveClickArea(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => setState(() => _open = !_open),
-              child: Row(
-                children: [
-                  (_open ? ArDriveIcons.carretDown : ArDriveIcons.carretRight)(
-                    size: 16,
-                    color: colorTokens.textMid,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.uploadOptions,
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textHigh,
+          child: ArDriveFocusable(
+            onActivate: () => setState(() => _open = !_open),
+            child: ArDriveClickArea(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _open = !_open),
+                child: Row(
+                  children: [
+                    (_open
+                        ? ArDriveIcons.carretDown
+                        : ArDriveIcons.carretRight)(
+                      size: 16,
+                      color: colorTokens.textMid,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Open, the options themselves say what is set.
-                  if (!_open)
-                    Expanded(
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          for (var i = 0; i < summary.length; i++) ...[
-                            if (i > 0) separator(),
-                            Text(summary[i], style: summaryStyle),
-                          ],
-                        ],
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.uploadOptions,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
                       ),
                     ),
-                ],
+                    const SizedBox(width: 12),
+                    // Open, the options themselves say what is set.
+                    if (!_open)
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            for (var i = 0; i < summary.length; i++) ...[
+                              if (i > 0) separator(),
+                              Text(summary[i], style: summaryStyle),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

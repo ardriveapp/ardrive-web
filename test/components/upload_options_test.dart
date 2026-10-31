@@ -1,6 +1,7 @@
 import 'package:ardrive/components/upload_options.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,5 +85,17 @@ void main() {
     await tester.pump();
 
     expect(find.text('Upload with thumbnails'), findsNothing);
+  });
+
+  testWidgets('opens from the keyboard: Tab reaches it, Enter opens',
+      (tester) async {
+    await pump(tester);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(find.text('license field'), findsOneWidget);
   });
 }
