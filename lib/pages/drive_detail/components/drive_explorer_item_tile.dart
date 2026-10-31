@@ -353,7 +353,7 @@ ArDriveIcon getIconForContentType(
       color: color,
     );
   } else if (contentType == 'drive') {
-    return ArDriveIcons.publicDrive(
+    return ArDriveIcons.drive(
       size: size,
       color: color,
     );

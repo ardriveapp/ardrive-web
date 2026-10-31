@@ -474,21 +474,33 @@ class ArDriveIcons {
         color: color,
       );
 
-  /// A drive is an archive box (things kept for good) with a badge for its
-  /// kind: a lock for private, a globe for public, people for shared. The
-  /// database cylinder it was read as "database" and nothing else.
+  /// A drive, in a list of them: one plain archive box whatever its kind,
+  /// as Google Drive draws every drive alike. Its kind is marked only where
+  /// it matters, by a lock after a private drive's name.
+  static ArDriveIcon drive({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.drive,
+        size: size,
+        color: color,
+      );
+
+  /// Private, said with a plain lock: the mark after a private drive's name,
+  /// and the Private heading.
   static ArDriveIcon privateDrive({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.drive_private,
+        icon: Icons.lock_outline,
         size: size,
         color: color,
       );
+
+  /// Public, said with a plain globe.
   static ArDriveIcon publicDrive({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.drive_public,
+        icon: Icons.public,
         size: size,
         color: color,
       );
+
+  /// Shared with me, said with plain people.
   static ArDriveIcon sharedDrive({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.drive_shared,
+        icon: Icons.people_outline,
         size: size,
         color: color,
       );

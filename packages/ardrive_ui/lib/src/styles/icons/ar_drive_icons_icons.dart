@@ -214,11 +214,7 @@ class ArDriveIconsData {
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 
-  /// A drive: an archive box, kept for good, with a badge for its kind.
-  static const IconData drive_public =
+  /// A drive: an archive box, things kept for good.
+  static const IconData drive =
       IconData(0xe881, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData drive_private =
-      IconData(0xe882, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData drive_shared =
-      IconData(0xe883, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }
