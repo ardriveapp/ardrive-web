@@ -79,12 +79,13 @@ class DriveScopeRail extends StatelessWidget {
     switch (scope) {
       case DriveScope.all:
         return Icons.home_outlined;
+      // The drive glyphs, so the sidebar and the rows under it agree.
       case DriveScope.public:
-        return Icons.public_outlined;
+        return ArDriveIconsData.drive_public;
       case DriveScope.private:
-        return Icons.lock_outline;
+        return ArDriveIconsData.drive_private;
       case DriveScope.sharedWithMe:
-        return Icons.swap_horiz_outlined;
+        return ArDriveIconsData.drive_shared;
       case DriveScope.hidden:
         return Icons.visibility_off_outlined;
     }
