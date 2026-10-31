@@ -130,6 +130,28 @@ void main() {
     expect(history.single.errorMessages, {'drive-a': 'the gateway said no'});
   });
 
+  test('a run over some drives comes back with how many', () async {
+    await repository.recordSyncRun(SyncRun(
+      startedAt: DateTime(2026, 8, 31, 9, 15),
+      took: const Duration(seconds: 8),
+      trigger: SyncTrigger.userInitiated,
+      outcome: SyncRunOutcome.completed,
+      scopedDriveCount: 3,
+    ));
+
+    final history = await repository.loadSyncHistory();
+
+    expect(history.single.scopedDriveCount, 3);
+  });
+
+  test('a run written before the count existed reads as every drive', () async {
+    await repository.recordSyncRun(run(startedAt: DateTime(2026, 8, 31)));
+
+    final history = await repository.loadSyncHistory();
+
+    expect(history.single.scopedDriveCount, isNull);
+  });
+
   test('the most recent run is first', () async {
     for (var minute = 0; minute < 3; minute++) {
       await repository.recordSyncRun(

@@ -30,6 +30,7 @@ class ArDriveNotice extends StatelessWidget {
     this.onDismiss,
     this.dismissLabel = 'Dismiss',
     this.layout = ArDriveNoticeLayout.inline,
+    this.leading,
   }) : assert(message != null || content != null,
             'A notice needs a message or content');
 
@@ -55,6 +56,12 @@ class ArDriveNotice extends StatelessWidget {
   final String dismissLabel;
 
   final ArDriveNoticeLayout layout;
+
+  /// Shown in place of the type's icon, for a notice whose state is still
+  /// changing, such as a small [ArDriveSpinner] while what it reports runs.
+  /// Keep it to 20 px, the icon's size, so the text does not move when it is
+  /// swapped back for the icon.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +157,14 @@ class ArDriveNotice extends StatelessWidget {
             // Lines the icon up with the first line of text.
             Padding(
               padding: const EdgeInsets.only(top: 1),
-              child: ExcludeSemantics(child: icon),
+              child: ExcludeSemantics(
+                child: leading == null
+                    ? icon
+                    : SizedBox.square(
+                        dimension: 20,
+                        child: Center(child: leading),
+                      ),
+              ),
             ),
             const SizedBox(width: ArDriveSpacing.sm),
             Expanded(

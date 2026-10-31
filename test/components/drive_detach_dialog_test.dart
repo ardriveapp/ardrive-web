@@ -42,6 +42,7 @@ void main() {
     // for the whole of a real session until it does - and forever when it
     // cannot. Every one of these expectations must hold in that state.
     when(() => syncCubit.drivesWithUnreadChanges).thenReturn(const {});
+    when(() => syncCubit.stoppedDriveIds).thenReturn(const {});
     when(() => syncCubit.unreadChangesStream)
         .thenAnswer((_) => const Stream<Set<String>>.empty());
     whenListen(drivesCubit, const Stream<DrivesState>.empty(),

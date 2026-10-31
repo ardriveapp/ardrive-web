@@ -657,6 +657,70 @@ void main() {
       find.widgetWithText(ArDriveButtonNew, 'Sync 2 drives'),
       findsOneWidget,
     );
+
+    // The app's system notice, with a quiet action: the drives page's split
+    // button is the one sync control that gets weight, so this is never a
+    // red primary.
+    final notice = tester.widget<ArDriveNotice>(find.byType(ArDriveNotice));
+    expect(notice.type, ArDriveNoticeType.info);
+    final button = tester.widget<ArDriveButtonNew>(
+      find.widgetWithText(ArDriveButtonNew, 'Sync 2 drives'),
+    );
+    expect(button.variant, isNot(ButtonVariant.primary));
+  });
+
+  testWidgets('the dialog shows a spinner while the drives sync',
+      (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 6,
+      unsearchedDriveIds: ['b', 'c', 'd', 'e'],
+    ));
+    whenListen(syncCubit, const Stream<SyncState>.empty(),
+        initialState: SyncInProgress());
+    when(() => syncCubit.syncingDriveId).thenReturn('c');
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await enter(tester);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(
+      find.descendant(
+        of: find.byType(ArDriveNotice),
+        matching: find.byType(ArDriveSpinner),
+      ),
+      findsOneWidget,
+    );
+    // Nothing to press while they sync.
+    expect(
+      find.descendant(
+        of: find.byType(ArDriveNotice),
+        matching: find.byType(ArDriveButtonNew),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('the link that starts a sync is announced as a button',
+      (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 3,
+      unsearchedDriveIds: ['b', 'c'],
+    ));
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+
+    // It starts a sync rather than going anywhere (README, Links).
+    final node = tester.widget<Semantics>(find.ancestor(
+      of: find.text('Sync the other 2'),
+      matching: find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == 'Sync the other 2',
+      ),
+    ));
+    expect(node.properties.button, isTrue);
+    expect(node.properties.link, isNot(isTrue));
   });
 
   testWidgets('a sync that could not start offers to try again',

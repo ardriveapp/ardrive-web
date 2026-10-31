@@ -35,6 +35,7 @@ import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/sync/presentation/sync_failure_toast.dart';
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
 import 'package:ardrive/search/search_scope.dart';
 import 'package:ardrive/services/services.dart';
@@ -47,7 +48,6 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:ardrive/upload_entry/presentation/start_upload.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -939,19 +939,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       ),
                     ),
                   ],
-                  child: BlocListener<SyncCubit, SyncState>(
-                    listener: (context, state) {
-                      if (state is SyncFailure) {
-                        showArDriveToast(
-                          ScaffoldMessenger.of(context),
-                          text: appLocalizationsOf(context).failedToSyncDrive,
-                          type: ArDriveStatusType.error,
-                          actionLabel:
-                              appLocalizationsOf(context).tryAgainEmphasized,
-                          onAction: () => context.read<SyncCubit>().startSync(),
-                        );
-                      }
-                    },
+                  // A failed sync is reported once, at the top bar's sync
+                  // indicator, with a Try again that repeats what failed. A
+                  // toast here said the same failure a second time, in other
+                  // words, and its Try again synced every drive. Only a
+                  // publication, whose top bar has no indicator, gets one.
+                  child: SyncFailureToastListener(
+                    enabled: PublicationMode.isOn,
                     child: ArNSResumeScope(
                       child: SearchScope(child: navigator),
                     ),

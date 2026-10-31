@@ -1,15 +1,14 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
+import 'package:ardrive/components/list_page/list_page_state_card.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -177,31 +176,15 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
   }
 }
 
+/// The same wait as the drives list's "Loading your drives", drawn the same
+/// way: they follow each other for a new account.
 class _SettingUpFirstDrive extends StatelessWidget {
   const _SettingUpFirstDrive();
 
   @override
-  Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SyncLoadingIndicator(size: 96),
-          const SizedBox(height: ArDriveSpacing.md),
-          Text(
-            appLocalizationsOf(context).firstDriveSettingUp,
-            style: typography.heading5(
-              color: colorTokens.textHigh,
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ListPageWaiting(
+        title: appLocalizationsOf(context).firstDriveSettingUp,
+      );
 }
 
 /// Makes a private "My files" the way Create new private drive does.

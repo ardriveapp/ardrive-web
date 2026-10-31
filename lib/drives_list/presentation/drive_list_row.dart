@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/components/drive_fingerprint.dart';
 import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
@@ -417,7 +419,16 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
+  /// The sync cell. A time ages while the page stays open: "Synced just now"
+  /// read the same an hour later, because nothing rebuilt the row.
   Widget _syncState(BuildContext context) {
+    if (drive.lastSyncedAt == null) {
+      return _syncStateNow(context);
+    }
+    return _EveryMinute(builder: _syncStateNow);
+  }
+
+  Widget _syncStateNow(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -469,6 +480,17 @@ class DriveListRow extends StatelessWidget {
             ),
           ),
         ],
+      );
+    }
+
+    // A sync stopped part way through this drive: a warning, in the warning
+    // status (grey text, the triangle), because what the row says about the
+    // drive's contents is only part of it.
+    if (drive.lastSyncStopped) {
+      return ArDriveStatusText(
+        text: formatDriveSyncState(context, drive),
+        type: ArDriveStatusType.warning,
+        maxLines: 1,
       );
     }
 
@@ -640,6 +662,12 @@ String formatDriveSyncState(
     return appLocalizationsOf(context).driveSyncFailed;
   }
 
+  // Ahead of the timestamp for the same reason: the time is of a sync before
+  // the one that stopped, and the figures beside it are of a half-read drive.
+  if (drive.lastSyncStopped) {
+    return appLocalizationsOf(context).driveSyncStopped;
+  }
+
   final lastSyncedAt = drive.lastSyncedAt;
 
   if (lastSyncedAt == null && drive.hasUnreadChanges) {
@@ -684,4 +712,40 @@ String _syncedAgo(BuildContext context, DateTime lastSyncedAt, DateTime? now) {
 
   return appLocalizationsOf(context)
       .driveSyncedOnDate(formatDate(lastSyncedAt));
+}
+
+/// Rebuilds [builder] every half minute while it is on screen, so a relative
+/// time such as "Synced just now" moves on to "Synced 1 minute ago" without
+/// anything else changing.
+class _EveryMinute extends StatefulWidget {
+  const _EveryMinute({required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  State<_EveryMinute> createState() => _EveryMinuteState();
+}
+
+class _EveryMinuteState extends State<_EveryMinute> {
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Half a minute, so the minute a time reads is never more than half a
+    // minute behind the clock.
+    _timer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => setState(() {}),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context);
 }

@@ -165,7 +165,7 @@ void main() {
           skippedEntityCount: 2,
           firstReadDriveCount: 2,
         )),
-        'Synced 2 drives (29 items) · 2 updates could not be read',
+        'Synced 2 drives (29 items) · 2 items could not be read',
       );
     });
 
@@ -182,14 +182,14 @@ void main() {
     // arrived would report a clean sync over a drive with holes in it.
     expect(
       summaryOf(finished(entitiesSynced: 12, skippedEntityCount: 2)),
-      '12 items changed · 2 updates could not be read',
+      '12 items changed · 2 items could not be read',
     );
   });
 
   test('one item that could not be read is not "1 items"', () {
     expect(
       summaryOf(finished(entitiesSynced: 12, skippedEntityCount: 1)),
-      '12 items changed · 1 update could not be read',
+      '12 items changed · 1 item could not be read',
     );
   });
 
@@ -198,7 +198,7 @@ void main() {
     // what it could not read is exactly what is missing.
     expect(
       summaryOf(finished(skippedEntityCount: 2)),
-      '2 updates could not be read',
+      '2 items could not be read',
     );
   });
 
@@ -211,8 +211,8 @@ void main() {
           partsOf(finished(entitiesSynced: 12, skippedEntityCount: 2));
 
       expect(parts.arrived, '12 items changed');
-      expect(parts.unreadable, '2 updates could not be read');
-      expect(parts.lines, ['12 items changed', '2 updates could not be read']);
+      expect(parts.unreadable, '2 items could not be read');
+      expect(parts.lines, ['12 items changed', '2 items could not be read']);
     });
 
     test('a clean sync has nothing unreadable to say', () {
@@ -227,7 +227,7 @@ void main() {
       final parts = partsOf(finished(skippedEntityCount: 2));
 
       expect(parts.arrived, isNull);
-      expect(parts.lines, ['2 updates could not be read']);
+      expect(parts.lines, ['2 items could not be read']);
     });
   });
 

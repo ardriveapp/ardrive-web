@@ -51,7 +51,10 @@ class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<void> {
 
 class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
   final Drive drive;
-  final FolderRevision rootFolderRevision;
+
+  /// Null for a drive a sync walked whose root folder's own revision was
+  /// never read: a ghost or skipped root.
+  final FolderRevision? rootFolderRevision;
   final FolderNode rootFolderTree;
 
   const FsEntryDriveInfoSuccess({
@@ -72,7 +75,7 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
         lastUpdated,
         dateCreated,
         metadataTxId,
-        rootFolderRevision,
+        rootFolderRevision ?? '',
         rootFolderTree,
       ];
 }

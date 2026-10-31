@@ -126,4 +126,37 @@ void main() {
     );
     expect(action.isDisabled, isTrue);
   });
+
+  testWidgets('a leading widget stands where the icon is, at its size',
+      (tester) async {
+    await tester.pumpWidget(wrap(const ArDriveNotice(
+      type: ArDriveNoticeType.info,
+      message: 'Syncing 2 drives',
+      leading: ArDriveSpinner(),
+    )));
+    await tester.pump();
+
+    expect(find.byType(ArDriveSpinner), findsOneWidget);
+    expect(find.byType(ArDriveIcon), findsNothing,
+        reason: 'the leading widget replaces the icon');
+    // The icon's 20 px slot, so the text does not move when it is swapped
+    // back for the icon.
+    final slot = find.ancestor(
+      of: find.byType(ArDriveSpinner),
+      matching: find.byWidgetPredicate(
+        (w) => w is SizedBox && w.width == 20 && w.height == 20,
+      ),
+    );
+    expect(slot, findsOneWidget);
+  });
+
+  testWidgets('without one it shows the type\'s icon', (tester) async {
+    await tester.pumpWidget(wrap(const ArDriveNotice(
+      type: ArDriveNoticeType.info,
+      message: 'Searched 1 of 3 drives',
+    )));
+
+    expect(find.byType(ArDriveIcon), findsOneWidget);
+    expect(find.byType(ArDriveSpinner), findsNothing);
+  });
 }

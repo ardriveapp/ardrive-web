@@ -22,6 +22,7 @@ class DriveListItem extends Equatable {
     required this.lastSyncedAt,
     required this.isSyncing,
     required this.lastSyncFailed,
+    this.lastSyncStopped = false,
     this.isLocked = false,
   });
 
@@ -45,6 +46,7 @@ class DriveListItem extends Equatable {
         lastSyncedAt = null,
         isSyncing = false,
         lastSyncFailed = false,
+        lastSyncStopped = false,
         isLocked = true;
 
   final String id;
@@ -121,6 +123,13 @@ class DriveListItem extends Equatable {
   /// indistinguishable from one nobody had opened yet.
   final bool lastSyncFailed;
 
+  /// Whether the last sync that opened this drive stopped before it had read
+  /// it to the end: it was cancelled, or ended with an error, part way.
+  ///
+  /// The drive's figures are then a part of it, stated as if they were the
+  /// whole, so the row says the sync stopped until a sync reads it to the end.
+  final bool lastSyncStopped;
+
   final bool isLocked;
 
   @override
@@ -138,6 +147,7 @@ class DriveListItem extends Equatable {
         lastSyncedAt,
         isSyncing,
         lastSyncFailed,
+        lastSyncStopped,
         isLocked,
       ];
 }

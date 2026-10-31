@@ -92,8 +92,47 @@ class SyncFailure extends SyncState {
   /// not a fresh few seconds every time something rebuilds the bar.
   final DateTime failedAt;
 
-  SyncFailure({this.error, this.stackTrace, DateTime? failedAt})
-      : failedAt = failedAt ?? DateTime.now();
+  /// What could not be read: the drive list, or the drives' contents after
+  /// the list was read. They are reported differently, because "Drives could
+  /// not be loaded" over a list of drives that loaded is untrue.
+  final SyncFailureKind kind;
+
+  /// Whether what failed was a drive-list refresh on its own, the one
+  /// `syncMetadataOnly` makes, rather than a sync of drives.
+  final bool wasDriveListRefresh;
+
+  /// The drives the failed sync covered, when it covered some rather than
+  /// all of them, so Try again runs over the same drives and no others.
+  final List<String>? driveIds;
+
+  /// The drive a single-drive sync was for, and its name when it was known.
+  final String? singleDriveId;
+  final String? driveName;
+
+  /// Whether the failed sync was a full resync, so Try again is one too.
+  final bool deep;
+
+  SyncFailure({
+    this.error,
+    this.stackTrace,
+    DateTime? failedAt,
+    this.kind = SyncFailureKind.driveList,
+    this.wasDriveListRefresh = false,
+    this.driveIds,
+    this.singleDriveId,
+    this.driveName,
+    this.deep = false,
+  }) : failedAt = failedAt ?? DateTime.now();
+}
+
+/// Which part of a sync failed. See [SyncFailure.kind].
+enum SyncFailureKind {
+  /// The drive list could not be read, so no drive was synced.
+  driveList,
+
+  /// The drive list was read, and reading the drives' contents stopped with
+  /// an error.
+  sync,
 }
 
 /// The ArConnect wallet the session was signed in with is no longer the one
@@ -128,6 +167,28 @@ class SyncCancelled extends SyncState {
   @override
   List<Object> get props =>
       [drivesCompleted, totalDrives, cancelledAt, trigger];
+}
+
+/// A cancelled sync after its announcement: the cubit is at rest, as at
+/// [SyncIdle], and the top bar still says the last sync was stopped until the
+/// next one starts or the reader dismisses it.
+///
+/// It extends [SyncIdle] for the reason [SyncComplete] does: the explorer's
+/// refresh and the shared-file handover wait on `is SyncIdle`, and returning to
+/// a plain idle state was how a cancelled sync released them.
+class SyncStopped extends SyncIdle {
+  SyncStopped({
+    required this.drivesCompleted,
+    required this.totalDrives,
+    required this.stoppedAt,
+  });
+
+  final int drivesCompleted;
+  final int totalDrives;
+  final DateTime stoppedAt;
+
+  @override
+  List<Object> get props => [drivesCompleted, totalDrives, stoppedAt];
 }
 
 class SyncCompleteWithErrors extends SyncState {

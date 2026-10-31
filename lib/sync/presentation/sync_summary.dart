@@ -3,9 +3,10 @@ import 'package:clock/clock.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// How long a finished sync's summary stays on screen before it takes itself
-/// away. Long enough to read a line, short enough that nobody has to dismiss
-/// it: neither surface asks for a click.
-const Duration syncSummaryDuration = Duration(seconds: 4);
+/// away: long enough to read (WCAG 2.2.1), short enough that nobody has to
+/// dismiss a clean result. A failure or a warning stays on the indicator after
+/// this; a clean result goes with it.
+const Duration syncSummaryDuration = Duration(seconds: 10);
 
 /// The separator between the two halves of a summary that has both - what
 /// arrived, and what could not be read.

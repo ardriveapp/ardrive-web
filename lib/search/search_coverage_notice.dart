@@ -35,7 +35,6 @@ class SearchCoverageNotice extends StatelessWidget {
         }
 
         final localizations = appLocalizationsOf(context);
-        final typography = ArDriveTypographyNew.of(context);
         final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
         final unsearched = coverage.unsearchedDriveIds.length;
         final noneSearched = coverage.searchedDrives == 0;
@@ -122,65 +121,31 @@ class SearchCoverageNotice extends StatelessWidget {
           );
         }
 
+        // The app's system notice: info, or error once a sync has failed. Its
+        // action is the notice's own quiet button, reachable by Tab, never a
+        // red primary - the drives page's split button is the one sync control
+        // that gets weight. While the drives sync, a spinner stands where the
+        // icon is and there is nothing to press.
         return Semantics(
           // Read out when it changes, so a screen reader hears that a sync
           // started, finished or failed without leaving the field.
           liveRegion: true,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color:
-                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
-              border: Border.all(
-                color: failed ? colorTokens.strokeRed : colorTokens.strokeLow,
-              ),
-            ),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              alignment: WrapAlignment.spaceBetween,
-              spacing: 16,
-              runSpacing: 12,
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: icon,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          '$lead $status',
-                          style: typography.paragraphNormal(
-                            color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.book,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!syncing)
-                  ArDriveButtonNew(
-                    text: failed
-                        ? localizations.tryAgain
-                        : localizations.searchSyncDrives(unsearched),
-                    typography: typography,
-                    variant: ButtonVariant.primary,
-                    size: ArDriveButtonSize.compact,
-                    // Only one sync runs at a time; this one can start when
-                    // the other ends.
-                    isDisabled:
-                        state.syncStatus == SearchSyncStatus.otherSyncRunning,
-                    onPressed: sync,
-                  ),
-              ],
-            ),
+          child: ArDriveNotice(
+            type: failed ? ArDriveNoticeType.error : ArDriveNoticeType.info,
+            message: '$lead $status',
+            leading: syncing
+                ? ArDriveSpinner(color: colorTokens.statusInfoFg)
+                : null,
+            actionLabel: syncing
+                ? null
+                : failed
+                    ? localizations.tryAgain
+                    : localizations.searchSyncDrives(unsearched),
+            // Only one sync runs at a time; this one can start when the other
+            // ends, so the action is shown but cannot be pressed.
+            onAction: state.syncStatus == SearchSyncStatus.otherSyncRunning
+                ? null
+                : sync,
           ),
         );
       },
@@ -254,6 +219,9 @@ class _CompactNotice extends StatelessWidget {
 /// A link that acts without taking focus from the search field, so the
 /// dropdown it sits in stays open. A keyboard reaches the same action as a
 /// button in the search dialog, which Enter opens.
+///
+/// Announced as a button: it starts a sync rather than going anywhere
+/// (README, Links).
 class _NoticeLink extends StatelessWidget {
   const _NoticeLink({
     required this.label,
@@ -270,7 +238,7 @@ class _NoticeLink extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Semantics(
-      link: true,
+      button: true,
       label: label,
       onTap: onTap,
       excludeSemantics: true,

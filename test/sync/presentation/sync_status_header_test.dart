@@ -279,7 +279,8 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Reading 340 files...'), findsOneWidget);
+      // Updates, not files: each fetch is a revision's metadata.
+      expect(find.text('Read 340 updates'), findsOneWidget);
       expect(find.text('Reading the drive history...'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
@@ -302,7 +303,7 @@ void main() {
 
       // Nothing has come back yet, so there is no count worth showing and
       // the phase name stands on its own rather than reading "Reading 0".
-      expect(find.text('Reading 0 files...'), findsNothing);
+      expect(find.text('Read 0 updates'), findsNothing);
 
       for (final done in [1, 2, 3]) {
         progressController.add(
@@ -315,7 +316,10 @@ void main() {
         // The overlay shows what changed on the frame after.
         await tester.pump();
 
-        expect(find.text('Reading $done files...'), findsOneWidget);
+        expect(
+          find.text(done == 1 ? 'Read 1 update' : 'Read $done updates'),
+          findsOneWidget,
+        );
       }
 
       await tester.pumpWidget(const SizedBox());
@@ -353,7 +357,8 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text("Syncing 'Family Photos'..."), findsOneWidget);
+      // The name bare, with no quotes and no ellipsis.
+      expect(find.text('Syncing Family Photos'), findsOneWidget);
       expect(find.text('Syncing drive'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
@@ -371,7 +376,7 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text("Syncing 'Shared Reports'..."), findsOneWidget);
+      expect(find.text('Syncing Shared Reports'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -389,6 +394,35 @@ void main() {
       await openMenu(tester);
 
       expect(find.text('Syncing drive'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a sync of some drives says how many, not all of them',
+        (tester) async {
+      when(() => syncCubit.syncingDriveIds)
+          .thenReturn({'drive-a', 'drive-b', 'drive-c'});
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      await startSyncing(tester);
+      await openMenu(tester);
+
+      expect(find.text('Syncing 3 drives'), findsOneWidget);
+      expect(find.text('Syncing all drives'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a sync of one chosen drive names it', (tester) async {
+      when(() => syncCubit.syncingDriveIds).thenReturn({'drive-a'});
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      await startSyncing(tester);
+      await openMenu(tester);
+
+      expect(find.text('Syncing Family Photos'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -432,6 +466,8 @@ void main() {
       // the defect - a wait that does not count is what a hang looks like.
       // The reading is driven off the wall clock, which a widget test does not
       // advance, so the start time moves instead and the tick has to notice.
+      // Past a minute it is minutes and seconds, the way the sync history
+      // says how long a sync took: "97s" is not a number anybody reads.
       when(() => syncCubit.syncStartTime)
           .thenReturn(DateTime.now().subtract(const Duration(seconds: 97)));
       await tester.pump(const Duration(milliseconds: 1100));
@@ -439,7 +475,7 @@ void main() {
       // The overlay lets go of it on the frame after.
       await tester.pump();
       expect(find.text('42s elapsed'), findsNothing);
-      expect(find.text('97s elapsed'), findsOneWidget);
+      expect(find.text('1m 37s elapsed'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -538,7 +574,7 @@ void main() {
         // scale inside a fixed row loses the bottom third of every glyph
         // without a word from the framework - no stripe, no exception.
         final count = tester.renderObject<RenderBox>(
-          find.text('Reading 12,345 files...'),
+          find.text('Read 12,345 updates'),
         );
         expect(
           count.size.height,
@@ -658,6 +694,45 @@ void main() {
       await tester.pump();
       await openMenu(tester);
 
+      // Drives are listed, so it is not "Drives could not be loaded": they
+      // were. What failed is the check for new ones.
+      expect(
+        find.descendant(
+          of: find.byKey(syncStatusHeaderKey),
+          matching: find.text("Couldn't check for new drives"),
+        ),
+        findsOneWidget,
+      );
+      expect(
+          find.text('The drives shown are from this device.'), findsOneWidget);
+      expect(find.text('Drives could not be loaded'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('SyncFailure with no drives listed says they could not load',
+        (tester) async {
+      whenListen(
+        drivesCubit,
+        const Stream<DrivesState>.empty(),
+        initialState: DrivesLoadSuccess(
+          selectedDriveId: null,
+          userDrives: const [],
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      );
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncFailure(
+        failedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await openMenu(tester);
+
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
@@ -665,6 +740,63 @@ void main() {
         ),
         findsOneWidget,
       );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a sync that stopped on a drive is not a load failure',
+        (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncFailure(
+        kind: SyncFailureKind.sync,
+        singleDriveId: 'drive-a',
+        failedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await openMenu(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(syncStatusHeaderKey),
+          matching: find.text('Sync stopped with an error'),
+        ),
+        findsOneWidget,
+      );
+      // Named from the drive list when the failure carries no name.
+      expect(find.text('Family Photos was not fully synced.'), findsOneWidget);
+      expect(find.text('Drives could not be loaded'), findsNothing);
+      expect(find.text("Couldn't check for new drives"), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('every drive failing is a failure, not an incomplete sync',
+        (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncCompleteWithErrors(
+        failedDrives: 22,
+        totalDrives: 22,
+        failedDriveIds: const ['drive-a'],
+        errorMessages: const {},
+        completedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await openMenu(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(syncStatusHeaderKey),
+          matching: find.text('Your drives could not be synced'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Sync incomplete: errors detected'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -711,7 +843,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Sync cancelled'),
+          matching: find.text('Sync stopped'),
         ),
         findsOneWidget,
       );
@@ -729,7 +861,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('SyncComplete is announced, and then it is history',
+    testWidgets('a clean SyncComplete is readable for a while, then goes',
         (tester) async {
       await tester.pumpWidget(host());
       await tester.pump();
@@ -745,26 +877,99 @@ void main() {
       await tester.pump();
 
       expect(find.text('12 items changed'), findsOneWidget);
-
-      // A finished sync is not a running one, so it has nothing to add to the
-      // header, and nothing failed, so there is nothing to act on. The pill
-      // says it all; there is no menu to open, empty or otherwise.
-      expect(find.byType(ArDriveDropdown), findsNothing);
       await openMenu(tester);
 
-      expect(find.byKey(syncStatusHeaderKey), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(syncStatusHeaderKey),
+          matching: find.text('12 items changed'),
+        ),
+        findsOneWidget,
+      );
+      // A clean result is said as success.
+      final status = tester.widget<ArDriveStatusText>(find.descendant(
+        of: find.byKey(syncStatusHeaderKey),
+        matching: find.byType(ArDriveStatusText),
+      ));
+      expect(status.type, ArDriveStatusType.success);
+      expect(find.text('Dismiss'), findsOneWidget);
       expect(find.text('Your drives'), findsNothing);
 
-      // And once its few seconds are up it is history: nothing is running and
-      // nothing is waiting to be read, so the indicator goes, menu and all.
-      // This used to find the menu still here, because the glyph outlived
-      // the result until something else rebuilt the top bar.
+      // It needs nothing from the reader, so once its time is up the
+      // indicator goes back to idle, menu and all.
+      await tester.tapAt(const Offset(5, 500));
       await tester.pump(const Duration(seconds: 30));
-
-      // The overlay lets go of it on the frame after.
       await tester.pump();
       expect(find.byType(ArDriveDropdown), findsNothing);
-      expect(find.text('Your drives'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a result with holes in it stays, with a Try again',
+        (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncComplete(
+        entitiesSynced: 12,
+        skippedEntityCount: 3,
+        sequence: 2,
+        completedAt: DateTime.now(),
+        trigger: SyncTrigger.background,
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pump();
+
+      expect(find.byType(ArDriveDropdown), findsOneWidget);
+      await openMenu(tester);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a result with items it could not read is a warning',
+        (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncComplete(
+        entitiesSynced: 12,
+        skippedEntityCount: 3,
+        sequence: 1,
+        completedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        trigger: SyncTrigger.background,
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await openMenu(tester);
+
+      final status = tester.widget<ArDriveStatusText>(find.descendant(
+        of: find.byKey(syncStatusHeaderKey),
+        matching: find.byType(ArDriveStatusText),
+      ));
+      expect(status.type, ArDriveStatusType.warning);
+      expect(find.text('3 items could not be read'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a one-line header is as tall as its line', (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      stateController.add(SyncLoadingDrives());
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump();
+      await openMenu(tester);
+
+      // Its padding and one line, not a fixed 108.
+      final header = tester.getSize(find.byKey(syncStatusHeaderKey));
+      final line = tester.getSize(find.text('Loading your drives...'));
+      // Plus the 1px line under it.
+      expect(header.height, line.height + 2 * ArDriveSpacing.sm + 1);
 
       await tester.pumpWidget(const SizedBox());
     });

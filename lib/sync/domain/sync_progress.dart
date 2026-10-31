@@ -30,6 +30,7 @@ class SyncProgress extends LinearProgress {
     this.examinedDriveIds = const {},
     this.firstTimeSyncDriveCount = 0,
     this.skippedDriveCount = 0,
+    this.unchangedDriveIds = const {},
     this.isIndeterminate = false,
     this.metadataFetchesCompleted = 0,
     this.metadataFetchesTotal = 0,
@@ -133,6 +134,14 @@ class SyncProgress extends LinearProgress {
   /// in both of those cases nothing was skipped.
   final int skippedDriveCount;
 
+  /// The drives the activity probe confirmed unchanged and left out of this
+  /// sync, by id. Empty whenever [skippedDriveCount] is zero.
+  ///
+  /// They are as current as the drives this sync walked, so a sync that runs
+  /// to the end records its time for them too: without that, every drive the
+  /// probe skipped kept no sync time and its row read a bare "Synced".
+  final Set<String> unchangedDriveIds;
+
   /// Entity metadata bodies this sync has finished with, and how many it has
   /// asked for, counted across the whole sync rather than per drive or per
   /// batch.
@@ -198,6 +207,7 @@ class SyncProgress extends LinearProgress {
     Set<String>? examinedDriveIds,
     int? firstTimeSyncDriveCount,
     int? skippedDriveCount,
+    Set<String>? unchangedDriveIds,
     bool? isIndeterminate,
     int? metadataFetchesCompleted,
     int? metadataFetchesTotal,
@@ -226,6 +236,7 @@ class SyncProgress extends LinearProgress {
       firstTimeSyncDriveCount:
           firstTimeSyncDriveCount ?? this.firstTimeSyncDriveCount,
       skippedDriveCount: skippedDriveCount ?? this.skippedDriveCount,
+      unchangedDriveIds: unchangedDriveIds ?? this.unchangedDriveIds,
       isIndeterminate: isIndeterminate ?? this.isIndeterminate,
       metadataFetchesCompleted:
           metadataFetchesCompleted ?? this.metadataFetchesCompleted,

@@ -41,6 +41,7 @@ void main() {
     SyncTrigger trigger = SyncTrigger.background,
     SyncRunOutcome outcome = SyncRunOutcome.completed,
     String? driveName,
+    int? scopedDriveCount,
     int itemsFound = 0,
     int skippedEntityCount = 0,
     int failedDrives = 0,
@@ -53,6 +54,7 @@ void main() {
         trigger: trigger,
         outcome: outcome,
         driveName: driveName,
+        scopedDriveCount: scopedDriveCount,
         itemsFound: itemsFound,
         skippedEntityCount: skippedEntityCount,
         failedDrives: failedDrives,
@@ -138,7 +140,7 @@ void main() {
         find.text('12 minutes ago · automatic · took 8s'),
         findsOneWidget,
       );
-      expect(find.text('12 new items'), findsOneWidget);
+      expect(find.text('12 items changed'), findsOneWidget);
     });
 
     testWidgets('a sync that changed nothing still says so', (tester) async {
@@ -148,7 +150,7 @@ void main() {
 
       await pumpPanel(tester);
 
-      expect(find.text('Nothing new'), findsOneWidget);
+      expect(find.text('No changes'), findsOneWidget);
     });
 
     testWidgets('a sync of one drive is titled with the drive', (tester) async {
@@ -158,6 +160,32 @@ void main() {
 
       expect(find.text('Family Photos'), findsOneWidget);
       expect(find.text('All drives'), findsNothing);
+    });
+
+    testWidgets('a sync of some drives says how many, not all of them',
+        (tester) async {
+      historyIs([run(scopedDriveCount: 3, itemsFound: 4)]);
+
+      await pumpPanel(tester);
+
+      expect(find.text('3 drives'), findsOneWidget);
+      expect(find.text('All drives'), findsNothing);
+    });
+
+    testWidgets('a sync of one of several drives is singular', (tester) async {
+      historyIs([run(scopedDriveCount: 1)]);
+
+      await pumpPanel(tester);
+
+      expect(find.text('1 drive'), findsOneWidget);
+    });
+
+    testWidgets('one item is singular', (tester) async {
+      historyIs([run(itemsFound: 1)]);
+
+      await pumpPanel(tester);
+
+      expect(find.text('1 item changed'), findsOneWidget);
     });
 
     testWidgets('a sync the user asked for says so', (tester) async {
@@ -191,8 +219,24 @@ void main() {
 
       await pumpPanel(tester);
 
-      expect(find.text('12 new items'), findsOneWidget);
+      expect(find.text('12 items changed'), findsOneWidget);
       expect(find.text('3 items could not be read'), findsOneWidget);
+      // A warning, not a clean result: the title carries the warning status.
+      final title = tester.widget<ArDriveStatusText>(
+        find.ancestor(
+          of: find.text('All drives'),
+          matching: find.byType(ArDriveStatusText),
+        ),
+      );
+      expect(title.type, ArDriveStatusType.warning);
+    });
+
+    testWidgets('a clean run carries no status', (tester) async {
+      historyIs([run(itemsFound: 12)]);
+
+      await pumpPanel(tester);
+
+      expect(find.byType(ArDriveStatusText), findsNothing);
     });
   });
 
@@ -242,12 +286,36 @@ void main() {
 
       await pumpPanel(tester);
 
-      expect(find.text('5 new items'), findsOneWidget);
+      expect(find.text('5 items changed'), findsOneWidget);
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
+      // Behind Show details: raw error text is for support, not the line a
+      // reader acts on.
+      expect(find.text('the gateway said no'), findsNothing);
+      await tester.tap(find.text('Show details'));
+      await tester.pump();
       // Verbatim. A user reading this is a button away from sending the logs
       // beside it to support, and a paraphrase is not something support can
       // search for.
       expect(find.text('the gateway said no'), findsOneWidget);
+      expect(find.text('Hide details'), findsOneWidget);
+
+      await tester.tap(find.text('Hide details'));
+      await tester.pump();
+      expect(find.text('the gateway said no'), findsNothing);
+    });
+
+    testWidgets('a run with no message to show offers no details',
+        (tester) async {
+      historyIs([
+        run(
+          outcome: SyncRunOutcome.failed,
+          errorMessages: const {'': "Instance of 'minified:Xy'"},
+        )
+      ]);
+
+      await pumpPanel(tester);
+
+      expect(find.text('Show details'), findsNothing);
     });
 
     testWidgets('leaves out a message that says nothing', (tester) async {
@@ -269,6 +337,8 @@ void main() {
       ]);
 
       await pumpPanel(tester);
+      await tester.tap(find.text('Show details'));
+      await tester.pump();
 
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
       expect(find.text('the gateway said no'), findsOneWidget);
@@ -284,7 +354,7 @@ void main() {
       await pumpPanel(tester);
 
       expect(
-        find.text('This sync could not be done, so nothing was read.'),
+        find.text('This sync stopped with an error. Try syncing again.'),
         findsOneWidget,
       );
     });
@@ -306,13 +376,35 @@ void main() {
 
       await pumpPanel(tester);
 
+      // The error status is on the title, by its icon. The sentence that says
+      // what to do is plain text, not a paragraph of red.
+      final title = tester.widget<ArDriveStatusText>(
+        find.ancestor(
+          of: find.text('All drives'),
+          matching: find.byType(ArDriveStatusText),
+        ),
+      );
+      expect(title.type, ArDriveStatusType.error);
+
       final colorTokens = lightTheme().colorTokens;
       final line = tester.widget<Text>(
-        find.text('This sync could not be done, so nothing was read.'),
+        find.text('This sync stopped with an error. Try syncing again.'),
       );
+      expect(line.style?.color, colorTokens.textMid);
+    });
 
-      expect(line.style?.color, colorTokens.textRed);
-      expect(line.style?.color, isNot(colorTokens.textMid));
+    testWidgets('a stopped sync is a warning', (tester) async {
+      historyIs([run(outcome: SyncRunOutcome.cancelled)]);
+
+      await pumpPanel(tester);
+
+      final title = tester.widget<ArDriveStatusText>(
+        find.ancestor(
+          of: find.text('All drives'),
+          matching: find.byType(ArDriveStatusText),
+        ),
+      );
+      expect(title.type, ArDriveStatusType.warning);
     });
   });
 
@@ -411,7 +503,7 @@ void main() {
 
       expect(find.byType(SyncHistoryPanel), findsOneWidget);
       expect(find.text('All drives'), findsOneWidget);
-      expect(find.text('12 new items'), findsOneWidget);
+      expect(find.text('12 items changed'), findsOneWidget);
       // The record is the whole modal. Nothing from Help came with it - it is
       // no longer the sixth section of a page about support links.
       expect(find.text('Troubleshooting'), findsNothing);
@@ -469,7 +561,7 @@ void main() {
       expect(find.text('Troubleshooting'), findsOneWidget);
       expect(find.text('Sync history'), findsOneWidget);
       expect(find.byType(SyncHistoryPanel), findsNothing);
-      expect(find.text('12 new items'), findsNothing);
+      expect(find.text('12 items changed'), findsNothing);
       // The log export is still the modal's own action.
       expect(find.text('Download'), findsOneWidget);
 
@@ -482,7 +574,7 @@ void main() {
 
       // And following it lands on the record, drawn over Help.
       expect(find.byType(SyncHistoryPanel), findsOneWidget);
-      expect(find.text('12 new items'), findsOneWidget);
+      expect(find.text('12 items changed'), findsOneWidget);
     });
   });
 }

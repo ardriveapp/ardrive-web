@@ -42,6 +42,7 @@ class SyncRun {
     required this.trigger,
     required this.outcome,
     this.driveName,
+    this.scopedDriveCount,
     this.itemsFound = 0,
     this.skippedEntityCount = 0,
     this.failedDrives = 0,
@@ -63,6 +64,11 @@ class SyncRun {
   /// of every drive, which is what the two triggers above describe on their
   /// own.
   final String? driveName;
+
+  /// How many drives the sync was asked to cover, when it was some of them
+  /// rather than all: the ticked drives, the ones that failed, or the ones
+  /// that changed. Null for a sync of one named drive or of every drive.
+  final int? scopedDriveCount;
 
   /// Files and folders this sync wrote.
   final int itemsFound;
@@ -93,6 +99,7 @@ class SyncRun {
         'trigger': trigger.name,
         'outcome': outcome.name,
         if (driveName != null) 'driveName': driveName,
+        if (scopedDriveCount != null) 'scopedDrives': scopedDriveCount,
         'itemsFound': itemsFound,
         'skipped': skippedEntityCount,
         'failedDrives': failedDrives,
@@ -133,6 +140,8 @@ class SyncRun {
       trigger: trigger,
       outcome: outcome,
       driveName: stored['driveName'] is String ? stored['driveName'] : null,
+      scopedDriveCount:
+          stored['scopedDrives'] is int ? stored['scopedDrives'] : null,
       itemsFound: stored['itemsFound'] is int ? stored['itemsFound'] : 0,
       skippedEntityCount: stored['skipped'] is int ? stored['skipped'] : 0,
       failedDrives: stored['failedDrives'] is int ? stored['failedDrives'] : 0,
