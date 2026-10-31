@@ -187,12 +187,71 @@ void main() {
         'says plainly it can\'t be recovered, and that the recovery phrase '
         'alone doesn\'t open private files', (tester) async {
       await pump(tester, dialog());
-      expect(find.textContaining("We can't recover this password"),
+      expect(
+          find.text('It locks your private files. ArDrive can\'t recover it, '
+              'so keep it somewhere safe.'),
           findsOneWidget);
       expect(
-          find.text('Your recovery phrase restores your wallet. Your private '
-              'files also need this password.'),
+          find.text(
+              'Your recovery phrase doesn\'t open private files without it.'),
           findsOneWidget);
+    });
+
+    testWidgets('says nothing of a recovery phrase to an account without one',
+        (tester) async {
+      await pump(tester, dialog(fromSignUp: true, mnemonic: null));
+      expect(find.byKey(const Key('newPasswordRecoveryNote')), findsNothing);
+    });
+
+    testWidgets('fits a 390 by 844 phone, Continue showing without a scroll',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            // Above the navigator, as in the app: the dialog is a route.
+            builder: (context, child) => MultiBlocProvider(
+              providers: [
+                BlocProvider<LoginBloc>.value(value: loginBloc),
+                BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+              ],
+              child: child!,
+            ),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => showAnimatedDialog(context,
+                      content: dialog(), useRootNavigator: false),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('suggestPasswordButton')));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pumpAndSettle();
+
+      final scroll = tester.state<ScrollableState>(find
+          .descendant(
+              of: find.byType(SecureYourWalletWidget),
+              matching: find.byType(Scrollable))
+          .first);
+      expect(scroll.position.maxScrollExtent, 0,
+          reason: 'the modal must fit, not scroll');
+      expect(
+          tester
+              .getRect(find.widgetWithText(ArDriveButtonNew, 'Continue'))
+              .bottom,
+          lessThanOrEqualTo(844));
     });
 
     testWidgets('a short password is refused', (tester) async {
@@ -226,11 +285,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('suggestedPassphrase')), findsOneWidget);
       expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Suggest another'), findsOneWidget);
+      // The intro says it once; the suggestion doesn't say it again.
       expect(find.textContaining("ArDrive can't recover it"), findsOneWidget);
       expect(continueEnabled(tester), isTrue);
     });
 
-    group('one eye for a suggestion (the Chrome and Safari pattern)', () {
+    group('a suggestion, masked, with one eye for both fields', () {
       bool obscured(WidgetTester tester, String key) => tester
           .widget<EditableText>(find.descendant(
               of: find.byKey(Key(key)), matching: find.byType(EditableText)))
@@ -248,47 +309,96 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      testWidgets(
-          'a suggestion is shown in the fields, and only there; the eye hides '
-          'both; Copy copies it', (tester) async {
-        String? copied;
+      /// The clipboard, which takes the text unless told to refuse, as a
+      /// phone's browser can.
+      List<String> clipboard(WidgetTester tester, {bool refuses = false}) {
+        final copied = <String>[];
         tester.binding.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, (call) async {
           if (call.method == 'Clipboard.setData') {
-            copied = (call.arguments as Map)['text'] as String;
+            if (refuses) {
+              throw PlatformException(code: 'denied');
+            }
+            copied.add((call.arguments as Map)['text'] as String);
           }
           return null;
         });
         addTearDown(() => tester.binding.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, null));
+        return copied;
+      }
+
+      testWidgets(
+          'fills both fields masked; the eye shows and hides both; the card '
+          'never shows it', (tester) async {
         await pump(tester, dialog());
         expect(obscured(tester, 'signUpPassword'), isTrue);
 
         await suggest(tester);
         final phrase = text(tester, 'signUpPassword');
-        expect(obscured(tester, 'signUpPassword'), isFalse);
-        expect(obscured(tester, 'signUpConfirmPassword'), isFalse);
-        // The card doesn't repeat it.
+        expect(phrase, isNotEmpty);
+        expect(text(tester, 'signUpConfirmPassword'), phrase);
+        expect(obscured(tester, 'signUpPassword'), isTrue);
+        expect(obscured(tester, 'signUpConfirmPassword'), isTrue);
         expect(
             find.descendant(
                 of: find.byKey(const Key('suggestedPassphrase')),
                 matching: find.text(phrase)),
             findsNothing);
 
-        await tester.tap(find.text('Copy'));
-        expect(copied, phrase);
+        await tester.tap(find.byKey(const Key('signUpPasswordReveal')));
+        await tester.pump();
+        expect(obscured(tester, 'signUpPassword'), isFalse);
+        expect(obscured(tester, 'signUpConfirmPassword'), isFalse);
 
         await tester.tap(find.byKey(const Key('signUpPasswordReveal')));
         await tester.pump();
         expect(obscured(tester, 'signUpPassword'), isTrue);
         expect(obscured(tester, 'signUpConfirmPassword'), isTrue);
+
+        // Another suggestion stays masked too.
+        await tester.tap(find.text('Suggest another'));
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.pumpAndSettle();
+        expect(obscured(tester, 'signUpPassword'), isTrue);
+        expect(obscured(tester, 'signUpConfirmPassword'), isTrue);
       });
 
-      testWidgets('typing a password of one\'s own hides the fields again',
+      testWidgets('Copy copies it, masked, and says so', (tester) async {
+        final copied = clipboard(tester);
+        await pump(tester, dialog());
+        await suggest(tester);
+        final phrase = text(tester, 'signUpPassword');
+
+        await tester.tap(find.text('Copy'));
+        await tester.pump();
+        expect(copied, [phrase]);
+        expect(find.text('Copied!'), findsOneWidget);
+        expect(find.text("Couldn't copy"), findsNothing);
+
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.text('Copied!'), findsNothing);
+      });
+
+      testWidgets('Copy refused by the browser says so, never Copied',
+          (tester) async {
+        final copied = clipboard(tester, refuses: true);
+        await pump(tester, dialog());
+        await suggest(tester);
+
+        await tester.tap(find.text('Copy'));
+        await tester.pump();
+        expect(copied, isEmpty);
+        expect(find.text("Couldn't copy"), findsOneWidget);
+        expect(find.text('Copied!'), findsNothing);
+        await tester.pump(const Duration(seconds: 2));
+      });
+
+      testWidgets('typing a password of one\'s own drops the suggestion',
           (tester) async {
         await pump(tester, dialog());
         await suggest(tester);
-        expect(obscured(tester, 'signUpPassword'), isFalse);
 
         await tester.enterText(
             find.descendant(
@@ -300,6 +410,24 @@ void main() {
         expect(obscured(tester, 'signUpPassword'), isTrue);
         expect(obscured(tester, 'signUpConfirmPassword'), isTrue);
         expect(find.byKey(const Key('suggestedPassphrase')), findsNothing);
+      });
+
+      testWidgets('the text stops short of the eye', (tester) async {
+        await pump(tester, dialog());
+        await tester.tap(find.byKey(const Key('signUpPasswordReveal')));
+        await tester.enterText(
+            find.descendant(
+                of: find.byKey(const Key('signUpPassword')),
+                matching: find.byType(EditableText)),
+            'harbor coast ' * 8);
+        await tester.pump();
+
+        final input = tester.getRect(find.descendant(
+            of: find.byKey(const Key('signUpPassword')),
+            matching: find.byType(EditableText)));
+        final eye =
+            tester.getRect(find.byKey(const Key('signUpPasswordReveal')));
+        expect(eye.left - input.right, greaterThanOrEqualTo(ArDriveSpacing.xs));
       });
     });
 

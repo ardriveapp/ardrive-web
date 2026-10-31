@@ -3,6 +3,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/locked_drives/presentation/set_drive_password_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -142,37 +143,81 @@ void main() {
   });
 
   testWidgets(
-      'a suggestion is shown in both fields, not in the card; one eye hides '
-      'both; typing one\'s own hides them', (tester) async {
+      'a suggestion fills both fields masked; one eye shows and hides both; '
+      'typing one\'s own drops the suggestion', (tester) async {
     await open(tester);
     bool obscured(String key) =>
         tester.widget<EditableText>(field(key)).obscureText;
+    String text(String key) =>
+        tester.widget<EditableText>(field(key)).controller.text;
     expect(obscured('newPassword'), isTrue);
 
     await tester.tap(find.byKey(const Key('suggestPasswordButton')));
     await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)));
     await tester.pumpAndSettle();
-    final phrase =
-        tester.widget<EditableText>(field('newPassword')).controller.text;
-    expect(obscured('newPassword'), isFalse);
-    expect(obscured('confirmNewPassword'), isFalse);
+    final phrase = text('newPassword');
+    expect(phrase, isNotEmpty);
+    expect(text('confirmNewPassword'), phrase);
+    expect(obscured('newPassword'), isTrue);
+    expect(obscured('confirmNewPassword'), isTrue);
     expect(
         find.descendant(
             of: find.byKey(const Key('suggestedPassphrase')),
             matching: find.text(phrase)),
         findsNothing);
+    expect(find.textContaining("ArDrive can't recover it"), findsNothing);
+
+    await tester.tap(find.byKey(const Key('newPasswordReveal')));
+    await tester.pump();
+    expect(obscured('newPassword'), isFalse);
+    expect(obscured('confirmNewPassword'), isFalse);
 
     await tester.tap(find.byKey(const Key('newPasswordReveal')));
     await tester.pump();
     expect(obscured('newPassword'), isTrue);
     expect(obscured('confirmNewPassword'), isTrue);
 
-    await tester.tap(find.byKey(const Key('newPasswordReveal')));
-    await tester.pump();
     await tester.enterText(field('newPassword'), _strong);
     await tester.pump();
     expect(obscured('newPassword'), isTrue);
     expect(obscured('confirmNewPassword'), isTrue);
+    expect(find.byKey(const Key('suggestedPassphrase')), findsNothing);
   });
+
+  for (final refuses in [false, true]) {
+    testWidgets(
+        refuses
+            ? 'Copy refused by the browser says so, never Copied'
+            : 'Copy copies the suggestion and says so', (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          if (refuses) throw PlatformException(code: 'denied');
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+      await open(tester);
+      await tester.tap(find.byKey(const Key('suggestPasswordButton')));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pumpAndSettle();
+      final phrase =
+          tester.widget<EditableText>(field('newPassword')).controller.text;
+
+      await tester.tap(find.text('Copy'));
+      await tester.pump();
+      expect(copied, refuses ? isEmpty : [phrase]);
+      expect(find.text('Copied!'), refuses ? findsNothing : findsOneWidget);
+      expect(
+          find.text("Couldn't copy"), refuses ? findsOneWidget : findsNothing);
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.byKey(const Key('suggestedPassphraseCopyMessage')),
+          findsNothing);
+    });
+  }
 }

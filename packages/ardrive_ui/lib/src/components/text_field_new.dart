@@ -306,6 +306,13 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
   String? _errorMessage;
   String? _currentText;
 
+  static Widget? _withGap(Widget? suffix) => suffix == null
+      ? null
+      : Padding(
+          padding: const EdgeInsets.only(left: ArDriveSpacing.xs),
+          child: suffix,
+        );
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -392,7 +399,9 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
             decoration: InputDecoration(
               prefix: widget.prefix,
               prefixIcon: widget.prefixIcon,
-              suffix: widget.showObfuscationToggle
+              // A gap before the suffix, so the end of a long value and its
+              // caret don't run into it: an eye sat flush on the last letter.
+              suffix: _withGap(widget.showObfuscationToggle
                   ? GestureDetector(
                       onTap: () {
                         setState(() {
@@ -414,7 +423,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
                         ),
                       ),
                     )
-                  : widget.suffixIcon,
+                  : widget.suffixIcon),
               errorStyle: const TextStyle(height: 0),
               hintText: widget.hintText,
               hintStyle: widget.hintStyle ??

@@ -58,8 +58,8 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
   bool _confirmTouched = false;
 
   /// Whether both fields hide what they hold. One eye, on the password
-  /// field, controls both. A suggestion fills them in shown, as Chrome and
-  /// Safari do; typing a password of one's own hides them again.
+  /// field, controls both, and only it: a suggestion fills both fields
+  /// masked, as a phone's screen may be seen or recorded.
   bool _obscured = true;
 
   PasswordStrength? get _strength =>
@@ -80,7 +80,6 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
     setState(() {
       if (_suggestion != null && _password.text != _suggestion) {
         _suggestion = null;
-        _obscured = true;
       }
     });
     final valid = isValid;
@@ -94,10 +93,14 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
     final words = await loadPassphraseWords(DefaultAssetBundle.of(context));
     if (!mounted) return;
     final phrase = suggestPassphrase(words);
-    _password.text = phrase;
-    _confirm.text = phrase;
+    // The caret after it, not the whole of it selected.
+    final filled = TextEditingValue(
+      text: phrase,
+      selection: TextSelection.collapsed(offset: phrase.length),
+    );
+    _password.value = filled;
+    _confirm.value = filled;
     _suggestion = phrase;
-    _obscured = false;
     _confirmTouched = true;
     _changed();
   }
@@ -167,7 +170,7 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: ArDriveSpacing.xs),
           ArDriveTextFieldNew(
             key: const Key('newPassword'),
             controller: _password,
@@ -188,10 +191,10 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
             onChanged: (_) => _changed(),
           ),
           if (strength != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             PasswordStrengthMeter(strength: strength),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: ArDriveSpacing.sm),
           if (_suggestion == null)
             Align(
               alignment: Alignment.centerLeft,
@@ -210,7 +213,7 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
               phrase: _suggestion!,
               onAnother: widget.enabled ? _suggest : null,
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: ArDriveSpacing.md),
           Text(
             s.confirmPassword,
             style: type.paragraphNormal(
@@ -218,7 +221,7 @@ class NewPasswordFieldsState extends State<NewPasswordFields> {
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: ArDriveSpacing.xs),
           ArDriveTextFieldNew(
             key: const Key('confirmNewPassword'),
             controller: _confirm,
@@ -292,10 +295,14 @@ class PasswordStrengthMeter extends StatelessWidget {
   }
 }
 
-/// Under a suggested passphrase, which the fields show: save it, Copy, and
+/// Under a suggested passphrase, which the fields hold masked: Copy, and
 /// another suggestion. It is made on the device and kept nowhere; saving it
 /// is up to the user.
-class SuggestedPassphrase extends StatelessWidget {
+///
+/// Copy says whether it worked, as [ArDriveCopyField] does, in a bubble over
+/// the link: a phone's browser can refuse the write, and saying "Copied!"
+/// anyway would leave someone thinking a password they never saved is safe.
+class SuggestedPassphrase extends StatefulWidget {
   const SuggestedPassphrase({
     super.key,
     required this.phrase,
@@ -306,45 +313,117 @@ class SuggestedPassphrase extends StatelessWidget {
   final VoidCallback? onAnother;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+  State<SuggestedPassphrase> createState() => _SuggestedPassphraseState();
+}
+
+class _SuggestedPassphraseState extends State<SuggestedPassphrase> {
+  final _copyKey = GlobalKey();
+
+  /// Whether the last copy worked, while its message shows.
+  bool? _copied;
+  OverlayEntry? _message;
+
+  @override
+  void dispose() {
+    _removeMessage();
+    super.dispose();
+  }
+
+  void _removeMessage() {
+    if (_message?.mounted ?? false) _message!.remove();
+    _message = null;
+  }
+
+  Future<void> _copy() async {
+    // Asked for at once, inside the tap: a browser refuses a write that comes
+    // later. Then waited on, because it can refuse this one too.
+    final write = Clipboard.setData(ClipboardData(text: widget.phrase));
+
+    bool copied;
+    try {
+      await write;
+      copied = true;
+    } catch (_) {
+      copied = false;
+    }
+    if (!mounted) return;
+
+    // Tapped again while the last answer still shows: a retry after a refusal
+    // that worked says so.
+    if (_message != null) {
+      if (copied != _copied) {
+        _copied = copied;
+        _message!.markNeedsBuild();
+      }
+      return;
+    }
+
+    _copied = copied;
+    _message = _buildMessage();
+    Overlay.of(context).insert(_message!);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) _removeMessage();
+    });
+  }
+
+  OverlayEntry _buildMessage() {
+    final box = _copyKey.currentContext!.findRenderObject() as RenderBox;
+    final position = box.localToGlobal(Offset.zero);
     final type = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final s = appLocalizationsOf(context);
-    return Container(
-      key: const Key('suggestedPassphrase'),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.containerRaised,
-        border: Border.all(color: colors.strokeMid),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // The fields show the passphrase; this card doesn't repeat it.
-          Text(
-            s.newPasswordSaveIt,
-            style: type.paragraphSmall(color: colors.textMid),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 16,
-            children: [
-              ArDriveLink(
-                text: s.newPasswordCopy,
-                isAction: true,
-                onTap: () => Clipboard.setData(ClipboardData(text: phrase)),
-              ),
-              if (onAnother != null)
-                ArDriveLink(
-                  text: s.newPasswordSuggestAnother,
-                  isAction: true,
-                  onTap: onAnother!,
+
+    return OverlayEntry(
+      builder: (_) => Positioned(
+        left: position.dx - ArDriveSpacing.xxs,
+        top: position.dy - 40,
+        child: Material(
+          key: const Key('suggestedPassphraseCopyMessage'),
+          color: colors.containerL1,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: ArDriveSpacing.sm,
+              vertical: ArDriveSpacing.xxs,
+            ),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                _copied! ? s.copied : s.couldNotCopy,
+                style: type.paragraphNormal(
+                  color: _copied! ? null : colors.statusErrorFg,
                 ),
-            ],
+              ),
+            ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    return Wrap(
+      key: const Key('suggestedPassphrase'),
+      spacing: ArDriveSpacing.md,
+      runSpacing: ArDriveSpacing.xs,
+      children: [
+        KeyedSubtree(
+          key: _copyKey,
+          child: ArDriveLink(
+            text: s.newPasswordCopy,
+            isAction: true,
+            onTap: _copy,
+          ),
+        ),
+        if (widget.onAnother != null)
+          ArDriveLink(
+            text: s.newPasswordSuggestAnother,
+            isAction: true,
+            onTap: widget.onAnother!,
+          ),
+      ],
     );
   }
 }
