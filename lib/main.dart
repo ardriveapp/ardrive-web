@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/components/drive_fingerprint.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
@@ -584,6 +585,13 @@ class AppState extends State<App> {
             arnsWalletStore: context.read<ArNSWalletStore>(),
             arnsPendingActionStore: context.read<ArNSPendingActionStore>(),
             driveUnlocker: driveUnlocker,
+          ),
+        ),
+        RepositoryProvider(
+          // The purchases a signed-in account has loaded, for the session
+          // only: cleared on sign-out or when another wallet signs in.
+          create: (context) => BillingSessionCache(
+            authChanges: context.read<ArDriveAuth>().onAuthStateChanged(),
           ),
         ),
         RepositoryProvider(

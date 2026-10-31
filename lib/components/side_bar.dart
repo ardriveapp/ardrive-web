@@ -1131,7 +1131,8 @@ class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
               isSelected: state.selectedDriveId == drive.id &&
                   !context.watch<AppRouterDelegate>().showingNames &&
                   !context.watch<AppRouterDelegate>().showingWebPages &&
-                  !context.watch<AppRouterDelegate>().showingAccount,
+                  !context.watch<AppRouterDelegate>().showingAccount &&
+                  !context.watch<AppRouterDelegate>().showingBilling,
               // Hiding is something a reader does to their own drives, so a
               // drive shared with them is never drawn as hidden.
               isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,

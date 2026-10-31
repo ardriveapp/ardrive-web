@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
@@ -564,6 +565,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> logout({bool fromAnotherTab = false}) async {
+    // Signed Turbo headers belong to the account that signed them.
+    TurboSignatureHeadersManager.clearSession();
+
     // Nobody signed in and no account saved: nothing to sign out, and
     // nothing for the wipe or the other tabs to hear about. A Wander switch
     // during a sign-in that saved nothing lands here, as can a second

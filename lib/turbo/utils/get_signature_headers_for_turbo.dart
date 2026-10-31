@@ -1,4 +1,5 @@
 import 'package:arconnect/arconnect.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -11,6 +12,11 @@ class TurboSignatureHeadersManager {
   static TurboSignatureHeadersManager? _instance;
   Map<String, dynamic>? _cachedHeaders;
   String? _lastWalletAddress;
+
+  /// Bumped whenever the cache is cleared, so a signature that was still
+  /// being made at the time is not stored afterwards: it would put a signed
+  /// header back in memory after a sign-out.
+  int _generation = 0;
   final TabVisibilitySingleton _tabVisibility;
 
   TurboSignatureHeadersManager._({
@@ -26,6 +32,17 @@ class TurboSignatureHeadersManager {
     return _instance!;
   }
 
+  /// Forgets the signed headers, so the next read signs afresh. Called when
+  /// Turbo refuses them, and on sign-out.
+  void clearCache() {
+    _generation++;
+    _cachedHeaders = null;
+    _lastWalletAddress = null;
+  }
+
+  /// [clearCache] on the shared instance, if one was ever made.
+  static void clearSession() => _instance?.clearCache();
+
   /// Gets signature headers for Turbo uploads.
   /// Headers are cached in memory to avoid multiple sign requests.
   /// The cache is invalidated if the wallet address changes.
@@ -37,6 +54,8 @@ class TurboSignatureHeadersManager {
     if (wallet == null) {
       return {};
     }
+
+    final generation = _generation;
 
     try {
       // Get current wallet address
@@ -76,19 +95,23 @@ class TurboSignatureHeadersManager {
         },
       );
 
-      // Cache the headers and wallet address
-      _cachedHeaders = {
+      final headers = {
         'x-nonce': nonce,
         'x-signature': signature,
         'x-public-key': publicKey,
       };
-      _lastWalletAddress = currentAddress;
+
+      // Cache them, unless the cache was cleared while they were signed.
+      if (generation == _generation) {
+        _cachedHeaders = headers;
+        _lastWalletAddress = currentAddress;
+      }
 
       logger.d('Generated new signature headers for Turbo');
-      return _cachedHeaders!;
+      return headers;
     } catch (e, stacktrace) {
       logger.e('Error generating signature headers for Turbo', e, stacktrace);
-      throw Exception('Failed to generate signature headers: $e');
+      throw TurboSignatureException('Failed to generate signature headers: $e');
     }
   }
 }
