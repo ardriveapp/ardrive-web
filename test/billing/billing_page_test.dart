@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/billing/presentation/billing_sections.dart';
+import 'package:ardrive/billing/bloc/billing_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
@@ -17,6 +18,7 @@ import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -95,6 +97,15 @@ Map<String, dynamic> _crypto(String date) => {
       'blockHeight': 1,
     };
 
+Map<String, dynamic> _name(String date, int winc) => {
+      'type': 'arns',
+      'date': date,
+      'wincSpent': '$winc',
+      'name': 'ardrive',
+      'intent': 'Buy-Name',
+      'status': 'success',
+    };
+
 TurboPaymentsPage _page(List<Map<String, dynamic>> rows,
         {bool more = false, String? cursor}) =>
     TurboPaymentsPage(payments: rows, hasMore: more, cursor: cursor);
@@ -163,6 +174,8 @@ void main() {
     Size size = const Size(390, 1600),
     bool dark = false,
     bool saveThrows = false,
+    BigInt? ar,
+    bool arFails = false,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -200,6 +213,10 @@ void main() {
                   child: BillingSections(
                     solanaProvider: solanaProvider,
                     metaMask: metaMask,
+                    readArBalance: (address) async {
+                      if (arFails) throw Exception('gateway down');
+                      return ar ?? BigInt.zero;
+                    },
                     creditSharing: sharing ?? _FakeSharing(),
                     saveCsv: (name, bytes) async {
                       if (saveThrows) throw StateError('no');
@@ -309,7 +326,8 @@ void main() {
       ]);
       await pumpPage(
         tester,
-        user: _user(ar: BigInt.from(840000000000)),
+        user: _user(),
+        ar: BigInt.from(840000000000),
       );
 
       expect(find.byKey(const Key('billingArRow')), findsOneWidget);
@@ -339,12 +357,7 @@ void main() {
     testWidgets('an unknown row type still renders', (tester) async {
       historyIs([
         _page([
-          {
-            'type': 'arns',
-            'date': '2026-10-01T00:00:00.000Z',
-            'wincSpent': '5',
-            'name': 'ardrive',
-          },
+          {'type': 'something-new', 'date': '2026-10-01T00:00:00.000Z'},
           {'type': 'something-new'},
           {},
         ]),
@@ -353,7 +366,31 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Other'), findsNWidgets(3));
+    });
+
+    testWidgets('a name row says what it cost, in the middle grey, not green',
+        (tester) async {
+      historyIs([
+        _page([
+          _card('2026-10-12T10:00:00.000Z', 2500, 3),
+          _name('2026-10-01T00:00:00.000Z', 1500000000000),
+        ]),
+      ]);
+      await pumpPage(tester, user: _user());
+
+      expect(find.text('Name'), findsOneWidget);
       expect(find.text('ardrive'), findsOneWidget);
+      expect(find.text('-1.5000'), findsOneWidget);
+      expect(find.text('+1.5000'), findsNothing);
+      expect(find.text('Purchases'), findsOneWidget);
+
+      Color? colourOf(String text) =>
+          tester.widget<Text>(find.text(text)).style?.color;
+      final tokens = ArDriveTheme.of(tester.element(find.text('Name')))
+          .themeData
+          .colorTokens;
+      expect(colourOf('-1.5000'), tokens.textMid);
+      expect(colourOf('+3.0000'), tokens.statusSuccessFg);
     });
 
     testWidgets('an empty history says so and offers Add credits',
@@ -442,6 +479,253 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text("Couldn't save the CSV. Try again."), findsOneWidget);
     });
+  });
+
+  group('purchases edge cases', () {
+    testWidgets('a 404 on the purchases read says no purchases yet',
+        (tester) async {
+      when(() => payments.getPaymentHistoryPage(
+            wallet: any(named: 'wallet'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).thenThrow(ArDriveHTTPException(
+        retryAttempts: 0,
+        exception: Exception('not found'),
+        statusCode: 404,
+      ));
+      await pumpPage(tester, user: _user());
+
+      expect(find.text('No purchases yet'), findsOneWidget);
+      expect(
+          find.text("Couldn't load your purchases. Try again."), findsNothing);
+    });
+
+    testWidgets('a 500 is still an error', (tester) async {
+      when(() => payments.getPaymentHistoryPage(
+            wallet: any(named: 'wallet'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).thenThrow(ArDriveHTTPException(
+        retryAttempts: 0,
+        exception: Exception('boom'),
+        statusCode: 500,
+      ));
+      await pumpPage(tester, user: _user());
+      expect(find.text("Couldn't load your purchases. Try again."),
+          findsOneWidget);
+    });
+
+    testWidgets('a failed Load more keeps the rows and says so under them',
+        (tester) async {
+      var call = 0;
+      when(() => payments.getPaymentHistoryPage(
+            wallet: any(named: 'wallet'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).thenAnswer((_) async {
+        if (call++ == 0) {
+          return _page([_card('2026-10-12T10:00:00.000Z', 500, 1)],
+              more: true, cursor: 'c1');
+        }
+        throw Exception('offline');
+      });
+      await pumpPage(tester, user: _user());
+
+      await tester.ensureVisible(find.byKey(const Key('billingLoadMore')));
+      await tester.tap(find.byKey(const Key('billingLoadMore')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('\$5.00'), findsOneWidget);
+      expect(find.byKey(const Key('billingActionError')), findsOneWidget);
+      expect(find.text("Couldn't load your purchases. Try again."),
+          findsOneWidget);
+      expect(find.byKey(const Key('billingLoadMore')), findsOneWidget);
+      // Not the whole-list error.
+      expect(find.byKey(const Key('billingPurchasesError')), findsNothing);
+    });
+
+    testWidgets(
+        'a signing failure on a keyfile account is a load error, not a refusal',
+        (tester) async {
+      when(() => payments.getPaymentHistoryPage(
+            wallet: any(named: 'wallet'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).thenThrow(TurboSignatureException('could not sign'));
+      await pumpPage(tester, user: _user());
+
+      expect(find.text("Couldn't load your purchases. Try again."),
+          findsOneWidget);
+      expect(find.text("It wasn't approved. Try again."), findsNothing);
+    });
+
+    testWidgets('a CSV reads at most maxCsvPages more pages', (tester) async {
+      var calls = 0;
+      when(() => payments.getPaymentHistoryPage(
+            wallet: any(named: 'wallet'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).thenAnswer((_) async {
+        calls++;
+        return _page([_card('2026-10-12T10:00:00.000Z', 500, 1)],
+            more: true, cursor: 'c$calls');
+      });
+      await pumpPage(tester, user: _user());
+      expect(calls, 1);
+
+      await tester.ensureVisible(find.byKey(const Key('billingDownloadCsv')));
+      await tester.tap(find.byKey(const Key('billingDownloadCsv')));
+      await tester.pumpAndSettle();
+
+      expect(calls, 41);
+      expect(saved, hasLength(1));
+      expect(saved.single.$2.split('\r\n'), hasLength(42));
+      // There is still more: the page says so by keeping Load more.
+      expect(find.byKey(const Key('billingLoadMore')), findsOneWidget);
+    });
+  });
+
+  group('AR row', () {
+    testWidgets('a failed read says so on a keyfile account, never 0',
+        (tester) async {
+      await pumpPage(tester, user: _user(), arFails: true);
+      expect(find.byKey(const Key('billingArRow')), findsOneWidget);
+      expect(find.text("Couldn't load"), findsOneWidget);
+      expect(find.text('0.0000 AR'), findsNothing);
+    });
+
+    testWidgets('a failed read hides the row on a Phantom account',
+        (tester) async {
+      await pumpPage(tester,
+          user: _user(source: _solana),
+          solanaProvider: 'phantom',
+          arFails: true);
+      expect(find.byKey(const Key('billingArRow')), findsNothing);
+    });
+
+    testWidgets('a real 0 is shown on a keyfile account', (tester) async {
+      await pumpPage(tester, user: _user());
+      expect(find.text('0.0000 AR'), findsOneWidget);
+    });
+  });
+
+  group('balance split', () {
+    test('shared is never negative', () {
+      final view = BalanceView(
+        status: LoadStatus.ready,
+        own: _credit * BigInt.from(10),
+        effective: _credit * BigInt.from(8),
+      );
+      expect(view.shared, BigInt.zero);
+      expect(
+        BalanceView(
+          own: _credit * BigInt.from(10),
+          effective: _credit * BigInt.from(12),
+        ).shared,
+        _credit * BigInt.from(2),
+      );
+    });
+
+    testWidgets(
+        'credits given away leave no split line, and the figure is '
+        'what can be spent', (tester) async {
+      when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))
+          .thenAnswer((_) async => _details(own: 10, effective: 8));
+      await pumpPage(tester, user: _user());
+      expect(find.text('8.0000'), findsOneWidget);
+      expect(find.byKey(const Key('billingYoursAndShared')), findsNothing);
+    });
+  });
+
+  group('CSV', () {
+    test('names are text and cost negative credits', () {
+      final csv = purchasesCsv([
+        Purchase.fromJson(_name('2026-10-01T00:00:00.000Z', 1500000000000)),
+      ]).split('\r\n');
+      expect(
+          csv[1], '"2026-10-01T00:00:00.000Z","Name","ardrive","","-1.5",""');
+    });
+
+    test('text a spreadsheet would run as a formula is prefixed', () {
+      final csv = purchasesCsv([
+        Purchase.fromJson({
+          'type': 'fiat',
+          'date': '=NOW()',
+          'paymentAmount': 100,
+          'currencyType': 'usd',
+          'receiptId': '=HYPERLINK("http://x")',
+          'wincCredited': '1000000000000',
+        }),
+        Purchase.fromJson({
+          'type': 'crypto',
+          'tokenType': 'arweave',
+          'tokenQuantity': '1000000000000',
+          'transactionId': '+cmd',
+          'wincCredited': '1000000000000',
+        }),
+        Purchase.fromJson({
+          'type': 'arns',
+          'name': '-ardrive',
+          'wincSpent': '1500000000000',
+        }),
+        Purchase.fromJson({'type': 'x', 'name': '@me'}),
+      ]).split('\r\n');
+      expect(csv[1], contains('"\'=NOW()"'));
+      expect(csv[1], contains('"\'=HYPERLINK(""http://x"")"'));
+      expect(csv[2], contains('"\'+cmd"'));
+      expect(csv[3], contains('"\'-ardrive"'));
+      // Credits stay a number, negative for a name.
+      expect(csv[3], contains(',"-1.5",'));
+      expect(csv[4], contains('"\'@me"'));
+    });
+
+    test('numbers are not prefixed', () {
+      final csv = purchasesCsv([
+        Purchase.fromJson({
+          'type': 'fiat',
+          'date': '2026-10-12',
+          'paymentAmount': 100,
+          'currencyType': 'usd',
+          'receiptId': 'pi_1',
+          'wincCredited': '1000000000000',
+        }),
+      ]).split('\r\n');
+      expect(csv[1], '"2026-10-12","Card","1 USD","1","1","pi_1"');
+    });
+  });
+
+  group('token amounts', () {
+    // The smallest unit of each token, as Turbo sends them.
+    const decimals = {
+      'arweave': (12, 'AR'),
+      'ario': (6, 'ARIO'),
+      'base-ario': (6, 'ARIO'),
+      'solana': (9, 'SOL'),
+      'ethereum': (18, 'ETH'),
+      'base-eth': (18, 'ETH'),
+      'usdc': (6, 'USDC'),
+      'base-usdc': (6, 'USDC'),
+      'polygon-usdc': (6, 'USDC'),
+      'pol': (18, 'POL'),
+      'matic': (18, 'POL'),
+      'kyve': (6, 'KYVE'),
+    };
+    for (final entry in decimals.entries) {
+      test('${entry.key} has ${entry.value.$1} decimals', () {
+        final one = BigInt.from(10).pow(entry.value.$1);
+        Purchase row(BigInt quantity) => Purchase.fromJson({
+              'type': 'crypto',
+              'tokenType': entry.key,
+              'tokenQuantity': '$quantity',
+            });
+        expect(row(one).cryptoAmountText, '1 ${entry.value.$2}');
+        expect(
+            row(one ~/ BigInt.two).cryptoAmountText, '0.5 ${entry.value.$2}');
+        // The CSV keeps every digit.
+        expect(purchasesCsv([row(one + BigInt.one)]),
+            contains('"1.${'0' * (entry.value.$1 - 1)}1 ${entry.value.$2}"'));
+      });
+    }
   });
 
   group('Wander account', () {
@@ -562,7 +846,8 @@ void main() {
     testWidgets('shows AR when it is above 0', (tester) async {
       await pumpPage(
         tester,
-        user: _user(source: _solana, ar: BigInt.from(5) * _credit),
+        user: _user(source: _solana),
+        ar: BigInt.from(5) * _credit,
         solanaProvider: 'phantom',
       );
       expect(find.byKey(const Key('billingArRow')), findsOneWidget);

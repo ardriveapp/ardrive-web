@@ -87,6 +87,93 @@ void main() {
     });
   });
 
+  group('a refused signature', () {
+    ArDriveHTTPException refused(int code) => ArDriveHTTPException(
+          retryAttempts: 0,
+          exception: Exception('refused'),
+          statusCode: code,
+        );
+
+    ArDriveHTTPResponse ok() => ArDriveHTTPResponse(
+          data: jsonEncode({'payments': [], 'hasMore': false}),
+          statusCode: 200,
+          retryAttempts: 0,
+        );
+
+    for (final code in [401, 403]) {
+      test('$code drops the cached headers and retries once, fresh', () async {
+        var sent = 0;
+        final used = <Object?>[];
+        when(() => signer.getSignatureHeaders(wallet: any(named: 'wallet')))
+            .thenAnswer((_) async => {'x-signature': 'sig${used.length}'});
+        when(() => http.get(
+              url: any(named: 'url'),
+              headers: any(named: 'headers'),
+            )).thenAnswer((i) async {
+          used.add(i.namedArguments[#headers]);
+          if (sent++ == 0) throw refused(code);
+          return ok();
+        });
+
+        final page = await service.getPaymentHistoryPage(wallet: wallet);
+
+        expect(page.payments, isEmpty);
+        expect(used, hasLength(2));
+        expect(used[0], isNot(used[1]));
+        verify(() => signer.clearCache()).called(1);
+      });
+    }
+
+    test('a second refusal is the caller\'s, not retried again', () async {
+      when(() => http.get(
+            url: any(named: 'url'),
+            headers: any(named: 'headers'),
+          )).thenThrow(refused(401));
+
+      await expectLater(
+        service.getPaymentHistoryPage(wallet: wallet),
+        throwsA(isA<ArDriveHTTPException>()),
+      );
+      verify(() => http.get(
+            url: any(named: 'url'),
+            headers: any(named: 'headers'),
+          )).called(2);
+    });
+
+    test('other failures are not retried and keep the cache', () async {
+      when(() => http.get(
+            url: any(named: 'url'),
+            headers: any(named: 'headers'),
+          )).thenThrow(refused(500));
+
+      await expectLater(
+        service.getPaymentHistoryPage(wallet: wallet),
+        throwsA(isA<ArDriveHTTPException>()),
+      );
+      verify(() => http.get(
+            url: any(named: 'url'),
+            headers: any(named: 'headers'),
+          )).called(1);
+      verifyNever(() => signer.clearCache());
+    });
+
+    test('the existing getPaymentHistory retries too', () async {
+      var sent = 0;
+      when(() => http.get(
+            url: any(named: 'url'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async {
+        if (sent++ == 0) throw refused(401);
+        return ok();
+      });
+
+      final history = await service.getPaymentHistory(wallet: wallet);
+
+      expect(history.complete, isTrue);
+      verify(() => signer.clearCache()).called(1);
+    });
+  });
+
   test('a history cut short gives no figure at all', () async {
     final payments = _MockPaymentService();
     when(() => payments.getPaymentHistory(wallet: any(named: 'wallet')))

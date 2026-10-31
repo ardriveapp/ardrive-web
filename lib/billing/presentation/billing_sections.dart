@@ -6,13 +6,13 @@ import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/account/data/ethereum_wallet_detection.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
-import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/truncate_string.dart';
@@ -42,6 +42,7 @@ class BillingSections extends StatelessWidget {
     this.metaMask,
     this.creditSharing,
     this.saveCsv,
+    this.readArBalance,
   });
 
   /// 'phantom' or 'solflare' for a Solana sign-in; detected when null.
@@ -55,6 +56,9 @@ class BillingSections extends StatelessWidget {
 
   /// Saves the CSV; the app's file saver when null.
   final SaveCsv? saveCsv;
+
+  /// Reads an address's AR balance; the Arweave service's when null.
+  final Future<BigInt> Function(String address)? readArBalance;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +76,8 @@ class BillingSections extends StatelessWidget {
             paymentService: context.read<PaymentService>(),
             cache: context.read<BillingSessionCache>(),
             saveCsv: saveCsv ?? saveCsvWithArDriveIO,
+            readArBalance: readArBalance ??
+                context.read<ArweaveService>().getWalletBalance,
             creditSharing: creditSharing ??
                 CreditSharingService.fromConfig(context.read<ConfigService>()),
             asksBeforePurchases: kind == AccountSignInKind.wander,
@@ -145,15 +151,18 @@ class _BalanceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final user = context.select<ProfileCubit, User?>((cubit) {
-      final s = cubit.state;
-      return s is ProfileLoggedIn ? s.user : null;
-    });
-    final ar = user?.walletBalance ?? BigInt.zero;
+    final arState = state.ar;
+    final ar = arState.balance ?? BigInt.zero;
     final crypto =
         kind == AccountSignInKind.solana || kind == AccountSignInKind.ethereum;
-    // Phantom and MetaMask accounts almost never hold AR: only when they do.
-    final showAr = !crypto || ar > BigInt.zero;
+    // Never a 0 that only means "don't know": nothing while it loads, and
+    // when the read failed, "Couldn't load" (no row at all for Phantom and
+    // MetaMask accounts, which show AR only when it is above 0).
+    final showAr = switch (arState.status) {
+      LoadStatus.loading => false,
+      LoadStatus.error => !crypto,
+      LoadStatus.ready => !crypto || ar > BigInt.zero,
+    };
     final credits = state.sourceCredits;
 
     return PageSection(
@@ -165,7 +174,10 @@ class _BalanceSection extends StatelessWidget {
             key: const Key('billingArRow'),
             title: strings.billingArRow,
             trailing: Text(
-              '${convertWinstonToLiteralString(ar)} AR',
+              arState.status == LoadStatus.error
+                  ? strings.billingArUnavailable
+                  : '${convertWinstonToLiteralString(ar)} AR',
+              key: const Key('billingArAmount'),
               style: ArDriveTypographyNew.of(context).paragraphNormal(
                 color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
                 fontWeight: ArFontWeight.semiBold,
@@ -579,13 +591,14 @@ class _PurchaseRow extends StatelessWidget {
     final tag = switch (p.kind) {
       PurchaseKind.card => strings.billingCard,
       PurchaseKind.crypto => strings.billingCrypto,
+      PurchaseKind.name => strings.billingName,
       PurchaseKind.other => strings.billingOther,
     };
     final amount = switch (p.kind) {
       PurchaseKind.card =>
         p.isGrant ? strings.billingCreditGrant : p.cardAmountText,
       PurchaseKind.crypto => p.cryptoAmountText,
-      PurchaseKind.other => p.detail,
+      PurchaseKind.name || PurchaseKind.other => p.detail,
     };
     final usd = p.usdText;
     final reference = p.reference;
@@ -690,9 +703,10 @@ class _PurchaseRow extends StatelessWidget {
             children: [
               if (p.creditsText.isNotEmpty)
                 Text(
-                  '+${p.creditsText}',
+                  p.isSpend ? p.creditsText : '+${p.creditsText}',
                   style: typography.paragraphNormal(
-                    color: colors.statusSuccessFg,
+                    // Credits added are green; credits a name cost are not.
+                    color: p.isSpend ? colors.textMid : colors.statusSuccessFg,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),

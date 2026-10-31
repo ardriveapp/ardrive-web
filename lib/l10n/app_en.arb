@@ -5983,5 +5983,9 @@
   "billingExpires": "expires {date}",
   "@billingExpires": {"description": "Billing page: a share's expiry date.", "placeholders": {"date": {"type": "String"}}},
   "billingExpired": "expired",
-  "@billingExpired": {"description": "Billing page: a share past its expiry."}
+  "@billingExpired": {"description": "Billing page: a share past its expiry."},
+  "billingName": "Name",
+  "@billingName": {"description": "Billing page: tag on a purchase of an ArNS name."},
+  "billingArUnavailable": "Couldn't load",
+  "@billingArUnavailable": {"description": "Billing page: shown in place of the AR amount when it could not be read. Never shown as 0."}
 }

@@ -10,6 +10,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum LoadStatus { loading, ready, error }
@@ -49,6 +50,14 @@ class BalanceView {
     final extra = effective - own;
     return extra > BigInt.zero ? extra : BigInt.zero;
   }
+}
+
+/// The account's AR, read from the gateway. Unknown is not 0.
+class ArView {
+  const ArView({this.status = LoadStatus.loading, this.balance});
+
+  final LoadStatus status;
+  final BigInt? balance;
 }
 
 class PurchasesView {
@@ -98,6 +107,7 @@ class BillingState {
     this.balance = const BalanceView(),
     this.storageGiB,
     this.freeAllowance,
+    this.ar = const ArView(),
     this.sourceCredits,
     this.sharing = false,
     this.shareFailed = false,
@@ -110,6 +120,7 @@ class BillingState {
   /// What the credits buy, in GiB; null when the price couldn't be read.
   final double? storageGiB;
   final TurboFreeAllowance? freeAllowance;
+  final ArView ar;
 
   /// Credits on the Phantom, Solflare or MetaMask wallet that signed in.
   final SourceWalletCredits? sourceCredits;
@@ -123,6 +134,7 @@ class BillingState {
     double? storageGiB,
     bool clearStorage = false,
     TurboFreeAllowance? freeAllowance,
+    ArView? ar,
     SourceWalletCredits? sourceCredits,
     bool clearSourceCredits = false,
     bool? sharing,
@@ -134,6 +146,7 @@ class BillingState {
         balance: balance ?? this.balance,
         storageGiB: clearStorage ? null : storageGiB ?? this.storageGiB,
         freeAllowance: freeAllowance ?? this.freeAllowance,
+        ar: ar ?? this.ar,
         sourceCredits:
             clearSourceCredits ? null : sourceCredits ?? this.sourceCredits,
         sharing: sharing ?? this.sharing,
@@ -153,6 +166,7 @@ class BillingCubit extends Cubit<BillingState> {
     required this.paymentService,
     required this.cache,
     required this.saveCsv,
+    required this.readArBalance,
     this.creditSharing,
     this.asksBeforePurchases = false,
   }) : super(const BillingState());
@@ -161,6 +175,9 @@ class BillingCubit extends Cubit<BillingState> {
   final PaymentService paymentService;
   final BillingSessionCache cache;
   final SaveCsv saveCsv;
+
+  /// The AR balance of an address, from the gateway.
+  final Future<BigInt> Function(String address) readArBalance;
   final CreditSharingService? creditSharing;
 
   /// Wander asks the person to approve a signature, so its purchases wait for
@@ -168,13 +185,16 @@ class BillingCubit extends Cubit<BillingState> {
   final bool asksBeforePurchases;
 
   static const _gib = 1024 * 1024 * 1024;
-  static const _maxCsvPages = 40;
+
+  /// A CSV reads at most this many pages (of 50) beyond what is loaded.
+  static const maxCsvPages = 40;
 
   String get _address => user.walletAddress;
 
   Future<void> load() async {
     await Future.wait([
       loadBalance(),
+      loadAr(),
       loadSourceCredits(),
       _restoreOrStartPurchases(),
     ]);
@@ -265,6 +285,18 @@ class BillingCubit extends Cubit<BillingState> {
     }
   }
 
+  Future<void> loadAr() async {
+    try {
+      final ar = await readArBalance(_address);
+      _safeEmit(state.copyWith(
+        ar: ArView(status: LoadStatus.ready, balance: ar),
+      ));
+    } catch (e) {
+      logger.d('Billing: could not read the AR balance: $e');
+      _safeEmit(state.copyWith(ar: const ArView(status: LoadStatus.error)));
+    }
+  }
+
   Future<void> loadSourceCredits() async {
     final source = user.sourceWalletAddress;
     final type = walletTypeOfSourceAddress(source);
@@ -352,6 +384,18 @@ class BillingCubit extends Cubit<BillingState> {
         ),
       ));
     } catch (e) {
+      if (e is ArDriveHTTPException && e.statusCode == 404) {
+        // No account at Turbo yet: nothing bought, not a failure.
+        cache.storePurchases(
+          _address,
+          purchases: const [],
+          cursor: null,
+          hasMore: false,
+        );
+        _safeEmit(
+            state.copyWith(purchases: const PurchasesView(started: true)));
+        return;
+      }
       logger.w('Billing: could not load purchases: $e');
       _safeEmit(state.copyWith(
         purchases: PurchasesView(
@@ -422,7 +466,7 @@ class BillingCubit extends Cubit<BillingState> {
     ));
     try {
       var pages = 0;
-      while (cache.hasMoreFor(_address) && pages++ < _maxCsvPages) {
+      while (cache.hasMoreFor(_address) && pages++ < maxCsvPages) {
         await _readNextPage();
       }
       final rows = cache.purchasesFor(_address);
@@ -451,6 +495,7 @@ class BillingCubit extends Cubit<BillingState> {
     final wasShowing = state.purchases.started;
     await Future.wait([
       loadBalance(),
+      loadAr(),
       if (wasShowing) loadPurchases(refresh: true),
     ]);
   }

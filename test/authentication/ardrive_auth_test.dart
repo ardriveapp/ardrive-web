@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:async';
 
+import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
@@ -739,11 +740,26 @@ void main() {
         await arDriveAuth.logout();
 
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
-        expect(
-            unlockSession.signature('owner', 'drive', DriveSignatureType.v2),
+        expect(unlockSession.signature('owner', 'drive', DriveSignatureType.v2),
             isNull);
         verifyNever(() => mockUserRepository.deleteUser());
         verifyNever(() => mockDatabaseHelpers.deleteAllTables());
+      });
+
+      test('forgets the signed Turbo headers', () async {
+        when(() => mockUserRepository.hasUser()).thenAnswer((_) async => false);
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+        final manager = TurboSignatureHeadersManager.getInstance(
+          tabVisibility: TabVisibilitySingleton(),
+        );
+        final first = await manager.getSignatureHeaders(wallet: wallet);
+
+        await arDriveAuth.logout();
+
+        final next = await manager.getSignatureHeaders(wallet: wallet);
+        expect(next['x-nonce'], isNot(first['x-nonce']));
+        TurboSignatureHeadersManager.clearSession();
       });
 
       test(

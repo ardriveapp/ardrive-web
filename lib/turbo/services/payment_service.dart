@@ -235,9 +235,6 @@ class PaymentService {
     required Wallet wallet,
     int maxPages = 10,
   }) async {
-    final headers = await turboSignatureHeadersManager.getSignatureHeaders(
-      wallet: wallet,
-    );
     final payments = <Map<String, dynamic>>[];
     String? cursor;
     var complete = false;
@@ -246,9 +243,9 @@ class PaymentService {
       final query = cursor == null
           ? 'limit=100'
           : 'limit=100&cursor=${Uri.encodeQueryComponent(cursor)}';
-      final result = await httpClient.get(
-        url: '$turboPaymentUri/v1/account/payments?$query',
-        headers: headers,
+      final result = await _signedGet(
+        wallet,
+        '$turboPaymentUri/v1/account/payments?$query',
       );
       final data = json.decode(result.data) as Map<String, dynamic>;
 
@@ -267,6 +264,24 @@ class PaymentService {
     return TurboPaymentHistory(payments: payments, complete: complete);
   }
 
+  /// A signed read. Turbo refusing the cached headers (401 or 403) drops them
+  /// and tries once more with fresh ones; any other failure is the caller's.
+  Future<ArDriveHTTPResponse> _signedGet(Wallet wallet, String url) async {
+    final headers = await turboSignatureHeadersManager.getSignatureHeaders(
+      wallet: wallet,
+    );
+    try {
+      return await httpClient.get(url: url, headers: headers);
+    } on ArDriveHTTPException catch (e) {
+      if (e.statusCode != 401 && e.statusCode != 403) rethrow;
+      turboSignatureHeadersManager.clearCache();
+      final fresh = await turboSignatureHeadersManager.getSignatureHeaders(
+        wallet: wallet,
+      );
+      return httpClient.get(url: url, headers: fresh);
+    }
+  }
+
   /// One page of the wallet's own top-ups, newest first. Signed like
   /// [getPaymentHistory]; the cached signature headers are reused for every
   /// page (checked against production: Turbo accepts a reused nonce).
@@ -275,15 +290,12 @@ class PaymentService {
     String? cursor,
     int limit = 50,
   }) async {
-    final headers = await turboSignatureHeadersManager.getSignatureHeaders(
-      wallet: wallet,
-    );
     final query = cursor == null
         ? 'limit=$limit'
         : 'limit=$limit&cursor=${Uri.encodeQueryComponent(cursor)}';
-    final result = await httpClient.get(
-      url: '$turboPaymentUri/v1/account/payments?$query',
-      headers: headers,
+    final result = await _signedGet(
+      wallet,
+      '$turboPaymentUri/v1/account/payments?$query',
     );
     final data = json.decode(result.data) as Map<String, dynamic>;
     final next = data['cursor'] as String?;

@@ -27,6 +27,16 @@ class TurboSignatureHeadersManager {
     return _instance!;
   }
 
+  /// Forgets the signed headers, so the next read signs afresh. Called when
+  /// Turbo refuses them, and on sign-out.
+  void clearCache() {
+    _cachedHeaders = null;
+    _lastWalletAddress = null;
+  }
+
+  /// [clearCache] on the shared instance, if one was ever made.
+  static void clearSession() => _instance?.clearCache();
+
   /// Gets signature headers for Turbo uploads.
   /// Headers are cached in memory to avoid multiple sign requests.
   /// The cache is invalidated if the wallet address changes.
@@ -89,8 +99,7 @@ class TurboSignatureHeadersManager {
       return _cachedHeaders!;
     } catch (e, stacktrace) {
       logger.e('Error generating signature headers for Turbo', e, stacktrace);
-      throw TurboSignatureException(
-          'Failed to generate signature headers: $e');
+      throw TurboSignatureException('Failed to generate signature headers: $e');
     }
   }
 }

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 /// What a row of the purchase history is. The service's payload is an open
 /// set: it also sends ArNS purchases, and may send kinds this build has never
 /// heard of, which all land in [other].
-enum PurchaseKind { card, crypto, other }
+enum PurchaseKind { card, crypto, name, other }
 
 /// How many decimals a token's smallest unit has, and what to call it.
 const _tokens = <String, ({int decimals, String label})>{
@@ -41,6 +41,7 @@ class Purchase {
     required this.usdEquivalent,
     required this.transactionId,
     required this.detail,
+    required this.spent,
   });
 
   factory Purchase.fromJson(Map<String, dynamic> json) {
@@ -55,6 +56,7 @@ class Purchase {
     final kind = switch (type) {
       'fiat' => PurchaseKind.card,
       'crypto' => PurchaseKind.crypto,
+      'arns' => PurchaseKind.name,
       _ => PurchaseKind.other,
     };
     final dateText = text('date') ?? '';
@@ -74,7 +76,12 @@ class Purchase {
       tokenQuantity: text('tokenQuantity'),
       usdEquivalent: double.tryParse(text('usdEquivalent') ?? ''),
       transactionId: text('transactionId'),
-      detail: kind == PurchaseKind.other ? text('name') : null,
+      detail: kind == PurchaseKind.other || kind == PurchaseKind.name
+          ? text('name')
+          : null,
+      spent: kind == PurchaseKind.name
+          ? BigInt.tryParse(text('wincSpent') ?? '')
+          : null,
     );
   }
 
@@ -99,8 +106,11 @@ class Purchase {
   final double? usdEquivalent;
   final String? transactionId;
 
-  /// For a kind this build doesn't know: a name to show, if the row has one.
+  /// A name (the ArNS name bought, or what an unknown kind calls itself).
   final String? detail;
+
+  /// A name purchase: the winston credits it cost.
+  final BigInt? spent;
 
   /// A grant has no charge: credits added for nothing.
   bool get isGrant =>
@@ -165,9 +175,22 @@ class Purchase {
   String get dateLabel =>
       date == null ? dateText : DateFormat.yMMMd().format(date!.toLocal());
 
-  String get creditsText => credits == null || credits! <= BigInt.zero
-      ? ''
-      : convertWinstonToCostString(credits!);
+  /// "0.0500" for credits added, "-0.0500" for credits a name cost; empty
+  /// when the row says neither.
+  String get creditsText {
+    if (kind == PurchaseKind.name) {
+      final cost = spent;
+      return cost == null || cost <= BigInt.zero
+          ? ''
+          : '-${convertWinstonToCostString(cost).replaceAll(' ', '')}';
+    }
+    return credits == null || credits! <= BigInt.zero
+        ? ''
+        : convertWinstonToCostString(credits!);
+  }
+
+  /// Credits spent rather than added: drawn without the green plus.
+  bool get isSpend => kind == PurchaseKind.name;
 }
 
 /// [quantity] (an integer in the token's smallest unit) as whole units, with
@@ -187,16 +210,26 @@ String? _wholeUnits(String? quantity, int? decimals, {int? maxDecimals}) {
   return fraction.isEmpty ? '$sign$whole' : '$sign$whole.$fraction';
 }
 
+/// A text cell that a spreadsheet would read as a formula (`= + - @`, or a
+/// leading tab or carriage return) gets a leading `'`, so it stays text.
+String? _safeText(String? value) {
+  if (value == null || value.isEmpty) return value;
+  return RegExp(r'^[=+\-@\t\r]').hasMatch(value) ? "'$value" : value;
+}
+
 /// The Console's export: `Date, Method, Amount, USD Value, Credits,
-/// Reference`, every cell quoted, rows joined by CRLF.
+/// Reference`, every cell quoted, rows joined by CRLF. Text cells that could
+/// run as a formula are prefixed (see [_safeText]); Credits and USD Value stay
+/// numbers, a name's cost negative.
 String purchasesCsv(List<Purchase> purchases) {
   String cell(String? value) => '"${(value ?? '').replaceAll('"', '""')}"';
 
   String credits(Purchase p) {
-    final winc = p.credits;
+    final winc = p.kind == PurchaseKind.name ? p.spent : p.credits;
     if (winc == null) return '';
     // Whole credits, exact: winston has 12 decimals.
-    return _wholeUnits(winc.toString(), 12) ?? '';
+    final text = _wholeUnits(winc.toString(), 12) ?? '';
+    return p.kind == PurchaseKind.name && text.isNotEmpty ? '-$text' : text;
   }
 
   final rows = <List<String?>>[
@@ -204,15 +237,15 @@ String purchasesCsv(List<Purchase> purchases) {
     for (final p in purchases)
       switch (p.kind) {
         PurchaseKind.crypto => [
-            p.dateText,
+            _safeText(p.dateText),
             'Crypto',
-            _csvCryptoAmount(p),
+            _safeText(_csvCryptoAmount(p)),
             p.usdEquivalent?.toStringAsFixed(2),
             credits(p),
-            p.transactionId,
+            _safeText(p.transactionId),
           ],
         PurchaseKind.card => [
-            p.dateText,
+            _safeText(p.dateText),
             'Card',
             p.paymentAmount == null
                 ? (p.currency ?? '').toUpperCase()
@@ -223,12 +256,20 @@ String purchasesCsv(List<Purchase> purchases) {
                 ? _wholeUnits(p.paymentAmount.toString(), 2)
                 : '',
             credits(p),
-            p.receiptId,
+            _safeText(p.receiptId),
+          ],
+        PurchaseKind.name => [
+            _safeText(p.dateText),
+            'Name',
+            _safeText(p.detail),
+            '',
+            credits(p),
+            '',
           ],
         PurchaseKind.other => [
-            p.dateText,
+            _safeText(p.dateText),
             'Other',
-            p.detail,
+            _safeText(p.detail),
             '',
             credits(p),
             '',
