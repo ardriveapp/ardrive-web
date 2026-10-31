@@ -1693,9 +1693,12 @@ class ProfileCreditsValue extends StatelessWidget {
         key: const Key('profileCreditsError'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            appLocalizationsOf(context).couldNotLoadCredits,
-            style: typography.paragraphNormal(color: colorTokens.textMid),
+          Flexible(
+            child: Text(
+              appLocalizationsOf(context).couldNotLoadCredits,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphNormal(color: colorTokens.textMid),
+            ),
           ),
           const SizedBox(width: 8),
           ArDriveButtonNew(
