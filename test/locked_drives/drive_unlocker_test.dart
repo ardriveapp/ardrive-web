@@ -703,6 +703,23 @@ void main() {
       expect(await db.driveDao.allDrives().get(), isEmpty);
     });
 
+    // #118: read, and no drive transaction: not something a retry fixes.
+    test('a drive with no drive transaction is unreadable, not unavailable',
+        () async {
+      when(() => arweave.getLatestDriveTx(_driveA, owner,
+          maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => null);
+
+      final result = await unlocker.unlock(
+        wallet: wallet,
+        profileKey: profileKey,
+        driveId: _driveA,
+        password: 'shared',
+      );
+
+      expect(result.failure, DriveUnlockFailure.unreadable);
+      expect(await db.driveDao.allDrives().get(), isEmpty);
+    });
+
     test(
         'asking for a drive brings its wallet prompt back; the others whose '
         'prompt was cancelled are not asked', () async {

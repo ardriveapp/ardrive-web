@@ -240,10 +240,10 @@ String _formatSize(int bytes) {
   return scaled(bytes / kb, 'KiB');
 }
 
-/// Between items in a line of facts, here and on the profile card. Wavehaus
-/// draws its middle dot low and small, so it read as a full stop; its bullet
-/// sits on the line's middle.
-const permanenceSeparator = '  •  ';
+/// Between items in a line of facts, here and on the profile card. The middle
+/// dot, as everywhere else in the app, so one line of facts never uses a
+/// different mark from the next.
+const permanenceSeparator = '  ·  ';
 
 /// A count and what it counts, with thousands separated: "1,776 files".
 String permanenceCount(int n, String one) =>

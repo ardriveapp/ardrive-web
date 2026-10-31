@@ -384,9 +384,8 @@ void main() {
       final passwordElement = tester.element(find.descendant(
           of: find.byKey(const Key('unlockDrivePassword')),
           matching: find.byType(TextField)));
-      final usernameElement = tester.element(find.byKey(
-          const Key('passwordAutofillUsername'),
-          skipOffstage: false));
+      final usernameElement = tester.element(find
+          .byKey(const Key('passwordAutofillUsername'), skipOffstage: false));
       expect(AutofillGroup.of(passwordElement),
           same(AutofillGroup.of(usernameElement)));
     });
@@ -426,6 +425,31 @@ void main() {
           find.text("Couldn't reach the network. Try again."), findsOneWidget);
       expect(find.text('Wrong password'), findsNothing);
       expect(field(tester).focusNode.hasFocus, isTrue);
+    });
+
+    // #118: a drive that can never be read here was reported as a network
+    // error with a retry that never helps.
+    testWidgets('a drive that can\'t be read here says so, with no retry',
+        (tester) async {
+      answers(const DriveUnlockResult.failed(DriveUnlockFailure.unreadable));
+      await open(tester);
+
+      await typeAndPressEnter(tester, 'secret');
+
+      expect(find.text("This drive can't be read on this device."),
+          findsOneWidget);
+      expect(find.text("Couldn't reach the network. Try again."), findsNothing);
+      expect(find.text('Wrong password'), findsNothing);
+
+      // Unlock is unavailable, and stays so however the password changes.
+      final unlock = find.ancestor(
+        of: find.text('Unlock'),
+        matching: find.byType(ArDriveButtonNew),
+      );
+      expect(tester.widget<ArDriveButtonNew>(unlock).isDisabled, isTrue);
+      await tester.enterText(find.byType(TextFormField), 'other');
+      await tester.pump();
+      expect(tester.widget<ArDriveButtonNew>(unlock).isDisabled, isTrue);
     });
 
     testWidgets('a cancelled wallet prompt returns quietly to the dialog',

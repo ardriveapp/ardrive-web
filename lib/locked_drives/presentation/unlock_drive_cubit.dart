@@ -16,8 +16,14 @@ enum UnlockDriveStatus {
   /// AES-GCM authentication failed: the password is wrong.
   wrongPassword,
 
-  /// Anything else that stopped the check.
+  /// The drive couldn't be fetched to check the password. Trying again may
+  /// work.
   networkError,
+
+  /// The drive can never be read on this device: it has no drive
+  /// transaction, or what decrypted isn't a drive. Trying again won't help,
+  /// so Unlock stays unavailable.
+  unreadable,
 
   /// The wallet couldn't sign, and not because the user cancelled it.
   walletFailed,
@@ -85,8 +91,11 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
     required bool tryOthers,
     bool remember = true,
   }) async {
+    // An unreadable drive stays so whatever is typed: trying again can't
+    // open it.
     if (state.status == UnlockDriveStatus.working ||
-        state.status == UnlockDriveStatus.unlocked) {
+        state.status == UnlockDriveStatus.unlocked ||
+        state.status == UnlockDriveStatus.unreadable) {
       return;
     }
 
@@ -149,6 +158,8 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
         emit(const UnlockDriveState(status: UnlockDriveStatus.walletFailed));
       case DriveUnlockFailure.unavailable:
         emit(const UnlockDriveState(status: UnlockDriveStatus.networkError));
+      case DriveUnlockFailure.unreadable:
+        emit(const UnlockDriveState(status: UnlockDriveStatus.unreadable));
     }
   }
 

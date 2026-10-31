@@ -149,7 +149,8 @@ class _SearchBoxState extends State<SearchBox> {
 
   /// The results the dropdown lists, which are what the reader can pick.
   List<SearchResult> _listed(SearchState state) {
-    if (state.status == SearchStatus.empty) {
+    if (state.status == SearchStatus.empty ||
+        state.status == SearchStatus.failed) {
       return const [];
     }
 
@@ -161,7 +162,7 @@ class _SearchBoxState extends State<SearchBox> {
 
     return [
       for (final result in listed) result.uniqueId,
-      if (listed.isNotEmpty) _seeAllRowId,
+      if (_hasMoreThanListed(state)) _seeAllRowId,
     ];
   }
 
@@ -394,6 +395,7 @@ class _SearchBoxState extends State<SearchBox> {
                     onHighlight: (id) => setState(() => _highlighted = id),
                     onOpenResult: _openResult,
                     onSeeAll: _openAllResults,
+                    onRetry: _session.submit,
                   ),
                 ),
               ),
@@ -418,6 +420,13 @@ class _SearchBoxState extends State<SearchBox> {
 
 /// The last row's label: how many results there are when the dropdown lists
 /// only some, so the reader knows whether more are worth opening.
+/// Whether the dropdown lists only some of the results, so "See all results"
+/// has something more to show. With every result listed it offered nothing.
+bool _hasMoreThanListed(SearchState state) =>
+    (state.status == SearchStatus.success ||
+        state.status == SearchStatus.loading) &&
+    state.results.length > searchBoxMaxResults;
+
 String _seeAllLabel(BuildContext context, SearchState state) {
   final localizations = appLocalizationsOf(context);
 
@@ -436,6 +445,7 @@ class _SearchDropdown extends StatelessWidget {
     required this.onHighlight,
     required this.onOpenResult,
     required this.onSeeAll,
+    required this.onRetry,
   });
 
   final SearchState state;
@@ -448,6 +458,9 @@ class _SearchDropdown extends StatelessWidget {
   final void Function(String id) onHighlight;
   final void Function(SearchResult result) onOpenResult;
   final VoidCallback onSeeAll;
+
+  /// Runs the failed search again.
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -479,6 +492,18 @@ class _SearchDropdown extends StatelessWidget {
                 onTap: () => onOpenResult(result),
               ),
           ],
+        ),
+      );
+    } else if (state.status == SearchStatus.failed && state.query == query) {
+      // What happened, with a way to try again, in the dropdown's one line.
+      body = Padding(
+        padding: const EdgeInsets.all(ArDriveSpacing.xs),
+        child: ArDriveNotice(
+          key: const Key('searchFailedNotice'),
+          type: ArDriveNoticeType.error,
+          message: localizations.searchFailed,
+          actionLabel: localizations.tryAgain,
+          onAction: onRetry,
         ),
       );
     } else {
@@ -517,7 +542,7 @@ class _SearchDropdown extends StatelessWidget {
               Divider(height: 1, color: colorTokens.strokeLow),
             ],
             body,
-            if (listed.isNotEmpty) ...[
+            if (listed.isNotEmpty && _hasMoreThanListed(state)) ...[
               Divider(height: 1, color: colorTokens.strokeLow),
               _SeeAllRow(
                 key: rowKeys.putIfAbsent(_seeAllRowId, GlobalKey.new),
@@ -556,7 +581,6 @@ class _HoverRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Semantics(
       button: true,
@@ -574,23 +598,11 @@ class _HoverRow extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
+          // The menu's hover colour alone, on hover and on keyboard focus, as
+          // every menu row draws it. The red bar it had is the dialogs'.
           child: ColoredBox(
             color: highlighted ? dropdownTheme.hoverColor : Colors.transparent,
-            // A bar down the edge as well as the shade, which alone was hard
-            // to see in the light theme.
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    width: 3,
-                    color: highlighted
-                        ? colorTokens.containerRed
-                        : Colors.transparent,
-                  ),
-                ),
-              ),
-              child: child,
-            ),
+            child: child,
           ),
         ),
       ),

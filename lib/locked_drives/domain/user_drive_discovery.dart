@@ -36,7 +36,10 @@ enum PrivateDriveVerdict {
       return PrivateDriveVerdict.readable;
     }
 
-    return attempt.failure == DriveUnlockFailure.unavailable
+    // Unreadable is skipped too, as it was before it had its own name: the
+    // drive is not locked by a password this pass could try.
+    return attempt.failure == DriveUnlockFailure.unavailable ||
+            attempt.failure == DriveUnlockFailure.unreadable
         ? PrivateDriveVerdict.skipped
         : PrivateDriveVerdict.locked;
   }

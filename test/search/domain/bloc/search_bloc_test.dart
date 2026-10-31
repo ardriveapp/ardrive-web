@@ -140,9 +140,10 @@ void main() {
 
       expect(states, [
         const SearchState(query: 'report', status: SearchStatus.loading),
+        // Failed, not empty: no matches would read as a typo (#117).
         const SearchState(
           query: 'report',
-          status: SearchStatus.empty,
+          status: SearchStatus.failed,
           resultsRevision: 1,
         ),
       ]);

@@ -14,6 +14,10 @@ enum SearchStatus {
 
   /// [SearchState.query] matched nothing.
   empty,
+
+  /// The search for [SearchState.query] itself failed. Not [empty]: a failure
+  /// shown as no matches read as a typo.
+  failed,
 }
 
 /// Where syncing the drives search could not look inside stands.

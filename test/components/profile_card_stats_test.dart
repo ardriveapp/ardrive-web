@@ -42,7 +42,7 @@ class _MockPermanenceCache extends Mock implements PermanenceCache {}
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
 
-/// The account line on the profile card: "5 drives • 46 files • 4.8 MiB".
+/// The account line on the profile card: "5 drives · 46 files · 4.8 MiB".
 ///
 /// Right after a first sync every file's data is still pending, so nothing
 /// counts as stored yet. The card read "0 files · 0.0 KiB" then, and kept
@@ -247,7 +247,7 @@ void main() {
       await confirmAll();
       await waitFor(tester, find.textContaining('2 files'));
 
-      expect(find.textContaining('2 drives  •  2 files'), findsOneWidget);
+      expect(find.textContaining('2 drives  ·  2 files'), findsOneWidget);
       expect(find.text('Your permanence'), findsOneWidget);
 
       await takeDown(tester);
@@ -313,7 +313,7 @@ void main() {
       await openCard(tester);
       await waitFor(tester, find.textContaining('1 drive'));
 
-      expect(find.textContaining('1 drive  •  0 files'), findsOneWidget);
+      expect(find.textContaining('1 drive  ·  0 files'), findsOneWidget);
 
       await takeDown(tester);
     });

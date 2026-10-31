@@ -534,7 +534,7 @@ void main() {
     expect(
       [permanenceCount(21, 'drive'), permanenceCount(1776, 'file')]
           .join(permanenceSeparator),
-      '21 drives  •  1,776 files',
+      '21 drives  ·  1,776 files',
     );
     expect(permanenceCount(1, 'file'), '1 file');
   });

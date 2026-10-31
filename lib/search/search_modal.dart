@@ -249,6 +249,24 @@ class _FileSearchModalState extends State<FileSearchModal> {
               child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
             );
           }
+          if (state.status == SearchStatus.failed) {
+            // Not the no-matches state, which suggests checking the spelling:
+            // the search itself failed.
+            final strings = appLocalizationsOf(context);
+            return Padding(
+              padding: const EdgeInsets.only(top: ArDriveSpacing.md),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ArDriveNotice(
+                  key: const Key('searchFailedNotice'),
+                  type: ArDriveNoticeType.error,
+                  message: strings.searchFailed,
+                  actionLabel: strings.tryAgain,
+                  onAction: _session.submit,
+                ),
+              ),
+            );
+          }
           final strings = appLocalizationsOf(context);
           return SingleChildScrollView(
             child: ArDriveEmptyState(

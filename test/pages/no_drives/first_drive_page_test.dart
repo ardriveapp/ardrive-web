@@ -236,4 +236,49 @@ void main() {
     await tester.pump();
     expect(find.text('Getting started'), findsOneWidget);
   });
+
+  // #115: a failed My files fell back to Getting started with no word.
+  testWidgets('a failed My files says so and offers Try again', (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+    final outcomes = [FirstDriveOutcome.failed, FirstDriveOutcome.made];
+    var asked = 0;
+
+    await pump(tester, (_) => () async => outcomes[asked++]);
+    await tester.pump();
+
+    expect(find.byKey(const Key('firstDriveFailedNotice')), findsOneWidget);
+    expect(find.text("Couldn't create My files"), findsOneWidget);
+    expect(find.text('Getting started'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(asked, 2);
+    expect(find.byKey(const Key('firstDriveFailedNotice')), findsNothing);
+    verify(() => firstDrive.done()).called(1);
+  });
+
+  testWidgets('one that needs credits says so, with Buy credits',
+      (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+
+    await pump(tester, (_) => () async => FirstDriveOutcome.needsCredits);
+    await tester.pump();
+
+    expect(find.text("Couldn't create My files"), findsOneWidget);
+    expect(find.text('Creating it needs Turbo Credits.'), findsOneWidget);
+    expect(find.text('Buy credits'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+  });
+
+  testWidgets('an account that was never owed My files hears nothing',
+      (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => false);
+
+    await pump(tester, (_) => () async => FirstDriveOutcome.made);
+    await tester.pump();
+
+    expect(find.byKey(const Key('firstDriveFailedNotice')), findsNothing);
+  });
 }

@@ -179,6 +179,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
           case UnlockDriveStatus.wrongPassword:
           case UnlockDriveStatus.networkError:
           case UnlockDriveStatus.walletFailed:
+          case UnlockDriveStatus.unreadable:
           case UnlockDriveStatus.idle:
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _refocus();
@@ -220,6 +221,8 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   controller: _password,
                   focusNode: _focus,
                   label: strings.drivePasswordLabel,
+                  // Unlock waits for it, so the label says so.
+                  isFieldRequired: true,
                   obscureText: true,
                   showObfuscationToggle: true,
                   autofocus: true,
@@ -241,16 +244,21 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   onFieldSubmitted: (_) => _submit(),
                 )),
                 if (state.status == UnlockDriveStatus.networkError ||
-                    state.status == UnlockDriveStatus.walletFailed) ...[
+                    state.status == UnlockDriveStatus.walletFailed ||
+                    state.status == UnlockDriveStatus.unreadable) ...[
                   const SizedBox(height: ArDriveSpacing.xs),
                   // Read out when it appears: a failed unlock was silent.
                   Semantics(
                     liveRegion: true,
                     child: ArDriveStatusText(
                       key: const Key('unlockDriveNetworkError'),
-                      text: state.status == UnlockDriveStatus.walletFailed
-                          ? strings.unlockWalletFailed
-                          : strings.unlockNetworkError,
+                      text: switch (state.status) {
+                        UnlockDriveStatus.walletFailed =>
+                          strings.unlockWalletFailed,
+                        UnlockDriveStatus.unreadable =>
+                          strings.unlockDriveUnreadable,
+                        _ => strings.unlockNetworkError,
+                      },
                       type: ArDriveStatusType.error,
                     ),
                   ),
@@ -288,7 +296,9 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
             ModalAction(
               action: _submit,
               title: strings.unlock,
-              isEnable: _password.text.isNotEmpty,
+              // Not for a drive that can't be read here: no password opens it.
+              isEnable: _password.text.isNotEmpty &&
+                  state.status != UnlockDriveStatus.unreadable,
               isLoading: working,
             ),
           ],
