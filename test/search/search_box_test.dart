@@ -13,6 +13,7 @@ import 'package:ardrive/search/search_coverage_notice.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_scope.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -407,12 +408,22 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.descendant(
+    // The dialog's close, not the field's clear, which draws the same x
+    // now that it is ArDrive's glyph (#120).
+    final xs = find.descendant(
       of: dialog,
       matching: find.byWidgetPredicate(
         (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x,
       ),
-    ));
+    );
+    final clear = find.descendant(
+      of: find.byType(SearchTextField),
+      matching: find.byWidgetPredicate((w) => w is ArDriveIcon),
+    );
+    final close = tester
+        .elementList(xs)
+        .firstWhere((e) => !tester.elementList(clear).contains(e));
+    await tester.tap(find.byElementPredicate((e) => e == close));
     await tester.pumpAndSettle();
     expect(find.byType(FileSearchModal), findsNothing);
   });
