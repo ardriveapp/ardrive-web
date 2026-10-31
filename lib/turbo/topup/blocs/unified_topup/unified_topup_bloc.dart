@@ -518,6 +518,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     emit(currentState.copyWith(
       promoCode: event.code,
       isLoadingQuote: true,
+      clearPromoCodeError: true,
     ));
 
     // Refresh estimate with promo code
@@ -578,7 +579,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             clearPromoCode: true,
             clearDiscountPercent: true,
             isLoadingQuote: false,
-            errorMessage: 'Invalid promo code',
+            promoCodeError: 'Invalid promo code',
           ));
         }
       }
@@ -600,6 +601,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     emit(currentState.copyWith(
       clearPromoCode: true,
       clearDiscountPercent: true,
+      clearPromoCodeError: true,
     ));
 
     // Refresh estimate without promo code

@@ -360,6 +360,9 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
                 child: ArDriveTextFieldNew(
                   controller: _controller,
                   hintText: 'Enter promo code',
+                  // The rejection sits under the field it is about, not
+                  // below the summary where it can be off screen.
+                  errorMessage: widget.state.promoCodeError,
                   onFieldSubmitted: (_) => submit(),
                 ),
               ),

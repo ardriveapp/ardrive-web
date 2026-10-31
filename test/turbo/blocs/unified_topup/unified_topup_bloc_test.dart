@@ -67,4 +67,59 @@ void main() {
     final state = bloc.state as UnifiedTopupLoaded;
     expect(state.estimatedStorage, '512.0 MB');
   });
+
+  test('a rejected promo code is reported on the promo field, not the page',
+      () async {
+    final turbo = MockTurbo();
+    when(() => turbo.onPriceEstimateChanged)
+        .thenAnswer((_) => const Stream.empty());
+    when(() => turbo.getBalance()).thenAnswer((_) async => BigInt.zero);
+    when(() => turbo.promoCode).thenReturn(null);
+    when(() => turbo.computeStorageEstimateForCredits(
+          credits: any(named: 'credits'),
+          outputDataUnit: any(named: 'outputDataUnit'),
+        )).thenAnswer((_) async => 0);
+    when(() => turbo.computePriceEstimate(
+          currentAmount: any(named: 'currentAmount'),
+          currentCurrency: any(named: 'currentCurrency'),
+          currentDataUnit: any(named: 'currentDataUnit'),
+          promoCode: any(named: 'promoCode'),
+        )).thenAnswer((i) async {
+      if (i.namedArguments[#promoCode] == 'NOPE') throw Exception('invalid');
+      return PriceEstimate(
+        estimate: PriceForFiat(
+          winc: BigInt.from(1000),
+          actualPaymentAmount: 1000,
+          quotedPaymentAmount: 1000,
+          adjustments: const [],
+        ),
+        priceInCurrency: 10,
+        estimatedStorage: 0.5,
+      );
+    });
+
+    final bloc = UnifiedTopupBloc(
+      turbo: turbo,
+      priceService: MockCryptoPriceService(),
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const UnifiedTopupStarted());
+    await bloc.stream.firstWhere((s) => s is UnifiedTopupLoaded);
+    bloc.add(const UnifiedTopupAmountSelected(10));
+    await bloc.stream.firstWhere(
+      (s) => s is UnifiedTopupLoaded && !s.isLoadingQuote && s.fiatAmount == 10,
+    );
+    bloc.add(const UnifiedTopupPromoCodeSubmitted('NOPE'));
+    await bloc.stream.firstWhere(
+      (s) => s is UnifiedTopupLoaded && s.promoCodeError != null,
+    );
+
+    final state = bloc.state as UnifiedTopupLoaded;
+    expect(state.promoCodeError, 'Invalid promo code');
+    expect(state.errorMessage, isNull);
+    expect(state.promoCode, isNull);
+    // The code was dropped, so the purchase goes on at the full price.
+    expect(state.canContinue, isTrue);
+  });
 }
