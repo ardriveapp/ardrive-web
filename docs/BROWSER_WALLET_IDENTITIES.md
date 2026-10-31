@@ -1,6 +1,6 @@
 # Browser wallet identities (an ArDrive client convention)
 
-This is not part of ArFS. No ArFS entity depends on it, and other ArFS clients do not need it. It is a compatibility contract between ArDrive clients (the web app, and desktop where it signs in the same way): the same Ethereum or Solana account must always give the same Arweave wallet.
+This is not part of ArFS. No ArFS entity depends on it, and other ArFS clients do not need it. It is a compatibility contract between ArDrive clients (the web app is the reference implementation): the same Ethereum or Solana account must always give the same Arweave wallet.
 
 For ArFS, the result is an ordinary Arweave wallet. It owns and signs the ArFS entities, and drive keys are derived from it exactly as for any other wallet (see "Drive privacy" in [ArweaveFS.md](ArweaveFS.md)). ardrive-core-js and the ArDrive CLI have no Ethereum or Solana sign-in.
 
@@ -22,7 +22,7 @@ ArDrive wants to access your account. Only approve this on a gateway you trust (
 
 The password picks the wallet: another password gives another wallet.
 
-1. The wallet signs `Sign message to verify wallet address.` with `personal_sign`. SHA-256 of that signature is the private key of the account's auth Ethereum key.
+1. The wallet signs `Sign message to verify wallet address.` with `personal_sign`. SHA-256 of that signature is the private key of the account's auth Ethereum key. The auth key's Arweave address is the SHA-256 of the 65-byte uncompressed secp256k1 public key (`0x04` followed by the 64-byte X and Y), as base64url without padding. This is `ownerToAddress` applied to the key's owner, the base64url of those 65 bytes.
 2. The wallet signs, with `personal_sign`, the UTF-8 bytes of the lowercase hex of SHA-256(`1:<address>:<password>`). Here `1` is the chain ID and `<address>` is the account address as a lowercase `0x` hex string. That signature gives the phrase.
 3. At sign-up the Arweave wallet signs the SHA-256 of the step 2 signature. That signature is posted twice, from the Arweave wallet and from the auth key, as each one's first transaction. Sign-in compares both with a fresh one to tell a right password from a wrong one.
 

@@ -39,7 +39,7 @@ All metadata transactions that store these entities unencrypted should define a 
 
 ### Version history
 
-Old entities stay valid. Readers must accept entities tagged `ArFS: 0.12` to `ArFS: 0.15`. A writer tags every entity with the current version.
+Old entities stay valid. Readers must accept entities tagged `ArFS: 0.10` to `ArFS: 0.15` (the ArDrive web app accepts exactly 0.10, 0.11, 0.12, 0.13, 0.14 and 0.15). A writer tags every entity with the current version.
 
 | Version | Added |
 |---|---|
@@ -61,7 +61,7 @@ Drives can store either public or private data, indicated by the `Drive-Privacy`
 
 If a Drive entity is private, an additional tag `Drive-Auth-Mode` is used to indicate how the Drive Key is derived. ArDrive clients currently leverage a secure `password` along with the Arweave Wallet private key signature to derive the global Drive key.
 
-On every encrypted entity, a `Cipher` tag must be specified. The required public parameters for decrypting the data must also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`. If the parameter is byte data it should be encoded as Base64 in the tag. ArDrive clients leverage AES256-GCM for symmetric encryption, which requires a Cipher Initialization Vector consisting of 12 random bytes. File data larger than 100 MiB is encrypted with AES256-CTR instead (`Cipher: AES256-CTR`); a reader must pick the decryption from the `Cipher` tag.
+On every encrypted entity, a `Cipher` tag must be specified. The required public parameters for decrypting the data must also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`. If the parameter is byte data it should be encoded as Base64 in the tag. ArDrive web writes URL-safe Base64 without padding and ardrive-core-js writes standard Base64, so a reader must accept both alphabets. ArDrive clients leverage AES256-GCM for symmetric encryption, which requires a Cipher Initialization Vector consisting of 12 random bytes. File data larger than 100 MiB is encrypted with AES256-CTR instead (`Cipher: AES256-CTR`); a reader must pick the decryption from the `Cipher` tag.
 
 Additionally, all encrypted transactions should have the `Content-Type` tag `application/octet-stream` as opposed to `application/json`.
 
@@ -152,7 +152,7 @@ The File data transaction contains limited information about the file, such as t
 
 ```File Data Transaction
 Cipher?: AES256-GCM
-Cipher-IV?: <12 byte initialization vector as hex>
+Cipher-IV?: <12 byte initialization vector as Base64>
 Content-Type: <file mime-type | application/octet-stream>
  { File data }
 ```
@@ -275,9 +275,9 @@ Every file the publish uploads, other than the Drive State, is a plain, public d
 | Key | Type | Required | Rule |
 |---|---|---|---|
 | `version` | integer | yes | At least 1. 1 for drive and folder pages, 2 for file pages. A reader that does not know the value must refuse the page as "needs a newer client" and read no other field |
-| `driveId` | string | yes | A UUID |
-| `rootFolderId` | string | yes | A UUID: the drive's root folder |
-| `scope` | object | yes | `{"type":"drive"}`, `{"type":"folder","folderId":"<uuid>"}` or `{"type":"file","fileId":"<uuid>"}` |
+| `driveId` | string | yes | A UUID in lowercase |
+| `rootFolderId` | string | yes | A UUID in lowercase: the drive's root folder |
+| `scope` | object | yes | `{"type":"drive"}`, `{"type":"folder","folderId":"<uuid>"}` or `{"type":"file","fileId":"<uuid>"}`, with lowercase UUIDs |
 | `privacy` | string | yes | `public` or `private` |
 | `owner` | string | yes | The Arweave address of the publisher: 43 base64url characters |
 | `title` | string | yes | Not empty after trimming. Shown as plain text. Writers keep it to 60 characters; readers do not enforce this |
@@ -336,7 +336,7 @@ Private drive and folder publications are reserved and not supported yet. The `p
 
 A publication counts only if the drive's owner published it. Anyone can write a manifest with any `owner` and any `Drive-Id`.
 
-What the ArDrive viewer checks today: it asks the serving gateway who signed the `snapshot` transaction (for a file page, the `file.metadataTxId` transaction), and refuses the page only if that signer is not `publication.json`'s `owner`. If the gateway cannot answer, the page opens as declared. The viewer does not check who signed the manifest, and does not check that `owner` owns the drive. The list of an owner's own publications is scoped to the signed-in owner's transactions.
+What the ArDrive viewer checks today: it asks the serving gateway who signed the `snapshot` transaction (for a file page, the `file.metadataTxId` transaction), and refuses the page only if that signer is not `publication.json`'s `owner`. If the gateway cannot answer, the page opens as declared. For a file page, when the lookup also returns the transaction's tags, the viewer checks too that it is a `file` entity with the page's file ID and drive ID. The viewer does not check who signed the manifest, and does not check that `owner` owns the drive. The list of an owner's own publications is scoped to the signed-in owner's transactions.
 
 A full client should check all of these, and fail closed:
 
