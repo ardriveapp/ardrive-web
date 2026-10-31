@@ -15,7 +15,7 @@ void main() {
 
   test('the kinds are plain lock, globe and people', () {
     expect(ArDriveIcons.privateDrive().icon, Icons.lock_outline);
-    expect(ArDriveIcons.publicDrive().icon, Icons.public);
+    expect(ArDriveIcons.publicDrive().icon, Icons.language);
     expect(ArDriveIcons.sharedDrive().icon, Icons.people_outline);
   });
 }

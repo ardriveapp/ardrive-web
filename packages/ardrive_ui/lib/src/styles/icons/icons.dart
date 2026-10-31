@@ -493,7 +493,7 @@ class ArDriveIcons {
 
   /// Public, said with a plain globe.
   static ArDriveIcon publicDrive({double? size, Color? color}) => ArDriveIcon(
-        icon: Icons.public,
+        icon: Icons.language,
         size: size,
         color: color,
       );
