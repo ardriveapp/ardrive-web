@@ -5876,6 +5876,8 @@
   "@accountCopyAddress": {"description": "Screen reader label of an address's copy button. {chain} is Arweave, Solana or Ethereum.", "placeholders": {"chain": {"type": "String"}}},
   "accountBack": "Back",
   "@accountBack": {"description": "Screen reader label of the Account and security page's back button on a phone."},
+  "couldNotLoadCredits": "Could not load",
+  "@couldNotLoadCredits": {"description": "Profile menu: shown in place of the credits figure when the balance could not be read."},
   "addCredits": "Add credits",
   "@addCredits": {"description": "Profile menu: opens the top-up when the account has no credits."},
   "accountCopyShortAddress": "Copy address",

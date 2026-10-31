@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Importing necessary packages and files
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart';
@@ -59,6 +61,25 @@ void main() {
       return turboBalanceCubit;
     },
     act: (cubit) => cubit.getBalance(),
+    expect: () => [
+      TurboBalanceLoading(),
+      TurboBalanceErrorState(),
+    ],
+  );
+
+  blocTest<TurboBalanceCubit, TurboBalanceState>(
+    'a balance request that never answers ends in the error state',
+    build: () {
+      when(() => mockPaymentService.getBalance(wallet: wallet))
+          .thenAnswer((_) => Completer<BigInt>().future);
+      return TurboBalanceCubit(
+        paymentService: mockPaymentService,
+        wallet: wallet,
+        requestTimeout: const Duration(milliseconds: 20),
+      );
+    },
+    act: (cubit) => cubit.getBalance(),
+    wait: const Duration(milliseconds: 100),
     expect: () => [
       TurboBalanceLoading(),
       TurboBalanceErrorState(),
