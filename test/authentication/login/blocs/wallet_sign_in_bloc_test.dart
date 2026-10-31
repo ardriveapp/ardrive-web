@@ -304,6 +304,36 @@ void main() {
         },
       );
 
+      const junk = {'ArDrive-Account-Version': '2'};
+
+      blocTest<LoginBloc, LoginState>(
+        'a real marker, then tag-less markers with unreadable data: the real '
+        'one still opens (they never fail a sign-in)',
+        build: bloc,
+        setUp: () => records(candidate([
+          real('real', height: 1),
+          for (var i = 0; i < 6; i++)
+            AccountRecordTx(id: 'junk$i', height: 2 + i, tags: junk),
+        ])),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginSuccess>());
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'only a tag-less marker with unreadable data: no record, no failure',
+        build: bloc,
+        setUp: () => records(candidate(
+            [const AccountRecordTx(id: 'junk', height: 1, tags: junk)])),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginAskUsedMetaMaskBefore>());
+        },
+      );
+
       blocTest<LoginBloc, LoginState>(
         'a version 1 record before the real marker: still version 1',
         build: bloc,

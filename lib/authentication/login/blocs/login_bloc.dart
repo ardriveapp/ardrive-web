@@ -1551,17 +1551,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       case EthereumV2Marker(:final records):
         // Only a candidate until the account message is signed: a marker
         // counts if it holds the address that signature derives.
-        final withAddresses = await _withMarkerAddresses(records);
-        if (withAddresses == null) {
-          emit(_logInPanel);
-          emit(const LoginFailure(EthereumAccountMarkerUnreadable()));
-          return;
-        }
         await _signInEthereumV2(
           emit,
           ethWallet: ethWallet,
           authWallet: derivedEthWallet,
-          records: withAddresses,
+          records: records,
         );
       case null:
         // Nothing anywhere: a new account, or one made before 3.0 whose
@@ -1618,25 +1612,35 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     );
   }
 
-  /// [records] with each marker that lacks the address tag given it from
-  /// its data. Null when a marker's data can't be read.
-  Future<List<AccountRecordTx>?> _withMarkerAddresses(
+  /// The most tag-less markers whose data is read to find an address.
+  static const _maxMarkerDataReads = 3;
+
+  /// [records] with the earliest tag-less markers given an address from
+  /// their data. A marker whose data can't be read is left without one, so
+  /// it never matches: anyone can post such a record, and it must not fail
+  /// a sign-in.
+  Future<List<AccountRecordTx>> _withMarkerAddresses(
     List<AccountRecordTx> records,
   ) async {
     final result = <AccountRecordTx>[];
+    var reads = 0;
     for (final tx in records) {
       final isMarker = tx.tags[ethereumAccountVersionTag] == '2';
-      if (!isMarker || tx.tags.containsKey(ethereumAccountAddressTag)) {
+      if (!isMarker ||
+          tx.tags.containsKey(ethereumAccountAddressTag) ||
+          reads >= _maxMarkerDataReads) {
         result.add(tx);
         continue;
       }
+      reads++;
       final address = await _markerAddressFromData(tx.id);
-      if (address == null) return null;
-      result.add(AccountRecordTx(
-        id: tx.id,
-        height: tx.height,
-        tags: {...tx.tags, ethereumAccountAddressTag: address},
-      ));
+      result.add(address == null
+          ? tx
+          : AccountRecordTx(
+              id: tx.id,
+              height: tx.height,
+              tags: {...tx.tags, ethereumAccountAddressTag: address},
+            ));
     }
     return result;
   }
@@ -1719,10 +1723,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     final address = await wallet.getAddress();
     if (!newAccount) {
-      final confirmed = classifyAccountRecords(
+      var confirmed = classifyAccountRecords(
         records ?? const [],
         accountAddress: address,
       );
+      if (confirmed is! EthereumV2Marker) {
+        // No marker with an address tag matches: markers that hold the
+        // address as their data only (read only now, and only a few).
+        confirmed = classifyAccountRecords(
+          await _withMarkerAddresses(records ?? const []),
+          accountAddress: address,
+        );
+      }
       if (confirmed is! EthereumV2Marker) {
         _walletAnswered(cancel);
         emit(_logInPanel);
