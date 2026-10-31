@@ -144,7 +144,7 @@ the wire.
 
 **Keep them (recommended).**
 
-- The artifact stays drop-in: current state is a table a Publication, core-js
+- The artifact stays drop-in: current state is a table a publication page, core-js
   or any SQLite tool reads directly, which is the property Ariel built the
   SQLite container for.
 - Nothing about current state has to be specified as a derivation, and nothing
@@ -279,9 +279,10 @@ Three facts decide it:
 
 1. **A private artifact can never be range-read.** It is encrypted as one unit,
    so it is always compressed and the threshold never applies to it.
-2. **Only a public artifact served by a Publication gains from identity**, and
-   Publications do not exist yet. Until they do, identity costs about three
-   times the upload (17.70 MiB against 5.98 at 41,767 files) and buys nothing.
+2. **Only a reader that range-reads a public artifact gains from identity**,
+   and the one that might have, a publication, loads the whole snapshot. So
+   identity costs about three times the upload (17.70 MiB against 5.98 at
+   41,767 files) and buys nothing.
 3. **D13's earlier form, a `meta` flag, cannot work.** `meta` is inside the
    compressed bytes, so a reader would have to decompress to learn whether to
    decompress. The bytes already answer the question: a gzip stream starts with
@@ -294,15 +295,12 @@ So:
   owner, decrypt if private, then sniff. gzip is inflated with the existing bound; SQLite is
   read as is; anything else is refused. The web reader does this as of #2197,
   before any artifact is published.
-- **Producers, until Publications ship:** always gzip, as the code does now.
-- **Producers, when Publications ship:** a public artifact is published
-  identity above a size measured with the real page, not chosen now. 16 MiB of
-  SQLite (about 26,000 files at 640 B each) is the proposed starting point to
-  test against, since below it a whole fetch is a few seconds on an ordinary
-  connection and a cold gateway fetches the whole object anyway (§4.5).
+- **Producers:** always gzip, as the code does and as
+  `DRIVE_STATE_ARTIFACT.md` section 2.7 says. Publications load the whole
+  snapshot, so there is no size threshold for publishing identity.
 
-The permanent choice is per artifact, as before. What changes is that the
-number stays adjustable, because no reader depends on it.
+Readers still accept both encodings, so a threshold can be added later
+without a format change.
 
 ---
 
@@ -408,7 +406,7 @@ implementation, read by another, yielding identical entities. Nothing else prove
    tests B3.2 and B3.3 gate it; nothing ships in core-js or the CLI until both
    directions pass.
 4. **Then** the deferrals: export views (1.11), ArNS (1.12), incremental
-   artifacts, Publications and the identity threshold.
+   artifacts and the identity threshold.
 
 The human decisions on the critical path, the format's names before anything
 is published and the first upload, are 🔒 and stay that way.

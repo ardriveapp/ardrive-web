@@ -311,7 +311,7 @@ new copy:
 | Record | Who reads it | Trust |
 |---|---|---|
 | ArNS (on Solana) | The owner's ArDrive, the console, every gateway | The truth |
-| File metadata `assignedNames` | Visitors, shared drives, publications (through the drive state), the CLI and desktop | A hint: written on every add and removal, checked against the gateway before it's shown |
+| File metadata `assignedNames` | Visitors, shared drives, publications (through the drive state). The web app reads and writes it | A hint: written on every add and removal, checked against the gateway before it's shown |
 | `publication.json` `names` | Visitors of a publication | A hint, written each time the publication is published (Q25) |
 | Local tables `arns_records`, `ant_records` | The app, for speed and search | A cache, refreshed from ArNS when the Names page opens and after every change |
 
@@ -404,8 +404,11 @@ address in Roboto Mono, full or shortened.
 - **Web app:** everything here.
 - **Desktop:** the same words, the same `assignedNames` hint, the same
   5-minute default, and, when names come to desktop, the same three levels.
-- **CLI and core-js:** read and write `assignedNames` the same way; command
-  and flag names use "name" and "undername".
+  It does not read or write names yet.
+- **CLI and core-js:** not built. Neither reads nor writes `assignedNames` as
+  names. ardrive-core-js only carries the field into the drive state files it
+  produces. When they do, command and flag names should use "name" and
+  "undername".
 - **Help centre and releases:** the terminology table.
 
 ## Phases

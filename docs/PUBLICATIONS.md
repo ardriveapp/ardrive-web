@@ -1,10 +1,14 @@
 # Publications
 
-> **Status: phases 1 and 2 built** (publication mode, and publishing from
-> the app; 2026-10-24). Private publications (phase 3) and names (phase 4)
-> are designed here and not built. Build order, code seams and tests are in
-> `docs/publications/IMPLEMENTATION_PLAN.md`. A publication is an ArFS entity
-> (`docs/ArweaveFS.md`, "Publication").
+> **Status:** publication mode, publishing from the app (drive, folder and
+> file pages) and names phase 1 are built; `enableArNS` is on in every
+> flavour. Private drive and folder publications are not built; only private
+> file pages work. There is no unpublish. Build order, code seams and tests
+> are in `docs/publications/IMPLEMENTATION_PLAN.md`. A publication is an
+> ArFS entity (`docs/ArweaveFS.md`, "Publication"), which is the spec for its
+> tags, `publication.json` fields and read rules. This document is the
+> design and the ArDrive app's behaviour: the viewer, the gateway, the
+> owner's dialogs.
 
 A publication is a permanent web page that shows one ArDrive drive, or one
 folder of it, to anyone who opens its link. It is ArDrive itself in a
@@ -17,11 +21,18 @@ as it is; a private one opens with the drive key.
 | Term | Means | Shown to users as |
 |---|---|---|
 | Publication | What a visitor opens | "Published" to the owner; to a visitor, just a web page |
-| Publish, republish, unpublish | The owner's actions | Publish to web, Update, Unpublish |
+| Publish, republish | The owner's actions | Publish to web, Update |
 | Snapshot | A drive state artifact (`DRIVE_STATE_ARTIFACT.md`), the catalog the page loads | Snapshot |
 | Viewer bundle | One release of the ArDrive web build, uploaded to Arweave | never shown |
 | Page manifest | The Arweave path manifest that is the page | never shown; its link is the page's link |
 | Name | An ArNS name or undername pointing at a page manifest | Name |
+
+There is no unpublish. A publication is permanent: ArFS has no delete, and the
+page stays at its link. What the app offers is **Remove name**, which changes
+an ArNS record and not the publication: an undername's record is removed, and
+a main name is pointed at the shared empty page (visitors see "Nothing here
+right now"). The old page is still reachable by its own link, and by any name
+that still points at it.
 
 Publish is not Share. Share hands out a link to what exists, writes nothing and
 costs nothing. Publish writes permanent objects to Arweave.
@@ -53,9 +64,10 @@ costs nothing. Publish writes permanent objects to Arweave.
     newest one when nothing in the drive changed after it, else a new one.
     An update is a new manifest with the same `Publication-Id`, so a new link;
     the earlier links keep working.
-11. **Names:** the owner picks the main name or an undername. Unpublishing an
-    undername removes its record; unpublishing a main name points it at the
-    shared empty page (visitors see "Nothing here right now"). See
+11. **Names:** the owner picks the main name or an undername. Removing an
+    undername's name removes its record; removing a main name points it at the
+    shared empty page (visitors see "Nothing here right now"). This does not
+    unpublish anything: a publication cannot be removed. See
     [Names](#names) and `docs/NAMES.md`, the spec for names across ArDrive.
 12. **A publication is an ArFS entity** (`Entity-Type: publication`), as a
     drive state is: owner only, never encrypted, never a file in the drive,
@@ -250,20 +262,19 @@ serving it and the gateway it detected, nothing else.
 
 ## Names
 
+**Status:** names phase 1 is built and `enableArNS` is on in every flavour
+(`docs/NAMES.md` is the spec). Buying a name is not built.
+
 **ArNS moved to Solana** (`@ar.io/sdk` 4.x). Names are Metaplex Core assets
 owned by Solana keys; every record change needs a Solana signer. Names held by
 Arweave wallets before the move sit in an escrow until claimed into a Solana
-wallet (`ANTEscrow`, Arweave-attested claim). The app's own name features are
-stubbed (`packages/ario_sdk/web/src/index.js`: "not yet implemented for
-Solana"), so "Assign name" does not work in 2.90 either.
+wallet (`ANTEscrow`, Arweave-attested claim). Builds up to v2.90.0 stub the
+name features (`packages/ario_sdk/web/src/index.js`: "not yet implemented for
+Solana"), so "Assign name" does not work there.
 
-So publications ship in two halves:
-
-- **Without names (phases 1 to 3):** a page is its manifest link. The owner
-  copies it, or points a name at the manifest ID by hand with any ArNS tool.
-- **With names (phase 4):** the name step, unpublish, and the main-name
-  placeholder arrive with ArNS-on-Solana support in the app, specified in
-  `docs/NAMES.md`. Publications consume it:
+A page is its manifest link, and a name can point at it. In the current app
+the name step is part of publishing, specified in `docs/NAMES.md`.
+Publications consume it:
   - `publication.json` carries the names that point at the publication
     (`"names": ["docs_acme"]`), written each time it's published. Naming an
     existing publication changes the name only; the page shows it after the
@@ -272,6 +283,25 @@ So publications ship in two halves:
     with its cost, with a box to leave it where it is.
   - A private publication's name opens its unlock screen. "Copy link" gives
     the name plus the key after the `#`.
+
+## Viewer behaviour moved from the spec
+
+These ArDrive-app behaviours were once in the ArFS spec. They are not
+protocol.
+
+- **Trust.** A page's `publication.json` `owner` is self-declared. The viewer
+  checks it with one gateway lookup (see "How a page opens", step 6) and
+  refuses only a confirmed different signer of the snapshot, or, on a file
+  page, of the file's metadata transaction. It does not check who signed the
+  manifest or that `owner` owns the drive. The owner's own list of
+  publications is scoped to the signed-in owner.
+- **Display name.** `ownerName` is free text, like the title, and proves
+  nothing. A viewer shows the owner's shortened address beside it, never the
+  name alone.
+- **Wording.** Users see "Publish to web", not "publication".
+- **Cost of old builds.** ArDrive builds up to v2.90.0 download each page
+  manifest (about 82 KB) during a first sync and discard it; newer builds skip
+  publications without fetching them.
 
 ## UX: the visitor
 
@@ -387,8 +417,8 @@ window with an upward arrow; the globe is for public drives), beside Share in: a
 page on desktop and phone, and the drives list), a folder row's menus, and
 the details panel's toolbar for a drive or folder. Offered on the web, in the
 app (never in a publication), to the owner of a public drive, where snapshots
-can be published (`enableDriveStatePublishing`). Hidden on private drives
-until phase 3. A file's menu has it too, in place of Add name, for the owner
+can be published (`enableDriveStatePublishing`). Not offered on private drives
+(drive and folder publications of a private drive are not built). A file's menu has it too, in place of Add name, for the owner
 of a public or a private drive, when the file's data is theirs (not pinned):
 see [File pages](#file-pages).
 
@@ -521,8 +551,8 @@ opening on the look, where Next keeps it), **Open page** and **Done**.
 
 The manifest is the Publication entity (`docs/ArweaveFS.md`, "Publication"):
 `ArFS: 0.15`, `Entity-Type: publication`, `Drive-Id`, `Publication-Id` (kept by
-every version), `Publication-Scope` (`drive` or the folder ID),
-`Publication-Version: 1`, `Content-Type: application/x.arweave-manifest+json`,
+every version), `Publication-Scope` (`drive`, the folder ID or `file`),
+`Publication-Version` (1, or 2 for a file page), `Content-Type: application/x.arweave-manifest+json`,
 a `Keyword` tag per keyword, and the app's tags (`App-Name: ArDrive-App`,
 `App-Platform`, `App-Version`, `Unix-Time`). Every other file carries its
 `Content-Type`, the `Publication-Id` and the app's tags, and no `Entity-Type`.
@@ -533,6 +563,10 @@ owner's transactions with `Entity-Type: publication`, grouped by
 `Publication-Id`; only the drive owner's count.
 
 ## Private publications
+
+Not built for drives and folders: the section below is a design, and the
+spec (`docs/ArweaveFS.md`) marks that form reserved. Private file pages are
+built (see File pages).
 
 - The key travels like a private drive link's, `#/?driveKey=…`, in the fragment
   only. Typed keys are never written to the URL.
@@ -625,7 +659,7 @@ marker, bump `staging.json`'s pinned viewer and its `configVersion`.
 
 ### Not built
 
-Unpublish (as for drives and folders), and per-file pages inside a folder
+Unpublish (there is none, for any scope), and per-file pages inside a folder
 page (decision 9).
 
 ## Phases
@@ -635,8 +669,8 @@ page (decision 9).
 | 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging upload loads through turbo-gateway.com and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`; every path loads through ar-io.dev once it has fetched the upload (it may serve gzipped items decompressed, which is valid); first-visit transfer is measured |
 | 1 · Publication mode | The viewer, public publications, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
 | 2 · Publish (public) | The dialog, the published view, update, the globe, discovery, the publication entity | A public drive and folder publish from the app with Turbo and AR; an update with nothing changed reuses the snapshot and earlier images; what is left out matches the page (done 2026-10-24) |
-| 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `publication.json`, `index.html` or any tag |
-| 4 · Names | The name step, unpublish, placeholder page | Needs ArNS-on-Solana in the app first |
+| 3 · Private (private file pages built; drive and folder pages not) | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `publication.json`, `index.html` or any tag |
+| 4 · Names | The name step and the placeholder page | Built as names phase 1 (`docs/NAMES.md`). There is no unpublish |
 
 Phase 1 must reach a production release before any real page works, because a
 page runs the release it pins.
