@@ -144,9 +144,8 @@ class _SuccessViewState extends State<SuccessView> {
     String label,
     String value,
     String? subvalue,
-    ArDriveColorTokens colors, {
-    bool isHighlighted = false,
-  }) {
+    ArDriveColorTokens colors,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -163,7 +162,9 @@ class _SuccessViewState extends State<SuccessView> {
               value,
               style: ArDriveTypographyNew.of(context).paragraphSmall(
                 fontWeight: ArFontWeight.semiBold,
-                color: isHighlighted ? colors.statusSuccessFg : colors.textHigh,
+                // A figure, not a status: the success colour measures too low
+                // as text on this surface.
+                color: colors.textHigh,
               ),
             ),
             if (subvalue != null)
@@ -274,7 +275,6 @@ class _SuccessViewState extends State<SuccessView> {
                             ? _formatStorageSubvalue(widget.newBalanceStorage!)
                             : null,
                         colors,
-                        isHighlighted: true,
                       ),
                     ],
                   ],
