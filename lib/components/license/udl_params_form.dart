@@ -22,17 +22,23 @@ class UdlParamsForm extends StatefulWidget {
   State<UdlParamsForm> createState() => _UdlParamsFormState();
 }
 
+/// Below this width the fee and currency stack instead of sharing a row.
+const _kStackBelowWidth = 400.0;
+
 class _UdlParamsFormState extends State<UdlParamsForm> {
+  late final AbstractControl<String> _feeControl =
+      widget.formGroup.control('licenseFeeAmount') as AbstractControl<String>;
+  late final TextEditingController _feeController =
+      TextEditingController(text: _feeControl.value);
+
+  @override
+  void dispose() {
+    _feeController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final inputBorder = OutlineInputBorder(
-      borderSide: BorderSide(
-        color: ArDriveTheme.of(context).themeData.colorTokens.strokeMid,
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(4),
-    );
-
     return ReactiveForm(
         formGroup: widget.formGroup,
         child: Column(
@@ -40,55 +46,61 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: LabeledInput(
-                    labelText:
-                        // TODO: Localize
-                        // appLocalizationsOf(context).udlLicenseFee,
-                        'License fee',
-                    child: ReactiveTextField(
-                      formControlName: 'licenseFeeAmount',
-                      cursorColor: ArDriveTheme.of(context)
-                          .themeData
-                          .colorTokens
-                          .textHigh,
-                      keyboardType: TextInputType.number,
-                      showErrors: (control) => control.dirty && control.invalid,
-                      decoration: InputDecoration(
-                        border: inputBorder,
-                        enabledBorder: inputBorder,
-                        focusedBorder: inputBorder,
-                      ),
-                      onChanged: (s) {
-                        widget.onChangeLicenseFee();
-                      },
-                      style: const TextStyle(height: 1.5),
-                    ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final fee = LabeledInput(
+                  labelText:
+                      // TODO: Localize
+                      // appLocalizationsOf(context).udlLicenseFee,
+                      'License fee',
+                  child: ArDriveTextFieldNew(
+                    controller: _feeController,
+                    keyboardType: TextInputType.number,
+                    showErrorMessage: _feeControl.dirty && _feeControl.invalid,
+                    errorMessage: _feeControl.dirty && _feeControl.invalid
+                        ? _feeControl.errors.values.first.toString()
+                        : null,
+                    onChanged: (s) {
+                      _feeControl.value = s;
+                      _feeControl.markAsDirty();
+                      setState(() {});
+                      widget.onChangeLicenseFee();
+                    },
                   ),
-                ),
-                Container(
-                  width: kMediumDialogWidth * 0.5,
-                  padding: const EdgeInsets.only(left: 24),
-                  child: LabeledInput(
-                    labelText: appLocalizationsOf(context).currency,
-                    child: ReactiveArDriveSelectField(
-                      formControlName: 'licenseFeeCurrency',
-                      showErrors: (control) => control.dirty && control.invalid,
-                      validationMessages:
-                          kValidationMessages(appLocalizationsOf(context)),
-                      choices: [
-                        for (final entry in udlCurrencyValues.entries)
-                          ArDriveChoice(value: entry.key, label: entry.value),
-                      ],
-                    ),
+                );
+                final currency = LabeledInput(
+                  labelText: appLocalizationsOf(context).currency,
+                  child: ReactiveArDriveSelectField(
+                    formControlName: 'licenseFeeCurrency',
+                    showErrors: (control) => control.dirty && control.invalid,
+                    validationMessages:
+                        kValidationMessages(appLocalizationsOf(context)),
+                    choices: [
+                      for (final entry in udlCurrencyValues.entries)
+                        ArDriveChoice(value: entry.key, label: entry.value),
+                    ],
                   ),
-                ),
-              ],
+                );
+
+                // Side by side leaves the fee a sliver on a phone: stack them.
+                if (constraints.maxWidth < _kStackBelowWidth) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [fee, const SizedBox(height: 16), currency],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: fee),
+                    Container(
+                      width: kMediumDialogWidth * 0.5,
+                      padding: const EdgeInsets.only(left: 24),
+                      child: currency,
+                    ),
+                  ],
+                );
+              },
             ),
             LabeledInput(
               labelText:
