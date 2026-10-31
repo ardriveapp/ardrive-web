@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
@@ -70,8 +72,11 @@ void main() {
     late MockSolanaWalletService solana;
     late MockCryptoTransactionStorage storage;
 
-    CryptoTopupBloc blocFor(Flavor flavor) => CryptoTopupBloc(
+    CryptoTopupBloc blocFor(Flavor flavor, {Duration? walletPromptTimeout}) =>
+        CryptoTopupBloc(
           networkConfig: networkFor(flavor),
+          walletPromptTimeout:
+              walletPromptTimeout ?? const Duration(minutes: 3),
           paymentService: MockCryptoPaymentService(),
           ethereumWalletService: ethereum,
           solanaWalletService: solana,
@@ -188,6 +193,31 @@ void main() {
           as CryptoTopupNetworkSwitch;
 
       expect(state.error, 'the RPC URL was refused');
+    });
+
+    test('a wallet that never answers the connect ends in a retryable error',
+        () async {
+      when(() => ethereum.connect(provider: any(named: 'provider')))
+          .thenAnswer((_) => Completer<EthereumWalletState>().future);
+      final bloc = blocFor(
+        Flavor.development,
+        walletPromptTimeout: const Duration(milliseconds: 50),
+      );
+      addTearDown(bloc.close);
+
+      bloc.add(const CryptoTopupSelectToken(CryptoToken.ethBase));
+      await bloc.stream.firstWhere((s) => s is CryptoTopupWalletConnection);
+      final failed = bloc.stream.firstWhere(
+        (s) => s is CryptoTopupWalletConnection && s.error != null,
+      );
+      bloc.add(const CryptoTopupWalletConnectionRequested(
+        walletType: WalletType.ethereum,
+      ));
+      final state = (await failed.timeout(const Duration(seconds: 5)))
+          as CryptoTopupWalletConnection;
+
+      expect(state.isConnecting, isFalse);
+      expect(state.error, contains('No payment was made'));
     });
 
     test('production asks the wallet for Base mainnet', () async {
