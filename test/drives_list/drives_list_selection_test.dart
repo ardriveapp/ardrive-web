@@ -21,11 +21,12 @@ void main() {
     bool lastSyncFailed = false,
     bool isSyncing = false,
     bool hasBeenWalked = true,
+    bool isPrivate = false,
   }) =>
       DriveListItem(
         id: id,
         name: id,
-        isPrivate: false,
+        isPrivate: isPrivate,
         isSharedWithMe: false,
         isHidden: false,
         dateCreated: DateTime(2024),
@@ -241,14 +242,20 @@ void main() {
       expect(cleared, 0, reason: 'nothing was ticked to clear');
     });
 
-    testWidgets('a long press on the privacy icon starts selecting too',
+    testWidgets('a long press on the private lock starts selecting too',
         (tester) async {
-      // Its tooltip used to take the long press and show its label.
-      await pump(tester, twoDrives);
+      // A Material tooltip there took the long press and showed its label.
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [drive('a', isPrivate: true), drive('b')],
+          scope: DriveScope.all,
+        ),
+      );
 
       await tester.longPress(find
           .byWidgetPredicate(
-              (w) => w is ArDriveTooltip && w.message == 'Public')
+              (w) => w is ArDriveTooltip && w.message == 'Private drive')
           .first);
       await tester.pumpAndSettle();
 

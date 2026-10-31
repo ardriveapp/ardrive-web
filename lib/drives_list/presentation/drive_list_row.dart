@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/components/drive_fingerprint.dart';
 import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
@@ -392,26 +393,12 @@ class DriveListRow extends StatelessWidget {
     }
 
     return ListNameCell(
-      // Public or private, said with the same icon the rest of the app uses
-      // for it rather than a word this row has no space for.
-      // ArDriveTooltip, not Material's: under a row that starts selecting
-      // on a long press, it leaves the long press to the row.
-      icon: ArDriveTooltip(
-        message: drive.isPrivate
-            ? appLocalizationsOf(context).private
-            : appLocalizationsOf(context).public,
-        child: drive.isPrivate
-            ? ArDriveIcons.privateDrive(
-                size: _iconSize,
-                color: colorTokens.textMid,
-              )
-            : ArDriveIcons.publicDrive(
-                size: _iconSize,
-                color: colorTokens.textMid,
-              ),
-      ),
+      // Every drive alike, as Google Drive draws them. Only a private one is
+      // marked, by the lock after its name: the kind that needs a key.
+      icon: ArDriveIcons.drive(size: _iconSize, color: colorTokens.textMid),
       title: drive.name,
       marks: [
+        if (drive.isPrivate) const PrivateDriveLock(size: 16),
         if (drive.isSharedWithMe) _SharedMarker(),
         // The name's marks are spaced by the list, so the mark adds none.
         PublishedToWebMark(driveId: drive.id, leadingGap: 0),

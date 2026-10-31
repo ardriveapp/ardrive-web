@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// The lock that says a drive is private, for the places that show a drive's
 /// name without room for a word.
 ///
-/// The drives list marks private drives with this same icon. It carries a
+/// The drives list puts it after a private drive's name. It carries a
 /// label as well as a tooltip, because an icon alone is silent to a screen
 /// reader.
 class PrivateDriveLock extends StatelessWidget {
@@ -22,7 +22,9 @@ class PrivateDriveLock extends StatelessWidget {
       label: label,
       image: true,
       excludeSemantics: true,
-      child: Tooltip(
+      // ArDriveTooltip, not Material's: in a row that starts selecting on a
+      // long press, it leaves the long press to the row.
+      child: ArDriveTooltip(
         message: label,
         child:
             ArDriveIcons.privateDrive(size: size, color: colorTokens.textMid),
