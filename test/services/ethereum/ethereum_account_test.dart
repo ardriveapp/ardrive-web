@@ -123,6 +123,68 @@ void main() {
           isNull);
     });
 
+    group('markers count only when their address is the wallet\'s', () {
+      const forged = AccountRecordTx(id: 'forged', tags: {
+        'ArDrive-Account-Version': '2',
+        'ArDrive-Account-Address': 'someone-else',
+      });
+      String? id(EthereumAccountRecord? r) => r?.txId;
+
+      test('an earlier forged marker, then the real one: the real one', () {
+        final found = classifyAccountRecords([forged, marker],
+            accountAddress: 'arweave-address');
+        expect(found, isA<EthereumV2Marker>());
+        expect(id(found), 'marker');
+      });
+
+      test('an earlier forged marker, then a version 1 record: version 1', () {
+        final found = classifyAccountRecords([forged, v1],
+            accountAddress: 'arweave-address');
+        expect(found, isA<EthereumV1Record>());
+      });
+
+      test('only a forged marker: no record', () {
+        expect(
+            classifyAccountRecords([forged], accountAddress: 'arweave-address'),
+            isNull);
+      });
+
+      test('the real marker beats a later version 1 record, which is kept', () {
+        final found = classifyAccountRecords([forged, marker, v1],
+            accountAddress: 'arweave-address') as EthereumV2Marker;
+        expect(found.txId, 'marker');
+        expect(found.laterV1RecordId, 'v1');
+      });
+
+      test('a version 1 record before the real marker: version 1', () {
+        expect(
+            classifyAccountRecords([v1, marker],
+                accountAddress: 'arweave-address'),
+            isA<EthereumV1Record>());
+      });
+
+      test('a marker with no address tag never matches', () {
+        const bare =
+            AccountRecordTx(id: 'bare', tags: {'ArDrive-Account-Version': '2'});
+        expect(
+            classifyAccountRecords([bare], accountAddress: 'arweave-address'),
+            isNull);
+      });
+
+      test('the real marker only: unchanged', () {
+        expect(
+            id(classifyAccountRecords([marker],
+                accountAddress: 'arweave-address')),
+            'marker');
+      });
+
+      test('before the address is known, the candidate carries the records',
+          () {
+        final found = classifyAccountRecords([forged, marker, v1]);
+        expect((found as EthereumV2Marker).records, hasLength(3));
+      });
+    });
+
     test(
         'records from several endpoints: by block, pending last, equal heights '
         'in the last endpoint\'s order', () {

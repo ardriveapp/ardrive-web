@@ -2576,6 +2576,13 @@ class ArweaveService {
   Future<EthereumAccountRecord?> findEthereumAccountRecord(
     String authAddress,
   ) {
+    // The query reads the first 20 records, oldest block first (see
+    // AccountRecords.graphql), and that is enough: spam posted after the
+    // account's real record was mined sorts after it, so it can't push it
+    // out of the 20. Only records that predate the account (posted before
+    // its first sign-up, the case no rule here can tell from a real one) or
+    // share the real record's block could crowd it out. Pending records
+    // rank last (see mergeAccountRecords).
     Future<List<AccountRecordTx>> lookupAt(String url) async {
       final client =
           fragmentFreeArtemisClient(url, httpClient: accountLookupHttpClient);

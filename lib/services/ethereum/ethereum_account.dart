@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:collection/collection.dart' show IterableExtension, mergeSort;
 // ignore: depend_on_referenced_packages
@@ -107,6 +108,7 @@ class EthereumV2Marker extends EthereumAccountRecord {
     super.txId, {
     this.accountAddress,
     this.laterV1RecordId,
+    this.records = const [],
   });
 
   final String? accountAddress;
@@ -116,6 +118,11 @@ class EthereumV2Marker extends EthereumAccountRecord {
   /// the account message derives isn't the marker's, the password is the
   /// way in, checked against this record.
   final String? laterV1RecordId;
+
+  /// The records this was classified from, earliest first. The marker is
+  /// only a candidate until the wallet the account message derives is
+  /// known: [classifyAccountRecords] again with that address confirms it.
+  final List<AccountRecordTx> records;
 }
 
 bool _isMarker(AccountRecordTx tx) => tx.tags[ethereumAccountVersionTag] == '2';
@@ -132,15 +139,38 @@ bool _isV1Record(AccountRecordTx tx) =>
 /// - A version 1 record an old build posts after a rollback always comes
 ///   after the real marker, so it can't take a version 2 account over.
 ///
+/// The verify message is the same for everyone, so anyone holding its
+/// signature can post records under the auth key. A marker counts only if
+/// its `ArDrive-Account-Address` is [accountAddress], the address the
+/// account message's signature derives: a forged one can lock an account
+/// out at worst, never open it. Markers that don't match are skipped (and
+/// logged), so the earliest *matching* marker beats a later version 1
+/// record, and a version 1 record earlier than any matching marker still
+/// means version 1.
+///
+/// While [accountAddress] is null (before the account message is signed)
+/// every marker is a candidate, and the result is an [EthereumV2Marker]
+/// carrying [EthereumV2Marker.records] to be classified again once the
+/// address is known.
+///
 /// Null when there are none.
-EthereumAccountRecord? classifyAccountRecords(List<AccountRecordTx> txs) {
+EthereumAccountRecord? classifyAccountRecords(
+  List<AccountRecordTx> txs, {
+  String? accountAddress,
+}) {
   for (var i = 0; i < txs.length; i++) {
     final tx = txs[i];
     if (_isMarker(tx)) {
+      final address = tx.tags[ethereumAccountAddressTag];
+      if (accountAddress != null && address != accountAddress) {
+        logger.w('Ignoring an account marker for another address: ${tx.id}');
+        continue;
+      }
       return EthereumV2Marker(
         tx.id,
-        accountAddress: tx.tags[ethereumAccountAddressTag],
+        accountAddress: address,
         laterV1RecordId: txs.skip(i + 1).where(_isV1Record).firstOrNull?.id,
+        records: txs,
       );
     }
     if (_isV1Record(tx)) return EthereumV1Record(tx.id);
