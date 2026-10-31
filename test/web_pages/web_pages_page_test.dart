@@ -1,6 +1,8 @@
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/models/models.dart';
@@ -8,6 +10,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/web_pages/domain/web_page.dart';
 import 'package:ardrive/web_pages/presentation/web_pages_cubit.dart';
 import 'package:ardrive/web_pages/presentation/web_pages_page.dart';
@@ -29,6 +32,8 @@ import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 class _MockConfigService extends Mock implements ConfigService {}
+
+class _MockActivityTracker extends Mock implements ActivityTracker {}
 
 class _MockWebPagesCubit extends MockCubit<WebPagesState>
     implements WebPagesCubit {}
@@ -84,6 +89,7 @@ void main() {
   late AppRouterDelegate delegate;
   late _RecordingUrlLauncher launcher;
   late MockDrivesCubit drives;
+  late MockSyncBloc sync;
   late MockDriveDao driveDao;
   late _MockNamesCubit names;
   var arns = false;
@@ -91,6 +97,8 @@ void main() {
   setUp(() {
     arns = false;
     drives = MockDrivesCubit();
+    sync = MockSyncBloc();
+    whenListen(sync, const Stream<SyncState>.empty(), initialState: SyncIdle());
     whenListen(drives, const Stream<DrivesState>.empty(),
         initialState: DrivesLoadInProgress());
     driveDao = MockDriveDao();
@@ -137,8 +145,13 @@ void main() {
               ),
               BlocProvider<WebPagesCubit>.value(value: cubit),
               BlocProvider<DrivesCubit>.value(value: drives),
+              BlocProvider<SyncCubit>.value(value: sync),
               BlocProvider<ArNSNamesCubit>.value(value: names),
               RepositoryProvider<DriveDao>.value(value: driveDao),
+              // Dialogs pause it while they are up.
+              ListenableProvider<ActivityTracker>.value(
+                value: _MockActivityTracker(),
+              ),
             ],
             child: const Scaffold(body: WebPagesBody()),
           ),
@@ -192,7 +205,7 @@ void main() {
 
     expect(find.byType(WebPageDetailsPanel), findsOneWidget);
     expect(find.text('From'), findsOneWidget);
-    expect(find.text('Campaigns folder, Websites drive'), findsWidgets);
+    expect(find.text('Campaigns in Websites'), findsWidgets);
     expect(launcher.launched, isEmpty, reason: 'a click only chooses');
 
     await tester.tap(find.byTooltip('Close'));
@@ -234,6 +247,43 @@ void main() {
     expect(find.byType(ArDriveMultiSelectBox), findsNothing);
   });
 
+  /// A drive named "New Test Drive" read "New Test Drive drive" with a
+  /// suffix, and a folder's drive the same.
+  testWidgets('the subtitle names the drive without a suffix', (tester) async {
+    final drivePage = WebPage(
+      kind: WebPageKind.publication,
+      publication: const Publication([]),
+      id: 'ntd',
+      title: 'New Test Drive',
+      driveId: 'd',
+      driveName: 'New Test Drive',
+      folderName: null,
+      openFolderId: 'f',
+      dataTxId: 'ntd-tx',
+      updatedAt: DateTime(2026, 3),
+    );
+    final folderPage = WebPage(
+      kind: WebPageKind.publication,
+      publication: const Publication([]),
+      id: 'docs',
+      title: 'Docs',
+      driveId: 'd',
+      driveName: 'New Test Drive',
+      folderName: 'Docs',
+      openFolderId: 'f',
+      dataTxId: 'docs-tx',
+      updatedAt: DateTime(2026, 2),
+    );
+    pagesAre([drivePage, folderPage]);
+    await pump(tester);
+
+    expect(find.textContaining('Drive drive'), findsNothing);
+    expect(find.textContaining('folder,'), findsNothing);
+    expect(find.text('Docs in New Test Drive'), findsOneWidget);
+    // The drive's own page: its title and its subtitle are the drive.
+    expect(find.text('New Test Drive'), findsNWidgets(2));
+  });
+
   testWidgets('no inline copy button in the rows', (tester) async {
     pagesAre([older]);
     await pump(tester);
@@ -241,15 +291,127 @@ void main() {
     expect(find.byTooltip('Copy link'), findsNothing);
   });
 
-  testWidgets('nothing yet: Publish and the empty state go to public drives',
+  testWidgets('nothing yet: the empty state goes to public drives',
       (tester) async {
     pagesAre(const []);
     await pump(tester);
 
     expect(find.text('Nothing published yet'), findsOneWidget);
-    await tester.tap(find.text('Publish'));
+    await tester.tap(find.text('Go to your drives'));
     expect(delegate.showingDrivesList, isTrue);
     expect(delegate.drivesListScope, DriveScope.public);
+  });
+
+  /// Publish used to go to Your drives and leave the rest to the reader. It
+  /// asks what to publish, in the drive picker, then publishes it as its
+  /// menu does.
+  testWidgets('Publish waits for the drives, rather than say there are none',
+      (tester) async {
+    pagesAre([older]);
+    await pump(tester);
+
+    final publish = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, 'Publish'));
+    expect(publish.isDisabled, isTrue);
+    await tester.tap(find.text('Publish'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DrivePickerDialog), findsNothing);
+  });
+
+  testWidgets('Publish asks what to publish, and says when nothing can be',
+      (tester) async {
+    whenListen(
+      drives,
+      const Stream<DrivesState>.empty(),
+      initialState: DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: const [],
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: true,
+      ),
+    );
+    pagesAre([older]);
+    await pump(tester);
+    expect(
+      tester
+          .widget<ArDriveButtonNew>(
+              find.widgetWithText(ArDriveButtonNew, 'Publish'))
+          .isDisabled,
+      isFalse,
+    );
+
+    await tester.tap(find.text('Publish'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DrivePickerDialog), findsOneWidget);
+    expect(find.text('Publish to web'), findsOneWidget);
+    // No public drive of the reader's can be published here.
+    expect(find.text('No public drives yet'), findsOneWidget);
+    expect(delegate.showingDrivesList, isFalse,
+        reason: 'it no longer leaves the page');
+  });
+
+  group('icons, as the explorer draws them', () {
+    IconData? iconOf(WidgetTester tester, String title) {
+      final row = find.ancestor(
+        of: find.text(title),
+        matching: find.byType(ListTableRow),
+      );
+      return tester
+          .widget<ArDriveIcon>(
+            find.descendant(of: row, matching: find.byType(ArDriveIcon)).first,
+          )
+          .icon;
+    }
+
+    WebPage filePage(String name, {String? contentType}) => WebPage(
+          kind: WebPageKind.filePage,
+          publication: const Publication([]),
+          id: name,
+          title: name,
+          driveId: 'd',
+          driveName: 'Websites',
+          folderName: null,
+          openFolderId: 'f',
+          dataTxId: '$name-tx',
+          updatedAt: DateTime(2026, 3),
+          contentType: contentType,
+        );
+
+    testWidgets("a file page has its file's type icon", (tester) async {
+      pagesAre([
+        filePage('permaman_detailed.png', contentType: 'image/png'),
+        filePage('theme.mp3', contentType: 'audio/mpeg'),
+      ]);
+      await pump(tester);
+
+      expect(
+          iconOf(tester, 'permaman_detailed.png'), ArDriveIcons.image().icon);
+      expect(iconOf(tester, 'theme.mp3'), ArDriveIcons.music().icon);
+    });
+
+    testWidgets("a drive's page has the drive icon, a folder's the folder's",
+        (tester) async {
+      final drivePage = _page('Websites', DateTime(2026, 2), deployment: false);
+      final folderPage = WebPage(
+        kind: WebPageKind.publication,
+        publication: const Publication([]),
+        id: 'campaigns',
+        title: 'Campaigns',
+        driveId: 'd',
+        driveName: 'Websites',
+        folderName: 'Campaigns',
+        openFolderId: 'f',
+        dataTxId: 'campaigns-tx',
+        updatedAt: DateTime(2026, 3),
+      );
+      pagesAre([drivePage, folderPage]);
+      await pump(tester);
+
+      expect(iconOf(tester, 'Websites'), ArDriveIcons.publicDrive().icon);
+      expect(iconOf(tester, 'Campaigns'), ArDriveIcons.folderOutline().icon);
+    });
   });
 
   /// The icon says it is a deployment; a tag beside the name said it again.

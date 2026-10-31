@@ -3,6 +3,7 @@ import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:equatable/equatable.dart';
 
 enum WebPageKind {
@@ -32,6 +33,7 @@ class WebPage extends Equatable {
     required this.updatedAt,
     this.publication,
     this.isPrivate = false,
+    this.contentType,
   });
 
   final WebPageKind kind;
@@ -64,6 +66,14 @@ class WebPage extends Equatable {
   /// A private file's page: its link needs the file's key to open.
   final bool isPrivate;
 
+  /// A file page's file type, for its icon: the file's content type, or the
+  /// one its name implies when an older upload carries none.
+  final String? contentType;
+
+  /// A publication of a whole drive rather than one of its folders.
+  bool get isDrivePublication =>
+      kind == WebPageKind.publication && folderName == null;
+
   bool get isDeployment => kind == WebPageKind.deployment;
   bool get isFilePage => kind == WebPageKind.filePage;
 
@@ -80,6 +90,7 @@ class WebPage extends Equatable {
         updatedAt,
         publication,
         isPrivate,
+        contentType,
       ];
 }
 
@@ -121,6 +132,10 @@ List<WebPage> composeWebPages({
         updatedAt: latest.publishedAt,
         publication: publication,
         isPrivate: drive.isPrivate,
+        contentType: switch (file.dataContentType) {
+          final type? when type.isNotEmpty => type,
+          _ => lookupMimeType(file.name),
+        },
       ));
       continue;
     }

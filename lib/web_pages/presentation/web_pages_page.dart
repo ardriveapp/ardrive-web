@@ -20,6 +20,8 @@ import 'package:ardrive/drives_list/presentation/open_drive_on_selection.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart'
+    show getIconForContentType;
 import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -199,6 +201,7 @@ class _WebPagesViewState extends State<WebPagesView> {
     final strings = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final state = context.watch<WebPagesCubit>().state;
+    final drivesKnown = context.watch<DrivesCubit>().state is DrivesLoadSuccess;
 
     void goToPublicDrives() => context
         .read<AppRouterDelegate>()
@@ -216,7 +219,11 @@ class _WebPagesViewState extends State<WebPagesView> {
           strings.webPagesPublish,
           minWidth: 96,
         ),
-        onPressed: goToPublicDrives,
+        // Choose what to publish, then publish it as its own menu does.
+        // Not before the drives are known: the picker would say there are
+        // none.
+        isDisabled: !drivesKnown,
+        onPressed: () => pickAndPublishToWeb(context),
       ),
     );
 
@@ -338,9 +345,10 @@ const _pageFlex = 6;
 const _linkFlex = 5;
 const _updatedFlex = 3;
 
-/// A publication's or a deployment's icon. The icon alone says which: a
-/// deployment's says so to a screen reader too, where a tag beside the name
-/// used to.
+/// A web page's icon, from what it publishes, as the explorer draws it: a
+/// file page has its file's type icon (an image's for a .png), a drive's or
+/// a folder's page the drive or folder icon. A deployment is a site, and its
+/// icon says so to a screen reader too, where a tag beside the name used to.
 Widget webPageIcon(BuildContext context, WebPage page, {double size = 20}) {
   final color = ArDriveTheme.of(context).themeData.colorTokens.textMid;
   if (page.isDeployment) {
@@ -351,21 +359,29 @@ Widget webPageIcon(BuildContext context, WebPage page, {double size = 20}) {
       semanticLabel: appLocalizationsOf(context).arnsDeployment,
     );
   }
+  // The explorer's icon for the type, in the row's colour: the helper drops
+  // the colour for most file types.
+  ArDriveIcon typeIcon(String contentType) => ArDriveIcon(
+        icon: getIconForContentType(contentType).icon,
+        size: size,
+        color: color,
+      );
   if (page.isFilePage) {
     return Semantics(
       label: appLocalizationsOf(context).publishHowPage,
-      child: ArDriveIcons.file(size: size, color: color),
+      child: typeIcon(page.contentType ?? ''),
     );
   }
-  return ArDriveIcons.publishToWeb(size: size, color: color);
+  return typeIcon(page.isDrivePublication ? 'drive' : 'folder');
 }
 
-/// "<folder> folder, <drive> drive", or "<drive> drive".
+/// "<folder> in <drive>", or the drive's name alone. No "drive" or
+/// "folder" suffix: names often end in one already ("New Test Drive drive").
 String webPageSource(BuildContext context, WebPage page) {
   final strings = appLocalizationsOf(context);
   final folder = page.folderName;
   return folder == null
-      ? strings.webPagesFromDrive(page.driveName)
+      ? page.driveName
       : strings.webPagesFromFolder(folder, page.driveName);
 }
 
