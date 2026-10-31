@@ -861,8 +861,6 @@ class _ProfileCardState extends State<ProfileCard> {
   Widget _buildBalanceSection(BuildContext context, ProfileLoggedIn state) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final walletBalance = state.user.walletBalance;
-    final hasArBalance = walletBalance > BigInt.zero;
 
     return BlocProvider(
       create: (context) => TurboBalanceCubit(
@@ -972,29 +970,6 @@ class _ProfileCardState extends State<ProfileCard> {
                       ),
                   ],
                 ),
-                // AR Balance — only if non-zero
-                if (hasArBalance) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'AR Balance',
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: colorTokens.textMid,
-                        ),
-                      ),
-                      Text(
-                        convertWinstonToLiteralString(walletBalance),
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textHigh,
-                          fontWeight: ArFontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           );
