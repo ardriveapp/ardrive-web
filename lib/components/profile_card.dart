@@ -276,6 +276,21 @@ class _ProfileCardState extends State<ProfileCard> {
               },
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
+            _ProfileMenuRow(
+              key: const Key('profileBilling'),
+              label: appLocalizationsOf(context).billing,
+              icon: ArDriveIcons.carretRight(
+                size: 21,
+                color: colorTokens.iconMid,
+              ),
+              onTap: () {
+                setState(() {
+                  _showProfileCard = false;
+                });
+                context.read<AppRouterDelegate>().showBilling();
+              },
+            ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
             ArDriveAccordion(
               backgroundColor: Colors.transparent,
               automaticallyCloseWhenOpenAnotherItem: true,

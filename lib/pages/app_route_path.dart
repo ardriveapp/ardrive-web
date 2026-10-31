@@ -34,6 +34,10 @@ class AppRoutePath {
   /// how the account signs in, what this device remembers, its addresses.
   final bool account;
 
+  /// Whether the app is showing the Billing page - `/billing`: Turbo Credits,
+  /// purchases and shared credits.
+  final bool billing;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -99,6 +103,7 @@ class AppRoutePath {
     this.arnsName,
     this.webPages = false,
     this.account = false,
+    this.billing = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -133,6 +138,9 @@ class AppRoutePath {
 
   /// The Account and security page.
   factory AppRoutePath.account() => const AppRoutePath(account: true);
+
+  /// The Billing page.
+  factory AppRoutePath.billing() => const AppRoutePath(billing: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({

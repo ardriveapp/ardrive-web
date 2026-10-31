@@ -83,7 +83,7 @@ String? solanaWalletName(String? provider) => switch (provider) {
 
 /// Which Solana wallet signed this session in. The profile doesn't record
 /// it: the wallet this session connected, or the only one installed.
-String? _detectSolanaProvider() {
+String? detectSolanaProvider() {
   try {
     final service = SolanaProviderService();
     final active = service.activeProvider();
@@ -188,7 +188,12 @@ class AccountPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final body = AccountSections(solanaProvider: solanaProvider);
     return ScreenTypeLayout.builder(
-      mobile: (context) => _PhonePage(child: body),
+      mobile: (context) => PhonePage(
+        title: appLocalizationsOf(context).accountAndSecurity,
+        backKey: const Key('accountBack'),
+        onBack: () => context.read<AppRouterDelegate>().closeAccount(),
+        child: body,
+      ),
       desktop: (context) => ListPageChrome(
         child: SingleChildScrollView(
           child: Column(
@@ -219,9 +224,20 @@ class AccountPage extends StatelessWidget {
   }
 }
 
-class _PhonePage extends StatelessWidget {
-  const _PhonePage({required this.child});
+/// A page that takes the whole phone screen: a back arrow and [title] above
+/// [child]. Shared by Account and security and Billing.
+class PhonePage extends StatelessWidget {
+  const PhonePage({
+    super.key,
+    required this.title,
+    required this.backKey,
+    required this.onBack,
+    required this.child,
+  });
 
+  final String title;
+  final Key backKey;
+  final VoidCallback onBack;
   final Widget child;
 
   @override
@@ -248,14 +264,13 @@ class _PhonePage extends StatelessWidget {
                     height: 48,
                     child: Center(
                       child: ArDriveIconButton(
-                        key: const Key('accountBack'),
+                        key: backKey,
                         tooltip: strings.accountBack,
                         icon: ArDriveIcons.arrowLeft(
                           size: 24,
                           color: colors.iconHigh,
                         ),
-                        onPressed: () =>
-                            context.read<AppRouterDelegate>().closeAccount(),
+                        onPressed: onBack,
                       ),
                     ),
                   ),
@@ -264,7 +279,7 @@ class _PhonePage extends StatelessWidget {
                     child: Semantics(
                       header: true,
                       child: Text(
-                        strings.accountAndSecurity,
+                        title,
                         style: ArDriveTypographyNew.of(context).heading5(
                           color: colors.textHigh,
                           fontWeight: ArFontWeight.bold,
@@ -332,7 +347,7 @@ class AccountSections extends StatelessWidget {
               ? 'MetaMask'
               : strings.accountEthereumWallet,
           AccountSignInKind.solana =>
-            solanaWalletName(solanaProvider ?? _detectSolanaProvider()) ??
+            solanaWalletName(solanaProvider ?? detectSolanaProvider()) ??
                 strings.accountSolanaWallet,
           AccountSignInKind.keyfile => null,
         };
@@ -340,14 +355,14 @@ class AccountSections extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Section(
+            PageSection(
               title: strings.accountSignInSection,
               rows: [
                 if (kind == AccountSignInKind.keyfile)
-                  _AccountRow(
+                  PageRow(
                     key: const Key('accountKeyfileRow'),
                     title: strings.accountKeyfile,
-                    trailing: _RowButton(
+                    trailing: PageRowButton(
                       key: const Key('accountKeyfileDownload'),
                       text: strings.accountDownload,
                       // Asks for the password before it downloads.
@@ -356,21 +371,21 @@ class AccountSections extends StatelessWidget {
                     ),
                   )
                 else
-                  _AccountRow(
+                  PageRow(
                     key: const Key('accountSignInWalletRow'),
                     title: walletName!,
                     note: kind == AccountSignInKind.wander
                         ? strings.accountWanderKeepsYourKey
                         : strings.accountWalletSignsYouIn(walletName),
-                    trailing: _StatusLabel(strings.accountConnected),
+                    trailing: PageStatusLabel(strings.accountConnected),
                   ),
               ],
             ),
-            _Section(
+            PageSection(
               title: strings.accountThisDeviceSection,
               rows: [_RememberedDrivesRow(tabs: tabs ?? DeviceTabs.instance)],
             ),
-            _Section(
+            PageSection(
               title: strings.accountAddressesSection,
               rows: _addressRows(context, user, kind),
             ),
@@ -480,10 +495,10 @@ class NamesWalletRow extends StatelessWidget {
         final strings = appLocalizationsOf(context);
         final linked = state.linked;
         if (linked == null) {
-          return _AccountRow(
+          return PageRow(
             key: const Key('accountNamesWallet'),
             title: strings.accountSolanaForNames,
-            trailing: _RowButton(
+            trailing: PageRowButton(
               key: const Key('accountNamesLink'),
               text: strings.accountLink,
               onPressed: () => showArNSWalletDialog(context),
@@ -495,7 +510,7 @@ class NamesWalletRow extends StatelessWidget {
           title: strings.accountSolanaForNames,
           address: linked.address,
           copyLabel: strings.accountCopyAddress('Solana'),
-          action: _RowButton(
+          action: PageRowButton(
             key: const Key('accountNamesUnlink'),
             text: strings.arnsUnlink,
             onPressed: cubit.unlink,
@@ -529,15 +544,15 @@ class _RememberedDrivesRow extends StatelessWidget {
       builder: (context, snapshot) {
         final count = snapshot.data ?? 0;
         if (count == 0) {
-          return _AccountRow(
+          return PageRow(
             key: const Key('accountRememberedDrives'),
             title: strings.accountNoDrivesRemembered,
           );
         }
-        return _AccountRow(
+        return PageRow(
           key: const Key('accountRememberedDrives'),
           title: strings.accountDrivesRemembered(count),
-          trailing: _RowButton(
+          trailing: PageRowButton(
             key: const Key('accountForgetDrives'),
             text: strings.forget,
             onPressed: () async {
@@ -561,11 +576,19 @@ class _RememberedDrivesRow extends StatelessWidget {
 }
 
 /// A heading and its rows on one card, divided.
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.rows});
+class PageSection extends StatelessWidget {
+  const PageSection({
+    super.key,
+    required this.title,
+    required this.rows,
+    this.footer,
+  });
 
   final String title;
   final List<Widget> rows;
+
+  /// A muted line under the card.
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -616,6 +639,7 @@ class _Section extends StatelessWidget {
               ],
             ),
           ),
+          if (footer != null) footer!,
         ],
       ),
     );
@@ -624,8 +648,8 @@ class _Section extends StatelessWidget {
 
 /// One row: a title, an optional address or note under it, and what it
 /// offers on the right.
-class _AccountRow extends StatelessWidget {
-  const _AccountRow({
+class PageRow extends StatelessWidget {
+  const PageRow({
     super.key,
     required this.title,
     this.subtitle,
@@ -716,7 +740,7 @@ class _AddressRow extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final action = this.action;
 
-    return _AccountRow(
+    return PageRow(
       title: title,
       subtitle: ArDriveIdText(
         shortenId(address),
@@ -736,8 +760,8 @@ class _AddressRow extends StatelessWidget {
   }
 }
 
-class _RowButton extends StatelessWidget {
-  const _RowButton({super.key, required this.text, required this.onPressed});
+class PageRowButton extends StatelessWidget {
+  const PageRowButton({super.key, required this.text, required this.onPressed});
 
   final String text;
   final VoidCallback onPressed;
@@ -755,8 +779,8 @@ class _RowButton extends StatelessWidget {
 }
 
 /// "Connected", beside the wallet that signs this account in.
-class _StatusLabel extends StatelessWidget {
-  const _StatusLabel(this.text);
+class PageStatusLabel extends StatelessWidget {
+  const PageStatusLabel(this.text, {super.key});
 
   final String text;
 

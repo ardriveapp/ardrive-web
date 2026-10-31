@@ -20,6 +20,86 @@ class TurboPaymentHistory {
   final bool complete;
 }
 
+/// One page of `GET /v1/account/payments`, rows as the service sent them.
+class TurboPaymentsPage {
+  const TurboPaymentsPage({
+    required this.payments,
+    required this.hasMore,
+    required this.cursor,
+  });
+
+  final List<Map<String, dynamic>> payments;
+  final bool hasMore;
+
+  /// Where the next page starts; null on the last.
+  final String? cursor;
+}
+
+/// Credits one wallet lets another spend (an entry of `givenApprovals` or
+/// `receivedApprovals`).
+class TurboCreditApproval {
+  const TurboCreditApproval({
+    required this.approvedAddress,
+    required this.payingAddress,
+    required this.approvedWinc,
+    required this.usedWinc,
+    this.expiresAt,
+  });
+
+  factory TurboCreditApproval.fromJson(Map<String, dynamic> json) =>
+      TurboCreditApproval(
+        approvedAddress: '${json['approvedAddress'] ?? ''}',
+        payingAddress: '${json['payingAddress'] ?? ''}',
+        approvedWinc:
+            BigInt.tryParse('${json['approvedWincAmount']}') ?? BigInt.zero,
+        usedWinc: BigInt.tryParse('${json['usedWincAmount']}') ?? BigInt.zero,
+        expiresAt: DateTime.tryParse('${json['expirationDate'] ?? ''}'),
+      );
+
+  /// Who may spend the credits.
+  final String approvedAddress;
+
+  /// Whose credits they are.
+  final String payingAddress;
+  final BigInt approvedWinc;
+  final BigInt usedWinc;
+  final DateTime? expiresAt;
+
+  BigInt get leftWinc {
+    final left = approvedWinc - usedWinc;
+    return left < BigInt.zero ? BigInt.zero : left;
+  }
+}
+
+/// A wallet's Turbo balance with the credits shared to and from it.
+class TurboBalanceDetails {
+  const TurboBalanceDetails({
+    required this.effective,
+    required this.controlled,
+    required this.given,
+    required this.received,
+  });
+
+  /// What the wallet can spend: its own plus what is left of shared credits.
+  final BigInt effective;
+
+  /// Its own credits.
+  final BigInt controlled;
+  final List<TurboCreditApproval> given;
+  final List<TurboCreditApproval> received;
+}
+
+/// The signature for a signed Turbo read could not be made: a wallet that
+/// asked to approve and was refused, or could not sign.
+class TurboSignatureException implements Exception {
+  TurboSignatureException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'Exception: $message';
+}
+
 class TurboBalanceInterface {
   /// What the wallet can spend now: its own credits plus what is left of
   /// credits other wallets have shared with it (Turbo's `effectiveBalance`).
@@ -185,6 +265,70 @@ class PaymentService {
     }
 
     return TurboPaymentHistory(payments: payments, complete: complete);
+  }
+
+  /// One page of the wallet's own top-ups, newest first. Signed like
+  /// [getPaymentHistory]; the cached signature headers are reused for every
+  /// page (checked against production: Turbo accepts a reused nonce).
+  Future<TurboPaymentsPage> getPaymentHistoryPage({
+    required Wallet wallet,
+    String? cursor,
+    int limit = 50,
+  }) async {
+    final headers = await turboSignatureHeadersManager.getSignatureHeaders(
+      wallet: wallet,
+    );
+    final query = cursor == null
+        ? 'limit=$limit'
+        : 'limit=$limit&cursor=${Uri.encodeQueryComponent(cursor)}';
+    final result = await httpClient.get(
+      url: '$turboPaymentUri/v1/account/payments?$query',
+      headers: headers,
+    );
+    final data = json.decode(result.data) as Map<String, dynamic>;
+    final next = data['cursor'] as String?;
+
+    return TurboPaymentsPage(
+      payments: ((data['payments'] as List<dynamic>?) ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(),
+      hasMore: data['hasMore'] == true && next != null,
+      cursor: next,
+    );
+  }
+
+  /// The wallet's balance with the credits it has shared and was shared.
+  /// Throws [TurboUserNotFound] for an account Turbo has never seen.
+  Future<TurboBalanceDetails> getBalanceDetails({
+    required Wallet wallet,
+  }) async {
+    try {
+      final result = await httpClient.get(
+        url:
+            '$turboPaymentUri/v1/account/balance/arweave?address=${await wallet.getAddress()}',
+      );
+      final data = json.decode(result.data) as Map<String, dynamic>;
+      List<TurboCreditApproval> approvals(String key) =>
+          ((data[key] as List<dynamic>?) ?? const [])
+              .whereType<Map>()
+              .map((a) =>
+                  TurboCreditApproval.fromJson(Map<String, dynamic>.from(a)))
+              .toList();
+      final effective = BigInt.parse('${data['effectiveBalance']}');
+
+      return TurboBalanceDetails(
+        effective: effective,
+        controlled: BigInt.tryParse('${data['controlledWinc']}') ?? effective,
+        given: approvals('givenApprovals'),
+        received: approvals('receivedApprovals'),
+      );
+    } catch (error) {
+      if (error is ArDriveHTTPException && error.statusCode == 404) {
+        throw TurboUserNotFound();
+      }
+      rethrow;
+    }
   }
 
   Future<BigInt> getBalance({

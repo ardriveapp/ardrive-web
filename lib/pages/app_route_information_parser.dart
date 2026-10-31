@@ -105,6 +105,12 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
           return AppRoutePath.account();
         }
         return AppRoutePath.unknown();
+      case 'billing':
+        // Handle '/billing' - the Billing page. New, like '/account'.
+        if (uri.pathSegments.length == 1) {
+          return AppRoutePath.billing();
+        }
+        return AppRoutePath.unknown();
       case 'drives':
         // Handle '/drives' - the list of the user's drives. Only the bare
         // segment: every longer shape below addresses a particular drive and
@@ -282,6 +288,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       return RouteInformation(uri: Uri.parse('/web-pages'));
     } else if (configuration.account) {
       return RouteInformation(uri: Uri.parse('/account'));
+    } else if (configuration.billing) {
+      return RouteInformation(uri: Uri.parse('/billing'));
     } else if (configuration.driveId != null) {
       final path = configuration.driveFolderId == null
           ? '/drives/${configuration.driveId}'

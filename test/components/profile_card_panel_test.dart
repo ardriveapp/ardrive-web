@@ -295,4 +295,30 @@ void main() {
       await takeDown(tester);
     });
   });
+
+  testWidgets('Billing sits under Account and security and opens the page',
+      (tester) async {
+    await tester.runAsync(() async {
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.byKey(const Key('profileBilling')));
+
+      final account = tester.getTopLeft(
+        find.byKey(const Key('profileAccountAndSecurity')),
+      );
+      final billing =
+          tester.getTopLeft(find.byKey(const Key('profileBilling')));
+      expect(billing.dy, greaterThan(account.dy));
+
+      await tester.tap(find.byKey(const Key('profileBilling')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(router.showingBilling, isTrue);
+      expect(router.showingAccount, isFalse);
+      expect(find.byKey(const Key('profileBilling')), findsNothing);
+
+      await takeDown(tester);
+    });
+  });
 }

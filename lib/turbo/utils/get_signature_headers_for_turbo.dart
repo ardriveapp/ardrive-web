@@ -1,4 +1,5 @@
 import 'package:arconnect/arconnect.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -88,7 +89,8 @@ class TurboSignatureHeadersManager {
       return _cachedHeaders!;
     } catch (e, stacktrace) {
       logger.e('Error generating signature headers for Turbo', e, stacktrace);
-      throw Exception('Failed to generate signature headers: $e');
+      throw TurboSignatureException(
+          'Failed to generate signature headers: $e');
     }
   }
 }
