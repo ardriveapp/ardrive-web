@@ -718,20 +718,13 @@ class _StatsScreenState extends State<StatsScreen> {
             child: Row(
               children: [
                 if (collapsible)
-                  ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () =>
-                          setState(() => _showAllFiles = !_showAllFiles),
-                      child: Text(
-                        _showAllFiles
-                            ? l10n.showFewerFiles
-                            : l10n.moreFiles(rows.length - _collapsedRows),
-                        style: footerStyle.copyWith(
-                          color: colorTokens.textMid,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
+                  ArDriveLink(
+                    text: _showAllFiles
+                        ? l10n.showFewerFiles
+                        : l10n.moreFiles(rows.length - _collapsedRows),
+                    isAction: true,
+                    style: footerStyle,
+                    onTap: () => setState(() => _showAllFiles = !_showAllFiles),
                   ),
                 const Spacer(),
                 Text(
@@ -2036,16 +2029,25 @@ class _UploadReadyWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      ArDriveClickArea(
-                        tooltip: l10n.learnMoreAboutLicenses,
-                        child: GestureDetector(
-                          onTap: () {
-                            showLicensingInfoModal(context: context);
-                          },
-                          // The same mark as the thumbnails option beside it.
-                          child: ArDriveIcons.info(
-                            color: colorTokens.textMid,
-                            size: 16,
+                      ArDriveFocusable(
+                        onActivate: () =>
+                            showLicensingInfoModal(context: context),
+                        child: Semantics(
+                          button: true,
+                          label: l10n.learnMoreAboutLicenses,
+                          child: ArDriveClickArea(
+                            tooltip: l10n.learnMoreAboutLicenses,
+                            child: GestureDetector(
+                              onTap: () {
+                                showLicensingInfoModal(context: context);
+                              },
+                              // The same mark as the thumbnails option beside
+                              // it.
+                              child: ArDriveIcons.info(
+                                color: colorTokens.textMid,
+                                size: 16,
+                              ),
+                            ),
                           ),
                         ),
                       ),
