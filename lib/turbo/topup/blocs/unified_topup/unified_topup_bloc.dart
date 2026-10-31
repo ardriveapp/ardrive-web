@@ -111,6 +111,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     // Reset amount when switching payment methods
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       paymentMethod: event.method,
       selectedToken: event.token,
       clearToken: event.method == PaymentMethod.card,
@@ -135,6 +136,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     // Reset amount when switching modes
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       amountMode: event.mode,
       fiatAmount: 0,
       clearStorageSize: true,
@@ -155,6 +157,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     if (event.amount <= 0) {
       emit(currentState.copyWith(
+        clearPromoCodeError: true,
         fiatAmount: 0,
         creditsToReceive: BigInt.zero,
         estimatedStorage: '0',
@@ -165,6 +168,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     }
 
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       fiatAmount: event.amount,
       isLoadingQuote: true,
       clearError: true,
@@ -300,6 +304,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     // Handle null or zero size (custom amount cleared)
     if (event.size == null || event.size! <= 0) {
       emit(currentState.copyWith(
+        clearPromoCodeError: true,
         clearStorageSize: true,
         storageUnit: event.unit,
         fiatAmount: 0,
@@ -311,6 +316,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     }
 
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       storageSize: event.size,
       storageUnit: event.unit,
       isLoadingQuote: true,
@@ -463,7 +469,10 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     if (currentState is! UnifiedTopupLoaded) return;
 
     // Update display unit
-    emit(currentState.copyWith(displayUnit: event.unit));
+    emit(currentState.copyWith(
+      displayUnit: event.unit,
+      clearPromoCodeError: true,
+    ));
 
     // Recalculate storage estimates with new unit
     // For crypto payments, use usdEquivalent; for card payments, use fiatAmount

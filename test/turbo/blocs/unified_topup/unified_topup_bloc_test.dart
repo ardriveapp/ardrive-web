@@ -121,5 +121,12 @@ void main() {
     expect(state.promoCode, isNull);
     // The code was dropped, so the purchase goes on at the full price.
     expect(state.canContinue, isTrue);
+
+    // A new amount is a new quote: the old rejection no longer applies.
+    bloc.add(const UnifiedTopupAmountSelected(20));
+    await bloc.stream.firstWhere(
+      (s) => s is UnifiedTopupLoaded && s.fiatAmount == 20,
+    );
+    expect((bloc.state as UnifiedTopupLoaded).promoCodeError, isNull);
   });
 }
