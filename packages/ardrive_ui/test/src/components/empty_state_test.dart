@@ -99,4 +99,20 @@ void main() {
     )));
     expect(find.byIcon(ArDriveIcons.newWindow().icon), findsOneWidget);
   });
+
+  testWidgets('a footnote is one muted line under the actions', (tester) async {
+    await tester.pumpWidget(wrap(ArDriveEmptyState(
+      title: 'Drop files',
+      actionLabel: 'Upload',
+      onAction: () {},
+      footnote: 'Small files upload free.',
+    )));
+
+    final line = find.text('Small files upload free.');
+    expect(line, findsOneWidget);
+    expect(tester.getTopLeft(line).dy,
+        greaterThan(tester.getBottomLeft(find.text('Upload')).dy));
+    expect(tester.widget<Text>(line).style!.color,
+        ArDriveColorTokens.darkMode().textMid);
+  });
 }

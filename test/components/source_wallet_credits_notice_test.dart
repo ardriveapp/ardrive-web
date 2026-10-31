@@ -28,10 +28,11 @@ void main() {
     UploadMethod method = UploadMethod.turbo,
     bool arFine = false,
     bool creditsFine = false,
+    int costWinc = 100,
   }) {
     final cost = UploadCostEstimate(
       pstFee: BigInt.zero,
-      totalCost: BigInt.from(100),
+      totalCost: BigInt.from(costWinc),
       totalSize: 1,
       usdUploadCost: 1,
     );
@@ -277,6 +278,37 @@ void main() {
     });
   });
 
+  /// Sharing would still leave it short, so buying is a way out too.
+  group('with too few credits on the sign-in wallet', () {
+    final costWinc = (credits.balance + BigInt.one).toInt();
+
+    testWidgets('offers Add credits under the notice', (tester) async {
+      await pump(tester, info(credits: credits, costWinc: costWinc),
+          onShare: () async => true);
+
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+      expect(find.text('Share credits'), findsOneWidget);
+      expect(find.text('Add credits'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Add credits')).dy,
+        greaterThan(tester.getTopLeft(find.text('Share credits')).dy),
+        reason: 'second to Share',
+      );
+    });
+
+    testWidgets('but not while AR can pay', (tester) async {
+      await pump(
+          tester,
+          info(
+              credits: credits,
+              costWinc: costWinc,
+              method: UploadMethod.ar,
+              arFine: true));
+
+      expect(find.text('Add credits'), findsNothing);
+    });
+  });
+
   /// Somebody who genuinely has no credits anywhere keeps every top-up route.
   group('with no credits anywhere', () {
     testWidgets('keeps "Add credits" when Turbo is chosen', (tester) async {
@@ -290,7 +322,7 @@ void main() {
       await pump(tester, info());
 
       expect(
-        find.textContaining('Add credits to upload', findRichText: true),
+        find.textContaining('Add credits', findRichText: true),
         findsWidgets,
       );
       expect(

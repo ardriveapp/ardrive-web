@@ -271,6 +271,7 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   Widget _review(BuildContext context, double dialogWidth) {
     final l10n = appLocalizationsOf(context);
     final summary = _adding ? null : widget.summary;
+    final shareFirst = summary != null && _shareFirst(summary);
 
     final List<ModalAction> actions = [
       ModalAction.dismiss(
@@ -283,7 +284,9 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           title: widget.primaryLabel,
           isEnable: false,
         )
-      else if (summary.needsCredits)
+      // Credits on the sign-in wallet cover it: Share credits, in their notice,
+      // is the way forward, and Add credits steps back to a link below it.
+      else if (summary.needsCredits && !shareFirst)
         ModalAction(
           action: () => setState(() => _step = _Step.credits),
           title: l10n.uploadAddCredits,
@@ -338,6 +341,11 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
     );
   }
 
+  /// Short of credits, and the sign-in wallet's would cover it once shared,
+  /// with their notice on screen to share them from.
+  bool _shareFirst(UploadReviewSummary summary) =>
+      summary.signInCreditsCover && widget.sourceWalletNotice != null;
+
   List<Widget> _notices(BuildContext context, UploadReviewSummary summary) {
     final l10n = appLocalizationsOf(context);
     final copy = ReviewCostCopy(l10n, widget.subject);
@@ -384,6 +392,14 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
         if (widget.sourceWalletNotice != null) ...[
           const SizedBox(height: ArDriveSpacing.md),
           widget.sourceWalletNotice!,
+        ],
+        if (_shareFirst(summary)) ...[
+          const SizedBox(height: ArDriveSpacing.sm),
+          ArDriveLink(
+            text: l10n.uploadAddCredits,
+            isAction: true,
+            onTap: () => setState(() => _step = _Step.credits),
+          ),
         ],
       ] else if (added != null &&
           !summary.isFree &&

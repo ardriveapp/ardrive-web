@@ -1,8 +1,10 @@
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The upload review's one rule: an upload starts only when it is free, or
@@ -25,6 +27,7 @@ void main() {
     bool turboPossible = true,
     bool turboUnreachable = false,
     bool arChosen = false,
+    int? signIn,
   }) =>
       UploadPaymentMethodInfo(
         uploadMethod: method,
@@ -41,6 +44,14 @@ void main() {
         turboBalanceWinc: BigInt.from(balance),
         turboUnreachable: turboUnreachable,
         arChosen: arChosen,
+        sourceWalletCredits: signIn == null
+            ? null
+            : SourceWalletCredits(
+                balance: BigInt.from(signIn),
+                sourceAddress: 'solana',
+                walletType: WalletType.solana,
+                arweaveAddress: 'arweave',
+              ),
       );
 
   test('a free upload is covered, whatever the balance', () {
@@ -249,6 +260,34 @@ void main() {
 
       expect(s.method, UploadMethod.turbo);
       expect(s.isCovered, isTrue);
+    });
+  });
+
+  group('credits on the sign-in wallet', () {
+    test('cover it once shared, with what is here', () {
+      final s = UploadReviewSummary.fromPaymentInfo(
+          info(balance: 1000, signIn: 4875));
+      expect(s.needsCredits, isTrue);
+      expect(s.signInCreditsCover, isTrue);
+    });
+
+    test('short even once shared', () {
+      final s = UploadReviewSummary.fromPaymentInfo(
+          info(balance: 1000, signIn: 4874));
+      expect(s.needsCredits, isTrue);
+      expect(s.signInCreditsCover, isFalse);
+    });
+
+    test('none there', () {
+      expect(UploadReviewSummary.fromPaymentInfo(info()).signInCreditsCover,
+          isFalse);
+    });
+
+    test('say nothing about a free upload', () {
+      final s = UploadReviewSummary.fromPaymentInfo(
+          info(freeStatus: FreeUploadStatus.free, signIn: 99999));
+      expect(s.needsCredits, isFalse);
+      expect(s.signInCreditsCover, isFalse);
     });
   });
 }

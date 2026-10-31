@@ -22,6 +22,8 @@ class UploadPaymentMethodView extends StatefulWidget {
   final Function(UploadMethod, UploadPaymentMethodInfo, bool)
       onUploadMethodChanged;
   final Function() onError;
+
+  /// After a top-up from the sheet. Null reads the sheet again.
   final Function()? onTurboTopupSucess;
   final Widget? loadingIndicator;
 
@@ -127,9 +129,10 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
                     ),
                   );
             },
-            onTurboTopupSucess: () {
-              widget.onTurboTopupSucess?.call();
-            },
+            // Without a handler of its own, the sheet reads its balance and
+            // price again, so a top-up shows up here.
+            onTurboTopupSucess: widget.onTurboTopupSucess ??
+                context.read<UploadPaymentMethodBloc>().refresh,
             onShareCredits: context
                     .read<UploadPaymentMethodBloc>()
                     .canShareSourceWalletCredits

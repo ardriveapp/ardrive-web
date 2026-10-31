@@ -19,6 +19,7 @@ class ArDriveEmptyState extends StatelessWidget {
     this.secondaryActionLabel,
     this.onSecondaryAction,
     this.framed = false,
+    this.footnote,
   });
 
   /// Drawn at 32 px in iconLow when it is an [ArDriveIcon] without its own
@@ -41,6 +42,10 @@ class ArDriveEmptyState extends StatelessWidget {
   final VoidCallback? onSecondaryAction;
 
   final bool framed;
+
+  /// A short, muted line under the actions: a detail worth knowing, not a
+  /// notice. No box, no icon, nothing to dismiss.
+  final String? footnote;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +118,14 @@ class ArDriveEmptyState extends StatelessWidget {
                         external: actionIsExternal,
                       ),
                   ],
+                ),
+              ],
+              if (footnote != null) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                Text(
+                  footnote!,
+                  textAlign: TextAlign.center,
+                  style: typography.paragraphSmall(color: colorTokens.textMid),
                 ),
               ],
             ],

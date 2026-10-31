@@ -26,6 +26,8 @@ class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
 const _mnemonic =
     'river lantern orbit maple quiet harbor cobalt meadow signal ember canvas summit';
 
+const _savedLabel = "I've saved my recovery phrase. ArDrive can't recover it.";
+
 void main() {
   late _MockLoginBloc loginBloc;
   late _MockProfileNameBloc profileNameBloc;
@@ -49,9 +51,10 @@ void main() {
         initialState: const ProfileNameInitial(null));
   });
 
-  Future<void> pump(WidgetTester tester, Widget child) async {
+  Future<void> pump(WidgetTester tester, Widget child,
+      {Size size = const Size(1200, 1600)}) async {
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ArDriveApp(
@@ -360,6 +363,31 @@ void main() {
       expect(words().enabled, isFalse);
     });
 
+    testWidgets('on a phone the label wraps, and all of it ticks the box',
+        (tester) async {
+      await pump(
+        tester,
+        RecoveryPhraseView(mnemonic: _mnemonic, wallet: getTestWallet()),
+        size: const Size(390, 844),
+      );
+      expect(tester.takeException(), isNull, reason: 'no overflow at 390');
+
+      final label = find.text(_savedLabel);
+      final box = tester.getRect(label);
+      expect(box.right, lessThanOrEqualTo(390));
+      // More than one line: it wraps rather than running off the screen.
+      final oneLine = tester.widget<Text>(label).style?.fontSize ?? 14;
+      expect(box.height, greaterThan(oneLine * 1.5));
+
+      bool ticked() => tester
+          .widget<ArDriveCheckBox>(find.byKey(const Key('recoverySaved')))
+          .checked;
+      // The end of the last line, far from the box itself.
+      await tester.tapAt(box.bottomRight - const Offset(4, 4));
+      await tester.pump();
+      expect(ticked(), isTrue);
+    });
+
     testWidgets('Continue waits for the saved box, then finishes',
         (tester) async {
       await pump(tester,
@@ -368,7 +396,7 @@ void main() {
           .widget<ArDriveButtonNew>(find.byKey(const Key('recoveryContinue')))
           .isDisabled;
       expect(disabled(), isTrue);
-      await tester.tap(find.text("I've saved my recovery phrase"));
+      await tester.tap(find.text(_savedLabel));
       await tester.pump();
       expect(disabled(), isFalse);
       await tester.tap(find.byKey(const Key('recoveryContinue')));

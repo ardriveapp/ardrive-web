@@ -244,17 +244,38 @@ void main() {
       }
     });
 
-    testWidgets('notes that small files upload free, until dismissed',
+    testWidgets('says small files upload free, in one plain line in the card',
         (tester) async {
       await pumpAt(tester, const Size(1280, 800), desktop: true);
 
       const note =
           'Small files upload free while your free upload allowance lasts.';
-      expect(find.text(note), findsOneWidget);
+      final line = find.text(note);
+      expect(line, findsOneWidget);
+      // Inside the dashed card, under its buttons.
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('firstDriveDropArea')), matching: line),
+          findsOneWidget);
+      expect(tester.getTopLeft(line).dy,
+          greaterThan(tester.getBottomLeft(find.text('Upload files')).dy));
+      // Not a notice: no box, nothing to dismiss.
+      expect(find.byType(ArDriveNotice), findsNothing);
+      expect(find.byTooltip('Dismiss'), findsNothing);
+      // Muted, and small.
+      final context = tester.element(line);
+      final style = tester.widget<Text>(line).style!;
+      expect(
+          style.color, ArDriveTheme.of(context).themeData.colorTokens.textMid);
+      expect(style.fontSize,
+          ArDriveTypographyNew.of(context).paragraphSmall().fontSize);
+    });
 
-      await tester.tap(find.byTooltip('Dismiss'));
-      await tester.pumpAndSettle();
-      expect(find.text(note), findsNothing);
+    testWidgets('fits a phone with the free line', (tester) async {
+      await pumpAt(tester, const Size(390, 844));
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('upload free'), findsOneWidget);
     });
 
     testWidgets('makes no free promise when Turbo uploads are off',
