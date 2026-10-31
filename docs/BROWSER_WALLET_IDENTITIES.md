@@ -59,14 +59,23 @@ This section describes what ArDrive clients do. Other behaviour is a client choi
 
 Sign-in signs the step 1 message, which needs no password. It then reads the transactions of the auth key's Arweave address.
 
-- A marker first: version 2. The account message is signed, and the wallet derived from it must have the marker's address. If it does not, sign-in stops with an error instead of opening another, empty account.
-- An untagged transaction first: a version 1 verification record. The password is asked.
+- A matching marker: version 2. The account message is signed first. A marker counts only if its `ArDrive-Account-Address` equals the address of the wallet derived from that signature. Markers for other addresses are ignored, because anyone holding the auth key can post one.
+- An untagged transaction earlier than any matching marker: a version 1 verification record. The password is asked.
 - No record: the person chooses between creating a version 2 account and signing in to a version 1 account. A version 1 password with no record to check it against is accepted only if the wallet it derives owns ArFS drives or has any transaction.
 
 A lookup that fails is an error, never "no record". The lookup is the GraphQL query `AccountRecords` (`lib/services/arweave/graphql/queries/AccountRecords.graphql`). It reads only the first 20 transactions of the auth key's address, sorted by block height, oldest first. A key with more than 20 transactions has the rest unread.
 
 ## The earliest record decides
 
-The auth key's transactions are read earliest first. A version 1 record made at sign-up predates any marker, so a marker posted later cannot take a version 1 account over. Transactions are ordered by block. A pending one (no block yet) comes after every mined one. Records whose owner is not the auth key's address are ignored.
+The auth key's transactions are read earliest first. Transactions are ordered by block. A pending one (no block yet) comes after every mined one. Records whose owner is not the auth key's address are ignored.
 
-Known limit (from reading the code, not tested): the step 1 message is a constant, so anyone who can ask the account's wallet to sign it learns the auth key. With it, they can post a record before the account's first sign-up. That can lock the account out of sign-in. It cannot give them the account's Arweave wallet, which comes from a signature only the account can make.
+- The earliest matching marker wins over any later untagged record. A version 1 record made at sign-up predates any marker, so a marker posted later cannot take a version 1 account over.
+- An untagged record earlier than every matching marker means version 1.
+- If no marker with an address tag matches, markers that hold the address only as their data are read: at most 3, the earliest first. A marker whose data cannot be read is skipped and never fails sign-in.
+- If only markers for other addresses exist, the result is the same as no record.
+
+## Known limits
+
+- The step 1 message is a constant, so anyone who can ask the account's wallet to sign it learns the auth key. With it they can post records under that address. A forged marker no longer locks an account out, since only a matching marker counts. But untagged records posted under a new user's auth address before their first sign-up are read as version 1 records, which locks that identity out of the version 2 path. This cannot give them the account's Arweave wallet, which comes from a signature only the account can make.
+- The lookup reads only the first 20 records (see above).
+- A wallet that does not sign the account message deterministically derives a different wallet each time. It matches no marker, so it gets the question whether the person has used ArDrive with this wallet before.
