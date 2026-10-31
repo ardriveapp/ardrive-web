@@ -224,8 +224,8 @@ class _EmptyFolder extends StatelessWidget {
 }
 
 /// A new user's first drive, empty: one place to drop files or choose them,
-/// and a note that small files upload free.
-class _NewUserEmptyRootFolder extends StatefulWidget {
+/// and a line that small files upload free.
+class _NewUserEmptyRootFolder extends StatelessWidget {
   final String driveId;
   final String parentFolderId;
   final bool isPrivate;
@@ -237,14 +237,6 @@ class _NewUserEmptyRootFolder extends StatefulWidget {
   });
 
   @override
-  State<_NewUserEmptyRootFolder> createState() =>
-      _NewUserEmptyRootFolderState();
-}
-
-class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
-  bool _noteDismissed = false;
-
-  @override
   Widget build(BuildContext context) {
     final s = appLocalizationsOf(context);
     // Phone and tablet, as the page lays them out: there, files are chosen
@@ -252,7 +244,7 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
     final phone =
         getDeviceType(MediaQuery.sizeOf(context)) != DeviceScreenType.desktop;
     final light = ArDriveTheme.of(context).themeData.name == 'light';
-    final whoSees = widget.isPrivate ? s.firstDriveOnlyYou : s.firstDriveAnyone;
+    final whoSees = isPrivate ? s.firstDriveOnlyYou : s.firstDriveAnyone;
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.newUserDriveEmptyPage,
@@ -262,6 +254,8 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
           Expanded(
             child: ArDriveEmptyState(
               key: const Key('firstDriveDropArea'),
+              footnote:
+                  _offersFreeUploads(context) ? s.firstDriveFreeNote : null,
               framed: true,
               icon: SvgPicture.asset(
                 Resources.images.login.bentoBox
@@ -277,8 +271,8 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
                     PlausiblePageView.newUserDriveEmptyPage);
                 promptToUpload(
                   context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
+                  driveId: driveId,
+                  parentFolderId: parentFolderId,
                   isFolderUpload: false,
                 );
               },
@@ -288,20 +282,12 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
                     PlausiblePageView.newUserDriveEmptyPage);
                 promptToCreateFolder(
                   context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
+                  driveId: driveId,
+                  parentFolderId: parentFolderId,
                 );
               },
             ),
           ),
-          if (!_noteDismissed && _offersFreeUploads(context)) ...[
-            const SizedBox(height: ArDriveSpacing.md),
-            ArDriveNotice(
-              type: ArDriveNoticeType.info,
-              message: s.firstDriveFreeNote,
-              onDismiss: () => setState(() => _noteDismissed = true),
-            ),
-          ],
         ],
       ),
     );

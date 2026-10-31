@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -244,17 +245,55 @@ void main() {
       }
     });
 
-    testWidgets('notes that small files upload free, until dismissed',
+    testWidgets('says small files upload free, in one plain line in the card',
         (tester) async {
       await pumpAt(tester, const Size(1280, 800), desktop: true);
 
+      // Drawn with its last two words joined; see keepLastWordsTogether.
       const note =
-          'Small files upload free while your free upload allowance lasts.';
-      expect(find.text(note), findsOneWidget);
+          'Small files upload free while your free upload allowance\u00A0lasts.';
+      final line = find.text(note);
+      expect(line, findsOneWidget);
+      // Inside the dashed card, under its buttons.
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('firstDriveDropArea')), matching: line),
+          findsOneWidget);
+      expect(tester.getTopLeft(line).dy,
+          greaterThan(tester.getBottomLeft(find.text('Upload files')).dy));
+      // Not a notice: no box, nothing to dismiss.
+      expect(find.byType(ArDriveNotice), findsNothing);
+      expect(find.byTooltip('Dismiss'), findsNothing);
+      // Muted, and small.
+      final context = tester.element(line);
+      final style = tester.widget<Text>(line).style!;
+      expect(
+          style.color, ArDriveTheme.of(context).themeData.colorTokens.textMid);
+      expect(style.fontSize,
+          ArDriveTypographyNew.of(context).paragraphSmall().fontSize);
+    });
 
-      await tester.tap(find.byTooltip('Dismiss'));
-      await tester.pumpAndSettle();
-      expect(find.text(note), findsNothing);
+    testWidgets('fits a phone with the free line', (tester) async {
+      await pumpAt(tester, const Size(390, 844));
+
+      expect(tester.takeException(), isNull);
+      final line = find.textContaining('upload free');
+      expect(line, findsOneWidget);
+
+      // No word left alone on its last line.
+      final text = tester.widget<Text>(line).data!;
+      final paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: line, matching: find.byType(RichText)));
+      double top(String word) {
+        final at = text.lastIndexOf(word);
+        return paragraph
+            .getBoxesForSelection(
+                TextSelection(baseOffset: at, extentOffset: at + word.length))
+            .first
+            .top;
+      }
+
+      expect(top('lasts.'), top('allowance'));
     });
 
     testWidgets('makes no free promise when Turbo uploads are off',

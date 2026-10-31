@@ -251,6 +251,18 @@ class UploadPaymentMethodBloc
     return true;
   }
 
+  /// Reads the price and balance again, as after a top-up. Nothing to do
+  /// before the sheet was first prepared.
+  void refresh() {
+    final params = _params;
+    if (params == null || isClosed) return;
+    try {
+      add(PrepareUploadPaymentMethod(params: params));
+    } on StateError {
+      logger.d('Sheet closed before it could be read again after a top-up');
+    }
+  }
+
   /// Looks for the credits on the wallet the user signed in with.
   ///
   /// Nothing found here is spendable and nothing about the upload changes. It

@@ -772,10 +772,6 @@
       }
     }
   },
-  "addCreditsToUpload": "Add credits to upload",
-  "@addCreditsToUpload": {
-    "description": "Link under the upload payment options, when neither balance can pay, that opens the Turbo Credits top-up"
-  },
   "amountInAr": "{amount} AR",
   "@amountInAr": {
     "description": "What an upload costs in AR, on the wallet payment option",
@@ -5588,7 +5584,7 @@
   "@recoveryHide": {"description": "Blurs the recovery phrase again."},
   "recoveryCopy": "Copy",
   "@recoveryCopy": {"description": "Copies the recovery phrase."},
-  "recoverySaved": "I've saved my recovery phrase",
+  "recoverySaved": "I've saved my recovery phrase. ArDrive can't recover it.",
   "@recoverySaved": {"description": "Checkbox the user ticks before continuing."},
   "recoveryContinue": "Continue",
   "@recoveryContinue": {"description": "Button that finishes making the account."},

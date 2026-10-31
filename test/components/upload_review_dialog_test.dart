@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -58,6 +60,7 @@ UploadReviewSummary summary({
   FreeUploadStatus freeStatus = FreeUploadStatus.notEligible,
   double balance = 0,
   bool unreachable = false,
+  double? signIn,
 }) =>
     UploadReviewSummary.fromPaymentInfo(
       UploadPaymentMethodInfo(
@@ -84,6 +87,14 @@ UploadReviewSummary summary({
         totalSize: 1,
         turboBalanceWinc: credits(balance),
         turboUnreachable: unreachable,
+        sourceWalletCredits: signIn == null
+            ? null
+            : SourceWalletCredits(
+                balance: credits(signIn),
+                sourceAddress: 'solanaAddress',
+                walletType: WalletType.solana,
+                arweaveAddress: 'arweaveAddress',
+              ),
       ),
     );
 
@@ -101,7 +112,9 @@ void main() {
     cancels = 0;
   });
 
-  Widget host(UploadReviewSummary? s) => ArDriveTheme(
+  Widget host(UploadReviewSummary? s,
+          {Widget? notice, bool canShare = false}) =>
+      ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
@@ -134,19 +147,22 @@ void main() {
                 onShown: () => shown++,
                 onCancel: () => cancels++,
                 funding: funding,
+                sourceWalletNotice: notice,
+                canShareInApp: canShare,
               ),
             ),
           ),
         ),
       );
 
-  Future<void> pump(WidgetTester tester, UploadReviewSummary? s) async {
+  Future<void> pump(WidgetTester tester, UploadReviewSummary? s,
+      {Widget? notice, bool canShare = false}) async {
     // Made in the test's own zone, so its futures complete as the test pumps.
     funding = _FakeFunding();
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(host(s));
+    await tester.pumpWidget(host(s, notice: notice, canShare: canShare));
     await tester.pump();
   }
 
@@ -168,6 +184,8 @@ void main() {
             'Covered by your free upload allowance. Saved for good, paid once.'),
         findsOneWidget);
     expect(enabled(tester, 'Upload'), isTrue);
+    expect(find.text('Add credits'), findsNothing,
+        reason: 'a free upload needs no credits');
 
     await tester.tap(button('Upload'));
     expect(uploads, 1);
@@ -223,6 +241,69 @@ void main() {
     await tester.tap(button('Back'));
     await tester.pumpAndSettle();
     expect(find.text('Upload 3 files'), findsOneWidget);
+  });
+
+  group('with credits on the sign-in wallet', () {
+    const notice = Text('Share credits notice', key: Key('signInNotice'));
+    Finder link() => find.ancestor(
+        of: find.text('Add credits'), matching: find.byType(ArDriveLink));
+
+    testWidgets('that cover it once shared: Share first, Add credits second',
+        (tester) async {
+      // 1 credit here and 5 on the sign-in wallet; it needs 5.875.
+      await pump(tester, summary(balance: 1, signIn: 5),
+          notice: notice, canShare: true);
+
+      expect(find.byKey(const Key('signInNotice')), findsOneWidget);
+      expect(button('Add credits'), findsNothing,
+          reason: 'no buy button competing with Share');
+      expect(enabled(tester, 'Upload'), isFalse);
+      expect(link(), findsOneWidget);
+
+      await tester.tap(link());
+      await tester.pumpAndSettle();
+      expect(find.text('Add Turbo Credits'), findsOneWidget);
+    });
+
+    testWidgets('that would not cover it either: Add credits stays the button',
+        (tester) async {
+      await pump(tester, summary(balance: 1, signIn: 2),
+          notice: notice, canShare: true);
+
+      expect(find.byKey(const Key('signInNotice')), findsOneWidget);
+      expect(button('Add credits'), findsOneWidget);
+      expect(link(), findsNothing);
+      expect(find.text('Upload'), findsNothing);
+    });
+
+    /// An Ethereum sign-in, or Solana where nothing here can sign the grant:
+    /// sharing means a trip to Turbo, so Upload must not wait on a Share
+    /// button that is not there.
+    testWidgets('that cover it but cannot be shared here: Add credits stays',
+        (tester) async {
+      await pump(tester, summary(balance: 1, signIn: 5), notice: notice);
+
+      expect(find.byKey(const Key('signInNotice')), findsOneWidget);
+      expect(button('Add credits'), findsOneWidget);
+      expect(link(), findsNothing);
+      expect(find.text('Upload'), findsNothing);
+    });
+
+    testWidgets('but no notice to share them from: Add credits stays',
+        (tester) async {
+      await pump(tester, summary(balance: 1, signIn: 5), canShare: true);
+
+      expect(button('Add credits'), findsOneWidget);
+      expect(link(), findsNothing);
+    });
+
+    testWidgets('and a free upload: neither', (tester) async {
+      await pump(tester, summary(freeStatus: FreeUploadStatus.free, signIn: 5),
+          notice: notice, canShare: true);
+
+      expect(find.text('Add credits'), findsNothing);
+      expect(enabled(tester, 'Upload'), isTrue);
+    });
   });
 
   testWidgets('a payment cancelled or refused goes back to the review',
