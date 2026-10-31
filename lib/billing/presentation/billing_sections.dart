@@ -331,16 +331,8 @@ class _BalanceCard extends StatelessWidget {
     switch (allowance.status) {
       case TurboFreeAllowanceStatus.limited:
       case TurboFreeAllowanceStatus.unlimited:
-        return [
-          Padding(
-            padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
-            child: Text(
-              strings.billingFreeAllowance,
-              key: const Key('billingFreeAllowance'),
-              style: style,
-            ),
-          ),
-        ];
+        // Nothing to say while there is allowance left.
+        return const [];
       case TurboFreeAllowanceStatus.disabled:
         return [
           Padding(

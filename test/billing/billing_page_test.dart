@@ -251,11 +251,10 @@ void main() {
       expect(find.text('About 2.4 GB of storage'), findsOneWidget);
       expect(
           find.text('10.0000 yours · 2.0000 shared with you'), findsOneWidget);
-      expect(
-        find.text(
-            'Small uploads are free while your free upload allowance lasts.'),
-        findsOneWidget,
-      );
+      // With allowance left there is nothing to say about it.
+      expect(find.byKey(const Key('billingFreeAllowance')), findsNothing);
+      expect(find.byKey(const Key('billingFreeAllowanceUsed')), findsNothing);
+      expect(find.textContaining('free upload allowance'), findsNothing);
       expect(find.byKey(const Key('billingAddCredits')), findsOneWidget);
     });
 

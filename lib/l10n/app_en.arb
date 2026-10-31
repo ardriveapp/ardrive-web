@@ -5916,8 +5916,6 @@
   "@billingStorageEstimate": {"description": "Billing page: what the credits buy at today's price. {size} is like 1.4 GB.", "placeholders": {"size": {"type": "String"}}},
   "billingYoursAndShared": "{own} yours · {shared} shared with you",
   "@billingYoursAndShared": {"description": "Billing page: the credits figure split into the account's own and what others shared.", "placeholders": {"own": {"type": "String"}, "shared": {"type": "String"}}},
-  "billingFreeAllowance": "Small uploads are free while your free upload allowance lasts.",
-  "@billingFreeAllowance": {"description": "Billing page: the free upload allowance, no figure."},
   "billingFreeAllowanceUsed": "Free upload allowance used up",
   "@billingFreeAllowanceUsed": {"description": "Billing page: Turbo says the free allowance is 0."},
   "billingBalanceError": "Couldn't load your balance",
