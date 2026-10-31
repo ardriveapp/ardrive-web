@@ -12,6 +12,11 @@ class TurboSignatureHeadersManager {
   static TurboSignatureHeadersManager? _instance;
   Map<String, dynamic>? _cachedHeaders;
   String? _lastWalletAddress;
+
+  /// Bumped whenever the cache is cleared, so a signature that was still
+  /// being made at the time is not stored afterwards: it would put a signed
+  /// header back in memory after a sign-out.
+  int _generation = 0;
   final TabVisibilitySingleton _tabVisibility;
 
   TurboSignatureHeadersManager._({
@@ -30,6 +35,7 @@ class TurboSignatureHeadersManager {
   /// Forgets the signed headers, so the next read signs afresh. Called when
   /// Turbo refuses them, and on sign-out.
   void clearCache() {
+    _generation++;
     _cachedHeaders = null;
     _lastWalletAddress = null;
   }
@@ -48,6 +54,8 @@ class TurboSignatureHeadersManager {
     if (wallet == null) {
       return {};
     }
+
+    final generation = _generation;
 
     try {
       // Get current wallet address
@@ -87,16 +95,20 @@ class TurboSignatureHeadersManager {
         },
       );
 
-      // Cache the headers and wallet address
-      _cachedHeaders = {
+      final headers = {
         'x-nonce': nonce,
         'x-signature': signature,
         'x-public-key': publicKey,
       };
-      _lastWalletAddress = currentAddress;
+
+      // Cache them, unless the cache was cleared while they were signed.
+      if (generation == _generation) {
+        _cachedHeaders = headers;
+        _lastWalletAddress = currentAddress;
+      }
 
       logger.d('Generated new signature headers for Turbo');
-      return _cachedHeaders!;
+      return headers;
     } catch (e, stacktrace) {
       logger.e('Error generating signature headers for Turbo', e, stacktrace);
       throw TurboSignatureException('Failed to generate signature headers: $e');

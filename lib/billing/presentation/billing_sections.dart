@@ -543,6 +543,18 @@ class _PurchaseActions extends StatelessWidget {
                 ),
               ),
             ),
+          if (state.csvPartialRows != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
+              child: Text(
+                strings.billingCsvPartial(state.csvPartialRows!),
+                key: const Key('billingCsvPartial'),
+                style: typography.paragraphNormal(
+                  color: colors.textMid,
+                  fontWeight: ArFontWeight.book,
+                ),
+              ),
+            ),
           Wrap(
             spacing: ArDriveSpacing.sm,
             runSpacing: ArDriveSpacing.xs,

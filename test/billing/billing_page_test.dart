@@ -466,6 +466,7 @@ void main() {
       expect(lines[2],
           '"2026-09-03T10:00:00.000Z","Crypto","2.5 AR","18.00","2.2","Hm3rAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAtW8c"');
       expect(lines, hasLength(3));
+      expect(find.byKey(const Key('billingCsvPartial')), findsNothing);
     });
 
     testWidgets('a CSV that cannot be saved says so', (tester) async {
@@ -581,6 +582,12 @@ void main() {
       expect(saved.single.$2.split('\r\n'), hasLength(42));
       // There is still more: the page says so by keeping Load more.
       expect(find.byKey(const Key('billingLoadMore')), findsOneWidget);
+      // And the file does not pass for the whole history.
+      expect(
+        find.text('Exported your latest 41 purchases. Your full history is '
+            'longer than one file can hold.'),
+        findsOneWidget,
+      );
     });
   });
 

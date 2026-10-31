@@ -113,6 +113,7 @@ class BillingState {
     this.shareFailed = false,
     this.purchases = const PurchasesView(),
     this.csvFailed = false,
+    this.csvPartialRows,
   });
 
   final BalanceView balance;
@@ -129,6 +130,9 @@ class BillingState {
   final PurchasesView purchases;
   final bool csvFailed;
 
+  /// A CSV that saved this many purchases and left the older ones out.
+  final int? csvPartialRows;
+
   BillingState copyWith({
     BalanceView? balance,
     double? storageGiB,
@@ -141,6 +145,8 @@ class BillingState {
     bool? shareFailed,
     PurchasesView? purchases,
     bool? csvFailed,
+    int? csvPartialRows,
+    bool clearCsvPartial = false,
   }) =>
       BillingState(
         balance: balance ?? this.balance,
@@ -153,6 +159,8 @@ class BillingState {
         shareFailed: shareFailed ?? this.shareFailed,
         purchases: purchases ?? this.purchases,
         csvFailed: csvFailed ?? this.csvFailed,
+        csvPartialRows:
+            clearCsvPartial ? null : csvPartialRows ?? this.csvPartialRows,
       );
 }
 
@@ -462,6 +470,7 @@ class BillingCubit extends Cubit<BillingState> {
 
     _safeEmit(state.copyWith(
       csvFailed: false,
+      clearCsvPartial: true,
       purchases: view.copyWith(savingCsv: true),
     ));
     try {
@@ -474,11 +483,15 @@ class BillingCubit extends Cubit<BillingState> {
         'turbo-purchases.csv',
         Uint8List.fromList(utf8.encode(purchasesCsv(rows))),
       );
+      // The loop is bounded: a history longer than that is saved as far as it
+      // was read, and says so rather than passing for the whole of it.
+      final partial = cache.hasMoreFor(_address);
       _safeEmit(state.copyWith(
+        csvPartialRows: partial ? rows.length : null,
         purchases: PurchasesView(
           started: true,
           rows: rows,
-          hasMore: cache.hasMoreFor(_address),
+          hasMore: partial,
         ),
       ));
     } catch (e) {

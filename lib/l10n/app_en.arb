@@ -5985,5 +5985,7 @@
   "billingName": "Name",
   "@billingName": {"description": "Billing page: tag on a purchase of an ArNS name."},
   "billingArUnavailable": "Couldn't load",
-  "@billingArUnavailable": {"description": "Billing page: shown in place of the AR amount when it could not be read. Never shown as 0."}
+  "@billingArUnavailable": {"description": "Billing page: shown in place of the AR amount when it could not be read. Never shown as 0."},
+  "billingCsvPartial": "Exported your latest {count} purchases. Your full history is longer than one file can hold.",
+  "@billingCsvPartial": {"description": "Billing page: the CSV stopped at its page limit, so older purchases are not in it.", "placeholders": {"count": {"type": "int"}}}
 }
