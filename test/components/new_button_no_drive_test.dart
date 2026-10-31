@@ -509,7 +509,7 @@ void main() {
         state: DriveDetailLoadInProgress(),
       );
 
-      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload files').isDisabled, isFalse);
       expect(tile(tester, 'Upload folder').isDisabled, isFalse);
       for (final action in ['New folder', 'New note', 'New file pin']) {
         expect(find.text(action), findsNothing, reason: action);
