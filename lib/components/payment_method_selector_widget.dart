@@ -487,9 +487,11 @@ class _PaymentOptionCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
+                      // A control's edge must stand out from the row (3:1);
+                      // strokeHigh is a divider and nearly vanishes here.
                       color: isSelected
                           ? colorTokens.textHigh
-                          : colorTokens.strokeHigh,
+                          : colorTokens.textLow,
                       width: 2,
                     ),
                   ),
