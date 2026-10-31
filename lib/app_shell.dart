@@ -350,9 +350,9 @@ class MobileDrawerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArDriveIconButton(
       icon: ArDriveIcons.menu(
-        // The size every other control in this bar is: the hide toggle, the
-        // sync indicator and the way home all take ArDriveIcon's default, and
-        // this was the only one at 20.
+        // The size every other control in this bar is: the sync indicator
+        // and the way home take ArDriveIcon's default, and this was the only
+        // one at 20.
         size: mobileAppBarIconSize,
         color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
       ),
@@ -407,7 +407,9 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
     return SafeArea(
       child: Container(
-        color: ArDriveTheme.of(context).themeData.tableTheme.cellColor,
+        // The page ground the desktop bar sits on, so the bar keeps its
+        // colour across the breakpoint. It was the table rows' colour.
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: SizedBox(
           height: _mobileAppBarRowHeight,
           child: Row(
@@ -440,8 +442,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               if (!PublicationMode.isOn) const Spacer(),
               // Search sits with the other controls that are about the whole
-              // view rather than one item in it - the hide toggle beside it is
-              // the same kind of thing. As a field it took a 60px band above
+              // view rather than one item in it. As a field it took a 60px band above
               // the file list on the screen with the least vertical room to
               // give; as an icon it takes the space that was already empty
               // here.
@@ -457,13 +458,12 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: PublicationTopBarActions(compact: true),
                 )
               else ...[
-                const GlobalHideToggleButton(),
-                const SizedBox(width: 8),
-                const SyncButton(),
-                const SizedBox(width: 8),
-                const SizedBox(
-                  width: 24,
-                ),
+                // One 8 px gap between every control, and no slot held for a
+                // sync indicator with nothing to report: the empty slot and
+                // the fixed gaps left an 80 px hole before the profile card.
+                // No hidden-items eye: that is a view option of the explorer
+                // now, in its menus.
+                const SyncButton(holdSlotWhenIdle: false, gap: 8),
                 // The phone's 16 px gutter.
                 const Padding(
                   padding: EdgeInsets.only(right: ArDriveSpacing.md),

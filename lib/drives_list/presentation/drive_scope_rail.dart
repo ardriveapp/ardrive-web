@@ -49,8 +49,15 @@ class DriveScopeRail extends StatelessWidget {
                     count: counts?[scope],
                     isCurrent: scope == current,
                     showLabel: showLabels,
-                    onTap: () =>
-                        context.read<DrivesListCubit>().showScope(scope),
+                    onTap: () {
+                      // On a phone the drawer closes, as it does for every
+                      // other nav row: left open it covered the list the tap
+                      // just changed.
+                      if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                        Scaffold.of(context).closeDrawer();
+                      }
+                      context.read<DrivesListCubit>().showScope(scope);
+                    },
                   ),
           ],
         );
@@ -69,24 +76,29 @@ class DriveScopeRail extends StatelessWidget {
       case DriveScope.private:
         return l.privateDrives;
       case DriveScope.sharedWithMe:
-        return l.sharedDrives;
+        // The row tag's words too, so the scope has one name, and not one
+        // that reads as drives I shared.
+        return l.driveSharedWithMe;
       case DriveScope.hidden:
         return l.hiddenDrives;
     }
   }
 
+  /// ArDrive's own glyphs where the icon font has one: the drive rows' public
+  /// drive, the private lock and the hide eye. Home and Shared have none, so
+  /// they stay Material's.
   static IconData iconFor(DriveScope scope) {
     switch (scope) {
       case DriveScope.all:
         return Icons.home_outlined;
       case DriveScope.public:
-        return Icons.public_outlined;
+        return ArDriveIcons.publicDrive().icon;
       case DriveScope.private:
-        return Icons.lock_outline;
+        return ArDriveIcons.lock().icon;
       case DriveScope.sharedWithMe:
         return Icons.swap_horiz_outlined;
       case DriveScope.hidden:
-        return Icons.visibility_off_outlined;
+        return ArDriveIcons.eyeClosed().icon;
     }
   }
 }

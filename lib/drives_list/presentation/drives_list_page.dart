@@ -26,7 +26,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/details_panel.dart';
-import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:flutter/services.dart';
@@ -38,16 +37,6 @@ const double _blockGap = listPageBlockGap;
 /// How long the heading takes to become the selection and back.
 const Duration _selectionFade = Duration(milliseconds: 150);
 
-/// Wide enough for "Sync all drives" and no wider, at a text scale of 1.
-///
-/// The label measures 120px in Wavehaus at the button's size, plus its 20px of
-/// padding. A button that fills its column reads as an alert rather than an
-/// offer.
-///
-/// Never used raw - see [driveListSyncAllButtonWidth]. It is a measurement of
-/// text, and text is not a fixed number of pixels.
-const double _syncAllButtonWidth = 180;
-
 /// How much larger the reader has asked text to be, as a plain multiplier.
 ///
 /// Taken at the size actually being drawn rather than at 1.0, because a
@@ -58,20 +47,6 @@ double driveListTextScale(BuildContext context, double fontSize) {
   if (fontSize <= 0) return 1;
 
   return MediaQuery.textScalerOf(context).scale(fontSize) / fontSize;
-}
-
-/// [_syncAllButtonWidth] at the reader's text scale.
-///
-/// [ArDriveButtonNew] applies `maxWidth` as a fixed `SizedBox` width and
-/// ellipsizes the label inside it, so a constant here is not a maximum - it is
-/// the width, and at 2.0 the page's one offer read "Sync All Dri...". The
-/// number above was measured at a text scale of 1, so that is the scale it has
-/// to be multiplied by.
-double driveListSyncAllButtonWidth(BuildContext context) {
-  final fontSize =
-      ArDriveTypographyNew.of(context).paragraphLarge().fontSize ?? 16;
-
-  return _syncAllButtonWidth * driveListTextScale(context, fontSize);
 }
 
 /// Where a login lands: the drives this wallet can open, before any of them is
@@ -175,7 +150,13 @@ class _DrivesListChrome extends StatelessWidget {
   static bool _isSynced(DriveListItem drive) =>
       drive.hasBeenWalked || (drive.fileCount ?? 0) > 0;
 
-  Widget? _menuFor(DrivesState drivesState, DriveListItem drive) {
+  /// [onShowDetails] opens the drive's details beside the list, where there
+  /// is a panel for them: on desktop.
+  Widget? _menuFor(
+    DrivesState drivesState,
+    DriveListItem drive, {
+    void Function(String driveId)? onShowDetails,
+  }) {
     if (drivesState is! DrivesLoadSuccess) {
       return null;
     }
@@ -186,6 +167,7 @@ class _DrivesListChrome extends StatelessWidget {
           drive: owned,
           isOwner: true,
           isSynced: _isSynced(drive),
+          onShowDetails: onShowDetails,
         );
       }
     }
@@ -196,6 +178,7 @@ class _DrivesListChrome extends StatelessWidget {
           drive: shared,
           isOwner: false,
           isSynced: _isSynced(drive),
+          onShowDetails: onShowDetails,
         );
       }
     }
@@ -235,7 +218,8 @@ class _DrivesListChrome extends StatelessWidget {
               onToggleSelected: cubit.toggleSelected,
               onToggleSelectAll: cubit.toggleSelectAll,
               onClearSelection: cubit.clearSelection,
-              buildMenu: (drive) => _menuFor(drivesState, drive),
+              buildMenu: (drive) =>
+                  _menuFor(drivesState, drive, onShowDetails: onChoose),
               syncMenu: const DrivesSyncMenu(),
               // A new account gets My files made before it would see this.
               buildEmpty: (_) => FirstDrivePage(
@@ -431,7 +415,8 @@ class DrivesListBody extends StatelessWidget {
       return _ChoosingSeveral(
         anyTicked: state.selected.isNotEmpty,
         onClear: onClearSelection,
-        builder: (context, selecting, onLongPress) => _DrivesListLoadedView(
+        builder: (context, selecting, choosing, onEndChoosing, onLongPress) =>
+            _DrivesListLoadedView(
           state: state,
           onOpenDrive: onOpenDrive,
           buildMenu: buildMenu,
@@ -443,6 +428,8 @@ class DrivesListBody extends StatelessWidget {
           chosenDriveId: chosenDriveId,
           onChoose: onChoose,
           selecting: selecting,
+          choosing: choosing,
+          onEndChoosing: onEndChoosing,
           onLongPress: onLongPress,
         ),
       );
@@ -514,9 +501,8 @@ class _DrivesListUnavailable extends StatelessWidget {
           typography: typography,
           // Secondary: the sidebar's New is the view's one primary.
           variant: ButtonVariant.secondary,
-          // Without a cap this fills its column. Scaled, because the cap is a
-          // measurement of the label inside it.
-          maxWidth: driveListSyncAllButtonWidth(context),
+          // No width: the button takes its label's. A 180 px cap measured
+          // for another label drew a slab around "Try again".
           onPressed: onTryAgain,
         ),
       ],
@@ -582,6 +568,8 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.chosenDriveId,
     this.onChoose,
     this.selecting = false,
+    this.choosing = false,
+    this.onEndChoosing,
     this.onLongPress,
   });
 
@@ -591,6 +579,14 @@ class _DrivesListLoadedView extends StatelessWidget {
   /// Whether the reader is choosing several drives, which shows every row's
   /// box and select-all - see [_ChoosingSeveral].
   final bool selecting;
+
+  /// Whether choosing several was started, by a tick or a long press, so the
+  /// heading shows the count and the way out even with nothing ticked yet.
+  /// Not the multi-select key held, which is only a moment.
+  final bool choosing;
+
+  /// Ends choosing several: clears the ticks and a long press.
+  final VoidCallback? onEndChoosing;
 
   /// A long press on a row - see [_ChoosingSeveral].
   final VoidCallback? onLongPress;
@@ -687,6 +683,8 @@ class _DrivesListLoadedView extends StatelessWidget {
                             state.drives.every((drive) =>
                                 drive.isLocked ||
                                 state.selected.contains(drive.id)),
+                    someSelected: state.drives
+                        .any((drive) => state.selected.contains(drive.id)),
                     onToggleSelectAll: onToggleSelectAll,
                     selecting: selecting,
                     showsAllColumns: showsAllColumns,
@@ -746,7 +744,8 @@ class _DrivesListLoadedView extends StatelessWidget {
       title: DriveScopeRail.labelFor(context, state.scope),
       syncMenu: syncMenu,
       selectionCount: onClearSelection == null ? 0 : state.selected.length,
-      onClearSelection: onClearSelection,
+      choosing: onClearSelection != null && choosing,
+      onClearSelection: onEndChoosing ?? onClearSelection,
     );
   }
 }
@@ -765,12 +764,17 @@ class _DrivesTitleRow extends StatelessWidget {
     required this.title,
     required this.syncMenu,
     this.selectionCount = 0,
+    this.choosing = false,
     this.onClearSelection,
   });
 
   final String title;
   final Widget? syncMenu;
   final int selectionCount;
+
+  /// Choosing several with nothing ticked yet, after a long press: the
+  /// heading shows "0 drives selected" and its way out, which were hidden.
+  final bool choosing;
   final VoidCallback? onClearSelection;
 
   @override
@@ -778,7 +782,7 @@ class _DrivesTitleRow extends StatelessWidget {
     final onClear = onClearSelection;
     // Tinted the table's colour for a ticked row while selecting, so the
     // heading and the rows read as one selection.
-    final selecting = selectionCount > 0 && onClear != null;
+    final selecting = (selectionCount > 0 || choosing) && onClear != null;
 
     return ListPageTitleRow(
       highlighted: selecting,
@@ -805,10 +809,11 @@ class _DrivesTitleRow extends StatelessWidget {
   }
 }
 
-/// The heading while drives are ticked: the way out, then how many.
+/// The heading while drives are ticked: how many, then the way out.
 ///
-/// The x first, where the eye lands, as mail and file lists put it. Esc does
-/// the same - see [_SelectionShortcuts].
+/// The way out is a compact Clear button. It was a 10 px x that looked like a
+/// stray glyph beside the sync button. Esc does the same - see
+/// [_SelectionShortcuts].
 class _SelectionHeading extends StatelessWidget {
   const _SelectionHeading({
     super.key,
@@ -826,12 +831,6 @@ class _SelectionHeading extends StatelessWidget {
 
     return Row(
       children: [
-        ArDriveIconButton(
-          icon: ArDriveIcons.x(size: 20, color: colorTokens.textHigh),
-          tooltip: appLocalizationsOf(context).driveListClearSelectionTooltip,
-          onPressed: onClear,
-        ),
-        const SizedBox(width: 12),
         Flexible(
           child: Text(
             appLocalizationsOf(context).driveListSelectedCount(count),
@@ -842,6 +841,15 @@ class _SelectionHeading extends StatelessWidget {
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
+        ),
+        const SizedBox(width: ArDriveSpacing.sm),
+        ArDriveButtonNew(
+          key: const ValueKey('drives-clear-selection'),
+          text: appLocalizationsOf(context).driveListClearSelection,
+          typography: typography,
+          size: ArDriveButtonSize.compact,
+          variant: ButtonVariant.secondary,
+          onPressed: onClear,
         ),
       ],
     );
@@ -909,6 +917,8 @@ class _ChoosingSeveral extends StatefulWidget {
   final Widget Function(
     BuildContext context,
     bool selecting,
+    bool choosing,
+    VoidCallback onEnd,
     VoidCallback onLongPress,
   ) builder;
 
@@ -954,6 +964,8 @@ class _ChoosingSeveralState extends State<_ChoosingSeveral> {
             keyHeld: keyHeld,
             longPressed: _longPressed,
           ),
+          choosing,
+          _end,
           _onLongPress,
         ),
       ),

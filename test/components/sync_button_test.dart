@@ -192,6 +192,43 @@ void main() {
         sequence: sequence ?? ++nextSequence,
       );
 
+  // #99: on a phone the empty slot and fixed gaps left an 80 px hole.
+  testWidgets('on a phone an idle indicator holds no slot and no gap',
+      (tester) async {
+    await tester.pumpWidget(host(const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [SyncButton(holdSlotWhenIdle: false, gap: 8)],
+    )));
+    await tester.pump();
+
+    expect(tester.getSize(find.byType(SyncButton)), Size.zero);
+  });
+
+  testWidgets('on desktop the idle slot is held, with its gap', (tester) async {
+    await tester.pumpWidget(host(const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [SyncButton(gap: 16)],
+    )));
+    await tester.pump();
+
+    expect(
+      tester.getSize(find.byType(SyncButton)).width,
+      syncIndicatorSize + 2 * ArDriveSpacing.xxs + 16,
+    );
+  });
+
+  testWidgets('a running sync keeps its gap after it', (tester) async {
+    await tester.pumpWidget(host(const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [SyncButton(holdSlotWhenIdle: false, gap: 8)],
+    )));
+    await startSyncing(tester);
+
+    final withGap = tester.getSize(find.byType(SyncButton)).width;
+    final indicator = tester.getSize(find.byType(SyncSummaryFlash)).width;
+    expect(withGap, indicator + 8);
+  });
+
   testWidgets('an idle sync shows nothing at all', (tester) async {
     // The indicator is present only when there is something to report. A
     // control that is idle almost always is ambient noise in the one corner

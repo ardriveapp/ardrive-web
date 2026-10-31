@@ -439,6 +439,47 @@ void main() {
     });
   });
 
+  // #132: with Names or Web pages turned off, their links showed the drives
+  // list beside the explorer's drive tree, nothing lit, and the old address.
+  group('a Names or Web pages page that is turned off', () {
+    test('falls back to the drives list, in the flags the nav and URL read',
+        () {
+      delegate.showNames(name: 'ardrive');
+
+      expect(
+        delegate.fallBackFromOffPage(namesOn: false, webPagesOn: true),
+        isTrue,
+      );
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.showingNames, isFalse);
+      expect(delegate.shownName, isNull);
+      expect(delegate.currentConfiguration.drivesList, isTrue);
+      expect(delegate.currentConfiguration.names, isFalse);
+    });
+
+    test('and so does Web pages', () {
+      delegate.showWebPages();
+
+      expect(
+        delegate.fallBackFromOffPage(namesOn: true, webPagesOn: false),
+        isTrue,
+      );
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.showingWebPages, isFalse);
+    });
+
+    test('leaves a page that is on alone', () {
+      delegate.showWebPages();
+
+      expect(
+        delegate.fallBackFromOffPage(namesOn: false, webPagesOn: true),
+        isFalse,
+      );
+      expect(delegate.showingWebPages, isTrue);
+      expect(delegate.showingDrivesList, isFalse);
+    });
+  });
+
   /// The drives list can ask for a drive's info panel but cannot open it: the
   /// panel is `DriveDetailCubit.selectDataItem`, and the cubit that page
   /// provides is built against no drive and is a different instance from the
@@ -474,6 +515,17 @@ void main() {
       delegate.requestDriveInfo('drive-2');
 
       expect(delegate.pendingInfoDriveId, 'drive-2');
+    });
+
+    // #30: a request never honoured opened the panel by itself on a later
+    // visit, maybe days after.
+    test('is dropped on going back to the drives list', () async {
+      delegate.requestDriveInfo(driveId);
+      delegate.openDriveFromList(driveId);
+
+      delegate.showDrivesList();
+
+      expect(delegate.pendingInfoDriveId, isNull);
     });
   });
 

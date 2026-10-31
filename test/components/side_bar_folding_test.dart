@@ -241,7 +241,7 @@ void main() {
   const under = {
     'Public drives': 'website',
     'Private drives': 'photos',
-    'Shared drives': 'shared',
+    'Shared with me': 'shared',
     'Web pages': 'Homepage',
     'Names': 'maya',
   };
@@ -262,7 +262,7 @@ void main() {
     for (final (heading, scope) in [
       ('Public drives', DriveScope.public),
       ('Private drives', DriveScope.private),
-      ('Shared drives', DriveScope.sharedWithMe),
+      ('Shared with me', DriveScope.sharedWithMe),
     ]) {
       testWidgets(heading, (tester) async {
         await pumpApp(tester);
@@ -368,7 +368,7 @@ void main() {
 
     preferencesChanged.add(_prefs(const {'sharedDrives', 'webPages'}));
     await tester.pump(const Duration(milliseconds: 200));
-    expectFolded(const {'Shared drives', 'Web pages'});
+    expectFolded(const {'Shared with me', 'Web pages'});
 
     preferencesChanged.add(_prefs(const {}));
     await tester.pump(const Duration(milliseconds: 200));

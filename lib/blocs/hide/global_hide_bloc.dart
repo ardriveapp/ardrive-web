@@ -13,6 +13,7 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
   final UserPreferencesRepository _userPreferencesRepository;
   final DriveDao _driveDao;
   StreamSubscription<UserPreferences>? _prefsSubscription;
+  StreamSubscription<bool>? _hiddenItemsSubscription;
 
   GlobalHideBloc({
     required UserPreferencesRepository userPreferencesRepository,
@@ -25,18 +26,21 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
     // Saving is done only in response to user actions (ToggleShowHiddenFiles).
     _prefsSubscription =
         _userPreferencesRepository.watch().listen((userPreferences) async {
-      if (userPreferences.showHiddenFiles) {
-        add(SyncShowHiddenState(
-          showHidden: true,
-          userHasHiddenItems: userPreferences.userHasHiddenDrive,
-        ));
-      } else {
-        add(SyncShowHiddenState(
-          showHidden: false,
-          userHasHiddenItems: userPreferences.userHasHiddenDrive,
-        ));
-      }
+      // Only whether to show them comes from the preferences. Whether there
+      // is anything hidden is the database's to say (below): the stored
+      // flag counted hidden drives alone and lagged a sync, so the eye came
+      // and went at the wrong times.
+      add(SyncShowHiddenState(
+        showHidden: userPreferences.showHiddenFiles,
+        userHasHiddenItems: state.userHasHiddenDrive,
+      ));
     });
+
+    // Hidden drives, folders and files, as the database has them now, so the
+    // toggle is offered exactly while there is something for it to show.
+    _hiddenItemsSubscription = _driveDao.watchUserHasHiddenItems().listen(
+          (hasHidden) => add(HiddenItemsChanged(userHasHiddenItems: hasHidden)),
+        );
 
     _userPreferencesRepository.load();
 
@@ -48,11 +52,18 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
         emit(HiddingItems(userHasHiddenDrive: event.userHasHiddenItems));
         await _userPreferencesRepository.saveShowHiddenFiles(false);
       } else if (event is SyncShowHiddenState) {
-        // Only update local state from stream updates, don't save back
+        // Only update local state from stream updates, don't save back.
+        // Whether anything is hidden is read when the event is handled, not
+        // when it was added, so a database answer handled in between stands.
         if (event.showHidden) {
-          emit(ShowingHiddenItems(userHasHiddenDrive: event.userHasHiddenItems));
+          emit(
+              ShowingHiddenItems(userHasHiddenDrive: state.userHasHiddenDrive));
         } else {
-          emit(HiddingItems(userHasHiddenDrive: event.userHasHiddenItems));
+          emit(HiddingItems(userHasHiddenDrive: state.userHasHiddenDrive));
+        }
+      } else if (event is HiddenItemsChanged) {
+        if (event.userHasHiddenItems != state.userHasHiddenDrive) {
+          emit(state.copyWith(userHasHiddenDrive: event.userHasHiddenItems));
         }
       } else if (event is RefreshOptions) {
         final hasHiddenItems = await _driveDao.userHasHiddenItems();
@@ -64,6 +75,7 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
   @override
   Future<void> close() async {
     await _prefsSubscription?.cancel();
+    await _hiddenItemsSubscription?.cancel();
     return super.close();
   }
 }

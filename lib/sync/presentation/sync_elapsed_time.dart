@@ -9,8 +9,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// How long the running sync has taken: seconds under a minute, minutes and
 /// seconds above, the way the sync history says how long a sync took. "1200s"
 /// is not a number anybody reads.
+///
+/// Never below zero: a start time read a moment ahead of the clock showed
+/// "-3s elapsed" after one sync was stopped and the next started at once.
 String formatSyncElapsed(BuildContext context, Duration elapsed) {
-  final seconds = elapsed.inSeconds;
+  final seconds = elapsed.isNegative ? 0 : elapsed.inSeconds;
   if (seconds < 60) {
     return appLocalizationsOf(context).syncElapsedTime(seconds.toString());
   }

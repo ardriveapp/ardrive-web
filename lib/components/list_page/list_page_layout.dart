@@ -4,7 +4,6 @@ import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/sizes.dart';
-import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/search/search_box.dart';
@@ -120,24 +119,8 @@ class ListPageTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: const ListPageSearchField(),
-            ),
-          ),
-        ),
-        const SizedBox(width: 24),
-        const SyncButton(),
-        const SizedBox(width: 16),
-        const ProfileCard(),
-      ],
-    );
+    // The explorer's row, so nothing moves between the two pages.
+    return const TopBarControls(search: ListPageSearchField());
   }
 }
 

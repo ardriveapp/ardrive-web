@@ -104,7 +104,7 @@ void main() {
       (DriveScope.all, 'Your drives'),
       (DriveScope.public, 'Public drives'),
       (DriveScope.private, 'Private drives'),
-      (DriveScope.sharedWithMe, 'Shared drives'),
+      (DriveScope.sharedWithMe, 'Shared with me'),
       (DriveScope.hidden, 'Hidden'),
     ]) {
       testWidgets('is named for the scope: $title', (tester) async {
@@ -130,7 +130,7 @@ void main() {
         scope: DriveScope.sharedWithMe,
       );
 
-      expect(find.text('Shared drives'), findsOneWidget);
+      expect(find.text('Shared with me'), findsOneWidget);
     });
   });
 
@@ -238,6 +238,16 @@ void main() {
         find.widgetWithText(ArDriveButtonNew, 'Try again'),
       );
       expect(tryAgain.variant, isNot(ButtonVariant.primary));
+    });
+
+    // #146: it was a fixed 180 px slab around 70 px of label.
+    testWidgets('Try again is as wide as its label, not a fixed slab',
+        (tester) async {
+      await pumpBody(tester, DrivesListUnavailable());
+
+      final button = find.widgetWithText(ArDriveButtonNew, 'Try again');
+      expect(tester.widget<ArDriveButtonNew>(button).maxWidth, isNull);
+      expect(tester.getSize(button).width, lessThan(180));
     });
   });
 

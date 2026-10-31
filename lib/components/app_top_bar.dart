@@ -4,7 +4,6 @@ import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -36,82 +35,79 @@ class AppTopBar extends StatelessWidget {
       width: double.maxFinite,
       child: Padding(
         padding: const EdgeInsets.only(right: ArDriveSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // A publication has no sidebar, so its icon leads the bar.
-            if (PublicationMode.isOn) ...[
-              PublicationIcon(config: publicationConfigOf(context), size: 40),
-              const SizedBox(width: 16),
-            ],
-            Expanded(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: const SearchBox(),
-              ),
-            ),
-            const SizedBox(width: 24),
-            const Spacer(),
-            // A publication has no hidden items to show, nothing to sync and
-            // no account (docs/PUBLICATIONS.md, "The publication frame").
-            if (PublicationMode.isOn)
-              const PublicationTopBarActions()
-            else ...[
-              const GlobalHideToggleButton(),
-              const SizedBox(width: 8),
-              const SyncButton(),
-              const SizedBox(width: 8),
-              const SizedBox(width: 24),
-              const ProfileCard(),
-            ],
-          ],
-        ),
+        child: PublicationMode.isOn
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // A publication has no sidebar, so its icon leads the bar.
+                  PublicationIcon(
+                    config: publicationConfigOf(context),
+                    size: 40,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: const SearchBox(),
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  const Spacer(),
+                  // A publication has no hidden items to show, nothing to
+                  // sync and no account (docs/PUBLICATIONS.md, "The
+                  // publication frame").
+                  const PublicationTopBarActions(),
+                ],
+              )
+            : const TopBarControls(search: SearchBox()),
       ),
     );
   }
 }
 
-class GlobalHideToggleButton extends StatelessWidget {
-  const GlobalHideToggleButton({super.key});
+/// The desktop top bar's row, the same on every page that has one: search on
+/// the left, capped; sync and the profile on the right.
+///
+/// No hidden-items eye: showing hidden items is a view option in the
+/// explorer's columns menu, as in Finder, and Your drives has its Hidden
+/// scope.
+///
+/// One widget for Your drives and a drive, so nothing moves between them.
+/// They used to build their own rows: going into a drive the search box
+/// widened 34 px, and the sync indicator and the profile card shifted.
+class TopBarControls extends StatelessWidget {
+  const TopBarControls({super.key, required this.search});
+
+  final Widget search;
+
+  /// Search's cap.
+  static const double searchMaxWidth = 400;
+
+  /// Between search and the controls after it.
+  static const double searchGap = 24;
+
+  /// Between the sync indicator and the profile card.
+  static const double syncToProfileGap = 16;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<GlobalHideBloc, GlobalHideState>(
-      builder: (context, hideState) {
-        if (!hideState.userHasHiddenDrive) {
-          return const SizedBox.shrink();
-        }
-
-        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-        final tooltip = hideState is ShowingHiddenItems
-            ? 'Hide hidden items'
-            : 'Show hidden items';
-
-        final icon = hideState is ShowingHiddenItems
-            ? ArDriveIcons.eyeOpen(
-                color: colorTokens.textMid,
-              )
-            : ArDriveIcons.eyeClosed(
-                color: colorTokens.textMid,
-              );
-
-        return ArDriveIconButton(
-          tooltip: tooltip,
-          icon: icon,
-          onPressed: () {
-            context.read<GlobalHideBloc>().add(
-                  hideState is ShowingHiddenItems
-                      ? HideItems(
-                          userHasHiddenItems: hideState.userHasHiddenDrive)
-                      : ShowItems(
-                          userHasHiddenItems: hideState.userHasHiddenDrive,
-                        ),
-                );
-          },
-        );
-      },
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: searchMaxWidth),
+              child: search,
+            ),
+          ),
+        ),
+        const SizedBox(width: searchGap),
+        const SyncButton(gap: syncToProfileGap),
+        const ProfileCard(),
+      ],
     );
   }
 }
@@ -303,7 +299,26 @@ class SyncAnnouncement {
 /// indicator, and each left on the indicator itself afterwards so a report
 /// nobody was watching for is still reachable.
 class SyncButton extends StatelessWidget {
-  const SyncButton({super.key});
+  const SyncButton({super.key, this.holdSlotWhenIdle = true, this.gap = 0});
+
+  /// Whether the slot is held while there is nothing to report. On desktop
+  /// it is, so nothing beside it moves when a sync starts. On a phone it is
+  /// not: the empty slot was most of an 80 px hole in a bar with no room.
+  final bool holdSlotWhenIdle;
+
+  /// The space after the indicator, drawn with the slot, so a collapsed slot
+  /// leaves no gap either.
+  final double gap;
+
+  /// The slot with nothing in it: held, or gone.
+  Widget _emptySlot() => holdSlotWhenIdle
+      ? SizedBox(
+          width: _syncButtonOuterSize + gap, height: _syncButtonOuterSize)
+      : const SizedBox.shrink();
+
+  Widget _withGap(Widget child) => gap == 0
+      ? child
+      : Padding(padding: EdgeInsets.only(right: gap), child: child);
 
   @override
   Widget build(BuildContext context) {
@@ -399,10 +414,7 @@ class SyncButton extends StatelessWidget {
     // failed" rows and its Try again, stays until the next sync.
     final reportKey = _syncReportKey(syncState);
     if (reportKey != null && reportKey == dismissed) {
-      return const SizedBox(
-        width: _syncButtonOuterSize,
-        height: _syncButtonOuterSize,
-      );
+      return _emptySlot();
     }
     final syncCubit = context.read<SyncCubit>();
 
@@ -542,11 +554,9 @@ class SyncButton extends StatelessWidget {
       // The slot is held, not collapsed. Removing the widget entirely moved
       // everything beside it the instant a sync began - and the control whose
       // job is to report calmly must not shove the account card sideways to do
-      // it. Nothing is drawn; the space stays.
-      return const SizedBox(
-        width: _syncButtonOuterSize,
-        height: _syncButtonOuterSize,
-      );
+      // it. Nothing is drawn; the space stays. On a phone it goes - see
+      // [holdSlotWhenIdle].
+      return _emptySlot();
     }
 
     final announcement = _announcement(
@@ -559,7 +569,7 @@ class SyncButton extends StatelessWidget {
       status,
     );
 
-    return SyncSummaryFlash(
+    return _withGap(SyncSummaryFlash(
       announcement: announcement,
       child: _SyncButtonMenu(
         status: status,
@@ -587,7 +597,7 @@ class SyncButton extends StatelessWidget {
             !(failure != null && failure.kind == SyncFailureKind.driveList),
         child: indicator,
       ),
-    );
+    ));
   }
 
   /// What a failure says, by what failed.
