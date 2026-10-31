@@ -124,6 +124,14 @@ void main() {
     final inDrive = state is DriveDetailLoadUnsynced ||
         state is DriveDetailLoadSuccess ||
         openDriveId != null;
+    if (webPages) {
+      // The page is only there with publishing on.
+      when(() => configService.config).thenReturn(AppConfig(
+        allowedDataItemSizeForTurbo: 0,
+        stripePublishableKey: '',
+        enableDriveStatePublishing: true,
+      ));
+    }
     router
       ..showingDrivesList = !inDrive && !webPages
       ..showingWebPages = webPages

@@ -8,6 +8,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// What the drive picker was closed on: the folder in view, and the file
@@ -22,15 +23,20 @@ typedef DrivePickerChoice = ({
 /// Move walks them, to choose where something goes or what to act on.
 ///
 /// It opens on [driveId]'s [folderId] (the root when null), or on the list
-/// of drives. [canChooseFile] lets files be chosen; without it they are
-/// shown greyed, for context, and only a folder can be chosen.
+/// of drives. [purpose] decides which folders are offered (see
+/// [DrivePickerPurpose]). [canChooseFile] lets files be chosen; without it
+/// they are shown greyed, for context, and only a folder can be chosen.
 /// [actionLabel] names the main action for what is chosen. [onChoose] runs
 /// once the picker has closed, in the same press, so a browser still lets
-/// it open a file picker.
+/// it open a file picker. [sync] lets a drive this device has not read be
+/// synced from the picker, as opening it from Your drives does.
+/// [showsPrivacy] says, on each drive and on the place in view, whether it is
+/// public or private.
 Future<void> showDrivePicker(
   BuildContext context, {
   required String title,
   required List<Drive> drives,
+  required DrivePickerPurpose purpose,
   required String Function(DrivePickerState state) actionLabel,
   required void Function(DrivePickerChoice choice) onChoose,
   String? driveId,
@@ -38,11 +44,14 @@ Future<void> showDrivePicker(
   bool Function(DrivePickerEntry file)? canChooseFile,
   bool showsPrivacy = false,
   String? noDrivesMessage,
+  Future<bool> Function(Drive drive)? sync,
   DrivePickerRead? read,
 }) {
   final cubit = DrivePickerCubit(
     drives: drives,
-    read: read ?? drivePickerReadFrom(context.read<DriveDao>()),
+    read:
+        read ?? drivePickerReadFrom(context.read<DriveDao>(), purpose: purpose),
+    sync: sync,
   )..start(driveId: driveId, folderId: folderId);
   return showArDriveDialog(
     context,
@@ -62,7 +71,7 @@ Future<void> showDrivePicker(
 
 /// The drive picker's dialog, over a [DrivePickerCubit]. See
 /// [showDrivePicker].
-class DrivePickerDialog extends StatelessWidget {
+class DrivePickerDialog extends StatefulWidget {
   const DrivePickerDialog({
     super.key,
     required this.title,
@@ -78,8 +87,8 @@ class DrivePickerDialog extends StatelessWidget {
   final void Function(DrivePickerChoice choice) onChoose;
   final bool Function(DrivePickerEntry file)? canChooseFile;
 
-  /// Says on each drive whether it is public or private: for an upload,
-  /// which cannot be taken back.
+  /// Says on each drive, and on the place in view, whether it is public or
+  /// private: for an upload, which cannot be taken back.
   final bool showsPrivacy;
 
   /// Said when there are no drives to choose from.
@@ -87,6 +96,28 @@ class DrivePickerDialog extends StatelessWidget {
 
   /// The list keeps one height as the picker moves between folders.
   static const listHeight = 320.0;
+
+  @override
+  State<DrivePickerDialog> createState() => _DrivePickerDialogState();
+}
+
+class _DrivePickerDialogState extends State<DrivePickerDialog> {
+  /// Back, which keeps keyboard focus in the picker once the row that was
+  /// pressed has gone with the folder it was in.
+  final _backFocus = FocusNode(debugLabel: 'drive picker back');
+
+  @override
+  void dispose() {
+    _backFocus.dispose();
+    super.dispose();
+  }
+
+  /// Whether the last press in the picker came from the keyboard.
+  bool _byKeyboard = false;
+
+  /// Where the picker is: a change of it moves focus to Back.
+  static Object? _place(DrivePickerState state) =>
+      (state.drive?.id, state.folder?.id);
 
   @override
   Widget build(BuildContext context) {
@@ -99,51 +130,95 @@ class DrivePickerDialog extends StatelessWidget {
       final drive = state.drive;
       if (drive == null || folder == null) return;
       Navigator.of(context).pop();
-      onChoose((drive: drive, folder: folder, fileId: state.fileId));
+      widget.onChoose((drive: drive, folder: folder, fileId: state.fileId));
     }
 
-    return ArDriveStandardModalNew(
-      title: title,
-      width: kMediumDialogWidth,
-      scrollableContent: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Location(state: state, onBack: cubit.back),
-          const SizedBox(height: ArDriveSpacing.xs),
-          SizedBox(
-            height: listHeight,
-            child: _Contents(
+    return BlocListener<DrivePickerCubit, DrivePickerState>(
+      listenWhen: (a, b) => _place(a) != _place(b) && b.folder != null,
+      listener: (context, state) {
+        // The row that was pressed went with the folder it was in, and focus
+        // with it: Back keeps a keyboard user in the picker. Not after a
+        // click, which would draw a focus ring nobody asked for.
+        if (!_byKeyboard) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _backFocus.context != null) _backFocus.requestFocus();
+        });
+      },
+      child: ArDriveStandardModalNew(
+        title: widget.title,
+        width: kMediumDialogWidth,
+        scrollableContent: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DrivePickerLocation(
               state: state,
-              canChooseFile: canChooseFile,
-              showsPrivacy: showsPrivacy,
-              noDrivesMessage: noDrivesMessage,
+              onBack: cubit.back,
+              showsPrivacy: widget.showsPrivacy,
+              backFocus: _backFocus,
             ),
+            const SizedBox(height: ArDriveSpacing.xs),
+            SizedBox(
+              height: DrivePickerDialog.listHeight,
+              child: Listener(
+                onPointerDown: (_) => _byKeyboard = false,
+                child: Focus(
+                  canRequestFocus: false,
+                  skipTraversal: true,
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent &&
+                        (event.logicalKey == LogicalKeyboardKey.enter ||
+                            event.logicalKey ==
+                                LogicalKeyboardKey.numpadEnter ||
+                            event.logicalKey == LogicalKeyboardKey.space)) {
+                      _byKeyboard = true;
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: _Contents(
+                    state: state,
+                    canChooseFile: widget.canChooseFile,
+                    showsPrivacy: widget.showsPrivacy,
+                    noDrivesMessage: widget.noDrivesMessage,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ModalAction.dismiss(
+            action: () => Navigator.of(context).pop(),
+            title: strings.cancel,
+          ),
+          ModalAction(
+            action: choose,
+            title: widget.actionLabel(state),
+            isEnable: folder != null,
           ),
         ],
       ),
-      actions: [
-        ModalAction.dismiss(
-          action: () => Navigator.of(context).pop(),
-          title: strings.cancel,
-        ),
-        ModalAction(
-          action: choose,
-          title: actionLabel(state),
-          isEnable: folder != null,
-        ),
-      ],
     );
   }
 }
 
-/// Where the picker is: the drives, or a drive's folder, with Back.
-class _Location extends StatelessWidget {
-  const _Location({required this.state, required this.onBack});
+/// Where the picker is: the drives, or a drive's folder, with Back. With
+/// [showsPrivacy], the drive's icon and whether it is public or private, on
+/// its root and in every folder under it. Announced as it changes.
+class DrivePickerLocation extends StatelessWidget {
+  const DrivePickerLocation({
+    super.key,
+    required this.state,
+    required this.onBack,
+    this.showsPrivacy = false,
+    this.backFocus,
+  });
 
   final DrivePickerState state;
   final VoidCallback onBack;
+  final bool showsPrivacy;
+  final FocusNode? backFocus;
 
   @override
   Widget build(BuildContext context) {
@@ -152,19 +227,43 @@ class _Location extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final drive = state.drive;
     final folder = state.folder;
+    final inFolder = folder != null && !state.atRoot;
     final name = drive == null
         ? strings.yourDrives
-        : (folder == null || state.atRoot)
-            ? drive.name
-            : folder.name;
+        : inFolder
+            ? folder.name
+            : drive.name;
 
-    return SizedBox(
-      height: 40,
+    Widget? privacy;
+    if (showsPrivacy && drive != null) {
+      final privacyWord = drive.isPrivate ? strings.private : strings.public;
+      privacy = Row(
+        children: [
+          drive.isPrivate
+              ? ArDriveIcons.privateDrive(size: 16, color: colors.iconMid)
+              : ArDriveIcons.publicDrive(size: 16, color: colors.iconMid),
+          const SizedBox(width: ArDriveSpacing.xxs),
+          Flexible(
+            child: Text(
+              // In a folder, the drive it is in as well.
+              inFolder ? '${drive.name}, $privacyWord' : privacyWord,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(color: colors.textMid),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 40),
       child: Row(
         children: [
           if (drive != null) ...[
             ArDriveIconButton(
               tooltip: strings.back,
+              focusNode: backFocus,
               icon: ArDriveIcons.arrowLeft(size: 20, color: colors.iconMid),
               onPressed: onBack,
             ),
@@ -173,14 +272,22 @@ class _Location extends StatelessWidget {
           Expanded(
             child: Semantics(
               header: true,
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: typography.paragraphLarge(
-                  color: colors.textHigh,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
+              liveRegion: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.paragraphLarge(
+                      color: colors.textHigh,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
+                  if (privacy != null) privacy,
+                ],
               ),
             ),
           ),
@@ -236,8 +343,39 @@ class _Contents extends StatelessWidget {
       );
     }
 
+    if (state.syncing) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+          const SizedBox(height: ArDriveSpacing.sm),
+          _Message(strings.drivePickerSyncing),
+        ],
+      );
+    }
+
     final folder = state.folder;
-    if (folder == null) return _Message(strings.driveNeverSynced);
+    if (folder == null) {
+      // A drive this device has not read: sync it here, as opening it from
+      // Your drives does, rather than leave a dead end.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _Message(state.syncRefused
+              ? strings.driveSyncNotStartedAnotherDriveIsSyncing
+              : strings.driveNeverSynced),
+          if (cubit.canSync)
+            ArDriveButtonNew(
+              text: strings.sync,
+              typography: ArDriveTypographyNew.of(context),
+              variant: ButtonVariant.secondary,
+              size: ArDriveButtonSize.compact,
+              onPressed: cubit.syncDrive,
+            ),
+        ],
+      );
+    }
     if (folder.folders.isEmpty && folder.files.isEmpty) {
       return _Message(strings.drivePickerEmptyFolder);
     }

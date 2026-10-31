@@ -10,6 +10,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/web_pages/domain/web_page.dart';
 import 'package:ardrive/web_pages/presentation/web_pages_cubit.dart';
 import 'package:ardrive/web_pages/presentation/web_pages_page.dart';
@@ -88,6 +89,7 @@ void main() {
   late AppRouterDelegate delegate;
   late _RecordingUrlLauncher launcher;
   late MockDrivesCubit drives;
+  late MockSyncBloc sync;
   late MockDriveDao driveDao;
   late _MockNamesCubit names;
   var arns = false;
@@ -95,6 +97,8 @@ void main() {
   setUp(() {
     arns = false;
     drives = MockDrivesCubit();
+    sync = MockSyncBloc();
+    whenListen(sync, const Stream<SyncState>.empty(), initialState: SyncIdle());
     whenListen(drives, const Stream<DrivesState>.empty(),
         initialState: DrivesLoadInProgress());
     driveDao = MockDriveDao();
@@ -141,6 +145,7 @@ void main() {
               ),
               BlocProvider<WebPagesCubit>.value(value: cubit),
               BlocProvider<DrivesCubit>.value(value: drives),
+              BlocProvider<SyncCubit>.value(value: sync),
               BlocProvider<ArNSNamesCubit>.value(value: names),
               RepositoryProvider<DriveDao>.value(value: driveDao),
               // Dialogs pause it while they are up.
@@ -300,10 +305,41 @@ void main() {
   /// Publish used to go to Your drives and leave the rest to the reader. It
   /// asks what to publish, in the drive picker, then publishes it as its
   /// menu does.
-  testWidgets('Publish asks what to publish, and says when nothing can be',
+  testWidgets('Publish waits for the drives, rather than say there are none',
       (tester) async {
     pagesAre([older]);
     await pump(tester);
+
+    final publish = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, 'Publish'));
+    expect(publish.isDisabled, isTrue);
+    await tester.tap(find.text('Publish'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DrivePickerDialog), findsNothing);
+  });
+
+  testWidgets('Publish asks what to publish, and says when nothing can be',
+      (tester) async {
+    whenListen(
+      drives,
+      const Stream<DrivesState>.empty(),
+      initialState: DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: const [],
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: true,
+      ),
+    );
+    pagesAre([older]);
+    await pump(tester);
+    expect(
+      tester
+          .widget<ArDriveButtonNew>(
+              find.widgetWithText(ArDriveButtonNew, 'Publish'))
+          .isDisabled,
+      isFalse,
+    );
 
     await tester.tap(find.text('Publish'));
     await tester.pumpAndSettle();

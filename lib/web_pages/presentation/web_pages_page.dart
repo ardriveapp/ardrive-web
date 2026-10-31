@@ -201,6 +201,7 @@ class _WebPagesViewState extends State<WebPagesView> {
     final strings = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final state = context.watch<WebPagesCubit>().state;
+    final drivesKnown = context.watch<DrivesCubit>().state is DrivesLoadSuccess;
 
     void goToPublicDrives() => context
         .read<AppRouterDelegate>()
@@ -219,6 +220,9 @@ class _WebPagesViewState extends State<WebPagesView> {
           minWidth: 96,
         ),
         // Choose what to publish, then publish it as its own menu does.
+        // Not before the drives are known: the picker would say there are
+        // none.
+        isDisabled: !drivesKnown,
         onPressed: () => pickAndPublishToWeb(context),
       ),
     );

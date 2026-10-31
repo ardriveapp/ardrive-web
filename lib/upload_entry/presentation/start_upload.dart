@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/drive_create_form.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_cubit.dart';
 import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/models.dart';
@@ -21,6 +22,15 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// [promptToUpload]'s shape, for [startUpload]'s tests.
+typedef UploadPrompt = Future<void> Function(
+  BuildContext context, {
+  required String driveId,
+  required String parentFolderId,
+  required bool isFolderUpload,
+  Drive? drive,
+});
+
 /// Pressing Upload, from anywhere it can be pressed.
 ///
 /// Inside an open drive this is the ordinary upload, untouched. Everywhere
@@ -29,9 +39,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 ///
 /// [context] is the control's own, and must sit under the shell's
 /// [DriveDetailCubit].
+///
+/// [prompt] stands in for [promptToUpload] in a test.
 Future<void> startUpload(
   BuildContext context, {
   required bool isFolderUpload,
+  @visibleForTesting UploadPrompt? prompt,
 }) async {
   final router = context.read<AppRouterDelegate>();
   final drivesCubit = context.read<DrivesCubit>();
@@ -44,8 +57,8 @@ Future<void> startUpload(
 
   final step = decideUploadStart(
     detailState: context.read<DriveDetailCubit>().state,
-    showingDrivesList: router.showingDrivesList,
-    showingFolderlessPage: router.showingFolderlessPage,
+    showingDrivesList: router.showsDrivesListIn(context),
+    showingFolderlessPage: router.showingFolderlessPageIn(context),
     openDriveId: router.driveId,
     openFolderId: router.driveFolderId,
     drivesState: drivesCubit.state,
@@ -117,14 +130,18 @@ Future<void> startUpload(
       await showDrivePicker(
         context,
         title: isFolderUpload ? strings.uploadFolder : strings.uploadFiles,
+        purpose: DrivePickerPurpose.upload,
         drives: drives,
         driveId: driveId,
         folderId: folderId,
         showsPrivacy: true,
+        // A drive this device has not read is synced here, as choosing it
+        // from Your drives syncs it.
+        sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
         actionLabel: (_) => strings.uploadHere,
         onChoose: (choice) {
           if (!context.mounted) return;
-          promptToUpload(
+          (prompt ?? promptToUpload)(
             context,
             drive: choice.drive,
             driveId: choice.drive.id,

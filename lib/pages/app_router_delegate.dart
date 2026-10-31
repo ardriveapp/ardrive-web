@@ -334,9 +334,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   bool get tryingToViewDrive => driveId != null;
 
-  /// A page that holds no folder and is not the drives list: Names, a name's
-  /// page, Web pages. [driveId] and [driveFolderId] stay the last ones open.
-  bool get showingFolderlessPage => showingNames || showingWebPages;
+  /// Whether a page that holds no folder and is not the drives list is on
+  /// screen: Names, a name's page, Web pages. [driveId] and [driveFolderId]
+  /// stay the last ones open. Only where the page's feature is on: with it
+  /// off, the drives list stands in for it (see [showsDrivesListIn]).
+  bool showingFolderlessPageIn(BuildContext context) =>
+      (showingNames && namesPageIsOn(context)) ||
+      (showingWebPages && webPagesAreOn(context));
+
+  /// Whether the drives list is on screen: asked for, or standing in for
+  /// Names or Web pages while their feature is off.
+  bool showsDrivesListIn(BuildContext context) =>
+      showingDrivesList ||
+      ((showingNames || showingWebPages) && !showingFolderlessPageIn(context));
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
   bool get isViewingRawTransaction => rawTransactionId != null;

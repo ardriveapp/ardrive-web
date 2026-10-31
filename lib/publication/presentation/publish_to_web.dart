@@ -1,5 +1,7 @@
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_cubit.dart';
 import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -99,6 +101,22 @@ Future<void> openPublishToWeb(
   await promptToPublish(context, drive: drive, folder: folder);
 }
 
+/// The drives Publish on the Web pages page offers: of the user's own
+/// [drives], those not hidden that [canPublish] (public ones, where
+/// publishing is on).
+List<Drive> publishPickerDrives(
+  List<Drive> drives, {
+  required bool Function(Drive drive) canPublish,
+}) =>
+    [
+      for (final drive in drives)
+        if (!drive.isHidden && canPublish(drive)) drive,
+    ];
+
+/// Whether the publish picker lets [file] be chosen: not a pinned file,
+/// whose data belongs to someone else.
+bool publishPickerCanChooseFile(DrivePickerEntry file) => !file.isPinned;
+
 /// Publish on the Web pages page: the drive picker, to choose a public
 /// drive, folder or file, then the same publishing its menu opens. Opens on
 /// the drive and folder last open, when that drive can be published.
@@ -106,24 +124,34 @@ Future<void> openPublishToWeb(
 /// Only public drives are offered, as a private drive's and folder's menus
 /// offer no publishing. A private file's page is still published from its
 /// own menu.
-Future<void> pickAndPublishToWeb(BuildContext context) {
+///
+/// [canPublish] defaults to [offersPublishToWeb], which is only ever true on
+/// the web; a test hands in its own.
+Future<void> pickAndPublishToWeb(
+  BuildContext context, {
+  bool Function(Drive drive)? canPublish,
+}) {
   final strings = appLocalizationsOf(context);
   final router = context.read<AppRouterDelegate>();
   final drivesState = context.read<DrivesCubit>().state;
-  final drives = [
-    if (drivesState is DrivesLoadSuccess)
-      for (final drive in drivesState.userDrives)
-        if (!drive.isHidden && offersPublishToWeb(context, drive)) drive,
-  ];
+  final syncCubit = context.read<SyncCubit>();
+  final drives = drivesState is DrivesLoadSuccess
+      ? publishPickerDrives(
+          drivesState.userDrives,
+          canPublish:
+              canPublish ?? (drive) => offersPublishToWeb(context, drive),
+        )
+      : const <Drive>[];
   return showDrivePicker(
     context,
     title: strings.publishToWeb,
+    purpose: DrivePickerPurpose.publish,
     drives: drives,
     driveId: router.driveId,
     folderId: router.driveFolderId,
     noDrivesMessage: strings.noPublicDrives,
-    // A pinned file's data belongs to someone else.
-    canChooseFile: (file) => !file.isPinned,
+    canChooseFile: publishPickerCanChooseFile,
+    sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
     actionLabel: (state) => state.fileId != null
         ? strings.webPagesPublishFile
         : state.folder == null

@@ -5446,6 +5446,8 @@
   "@webPagesPublishFile": {"description": "Publish picker main action: publish the chosen file."},
   "uploadHere": "Upload here",
   "@uploadHere": {"description": "Upload destination picker main action: upload into the folder in view."},
+  "drivePickerSyncing": "Syncing this drive",
+  "@drivePickerSyncing": {"description": "Drive picker: a drive this device had not read is being synced so its folders can be shown."},
   "drivePickerEmptyFolder": "This folder is empty",
   "@drivePickerEmptyFolder": {"description": "Drive picker: the folder in view holds nothing to show."},
   "webPagesFrom": "From",

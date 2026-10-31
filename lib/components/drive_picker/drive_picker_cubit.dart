@@ -59,17 +59,39 @@ typedef DrivePickerRead = Future<DrivePickerFolder?> Function(
   String? folderId,
 );
 
+/// What the picker is choosing, which decides what [drivePickerReadFrom]
+/// offers.
+enum DrivePickerPurpose {
+  /// Where files go. As in the explorer: ghost folders (folders files point
+  /// to whose own metadata was never found) can take files, and the folder
+  /// last open is opened even when it is hidden, as the explorer showed it.
+  upload,
+
+  /// What to publish. As in the item menus: a ghost folder is never offered,
+  /// and nothing hidden can be published, so a hidden or ghost folder opened
+  /// directly is not read and the picker opens the drive's root instead.
+  publish,
+}
+
 /// [DrivePickerRead] from the local database, in the explorer's natural name
-/// order. Hidden items are left out: hiding something is asking not to see
-/// it, and nothing hidden can be published.
-DrivePickerRead drivePickerReadFrom(DriveDao driveDao) =>
+/// order. Hidden items are not listed: hiding something is asking not to see
+/// it. See [DrivePickerPurpose] for the rest.
+DrivePickerRead drivePickerReadFrom(
+  DriveDao driveDao, {
+  required DrivePickerPurpose purpose,
+}) =>
     (drive, folderId) async {
+      final publishing = purpose == DrivePickerPurpose.publish;
       try {
         final folder = await driveDao
             .folderById(folderId: folderId ?? drive.rootFolderId)
             .getSingleOrNull();
         // A drive nothing on this device has read has no root folder yet.
         if (folder == null || folder.driveId != drive.id) return null;
+        final isRoot = folder.id == drive.rootFolderId;
+        if (publishing && !isRoot && (folder.isHidden || folder.isGhost)) {
+          return null;
+        }
         final folders = await driveDao
             .foldersInFolder(driveId: drive.id, parentFolderId: folder.id)
             .get();
@@ -81,11 +103,10 @@ DrivePickerRead drivePickerReadFrom(DriveDao driveDao) =>
         return DrivePickerFolder(
           id: folder.id,
           name: folder.name,
-          parentFolderId:
-              folder.id == drive.rootFolderId ? null : folder.parentFolderId,
+          parentFolderId: isRoot ? null : folder.parentFolderId,
           folders: [
             for (final folder in folders)
-              if (!folder.isHidden)
+              if (!folder.isHidden && !(publishing && folder.isGhost))
                 DrivePickerEntry(
                   id: folder.id,
                   name: folder.name,
@@ -119,6 +140,8 @@ class DrivePickerState extends Equatable {
     this.folder,
     this.fileId,
     this.loading = false,
+    this.syncing = false,
+    this.syncRefused = false,
   });
 
   /// The drives to choose from.
@@ -135,15 +158,23 @@ class DrivePickerState extends Equatable {
   final String? fileId;
   final bool loading;
 
+  /// [drive], unreadable here, is being synced.
+  final bool syncing;
+
+  /// A sync of [drive] was asked for and not started: another was running.
+  final bool syncRefused;
+
   bool get choosingDrive => drive == null;
 
   /// [drive] is open but its folder could not be read.
-  bool get unreadable => drive != null && !loading && folder == null;
+  bool get unreadable =>
+      drive != null && !loading && !syncing && folder == null;
 
   bool get atRoot => folder != null && folder!.parentFolderId == null;
 
   @override
-  List<Object?> get props => [drives, drive, folder, fileId, loading];
+  List<Object?> get props =>
+      [drives, drive, folder, fileId, loading, syncing, syncRefused];
 }
 
 /// Walks the user's drives and folders for the drive picker.
@@ -151,10 +182,42 @@ class DrivePickerCubit extends Cubit<DrivePickerState> {
   DrivePickerCubit({
     required List<Drive> drives,
     required DrivePickerRead read,
+    Future<bool> Function(Drive drive)? sync,
   })  : _read = read,
+        _sync = sync,
         super(DrivePickerState(drives: drives));
 
   final DrivePickerRead _read;
+
+  /// Syncs a drive, saying whether a sync ran. Null where the picker cannot
+  /// sync.
+  final Future<bool> Function(Drive drive)? _sync;
+
+  /// Whether a drive this device has not read can be synced from here.
+  bool get canSync => _sync != null;
+
+  /// Syncs the open drive this device has not read, as opening it from Your
+  /// drives does, then shows its root.
+  Future<void> syncDrive() async {
+    final drive = state.drive;
+    final sync = _sync;
+    if (drive == null || sync == null || !state.unreadable || state.syncing) {
+      return;
+    }
+    final read = ++_reads;
+    emit(DrivePickerState(drives: state.drives, drive: drive, syncing: true));
+    final ran = await sync(drive);
+    if (isClosed || read != _reads) return;
+    if (!ran) {
+      emit(DrivePickerState(
+        drives: state.drives,
+        drive: drive,
+        syncRefused: true,
+      ));
+      return;
+    }
+    await _open(drive, null);
+  }
 
   /// Counts reads, so a slow one that lost a race lands nowhere.
   int _reads = 0;
@@ -165,7 +228,8 @@ class DrivePickerCubit extends Cubit<DrivePickerState> {
     final drive = _driveById(driveId);
     if (drive == null) return;
     await _open(drive, folderId);
-    // A folder that has gone (moved, or hidden) opens the drive's root.
+    // A folder that has gone (moved away, deleted) or that the read leaves
+    // out (see [DrivePickerPurpose]) opens the drive's root.
     if (folderId != null && state.drive == drive && state.folder == null) {
       await _open(drive, null);
     }
