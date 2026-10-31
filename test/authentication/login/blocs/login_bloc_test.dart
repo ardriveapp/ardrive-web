@@ -1362,6 +1362,7 @@ void main() {
   });
 
   group('testing LoginBloc LoginWithSolana event', () {
+
     LoginBloc createSolanaBloc() {
       return LoginBloc(
         arDriveAuth: mockArDriveAuth,

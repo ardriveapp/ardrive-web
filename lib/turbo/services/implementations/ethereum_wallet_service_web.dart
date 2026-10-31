@@ -490,8 +490,7 @@ class EthereumWalletService {
   EthereumWalletProvider _stringToProvider(String type) {
     return switch (type) {
       'metamask' => EthereumWalletProvider.metamask,
-      'brave' =>
-        EthereumWalletProvider.metamask, // Brave uses MetaMask interface
+      'brave' => EthereumWalletProvider.metamask, // Brave uses MetaMask interface
       'coinbase' => EthereumWalletProvider.coinbaseWallet,
       'rainbow' => EthereumWalletProvider.rainbow,
       _ => EthereumWalletProvider.metamask, // Default
