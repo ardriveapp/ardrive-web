@@ -131,6 +131,7 @@ enum TurboErrorType {
   unknown,
   sessionExpired,
   paymentFailed,
+  paymentCanceled,
   fetchPaymentIntentFailed,
   fetchEstimationInformationFailed,
 }

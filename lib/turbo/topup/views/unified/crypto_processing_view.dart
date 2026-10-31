@@ -35,6 +35,8 @@ class CryptoProcessingView extends StatelessWidget {
 
         // No close button: the payment is under way.
         return TurboTopupScaffold(
+          // A heading for the dialog, which screen readers announce on open.
+          title: 'Payment in progress',
           canClose: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
@@ -47,27 +49,36 @@ class CryptoProcessingView extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Main message
-                Text(
-                  message,
-                  style: typography.heading5(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colors.textHigh,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                // The step changes in place (approve, submit, confirm), so
+                // it is a live region: a screen reader hears each one.
+                Semantics(
+                  liveRegion: true,
+                  child: Column(
+                    children: [
+                      // Main message
+                      Text(
+                        message,
+                        style: typography.heading5(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colors.textHigh,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
 
-                // Sub message
-                if (submessage != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    submessage,
-                    style: typography.paragraphNormal(
-                      color: colors.textMid,
-                    ),
-                    textAlign: TextAlign.center,
+                      // Sub message
+                      if (submessage != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          submessage,
+                          style: typography.paragraphNormal(
+                            color: colors.textMid,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
 
                 const SizedBox(height: 32),
 

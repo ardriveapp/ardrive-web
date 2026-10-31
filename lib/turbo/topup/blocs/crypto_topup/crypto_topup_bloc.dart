@@ -83,8 +83,15 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   /// The chains this app pays on: testnets on the development flavor.
   final CryptoNetworkConfig networkConfig;
 
+  /// How long a wallet may take to answer a connect, sign or network-switch
+  /// request before the flow gives up. None of these moves money, so giving up
+  /// is safe; a lost wallet popup would otherwise leave the dialog waiting
+  /// forever.
+  final Duration walletPromptTimeout;
+
   CryptoTopupBloc({
     required this.networkConfig,
+    this.walletPromptTimeout = const Duration(minutes: 3),
     required CryptoPaymentService paymentService,
     required EthereumWalletService ethereumWalletService,
     required SolanaWalletService solanaWalletService,
@@ -422,18 +429,18 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     try {
       if (event.walletType == WalletType.ethereum) {
-        final walletState = await _ethereumWalletService.connect(
-          provider: event.ethereumProvider,
-        );
+        final walletState = await _ethereumWalletService
+            .connect(provider: event.ethereumProvider)
+            .timeout(walletPromptTimeout);
         add(CryptoTopupWalletConnected(
           address: walletState.address,
           chainId: walletState.chainId,
           walletType: WalletType.ethereum,
         ));
       } else if (event.walletType == WalletType.solana) {
-        final walletState = await _solanaWalletService.connect(
-          provider: event.solanaProvider,
-        );
+        final walletState = await _solanaWalletService
+            .connect(provider: event.solanaProvider)
+            .timeout(walletPromptTimeout);
         add(CryptoTopupWalletConnected(
           address: walletState.address,
           walletType: WalletType.solana,
@@ -451,6 +458,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         isUserRejected: e.isUserRejected,
         isNotInstalled: e.isNoProvider,
       ));
+    } on TimeoutException {
+      add(const CryptoTopupWalletConnectionFailed(error: _walletDidNotAnswer));
     } catch (e, s) {
       logger.e('Could not connect the wallet', e, s);
       add(CryptoTopupWalletConnectionFailed(
@@ -583,14 +592,18 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     ));
 
     try {
-      final signatureData = await _signerCache.signAndCacheAOConnect(
-        _ethereumWalletService,
-      );
+      final signatureData = await _signerCache
+          .signAndCacheAOConnect(_ethereumWalletService)
+          .timeout(walletPromptTimeout);
       add(CryptoTopupAOConnectSignatureCompleted(signatureData.publicKey));
     } on EthereumWalletException catch (e) {
       add(CryptoTopupAOConnectSignatureFailed(
         error: e.userMessage,
         isUserRejected: e.isUserRejected,
+      ));
+    } on TimeoutException {
+      add(const CryptoTopupAOConnectSignatureFailed(
+        error: _walletDidNotAnswer,
       ));
     } catch (e, s) {
       logger.e('Could not sign for AO', e, s);
@@ -967,7 +980,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     }
 
     try {
-      await _ethereumWalletService.switchChain(event.targetChainId);
+      await _ethereumWalletService
+          .switchChain(event.targetChainId)
+          .timeout(walletPromptTimeout);
       _chainAddedFor = null;
       add(CryptoTopupNetworkSwitchCompleted(event.targetChainId));
     } on EthereumWalletException catch (e) {
@@ -982,6 +997,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       } else {
         add(CryptoTopupNetworkSwitchFailed(e.userMessage));
       }
+    } on TimeoutException {
+      add(const CryptoTopupNetworkSwitchFailed(_walletDidNotAnswer));
     } catch (e, s) {
       logger.e('Could not switch the network', e, s);
       add(CryptoTopupNetworkSwitchFailed(
@@ -1795,6 +1812,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 // What the top-up shows when something other than the wallet failed and its
 // error can't be read: in a release build an exception without its own
 // toString reads "Instance of 'minified:Xy'".
+const _walletDidNotAnswer =
+    'Your wallet did not answer. No payment was made. Try again.';
 const _couldNotConnectWallet = 'Could not connect your wallet. Try again.';
 const _couldNotSign = 'Could not sign. Try again.';
 const _couldNotSwitchNetwork = 'Could not switch networks. Try again.';

@@ -866,11 +866,6 @@ class _ProfileCardState extends State<ProfileCard> {
       )..getBalance(),
       child: BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
         builder: (context, turboState) {
-          final creditsText = turboState is TurboBalanceSuccessState
-              ? convertWinstonToLiteralString(turboState.balance)
-              : turboState is TurboBalanceLoading
-                  ? '...'
-                  : '0.0000';
           // No credits: the one thing to do about it, said in words. A new
           // account has no balance at all, which is the same thing.
           final hasNoCredits = (turboState is TurboBalanceSuccessState &&
@@ -922,13 +917,10 @@ class _ProfileCardState extends State<ProfileCard> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            creditsText,
-                            key: const Key('profileCreditsBalance'),
-                            style: typography.paragraphNormal(
-                              color: colorTokens.textHigh,
-                              fontWeight: ArFontWeight.bold,
-                            ),
+                          ProfileCreditsValue(
+                            state: turboState,
+                            onRetry: () =>
+                                context.read<TurboBalanceCubit>().getBalance(),
                           ),
                           const SizedBox(width: 8),
                           Semantics(
@@ -1662,6 +1654,67 @@ class ForgetAllOnThisDeviceDialog extends StatelessWidget {
           title: strings.forget,
         ),
       ],
+    );
+  }
+}
+
+/// The credits figure in the profile card. Only a balance that was read is
+/// shown as a number: while it loads there is a spinner, and when it could not
+/// be read it says so with a way to try again, so an outage never looks like
+/// an empty account.
+class ProfileCreditsValue extends StatelessWidget {
+  const ProfileCreditsValue({
+    super.key,
+    required this.state,
+    required this.onRetry,
+  });
+
+  final TurboBalanceState state;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final state = this.state;
+
+    if (state is TurboBalanceSuccessState) {
+      return Text(
+        convertWinstonToLiteralString(state.balance),
+        key: const Key('profileCreditsBalance'),
+        style: typography.paragraphNormal(
+          color: colorTokens.textHigh,
+          fontWeight: ArFontWeight.bold,
+        ),
+      );
+    }
+    if (state is TurboBalanceErrorState) {
+      return Row(
+        key: const Key('profileCreditsError'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              appLocalizationsOf(context).couldNotLoadCredits,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphNormal(color: colorTokens.textMid),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ArDriveButtonNew(
+            key: const Key('profileCreditsRetry'),
+            text: appLocalizationsOf(context).tryAgain,
+            typography: typography,
+            variant: ButtonVariant.secondary,
+            size: ArDriveButtonSize.compact,
+            onPressed: onRetry,
+          ),
+        ],
+      );
+    }
+    return const ArDriveSpinner(
+      key: Key('profileCreditsLoading'),
+      size: ArDriveSpinnerSize.small,
     );
   }
 }

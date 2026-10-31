@@ -23,7 +23,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
   final _emailController = TextEditingController();
   bool _emailChecked = false;
   bool _emailIsValid = true;
-  bool _hasAutomaticChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -192,14 +191,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         if (!valid) _emailChecked = false;
                       });
                     },
-                    onEmailChanged: () {
-                      if (!_hasAutomaticChecked && _emailIsValid) {
-                        setState(() {
-                          _emailChecked = true;
-                          _hasAutomaticChecked = true;
-                        });
-                      }
-                    },
+                    // The news opt-in is the buyer's own tick, never implied by
+                    // typing the receipt email. Rebuild so the box enables.
+                    onEmailChanged: () => setState(() {}),
                     onCheckChanged: (checked) {
                       setState(() {
                         _emailChecked = checked;

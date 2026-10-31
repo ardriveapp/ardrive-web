@@ -127,6 +127,10 @@ String turboErrorMessage(BuildContext context, TurboErrorType errorType) {
       return appLocalizationsOf(context).turboErrorMessageSessionExpired;
     case TurboErrorType.unknown:
       return appLocalizationsOf(context).turboErrorMessageUnknown;
+    case TurboErrorType.paymentFailed:
+      return appLocalizationsOf(context).turboErrorMessagePaymentFailed;
+    case TurboErrorType.paymentCanceled:
+      return appLocalizationsOf(context).turboErrorMessagePaymentCanceled;
     case TurboErrorType.server:
       return appLocalizationsOf(context).turboErrorMessageServer;
     case TurboErrorType.fetchPaymentIntentFailed:

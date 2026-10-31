@@ -7,6 +7,8 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_stripe/flutter_stripe.dart'
+    show StripeException, FailureCode;
 
 part 'payment_review_event.dart';
 part 'payment_review_state.dart';
@@ -65,8 +67,25 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
         _emitPaymentReviewError(emit);
       }
     } catch (e) {
-      _emitPaymentReviewError(emit);
+      _emitPaymentReviewError(emit, _errorTypeFor(e));
     }
+  }
+
+  /// What went wrong, as far as the payment provider says. A card that was
+  /// declined or failed its authentication was not charged; anything else
+  /// (a dropped connection, a service fault) leaves the outcome unconfirmed.
+  TurboErrorType _errorTypeFor(Object error) {
+    if (error is StripeException) {
+      switch (error.error.code) {
+        case FailureCode.Failed:
+          return TurboErrorType.paymentFailed;
+        case FailureCode.Canceled:
+          return TurboErrorType.paymentCanceled;
+        case FailureCode.Timeout:
+          return TurboErrorType.unknown;
+      }
+    }
+    return TurboErrorType.unknown;
   }
 
   Future<void> _handlePaymentReviewRefreshQuote(
@@ -247,10 +266,13 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
     );
   }
 
-  void _emitPaymentReviewError(Emitter emit) {
+  void _emitPaymentReviewError(
+    Emitter emit, [
+    TurboErrorType errorType = TurboErrorType.unknown,
+  ]) {
     emit(
       PaymentReviewPaymentError(
-        errorType: TurboErrorType.unknown,
+        errorType: errorType,
         quoteExpirationDate: _quoteExpirationDate!,
         credits: _getCreditsFromPaymentModel(),
         subTotal: _getSubTotalFromPaymentModel(),
