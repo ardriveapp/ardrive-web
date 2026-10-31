@@ -152,6 +152,7 @@ Future<void> pickAndPublishToWeb(
     noDrivesMessage: strings.noPublicDrives,
     canChooseFile: publishPickerCanChooseFile,
     sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
+    syncRefusal: () => syncCubit.lastSingleSyncRefusal,
     actionLabel: (state) => state.fileId != null
         ? strings.webPagesPublishFile
         : state.folder == null

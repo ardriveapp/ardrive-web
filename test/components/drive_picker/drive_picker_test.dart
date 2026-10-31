@@ -1,6 +1,7 @@
 import 'package:ardrive/components/drive_picker/drive_picker_cubit.dart';
 import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/sync/domain/sync_refusal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -194,6 +195,24 @@ void main() {
       expect(cubit.state.unreadable, isTrue, reason: 'it can be tried again');
     });
 
+    test('says why, for each reason a sync is refused', () async {
+      for (final reason in [...SyncRefusal.values, null]) {
+        final cubit = DrivePickerCubit(
+          drives: [_photos],
+          read: _read,
+          sync: (_) async => false,
+          syncRefusal: () => reason,
+        );
+        addTearDown(cubit.close);
+
+        await cubit.openDrive(_photos);
+        await cubit.syncDrive();
+
+        expect(cubit.state.syncRefused, isTrue);
+        expect(cubit.state.refusal, reason);
+      }
+    });
+
     test('offers nothing to sync without a way to sync', () {
       final cubit = DrivePickerCubit(drives: [_photos], read: _read);
       addTearDown(cubit.close);
@@ -214,11 +233,13 @@ void main() {
       bool showsPrivacy = false,
       DrivePickerRead read = _read,
       Future<bool> Function(Drive drive)? sync,
+      SyncRefusal? Function()? syncRefusal,
     }) async {
       final cubit = DrivePickerCubit(
         drives: drives ?? [_site, _photos],
         read: read,
         sync: sync,
+        syncRefusal: syncRefusal,
       );
       addTearDown(cubit.close);
       await tester.pumpWidget(
@@ -449,6 +470,60 @@ void main() {
             (w) => w is Semantics && (w.properties.liveRegion ?? false)),
       );
       expect(live, findsOneWidget);
+    });
+
+    group('a refused sync says why', () {
+      const messages = {
+        SyncRefusal.anotherSync:
+            'Another sync is running. Try again when it finishes.',
+        SyncRefusal.activityInProgress: 'Finish the current upload first.',
+        SyncRefusal.tabHidden: 'Bring this tab to the front, then try again.',
+        SyncRefusal.publicationMode: 'Syncing is off here.',
+      };
+      for (final entry in messages.entries) {
+        testWidgets(entry.key.name, (tester) async {
+          await pump(
+            tester,
+            driveId: _photos.id,
+            sync: (_) async => false,
+            syncRefusal: () => entry.key,
+          );
+          await tester.tap(find.text('Sync'));
+          await tester.pumpAndSettle();
+
+          expect(find.text(entry.value), findsOneWidget);
+          expect(
+              find.text(
+                  'Another drive is syncing. Sync this one when it finishes.'),
+              findsNothing);
+          expect(actionDisabled(tester, 'Use'), isTrue);
+        });
+      }
+    });
+
+    testWidgets('Back from a drive root puts focus on the drive left',
+        (tester) async {
+      await pump(tester, driveId: _site.id);
+      expect(find.text('Campaigns'), findsOneWidget, reason: 'at the root');
+
+      Focus.of(tester.element(find.byTooltip('Back'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your drives'), findsOneWidget);
+      final focused = FocusManager.instance.primaryFocus!.context!;
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Website'),
+            matching: find.byType(DrivePickerRow),
+          ),
+          matching: find.byWidget(focused.widget),
+        ),
+        findsWidgets,
+        reason: 'focus on the Website row, not lost with Back',
+      );
     });
 
     testWidgets('a folder opened from the keyboard leaves focus on Back',

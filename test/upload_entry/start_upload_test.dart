@@ -298,6 +298,9 @@ void main() {
       uploads.clear();
       syncState();
       driveDao = MockDriveDao();
+      // Both drives were read here, which the picker asks before listing.
+      when(() => driveDao.driveIdsSyncedHere())
+          .thenAnswer((_) async => {_photos.id, _work.id});
       final photosRoot = entry(_photos, _photos.rootFolderId, _photos.name);
       final holidays =
           entry(_photos, 'holidays', 'Holidays', parent: photosRoot.id);
@@ -338,6 +341,32 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Photos'), findsWidgets);
       expect(find.text('Holidays'), findsOneWidget);
+    });
+
+    /// Upload takes files into a ghost folder, as the explorer lets it, which
+    /// publishing never offers: so a ghost folder in the list says the picker
+    /// was opened for an upload and not to publish.
+    testWidgets('asks as an upload does: ghost folders are offered',
+        (tester) async {
+      final root = entry(_photos, _photos.rootFolderId, _photos.name);
+      final ghost = FolderEntry(
+        id: 'ghost',
+        driveId: _photos.id,
+        name: 'Ghost folder',
+        parentFolderId: root.id,
+        path: '',
+        dateCreated: DateTime(2026),
+        lastUpdated: DateTime(2026),
+        isGhost: true,
+        isHidden: false,
+      );
+      folder(_photos, root, [ghost]);
+      router.driveFolderId = root.id;
+
+      await pressUpload(tester, driveDao: driveDao, prompt: recordUpload);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ghost folder'), findsOneWidget);
     });
 
     testWidgets('Upload here uploads into the folder in view', (tester) async {

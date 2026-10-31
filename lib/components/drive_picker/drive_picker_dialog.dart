@@ -1,6 +1,7 @@
 import 'package:ardrive/components/drive_picker/drive_picker_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/sync/domain/sync_refusal.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart'
     show getIconForContentType;
 import 'package:ardrive/theme/theme.dart';
@@ -29,7 +30,8 @@ typedef DrivePickerChoice = ({
 /// [actionLabel] names the main action for what is chosen. [onChoose] runs
 /// once the picker has closed, in the same press, so a browser still lets
 /// it open a file picker. [sync] lets a drive this device has not read be
-/// synced from the picker, as opening it from Your drives does.
+/// synced from the picker, as opening it from Your drives does; [syncRefusal]
+/// says why [sync] was refused, so the picker can.
 /// [showsPrivacy] says, on each drive and on the place in view, whether it is
 /// public or private.
 Future<void> showDrivePicker(
@@ -45,6 +47,7 @@ Future<void> showDrivePicker(
   bool showsPrivacy = false,
   String? noDrivesMessage,
   Future<bool> Function(Drive drive)? sync,
+  SyncRefusal? Function()? syncRefusal,
   DrivePickerRead? read,
 }) {
   final cubit = DrivePickerCubit(
@@ -52,6 +55,7 @@ Future<void> showDrivePicker(
     read:
         read ?? drivePickerReadFrom(context.read<DriveDao>(), purpose: purpose),
     sync: sync,
+    syncRefusal: syncRefusal,
   )..start(driveId: driveId, folderId: folderId);
   return showArDriveDialog(
     context,
@@ -106,9 +110,21 @@ class _DrivePickerDialogState extends State<DrivePickerDialog> {
   /// pressed has gone with the folder it was in.
   final _backFocus = FocusNode(debugLabel: 'drive picker back');
 
+  String? _cameFrom;
+
+  /// The drive rows, so focus can return to the one a keyboard user came
+  /// back from.
+  final _driveFocus = <String, FocusNode>{};
+
+  FocusNode _driveRowFocus(String driveId) => _driveFocus.putIfAbsent(
+      driveId, () => FocusNode(debugLabel: 'drive picker drive $driveId'));
+
   @override
   void dispose() {
     _backFocus.dispose();
+    for (final node in _driveFocus.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -134,8 +150,29 @@ class _DrivePickerDialogState extends State<DrivePickerDialog> {
     }
 
     return BlocListener<DrivePickerCubit, DrivePickerState>(
-      listenWhen: (a, b) => _place(a) != _place(b) && b.folder != null,
+      listenWhen: (a, b) {
+        // Back out of a drive to the drives: Back is gone, and focus with it.
+        if (a.drive != null && b.drive == null) {
+          _cameFrom = a.drive!.id;
+          return true;
+        }
+        return _place(a) != _place(b) && b.folder != null;
+      },
       listener: (context, state) {
+        if (state.drive == null) {
+          // To the drive left, or the first.
+          if (!_backFocus.hasFocus) return;
+          final cameFrom = _cameFrom;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final node = _driveFocus[cameFrom] ??
+                (state.drives.isEmpty
+                    ? null
+                    : _driveFocus[state.drives.first.id]);
+            if (node != null && node.context != null) node.requestFocus();
+          });
+          return;
+        }
         // The row that was pressed went with the folder it was in, and focus
         // with it: Back keeps a keyboard user in the picker. Not after a
         // click, which would draw a focus ring nobody asked for.
@@ -181,6 +218,7 @@ class _DrivePickerDialogState extends State<DrivePickerDialog> {
                     canChooseFile: widget.canChooseFile,
                     showsPrivacy: widget.showsPrivacy,
                     noDrivesMessage: widget.noDrivesMessage,
+                    driveFocus: _driveRowFocus,
                   ),
                 ),
               ),
@@ -303,8 +341,10 @@ class _Contents extends StatelessWidget {
     required this.canChooseFile,
     required this.showsPrivacy,
     required this.noDrivesMessage,
+    required this.driveFocus,
   });
 
+  final FocusNode Function(String driveId) driveFocus;
   final DrivePickerState state;
   final bool Function(DrivePickerEntry file)? canChooseFile;
   final bool showsPrivacy;
@@ -331,6 +371,7 @@ class _Contents extends StatelessWidget {
                   ? (drive.isPrivate ? strings.private : strings.public)
                   : null,
               opens: true,
+              focusNode: driveFocus(drive.id),
               onTap: () => cubit.openDrive(drive),
             ),
         ],
@@ -363,7 +404,14 @@ class _Contents extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _Message(state.syncRefused
-              ? strings.driveSyncNotStartedAnotherDriveIsSyncing
+              ? switch (state.refusal) {
+                  SyncRefusal.anotherSync => strings.drivePickerSyncAnother,
+                  SyncRefusal.activityInProgress =>
+                    strings.drivePickerSyncActivity,
+                  SyncRefusal.tabHidden => strings.drivePickerSyncTab,
+                  SyncRefusal.publicationMode => strings.drivePickerSyncOff,
+                  null => strings.drivePickerSyncFailed,
+                }
               : strings.driveNeverSynced),
           if (cubit.canSync)
             ArDriveButtonNew(
@@ -434,8 +482,10 @@ class DrivePickerRow extends StatelessWidget {
     this.opens = false,
     this.enabled = true,
     this.selected = false,
+    this.focusNode,
   });
 
+  final FocusNode? focusNode;
   final ArDriveIcon icon;
   final String title;
   final VoidCallback onTap;
@@ -464,6 +514,7 @@ class DrivePickerRow extends StatelessWidget {
         color: selected ? colors.buttonSecondaryHover : Colors.transparent,
         borderRadius: BorderRadius.circular(ArDriveRadius.sm),
         child: InkWell(
+          focusNode: focusNode,
           onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(ArDriveRadius.sm),
           hoverColor: highlight,

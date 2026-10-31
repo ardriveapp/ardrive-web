@@ -138,6 +138,7 @@ Future<void> startUpload(
         // A drive this device has not read is synced here, as choosing it
         // from Your drives syncs it.
         sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
+        syncRefusal: () => syncCubit.lastSingleSyncRefusal,
         actionLabel: (_) => strings.uploadHere,
         onChoose: (choice) {
           if (!context.mounted) return;
