@@ -102,6 +102,9 @@ void main() {
       whenListen(sync, const Stream<SyncState>.empty(),
           initialState: SyncIdle());
       driveDao = MockDriveDao();
+      // The drive was read here, which the picker asks before listing it.
+      when(() => driveDao.driveIdsSyncedHere())
+          .thenAnswer((_) async => {_site.id});
       final root = FolderEntry(
         id: _site.rootFolderId,
         driveId: _site.id,

@@ -14,6 +14,7 @@ import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/domain/sync_refusal.dart';
 import 'package:ardrive/sync/domain/sync_run.dart';
 import 'package:ardrive/sync/domain/sync_trigger.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -31,6 +32,8 @@ import 'package:rxdart/rxdart.dart';
 /// [SyncTrigger] - it moved to its own file because the persisted sync history
 /// records it and must not depend on the cubit.
 export 'package:ardrive/sync/domain/sync_trigger.dart';
+
+export 'package:ardrive/sync/domain/sync_refusal.dart';
 
 part 'sync_state.dart';
 
@@ -1084,6 +1087,12 @@ class SyncCubit extends Cubit<SyncState> {
     _emitIfOpen(state);
   }
 
+  SyncRefusal? _lastSingleRefusal;
+
+  /// Why the last [startSyncForDrive] was refused, or null when it was not:
+  /// it ran (and may have failed or been stopped), or was never called.
+  SyncRefusal? get lastSingleSyncRefusal => _lastSingleRefusal;
+
   bool _lastStartRefused = false;
 
   /// Whether the last [startSync] was refused before it ran: another sync
@@ -1440,7 +1449,11 @@ class SyncCubit extends Cubit<SyncState> {
     bool deepSync = false,
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
-    if (PublicationMode.isOn) return false;
+    _lastSingleRefusal = null;
+    if (PublicationMode.isOn) {
+      _lastSingleRefusal = SyncRefusal.publicationMode;
+      return false;
+    }
     logger.i('Starting Sync for drive: $driveId, deepSync: $deepSync');
 
     // One sync at a time, and no queue behind it. This used to await the
@@ -1456,6 +1469,7 @@ class SyncCubit extends Cubit<SyncState> {
     // menus.
     if (state is SyncInProgress) {
       logger.d('A sync is already running; refusing single drive sync');
+      _lastSingleRefusal = SyncRefusal.anotherSync;
       return false;
     }
 
@@ -1517,6 +1531,7 @@ class SyncCubit extends Cubit<SyncState> {
           _emitIfOpen(SyncIdle());
           // Skipped, not run: nothing was fetched, so there is no result for
           // anyone to report.
+          _lastSingleRefusal = SyncRefusal.tabHidden;
           return false;
         }
 
@@ -1524,6 +1539,7 @@ class SyncCubit extends Cubit<SyncState> {
           logger.d(
               'Uninterruptible activity in progress, skipping single drive sync...');
           _emitIfOpen(SyncIdle());
+          _lastSingleRefusal = SyncRefusal.activityInProgress;
           return false;
         }
 

@@ -94,6 +94,9 @@ void main() {
         file('typed', 'notes', contentType: 'text/plain'),
       ]);
     });
+    // Site was synced here; the others were only listed.
+    await (db.update(db.drives)..where((d) => d.id.equals('site')))
+        .write(const DrivesCompanion(lastBlockHeight: Value(100)));
     site = await dao.driveById(driveId: 'site').getSingle();
     unread = await dao.driveById(driveId: 'unread').getSingle();
   });
@@ -129,6 +132,42 @@ void main() {
 
   test('a drive this device has not read is not read', () async {
     expect(await read(DrivePickerPurpose.upload)(unread, null), isNull);
+  });
+
+  /// Reading the drive list stores a placeholder for a drive's root and no
+  /// block height. The folder row is there, so the folder alone cannot say
+  /// the drive was never read: that is the drive's synced status, by the
+  /// rule the explorer and Your drives use.
+  test('a drive with only a placeholder root is not read', () async {
+    await db.into(db.folderEntries).insert(
+          folder('unread-root', 'Unread', driveId: 'unread', parent: null),
+        );
+    expect(await dao.folderById(folderId: 'unread-root').getSingleOrNull(),
+        isNotNull,
+        reason: 'the placeholder is there');
+    expect(await dao.driveIdsSyncedHere(), isNot(contains('unread')));
+
+    for (final purpose in DrivePickerPurpose.values) {
+      expect(await read(purpose)(unread, null), isNull);
+    }
+
+    // The Sync prompt, with nothing to upload or publish into.
+    final cubit = DrivePickerCubit(
+        drives: [unread], read: read(DrivePickerPurpose.upload));
+    addTearDown(cubit.close);
+    await cubit.openDrive(unread);
+    expect(cubit.state.unreadable, isTrue);
+  });
+
+  test('the same drive reads once a sync has walked it', () async {
+    await db.into(db.folderEntries).insert(
+          folder('unread-root', 'Unread', driveId: 'unread', parent: null),
+        );
+    await (db.update(db.drives)..where((d) => d.id.equals('unread')))
+        .write(const DrivesCompanion(lastBlockHeight: Value(5)));
+
+    final root = await read(DrivePickerPurpose.upload)(unread, null);
+    expect(root!.id, 'unread-root');
   });
 
   group('ghost folders', () {

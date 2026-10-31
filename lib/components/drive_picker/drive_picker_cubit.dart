@@ -1,4 +1,5 @@
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/sync/domain/sync_refusal.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
@@ -86,7 +87,12 @@ DrivePickerRead drivePickerReadFrom(
         final folder = await driveDao
             .folderById(folderId: folderId ?? drive.rootFolderId)
             .getSingleOrNull();
-        // A drive nothing on this device has read has no root folder yet.
+        // Reading the drive list stores a placeholder root folder, so a row
+        // does not say the drive was read: ask what the explorer and Your
+        // drives ask.
+        if (!(await driveDao.driveIdsSyncedHere()).contains(drive.id)) {
+          return null;
+        }
         if (folder == null || folder.driveId != drive.id) return null;
         final isRoot = folder.id == drive.rootFolderId;
         if (publishing && !isRoot && (folder.isHidden || folder.isGhost)) {
@@ -142,6 +148,7 @@ class DrivePickerState extends Equatable {
     this.loading = false,
     this.syncing = false,
     this.syncRefused = false,
+    this.refusal,
   });
 
   /// The drives to choose from.
@@ -164,6 +171,9 @@ class DrivePickerState extends Equatable {
   /// A sync of [drive] was asked for and not started: another was running.
   final bool syncRefused;
 
+  /// Why, when it is known. See [SyncRefusal].
+  final SyncRefusal? refusal;
+
   bool get choosingDrive => drive == null;
 
   /// [drive] is open but its folder could not be read.
@@ -174,7 +184,7 @@ class DrivePickerState extends Equatable {
 
   @override
   List<Object?> get props =>
-      [drives, drive, folder, fileId, loading, syncing, syncRefused];
+      [drives, drive, folder, fileId, loading, syncing, syncRefused, refusal];
 }
 
 /// Walks the user's drives and folders for the drive picker.
@@ -183,8 +193,10 @@ class DrivePickerCubit extends Cubit<DrivePickerState> {
     required List<Drive> drives,
     required DrivePickerRead read,
     Future<bool> Function(Drive drive)? sync,
+    SyncRefusal? Function()? syncRefusal,
   })  : _read = read,
         _sync = sync,
+        _syncRefusal = syncRefusal,
         super(DrivePickerState(drives: drives));
 
   final DrivePickerRead _read;
@@ -192,6 +204,9 @@ class DrivePickerCubit extends Cubit<DrivePickerState> {
   /// Syncs a drive, saying whether a sync ran. Null where the picker cannot
   /// sync.
   final Future<bool> Function(Drive drive)? _sync;
+
+  /// Why the last [_sync] was refused, when it was.
+  final SyncRefusal? Function()? _syncRefusal;
 
   /// Whether a drive this device has not read can be synced from here.
   bool get canSync => _sync != null;
@@ -213,6 +228,7 @@ class DrivePickerCubit extends Cubit<DrivePickerState> {
         drives: state.drives,
         drive: drive,
         syncRefused: true,
+        refusal: _syncRefusal?.call(),
       ));
       return;
     }

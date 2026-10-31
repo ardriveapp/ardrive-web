@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -379,6 +380,62 @@ void main() {
       final ask = lastAsk();
       expect(ask.all, isTrue);
       expect(ask.only, isNull);
+      await cubit.close();
+    });
+  });
+
+  /// The drive picker says why a sync did not start, so each refusal has its
+  /// own reason and a sync that ran has none.
+  group('why a single-drive sync was refused', () {
+    tearDown(() => PublicationMode.debugSet(null));
+
+    test('another sync is running', () async {
+      final finish = aSingleDriveSyncThatHangs();
+      final cubit = buildCubit();
+      await settled();
+
+      final first = cubit.startSyncForDrive(driveId: 'drive-a');
+      await Future<void>.delayed(Duration.zero);
+      expect(await cubit.startSyncForDrive(driveId: 'drive-b'), isFalse);
+      expect(cubit.lastSingleSyncRefusal, SyncRefusal.anotherSync);
+
+      finish.complete();
+      await first;
+      expect(await cubit.startSyncForDrive(driveId: 'drive-b'), isTrue);
+      expect(cubit.lastSingleSyncRefusal, isNull,
+          reason: 'a sync that ran was not refused, whatever came before');
+      await cubit.close();
+    });
+
+    test('publication mode', () async {
+      final cubit = buildCubit();
+      await settled();
+      PublicationMode.debugSet('publication.json');
+
+      expect(await cubit.startSyncForDrive(driveId: 'drive-a'), isFalse);
+      expect(cubit.lastSingleSyncRefusal, SyncRefusal.publicationMode);
+      await cubit.close();
+    });
+
+    test('an ArConnect tab without focus', () async {
+      when(() => profileCubit.isCurrentProfileArConnect())
+          .thenAnswer((_) async => true);
+      when(() => tabVisibility.isTabFocused()).thenReturn(false);
+      final cubit = buildCubit();
+      await settled();
+
+      expect(await cubit.startSyncForDrive(driveId: 'drive-a'), isFalse);
+      expect(cubit.lastSingleSyncRefusal, SyncRefusal.tabHidden);
+      await cubit.close();
+    });
+
+    test('an activity that must not be interrupted', () async {
+      when(() => activityCubit.state).thenReturn(ActivityInProgress());
+      final cubit = buildCubit();
+      await settled();
+
+      expect(await cubit.startSyncForDrive(driveId: 'drive-a'), isFalse);
+      expect(cubit.lastSingleSyncRefusal, SyncRefusal.activityInProgress);
       await cubit.close();
     });
   });
