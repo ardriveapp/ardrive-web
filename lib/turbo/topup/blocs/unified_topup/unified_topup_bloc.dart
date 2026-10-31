@@ -497,8 +497,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             currentBalanceStorage: formatStorageWithDynamicUnit(balanceStorage,
                 includeApprox: false),
             estimatedStorage: formatStorageWithDynamicUnit(
-              _estimateToGiB(estimate, event.unit),
-              includeApprox: false),
+                _estimateToGiB(estimate, event.unit),
+                includeApprox: false),
             newBalanceStorage: newBalanceStorage,
           ));
         }
@@ -565,8 +565,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             discountPercent: discountPercent,
             creditsToReceive: estimate.estimate.winstonCredits,
             estimatedStorage: formatStorageWithDynamicUnit(
-              _estimateToGiB(estimate, currentState.displayUnit),
-              includeApprox: false),
+                _estimateToGiB(estimate, currentState.displayUnit),
+                includeApprox: false),
             newBalanceStorage: newBalanceStorage,
             isLoadingQuote: false,
           ));
@@ -627,8 +627,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           emit(loadedState.copyWith(
             creditsToReceive: estimate.estimate.winstonCredits,
             estimatedStorage: formatStorageWithDynamicUnit(
-              _estimateToGiB(estimate, currentState.displayUnit),
-              includeApprox: false),
+                _estimateToGiB(estimate, currentState.displayUnit),
+                includeApprox: false),
             newBalanceStorage: newBalanceStorage,
           ));
         }
