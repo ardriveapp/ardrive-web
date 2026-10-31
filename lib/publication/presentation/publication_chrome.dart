@@ -445,7 +445,7 @@ class _LabelledButton extends StatelessWidget {
   }
 }
 
-/// "By <owner> • N files • size • published <date>". The owner is their
+/// "By <owner> · N files · size · published <date>". The owner is their
 /// address shortened, after the name they chose when there is one, since a
 /// typed name proves nothing; the whole address is a hover away and a click
 /// copies it. The address is the identity: a page whose snapshot someone
@@ -468,7 +468,7 @@ class _Byline extends StatelessWidget {
     final publishedAt = config.publishedAt;
     final stats = this.stats;
 
-    // One line that wraps between words. Each bullet is held to the word
+    // One line that wraps between words. Each middle dot is held to the word
     // before it by a no-break space, so a wrapped line never starts with one.
     return Text.rich(
       TextSpan(
@@ -508,23 +508,23 @@ class _Byline extends StatelessWidget {
           if (stats == null && publishedAt != null)
             TextSpan(
                 text:
-                    '\u00a0• ${strings.publishedOn(formatDate(publishedAt))}'),
+                    '\u00a0· ${strings.publishedOn(formatDate(publishedAt))}'),
           if (stats != null)
             TextSpan(
               text:
-                  '\u00a0• ${(publishedAt == null ? strings.publicationCountSummary(
+                  '\u00a0· ${(publishedAt == null ? strings.publicationCountSummary(
                       stats.fileCount,
                       filesize(stats.totalSize),
                     ) : strings.publicationCoverSummary(
                       stats.fileCount,
                       filesize(stats.totalSize),
                       formatDate(publishedAt),
-                    )).replaceAll(' • ', '\u00a0• ')}',
+                    )).replaceAll(' · ', '\u00a0· ')}',
             ),
           // The licence its owner set for everything in it, named and linked
           // to the transaction that defines it.
           if (config.license case final license?) ...[
-            const TextSpan(text: '\u00a0• '),
+            const TextSpan(text: '\u00a0· '),
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,

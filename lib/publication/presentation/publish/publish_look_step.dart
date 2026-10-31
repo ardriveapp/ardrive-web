@@ -632,7 +632,7 @@ class _HeaderPreview extends StatelessWidget {
       strings.publicationBy(owner),
       if (summary != null) strings.publishFileCount(summary.fileCount),
       if (state.licence != null) state.licence!.meta.shortName,
-    ].join(' • ');
+    ].join(' · ');
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(

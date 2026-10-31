@@ -409,7 +409,7 @@ void main() {
       pagesAre([drivePage, folderPage]);
       await pump(tester);
 
-      expect(iconOf(tester, 'Websites'), ArDriveIcons.publicDrive().icon);
+      expect(iconOf(tester, 'Websites'), ArDriveIcons.drive().icon);
       expect(iconOf(tester, 'Campaigns'), ArDriveIcons.folderOutline().icon);
     });
   });

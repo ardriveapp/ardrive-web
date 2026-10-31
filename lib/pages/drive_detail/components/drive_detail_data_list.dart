@@ -16,6 +16,19 @@ void _openRow(BuildContext context, ArDriveDataTableItem item) {
   context.read<DriveDetailCubit>().openDataItem(item);
 }
 
+/// A folder whose every item is hidden: said, with the way to show them.
+Widget _allItemsHidden(BuildContext context) => Center(
+      child: SingleChildScrollView(
+        child: ArDriveEmptyState(
+          key: const Key('allItemsHidden'),
+          icon: ArDriveIcons.eyeClosed(size: 32),
+          title: appLocalizationsOf(context).allItemsHidden,
+          actionLabel: appLocalizationsOf(context).showHiddenItems,
+          onAction: () => setShowHiddenItems(context, true),
+        ),
+      ),
+    );
+
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
@@ -29,6 +42,7 @@ Widget _buildDataList(
     state.currentDrive,
     isMultiselecting: state.multiselect,
     columnVisibility: state.columnVisibility,
+    driveHasLicensedFiles: state.driveHasLicensedFiles,
     emptyState: emptyState,
     revealSelectedItem: state.revealSelectedItem,
     rowsPerPage: state.rowsPerPage,
@@ -43,6 +57,7 @@ Widget _buildDataListContent(
   Drive drive, {
   required bool isMultiselecting,
   required Map<int, bool> columnVisibility,
+  bool driveHasLicensedFiles = false,
   required Widget emptyState,
   bool revealSelectedItem = false,
   required int rowsPerPage,
@@ -101,17 +116,20 @@ Widget _buildDataListContent(
       ),
       // if (constraints.maxWidth > 820)
       TableColumn(
-        // TODO: Localize
-        // appLocalizationsOf(context).licenseType,
-        'License',
+        appLocalizationsOf(context).tableColumnLicense,
         2,
-        index: 4,
+        index: DriveDetailCubit.licenseColumnIndex,
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
-        isVisible:
-            (constraints.maxWidth > 820 && (columnVisibility[4] ?? true)),
+        // Hidden by default unless something in the drive is licensed: in
+        // most drives it was a column of blanks. The reader's choice wins.
+        isVisible: constraints.maxWidth > 820 &&
+            DriveDetailCubit.showsLicenseColumn(
+              columnVisibility: columnVisibility,
+              driveHasLicensedFiles: driveHasLicensedFiles,
+            ),
       ),
     ];
 
@@ -130,6 +148,12 @@ Widget _buildDataListContent(
         }
 
         if (filteredItems.isEmpty) {
+          // Everything here is hidden: say so, with the way to show it. The
+          // columns menu that holds that option belongs to the table, and
+          // there is no table to open it from.
+          if (items.isNotEmpty) {
+            return _allItemsHidden(context);
+          }
           return emptyState;
         }
 
@@ -168,6 +192,19 @@ Widget _buildDataListContent(
               appLocalizationsOf(context).tablePageRange(first, last, total),
           previousPageText: appLocalizationsOf(context).tablePreviousPage,
           nextPageText: appLocalizationsOf(context).tableNextPage,
+          columnsText: appLocalizationsOf(context).tableColumns,
+          // Finder's view menu: whether hidden items show is a choice about
+          // how the table looks, so it sits with the columns. It was an eye
+          // in the top bar.
+          viewOptions: [
+            if (hideState.userHasHiddenDrive)
+              ViewOption(
+                key: const Key('showHiddenItemsOption'),
+                label: appLocalizationsOf(context).showHiddenItems,
+                checked: hideState is ShowingHiddenItems,
+                onChanged: (show) => setShowHiddenItems(context, show),
+              ),
+          ],
           pageText: (page) => appLocalizationsOf(context).tablePageNumber(page),
           // The sync half of this lock is stated out loud rather than left as
           // a silent no-op - see [SyncingDriveNotice], which is given the

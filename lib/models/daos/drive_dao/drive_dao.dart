@@ -1363,6 +1363,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return folder != null;
   }
 
+  /// Whether any file in this drive carries a license, as of its latest
+  /// revision. The explorer shows its License column by default only then.
+  Future<bool> driveHasLicensedFiles(String driveId) async {
+    final file = await (selectOnly(fileEntries)
+          ..addColumns([fileEntries.id])
+          ..where(fileEntries.driveId.equals(driveId) &
+              fileEntries.licenseTxId.isNotNull())
+          ..limit(1))
+        .getSingleOrNull();
+    return file != null;
+  }
+
   Future<bool> userHasHiddenItems() {
     return hasHiddenItems().getSingle();
   }

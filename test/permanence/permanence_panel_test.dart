@@ -530,11 +530,11 @@ void main() {
     expect(formatPermanenceSize(2 * 1024 * gb), '2.0 TiB');
   });
 
-  test('counts are separated by thousands, with a bullet between them', () {
+  test('counts are separated by thousands, with a middle dot between them', () {
     expect(
       [permanenceCount(21, 'drive'), permanenceCount(1776, 'file')]
           .join(permanenceSeparator),
-      '21 drives  •  1,776 files',
+      '21 drives  ·  1,776 files',
     );
     expect(permanenceCount(1, 'file'), '1 file');
   });

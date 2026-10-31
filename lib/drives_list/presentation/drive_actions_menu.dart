@@ -56,7 +56,12 @@ class DriveActionsMenu extends StatelessWidget {
     required this.drive,
     required this.isOwner,
     required this.isSynced,
+    this.onShowDetails,
   });
+
+  /// Opens the drive's details beside the list, where the page has a panel
+  /// for them (desktop). Null on a phone, where More info opens the drive.
+  final void Function(String driveId)? onShowDetails;
 
   /// The drive as stored, not the row's view of it: [promptToShareDrive] and
   /// the hide dialog both take the record itself.
@@ -68,6 +73,31 @@ class DriveActionsMenu extends StatelessWidget {
   /// Whether this device has the drive's contents. Until it does, the menu
   /// leaves out what reads them, as the drive's other menus do.
   final bool isSynced;
+
+  /// More info, the way this page can show it.
+  ///
+  /// On desktop the list's own details panel, for this row, without leaving
+  /// the page. On a phone the drive opens with its details asked for, which
+  /// the explorer honours once the drive has loaded; a drive not synced on
+  /// this device never loads, so the request lingered and opened the panel by
+  /// itself days later. There it is left out.
+  VoidCallback? _moreInfo(BuildContext context) {
+    final onShowDetails = this.onShowDetails;
+    if (onShowDetails != null) {
+      return () => onShowDetails(drive.id);
+    }
+
+    if (!isSynced) {
+      return null;
+    }
+
+    return () {
+      // Order matters: the request has to be standing before the selection
+      // reaches the explorer, or the drive loads with nothing asked of it.
+      context.read<AppRouterDelegate>().requestDriveInfo(drive.id);
+      context.read<DrivesCubit>().selectDrive(drive.id);
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,13 +140,7 @@ class DriveActionsMenu extends StatelessWidget {
         isOwner: isOwner,
         isSynced: isSynced,
         isSyncing: isSyncing,
-        onMoreInfo: () {
-          // Order matters: the request has to be standing before the
-          // selection reaches the explorer, or the drive loads with nothing
-          // asked of it.
-          context.read<AppRouterDelegate>().requestDriveInfo(drive.id);
-          context.read<DrivesCubit>().selectDrive(drive.id);
-        },
+        onMoreInfo: _moreInfo(context),
       ),
       // The name once. The tooltip carries its message to a screen reader as
       // well, so with a label of its own inside it the button was announced

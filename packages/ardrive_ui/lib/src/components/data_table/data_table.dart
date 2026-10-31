@@ -81,6 +81,15 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final String previousPageText;
   final String nextPageText;
 
+  /// The name of the button that chooses which columns show, for its
+  /// tooltip and a screen reader.
+  final String columnsText;
+
+  /// View options listed under the columns in that same menu, such as
+  /// showing hidden items: Finder's view menu, one place for how the table
+  /// looks.
+  final List<ViewOption> viewOptions;
+
   /// What a screen reader says for a page button, given the one-based page.
   final String Function(int page)? pageText;
   final Function(List<MultiSelectBox<T>> selectedRows)? onSelectedRows;
@@ -162,6 +171,8 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.pageRangeText,
     this.previousPageText = 'Previous page',
     this.nextPageText = 'Next page',
+    this.columnsText = 'Columns',
+    this.viewOptions = const [],
     this.pageText,
     this.sortRows,
     this.onSelectedRows,
@@ -189,6 +200,22 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
 }
 
 enum TableSort { asc, desc }
+
+/// A checkbox in a table's columns menu that is not a column. See
+/// [ArDriveDataTable.viewOptions].
+class ViewOption {
+  const ViewOption({
+    required this.label,
+    required this.checked,
+    required this.onChanged,
+    this.key,
+  });
+
+  final String label;
+  final bool checked;
+  final ValueChanged<bool> onChanged;
+  final Key? key;
+}
 
 abstract class IndexedItem extends Equatable {
   const IndexedItem(this.index);
@@ -873,9 +900,48 @@ class _ArDriveDataTableState<T extends IndexedItem>
                                         _toggleColumnVisibility(i);
                                       },
                                     ),
-                                  ))
+                                  )),
+                                for (final option in widget.viewOptions)
+                                  ArDriveSubmenuItem(
+                                    widget: Container(
+                                      // A line above, as between a menu's
+                                      // groups: these are not columns.
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          top: BorderSide(
+                                            color: ArDriveTheme.of(context)
+                                                .themeData
+                                                .colorTokens
+                                                .strokeLow,
+                                          ),
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.all(16),
+                                      child: ArDriveCheckBox(
+                                        key: option.key,
+                                        title: option.label,
+                                        checked: option.checked,
+                                        titleStyle:
+                                            ArDriveTypographyNew.of(context)
+                                                .paragraphLarge(
+                                          fontWeight: ArFontWeight.bold,
+                                        ),
+                                        onChange: option.onChanged,
+                                      ),
+                                    ),
+                                  ),
                               ],
-                              child: ArDriveIcons.plus(),
+                              // A columns glyph, named: a bare plus with no
+                              // tooltip read as "add an item".
+                              child: Semantics(
+                                button: true,
+                                label: widget.columnsText,
+                                excludeSemantics: true,
+                                child: ArDriveTooltip(
+                                  message: widget.columnsText,
+                                  child: ArDriveIcons.columns(),
+                                ),
+                              ),
                             ),
                           ],
                         ),

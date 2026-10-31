@@ -100,7 +100,7 @@ class EmailAttachmentList extends StatelessWidget {
                 ),
                 const SizedBox(height: ArDriveSpacing.xxs),
                 Text(
-                  '${attachment.sizeFormatted} • ${attachment.mimeType}',
+                  '${attachment.sizeFormatted} · ${attachment.mimeType}',
                   style: typography.caption(color: colorTokens.textMid),
                 ),
               ],

@@ -242,6 +242,37 @@ void main() {
       expect(cleared, 0, reason: 'nothing was ticked to clear');
     });
 
+    // #105: a long press showed every box but no heading and no way out.
+    testWidgets('a long press with nothing ticked shows the count and Clear',
+        (tester) async {
+      await pump(tester, twoDrives);
+
+      await tester.longPress(find.text('a'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0 drives selected'), findsOneWidget);
+      final clear = find.byKey(const ValueKey('drives-clear-selection'));
+      expect(clear, findsOneWidget);
+
+      await tester.tap(clear);
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), [false, false, false]);
+      expect(find.text('Your drives'), findsOneWidget);
+      expect(cleared, 0, reason: 'nothing was ticked to clear');
+    });
+
+    testWidgets('holding the multi-select key does not change the heading',
+        (tester) async {
+      await pump(tester, twoDrives);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('selected'), findsNothing);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a long press on the private lock starts selecting too',
         (tester) async {
       // A Material tooltip there took the long press and showed its label.
@@ -428,7 +459,7 @@ void main() {
       expect(find.text('Sync selected'), findsNothing);
     });
 
-    testWidgets('the x clears it, and does not select everything instead',
+    testWidgets('Clear clears it, and does not select everything instead',
         (tester) async {
       await pump(
         tester,
@@ -441,10 +472,49 @@ void main() {
 
       expect(find.text('1 drive selected'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Clear selection'));
+      // A compact Clear button (#62): it was a 10 px x with no focus.
+      final clear = find.byKey(const ValueKey('drives-clear-selection'));
+      expect(clear, findsOneWidget);
+      expect(find.descendant(of: clear, matching: find.text('Clear')),
+          findsOneWidget);
+      await tester.tap(clear);
       await tester.pump();
 
-      expect(cleared, 1, reason: 'the x must clear, not toggle-all');
+      expect(cleared, 1, reason: 'Clear must clear, not toggle-all');
+    });
+
+    // #61: with some ticked the box looked empty, and had no name.
+    testWidgets('select-all shows a dash when some are ticked, and is named',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [drive('a'), drive('b')],
+          scope: DriveScope.all,
+          selected: const {'a'},
+        ),
+      );
+
+      final box = tester
+          .widget<ArDriveCheckBox>(find.byKey(const ValueKey('select-all')));
+      expect(box.checked, isFalse);
+      expect(box.isIndeterminate, isTrue);
+      expect(box.semanticLabel, 'Select all drives');
+      semantics.dispose();
+
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [drive('a'), drive('b')],
+          scope: DriveScope.all,
+          selected: const {'a', 'b'},
+        ),
+      );
+      final all = tester
+          .widget<ArDriveCheckBox>(find.byKey(const ValueKey('select-all')));
+      expect(all.checked, isTrue);
+      expect(all.isIndeterminate, isFalse);
     });
 
     testWidgets('and so does Esc', (tester) async {

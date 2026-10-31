@@ -637,7 +637,7 @@ class _Included extends StatelessWidget {
             style: typography.heading5(fontWeight: ArFontWeight.bold)),
         const SizedBox(height: 4),
         Text(
-          '${isFolder ? strings.publishScopeFolder : strings.publishScopeDrive} • $scopeName',
+          '${isFolder ? strings.publishScopeFolder : strings.publishScopeDrive} · $scopeName',
           style: typography.paragraphNormal(color: colors.textMid),
         ),
         const SizedBox(height: 16),
@@ -696,7 +696,7 @@ class _Review extends StatelessWidget {
               strings.publishReviewWhat,
               cubit.isFile
                   ? scopeName
-                  : '$scopeName • ${strings.publishFileCount(state.summary!.fileCount)}'),
+                  : '$scopeName · ${strings.publishFileCount(state.summary!.fileCount)}'),
           SummaryRow(strings.publishTitleLabel, state.title.trim()),
           SummaryRow(
             strings.publishReviewLink,

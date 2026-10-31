@@ -160,6 +160,7 @@ class DriveListHeader extends StatelessWidget {
     this.sortAscending = true,
     this.onSort,
     this.allSelected,
+    this.someSelected = false,
     this.onToggleSelectAll,
     this.selecting = false,
     this.showsAllColumns = true,
@@ -188,6 +189,9 @@ class DriveListHeader extends StatelessWidget {
   /// the list is not offering selection.
   final bool? allSelected;
 
+  /// Whether some drives on screen are ticked but not all.
+  final bool someSelected;
+
   final VoidCallback? onToggleSelectAll;
 
   @override
@@ -202,6 +206,8 @@ class DriveListHeader extends StatelessWidget {
           ? null
           : ListHeaderSelection(
               allTicked: allSelected!,
+              someTicked: someSelected,
+              label: strings.selectAllDrives,
               onToggleAll: () => onToggleSelectAll?.call(),
               selecting: selecting,
             ),
@@ -598,7 +604,9 @@ class DriveListRow extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: typography
           .paragraphSmall(
-        color: withheld ? colorTokens.textXLow : colorTokens.textMid,
+        // text-low for the dash: it is withheld information, not a
+        // placeholder, and text-xlow measured as background in dark.
+        color: withheld ? colorTokens.textLow : colorTokens.textMid,
       )
           .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );

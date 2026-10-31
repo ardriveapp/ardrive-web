@@ -89,6 +89,91 @@ void main() {
     expect(await firstDrive.claim('wallet-a'), isTrue);
   });
 
+  test('asking again leaves a request another tab holds alone', () async {
+    await firstDrive.request('w');
+    expect(await firstDrive.claim('w'), isTrue);
+    final held = store.values.values.single;
+
+    await firstDrive.requestUnlessPending('w');
+
+    expect(store.values.values.single, held);
+    expect(await firstDrive.claim('w'), isFalse);
+  });
+
+  test('asking again after the request was spent makes it again', () async {
+    await firstDrive.request('w');
+    await firstDrive.done();
+
+    await firstDrive.requestUnlessPending('w');
+
+    expect(await firstDrive.claim('w'), isTrue);
+  });
+
+  group('two tabs', () {
+    // Each tab keeps its own copy of the shared storage, as the local store
+    // does, and sees the other's writes only when it reads afresh.
+    late Map<String, String> shared;
+    late Future<void> lockTail;
+
+    Future<T> lock<T>(Future<T> Function() body) {
+      final run = lockTail.then((_) => body());
+      lockTail = run.then((_) {}, onError: (_) {});
+      return run;
+    }
+
+    FirstDrive tab({required bool readsAfresh, bool locks = true}) {
+      // The copy it took when it opened.
+      final cache = _CachedStore(shared)..reload();
+      return FirstDrive(
+        openStore: () async {
+          if (readsAfresh) cache.reload();
+          return cache;
+        },
+        now: () => now,
+        exclusive: locks ? lock : <T>(body) => body(),
+      );
+    }
+
+    setUp(() {
+      shared = {};
+      lockTail = Future.value();
+    });
+
+    test('only one of two tabs claiming at once makes the drive', () async {
+      final a = tab(readsAfresh: true);
+      final b = tab(readsAfresh: true);
+      await a.request('w');
+
+      final claims = await Future.wait([a.claim('w'), b.claim('w')]);
+
+      expect(claims.where((c) => c), hasLength(1));
+    });
+
+    test('a tab asking again leaves the other tab\'s hold alone', () async {
+      // b opened before anything was asked for.
+      final b = tab(readsAfresh: true);
+      final a = tab(readsAfresh: true);
+      await a.request('w');
+      expect(await a.claim('w'), isTrue);
+      final held = shared.values.single;
+
+      await b.requestUnlessPending('w');
+
+      expect(shared.values.single, held);
+      expect(await b.claim('w'), isFalse);
+    });
+
+    test('without a fresh read, a stale tab would claim it too', () async {
+      // What the fresh read is for: b's copy predates a's hold.
+      final a = tab(readsAfresh: true);
+      await a.request('w');
+      final b = tab(readsAfresh: false);
+      expect(await a.claim('w'), isTrue);
+
+      expect(await b.claim('w'), isTrue);
+    });
+  });
+
   test('a request older than a day is dropped', () async {
     await firstDrive.request('wallet-a');
 
@@ -97,4 +182,42 @@ void main() {
     expect(await firstDrive.claim('wallet-a'), isFalse);
     expect(store.values, isEmpty);
   });
+}
+
+/// A tab's copy of storage shared with other tabs: reads come from the copy,
+/// writes go to both, and [reload] refreshes the copy.
+class _CachedStore implements KeyValueStore {
+  _CachedStore(this.shared);
+
+  final Map<String, String> shared;
+  final _copy = <String, String>{};
+
+  void reload() => _copy
+    ..clear()
+    ..addAll(shared);
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    _copy[key] = value;
+    shared[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => _copy[key];
+
+  @override
+  Future<bool> remove(String key) async {
+    _copy.remove(key);
+    return shared.remove(key) != null;
+  }
+
+  @override
+  Set<String> getKeys() => _copy.keys.toSet();
+
+  @override
+  Future<bool> putBool(String key, bool value) async => true;
+
+  @override
+  bool? getBool(String key) => null;
 }

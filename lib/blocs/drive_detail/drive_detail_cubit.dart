@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/licensed_files_cache.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
@@ -450,6 +451,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       }
 
       if (_initialLoadComplete && SyncCubit.syncHasFinished(syncState)) {
+        // A sync may have brought licensed files in.
+        unawaited(_refreshLicensedFiles());
         _onSyncCompleted();
       }
     });
@@ -1225,6 +1228,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
           }
 
+          final driveHasLicensedFiles = await _driveHasLicensedFiles(driveId);
+
           final List<BreadCrumbRowInfo> pathSegments =
               await _breadcrumbBuilder.buildForFolder(
             folderId: folderContents.folder.id,
@@ -1254,6 +1259,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 pathSegments: pathSegments,
                 driveIsEmpty: driveIsEmpty,
                 contentsStillArriving: contentsMayStillArrive(drive),
+                driveHasLicensedFiles: driveHasLicensedFiles,
                 showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
                 // The table is kept when the folder is unchanged, so one
@@ -1288,6 +1294,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
+                driveHasLicensedFiles: driveHasLicensedFiles,
                 showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
               ),
@@ -1639,6 +1646,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // [SyncCubit.watchForPendingConfirmations].
     _syncCubit.watchForPendingConfirmations();
 
+    // A write may have added a license, such as the license form's.
+    unawaited(_refreshLicensedFiles());
+
     if (_droppedFolderRedraw) {
       await _refreshAfterDroppedRedraws();
       return;
@@ -1737,6 +1747,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
+  /// The column the explorer shows by default only when the drive has a
+  /// licensed file. See [DriveDetailLoadSuccess.driveHasLicensedFiles].
+  static const licenseColumnIndex = 4;
+
   Future<Map<int, bool>> getTableColumnVisibility() async {
     final columnVisibility = <int, bool>{};
 
@@ -1745,10 +1759,51 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         'drive_detail_column_$i',
       );
 
-      columnVisibility[i] = isVisible ?? true;
+      if (isVisible != null) {
+        columnVisibility[i] = isVisible;
+      } else if (i != licenseColumnIndex) {
+        // License is left out when the reader never chose: its default
+        // depends on the drive, so the table decides it from
+        // [DriveDetailLoadSuccess.driveHasLicensedFiles].
+        columnVisibility[i] = true;
+      }
     }
 
     return columnVisibility;
+  }
+
+  /// Whether the License column is shown: the reader's choice when there is
+  /// one, otherwise whether anything in the drive is licensed.
+  static bool showsLicenseColumn({
+    required Map<int, bool> columnVisibility,
+    required bool driveHasLicensedFiles,
+  }) =>
+      columnVisibility[licenseColumnIndex] ?? driveHasLicensedFiles;
+
+  /// See [LicensedFilesCache]: read once per drive, not on every reload.
+  late final _licensedFiles =
+      LicensedFilesCache(_driveDao.driveHasLicensedFiles);
+
+  Future<bool> _driveHasLicensedFiles(String driveId) =>
+      _licensedFiles.hasLicensedFiles(driveId);
+
+  /// Reads the open drive's answer again, after something that can change
+  /// it, and shows it if it did.
+  Future<void> _refreshLicensedFiles() async {
+    _licensedFiles.forget();
+    final before = state;
+    if (before is! DriveDetailLoadSuccess) return;
+
+    final driveId = before.currentDrive.id;
+    final has = await _driveHasLicensedFiles(driveId);
+    final now = state;
+    if (isClosed ||
+        now is! DriveDetailLoadSuccess ||
+        now.currentDrive.id != driveId ||
+        now.driveHasLicensedFiles == has) {
+      return;
+    }
+    emit(now.copyWith(driveHasLicensedFiles: has));
   }
 
   Future<LocalKeyValueStore> _store() async {

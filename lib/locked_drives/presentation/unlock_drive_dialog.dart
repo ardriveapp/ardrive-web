@@ -220,6 +220,8 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   controller: _password,
                   focusNode: _focus,
                   label: strings.drivePasswordLabel,
+                  // Unlock waits for it, so the label says so.
+                  isFieldRequired: true,
                   obscureText: true,
                   showObfuscationToggle: true,
                   autofocus: true,

@@ -13,6 +13,7 @@ import 'package:ardrive/search/search_coverage_notice.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_scope.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -242,11 +243,11 @@ void main() {
     await tester.pumpWidget(host());
 
     expect(hint(tester), 'Search files, folders and drives');
-    expect(find.byIcon(Icons.close), findsNothing);
+    expect(find.byIcon(ArDriveIcons.x().icon), findsNothing);
 
     await typeQuery(tester, 'rep');
 
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byIcon(ArDriveIcons.x().icon), findsOneWidget);
   });
 
   testWidgets('lists matches under the box as you type, without Enter',
@@ -258,8 +259,98 @@ void main() {
     expect(find.text('Work / Q3'), findsOneWidget);
     // At the top of its drive: the drive alone, not the drive twice.
     expect(find.text('Work'), findsOneWidget);
-    expect(find.text('See all results'), findsOneWidget);
+    // Both results are listed, so there is nothing more to see (#130).
+    expect(find.text('See all results'), findsNothing);
     expect(find.byType(FileSearchModal), findsNothing);
+  });
+
+  // #130: it was offered even when the dropdown already listed everything.
+  testWidgets('offers "See all" only past what the dropdown lists',
+      (tester) async {
+    searchReturns('rep', [
+      for (var i = 0; i < searchBoxMaxResults; i++) file('f$i', 'rep-$i.txt'),
+    ]);
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+
+    expect(find.textContaining('See all'), findsNothing);
+
+    searchReturns('rep', [
+      for (var i = 0; i <= searchBoxMaxResults; i++) file('f$i', 'rep-$i.txt'),
+    ]);
+    session().bloc.add(const SearchSubmitted('rep'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('See all ${searchBoxMaxResults + 1} results'),
+        findsOneWidget);
+  });
+
+  // #131: a highlighted row drew the dialogs' red bar over the hover colour.
+  testWidgets('a highlighted row is the menu hover colour, with no red bar',
+      (tester) async {
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await key(tester, LogicalKeyboardKey.arrowDown);
+
+    final theme =
+        ArDriveTheme.of(tester.element(find.text('report.pdf'))).themeData;
+    expect(rowColor(tester, 'report.pdf'), theme.dropdownTheme.hoverColor);
+    final bars = find.ancestor(
+      of: find.text('report.pdf'),
+      matching: find.byWidgetPredicate((w) =>
+          w is DecoratedBox &&
+          w.decoration is BoxDecoration &&
+          (w.decoration as BoxDecoration).border is Border &&
+          ((w.decoration as BoxDecoration).border as Border).left.color ==
+              theme.colorTokens.containerRed),
+    );
+    expect(bars, findsNothing);
+  });
+
+  // #117: a failed search read as no matches, which suggests a typo.
+  testWidgets('a search that fails says so, and Try again runs it again',
+      (tester) async {
+    var calls = 0;
+    when(() => repository.search('rep')).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) throw StateError('database closed');
+      return [report, reports];
+    });
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+
+    expect(find.byKey(const Key('searchFailedNotice')), findsOneWidget);
+    expect(find.text("Couldn't search."), findsOneWidget);
+    expect(
+        find.textContaining('No files, folders or drives match'), findsNothing);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('searchFailedNotice')), findsNothing);
+    expect(find.text('report.pdf'), findsOneWidget);
+  });
+
+  testWidgets('Enter after a failed search runs it again', (tester) async {
+    var calls = 0;
+    when(() => repository.search('rep')).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) throw StateError('database closed');
+      return [report, reports];
+    });
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    expect(find.byKey(const Key('searchFailedNotice')), findsOneWidget);
+
+    await enter(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(FileSearchModal), findsNothing);
+    expect(find.byKey(const Key('searchFailedNotice')), findsNothing);
+    expect(find.text('report.pdf'), findsOneWidget);
   });
 
   testWidgets('Down and Up move through the rows and back to the field',
@@ -276,17 +367,15 @@ void main() {
     expect(isHighlighted(tester, 'report.pdf'), isFalse);
     expect(isHighlighted(tester, 'reports-2024.zip'), isTrue);
 
+    // Past the last row, back to the field with nothing highlighted. With
+    // every result listed there is no "See all" row to stop at.
     await key(tester, LogicalKeyboardKey.arrowDown);
-    expect(isHighlighted(tester, 'See all results'), isTrue);
-
-    // Past the last row, back to the field with nothing highlighted.
-    await key(tester, LogicalKeyboardKey.arrowDown);
-    expect(isHighlighted(tester, 'See all results'), isFalse);
+    expect(isHighlighted(tester, 'reports-2024.zip'), isFalse);
     expect(isHighlighted(tester, 'report.pdf'), isFalse);
 
     // Up from the field goes to the last row.
     await key(tester, LogicalKeyboardKey.arrowUp);
-    expect(isHighlighted(tester, 'See all results'), isTrue);
+    expect(isHighlighted(tester, 'reports-2024.zip'), isTrue);
   });
 
   testWidgets('Enter goes to the highlighted result, once', (tester) async {
@@ -339,12 +428,22 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.descendant(
+    // The dialog's close, not the field's clear, which draws the same x
+    // now that it is ArDrive's glyph (#120).
+    final xs = find.descendant(
       of: dialog,
       matching: find.byWidgetPredicate(
         (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x,
       ),
-    ));
+    );
+    final clear = find.descendant(
+      of: find.byType(SearchTextField),
+      matching: find.byWidgetPredicate((w) => w is ArDriveIcon),
+    );
+    final close = tester
+        .elementList(xs)
+        .firstWhere((e) => !tester.elementList(clear).contains(e));
+    await tester.tap(find.byElementPredicate((e) => e == close));
     await tester.pumpAndSettle();
     expect(find.byType(FileSearchModal), findsNothing);
   });
@@ -436,6 +535,9 @@ void main() {
   });
 
   testWidgets('Enter on "See all results" opens every result', (tester) async {
+    searchReturns('rep', [
+      for (var i = 0; i <= searchBoxMaxResults; i++) file('f$i', 'rep-$i.txt'),
+    ]);
     await tester.pumpWidget(host());
     await typeQuery(tester, 'rep');
     await key(tester, LogicalKeyboardKey.arrowUp);

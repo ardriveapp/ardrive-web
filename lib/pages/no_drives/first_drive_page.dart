@@ -7,8 +7,10 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -69,6 +71,11 @@ enum _Stage { checking, creating, noDrives }
 class _FirstDrivePageState extends State<FirstDrivePage> {
   var _stage = _Stage.checking;
 
+  /// How this page's own attempt ended, when it did not make the drive. The
+  /// new user is told, with a way on: they used to fall back to Getting
+  /// started with no word that anything had been tried.
+  FirstDriveOutcome? _failure;
+
   @override
   void initState() {
     super.initState();
@@ -108,26 +115,79 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
         return;
       }
 
-      FirstDrivePage.settingUp.value = true;
-      running = _running = _makeFirstDrive(
-        attempt: widget.createFirstDrive(context),
-        firstDrive: firstDrive,
-        walletAddress: profile.user.walletAddress,
-        retryDelays: widget.retryDelays,
-      ).whenComplete(() {
-        _running = null;
-        FirstDrivePage.settingUp.value = false;
-      });
+      running = _begin(firstDrive, profile.user.walletAddress);
     }
 
-    setState(() => _stage = _Stage.creating);
+    await _await(running);
+  }
+
+  Future<FirstDriveOutcome> _begin(FirstDrive firstDrive, String wallet) {
+    FirstDrivePage.settingUp.value = true;
+    return _running = _makeFirstDrive(
+      attempt: widget.createFirstDrive(context),
+      firstDrive: firstDrive,
+      walletAddress: wallet,
+      retryDelays: widget.retryDelays,
+    ).whenComplete(() {
+      _running = null;
+      FirstDrivePage.settingUp.value = false;
+    });
+  }
+
+  Future<void> _await(Future<FirstDriveOutcome> running) async {
+    setState(() {
+      _stage = _Stage.creating;
+      _failure = null;
+    });
 
     // On success the new drive is selected, which opens it.
     final outcome = await running;
 
     if (outcome != FirstDriveOutcome.made && mounted) {
-      setState(() => _stage = _Stage.noDrives);
+      setState(() {
+        _stage = _Stage.noDrives;
+        _failure = outcome;
+      });
     }
+  }
+
+  /// Try again, from the notice: one more round of attempts, now, for the
+  /// person who asked, whatever this session has tried already.
+  ///
+  /// Claims the request first, as the first attempt did, so another tab
+  /// cannot make a second drive alongside. Buying credits ended the request,
+  /// so it is made again.
+  Future<void> _tryAgain() async {
+    final profile = context.read<ProfileCubit>().state;
+    if (_running != null || profile is! ProfileLoggedIn) return;
+
+    final wallet = profile.user.walletAddress;
+    final firstDrive = widget.firstDrive ?? FirstDrive();
+    final failure = _failure;
+    final bool claimed;
+
+    try {
+      if (failure == FirstDriveOutcome.needsCredits) {
+        await firstDrive.requestUnlessPending(wallet);
+      }
+      claimed = await firstDrive.claim(wallet);
+    } catch (e, stackTrace) {
+      // Not known to be anyone else's: the notice and its Try again stay.
+      logger.e('Could not read the first drive request', e, stackTrace);
+      return;
+    }
+
+    if (!mounted || _running != null) return;
+
+    if (!claimed) {
+      // Another tab holds it and is making the drive, which then appears in
+      // the list here too.
+      setState(() => _failure = null);
+      return;
+    }
+
+    _failedThisSession.remove(wallet);
+    await _await(_begin(firstDrive, wallet));
   }
 
   static Future<FirstDriveOutcome> _makeFirstDrive({
@@ -171,8 +231,57 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
     return switch (_stage) {
       _Stage.checking => const SizedBox.shrink(),
       _Stage.creating => const _SettingUpFirstDrive(),
-      _Stage.noDrives => widget.noDrives(context),
+      _Stage.noDrives => _failure == null
+          ? widget.noDrives(context)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _FirstDriveFailed(
+                  needsCredits: _failure == FirstDriveOutcome.needsCredits,
+                  onTryAgain: _tryAgain,
+                ),
+                Expanded(child: widget.noDrives(context)),
+              ],
+            ),
     };
+  }
+}
+
+/// Says "My files" could not be made, and what to do: Try again, or for a
+/// wallet that has to pay, buy credits and then try again.
+class _FirstDriveFailed extends StatelessWidget {
+  const _FirstDriveFailed({
+    required this.needsCredits,
+    required this.onTryAgain,
+  });
+
+  final bool needsCredits;
+  final VoidCallback onTryAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+      // Read out when it appears.
+      child: Semantics(
+        liveRegion: true,
+        child: ArDriveNotice(
+          key: const Key('firstDriveFailedNotice'),
+          type: ArDriveNoticeType.error,
+          // A title only when there is more to say under it.
+          title: needsCredits ? strings.firstDriveFailedTitle : null,
+          message: needsCredits
+              ? strings.firstDriveNeedsCredits
+              : strings.firstDriveFailedTitle,
+          actionLabel: needsCredits ? strings.buyCredits : strings.tryAgain,
+          onAction: needsCredits
+              ? () => showTurboTopupModal(context, onSuccess: onTryAgain)
+              : onTryAgain,
+        ),
+      ),
+    );
   }
 }
 

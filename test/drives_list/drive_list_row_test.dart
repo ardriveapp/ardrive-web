@@ -186,6 +186,20 @@ void main() {
       expect(find.text('0 B'), findsNothing);
     });
 
+    // #39: the dash was text-xlow, which in dark measured as background.
+    testWidgets('the withheld dash is text-low, not the faintest text',
+        (tester) async {
+      await pumpRow(tester, drive(hasBeenWalked: false), width: 1200);
+
+      final dash =
+          tester.widget<Text>(find.text(driveListWithheldFigure).first);
+      final colors = ArDriveTheme.of(
+              tester.element(find.text(driveListWithheldFigure).first))
+          .themeData
+          .colorTokens;
+      expect(dash.style?.color, colors.textLow);
+    });
+
     testWidgets('a walked drive reports both', (tester) async {
       await pumpRow(tester, drive(), width: 1200);
 

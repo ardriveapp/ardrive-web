@@ -682,6 +682,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       (showingNames && !namesPageIsOn(context)) ||
                       (showingWebPages && !webPagesAreOn(context))) &&
                   canShowDrivesList(state)) {
+                // Names or Web pages turned off: the drives list in their
+                // place, said everywhere. The flags move before the sidebar
+                // builds, so it lights Your drives, and the address follows
+                // on the next frame.
+                if (fallBackFromOffPage(
+                  namesOn: namesPageIsOn(context),
+                  webPagesOn: webPagesAreOn(context),
+                )) {
+                  // Replacing the off page's history entry, not adding one:
+                  // Back would land on it and bounce straight here again.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (context.mounted) {
+                      Router.neglect(context, notifyListeners);
+                    } else {
+                      notifyListeners();
+                    }
+                  });
+                }
                 shellKey = 'drivesList';
                 // A separate subtree from the explorer's, deliberately. The
                 // explorer's `DriveDetailCubit` is created once and switched
@@ -745,6 +763,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               unawaited(
                                 _ensureVisitorHasDriveKey(context, shownDrive),
                               );
+                            }
+
+                            // A drive not synced here has no details to show,
+                            // so the info asked for it is dropped rather than
+                            // kept to open the panel by itself later.
+                            if (driveDetailCubitState
+                                    is DriveDetailLoadUnsynced &&
+                                _pendingInfoDriveId ==
+                                    driveDetailCubitState.drive.id) {
+                              _pendingInfoDriveId = null;
                             }
 
                             if (driveDetailCubitState
@@ -1252,6 +1280,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionId = null;
     rawTransactionName = null;
     rawTransactionContentType = null;
+    // A More info asked of a drive and never honoured is not wanted on the
+    // next visit: it opened the details panel by itself, maybe days later.
+    _pendingInfoDriveId = null;
 
     notifyListeners();
   }
@@ -1273,6 +1304,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingAccount = false;
     showingNames = false;
     _leaveForAPage();
+  }
+
+  /// Puts the drives list in place of a Names or Web pages page that is
+  /// turned off, so the address, the nav and the page agree. It showed the
+  /// drives list beside the explorer's drive tree, nothing lit, and the old
+  /// address in the bar. Whether anything changed.
+  @visibleForTesting
+  bool fallBackFromOffPage({required bool namesOn, required bool webPagesOn}) {
+    final off = (showingNames && !namesOn) || (showingWebPages && !webPagesOn);
+    if (!off) return false;
+
+    showingNames = false;
+    shownName = null;
+    showingWebPages = false;
+    showingDrivesList = true;
+    drivesListScope = DriveScope.all;
+    return true;
   }
 
   /// Off the sign-in page once signed in. It lands on the list of drives

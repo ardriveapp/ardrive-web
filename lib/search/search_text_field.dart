@@ -80,8 +80,8 @@ class SearchTextField extends StatelessWidget {
                       child: ArDriveClickArea(
                         tooltip: appLocalizationsOf(context).searchClear,
                         child: GestureDetector(
-                          child: Icon(
-                            Icons.close,
+                          // ArDrive's own glyph, as every other close is.
+                          child: ArDriveIcons.x(
                             size: 20,
                             color: colorTokens.textMid,
                           ),

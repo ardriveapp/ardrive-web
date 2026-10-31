@@ -1,5 +1,7 @@
+import 'package:ardrive/utils/cross_tab_lock/cross_tab_lock.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// What a new account's first drive is called.
 const firstDriveName = 'My files';
@@ -16,12 +18,28 @@ const firstDriveName = 'My files';
 ///
 /// Stored as `address|requested`, or `address|requested|leased` while one
 /// attempt is under way, so a second tab waits rather than making another.
+///
+/// Every read and change runs under one Web Lock and starts from a fresh read
+/// of storage. Tabs share local storage but each keeps its own copy of it in
+/// memory, so without both, two tabs could each see no hold and each claim.
 class FirstDrive {
   FirstDrive({
     Future<KeyValueStore> Function()? openStore,
     DateTime Function()? now,
-  })  : _openStore = openStore ?? LocalKeyValueStore.getInstance,
-        _now = now ?? DateTime.now;
+    Future<T> Function<T>(Future<T> Function() body)? exclusive,
+  })  : _openStore = openStore ?? _openFreshPreferences,
+        _now = now ?? DateTime.now,
+        _exclusive = exclusive ?? _acrossTabs;
+
+  /// The local store, re-read: another tab may have changed it since this
+  /// tab last looked.
+  static Future<KeyValueStore> _openFreshPreferences() async {
+    await (await SharedPreferences.getInstance()).reload();
+    return LocalKeyValueStore.getInstance();
+  }
+
+  static Future<T> _acrossTabs<T>(Future<T> Function() body) =>
+      runExclusiveAcrossTabs('ardrive-first-drive', body);
 
   static const _key = 'firstDrivePendingFor';
 
@@ -33,10 +51,14 @@ class FirstDrive {
 
   final Future<KeyValueStore> Function() _openStore;
   final DateTime Function() _now;
+  final Future<T> Function<T>(Future<T> Function() body) _exclusive;
 
   /// Asks for [walletAddress]'s first drive to be made when it reaches the
   /// app.
-  Future<void> request(String walletAddress) async {
+  Future<void> request(String walletAddress) =>
+      _exclusive(() => _request(walletAddress));
+
+  Future<void> _request(String walletAddress) async {
     final now = _now().millisecondsSinceEpoch;
     await (await _openStore()).putString(_key, '$walletAddress|$now');
   }
@@ -45,10 +67,13 @@ class FirstDrive {
   /// holds it and ends with [done] or [release]; until then, or until the
   /// hold lapses, no other claim succeeds. A request for another wallet, or
   /// an expired one, is dropped.
-  Future<bool> claim(String walletAddress) async {
+  Future<bool> claim(String walletAddress) =>
+      _exclusive(() => _claim(walletAddress));
+
+  Future<bool> _claim(String walletAddress) async {
     final store = await _openStore();
-    // Read and held with no await between, so two claims at once can't both
-    // win (the local store reads and writes its cache synchronously).
+    // Read and held with no await between, so two claims in this tab can't
+    // both win; the lock does the same between tabs.
     final read = store.getString(_key);
     final stored = read is Future<String?> ? await read : read;
     if (stored == null) return false;
@@ -73,13 +98,30 @@ class FirstDrive {
     return true;
   }
 
-  /// The drive was made, or never can be: the request is spent.
-  Future<void> done() async {
-    await (await _openStore()).remove(_key);
+  /// Asks again for [walletAddress]'s first drive, unless a request is
+  /// already stored: one another tab holds is left as it is, so only that
+  /// tab goes on to make the drive.
+  Future<void> requestUnlessPending(String walletAddress) =>
+      _exclusive(() => _requestUnlessPending(walletAddress));
+
+  Future<void> _requestUnlessPending(String walletAddress) async {
+    final store = await _openStore();
+    final read = store.getString(_key);
+    final stored = read is Future<String?> ? await read : read;
+    if (stored != null) return;
+    await store.putString(
+        _key, '$walletAddress|${_now().millisecondsSinceEpoch}');
   }
 
+  /// The drive was made, or never can be: the request is spent.
+  Future<void> done() =>
+      _exclusive(() async => (await _openStore()).remove(_key));
+
   /// The attempt failed for now; the next claim may try again.
-  Future<void> release(String walletAddress) async {
+  Future<void> release(String walletAddress) =>
+      _exclusive(() => _release(walletAddress));
+
+  Future<void> _release(String walletAddress) async {
     final store = await _openStore();
     final read = store.getString(_key);
     final stored = read is Future<String?> ? await read : read;

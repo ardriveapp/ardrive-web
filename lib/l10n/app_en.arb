@@ -1258,9 +1258,9 @@
   "@expandSideBar": {
     "description": "Expand side bar tooltip"
   },
-  "exportDriveContents": "Export drive contents",
+  "exportDriveContents": "Export contents",
   "@exportDriveContents": {
-    "description": "Export the data of a drive into a CSV file"
+    "description": "Drive menu item that exports a list of the drive's files, with their details, as a CSV file. Distinct from Download, which downloads the files"
   },
   "exportFromCSV": "Export from {driveId} {timestamp}.csv",
   "@exportFromCSV": {
@@ -4175,7 +4175,7 @@
   "@uploadFailedWalletKeepTabOpen": {
     "description": "Warning in the upload problem dialog when files paid for from the wallet balance (AR) failed and can still be re-uploaded from this tab only"
   },
-  "uploadFiles": "Upload file(s)",
+  "uploadFiles": "Upload files",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
@@ -4728,7 +4728,7 @@
     "description": "Shown in a publication's search dropdown when nothing matches. A publication has no drives to search.",
     "placeholders": { "query": { "type": "String", "example": "report" } }
   },
-  "publicationCoverSummary": "{files, plural, =1{1 file} other{{files} files}} • {size} • published {date}",
+  "publicationCoverSummary": "{files, plural, =1{1 file} other{{files} files}} · {size} · published {date}",
   "@publicationCoverSummary": {
     "description": "In a publication's byline, after who it is by: how many files it has, their total size and when it was published. Size and date are already formatted.",
     "placeholders": {
@@ -4743,7 +4743,7 @@
       }
     }
   },
-  "publicationCountSummary": "{files, plural, =1{1 file} other{{files} files}} • {size}",
+  "publicationCountSummary": "{files, plural, =1{1 file} other{{files} files}} · {size}",
   "@publicationCountSummary": {
     "description": "A publication's byline when its settings carry no publish date: how many files it has and their total size, already formatted.",
     "placeholders": {
@@ -4897,7 +4897,7 @@
   "@publishOpenPage": {"description": "Button: opens the web page in a new tab."},
   "publishedOn": "Published {date}",
   "@publishedOn": {"description": "When a web page was published; the date is formatted.", "placeholders": {"date": {"type": "String"}}},
-  "publishedOnWithFiles": "Published {date} • {count, plural, =1{1 file} other{{count} files}}",
+  "publishedOnWithFiles": "Published {date} · {count, plural, =1{1 file} other{{count} files}}",
   "@publishedOnWithFiles": {"description": "When a web page was published and how many files it has; the date is formatted.", "placeholders": {"date": {"type": "String"}, "count": {"type": "int"}}},
   "publishUpdate": "Update",
   "@publishUpdate": {"description": "Button: publishes the drive or folder again, starting from its look."},
@@ -5820,6 +5820,26 @@
   "@syncHistoryHideDetails": {"description": "Closes the error text of a sync history entry"},
   "driveSyncStopped": "Sync stopped",
   "@driveSyncStopped": {"description": "Sync state of a drive whose last sync was stopped or ended with an error before the drive was fully read"},
+  "tableColumns": "Columns",
+  "@tableColumns": {"description": "Tooltip and accessible name of the button that chooses which columns the file table shows"},
+  "tableColumnLicense": "License",
+  "@tableColumnLicense": {"description": "Heading of the file table column that shows each file license"},
+  "searchFailed": "Couldn't search.",
+  "@searchFailed": {"description": "Search itself failed, as against finding nothing. Shown with a Try again action."},
+  "selectAllDrives": "Select all drives",
+  "@selectAllDrives": {"description": "Accessible name of the checkbox in the drives list header that ticks every drive"},
+  "showHiddenItems": "Show hidden items",
+  "@showHiddenItems": {"description": "Checkbox in the file table's columns menu, and in a phone folder header's menu, that shows hidden folders and files. Also the action of the state for a folder whose items are all hidden"},
+  "firstDriveFailedTitle": "Couldn't create My files",
+  "@firstDriveFailedTitle": {"description": "A new account: making its first private drive, My files, failed. Shown with Try again, or Buy credits when credits were the problem"},
+  "firstDriveNeedsCredits": "Creating it needs Turbo Credits.",
+  "@firstDriveNeedsCredits": {"description": "Under Couldn't create My files, when the wallet has to pay and has nothing to pay with"},
+  "driveKeyFrom": "Drive key",
+  "@driveKeyFrom": {"description": "Details panel row title for a private drive: what its key is derived from"},
+  "driveKeyWalletSignature": "Wallet signature, version {version}",
+  "@driveKeyWalletSignature": {"description": "Details panel: a private drive key derived from a wallet signature of this version (1 or 2)", "placeholders": {"version": {"type": "String"}}},
+  "allItemsHidden": "Everything here is hidden",
+  "@allItemsHidden": {"description": "A folder whose items are all hidden while hidden items are not shown. Offers Show hidden items"},
   "accountAndSecurity": "Account and security",
   "@accountAndSecurity": {"description": "Profile menu row and the title of the page that holds sign-in, this device and the account's addresses."},
   "accountSignInSection": "Sign in",

@@ -325,7 +325,7 @@ void main() {
       await pressUpload(tester, driveDao: driveDao, prompt: recordUpload);
       await tester.pumpAndSettle();
 
-      expect(find.text('Upload file(s)'), findsOneWidget);
+      expect(find.text('Upload files'), findsOneWidget);
       expect(find.text('Holidays'), findsOneWidget);
       expect(find.text('This folder is empty'), findsOneWidget);
       expect(find.text('Upload here'), findsOneWidget);

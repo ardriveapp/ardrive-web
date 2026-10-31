@@ -115,7 +115,7 @@ void main() {
           'Share drive',
           '|',
           'Download',
-          'Export drive contents',
+          'Export contents',
           '|',
           'Rename drive',
           'Create snapshot',
@@ -127,6 +127,43 @@ void main() {
           'More info',
         ],
       );
+    });
+
+    // #18: Export read as a second Download, with the same arrow.
+    testWidgets('Export contents has its own icon, not Download\'s',
+        (tester) async {
+      late List<ArDriveDropdownItem> items;
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider<ProfileCubit>.value(
+              value: profileCubit,
+              child: Builder(builder: (context) {
+                items = driveMenuItems(
+                  context,
+                  drive: drive(),
+                  isOwner: true,
+                  isSynced: true,
+                  isSyncing: false,
+                  onMoreInfo: () {},
+                );
+                return const SizedBox();
+              }),
+            ),
+          ),
+        ),
+      );
+      IconData iconOf(String name) => (items
+              .where((item) => !item.isDivider)
+              .map((item) => item.content as ArDriveDropdownItemTile)
+              .firstWhere((tile) => tile.name == name)
+              .icon as ArDriveIcon)
+          .icon;
+
+      expect(iconOf('Export contents'), isNot(iconOf('Download')));
+      expect(iconOf('Export contents'), ArDriveIcons.table().icon);
     });
 
     testWidgets('shared with you: no owner actions, Detach last',
@@ -147,7 +184,7 @@ void main() {
           'Share drive',
           '|',
           'Download',
-          'Export drive contents',
+          'Export contents',
           '|',
           'Sync this drive',
           'Full resync this drive',

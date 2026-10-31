@@ -151,7 +151,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       if (!emit.isDone) {
         emit(state.copyWith(
           query: query,
-          status: SearchStatus.empty,
+          status: SearchStatus.failed,
           results: const [],
           resultsRevision: ++_resultsRevision,
         ));

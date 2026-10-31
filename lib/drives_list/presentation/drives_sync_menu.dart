@@ -217,7 +217,8 @@ class DrivesSyncMenu extends StatelessWidget {
                   onClick: () => showSyncHistoryModal(context),
                   content: ArDriveDropdownItemTile(
                     name: appLocalizationsOf(context).syncHistory,
-                    icon: ArDriveIcons.info(color: iconColor),
+                    // Not More info's glyph: this is a record of past syncs.
+                    icon: ArDriveIcons.history(color: iconColor),
                   ),
                 ),
               ],

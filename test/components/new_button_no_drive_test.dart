@@ -231,7 +231,7 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pumpMenu(tester);
 
-      for (final name in ['Upload file(s)', 'Upload folder']) {
+      for (final name in ['Upload files', 'Upload folder']) {
         expect(
           tester.getSemantics(find.bySemanticsLabel(name)),
           containsSemantics(isButton: true, hasTapAction: true),
@@ -248,7 +248,7 @@ void main() {
     testWidgets('offers uploading', (tester) async {
       await pumpMenu(tester);
 
-      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload files').isDisabled, isFalse);
       expect(tile(tester, 'Upload folder').isDisabled, isFalse);
     });
 
@@ -307,7 +307,7 @@ void main() {
     testWidgets('offers the same actions', (tester) async {
       await pumpMenu(tester, bottomNavigation: true);
 
-      expect(find.text('Upload file(s)'), findsOneWidget);
+      expect(find.text('Upload files'), findsOneWidget);
       expect(find.text('Upload folder'), findsOneWidget);
       expect(find.text('New drive'), findsOneWidget);
       expect(find.text('Attach drive'), findsOneWidget);
@@ -320,7 +320,7 @@ void main() {
       await pumpMenu(tester, bottomNavigation: true);
 
       expect(
-        top(tester, find.text('Upload file(s)')),
+        top(tester, find.text('Upload files')),
         lessThan(top(tester, find.byType(Divider).first)),
       );
     });
@@ -362,7 +362,7 @@ void main() {
         ),
       );
 
-      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload files').isDisabled, isFalse);
     });
 
     /// Syncing somebody else's drive would only arrive at the same answer.
@@ -374,7 +374,7 @@ void main() {
         ),
       );
 
-      expect(tile(tester, 'Upload file(s)').isDisabled, isTrue);
+      expect(tile(tester, 'Upload files').isDisabled, isTrue);
       expect(tile(tester, 'Upload folder').isDisabled, isTrue);
     });
 
@@ -426,7 +426,7 @@ void main() {
       );
 
       for (final action in [
-        'Upload file(s)',
+        'Upload files',
         'Upload folder',
         'New folder',
         'New note',
@@ -470,7 +470,7 @@ void main() {
         expect(tile(tester, action).isDisabled, isTrue, reason: action);
       }
       expect(
-        tile(tester, 'Upload file(s)').isDisabled,
+        tile(tester, 'Upload files').isDisabled,
         isFalse,
         reason: 'an upload waits the second or two a drive takes to open',
       );
@@ -509,7 +509,7 @@ void main() {
         state: DriveDetailLoadInProgress(),
       );
 
-      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload files').isDisabled, isFalse);
       expect(tile(tester, 'Upload folder').isDisabled, isFalse);
       for (final action in ['New folder', 'New note', 'New file pin']) {
         expect(find.text(action), findsNothing, reason: action);
@@ -521,7 +521,7 @@ void main() {
   testWidgets('Upload is greyed until the drive list is known', (tester) async {
     await pumpMenu(tester, drivesState: DrivesLoadInProgress());
 
-    expect(tile(tester, 'Upload file(s)').isDisabled, isTrue);
+    expect(tile(tester, 'Upload files').isDisabled, isTrue);
     expect(tile(tester, 'Upload folder').isDisabled, isTrue);
   });
 

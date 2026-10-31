@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
@@ -33,6 +34,45 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 //
 // A surface passes what only it knows (how it shows More info, how it syncs);
 // which items appear, in what order, and when, is decided here.
+
+/// Shows or hides hidden items everywhere, as the top bar's eye did: the
+/// same [GlobalHideBloc] events, from the explorer's columns menu or a phone
+/// header's menu.
+void setShowHiddenItems(BuildContext context, bool show) {
+  final bloc = context.read<GlobalHideBloc>();
+  final hasHidden = bloc.state.userHasHiddenDrive;
+  bloc.add(show
+      ? ShowItems(userHasHiddenItems: hasHidden)
+      : HideItems(userHasHiddenItems: hasHidden));
+}
+
+/// The phone's place for [setShowHiddenItems]: a checked item at the end of
+/// the folder header's menu, only while something is hidden. A phone has no
+/// columns menu to hold it.
+List<ArDriveDropdownItem> showHiddenItemsGroup(
+  BuildContext context, {
+  double? height,
+}) {
+  final state = context.read<GlobalHideBloc>().state;
+  if (!state.userHasHiddenDrive) return const [];
+
+  final showing = state is ShowingHiddenItems;
+  return [
+    ArDriveDropdownItem(
+      onClick: () => setShowHiddenItems(context, !showing),
+      content: ArDriveDropdownItemTile(
+        key: const Key('showHiddenItemsMenuItem'),
+        name: appLocalizationsOf(context).showHiddenItems,
+        // A tick while they show, as a menu's choice rows mark the current
+        // value; the open eye while they don't.
+        icon: showing
+            ? ArDriveIcons.checked(size: defaultIconSize)
+            : ArDriveIcons.eyeOpen(size: defaultIconSize),
+        height: height,
+      ),
+    ),
+  ];
+}
 
 /// The groups joined by dividers, empty groups dropped.
 List<ArDriveDropdownItem> menuWithDividers(
@@ -141,7 +181,8 @@ List<ArDriveDropdownItem> driveMenuItems(
       if (isSynced && !publication)
         _item(
           strings.exportDriveContents,
-          ArDriveIcons.download(size: defaultIconSize),
+          // Not Download's arrow: this is a list of the files, not the files.
+          ArDriveIcons.table(size: defaultIconSize),
           height: height,
           onClick: () =>
               promptToExportCSVData(context: context, driveId: drive.id),
@@ -250,7 +291,8 @@ List<ArDriveDropdownItem> driveMenuItems(
 /// [drive] is null where the surface doesn't know it; share and publish need
 /// it and are left out then. [zipName] is asked only when Download is
 /// pressed. [onMoreInfo] is null where the menu sits in the
-/// folder's own details.
+/// folder's own details. [isOpen] is for the header of the folder being
+/// shown, where Open would go nowhere and is left out.
 List<ArDriveDropdownItem> folderMenuItems(
   BuildContext context, {
   required FolderDataTableItem folder,
@@ -258,6 +300,7 @@ List<ArDriveDropdownItem> folderMenuItems(
   required String Function() zipName,
   VoidCallback? onMoreInfo,
   double? height,
+  bool isOpen = false,
 }) {
   final strings = appLocalizationsOf(context);
   final publication = PublicationMode.isOn;
@@ -265,12 +308,13 @@ List<ArDriveDropdownItem> folderMenuItems(
 
   return menuWithDividers([
     [
-      _item(
-        strings.open,
-        ArDriveIcons.folderOutline(size: defaultIconSize),
-        height: height,
-        onClick: () => context.read<DriveDetailCubit>().openDataItem(folder),
-      ),
+      if (!isOpen)
+        _item(
+          strings.open,
+          ArDriveIcons.folderOutline(size: defaultIconSize),
+          height: height,
+          onClick: () => context.read<DriveDetailCubit>().openDataItem(folder),
+        ),
     ],
     [
       if (publication)

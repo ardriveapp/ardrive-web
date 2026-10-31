@@ -59,10 +59,20 @@ class ListHeaderSelection {
     required this.allTicked,
     required this.onToggleAll,
     required this.selecting,
+    this.someTicked = false,
+    this.label,
   });
 
   /// Whether every row is ticked.
   final bool allTicked;
+
+  /// Whether some rows but not all are ticked: the box shows a dash, not an
+  /// empty box that says nothing is.
+  final bool someTicked;
+
+  /// What a screen reader calls the box, such as "Select all drives". It
+  /// was an unnamed checkbox.
+  final String? label;
   final VoidCallback onToggleAll;
 
   /// Whether the reader is choosing several rows: select-all shows only then.
@@ -178,6 +188,8 @@ class ListTableHeader<T> extends StatelessWidget {
                 // A Tab stop only while there is a selection to act on.
                 inTabOrder: selection.selecting,
                 checked: selection.allTicked,
+                isIndeterminate: !selection.allTicked && selection.someTicked,
+                semanticLabel: selection.label,
                 onChange: (_) => selection.onToggleAll(),
               ),
             ),
