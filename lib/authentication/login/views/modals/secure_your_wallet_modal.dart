@@ -64,6 +64,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   /// The passphrase last suggested, while it is what the field holds.
   String? _suggestion;
 
+  /// Whether the confirm field holds what a suggestion put there, not what
+  /// was typed into it. Its own check has not run, so a password changed
+  /// since says here that the two no longer match.
+  bool _confirmFilledBySuggestion = false;
+
   /// Whether both fields hide what they hold. One eye, on the password
   /// field, controls both, and only it: a suggestion fills both fields
   /// masked, as a phone's screen may be seen or recorded.
@@ -105,6 +110,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     // suggestion is strong and the same in both fields.
     setState(() {
       _suggestion = phrase;
+      _confirmFilledBySuggestion = true;
       _strength = PasswordStrength.strong;
       _isPasswordValid = true;
       _confirmPasswordIsValid = true;
@@ -295,6 +301,13 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 textInputAction: TextInputAction.next,
                 isEnabled: !_isProcessing,
                 validator: (value) {
+                  // A changed password is checked against the confirmation
+                  // too: one a suggestion filled in stayed "valid" after
+                  // the password was changed, and Continue stayed on.
+                  final confirm = _confirmPasswordController.text;
+                  if (confirm.isNotEmpty) {
+                    setState(() => _confirmPasswordIsValid = confirm == value);
+                  }
                   if (value == null || value.isEmpty) {
                     setState(() {
                       _isPasswordValid = false;
@@ -373,7 +386,15 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   autofillHints: const [AutofillHints.newPassword],
                   textInputAction: TextInputAction.done,
                   isEnabled: !_isProcessing,
+                  errorMessage: _confirmFilledBySuggestion &&
+                          _confirmPasswordController.text.isNotEmpty &&
+                          _confirmPasswordController.text !=
+                              _passwordController.text
+                      ? appLocalizationsOf(context).passwordMismatch
+                      : null,
                   validator: (value) {
+                    // Typed into: its own check speaks from now on.
+                    _confirmFilledBySuggestion = false;
                     if (value == null || value.isEmpty) {
                       setState(() {
                         _confirmPasswordIsValid = false;

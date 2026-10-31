@@ -167,9 +167,24 @@ void main() {
             matching: find.text(phrase)),
         findsNothing);
     expect(find.textContaining("ArDrive can't recover it"), findsNothing);
+    for (final key in ['newPassword', 'confirmNewPassword']) {
+      final controller = tester.widget<EditableText>(field(key)).controller;
+      expect(controller.selection,
+          TextSelection.collapsed(offset: controller.text.length),
+          reason: 'the caret after it, nothing selected');
+    }
 
     await tester.tap(find.byKey(const Key('newPasswordReveal')));
     await tester.pump();
+    expect(obscured('newPassword'), isFalse);
+    expect(obscured('confirmNewPassword'), isFalse);
+
+    // Suggest another keeps the user's choice.
+    await tester.tap(find.text('Suggest another'));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pumpAndSettle();
+    expect(text('newPassword'), isNot(phrase));
     expect(obscured('newPassword'), isFalse);
     expect(obscured('confirmNewPassword'), isFalse);
 
@@ -216,6 +231,7 @@ void main() {
       expect(
           find.text("Couldn't copy"), refuses ? findsOneWidget : findsNothing);
       await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('suggestedPassphraseCopyMessage')),
           findsNothing);
     });

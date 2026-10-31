@@ -345,8 +345,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       PlausibleEventTracker.trackPageview(page: PlausiblePageView.signUpPage);
       emit(_logInPanel);
     } else {
-      await _handleCreateNewWalletEvent(
-          const CreateNewWallet(), emit);
+      await _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
     }
   }
 
@@ -840,8 +839,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
 
-    final record =
-        await _arweaveService.findEthereumAccountRecord(arweaveNativeAddressForEth);
+    final record = await _arweaveService
+        .findEthereumAccountRecord(arweaveNativeAddressForEth);
     final String? ethFirstTxId = switch (record) {
       EthereumV1Record(:final txId) => txId,
       EthereumV2Marker(:final laterV1RecordId) => laterV1RecordId,
@@ -1558,8 +1557,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit,
           ethWallet: ethWallet,
           authWallet: derivedEthWallet,
-          expectedAddress:
-              accountAddress ?? await _markerAddressFromData(txId),
+          expectedAddress: accountAddress ?? await _markerAddressFromData(txId),
           passwordAccountToo: laterV1RecordId != null,
         );
       case null:
@@ -2076,7 +2074,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             source = DeviceSecretSource.fromSecret(
                 DeviceUnlockMethod.ethereumAccount, signature);
           } else {
-            source = _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel);
+            source =
+                _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel);
           }
           user = await _arDriveAuth.unlockWithWallet(source);
           profileType = ProfileType.json;

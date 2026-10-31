@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/password/breached_password.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/components/password_autofill.dart';
@@ -299,9 +301,11 @@ class PasswordStrengthMeter extends StatelessWidget {
 /// another suggestion. It is made on the device and kept nowhere; saving it
 /// is up to the user.
 ///
-/// Copy says whether it worked, as [ArDriveCopyField] does, in a bubble over
-/// the link: a phone's browser can refuse the write, and saying "Copied!"
-/// anyway would leave someone thinking a password they never saved is safe.
+/// Copy says whether it worked, at the end of the row as the meter above
+/// says "Strong": a phone's browser can refuse the write, and saying
+/// "Copied!" anyway would leave someone thinking a password they never saved
+/// is safe. It is in the row, not an overlay: a bubble placed once covered
+/// the meter and stayed put when the modal scrolled.
 class SuggestedPassphrase extends StatefulWidget {
   const SuggestedPassphrase({
     super.key,
@@ -317,21 +321,20 @@ class SuggestedPassphrase extends StatefulWidget {
 }
 
 class _SuggestedPassphraseState extends State<SuggestedPassphrase> {
-  final _copyKey = GlobalKey();
+  static const _shownFor = Duration(seconds: 2);
+  static const _fade = Duration(milliseconds: 200);
 
-  /// Whether the last copy worked, while its message shows.
+  /// Whether the last copy worked, while its message is in the row.
   bool? _copied;
-  OverlayEntry? _message;
+
+  /// Whether that message is showing, rather than fading out.
+  bool _showing = false;
+  Timer? _hide;
 
   @override
   void dispose() {
-    _removeMessage();
+    _hide?.cancel();
     super.dispose();
-  }
-
-  void _removeMessage() {
-    if (_message?.mounted ?? false) _message!.remove();
-    _message = null;
   }
 
   Future<void> _copy() async {
@@ -348,81 +351,70 @@ class _SuggestedPassphraseState extends State<SuggestedPassphrase> {
     }
     if (!mounted) return;
 
-    // Tapped again while the last answer still shows: a retry after a refusal
-    // that worked says so.
-    if (_message != null) {
-      if (copied != _copied) {
-        _copied = copied;
-        _message!.markNeedsBuild();
-      }
-      return;
-    }
-
-    _copied = copied;
-    _message = _buildMessage();
-    Overlay.of(context).insert(_message!);
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) _removeMessage();
+    // A retry while the last answer shows says the new one, for its own two
+    // seconds.
+    setState(() {
+      _copied = copied;
+      _showing = true;
     });
-  }
-
-  OverlayEntry _buildMessage() {
-    final box = _copyKey.currentContext!.findRenderObject() as RenderBox;
-    final position = box.localToGlobal(Offset.zero);
-    final type = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final s = appLocalizationsOf(context);
-
-    return OverlayEntry(
-      builder: (_) => Positioned(
-        left: position.dx - ArDriveSpacing.xxs,
-        top: position.dy - 40,
-        child: Material(
-          key: const Key('suggestedPassphraseCopyMessage'),
-          color: colors.containerL1,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: ArDriveSpacing.sm,
-              vertical: ArDriveSpacing.xxs,
-            ),
-            child: Semantics(
-              liveRegion: true,
-              child: Text(
-                _copied! ? s.copied : s.couldNotCopy,
-                style: type.paragraphNormal(
-                  color: _copied! ? null : colors.statusErrorFg,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    _hide?.cancel();
+    _hide = Timer(_shownFor, () {
+      if (mounted) setState(() => _showing = false);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final s = appLocalizationsOf(context);
-    return Wrap(
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final copied = _copied;
+    // A row like the meter's above: the links on the left, wrapping at large
+    // text sizes, and the copy's answer at the end, as "Strong" is there.
+    return Row(
       key: const Key('suggestedPassphrase'),
-      spacing: ArDriveSpacing.md,
-      runSpacing: ArDriveSpacing.xs,
       children: [
-        KeyedSubtree(
-          key: _copyKey,
-          child: ArDriveLink(
-            text: s.newPasswordCopy,
-            isAction: true,
-            onTap: _copy,
+        Expanded(
+          child: Wrap(
+            spacing: ArDriveSpacing.md,
+            runSpacing: ArDriveSpacing.xs,
+            children: [
+              ArDriveLink(
+                text: s.newPasswordCopy,
+                isAction: true,
+                onTap: _copy,
+              ),
+              if (widget.onAnother != null)
+                ArDriveLink(
+                  text: s.newPasswordSuggestAnother,
+                  isAction: true,
+                  onTap: widget.onAnother!,
+                ),
+            ],
           ),
         ),
-        if (widget.onAnother != null)
-          ArDriveLink(
-            text: s.newPasswordSuggestAnother,
-            isAction: true,
-            onTap: widget.onAnother!,
+        if (copied != null) ...[
+          const SizedBox(width: ArDriveSpacing.sm),
+          AnimatedOpacity(
+            key: const Key('suggestedPassphraseCopyMessage'),
+            opacity: _showing ? 1 : 0,
+            duration: _fade,
+            // Gone once faded, so it is not read out or found again.
+            onEnd: () {
+              if (!_showing && mounted) setState(() => _copied = null);
+            },
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                copied ? s.copied : s.couldNotCopy,
+                style: type.paragraphSmall(
+                  color: copied ? colors.statusSuccessFg : colors.statusErrorFg,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+            ),
           ),
+        ],
       ],
     );
   }

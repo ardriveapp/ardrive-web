@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/creating_account_view.dart';
 import 'package:ardrive/authentication/password/breached_password.dart';
+import 'package:ardrive/authentication/password/new_password_fields.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/recovery_phrase_view.dart';
@@ -99,11 +100,13 @@ void main() {
       String? mnemonic = _mnemonic,
       bool? breached = false,
       bool fromSignUp = false,
+      String? sourceWalletAddress,
     }) =>
         SecureYourWalletWidget(
           loginBloc: loginBloc,
           wallet: getTestWallet(),
           mnemonic: mnemonic,
+          sourceWalletAddress: sourceWalletAddress,
           isNewUser: isNewUser,
           showWalletCreated: true,
           retrying: retrying,
@@ -203,55 +206,105 @@ void main() {
       expect(find.byKey(const Key('newPasswordRecoveryNote')), findsNothing);
     });
 
-    testWidgets('fits a 390 by 844 phone, Continue showing without a scroll',
-        (tester) async {
-      tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(390, 844);
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-        ArDriveApp(
-          builder: (context) => MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            // Above the navigator, as in the app: the dialog is a route.
-            builder: (context, child) => MultiBlocProvider(
-              providers: [
-                BlocProvider<LoginBloc>.value(value: loginBloc),
-                BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
-              ],
-              child: child!,
-            ),
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => TextButton(
-                  onPressed: () => showAnimatedDialog(context,
-                      content: dialog(), useRootNavigator: false),
-                  child: const Text('open'),
+    group('on a phone', () {
+      /// The modal as the app shows it, a dialog route, with a suggestion
+      /// filled in. Returns its scroll view.
+      Future<ScrollableState> openSuggested(
+          WidgetTester tester, Size size, Widget modal) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = size;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          ArDriveApp(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              // Above the navigator, as in the app: the dialog is a route.
+              builder: (context, child) => MultiBlocProvider(
+                providers: [
+                  BlocProvider<LoginBloc>.value(value: loginBloc),
+                  BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+                ],
+                child: child!,
+              ),
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => TextButton(
+                    onPressed: () => showAnimatedDialog(context,
+                        content: modal, useRootNavigator: false),
+                    child: const Text('open'),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('suggestPasswordButton')));
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 300)));
-      await tester.pumpAndSettle();
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        final suggest = find.byKey(const Key('suggestPasswordButton'));
+        await tester.ensureVisible(suggest);
+        await tester.pumpAndSettle();
+        await tester.tap(suggest);
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'nothing overflows');
+        return tester.state<ScrollableState>(find
+            .descendant(
+                of: find.byType(SecureYourWalletWidget),
+                matching: find.byType(Scrollable))
+            .first);
+      }
 
-      final scroll = tester.state<ScrollableState>(find
-          .descendant(
-              of: find.byType(SecureYourWalletWidget),
-              matching: find.byType(Scrollable))
-          .first);
-      expect(scroll.position.maxScrollExtent, 0,
-          reason: 'the modal must fit, not scroll');
-      expect(
-          tester
-              .getRect(find.widgetWithText(ArDriveButtonNew, 'Continue'))
-              .bottom,
-          lessThanOrEqualTo(844));
+      /// Continue can be reached, by scrolling if need be, wholly on screen.
+      Future<void> expectContinueReachable(
+          WidgetTester tester, ScrollableState scroll, Size size) async {
+        scroll.position.jumpTo(scroll.position.maxScrollExtent);
+        await tester.pump();
+        final button =
+            tester.getRect(find.widgetWithText(ArDriveButtonNew, 'Continue'));
+        expect(button.top, greaterThanOrEqualTo(0));
+        expect(button.bottom, lessThanOrEqualTo(size.height));
+        expect(tester.takeException(), isNull);
+      }
+
+      testWidgets('fits 390 by 844, Continue showing without a scroll',
+          (tester) async {
+        const size = Size(390, 844);
+        final scroll = await openSuggested(tester, size, dialog());
+        expect(scroll.position.maxScrollExtent, 0,
+            reason: 'the modal must fit, not scroll');
+        expect(
+            tester
+                .getRect(find.widgetWithText(ArDriveButtonNew, 'Continue'))
+                .bottom,
+            lessThanOrEqualTo(size.height));
+      });
+
+      // The test font is taller than the app's, so these are held to
+      // "reachable, nothing clipped" rather than "no scroll at all".
+      final variants = <String, Widget Function()>{
+        'a retry': () => dialog(retrying: true),
+        'a wallet card': () => dialog(
+            fromSignUp: true,
+            mnemonic: null,
+            sourceWalletAddress: 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG'),
+      };
+      for (final variant in variants.entries) {
+        testWidgets('with ${variant.key}, 390 by 844, Continue is reachable',
+            (tester) async {
+          const size = Size(390, 844);
+          final scroll = await openSuggested(tester, size, variant.value());
+          await expectContinueReachable(tester, scroll, size);
+        });
+      }
+
+      testWidgets('375 by 667 scrolls to Continue, nothing clipped',
+          (tester) async {
+        const size = Size(375, 667);
+        final scroll = await openSuggested(tester, size, dialog());
+        await expectContinueReachable(tester, scroll, size);
+      });
     });
 
     testWidgets('a short password is refused', (tester) async {
@@ -377,7 +430,25 @@ void main() {
         expect(find.text('Copied!'), findsOneWidget);
         expect(find.text("Couldn't copy"), findsNothing);
 
+        // In the links row, at its end, clear of the meter above.
+        final message = tester
+            .getRect(find.byKey(const Key('suggestedPassphraseCopyMessage')));
+        final row =
+            tester.getRect(find.byKey(const Key('suggestedPassphrase')));
+        final meter = tester.getRect(find.byType(PasswordStrengthMeter));
+        expect(message.top, greaterThanOrEqualTo(row.top));
+        expect(message.bottom, lessThanOrEqualTo(row.bottom));
+        expect(message.right, moreOrLessEquals(row.right, epsilon: 0.5));
+        expect(message.overlaps(meter), isFalse);
+        expect(
+            tester.widget<Text>(find.text('Copied!')).style?.color,
+            ArDriveTheme.of(tester.element(find.text('Copied!')))
+                .themeData
+                .colorTokens
+                .statusSuccessFg);
+
         await tester.pump(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
         expect(find.text('Copied!'), findsNothing);
       });
 
@@ -392,7 +463,78 @@ void main() {
         expect(copied, isEmpty);
         expect(find.text("Couldn't copy"), findsOneWidget);
         expect(find.text('Copied!'), findsNothing);
+        expect(
+            tester.widget<Text>(find.text("Couldn't copy")).style?.color,
+            ArDriveTheme.of(tester.element(find.text("Couldn't copy")))
+                .themeData
+                .colorTokens
+                .statusErrorFg);
         await tester.pump(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+        expect(find.text("Couldn't copy"), findsNothing);
+      });
+
+      testWidgets('leaves the caret after it, nothing selected',
+          (tester) async {
+        await pump(tester, dialog());
+        await suggest(tester);
+        for (final key in ['signUpPassword', 'signUpConfirmPassword']) {
+          final controller = tester
+              .widget<EditableText>(find.descendant(
+                  of: find.byKey(Key(key)),
+                  matching: find.byType(EditableText)))
+              .controller;
+          expect(controller.selection,
+              TextSelection.collapsed(offset: controller.text.length),
+              reason: key);
+        }
+      });
+
+      testWidgets('Suggest another keeps the fields shown when shown',
+          (tester) async {
+        await pump(tester, dialog());
+        await suggest(tester);
+        await tester.tap(find.byKey(const Key('signUpPasswordReveal')));
+        await tester.pump();
+        final first = text(tester, 'signUpPassword');
+
+        await tester.tap(find.text('Suggest another'));
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.pumpAndSettle();
+        expect(text(tester, 'signUpPassword'), isNot(first));
+        expect(obscured(tester, 'signUpPassword'), isFalse);
+        expect(obscured(tester, 'signUpConfirmPassword'), isFalse);
+      });
+
+      testWidgets(
+          'a password changed after a suggestion no longer matches the '
+          'confirmation: Continue goes off and the field says so',
+          (tester) async {
+        await pump(tester, dialog());
+        await suggest(tester);
+        expect(continueEnabled(tester), isTrue);
+
+        await tester.enterText(
+            find.descendant(
+                of: find.byKey(const Key('signUpPassword')),
+                matching: find.byType(EditableText)),
+            'Copper meadow 92 kites unfold');
+        await tester.pump();
+
+        expect(continueEnabled(tester), isFalse);
+        expect(find.text('The confirmation password does not match.'),
+            findsOneWidget);
+
+        await tester.enterText(
+            find.descendant(
+                of: find.byKey(const Key('signUpConfirmPassword')),
+                matching: find.byType(EditableText)),
+            'Copper meadow 92 kites unfold');
+        await tester.pump();
+        expect(continueEnabled(tester), isTrue);
+        expect(find.text('The confirmation password does not match.'),
+            findsNothing);
       });
 
       testWidgets('typing a password of one\'s own drops the suggestion',
