@@ -1379,11 +1379,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return hasHiddenItems().getSingle();
   }
 
-  /// [userHasHiddenItems], as it changes.
-  Stream<bool> watchUserHasHiddenItems() {
-    return hasHiddenItems().watchSingle().distinct();
-  }
-
   /// How much of each drive is actually on this device, in one pass.
   ///
   /// Grouped rather than asked per drive: the drives list wants both numbers

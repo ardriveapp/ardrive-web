@@ -1,17 +1,11 @@
-import 'dart:async';
-
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
-import 'package:ardrive/models/models.dart' hide DriveDao;
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-
-import '../../test_utils/utils.dart';
 
 class MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -40,8 +34,6 @@ void main() {
     );
     when(() => mockDriveDao.userHasHiddenItems())
         .thenAnswer((_) async => false);
-    when(() => mockDriveDao.watchUserHasHiddenItems())
-        .thenAnswer((_) => const Stream.empty());
   });
 
   blocTest<GlobalHideBloc, GlobalHideState>(
@@ -154,86 +146,12 @@ void main() {
         driveDao: mockDriveDao,
       );
     },
-    // Whether anything is hidden is the database's to say, not the stored
-    // flag's (#25): nothing hidden has been reported here, so it is false.
     expect: () => [
       /// Show hidden files
-      const ShowingHiddenItems(userHasHiddenDrive: false),
+      const ShowingHiddenItems(userHasHiddenDrive: true),
 
       /// Hide hidden files
-      const HiddingItems(userHasHiddenDrive: false),
+      const HiddingItems(userHasHiddenDrive: true),
     ],
   );
-
-  // #25: the eye followed a stored flag that lagged a sync and counted hidden
-  // drives alone, so it showed and hid at the wrong times.
-  blocTest<GlobalHideBloc, GlobalHideState>(
-    'whether anything is hidden follows the database',
-    build: () {
-      when(() => mockDriveDao.watchUserHasHiddenItems())
-          .thenAnswer((_) => Stream.fromIterable([true, false]));
-      return GlobalHideBloc(
-        userPreferencesRepository: mockUserPreferencesRepository,
-        driveDao: mockDriveDao,
-      );
-    },
-    expect: () => [
-      const GlobalHideInitial(userHasHiddenDrive: true),
-      const GlobalHideInitial(userHasHiddenDrive: false),
-    ],
-  );
-
-  blocTest<GlobalHideBloc, GlobalHideState>(
-    'and the preferences do not overwrite it with their stored flag',
-    build: () {
-      final db = StreamController<bool>();
-      final prefs = StreamController<UserPreferences>();
-      when(() => mockDriveDao.watchUserHasHiddenItems())
-          .thenAnswer((_) => db.stream);
-      when(() => mockUserPreferencesRepository.watch())
-          .thenAnswer((_) => prefs.stream);
-      final bloc = GlobalHideBloc(
-        userPreferencesRepository: mockUserPreferencesRepository,
-        driveDao: mockDriveDao,
-      );
-      db.add(true);
-      Future.delayed(const Duration(milliseconds: 10), () {
-        prefs.add(const UserPreferences(
-          showHiddenFiles: true,
-          userHasHiddenDrive: false,
-          currentTheme: ArDriveThemes.light,
-          lastSelectedDriveId: '',
-        ));
-      });
-      return bloc;
-    },
-    wait: const Duration(milliseconds: 50),
-    expect: () => [
-      const GlobalHideInitial(userHasHiddenDrive: true),
-      const ShowingHiddenItems(userHasHiddenDrive: true),
-    ],
-  );
-
-  test('DriveDao watches hidden drives, folders and files', () async {
-    final db = getTestDb();
-    addTearDown(db.close);
-    final seen = <bool>[];
-    final sub = db.driveDao.watchUserHasHiddenItems().listen(seen.add);
-    await Future.delayed(Duration.zero);
-    await db.into(db.fileEntries).insert(FileEntriesCompanion.insert(
-          id: 'f',
-          driveId: 'd',
-          parentFolderId: 'r',
-          name: 'f',
-          dataTxId: 'tx',
-          size: 1,
-          lastModifiedDate: DateTime(2024),
-          path: '',
-          isHidden: const Value(true),
-        ));
-    await Future.delayed(const Duration(milliseconds: 50));
-    await sub.cancel();
-
-    expect(seen, [false, true]);
-  });
 }

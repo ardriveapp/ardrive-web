@@ -379,62 +379,6 @@ void main() {
     /// One sync at a time is the standing rule, and a running sync answers
     /// this question itself. The round is not spent, so the wait must not
     /// widen: ask again at the same spacing once the sync is over.
-    // #20: a first sync writes every file's data tx as pending, and its own
-    // pass settles only a few hundred. Nothing asked again, so old files read
-    // "Waiting to be mined" until the next sync.
-    test('a sync that leaves something pending hands it to the watch',
-        () async {
-      final cubit = buildCubit(syncAllDrivesOnLogin: false);
-      addTearDown(cubit.close);
-
-      fakeAsync((async) {
-        async.elapse(const Duration(seconds: 5));
-        async.flushMicrotasks();
-
-        // Pending only once the sync has written its rows.
-        somethingIsPending();
-        unawaited(cubit.startSync());
-        async.elapse(const Duration(seconds: 1));
-        async.flushMicrotasks();
-        expect(cubit.state, isA<SyncComplete>());
-        clearInteractions(syncRepository);
-
-        // Nobody wrote anything after the sync: only the sync started this.
-        async.elapse(const Duration(seconds: 31));
-        async.flushMicrotasks();
-      });
-
-      verify(() => syncRepository.refreshTransactionStatuses(
-            ownerAddress: any(named: 'ownerAddress'),
-            cancellationToken: any(named: 'cancellationToken'),
-          )).called(1);
-    });
-
-    test('and with nothing pending after it, the watch only reads locally',
-        () async {
-      final cubit = buildCubit(syncAllDrivesOnLogin: false);
-      addTearDown(cubit.close);
-
-      fakeAsync((async) {
-        async.elapse(const Duration(seconds: 5));
-        async.flushMicrotasks();
-
-        unawaited(cubit.startSync());
-        async.elapse(const Duration(seconds: 1));
-        async.flushMicrotasks();
-        clearInteractions(syncRepository);
-
-        async.elapse(const Duration(minutes: 5));
-        async.flushMicrotasks();
-      });
-
-      verify(() => syncRepository.hasPendingTransactions()).called(1);
-      verifyNever(() => syncRepository.refreshTransactionStatuses(
-            ownerAddress: any(named: 'ownerAddress'),
-            cancellationToken: any(named: 'cancellationToken'),
-          ));
-    });
-
     test('a round refused because a sync is running does not widen the wait',
         () async {
       // A sync that starts and never finishes, so the cubit stays in

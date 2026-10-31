@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/blocs/drive_detail/licensed_files_cache.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +86,71 @@ void main() {
       await addFile('drive-b', 'b1', licenseTxId: 'license-tx');
 
       expect(await db.driveDao.driveHasLicensedFiles('drive-a'), isFalse);
+    });
+  });
+
+  // Read once per drive, not on every folder reload: the read scans the
+  // drive's files, and a sync reloads the folder on every write.
+  group('LicensedFilesCache', () {
+    test('reads a drive once, however often it is asked', () async {
+      var reads = 0;
+      final cache = LicensedFilesCache((_) async {
+        reads++;
+        return true;
+      });
+
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+
+      expect(reads, 1);
+    });
+
+    test('keeps each drive apart', () async {
+      final asked = <String>[];
+      final cache = LicensedFilesCache((id) async {
+        asked.add(id);
+        return id == 'a';
+      });
+
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+      expect(await cache.hasLicensedFiles('b'), isFalse);
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+
+      expect(asked, ['a', 'b']);
+    });
+
+    test('reads again after it forgets, as after a sync or a license',
+        () async {
+      var licensed = false;
+      var reads = 0;
+      final cache = LicensedFilesCache((_) async {
+        reads++;
+        return licensed;
+      });
+
+      expect(await cache.hasLicensedFiles('a'), isFalse);
+      licensed = true;
+      expect(await cache.hasLicensedFiles('a'), isFalse);
+
+      cache.forget();
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+      expect(reads, 2);
+    });
+
+    test('a failed read answers false and is not kept', () async {
+      var fail = true;
+      var reads = 0;
+      final cache = LicensedFilesCache((_) async {
+        reads++;
+        if (fail) throw StateError('database closed');
+        return true;
+      });
+
+      expect(await cache.hasLicensedFiles('a'), isFalse);
+      fail = false;
+      expect(await cache.hasLicensedFiles('a'), isTrue);
+      expect(reads, 2);
     });
   });
 }

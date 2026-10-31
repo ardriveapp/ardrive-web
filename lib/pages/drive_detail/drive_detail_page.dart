@@ -1491,9 +1491,7 @@ class MobileFolderNavigation extends StatelessWidget {
                             if (isPrivate)
                               const Padding(
                                 padding: EdgeInsets.only(right: 8),
-                                // The sidebar's plain padlock, not the
-                                // drive-with-a-lock glyph.
-                                child: PrivateDriveLock(plain: true),
+                                child: PrivateDriveLock(),
                               ),
                             Expanded(
                               child: Text(

@@ -9,14 +9,9 @@ import 'package:flutter/material.dart';
 /// label as well as a tooltip, because an icon alone is silent to a screen
 /// reader.
 class PrivateDriveLock extends StatelessWidget {
-  const PrivateDriveLock({super.key, this.size = 18, this.plain = false});
+  const PrivateDriveLock({super.key, this.size = 18});
 
   final double size;
-
-  /// The plain padlock the sidebar's Private drives heading draws, rather
-  /// than the drive-with-a-lock glyph. For a header beside a drive's name,
-  /// where the drive glyph read as a second, unrelated icon.
-  final bool plain;
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +24,8 @@ class PrivateDriveLock extends StatelessWidget {
       excludeSemantics: true,
       child: Tooltip(
         message: label,
-        child: plain
-            ? ArDriveIcons.lock(size: size, color: colorTokens.textMid)
-            : ArDriveIcons.privateDrive(size: size, color: colorTokens.textMid),
+        child:
+            ArDriveIcons.privateDrive(size: size, color: colorTokens.textMid),
       ),
     );
   }

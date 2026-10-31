@@ -25,16 +25,6 @@ class RefreshOptions extends GlobalHideEvent {
   const RefreshOptions({required this.userHasHiddenItems});
 }
 
-/// Whether anything on this device is hidden changed in the database.
-class HiddenItemsChanged extends GlobalHideEvent {
-  final bool userHasHiddenItems;
-
-  const HiddenItemsChanged({required this.userHasHiddenItems});
-
-  @override
-  List<Object> get props => [userHasHiddenItems];
-}
-
 /// Event to sync local state with preferences stream without saving back.
 /// This prevents infinite loops when the preferences stream emits updates.
 class SyncShowHiddenState extends GlobalHideEvent {

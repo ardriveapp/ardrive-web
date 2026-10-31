@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/licensed_files_cache.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
@@ -450,6 +451,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       }
 
       if (_initialLoadComplete && SyncCubit.syncHasFinished(syncState)) {
+        // A sync may have brought licensed files in.
+        unawaited(_refreshLicensedFiles());
         _onSyncCompleted();
       }
     });
@@ -1643,6 +1646,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // [SyncCubit.watchForPendingConfirmations].
     _syncCubit.watchForPendingConfirmations();
 
+    // A write may have added a license, such as the license form's.
+    unawaited(_refreshLicensedFiles());
+
     if (_droppedFolderRedraw) {
       await _refreshAfterDroppedRedraws();
       return;
@@ -1774,16 +1780,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }) =>
       columnVisibility[licenseColumnIndex] ?? driveHasLicensedFiles;
 
-  /// Read for every load, so a license added in this drive brings the column
-  /// in. Whether to offer a column is not worth failing a folder over, so a
-  /// read that fails leaves it at its default, hidden.
-  Future<bool> _driveHasLicensedFiles(String driveId) async {
-    try {
-      return await _driveDao.driveHasLicensedFiles(driveId);
-    } catch (e) {
-      logger.w('Could not read whether drive $driveId has licensed files: $e');
-      return false;
+  /// See [LicensedFilesCache]: read once per drive, not on every reload.
+  late final _licensedFiles =
+      LicensedFilesCache(_driveDao.driveHasLicensedFiles);
+
+  Future<bool> _driveHasLicensedFiles(String driveId) =>
+      _licensedFiles.hasLicensedFiles(driveId);
+
+  /// Reads the open drive's answer again, after something that can change
+  /// it, and shows it if it did.
+  Future<void> _refreshLicensedFiles() async {
+    _licensedFiles.forget();
+    final before = state;
+    if (before is! DriveDetailLoadSuccess) return;
+
+    final driveId = before.currentDrive.id;
+    final has = await _driveHasLicensedFiles(driveId);
+    final now = state;
+    if (isClosed ||
+        now is! DriveDetailLoadSuccess ||
+        now.currentDrive.id != driveId ||
+        now.driveHasLicensedFiles == has) {
+      return;
     }
+    emit(now.copyWith(driveHasLicensedFiles: has));
   }
 
   Future<LocalKeyValueStore> _store() async {

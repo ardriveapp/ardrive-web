@@ -5824,8 +5824,6 @@
   "@tableColumns": {"description": "Tooltip and accessible name of the button that chooses which columns the file table shows"},
   "tableColumnLicense": "License",
   "@tableColumnLicense": {"description": "Heading of the file table column that shows each file license"},
-  "unlockDriveUnreadable": "This drive can't be read on this device.",
-  "@unlockDriveUnreadable": {"description": "Unlock dialog: the drive was reached but has no drive transaction, or its contents are not a drive. Trying again will not help, so no retry is offered."},
   "searchFailed": "Couldn't search.",
   "@searchFailed": {"description": "Search itself failed, as against finding nothing. Shown with a Try again action."},
   "selectAllDrives": "Select all drives",

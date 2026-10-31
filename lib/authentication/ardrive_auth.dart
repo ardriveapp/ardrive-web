@@ -888,7 +888,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
           await _markSignInPassword(address, proven: false);
           throw const PasswordOpensNoDriveException();
         case DriveUnlockFailure.unavailable:
-        case DriveUnlockFailure.unreadable:
           unreadable ??= const AuthenticationGatewayException();
           continue;
       }

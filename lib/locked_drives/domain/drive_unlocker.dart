@@ -34,14 +34,9 @@ enum DriveUnlockFailure {
   /// or errored).
   walletFailed,
 
-  /// The drive's metadata or its signature record couldn't be fetched, so
-  /// trying again later may work.
+  /// Anything else: the drive's metadata or its signature record couldn't be
+  /// read, or what decrypted couldn't be read as a drive.
   unavailable,
-
-  /// The drive was reached but can never be read on this device: it has no
-  /// drive transaction, or what decrypted isn't a drive. Trying again won't
-  /// help, so nothing offers it.
-  unreadable,
 
   /// Not tried: this device was told not to keep the drive's key ("Remember
   /// on this device" off, or "Forget on this device"), so it is not opened
@@ -570,7 +565,7 @@ class DriveUnlocker {
       try {
         entity = await openWithKey(driveTx, data, key);
       } on DriveUnreadableException {
-        return const DriveKeyAttempt.failed(DriveUnlockFailure.unreadable);
+        return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
       }
 
       if (entity != null) {
@@ -728,9 +723,8 @@ class DriveUnlocker {
         return const DriveUnlockResult.failed(DriveUnlockFailure.unavailable);
       }
 
-      // Read, and there is no drive transaction: not a network problem.
       if (metadata == null) {
-        return const DriveUnlockResult.failed(DriveUnlockFailure.unreadable);
+        return const DriveUnlockResult.failed(DriveUnlockFailure.unavailable);
       }
 
       final lockedTypes = {
@@ -864,7 +858,6 @@ class DriveUnlocker {
         case DriveUnlockFailure.notTried:
           continue;
         case DriveUnlockFailure.unavailable:
-        case DriveUnlockFailure.unreadable:
           unavailable = true;
           continue;
         case DriveUnlockFailure.walletDeclined:
@@ -935,12 +928,10 @@ class DriveUnlocker {
         drive = await _readLatest(driveId, ownerAddress);
       } catch (e) {
         logger.w('Could not read the metadata of $driveId: $e');
-        return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
       }
 
-      // Read, and there is no drive transaction: not a network problem.
       if (drive == null) {
-        return const DriveKeyAttempt.failed(DriveUnlockFailure.unreadable);
+        return const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
       }
     }
 

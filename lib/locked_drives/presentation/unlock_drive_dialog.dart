@@ -179,7 +179,6 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
           case UnlockDriveStatus.wrongPassword:
           case UnlockDriveStatus.networkError:
           case UnlockDriveStatus.walletFailed:
-          case UnlockDriveStatus.unreadable:
           case UnlockDriveStatus.idle:
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _refocus();
@@ -244,21 +243,16 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   onFieldSubmitted: (_) => _submit(),
                 )),
                 if (state.status == UnlockDriveStatus.networkError ||
-                    state.status == UnlockDriveStatus.walletFailed ||
-                    state.status == UnlockDriveStatus.unreadable) ...[
+                    state.status == UnlockDriveStatus.walletFailed) ...[
                   const SizedBox(height: ArDriveSpacing.xs),
                   // Read out when it appears: a failed unlock was silent.
                   Semantics(
                     liveRegion: true,
                     child: ArDriveStatusText(
                       key: const Key('unlockDriveNetworkError'),
-                      text: switch (state.status) {
-                        UnlockDriveStatus.walletFailed =>
-                          strings.unlockWalletFailed,
-                        UnlockDriveStatus.unreadable =>
-                          strings.unlockDriveUnreadable,
-                        _ => strings.unlockNetworkError,
-                      },
+                      text: state.status == UnlockDriveStatus.walletFailed
+                          ? strings.unlockWalletFailed
+                          : strings.unlockNetworkError,
                       type: ArDriveStatusType.error,
                     ),
                   ),
@@ -296,9 +290,7 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
             ModalAction(
               action: _submit,
               title: strings.unlock,
-              // Not for a drive that can't be read here: no password opens it.
-              isEnable: _password.text.isNotEmpty &&
-                  state.status != UnlockDriveStatus.unreadable,
+              isEnable: _password.text.isNotEmpty,
               isLoading: working,
             ),
           ],

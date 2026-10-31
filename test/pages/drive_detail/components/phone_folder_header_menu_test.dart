@@ -1,7 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
-import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -178,10 +177,9 @@ void main() {
   });
 
   // Phil's header nits: the header's menu sat about 24 px left of the rows',
-  // the private mark was the drive-with-a-lock glyph, and the name was tiny.
+  // and the name was tiny.
   group('the header', () {
-    Future<void> pumpWithRow(WidgetTester tester,
-        {bool private = false}) async {
+    Future<void> pumpWithRow(WidgetTester tester) async {
       whenListen(
         detailCubit,
         const Stream<DriveDetailState>.empty(),
@@ -232,11 +230,11 @@ void main() {
                   child: Scaffold(
                     body: Column(
                       children: [
-                        MobileFolderNavigation(
+                        const MobileFolderNavigation(
                           driveName: 'Photos',
                           isShowingHiddenFiles: false,
-                          isPrivate: private,
-                          path: const [],
+                          isPrivate: false,
+                          path: [],
                         ),
                         Expanded(
                           child: ArDriveItemList(
@@ -266,17 +264,6 @@ void main() {
         tester.getRect(kebabs.at(0)).right,
         tester.getRect(kebabs.at(1)).right,
       );
-    });
-
-    testWidgets('a private drive gets the sidebar\'s plain lock',
-        (tester) async {
-      await pumpWithRow(tester, private: true);
-
-      final lock =
-          tester.widget<PrivateDriveLock>(find.byType(PrivateDriveLock));
-      expect(lock.plain, isTrue);
-      expect(find.byIcon(ArDriveIcons.lock().icon), findsOneWidget);
-      expect(find.byIcon(ArDriveIcons.privateDrive().icon), findsNothing);
     });
 
     testWidgets('the name is set as the page title is', (tester) async {
