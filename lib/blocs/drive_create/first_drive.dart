@@ -73,6 +73,19 @@ class FirstDrive {
     return true;
   }
 
+  /// Asks again for [walletAddress]'s first drive, unless a request is
+  /// already stored: one another tab holds is left as it is, so only that
+  /// tab goes on to make the drive.
+  Future<void> requestUnlessPending(String walletAddress) async {
+    final store = await _openStore();
+    // Read and written with no await between, as in [claim].
+    final read = store.getString(_key);
+    final stored = read is Future<String?> ? await read : read;
+    if (stored != null) return;
+    await store.putString(
+        _key, '$walletAddress|${_now().millisecondsSinceEpoch}');
+  }
+
   /// The drive was made, or never can be: the request is spent.
   Future<void> done() async {
     await (await _openStore()).remove(_key);

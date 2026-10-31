@@ -164,16 +164,17 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
     final wallet = profile.user.walletAddress;
     final firstDrive = widget.firstDrive ?? FirstDrive();
     final failure = _failure;
-    var claimed = false;
+    final bool claimed;
 
     try {
-      claimed = await firstDrive.claim(wallet);
-      if (!claimed && failure == FirstDriveOutcome.needsCredits) {
-        await firstDrive.request(wallet);
-        claimed = await firstDrive.claim(wallet);
+      if (failure == FirstDriveOutcome.needsCredits) {
+        await firstDrive.requestUnlessPending(wallet);
       }
+      claimed = await firstDrive.claim(wallet);
     } catch (e, stackTrace) {
+      // Not known to be anyone else's: the notice and its Try again stay.
       logger.e('Could not read the first drive request', e, stackTrace);
+      return;
     }
 
     if (!mounted || _running != null) return;

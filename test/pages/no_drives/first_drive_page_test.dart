@@ -261,6 +261,32 @@ void main() {
     verify(() => firstDrive.claim('new-wallet')).called(2);
   });
 
+  testWidgets('Try again that cannot read the request keeps the notice',
+      (tester) async {
+    var claims = 0;
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async {
+      if (claims++ == 0) return true;
+      throw StateError('storage unavailable');
+    });
+    var asked = 0;
+
+    await pump(
+        tester,
+        (_) => () async {
+              asked++;
+              return FirstDriveOutcome.failed;
+            });
+    await tester.pump();
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(asked, 1);
+    expect(find.byKey(const Key('firstDriveFailedNotice')), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+  });
+
   testWidgets('Try again leaves it to a tab that already holds it',
       (tester) async {
     final claims = [true, false];

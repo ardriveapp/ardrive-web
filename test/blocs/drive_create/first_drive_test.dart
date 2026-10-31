@@ -89,6 +89,26 @@ void main() {
     expect(await firstDrive.claim('wallet-a'), isTrue);
   });
 
+  test('asking again leaves a request another tab holds alone', () async {
+    await firstDrive.request('w');
+    expect(await firstDrive.claim('w'), isTrue);
+    final held = store.values.values.single;
+
+    await firstDrive.requestUnlessPending('w');
+
+    expect(store.values.values.single, held);
+    expect(await firstDrive.claim('w'), isFalse);
+  });
+
+  test('asking again after the request was spent makes it again', () async {
+    await firstDrive.request('w');
+    await firstDrive.done();
+
+    await firstDrive.requestUnlessPending('w');
+
+    expect(await firstDrive.claim('w'), isTrue);
+  });
+
   test('a request older than a day is dropped', () async {
     await firstDrive.request('wallet-a');
 
