@@ -533,7 +533,10 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
     // if (textFieldState == TextFieldState.success) {
     //   return _getSuccessBorder(colorTokens);
     // } else
-    if (textFieldState == TextFieldStateNew.error) {
+    // An error handed in from outside (a server's rejection) gets the same
+    // edge as one the validator found.
+    if (textFieldState == TextFieldStateNew.error ||
+        widget.errorMessage != null) {
       return _getErrorBorder(colorTokens);
     }
     return _getBorder(colorTokens.strokeMid);
@@ -543,7 +546,10 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
     // if (textFieldState == TextFieldState.success) {
     //   return _getSuccessBorder(colorTokens);
     // } else
-    if (textFieldState == TextFieldStateNew.error) {
+    // An error handed in from outside (a server's rejection) gets the same
+    // edge as one the validator found.
+    if (textFieldState == TextFieldStateNew.error ||
+        widget.errorMessage != null) {
       return _getErrorBorder(colorTokens);
     }
 

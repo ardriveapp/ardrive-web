@@ -111,6 +111,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     // Reset amount when switching payment methods
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       paymentMethod: event.method,
       selectedToken: event.token,
       clearToken: event.method == PaymentMethod.card,
@@ -135,6 +136,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     // Reset amount when switching modes
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       amountMode: event.mode,
       fiatAmount: 0,
       clearStorageSize: true,
@@ -155,6 +157,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     if (event.amount <= 0) {
       emit(currentState.copyWith(
+        clearPromoCodeError: true,
         fiatAmount: 0,
         creditsToReceive: BigInt.zero,
         estimatedStorage: '0',
@@ -165,6 +168,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     }
 
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       fiatAmount: event.amount,
       isLoadingQuote: true,
       clearError: true,
@@ -221,7 +225,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           usdEquivalent: usdEquivalent,
           creditsToReceive: estimate.estimate.winstonCredits,
           estimatedStorage: formatStorageWithDynamicUnit(
-              estimate.estimatedStorage,
+              _estimateToGiB(estimate, currentState.displayUnit),
               includeApprox: false),
           newBalanceStorage: newBalanceStorage,
           isLoadingQuote: false,
@@ -300,6 +304,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     // Handle null or zero size (custom amount cleared)
     if (event.size == null || event.size! <= 0) {
       emit(currentState.copyWith(
+        clearPromoCodeError: true,
         clearStorageSize: true,
         storageUnit: event.unit,
         fiatAmount: 0,
@@ -311,6 +316,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     }
 
     emit(currentState.copyWith(
+      clearPromoCodeError: true,
       storageSize: event.size,
       storageUnit: event.unit,
       isLoadingQuote: true,
@@ -394,7 +400,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           fiatAmount: priceInUsd,
           creditsToReceive: estimate.estimate.winstonCredits,
           estimatedStorage: formatStorageWithDynamicUnit(
-              estimate.estimatedStorage,
+              _estimateToGiB(estimate, event.unit),
               includeApprox: false),
           newBalanceStorage: newBalanceStorage,
           isLoadingQuote: false,
@@ -428,6 +434,19 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     return formatStorageWithDynamicUnit(storage, includeApprox: false);
   }
 
+  /// A [PriceEstimate.estimatedStorage] is expressed in the unit it was
+  /// requested in; [formatStorageWithDynamicUnit] expects GiB.
+  double _estimateToGiB(PriceEstimate estimate, FileSizeUnit unit) =>
+      _storageSizeToGB(estimate.estimatedStorage, unit);
+
+  Future<String> _formatStorageForCredits(BigInt credits) async {
+    final storage = await turbo.computeStorageEstimateForCredits(
+      credits: credits,
+      outputDataUnit: FileSizeUnit.gigabytes,
+    );
+    return formatStorageWithDynamicUnit(storage, includeApprox: false);
+  }
+
   /// Converts storage size to GB equivalent
   double _storageSizeToGB(double size, FileSizeUnit unit) {
     switch (unit) {
@@ -450,7 +469,10 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     if (currentState is! UnifiedTopupLoaded) return;
 
     // Update display unit
-    emit(currentState.copyWith(displayUnit: event.unit));
+    emit(currentState.copyWith(
+      displayUnit: event.unit,
+      clearPromoCodeError: true,
+    ));
 
     // Recalculate storage estimates with new unit
     // For crypto payments, use usdEquivalent; for card payments, use fiatAmount
@@ -484,7 +506,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             currentBalanceStorage: formatStorageWithDynamicUnit(balanceStorage,
                 includeApprox: false),
             estimatedStorage: formatStorageWithDynamicUnit(
-                estimate.estimatedStorage,
+                _estimateToGiB(estimate, event.unit),
                 includeApprox: false),
             newBalanceStorage: newBalanceStorage,
           ));
@@ -505,6 +527,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     emit(currentState.copyWith(
       promoCode: event.code,
       isLoadingQuote: true,
+      clearPromoCodeError: true,
     ));
 
     // Refresh estimate with promo code
@@ -552,7 +575,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             discountPercent: discountPercent,
             creditsToReceive: estimate.estimate.winstonCredits,
             estimatedStorage: formatStorageWithDynamicUnit(
-                estimate.estimatedStorage,
+                _estimateToGiB(estimate, currentState.displayUnit),
                 includeApprox: false),
             newBalanceStorage: newBalanceStorage,
             isLoadingQuote: false,
@@ -565,7 +588,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             clearPromoCode: true,
             clearDiscountPercent: true,
             isLoadingQuote: false,
-            errorMessage: 'Invalid promo code',
+            promoCodeError: 'Invalid promo code',
           ));
         }
       }
@@ -587,6 +610,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     emit(currentState.copyWith(
       clearPromoCode: true,
       clearDiscountPercent: true,
+      clearPromoCodeError: true,
     ));
 
     // Refresh estimate without promo code
@@ -614,7 +638,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           emit(loadedState.copyWith(
             creditsToReceive: estimate.estimate.winstonCredits,
             estimatedStorage: formatStorageWithDynamicUnit(
-                estimate.estimatedStorage,
+                _estimateToGiB(estimate, currentState.displayUnit),
                 includeApprox: false),
             newBalanceStorage: newBalanceStorage,
           ));
@@ -678,9 +702,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     // Update with new price estimate
     emit(currentState.copyWith(
       creditsToReceive: event.estimate.estimate.winstonCredits,
-      estimatedStorage: formatStorageWithDynamicUnit(
-          event.estimate.estimatedStorage,
-          includeApprox: false),
+      estimatedStorage: await _formatStorageForCredits(
+          event.estimate.estimate.winstonCredits),
       newBalanceStorage: newBalanceStorage,
     ));
   }

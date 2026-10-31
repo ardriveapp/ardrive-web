@@ -74,6 +74,11 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
   /// Error message (if any)
   final String? errorMessage;
 
+  /// Why the last promo code was not accepted. Shown under the promo field,
+  /// and does not block the purchase: the code is dropped and the full price
+  /// stands.
+  final String? promoCodeError;
+
   const UnifiedTopupLoaded({
     required this.paymentMethod,
     this.selectedToken,
@@ -92,6 +97,7 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
     this.discountPercent,
     this.isLoadingQuote = false,
     this.errorMessage,
+    this.promoCodeError,
   });
 
   /// New balance after purchase
@@ -159,6 +165,8 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
     bool? isLoadingQuote,
     String? errorMessage,
     bool clearError = false,
+    String? promoCodeError,
+    bool clearPromoCodeError = false,
   }) {
     return UnifiedTopupLoaded(
       paymentMethod: paymentMethod ?? this.paymentMethod,
@@ -182,6 +190,8 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
           : (discountPercent ?? this.discountPercent),
       isLoadingQuote: isLoadingQuote ?? this.isLoadingQuote,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      promoCodeError:
+          clearPromoCodeError ? null : (promoCodeError ?? this.promoCodeError),
     );
   }
 
@@ -204,6 +214,7 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
         discountPercent,
         isLoadingQuote,
         errorMessage,
+        promoCodeError,
       ];
 }
 

@@ -178,7 +178,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _bloc == null) {
-      return const _Loading();
+      return CryptoFlowLoading(onClose: widget.onCancel);
     }
 
     return BlocProvider.value(
@@ -227,7 +227,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _bloc!.add(const CryptoTopupProceedToConfirmation());
         });
-        return const _Loading();
+        return CryptoFlowLoading(onClose: widget.onCancel);
       }
     } else {
       // No preselected token - show full inline crypto payment flow
@@ -301,7 +301,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
         }
 
         // Show a brief loading indicator while transitioning
-        return const _Loading();
+        return CryptoFlowLoading(onClose: widget.onCancel);
       }
 
       // Fallback: render CryptoSuccessView inline (old behavior)
@@ -324,7 +324,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     }
 
     // Default loading
-    return const _Loading();
+    return CryptoFlowLoading(onClose: widget.onCancel);
   }
 
   /// Format amount paid for display (e.g., "100 ARIO ($25.00)")
@@ -436,14 +436,20 @@ Future<void> showUnifiedCryptoModal(
 
 /// Between screens: the standard dialog with a spinner, so the flow never
 /// shows a bare spinner over the page.
-class _Loading extends StatelessWidget {
-  const _Loading();
+///
+/// Nothing has been paid on these screens, so it can always be closed: a flow
+/// that never leaves it (a wallet that never answers) must not trap the buyer.
+class CryptoFlowLoading extends StatelessWidget {
+  const CryptoFlowLoading({super.key, this.onClose});
+
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
-    return const TurboTopupScaffold(
-      canClose: false,
-      child: SizedBox(
+    return TurboTopupScaffold(
+      canClose: onClose != null,
+      onClose: onClose,
+      child: const SizedBox(
         height: 200,
         child: Center(
           child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
