@@ -970,6 +970,8 @@ class UploadCubit extends Cubit<UploadState> {
     // still reading the manifest finds it taken. Every way out below that
     // sends nothing gives it back.
     _uploadIsInProgress = true;
+    // A new run is not a canceled one.
+    _uploadCanceled = false;
 
     if (_uploadFileAsCustomManifest) {
       final IOFile fileWithCustomContentType;
@@ -1167,6 +1169,10 @@ class UploadCubit extends Cubit<UploadState> {
         emit(UploadCanceled());
       } catch (e) {
         logger.e('Error canceling upload', e);
+        // The upload was not stopped, so it may still finish: let it report
+        // that, and tell the person the cancel did not work.
+        _uploadCanceled = false;
+        emit(UploadFailure(error: UploadErrors.cancelFailed));
       }
     }
   }

@@ -333,6 +333,7 @@ class EmptyUpload extends UploadState {}
 enum UploadErrors {
   turboTimeout,
   turboPaymentRequired,
+  cancelFailed,
   unknown,
 }
 
