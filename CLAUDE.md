@@ -165,7 +165,7 @@ Menus section.
 
 ### Database (Drift ORM)
 
-- Main database: `lib/models/database/database.dart` (currently `schemaVersion => 31`)
+- Main database: `lib/models/database/database.dart` (currently `schemaVersion => 32`)
 - Table definitions: `lib/models/tables/*.drift`
 - DAOs: `DriveDao`, `ProfileDao`, `ARNSDao`
 - Drift codegen options live in `build.yaml` (`named_parameters: true`); the same file
@@ -326,7 +326,7 @@ The deploy workflows build the web app with `--dart2js-optimization=O2`, which m
 
 ## Design Documents
 
-The `docs/` directory contains internal design documents, including `ArweaveFS.md` (the ArFS file system protocol specification — entity types, transaction tags, privacy model) and implementation plans for sync and upload improvements. Consult these before making changes to sync, ArFS entities, or transaction handling.
+The `docs/` directory contains internal design documents, including `ArweaveFS.md` (the ArFS file system protocol specification — entity types, transaction tags, privacy model) and implementation plans for sync and upload improvements. Consult these before making changes to sync, ArFS entities, or transaction handling. `docs/BROWSER_WALLET_IDENTITIES.md` holds the Ethereum and Solana sign-in derivations; it is an ArDrive client convention, not part of ArFS.
 
 The drive state artifact (a published SQLite file of a drive's parsed state, imported in bulk instead of replaying history; additive to snapshots) is specified in `docs/DRIVE_STATE_ARTIFACT.md`, with bound decisions in `docs/drive-state/DECISIONS.md`, cross-repo status in `docs/drive-state/DELIVERY_PLAN.md`, and the SQLite-format proposal and measurements in `docs/drive-state/SQLITE_ARTIFACT.md`. Users see the word "snapshot" for both the old JSON snapshots and drive state artifacts.
 
