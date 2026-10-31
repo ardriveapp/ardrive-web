@@ -301,14 +301,11 @@ void main() {
       expect(added(), contains(const UnlockWithWallet()));
     });
 
-    testWidgets('says the drives lock again for a profile from before 3.0',
-        (tester) async {
+    testWidgets('shows no notice about locked drives', (tester) async {
       await show(
-          tester,
-          const PromptWalletUnlock(
-              wallet: BrowserWallet.wander, relocks: true));
+          tester, const PromptWalletUnlock(wallet: BrowserWallet.wander));
 
-      expect(find.byKey(const Key('welcomeBackRelocks')), findsOneWidget);
+      expect(find.textContaining('lock again'), findsNothing);
     });
 
     testWidgets('says why the last try opened nothing', (tester) async {

@@ -236,24 +236,19 @@ enum WalletUnlockProblem {
 class PromptWalletUnlock extends LoginState {
   const PromptWalletUnlock({
     required this.wallet,
-    this.relocks = false,
     this.problem,
   });
 
   final BrowserWallet wallet;
 
-  /// Saved before 3.0 under a password: opening it with the wallet locks the
-  /// private drives this device remembered, until they are unlocked again.
-  final bool relocks;
-
   /// What went wrong with the last Continue, if anything.
   final WalletUnlockProblem? problem;
 
   PromptWalletUnlock withProblem(WalletUnlockProblem problem) =>
-      PromptWalletUnlock(wallet: wallet, relocks: relocks, problem: problem);
+      PromptWalletUnlock(wallet: wallet, problem: problem);
 
   @override
-  List<Object?> get props => [wallet, relocks, problem];
+  List<Object?> get props => [wallet, problem];
 }
 
 /// No record of this MetaMask's ArDrive account was found anywhere: asks

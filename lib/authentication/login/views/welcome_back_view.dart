@@ -88,7 +88,6 @@ class _WelcomeBackViewState extends State<WelcomeBackView> {
                 BrowserWallet.metamask,
               _ => BrowserWallet.otherSolana,
             },
-            relocks: account!.isLegacyWalletProfile,
           ));
     }).catchError((Object _) {});
   }
@@ -447,14 +446,6 @@ class _WalletUnlock extends StatelessWidget {
           textAlign: TextAlign.center,
           style: type.paragraphLarge(color: colors.textMid),
         ),
-        if (prompt.relocks) ...[
-          const SizedBox(height: ArDriveSpacing.md),
-          ArDriveNotice(
-            key: const Key('welcomeBackRelocks'),
-            type: ArDriveNoticeType.info,
-            message: s.welcomeBackRelocks,
-          ),
-        ],
         if (problem != null) ...[
           const SizedBox(height: ArDriveSpacing.md),
           ArDriveStatusText(

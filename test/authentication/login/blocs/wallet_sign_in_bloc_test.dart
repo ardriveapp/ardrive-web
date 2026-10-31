@@ -608,14 +608,13 @@ void main() {
     );
 
     blocTest<LoginBloc, LoginState>(
-      'a Wander profile saved before 3.0 opens with Wander, and says its '
-      'drives lock again',
+      'a Wander profile saved before 3.0 opens with Wander, with no notice',
       build: bloc,
       setUp: () => saved(account(DeviceUnlockMethod.password)),
       act: (bloc) => bloc.add(const CheckIfUserIsLoggedIn()),
       expect: () => [
         isA<LoginLoading>(),
-        const PromptWalletUnlock(wallet: BrowserWallet.wander, relocks: true),
+        const PromptWalletUnlock(wallet: BrowserWallet.wander),
       ],
     );
 
