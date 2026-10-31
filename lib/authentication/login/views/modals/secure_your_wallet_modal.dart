@@ -65,8 +65,8 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   String? _suggestion;
 
   /// Whether both fields hide what they hold. One eye, on the password
-  /// field, controls both. A suggestion fills them in shown, as Chrome and
-  /// Safari do; typing a password of one's own hides them again.
+  /// field, controls both, and only it: a suggestion fills both fields
+  /// masked, as a phone's screen may be seen or recorded.
   bool _obscured = true;
   PasswordStrength? _strength;
 
@@ -94,13 +94,17 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     final words = await loadPassphraseWords(DefaultAssetBundle.of(context));
     if (!mounted) return;
     final phrase = suggestPassphrase(words);
-    _passwordController.text = phrase;
-    _confirmPasswordController.text = phrase;
+    // The caret after it, not the whole of it selected.
+    final filled = TextEditingValue(
+      text: phrase,
+      selection: TextSelection.collapsed(offset: phrase.length),
+    );
+    _passwordController.value = filled;
+    _confirmPasswordController.value = filled;
     // Filled in, not typed: no field validator runs, and none needs to. A
     // suggestion is strong and the same in both fields.
     setState(() {
       _suggestion = phrase;
-      _obscured = false;
       _strength = PasswordStrength.strong;
       _isPasswordValid = true;
       _confirmPasswordIsValid = true;
@@ -192,7 +196,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   height: 36,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: ArDriveSpacing.sm),
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
@@ -206,14 +210,14 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       fontWeight: ArFontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: ArDriveSpacing.xs),
               Text(_getDescription(),
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
               if (_isFreshAccount) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: ArDriveSpacing.xs),
                 Text(
                   appLocalizationsOf(context).newPasswordRecoveryNote,
                   key: const Key('newPasswordRecoveryNote'),
@@ -224,7 +228,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 ),
               ],
               if (widget.retrying) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 ArDriveNotice(
                   key: const Key('newPasswordRetry'),
                   type: ArDriveNoticeType.error,
@@ -232,7 +236,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 ),
               ],
               if (!_isFreshAccount) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: ArDriveSpacing.lg),
                 BlocBuilder<ProfileNameBloc, ProfileNameState>(
                   builder: (context, state) {
                     if (state is ProfileNameLoaded) {
@@ -270,12 +274,12 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
+              const SizedBox(height: ArDriveSpacing.lg),
               Text('Password',
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 8),
+              const SizedBox(height: ArDriveSpacing.xs),
               ArDriveTextFieldNew(
                 controller: _passwordController,
                 key: const Key('signUpPassword'),
@@ -291,6 +295,13 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 textInputAction: TextInputAction.next,
                 isEnabled: !_isProcessing,
                 validator: (value) {
+                  // A changed password is checked against the confirmation
+                  // too: one a suggestion filled in stayed "valid" after
+                  // the password was changed, and Continue stayed on.
+                  final confirm = _confirmPasswordController.text;
+                  if (confirm.isNotEmpty) {
+                    setState(() => _confirmPasswordIsValid = confirm == value);
+                  }
                   if (value == null || value.isEmpty) {
                     setState(() {
                       _isPasswordValid = false;
@@ -307,7 +318,6 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       _isPasswordValid = strong;
                       if (_suggestion != null && value != _suggestion) {
                         _suggestion = null;
-                        _obscured = true;
                       }
                     });
                     final s = appLocalizationsOf(context);
@@ -331,11 +341,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 },
               ),
               if (_rulesApply && _strength != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: ArDriveSpacing.xs),
                 PasswordStrengthMeter(strength: _strength!),
               ],
               if (_rulesApply) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: ArDriveSpacing.sm),
                 if (_suggestion == null)
                   Align(
                     alignment: Alignment.centerLeft,
@@ -355,12 +365,12 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                     onAnother: _isProcessing ? null : _suggest,
                   ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: ArDriveSpacing.md),
               Text('Confirm password',
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 8),
+              const SizedBox(height: ArDriveSpacing.xs),
               ArDriveTextFieldNew(
                   controller: _confirmPasswordController,
                   key: const Key('signUpConfirmPassword'),
@@ -370,6 +380,15 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   autofillHints: const [AutofillHints.newPassword],
                   textInputAction: TextInputAction.done,
                   isEnabled: !_isProcessing,
+                  // Worked out on every build, from both fields: a mismatch
+                  // the validator returned stayed up after the password was
+                  // changed to match, and a suggestion's confirmation never
+                  // went through the validator at all.
+                  errorMessage: _confirmPasswordController.text.isNotEmpty &&
+                          _confirmPasswordController.text !=
+                              _passwordController.text
+                      ? appLocalizationsOf(context).passwordMismatch
+                      : null,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       setState(() {
@@ -377,10 +396,12 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       });
                       return appLocalizationsOf(context).validationRequired;
                     } else if (value != _passwordController.text) {
+                      // Said by errorMessage above, which follows the
+                      // password too.
                       setState(() {
                         _confirmPasswordIsValid = false;
                       });
-                      return appLocalizationsOf(context).passwordMismatch;
+                      return null;
                     }
 
                     setState(() {
@@ -394,7 +415,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       _onSubmit();
                     }
                   }),
-              const SizedBox(height: 40),
+              const SizedBox(height: ArDriveSpacing.lg),
               ArDriveButtonNew(
                   size: ArDriveButtonSize.large,
                   maxWidth: double.infinity,
