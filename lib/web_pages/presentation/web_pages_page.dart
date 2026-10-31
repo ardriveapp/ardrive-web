@@ -371,12 +371,13 @@ Widget webPageIcon(BuildContext context, WebPage page, {double size = 20}) {
   return typeIcon(page.isDrivePublication ? 'drive' : 'folder');
 }
 
-/// "<folder> folder, <drive> drive", or "<drive> drive".
+/// "<folder> in <drive>", or the drive's name alone. No "drive" or
+/// "folder" suffix: names often end in one already ("New Test Drive drive").
 String webPageSource(BuildContext context, WebPage page) {
   final strings = appLocalizationsOf(context);
   final folder = page.folderName;
   return folder == null
-      ? strings.webPagesFromDrive(page.driveName)
+      ? page.driveName
       : strings.webPagesFromFolder(folder, page.driveName);
 }
 

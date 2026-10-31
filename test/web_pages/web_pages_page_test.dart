@@ -200,7 +200,7 @@ void main() {
 
     expect(find.byType(WebPageDetailsPanel), findsOneWidget);
     expect(find.text('From'), findsOneWidget);
-    expect(find.text('Campaigns folder, Websites drive'), findsWidgets);
+    expect(find.text('Campaigns in Websites'), findsWidgets);
     expect(launcher.launched, isEmpty, reason: 'a click only chooses');
 
     await tester.tap(find.byTooltip('Close'));
@@ -240,6 +240,43 @@ void main() {
     expect(find.byType(ListTableRow), findsWidgets);
     expect(find.byType(ArDriveCheckBox), findsNothing);
     expect(find.byType(ArDriveMultiSelectBox), findsNothing);
+  });
+
+  /// A drive named "New Test Drive" read "New Test Drive drive" with a
+  /// suffix, and a folder's drive the same.
+  testWidgets('the subtitle names the drive without a suffix', (tester) async {
+    final drivePage = WebPage(
+      kind: WebPageKind.publication,
+      publication: const Publication([]),
+      id: 'ntd',
+      title: 'New Test Drive',
+      driveId: 'd',
+      driveName: 'New Test Drive',
+      folderName: null,
+      openFolderId: 'f',
+      dataTxId: 'ntd-tx',
+      updatedAt: DateTime(2026, 3),
+    );
+    final folderPage = WebPage(
+      kind: WebPageKind.publication,
+      publication: const Publication([]),
+      id: 'docs',
+      title: 'Docs',
+      driveId: 'd',
+      driveName: 'New Test Drive',
+      folderName: 'Docs',
+      openFolderId: 'f',
+      dataTxId: 'docs-tx',
+      updatedAt: DateTime(2026, 2),
+    );
+    pagesAre([drivePage, folderPage]);
+    await pump(tester);
+
+    expect(find.textContaining('Drive drive'), findsNothing);
+    expect(find.textContaining('folder,'), findsNothing);
+    expect(find.text('Docs in New Test Drive'), findsOneWidget);
+    // The drive's own page: its title and its subtitle are the drive.
+    expect(find.text('New Test Drive'), findsNWidgets(2));
   });
 
   testWidgets('no inline copy button in the rows', (tester) async {
