@@ -258,7 +258,7 @@ void main() {
     }
   }
 
-  group("a heading's words open its page and fold nothing", () {
+  group("a drives heading's words open its page and fold nothing", () {
     for (final (heading, scope) in [
       ('Public drives', DriveScope.public),
       ('Private drives', DriveScope.private),
@@ -277,13 +277,18 @@ void main() {
       });
     }
 
+  });
+
+  // Phil: opening Web pages leaves only Web pages open; Names likewise.
+  group("Web pages' and Names' words open the page and fold everything else",
+      () {
     testWidgets('Web pages', (tester) async {
       await pumpApp(tester);
 
       await open(tester, 'Web pages');
 
       expect(router.showingWebPages, isTrue);
-      expectFolded(const {});
+      expectFolded(under.keys.toSet()..remove('Web pages'));
     });
 
     testWidgets('Names', (tester) async {
@@ -292,7 +297,7 @@ void main() {
       await open(tester, 'Names');
 
       expect(router.showingNames, isTrue);
-      expectFolded(const {});
+      expectFolded(under.keys.toSet()..remove('Names'));
     });
   });
 
@@ -309,32 +314,22 @@ void main() {
     expect(router.showingNames, isFalse);
   });
 
-  testWidgets('a fold stays made on Web pages, on Names and in a drive',
+  testWidgets('a fold stays made in a drive and on the page opened after',
       (tester) async {
     await pumpApp(tester);
-    const folded = {'Public drives', 'Private drives', 'Names'};
-
-    for (final heading in folded) {
-      await fold(tester, heading);
-    }
-    expectFolded(folded);
-
-    await open(tester, 'Web pages');
-    expect(router.showingWebPages, isTrue);
-    expectFolded(folded);
 
     await open(tester, 'Names');
-    expect(router.showingNames, isTrue);
-    expectFolded(folded);
+    final names = under.keys.toSet()..remove('Names');
+    expectFolded(names);
 
     await openDrive(tester);
     expect(router.showingNames, isFalse);
-    expectFolded(folded);
+    expectFolded(names);
 
-    // Unfolded, and still so on the next page.
+    // Unfolded by hand, and still so in the next drive.
     await fold(tester, 'Public drives');
-    await open(tester, 'Web pages');
-    expectFolded(const {'Private drives', 'Names'});
+    await openDrive(tester);
+    expectFolded(names..remove('Public drives'));
   });
 
   testWidgets('each fold is saved with the preferences', (tester) async {
