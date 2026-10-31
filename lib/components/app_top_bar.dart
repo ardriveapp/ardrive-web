@@ -1485,7 +1485,9 @@ final ValueNotifier<Object?> _dismissedSyncReport = ValueNotifier(null);
 /// A cancelled sync and the rest it moves on to are one report: both are
 /// keyed by the moment it was stopped.
 Object? _syncReportKey(SyncState state) => switch (state) {
-      SyncComplete() => ('complete', state.sequence),
+      // With its time: the sequence starts again in each session's cubit,
+      // and the dismissed key outlives the session.
+      SyncComplete() => ('complete', state.sequence, state.completedAt),
       SyncStopped() => ('stopped', state.stoppedAt),
       SyncCancelled() => ('stopped', state.cancelledAt),
       SyncCompleteWithErrors() => ('errors', state.completedAt),

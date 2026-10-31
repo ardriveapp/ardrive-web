@@ -591,6 +591,37 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  // The dismissed report outlives the session, and each session's cubit
+  // counts its results from 1 again: the next session's first result must
+  // not be taken for the one put away.
+  testWidgets('a dismissed result does not hide the next session\'s first',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    final first = clock.now();
+    stateController
+        .add(finished(skippedEntityCount: 3, sequence: 1, completedAt: first));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+    await openMenuNow(tester);
+    await tester.tap(find.text('Dismiss'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(ArDriveDropdown), findsNothing);
+
+    stateController.add(finished(
+      skippedEntityCount: 3,
+      sequence: 1,
+      completedAt: first.add(const Duration(minutes: 5)),
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump();
+    expect(find.byType(ArDriveDropdown), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('dismissing a stopped sync still lets it go', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
