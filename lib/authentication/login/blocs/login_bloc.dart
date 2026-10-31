@@ -1965,7 +1965,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (account == null || method == null) return null;
     return PromptWalletUnlock(
       wallet: _browserWalletFor(method),
-      relocks: account.isLegacyWalletProfile,
       problem: problem,
     );
   }

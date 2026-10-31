@@ -5782,8 +5782,6 @@
   "@welcomeBackContinueGeneric": {"description": "welcomeBackContinueWith for a Solana wallet other than Phantom or Solflare."},
   "welcomeBackWalletBody": "Approve in your wallet to open your drives.",
   "@welcomeBackWalletBody": {"description": "Welcome back, for an account a browser wallet opens, under the account."},
-  "welcomeBackRelocks": "Your private drives lock again. Unlock them once to remember them. Drives others shared with you need their link again.",
-  "@welcomeBackRelocks": {"description": "Welcome back, for a browser wallet account saved before 3.0 under its old sign-in password: the remembered drive keys can't move to the wallet."},
   "welcomeBackDeclined": "It wasn't approved. Try again.",
   "@welcomeBackDeclined": {"description": "Welcome back: the wallet prompt was refused or not answered."},
   "welcomeBackMismatch": "Your wallet signed differently than before. Use a different account, then sign in again.",
