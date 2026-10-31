@@ -29,8 +29,9 @@ class ArDriveCheckBox extends StatefulWidget {
   /// reader.
   final bool inTabOrder;
 
-  /// What a screen reader calls the box when it has no [title]: the row it
-  /// ticks, say.
+  /// What a screen reader calls the box: the row it ticks, say, when it has
+  /// no [title], or the title as spoken when it is drawn differently.
+  /// Takes the place of [title] for a screen reader, never on screen.
   final String? semanticLabel;
 
   /// Whether it is ticked. Followed as it changes.
@@ -149,7 +150,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       checked: checked && state != CheckBoxState.indeterminate,
       mixed: state == CheckBoxState.indeterminate ? true : null,
       enabled: enabled,
-      label: widget.title ?? widget.semanticLabel,
+      label: widget.semanticLabel ?? widget.title,
       onTap: enabled ? _toggle : null,
       child: FocusableActionDetector(
         enabled: enabled,

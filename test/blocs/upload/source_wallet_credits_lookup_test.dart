@@ -616,4 +616,92 @@ void main() {
           ));
     });
   });
+
+  /// After a top-up from a sheet with no handler of its own, as on the
+  /// manifest steps: the sheet is read again so the credits show up.
+  group('refresh', () {
+    Future<void> settle() async {
+      for (var i = 0; i < 12; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('does nothing before the sheet was first prepared', () async {
+      final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+      addTearDown(bloc.close);
+
+      bloc.refresh();
+      await settle();
+
+      verifyNever(
+          () => preparationManager.prepareUpload(params: any(named: 'params')));
+      expect(bloc.state, isA<UploadPaymentMethodInitial>());
+    });
+
+    test('prepares again with the same params and shows the new balance',
+        () async {
+      final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+      addTearDown(bloc.close);
+      await prepare(bloc);
+      expect(
+          (bloc.state as UploadPaymentMethodLoaded)
+              .paymentMethodInfo
+              .sufficentCreditsBalance,
+          isFalse);
+
+      // The card payment went through.
+      when(() => preparationManager.prepareUpload(params: any(named: 'params')))
+          .thenAnswer(
+              (_) async => preparationWith(turboBalance: BigInt.from(1000)));
+      bloc.refresh();
+      await settle();
+
+      final calls = verify(() => preparationManager.prepareUpload(
+          params: captureAny(named: 'params'))).captured;
+      expect(calls, [same(params), same(params)]);
+      expect(
+          (bloc.state as UploadPaymentMethodLoaded)
+              .paymentMethodInfo
+              .sufficentCreditsBalance,
+          isTrue);
+    });
+
+    test('supersedes a preparation still under way', () async {
+      final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+      addTearDown(bloc.close);
+      final older = Completer<UploadPreparation>();
+      var calls = 0;
+      when(() => preparationManager.prepareUpload(params: any(named: 'params')))
+          .thenAnswer((_) {
+        calls++;
+        return calls == 1
+            ? older.future
+            : Future.value(preparationWith(turboBalance: BigInt.from(1000)));
+      });
+
+      await prepare(bloc);
+      bloc.refresh();
+      await settle();
+      older.complete(preparationWith(turboBalance: BigInt.zero));
+      await settle();
+
+      expect(calls, 2);
+      expect(
+          (bloc.state as UploadPaymentMethodLoaded)
+              .paymentMethodInfo
+              .sufficentCreditsBalance,
+          isTrue,
+          reason: 'the refreshed read is the one on screen');
+    });
+
+    test('is safe on a bloc that is closing or closed', () async {
+      final bloc = build(turboBalance: BigInt.zero, sourceAddress: null);
+      await prepare(bloc);
+
+      final closing = bloc.close();
+      expect(bloc.refresh, returnsNormally);
+      await closing;
+      expect(bloc.refresh, returnsNormally);
+    });
+  });
 }

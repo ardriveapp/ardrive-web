@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -248,8 +249,9 @@ void main() {
         (tester) async {
       await pumpAt(tester, const Size(1280, 800), desktop: true);
 
+      // Drawn with its last two words joined; see keepLastWordsTogether.
       const note =
-          'Small files upload free while your free upload allowance lasts.';
+          'Small files upload free while your free upload allowance\u00A0lasts.';
       final line = find.text(note);
       expect(line, findsOneWidget);
       // Inside the dashed card, under its buttons.
@@ -275,7 +277,23 @@ void main() {
       await pumpAt(tester, const Size(390, 844));
 
       expect(tester.takeException(), isNull);
-      expect(find.textContaining('upload free'), findsOneWidget);
+      final line = find.textContaining('upload free');
+      expect(line, findsOneWidget);
+
+      // No word left alone on its last line.
+      final text = tester.widget<Text>(line).data!;
+      final paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: line, matching: find.byType(RichText)));
+      double top(String word) {
+        final at = text.lastIndexOf(word);
+        return paragraph
+            .getBoxesForSelection(
+                TextSelection(baseOffset: at, extentOffset: at + word.length))
+            .first
+            .top;
+      }
+
+      expect(top('lasts.'), top('allowance'));
     });
 
     testWidgets('makes no free promise when Turbo uploads are off',

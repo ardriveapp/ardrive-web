@@ -93,6 +93,7 @@ class UploadReviewDialog extends StatefulWidget {
     this.primaryEnabled = true,
     this.paymentChoice,
     this.sourceWalletNotice,
+    this.canShareInApp = false,
     this.extras = const [],
     this.onShown,
     this.leading = const [],
@@ -130,6 +131,11 @@ class UploadReviewDialog extends StatefulWidget {
 
   /// Credits on the sign-in wallet, shown while credits are short.
   final Widget? sourceWalletNotice;
+
+  /// Whether [sourceWalletNotice] carries a Share credits button that works
+  /// here. Without one, sharing is a trip to Turbo, so Add credits stays the
+  /// way forward.
+  final bool canShareInApp;
 
   /// The rest, below the cost: names, options.
   final List<Widget> extras;
@@ -342,9 +348,11 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   }
 
   /// Short of credits, and the sign-in wallet's would cover it once shared,
-  /// with their notice on screen to share them from.
+  /// with their notice on screen and its Share credits button working here.
   bool _shareFirst(UploadReviewSummary summary) =>
-      summary.signInCreditsCover && widget.sourceWalletNotice != null;
+      summary.signInCreditsCover &&
+      widget.sourceWalletNotice != null &&
+      widget.canShareInApp;
 
   List<Widget> _notices(BuildContext context, UploadReviewSummary summary) {
     final l10n = appLocalizationsOf(context);

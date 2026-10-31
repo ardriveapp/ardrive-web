@@ -397,6 +397,14 @@ void main() {
       bool ticked() => tester
           .widget<ArDriveCheckBox>(find.byKey(const Key('recoverySaved')))
           .checked;
+      // Read with plain spaces, not the non-breaking one drawn.
+      final handle = tester.ensureSemantics();
+      expect(
+          find.bySemanticsLabel(
+              "I've saved my recovery phrase. ArDrive can't recover it."),
+          findsOneWidget);
+      handle.dispose();
+
       // The end of the last line, far from the box itself.
       await tester.tapAt(box.bottomRight - const Offset(4, 4));
       await tester.pump();

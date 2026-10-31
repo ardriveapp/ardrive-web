@@ -29,6 +29,8 @@ void main() {
     bool arFine = false,
     bool creditsFine = false,
     int costWinc = 100,
+    int? turboWinc,
+    bool unreachable = false,
   }) {
     final cost = UploadCostEstimate(
       pstFee: BigInt.zero,
@@ -52,6 +54,8 @@ void main() {
       uploadPlanForTurbo: _MockUploadPlan(),
       totalSize: 1,
       sourceWalletCredits: credits,
+      turboBalanceWinc: turboWinc == null ? null : BigInt.from(turboWinc),
+      turboUnreachable: unreachable,
     );
   }
 
@@ -294,6 +298,33 @@ void main() {
         greaterThan(tester.getTopLeft(find.text('Share credits')).dy),
         reason: 'second to Share',
       );
+    });
+
+    testWidgets('but not when they cover it exactly', (tester) async {
+      await pump(
+          tester, info(credits: credits, costWinc: credits.balance.toInt()));
+
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+      expect(find.text('Add credits'), findsNothing);
+    });
+
+    testWidgets('nor when some are here and the rest are there',
+        (tester) async {
+      await pump(
+          tester, info(credits: credits, costWinc: costWinc, turboWinc: 1));
+
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+      expect(find.text('Add credits'), findsNothing,
+          reason: 'the credits here and the shared ones cover it together');
+    });
+
+    testWidgets('nor while Turbo price is unknown', (tester) async {
+      await pump(tester,
+          info(credits: credits, costWinc: costWinc, unreachable: true));
+
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+      expect(find.text('Add credits'), findsNothing,
+          reason: 'a price nobody read is not one to fall short of');
     });
 
     testWidgets('but not while AR can pay', (tester) async {

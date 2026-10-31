@@ -108,11 +108,33 @@ void main() {
       footnote: 'Small files upload free.',
     )));
 
-    final line = find.text('Small files upload free.');
+    final line = find.text('Small files upload\u00A0free.');
     expect(line, findsOneWidget);
     expect(tester.getTopLeft(line).dy,
         greaterThan(tester.getBottomLeft(find.text('Upload')).dy));
     expect(tester.widget<Text>(line).style!.color,
         ArDriveColorTokens.darkMode().textMid);
+  });
+
+  testWidgets('a footnote keeps its last two words on one line',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(wrap(const ArDriveEmptyState(
+      title: 'Drop files',
+      footnote: 'Small files upload free while it lasts.',
+    )));
+
+    expect(find.text('Small files upload free while it\u00A0lasts.'),
+        findsOneWidget);
+    expect(find.bySemanticsLabel('Small files upload free while it lasts.'),
+        findsOneWidget,
+        reason: 'read with plain spaces');
+    handle.dispose();
+  });
+
+  test('keepLastWordsTogether joins only the last two words', () {
+    expect(keepLastWordsTogether('a b c'), 'a b\u00A0c');
+    expect(keepLastWordsTogether('one'), 'one');
+    expect(keepLastWordsTogether(''), '');
   });
 }

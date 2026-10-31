@@ -44,7 +44,8 @@ class ArDriveEmptyState extends StatelessWidget {
   final bool framed;
 
   /// A short, muted line under the actions: a detail worth knowing, not a
-  /// notice. No box, no icon, nothing to dismiss.
+  /// notice. No box, no icon, nothing to dismiss. Its last two words wrap
+  /// together; a screen reader hears it as given.
   final String? footnote;
 
   @override
@@ -123,7 +124,8 @@ class ArDriveEmptyState extends StatelessWidget {
               if (footnote != null) ...[
                 const SizedBox(height: ArDriveSpacing.md),
                 Text(
-                  footnote!,
+                  keepLastWordsTogether(footnote!),
+                  semanticsLabel: footnote,
                   textAlign: TextAlign.center,
                   style: typography.paragraphSmall(color: colorTokens.textMid),
                 ),

@@ -183,8 +183,10 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
               key: const Key('recoverySaved'),
               checked: _saved,
               // The last two words wrap together, so a phone never leaves
-              // one alone on the second line.
-              title: _keepLastWordsTogether(s.recoverySaved),
+              // one alone on the second line. A screen reader gets the text
+              // with plain spaces.
+              title: keepLastWordsTogether(s.recoverySaved),
+              semanticLabel: s.recoverySaved,
               onChange: (value) {
                 PlausibleEventTracker.trackClickBackedUpSeedPhraseCheckBox();
                 setState(() => _saved = value);
@@ -219,12 +221,4 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
       ),
     );
   }
-}
-
-/// [text] with its last space made non-breaking.
-String _keepLastWordsTogether(String text) {
-  final last = text.lastIndexOf(' ');
-  return last < 0
-      ? text
-      : '${text.substring(0, last)}\u00A0${text.substring(last + 1)}';
 }

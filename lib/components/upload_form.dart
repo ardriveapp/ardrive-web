@@ -1984,6 +1984,7 @@ class _UploadReadyWidget extends StatelessWidget {
                     cubit.setUploadMethod(method, info, canUpload),
               ),
             ),
+            canShareInApp: paymentBloc.canShareSourceWalletCredits,
             sourceWalletNotice: info.sourceWalletCredits == null
                 ? null
                 : SourceWalletCreditsNotice(

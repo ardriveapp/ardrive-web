@@ -112,7 +112,9 @@ void main() {
     cancels = 0;
   });
 
-  Widget host(UploadReviewSummary? s, {Widget? notice}) => ArDriveTheme(
+  Widget host(UploadReviewSummary? s,
+          {Widget? notice, bool canShare = false}) =>
+      ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
@@ -146,6 +148,7 @@ void main() {
                 onCancel: () => cancels++,
                 funding: funding,
                 sourceWalletNotice: notice,
+                canShareInApp: canShare,
               ),
             ),
           ),
@@ -153,13 +156,13 @@ void main() {
       );
 
   Future<void> pump(WidgetTester tester, UploadReviewSummary? s,
-      {Widget? notice}) async {
+      {Widget? notice, bool canShare = false}) async {
     // Made in the test's own zone, so its futures complete as the test pumps.
     funding = _FakeFunding();
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(host(s, notice: notice));
+    await tester.pumpWidget(host(s, notice: notice, canShare: canShare));
     await tester.pump();
   }
 
@@ -248,7 +251,8 @@ void main() {
     testWidgets('that cover it once shared: Share first, Add credits second',
         (tester) async {
       // 1 credit here and 5 on the sign-in wallet; it needs 5.875.
-      await pump(tester, summary(balance: 1, signIn: 5), notice: notice);
+      await pump(tester, summary(balance: 1, signIn: 5),
+          notice: notice, canShare: true);
 
       expect(find.byKey(const Key('signInNotice')), findsOneWidget);
       expect(button('Add credits'), findsNothing,
@@ -263,7 +267,21 @@ void main() {
 
     testWidgets('that would not cover it either: Add credits stays the button',
         (tester) async {
-      await pump(tester, summary(balance: 1, signIn: 2), notice: notice);
+      await pump(tester, summary(balance: 1, signIn: 2),
+          notice: notice, canShare: true);
+
+      expect(find.byKey(const Key('signInNotice')), findsOneWidget);
+      expect(button('Add credits'), findsOneWidget);
+      expect(link(), findsNothing);
+      expect(find.text('Upload'), findsNothing);
+    });
+
+    /// An Ethereum sign-in, or Solana where nothing here can sign the grant:
+    /// sharing means a trip to Turbo, so Upload must not wait on a Share
+    /// button that is not there.
+    testWidgets('that cover it but cannot be shared here: Add credits stays',
+        (tester) async {
+      await pump(tester, summary(balance: 1, signIn: 5), notice: notice);
 
       expect(find.byKey(const Key('signInNotice')), findsOneWidget);
       expect(button('Add credits'), findsOneWidget);
@@ -273,7 +291,7 @@ void main() {
 
     testWidgets('but no notice to share them from: Add credits stays',
         (tester) async {
-      await pump(tester, summary(balance: 1, signIn: 5));
+      await pump(tester, summary(balance: 1, signIn: 5), canShare: true);
 
       expect(button('Add credits'), findsOneWidget);
       expect(link(), findsNothing);
@@ -281,7 +299,7 @@ void main() {
 
     testWidgets('and a free upload: neither', (tester) async {
       await pump(tester, summary(freeStatus: FreeUploadStatus.free, signIn: 5),
-          notice: notice);
+          notice: notice, canShare: true);
 
       expect(find.text('Add credits'), findsNothing);
       expect(enabled(tester, 'Upload'), isTrue);
