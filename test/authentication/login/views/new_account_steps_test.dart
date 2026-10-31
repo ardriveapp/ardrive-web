@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/creating_account_view.dart';
 import 'package:ardrive/authentication/password/breached_password.dart';
@@ -299,12 +301,47 @@ void main() {
         });
       }
 
-      testWidgets('375 by 667 scrolls to Continue, nothing clipped',
-          (tester) async {
-        const size = Size(375, 667);
-        final scroll = await openSuggested(tester, size, dialog());
-        await expectContinueReachable(tester, scroll, size);
-      });
+      for (final variant in {
+        'no card': dialog,
+        ...variants,
+      }.entries) {
+        testWidgets(
+            'with ${variant.key}, 375 by 667 scrolls to Continue, '
+            'nothing clipped', (tester) async {
+          const size = Size(375, 667);
+          final scroll = await openSuggested(tester, size, variant.value());
+          await expectContinueReachable(tester, scroll, size);
+        });
+      }
+    });
+
+    testWidgets(
+        'a typed confirmation says it doesn\'t match, and stops saying so '
+        'once the password is changed to match it', (tester) async {
+      Finder field(String key) => find.descendant(
+          of: find.byKey(Key(key)), matching: find.byType(EditableText));
+      const mismatch = 'The confirmation password does not match.';
+      await pump(tester, dialog());
+
+      await tester.enterText(
+          field('signUpPassword'), 'Copper meadow 92 kites unfold');
+      await tester.enterText(
+          field('signUpConfirmPassword'), 'Velvet harbour 47 lanterns drift');
+      await tester.pump();
+      expect(find.text(mismatch), findsOneWidget);
+      expect(continueEnabled(tester), isFalse);
+
+      await tester.enterText(
+          field('signUpPassword'), 'Velvet harbour 47 lanterns drift');
+      await tester.pump();
+      expect(find.text(mismatch), findsNothing);
+      expect(continueEnabled(tester), isTrue);
+
+      await tester.enterText(
+          field('signUpPassword'), 'Copper meadow 92 kites unfold');
+      await tester.pump();
+      expect(find.text(mismatch), findsOneWidget);
+      expect(continueEnabled(tester), isFalse);
     });
 
     testWidgets('a short password is refused', (tester) async {
@@ -472,6 +509,80 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         await tester.pumpAndSettle();
         expect(find.text("Couldn't copy"), findsNothing);
+      });
+
+      testWidgets('a retry after a refusal that works says Copied',
+          (tester) async {
+        var refuse = true;
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData' && refuse) {
+            throw PlatformException(code: 'denied');
+          }
+          return null;
+        });
+        addTearDown(() => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null));
+        await pump(tester, dialog());
+        await suggest(tester);
+
+        await tester.tap(find.text('Copy'));
+        await tester.pump();
+        expect(find.text("Couldn't copy"), findsOneWidget);
+
+        refuse = false;
+        await tester.tap(find.text('Copy'));
+        await tester.pump();
+        expect(find.text('Copied!'), findsOneWidget);
+        expect(find.text("Couldn't copy"), findsNothing);
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('Suggest another clears what Copy said of the last one',
+          (tester) async {
+        clipboard(tester);
+        await pump(tester, dialog());
+        await suggest(tester);
+        await tester.tap(find.text('Copy'));
+        await tester.pump();
+        expect(find.text('Copied!'), findsOneWidget);
+
+        await tester.tap(find.text('Suggest another'));
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.pump();
+        expect(find.text('Copied!'), findsNothing);
+        await tester.pumpAndSettle(const Duration(seconds: 3));
+      });
+
+      testWidgets(
+          'a copy that answers after Suggest another says nothing of the '
+          'new one', (tester) async {
+        final answer = Completer<void>();
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') await answer.future;
+          return null;
+        });
+        addTearDown(() => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null));
+        await pump(tester, dialog());
+        await suggest(tester);
+        await tester.tap(find.text('Copy'));
+        await tester.pump();
+
+        await tester.tap(find.text('Suggest another'));
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 300)));
+        await tester.pumpAndSettle();
+
+        answer.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Copied!'), findsNothing);
+        expect(find.byKey(const Key('suggestedPassphraseCopyMessage')),
+            findsNothing);
       });
 
       testWidgets('leaves the caret after it, nothing selected',

@@ -331,6 +331,21 @@ class _SuggestedPassphraseState extends State<SuggestedPassphrase> {
   bool _showing = false;
   Timer? _hide;
 
+  /// Bumped when the phrase changes, so a copy of the last one that answers
+  /// late, or its message still up, never speaks for the new one.
+  int _revision = 0;
+
+  @override
+  void didUpdateWidget(covariant SuggestedPassphrase oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.phrase != widget.phrase) {
+      _revision++;
+      _hide?.cancel();
+      _copied = null;
+      _showing = false;
+    }
+  }
+
   @override
   void dispose() {
     _hide?.cancel();
@@ -340,6 +355,7 @@ class _SuggestedPassphraseState extends State<SuggestedPassphrase> {
   Future<void> _copy() async {
     // Asked for at once, inside the tap: a browser refuses a write that comes
     // later. Then waited on, because it can refuse this one too.
+    final revision = _revision;
     final write = Clipboard.setData(ClipboardData(text: widget.phrase));
 
     bool copied;
@@ -349,7 +365,7 @@ class _SuggestedPassphraseState extends State<SuggestedPassphrase> {
     } catch (_) {
       copied = false;
     }
-    if (!mounted) return;
+    if (!mounted || revision != _revision) return;
 
     // A retry while the last answer shows says the new one, for its own two
     // seconds.
