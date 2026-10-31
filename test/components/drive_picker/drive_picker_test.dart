@@ -263,6 +263,16 @@ void main() {
 
       await tester.tap(find.text('logo.png'));
       await tester.pumpAndSettle();
+      // Ticked, not marked by colour alone.
+      final ticks = find.descendant(
+        of: find.byType(DrivePickerRow),
+        matching: find.byWidgetPredicate(
+            (w) => w is ArDriveIcon && w.icon == ArDriveIcons.checkmark().icon),
+      );
+      expect(ticks, findsOneWidget);
+      Element rowOf(Finder finder) => tester.element(
+          find.ancestor(of: finder, matching: find.byType(DrivePickerRow)));
+      expect(rowOf(ticks), rowOf(find.text('logo.png')));
       await tester.tap(find.text('Use file'));
       await tester.pumpAndSettle();
       expect(chosen?.fileId, _logo.id);

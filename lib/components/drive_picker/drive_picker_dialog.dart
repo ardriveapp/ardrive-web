@@ -313,7 +313,9 @@ class DrivePickerRow extends StatelessWidget {
     final theme = ArDriveTheme.of(context).themeData;
     final colors = theme.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
-    final highlight = theme.dropdownTheme.hoverColor;
+    // Fills made for laying over a dialog, as its secondary buttons are: the
+    // explorer's row colours are the dialog's own in the light theme.
+    final highlight = colors.buttonSecondaryDefault;
     final fg = enabled ? colors.textHigh : colors.textXLow;
 
     return Semantics(
@@ -321,7 +323,7 @@ class DrivePickerRow extends StatelessWidget {
       selected: selected,
       enabled: enabled,
       child: Material(
-        color: selected ? colors.containerL2 : Colors.transparent,
+        color: selected ? colors.buttonSecondaryHover : Colors.transparent,
         borderRadius: BorderRadius.circular(ArDriveRadius.sm),
         child: InkWell(
           onTap: enabled ? onTap : null,
@@ -364,6 +366,11 @@ class DrivePickerRow extends StatelessWidget {
                       trailing!,
                       style: typography.paragraphSmall(color: colors.textMid),
                     ),
+                  ],
+                  // Not by colour alone: a chosen file is ticked.
+                  if (selected) ...[
+                    const SizedBox(width: ArDriveSpacing.xs),
+                    ArDriveIcons.checkmark(size: 18, color: colors.iconHigh),
                   ],
                   if (opens) ...[
                     const SizedBox(width: ArDriveSpacing.xs),
