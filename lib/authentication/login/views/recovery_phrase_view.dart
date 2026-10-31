@@ -182,7 +182,11 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
             ArDriveCheckBox(
               key: const Key('recoverySaved'),
               checked: _saved,
-              title: s.recoverySaved,
+              // The last two words wrap together, so a phone never leaves
+              // one alone on the second line. A screen reader gets the text
+              // with plain spaces.
+              title: keepLastWordsTogether(s.recoverySaved),
+              semanticLabel: s.recoverySaved,
               onChange: (value) {
                 PlausibleEventTracker.trackClickBackedUpSeedPhraseCheckBox();
                 setState(() => _saved = value);

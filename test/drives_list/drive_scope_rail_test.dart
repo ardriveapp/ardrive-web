@@ -82,12 +82,14 @@ void main() {
     expect(find.text('Shared drives'), findsNothing);
   });
 
-  // #120: ArDrive's glyphs where the icon font has them.
-  test('scope icons are ArDrive glyphs where there is one', () {
+  // #120, then #2444: the plain icons that name a drive's kind everywhere.
+  test('scope icons are the kinds\' own icons', () {
     expect(DriveScopeRail.iconFor(DriveScope.public),
         ArDriveIcons.publicDrive().icon);
-    expect(
-        DriveScopeRail.iconFor(DriveScope.private), ArDriveIcons.lock().icon);
+    expect(DriveScopeRail.iconFor(DriveScope.private),
+        ArDriveIcons.privateDrive().icon);
+    expect(DriveScopeRail.iconFor(DriveScope.sharedWithMe),
+        ArDriveIcons.sharedDrive().icon);
     expect(DriveScopeRail.iconFor(DriveScope.hidden),
         ArDriveIcons.eyeClosed().icon);
   });

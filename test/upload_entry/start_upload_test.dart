@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/services/config/config.dart';
+import 'package:drift/drift.dart' show Selectable;
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -18,6 +20,10 @@ import 'package:provider/provider.dart';
 import '../test_utils/utils.dart';
 
 class _MockActivityTracker extends Mock implements ActivityTracker {}
+
+class _MockFolderSelectable extends Mock implements Selectable<FolderEntry> {}
+
+class _MockFileSelectable extends Mock implements Selectable<FileEntry> {}
 
 final _work = Drive(
   id: 'work',
@@ -90,7 +96,18 @@ void main() {
         .thenReturn(syncingDriveId == null ? null : {syncingDriveId});
   }
 
-  Future<void> pressUpload(WidgetTester tester, {DriveDao? driveDao}) async {
+  Future<void> pressUpload(
+    WidgetTester tester, {
+    DriveDao? driveDao,
+    UploadPrompt? prompt,
+    bool webPagesOn = true,
+  }) async {
+    final config = MockConfigService();
+    when(() => config.config).thenReturn(AppConfig(
+      allowedDataItemSizeForTurbo: 0,
+      stripePublishableKey: '',
+      enableDriveStatePublishing: webPagesOn,
+    ));
     await tester.pumpWidget(
       ArDriveTheme(
         themeData: lightTheme(),
@@ -113,6 +130,7 @@ void main() {
                 ),
               ],
               ListenableProvider<AppRouterDelegate>.value(value: router),
+              RepositoryProvider<ConfigService>.value(value: config),
               BlocProvider<DrivesCubit>.value(value: drivesCubit),
               BlocProvider<DriveDetailCubit>.value(value: detail),
               BlocProvider<SyncCubit>.value(value: sync),
@@ -120,7 +138,11 @@ void main() {
             child: Scaffold(
               body: Builder(
                 builder: (context) => TextButton(
-                  onPressed: () => startUpload(context, isFolderUpload: false),
+                  onPressed: () => startUpload(
+                    context,
+                    isFolderUpload: false,
+                    prompt: prompt,
+                  ),
                   child: const Text('Upload'),
                 ),
               ),
@@ -226,5 +248,145 @@ void main() {
     );
 
     await tester.pump(AppRouterDelegate.uploadWaitLimit);
+  });
+
+  /// Web pages and Names hold no folder, and their explorer cubit stays
+  /// loading. Upload there used to queue an upload for an explorer that
+  /// never opened, and did nothing. It asks where instead, opening on the
+  /// last drive and folder the reader had open.
+  group('on Web pages', () {
+    late MockDriveDao driveDao;
+    final uploads = <({String driveId, String folderId, Drive? drive})>[];
+
+    Future<void> recordUpload(
+      BuildContext context, {
+      required String driveId,
+      required String parentFolderId,
+      required bool isFolderUpload,
+      Drive? drive,
+    }) async =>
+        uploads.add((driveId: driveId, folderId: parentFolderId, drive: drive));
+
+    FolderEntry entry(Drive drive, String id, String name, {String? parent}) =>
+        FolderEntry(
+          id: id,
+          driveId: drive.id,
+          name: name,
+          parentFolderId: parent,
+          path: '',
+          dateCreated: DateTime(2026),
+          lastUpdated: DateTime(2026),
+          isGhost: false,
+          isHidden: false,
+        );
+
+    void folder(Drive drive, FolderEntry entry, List<FolderEntry> subfolders) {
+      final one = _MockFolderSelectable();
+      when(() => one.getSingleOrNull()).thenAnswer((_) async => entry);
+      when(() => driveDao.folderById(folderId: entry.id)).thenReturn(one);
+      final many = _MockFolderSelectable();
+      when(() => many.get()).thenAnswer((_) async => subfolders);
+      when(() => driveDao.foldersInFolder(
+          driveId: drive.id, parentFolderId: entry.id)).thenReturn(many);
+      final files = _MockFileSelectable();
+      when(() => files.get()).thenAnswer((_) async => const []);
+      when(() => driveDao.filesInFolder(
+          driveId: drive.id, parentFolderId: entry.id)).thenReturn(files);
+    }
+
+    setUp(() {
+      uploads.clear();
+      syncState();
+      driveDao = MockDriveDao();
+      final photosRoot = entry(_photos, _photos.rootFolderId, _photos.name);
+      final holidays =
+          entry(_photos, 'holidays', 'Holidays', parent: photosRoot.id);
+      folder(_photos, photosRoot, [holidays]);
+      folder(_photos, holidays, const []);
+      folder(_work, entry(_work, _work.rootFolderId, _work.name), const []);
+      whenListen(
+        drivesCubit,
+        const Stream<DrivesState>.empty(),
+        initialState: DrivesLoadSuccess(
+          selectedDriveId: _photos.id,
+          userDrives: [_photos, _work],
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      );
+      router = AppRouterDelegate()
+        ..showingWebPages = true
+        ..driveId = _photos.id
+        ..driveFolderId = 'holidays';
+    });
+
+    testWidgets('asks where, on the last folder open', (tester) async {
+      await pressUpload(tester, driveDao: driveDao, prompt: recordUpload);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Upload file(s)'), findsOneWidget);
+      expect(find.text('Holidays'), findsOneWidget);
+      expect(find.text('This folder is empty'), findsOneWidget);
+      expect(find.text('Upload here'), findsOneWidget);
+      expect(router.pendingUpload, isNull,
+          reason: 'nothing waits for an explorer that will not open');
+      verifyNever(() => drivesCubit.selectDrive(any()));
+
+      // Back to the drive's root, where Holidays is a folder to open.
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('Photos'), findsWidgets);
+      expect(find.text('Holidays'), findsOneWidget);
+    });
+
+    testWidgets('Upload here uploads into the folder in view', (tester) async {
+      await pressUpload(tester, driveDao: driveDao, prompt: recordUpload);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Upload here'));
+      await tester.pumpAndSettle();
+
+      expect(uploads, [
+        (driveId: _photos.id, folderId: 'holidays', drive: _photos),
+      ]);
+      expect(find.text('Upload here'), findsNothing, reason: 'it closed');
+    });
+
+    testWidgets('and into another drive, when that is where the reader went',
+        (tester) async {
+      await pressUpload(tester, driveDao: driveDao, prompt: recordUpload);
+      await tester.pumpAndSettle();
+
+      // Up to the drives, then into Work.
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Work'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Upload here'));
+      await tester.pumpAndSettle();
+
+      expect(uploads, [
+        (driveId: _work.id, folderId: _work.rootFolderId, drive: _work),
+      ]);
+    });
+
+    testWidgets('with Web pages off, Upload does what it does on Your drives',
+        (tester) async {
+      // The drives list stands in for the page, so the drive opens with the
+      // upload waiting, and no picker asks where.
+      await pressUpload(
+        tester,
+        driveDao: driveDao,
+        prompt: recordUpload,
+        webPagesOn: false,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Upload here'), findsNothing);
+      expect(find.text('Upload to which drive?'), findsOneWidget);
+    });
   });
 }

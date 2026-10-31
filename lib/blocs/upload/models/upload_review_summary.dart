@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:equatable/equatable.dart';
@@ -11,7 +12,7 @@ import 'package:equatable/equatable.dart';
 /// that: the cost shown, the notice, and whether the main button is Upload or
 /// Add credits.
 class UploadReviewSummary extends Equatable {
-  const UploadReviewSummary({
+  UploadReviewSummary({
     required this.method,
     required this.isFree,
     required this.priceUnavailable,
@@ -23,7 +24,8 @@ class UploadReviewSummary extends Equatable {
     required this.creditsBalance,
     required this.usdCost,
     required this.arCost,
-  });
+    BigInt? signInWalletCredits,
+  }) : signInWalletCredits = signInWalletCredits ?? BigInt.zero;
 
   /// How this upload would be paid for.
   final UploadMethod method;
@@ -62,6 +64,16 @@ class UploadReviewSummary extends Equatable {
 
   /// What it costs from the wallet, in winston.
   final BigInt arCost;
+
+  /// Turbo Credits on the wallet the person signed in with, in winston
+  /// credits, which this account can't spend until they are shared to it.
+  /// Zero when there are none, or none are known. See [SourceWalletCredits].
+  final BigInt signInWalletCredits;
+
+  /// Short of credits, but the sign-in wallet's credits would cover it once
+  /// shared. Sharing them is then the way forward, not buying more.
+  bool get signInCreditsCover =>
+      needsCredits && creditsBalance + signInWalletCredits >= creditsCost;
 
   /// Paid with Turbo Credits and not covered: the review offers Add credits.
   bool get needsCredits =>
@@ -112,6 +124,7 @@ class UploadReviewSummary extends Equatable {
           creditsBalance: balance,
           usdCost: info.costEstimateTurbo?.usdUploadCost,
           arCost: arCost,
+          signInWalletCredits: info.sourceWalletCredits?.balance,
         );
 
     if (isFree) {
@@ -191,5 +204,6 @@ class UploadReviewSummary extends Equatable {
         creditsBalance,
         usdCost,
         arCost,
+        signInWalletCredits,
       ];
 }

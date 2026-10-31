@@ -1,4 +1,3 @@
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -28,9 +27,8 @@ Widget searchResultIcon(
       color: colorTokens.textHigh,
     );
   } else if (result is Drive) {
-    return result.privacy == DrivePrivacy.private.name
-        ? ArDriveIcons.privateDrive(size: size, color: colorTokens.iconHigh)
-        : ArDriveIcons.publicDrive(size: size, color: colorTokens.iconHigh);
+    // Its kind is in the line under its name.
+    return ArDriveIcons.drive(size: size, color: colorTokens.iconHigh);
   }
 
   return Icon(Icons.error, size: size);

@@ -1,3 +1,4 @@
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -100,28 +101,31 @@ class _DestinationRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Row(
               children: [
-                isPrivate
-                    ? ArDriveIcons.privateDrive(
-                        size: 18,
-                        color: colorTokens.textMid,
-                      )
-                    : ArDriveIcons.publicDrive(
-                        size: 18,
-                        color: colorTokens.textMid,
-                      ),
+                ArDriveIcons.drive(size: 18, color: colorTokens.textMid),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        drive.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.paragraphLarge(
-                          color: colorTokens.textHigh,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              drive.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: typography.paragraphLarge(
+                                color: colorTokens.textHigh,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                          ),
+                          // Private marked after the name, as in the list.
+                          if (isPrivate) ...[
+                            const SizedBox(width: 6),
+                            const PrivateDriveLock(size: 16),
+                          ],
+                        ],
                       ),
                       if (isUnsynced)
                         Text(

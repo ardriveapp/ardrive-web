@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -81,7 +82,7 @@ void main() {
     );
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {void Function()? onTopup}) async {
     await tester.binding.setSurfaceSize(const Size(900, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -106,6 +107,7 @@ void main() {
                     child: UploadPaymentMethodView(
                       onUploadMethodChanged: (_, __, ___) {},
                       onError: () {},
+                      onTurboTopupSucess: onTopup,
                     ),
                   ),
                 ),
@@ -138,5 +140,31 @@ void main() {
       reason: 'the reader still needs to know where the credits are',
     );
     expect(find.text('Share credits'), findsNothing);
+  });
+
+  /// A sheet that is not told what to do after a top-up, as on the manifest
+  /// steps, reads its balance and price again so the credits show up.
+  group('after a top-up', () {
+    void Function() topupDone(WidgetTester tester) => tester
+        .widget<PaymentMethodSelector>(find.byType(PaymentMethodSelector))
+        .onTurboTopupSucess;
+
+    testWidgets('reads the sheet again', (tester) async {
+      when(() => bloc.canShareSourceWalletCredits).thenReturn(false);
+      await pump(tester);
+
+      topupDone(tester)();
+      verify(() => bloc.refresh()).called(1);
+    });
+
+    testWidgets('or does what the caller asks instead', (tester) async {
+      when(() => bloc.canShareSourceWalletCredits).thenReturn(false);
+      var called = 0;
+      await pump(tester, onTopup: () => called++);
+
+      topupDone(tester)();
+      expect(called, 1);
+      verifyNever(() => bloc.refresh());
+    });
   });
 }

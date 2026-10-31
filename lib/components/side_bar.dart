@@ -1126,11 +1126,12 @@ class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
               hasAlert: state.drivesWithAlerts.contains(drive.id),
               drive: drive,
               onTap: () => _openDrive(context, drive),
-              // Not lit on the Names or Web pages page: the page is where
-              // the reader is.
+              // Not lit on the Names, Web pages or Account and security
+              // page: the page is where the reader is.
               isSelected: state.selectedDriveId == drive.id &&
                   !context.watch<AppRouterDelegate>().showingNames &&
-                  !context.watch<AppRouterDelegate>().showingWebPages,
+                  !context.watch<AppRouterDelegate>().showingWebPages &&
+                  !context.watch<AppRouterDelegate>().showingAccount,
               // Hiding is something a reader does to their own drives, so a
               // drive shared with them is never drawn as hidden.
               isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,

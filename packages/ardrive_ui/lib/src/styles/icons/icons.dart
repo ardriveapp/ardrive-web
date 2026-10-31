@@ -499,14 +499,33 @@ class ArDriveIcons {
         color: color,
       );
 
-  // private drive
-  static ArDriveIcon privateDrive({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.private_drive,
+  /// A drive, in a list of them: one plain archive box whatever its kind,
+  /// as Google Drive draws every drive alike. Its kind is marked only where
+  /// it matters, by a lock after a private drive's name.
+  static ArDriveIcon drive({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.drive,
         size: size,
         color: color,
       );
+
+  /// Private, said with a plain lock: the mark after a private drive's name,
+  /// and the Private heading.
+  static ArDriveIcon privateDrive({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.lock_outline,
+        size: size,
+        color: color,
+      );
+
+  /// Public, said with a plain globe.
   static ArDriveIcon publicDrive({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.public_drive,
+        icon: Icons.language,
+        size: size,
+        color: color,
+      );
+
+  /// Shared with me, said with plain people.
+  static ArDriveIcon sharedDrive({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.people_outline,
         size: size,
         color: color,
       );

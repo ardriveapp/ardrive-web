@@ -100,6 +100,7 @@ class ArDriveIconButton extends StatelessWidget {
     this.size = 16,
     this.tooltip,
     this.scale,
+    this.focusNode,
   });
 
   final ArDriveIcon icon;
@@ -107,6 +108,9 @@ class ArDriveIconButton extends StatelessWidget {
   final double size;
   final String? tooltip;
   final bool? scale;
+
+  /// For moving keyboard focus to it from outside.
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +130,7 @@ class ArDriveIconButton extends StatelessWidget {
       child: ArDriveFocusable(
         onActivate: onPressed == null ? null : () => onPressed(),
         radius: ArDriveRadius.control,
+        focusNode: focusNode,
         child: GestureDetector(
           onTap: onPressed,
           child: HoverWidget(

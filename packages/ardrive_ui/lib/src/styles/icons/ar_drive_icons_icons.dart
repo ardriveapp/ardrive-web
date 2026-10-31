@@ -213,4 +213,8 @@ class ArDriveIconsData {
       IconData(0xe85d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+
+  /// A drive: an archive box, things kept for good.
+  static const IconData drive =
+      IconData(0xe881, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

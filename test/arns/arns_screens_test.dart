@@ -11,6 +11,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:ardrive/publication/domain/publication_config.dart';
+import 'package:ardrive/account/presentation/account_page.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
 import 'package:ardrive/arns/data/arns_name_verifier.dart';
@@ -22,7 +23,6 @@ import 'package:ardrive/arns/domain/arns_cache_time.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
-import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_profile_row.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -1233,18 +1233,16 @@ void main() {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Text('Profile card',
+                      Text('Account and security',
                           style:
                               typography.paragraphSmall(color: colors.textLow)),
                       const SizedBox(height: 8),
                       for (final status in [
                         ArNSWalletStatus.connected,
-                        ArNSWalletStatus.wrongAccount,
-                        ArNSWalletStatus.disconnected,
                         ArNSWalletStatus.notLinked,
                       ]) ...[
                         Container(
-                          width: 281,
+                          width: 342,
                           padding: const EdgeInsets.only(bottom: 12),
                           color: ArDriveTheme.of(context)
                               .themeData
@@ -1252,7 +1250,7 @@ void main() {
                               .backgroundColor,
                           child: BlocProvider<ArNSWalletCubit>.value(
                             value: walletCubit(_wallet(status)),
-                            child: const ArNSWalletProfileRow(),
+                            child: const NamesWalletRow(),
                           ),
                         ),
                         const SizedBox(height: 8),

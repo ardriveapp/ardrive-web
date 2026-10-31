@@ -57,13 +57,17 @@ void main() {
   UploadStart decide({
     DriveDetailState? detailState,
     bool showingDrivesList = false,
+    bool showingFolderlessPage = false,
     String? openDriveId,
+    String? openFolderId,
     DrivesState? drivesState,
   }) =>
       decideUploadStart(
         detailState: detailState ?? DriveDetailLoadInProgress(),
         showingDrivesList: showingDrivesList,
+        showingFolderlessPage: showingFolderlessPage,
         openDriveId: openDriveId,
+        openFolderId: openFolderId,
         drivesState: drivesState ?? drives([photos]),
       );
 
@@ -166,6 +170,92 @@ void main() {
     test('offers nothing before the drives are known', () {
       final step = decide(
         showingDrivesList: true,
+        drivesState: DrivesLoadInProgress(),
+      );
+
+      expect(step, isA<UploadNotYet>());
+    });
+  });
+
+  // Names and Web pages hold no folder. Their explorer cubit is built
+  // against no drive and stays loading, which once read as "a drive opening"
+  // and queued an upload for an explorer that never came: Upload did nothing.
+  group('on a page that is no folder', () {
+    test('asks where, opening on the last drive and folder open', () {
+      final step = decide(
+        showingFolderlessPage: true,
+        openDriveId: website.id,
+        openFolderId: 'campaigns',
+        drivesState: drives([photos, website], selected: website.id),
+      );
+
+      expect(
+        step,
+        isA<UploadChooseFolder>()
+            .having((s) => s.driveId, 'drive', website.id)
+            .having((s) => s.folderId, 'folder', 'campaigns')
+            .having((s) => s.drives, 'drives', [website, photos]),
+      );
+    });
+
+    test('even with one drive: the folder is still to choose', () {
+      final step = decide(
+        showingFolderlessPage: true,
+        openDriveId: photos.id,
+        drivesState: drives([photos], selected: photos.id),
+      );
+
+      expect(
+        step,
+        isA<UploadChooseFolder>()
+            .having((s) => s.driveId, 'drive', photos.id)
+            .having((s) => s.folderId, 'folder', isNull),
+      );
+    });
+
+    test("ignores the page's loading explorer state", () {
+      final step = decide(
+        showingFolderlessPage: true,
+        detailState: DriveDetailLoadInProgress(),
+        openDriveId: photos.id,
+        drivesState: drives([photos, website], selected: photos.id),
+      );
+
+      expect(step, isNot(isA<UploadWhenOpen>()));
+      expect(step, isA<UploadChooseFolder>());
+    });
+
+    test('the last folder only when it is in the drive it opens on', () {
+      // The last drive was somebody else's, so it is not offered; its
+      // folder is not looked for in the drive that is.
+      final shared = _drive('shared');
+      final step = decide(
+        showingFolderlessPage: true,
+        openDriveId: shared.id,
+        openFolderId: 'their-folder',
+        drivesState: drives([photos], shared: [shared], selected: shared.id),
+      );
+
+      expect(
+        step,
+        isA<UploadChooseFolder>()
+            .having((s) => s.driveId, 'drive', photos.id)
+            .having((s) => s.folderId, 'folder', isNull),
+      );
+    });
+
+    test('asks for a drive first when there is none', () {
+      final step = decide(
+        showingFolderlessPage: true,
+        drivesState: drives(const []),
+      );
+
+      expect(step, isA<UploadNeedsDrive>());
+    });
+
+    test('offers nothing before the drives are known', () {
+      final step = decide(
+        showingFolderlessPage: true,
         drivesState: DrivesLoadInProgress(),
       );
 

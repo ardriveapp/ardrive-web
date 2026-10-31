@@ -84,19 +84,19 @@ class DriveScopeRail extends StatelessWidget {
     }
   }
 
-  /// ArDrive's own glyphs where the icon font has one: the drive rows' public
-  /// drive, the private lock and the hide eye. Home and Shared have none, so
-  /// they stay Material's.
+  /// Plain icons, one meaning each: the same globe, lock and people that
+  /// name a drive's kind elsewhere, and ArDrive's own hide eye.
   static IconData iconFor(DriveScope scope) {
     switch (scope) {
       case DriveScope.all:
         return Icons.home_outlined;
+      // Plain, one meaning each, as the marks in the rows draw them.
       case DriveScope.public:
         return ArDriveIcons.publicDrive().icon;
       case DriveScope.private:
-        return ArDriveIcons.lock().icon;
+        return ArDriveIcons.privateDrive().icon;
       case DriveScope.sharedWithMe:
-        return Icons.swap_horiz_outlined;
+        return ArDriveIcons.sharedDrive().icon;
       case DriveScope.hidden:
         return ArDriveIcons.eyeClosed().icon;
     }

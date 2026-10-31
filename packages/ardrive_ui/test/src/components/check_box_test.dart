@@ -454,4 +454,25 @@ void main() {
     await tester.tap(find.byType(ArDriveCheckBox));
     expect(changes, [true]);
   });
+
+  /// A title drawn with a non-breaking space is still read with a plain one.
+  testWidgets('a semantic label is what a screen reader hears over the title',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => const MaterialApp(
+        home: Scaffold(
+          body: ArDriveCheckBox(
+            title: 'Saved it\u00A0all.',
+            semanticLabel: 'Saved it all.',
+          ),
+        ),
+      ),
+    ));
+
+    expect(find.text('Saved it\u00A0all.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Saved it all.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Saved it\u00A0all.'), findsNothing);
+    handle.dispose();
+  });
 }

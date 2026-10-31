@@ -196,8 +196,25 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       );
 
       // Short of AR is already said on the wallet card; the notice is the way
-      // out.
-      return notice;
+      // out. While the credits there would cover it once shared, it is the
+      // only one: no offer to buy more beside it.
+      final cost = info.costEstimateTurbo?.totalCost;
+      final shortEvenShared = !info.turboUnreachable &&
+          cost != null &&
+          info.turboBalance + credits.balance < cost;
+
+      if (!shortEvenShared) {
+        return notice;
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          notice,
+          _addCreditsLink(context),
+        ],
+      );
     }
 
     final bothShort = !widget.uploadMethodInfo.sufficentCreditsBalance &&
@@ -208,20 +225,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         widget.uploadMethodInfo.sufficientArBalance) {
       // The Turbo card already says the credits are short; what is left to
       // offer is the way to add some.
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.only(top: ArDriveSpacing.sm),
-          child: ArDriveLink(
-            text: appLocalizationsOf(context).addCreditsToUpload,
-            isAction: true,
-            onTap: () => showTurboTopupModal(
-              context,
-              onSuccess: widget.onTurboTopupSucess,
-            ),
-          ),
-        ),
-      );
+      return _addCreditsLink(context);
     }
 
     // The wallet card already says AR is short. When the credits are short
@@ -241,7 +245,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           child: ArDriveNotice(
             type: ArDriveNoticeType.error,
             message: appLocalizationsOf(context).notEnoughCreditsOrAr,
-            actionLabel: appLocalizationsOf(context).addCreditsToUpload,
+            actionLabel: appLocalizationsOf(context).uploadAddCredits,
             onAction: () => showTurboTopupModal(
               context,
               onSuccess: widget.onTurboTopupSucess,
@@ -252,6 +256,22 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     }
     return const SizedBox();
   }
+
+  /// Opens the Turbo top-up; on success the sheet reads its balance again.
+  Widget _addCreditsLink(BuildContext context) => Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(top: ArDriveSpacing.sm),
+          child: ArDriveLink(
+            text: appLocalizationsOf(context).uploadAddCredits,
+            isAction: true,
+            onTap: () => showTurboTopupModal(
+              context,
+              onSuccess: widget.onTurboTopupSucess,
+            ),
+          ),
+        ),
+      );
 
   Widget _buildCongestionWarning(BuildContext context) {
     return SizedBox(

@@ -1,7 +1,7 @@
 part of 'arns_wallet_cubit.dart';
 
 /// Where the ArNS wallet stands, for the button that asks for it at commit
-/// and the profile card row (docs/NAMES.md, "Wallets and paying").
+/// and the Account and security row (docs/NAMES.md, "Wallets and paying").
 enum ArNSWalletStatus {
   /// Names are off, or nobody is signed in.
   unavailable,
