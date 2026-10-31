@@ -153,13 +153,40 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
 
   /// Try again, from the notice: one more round of attempts, now, for the
   /// person who asked, whatever this session has tried already.
-  void _tryAgain() {
+  ///
+  /// Claims the request first, as the first attempt did, so another tab
+  /// cannot make a second drive alongside. Buying credits ended the request,
+  /// so it is made again.
+  Future<void> _tryAgain() async {
     final profile = context.read<ProfileCubit>().state;
     if (_running != null || profile is! ProfileLoggedIn) return;
 
     final wallet = profile.user.walletAddress;
+    final firstDrive = widget.firstDrive ?? FirstDrive();
+    final failure = _failure;
+    var claimed = false;
+
+    try {
+      claimed = await firstDrive.claim(wallet);
+      if (!claimed && failure == FirstDriveOutcome.needsCredits) {
+        await firstDrive.request(wallet);
+        claimed = await firstDrive.claim(wallet);
+      }
+    } catch (e, stackTrace) {
+      logger.e('Could not read the first drive request', e, stackTrace);
+    }
+
+    if (!mounted || _running != null) return;
+
+    if (!claimed) {
+      // Another tab holds it and is making the drive, which then appears in
+      // the list here too.
+      setState(() => _failure = null);
+      return;
+    }
+
     _failedThisSession.remove(wallet);
-    _await(_begin(widget.firstDrive ?? FirstDrive(), wallet));
+    await _await(_begin(firstDrive, wallet));
   }
 
   static Future<FirstDriveOutcome> _makeFirstDrive({

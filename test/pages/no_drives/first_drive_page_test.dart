@@ -257,6 +257,33 @@ void main() {
     expect(asked, 2);
     expect(find.byKey(const Key('firstDriveFailedNotice')), findsNothing);
     verify(() => firstDrive.done()).called(1);
+    // Claimed again, as the first attempt was, so no other tab joins in.
+    verify(() => firstDrive.claim('new-wallet')).called(2);
+  });
+
+  testWidgets('Try again leaves it to a tab that already holds it',
+      (tester) async {
+    final claims = [true, false];
+    var claimed = 0;
+    when(() => firstDrive.claim('new-wallet'))
+        .thenAnswer((_) async => claims[claimed++]);
+    var asked = 0;
+
+    await pump(
+        tester,
+        (_) => () async {
+              asked++;
+              return FirstDriveOutcome.failed;
+            });
+    await tester.pump();
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(asked, 1);
+    expect(find.byKey(const Key('firstDriveFailedNotice')), findsNothing);
+    expect(find.text('Getting started'), findsOneWidget);
   });
 
   testWidgets('one that needs credits says so, with Buy credits',

@@ -287,6 +287,14 @@ class _SearchBoxState extends State<SearchBox> {
       return;
     }
 
+    // A failed search: Enter is the notice's Try again, which is out of
+    // reach of a keyboard in the field without closing the dropdown.
+    final state = _session.bloc.state;
+    if (state.status == SearchStatus.failed && state.query == _session.query) {
+      _session.submit();
+      return;
+    }
+
     final highlighted = _highlighted;
 
     if (_isOpen && highlighted != null && highlighted != _seeAllRowId) {

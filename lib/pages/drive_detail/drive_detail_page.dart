@@ -480,8 +480,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         ),
                       );
                     } else if (driveDetailState is DriveDetailLoadSuccess) {
-                      final isShowingHiddenFiles =
-                          hideState is ShowingHiddenItems;
                       final bool hasSubfolders;
                       final bool hasFiles;
 
@@ -493,18 +491,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         hasSubfolders =
                             contents.any((e) => e is FolderDataTableItem);
                         hasFiles = contents.any((e) => e is FileDataTableItem);
-                      } else if (isShowingHiddenFiles) {
+                      } else {
+                        // Hidden items count, shown or not: a folder of only
+                        // hidden items reaches the table, which says so and
+                        // offers to show them. Gated here it read as empty.
                         hasSubfolders =
                             driveDetailState.folderInView.subfolders.isNotEmpty;
                         hasFiles =
                             driveDetailState.folderInView.files.isNotEmpty;
-                      } else {
-                        hasSubfolders = driveDetailState.folderInView.subfolders
-                            .where((e) => !e.isHidden)
-                            .isNotEmpty;
-                        hasFiles = driveDetailState.folderInView.files
-                            .where((e) => !e.isHidden)
-                            .isNotEmpty;
                       }
 
                       final isOwner = isDriveOwner(
@@ -1204,14 +1198,16 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
         Expanded(
           child: (hasSubfolders || hasFiles)
-              ? _foldsPublicationHeader(
-                  state.folderInView.folder.id,
-                  ArDriveItemList(
-                    controller: _scrollController,
-                    drive: state.currentDrive,
-                    items: filteredItems,
-                    selectedItem: state.selectedItem,
-                  ))
+              ? filteredItems.isEmpty
+                  ? _allItemsHidden(context)
+                  : _foldsPublicationHeader(
+                      state.folderInView.folder.id,
+                      ArDriveItemList(
+                        controller: _scrollController,
+                        drive: state.currentDrive,
+                        items: filteredItems,
+                        selectedItem: state.selectedItem,
+                      ))
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
                   isPrivate: state.currentDrive.isPrivate,

@@ -16,6 +16,19 @@ void _openRow(BuildContext context, ArDriveDataTableItem item) {
   context.read<DriveDetailCubit>().openDataItem(item);
 }
 
+/// A folder whose every item is hidden: said, with the way to show them.
+Widget _allItemsHidden(BuildContext context) => Center(
+      child: SingleChildScrollView(
+        child: ArDriveEmptyState(
+          key: const Key('allItemsHidden'),
+          icon: ArDriveIcons.eyeClosed(size: 32),
+          title: appLocalizationsOf(context).allItemsHidden,
+          actionLabel: appLocalizationsOf(context).showHiddenItems,
+          onAction: () => setShowHiddenItems(context, true),
+        ),
+      ),
+    );
+
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
@@ -139,17 +152,7 @@ Widget _buildDataListContent(
           // columns menu that holds that option belongs to the table, and
           // there is no table to open it from.
           if (items.isNotEmpty) {
-            return Center(
-              child: SingleChildScrollView(
-                child: ArDriveEmptyState(
-                  key: const Key('allItemsHidden'),
-                  icon: ArDriveIcons.eyeClosed(size: 32),
-                  title: appLocalizationsOf(context).allItemsHidden,
-                  actionLabel: appLocalizationsOf(context).showHiddenItems,
-                  onAction: () => setShowHiddenItems(context, true),
-                ),
-              ),
-            );
+            return _allItemsHidden(context);
           }
           return emptyState;
         }

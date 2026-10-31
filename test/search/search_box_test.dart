@@ -333,6 +333,26 @@ void main() {
     expect(find.text('report.pdf'), findsOneWidget);
   });
 
+  testWidgets('Enter after a failed search runs it again', (tester) async {
+    var calls = 0;
+    when(() => repository.search('rep')).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) throw StateError('database closed');
+      return [report, reports];
+    });
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    expect(find.byKey(const Key('searchFailedNotice')), findsOneWidget);
+
+    await enter(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(FileSearchModal), findsNothing);
+    expect(find.byKey(const Key('searchFailedNotice')), findsNothing);
+    expect(find.text('report.pdf'), findsOneWidget);
+  });
+
   testWidgets('Down and Up move through the rows and back to the field',
       (tester) async {
     await tester.pumpWidget(host());

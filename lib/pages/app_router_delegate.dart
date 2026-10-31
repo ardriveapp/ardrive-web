@@ -670,8 +670,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   namesOn: namesPageIsOn(context),
                   webPagesOn: webPagesAreOn(context),
                 )) {
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) => notifyListeners());
+                  // Replacing the off page's history entry, not adding one:
+                  // Back would land on it and bounce straight here again.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (context.mounted) {
+                      Router.neglect(context, notifyListeners);
+                    } else {
+                      notifyListeners();
+                    }
+                  });
                 }
                 shellKey = 'drivesList';
                 // A separate subtree from the explorer's, deliberately. The

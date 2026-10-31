@@ -67,6 +67,15 @@ void main() {
       findsOneWidget,
     );
     expect(find.bySemanticsLabel('Columns'), findsOneWidget);
+    // The named node is the one a screen reader activates.
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Columns')),
+      matchesSemantics(
+        label: 'Columns',
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
     semantics.dispose();
   });
 
