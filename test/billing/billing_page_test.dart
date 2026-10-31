@@ -765,8 +765,13 @@ void main() {
 
     test('tiny USD equivalents are not shown as 0', () {
       expect(
+        Purchase.fromJson({'type': 'crypto', 'usdEquivalent': 0.009998})
+            .usdText,
+        '~\$0.01',
+      );
+      expect(
         Purchase.fromJson({'type': 'crypto', 'usdEquivalent': 0.004}).usdText,
-        '~<\$0.01',
+        '<\$0.01',
       );
       expect(
         Purchase.fromJson({'type': 'crypto', 'usdEquivalent': 0}).usdText,

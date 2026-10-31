@@ -158,7 +158,7 @@ class Purchase {
   String? get usdText {
     final usd = usdEquivalent;
     if (kind != PurchaseKind.crypto || usd == null || usd <= 0) return null;
-    if (usd < 0.01) return '~<\$0.01';
+    if (usd < 0.005) return '<\$0.01';
     return '~\$${usd.toStringAsFixed(2)}';
   }
 
