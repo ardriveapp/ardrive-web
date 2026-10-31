@@ -43,8 +43,14 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final List<ArDriveDataTableItem> currentFolderContents;
 
+  /// The reader's column choices, by column index. A column with no entry
+  /// takes its default, which for License is [driveHasLicensedFiles].
   final Map<int, bool> columnVisibility;
   final Key? forceRebuildKey;
+
+  /// Whether any file in this drive carries a license. The License column is
+  /// shown by default only then: in most drives it was a column of blanks.
+  final bool driveHasLicensedFiles;
 
   /// Whether this drive's first sync on this device is still reading it, so
   /// an empty folder may be empty only so far. See
@@ -72,6 +78,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.pathSegments,
     this.revealSelectedItem = false,
     this.contentsStillArriving = false,
+    this.driveHasLicensedFiles = false,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -95,8 +102,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? revealSelectedItem,
     Map<int, bool>? columnVisibility,
     bool? contentsStillArriving,
+    bool? driveHasLicensedFiles,
   }) =>
       DriveDetailLoadSuccess(
+        driveHasLicensedFiles:
+            driveHasLicensedFiles ?? this.driveHasLicensedFiles,
         contentsStillArriving:
             contentsStillArriving ?? this.contentsStillArriving,
         revealSelectedItem: revealSelectedItem ?? this.revealSelectedItem,
@@ -143,6 +153,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedItem,
         revealSelectedItem,
         contentsStillArriving,
+        driveHasLicensedFiles,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

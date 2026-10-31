@@ -1225,6 +1225,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
           }
 
+          final driveHasLicensedFiles = await _driveHasLicensedFiles(driveId);
+
           final List<BreadCrumbRowInfo> pathSegments =
               await _breadcrumbBuilder.buildForFolder(
             folderId: folderContents.folder.id,
@@ -1254,6 +1256,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 pathSegments: pathSegments,
                 driveIsEmpty: driveIsEmpty,
                 contentsStillArriving: contentsMayStillArrive(drive),
+                driveHasLicensedFiles: driveHasLicensedFiles,
                 showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
                 // The table is kept when the folder is unchanged, so one
@@ -1288,6 +1291,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
+                driveHasLicensedFiles: driveHasLicensedFiles,
                 showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
               ),
@@ -1737,6 +1741,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
+  /// The column the explorer shows by default only when the drive has a
+  /// licensed file. See [DriveDetailLoadSuccess.driveHasLicensedFiles].
+  static const licenseColumnIndex = 4;
+
   Future<Map<int, bool>> getTableColumnVisibility() async {
     final columnVisibility = <int, bool>{};
 
@@ -1745,10 +1753,37 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         'drive_detail_column_$i',
       );
 
-      columnVisibility[i] = isVisible ?? true;
+      if (isVisible != null) {
+        columnVisibility[i] = isVisible;
+      } else if (i != licenseColumnIndex) {
+        // License is left out when the reader never chose: its default
+        // depends on the drive, so the table decides it from
+        // [DriveDetailLoadSuccess.driveHasLicensedFiles].
+        columnVisibility[i] = true;
+      }
     }
 
     return columnVisibility;
+  }
+
+  /// Whether the License column is shown: the reader's choice when there is
+  /// one, otherwise whether anything in the drive is licensed.
+  static bool showsLicenseColumn({
+    required Map<int, bool> columnVisibility,
+    required bool driveHasLicensedFiles,
+  }) =>
+      columnVisibility[licenseColumnIndex] ?? driveHasLicensedFiles;
+
+  /// Read for every load, so a license added in this drive brings the column
+  /// in. Whether to offer a column is not worth failing a folder over, so a
+  /// read that fails leaves it at its default, hidden.
+  Future<bool> _driveHasLicensedFiles(String driveId) async {
+    try {
+      return await _driveDao.driveHasLicensedFiles(driveId);
+    } catch (e) {
+      logger.w('Could not read whether drive $driveId has licensed files: $e');
+      return false;
+    }
   }
 
   Future<LocalKeyValueStore> _store() async {

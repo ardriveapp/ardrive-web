@@ -1316,7 +1316,10 @@ class ArDriveItemListTile extends StatelessWidget {
             // finger needs.
             constraints:
                 const BoxConstraints(minHeight: ArDriveDataTable.rowHeight),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: mobileExplorerRowEndPadding,
+              vertical: 8,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.max,
               children: [
@@ -1418,6 +1421,10 @@ class ArDriveItemListTile extends StatelessWidget {
   }
 }
 
+/// A phone explorer row's padding at its ends, which the folder header's
+/// menu button shares so the two menus line up.
+const double mobileExplorerRowEndPadding = 16;
+
 class MobileFolderNavigation extends StatelessWidget {
   final List<BreadCrumbRowInfo> path;
   final String driveName;
@@ -1484,7 +1491,9 @@ class MobileFolderNavigation extends StatelessWidget {
                             if (isPrivate)
                               const Padding(
                                 padding: EdgeInsets.only(right: 8),
-                                child: PrivateDriveLock(),
+                                // The sidebar's plain padlock, not the
+                                // drive-with-a-lock glyph.
+                                child: PrivateDriveLock(plain: true),
                               ),
                             Expanded(
                               child: Text(
@@ -1495,9 +1504,17 @@ class MobileFolderNavigation extends StatelessWidget {
                                 // line was cut through the middle.
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: ArDriveTypographyNew.of(context)
-                                    .paragraphNormal(
-                                        fontWeight: ArFontWeight.semiBold),
+                                // The page title's style, as the drives
+                                // page sets its title: heading3 Bold. It was
+                                // paragraph-normal, smaller than the rows.
+                                style:
+                                    ArDriveTypographyNew.of(context).heading3(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colorTokens
+                                      .textHigh,
+                                  fontWeight: ArFontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -1514,39 +1531,69 @@ class MobileFolderNavigation extends StatelessWidget {
               if (state is DriveDetailLoadSuccess) {
                 final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
                     state.currentDrive.ownerAddress);
+                final shownFolder = state.folderInView.folder;
 
-                return _DriveMenu(
-                  builder: (context, isSyncing) => ArDriveDropdown(
+                // Inside a folder the header names the folder, so its menu
+                // is the folder's. It was the drive's, so Rename and Hide
+                // acted on the whole drive while reading as the folder's.
+                if (shownFolder.id != state.currentDrive.rootFolderId) {
+                  final folderItem = DriveDataTableItemMapper.fromFolderEntry(
+                    shownFolder,
+                    0,
+                    isOwner,
+                  );
+
+                  return ArDriveDropdown(
+                    key: const ValueKey('mobile-folder-header-menu'),
                     anchor: const Aligned(
                       follower: Alignment.topRight,
                       target: Alignment.bottomRight,
                     ),
-                    items: driveMenuItems(
+                    items: _withShowHidden(
                       context,
-                      drive: state.currentDrive,
-                      isOwner: isOwner,
-                      isSynced: true,
-                      isSyncing: isSyncing,
-                      zipName: publicationConfigOf(context)?.title,
-                      onMoreInfo: () =>
-                          context.read<DriveDetailCubit>().selectDataItem(
-                                DriveDataTableItemMapper.fromDrive(
-                                  state.currentDrive,
-                                  (_) => null,
-                                  0,
-                                  isOwner,
+                      folderMenuItems(
+                        context,
+                        folder: folderItem,
+                        drive: state.currentDrive,
+                        isOpen: true,
+                        zipName: () => folderItem.name,
+                        onMoreInfo: () => context
+                            .read<DriveDetailCubit>()
+                            .selectDataItem(folderItem),
+                      ),
+                    ),
+                    child: _headerMenuButton(context),
+                  );
+                }
+
+                return _DriveMenu(
+                  builder: (context, isSyncing) => ArDriveDropdown(
+                    key: const ValueKey('mobile-drive-header-menu'),
+                    anchor: const Aligned(
+                      follower: Alignment.topRight,
+                      target: Alignment.bottomRight,
+                    ),
+                    items: _withShowHidden(
+                      context,
+                      driveMenuItems(
+                        context,
+                        drive: state.currentDrive,
+                        isOwner: isOwner,
+                        isSynced: true,
+                        isSyncing: isSyncing,
+                        zipName: publicationConfigOf(context)?.title,
+                        onMoreInfo: () =>
+                            context.read<DriveDetailCubit>().selectDataItem(
+                                  DriveDataTableItemMapper.fromDrive(
+                                    state.currentDrive,
+                                    (_) => null,
+                                    0,
+                                    isOwner,
+                                  ),
                                 ),
-                              ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 8,
-                      ),
-                      child: HoverWidget(
-                        child: ArDriveIcons.kebabMenu(),
                       ),
                     ),
+                    child: _headerMenuButton(context),
                   ),
                 );
               }
@@ -1557,6 +1604,29 @@ class MobileFolderNavigation extends StatelessWidget {
       ),
     );
   }
+
+  /// The header's menu button, its glyph on the same right edge as the
+  /// rows' below it: their 16 px padding. It was 24, so the header's sat
+  /// left of theirs.
+  /// The header's menu, then the phone's Show hidden items, which has no
+  /// columns menu to live in here. See [showHiddenItemsGroup].
+  List<ArDriveDropdownItem> _withShowHidden(
+    BuildContext context,
+    List<ArDriveDropdownItem> items,
+  ) =>
+      menuWithDividers([items, showHiddenItemsGroup(context)]);
+
+  Widget _headerMenuButton(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: mobileExplorerRowEndPadding,
+          top: 8,
+          bottom: 8,
+        ),
+        child: HoverWidget(
+          child: ArDriveIcons.kebabMenu(),
+        ),
+      );
 
   String _pathToName(String path) {
     if (path.isEmpty) {

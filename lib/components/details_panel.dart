@@ -534,14 +534,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       if (state.drive.isPrivate) ...[
         sizedBoxHeight16px,
-        DetailsPanelItem(
-          leading: Text(
-            widget.item.signatureType ?? '?',
-            textAlign: TextAlign.right,
+        // Named: a bare "Signature type: 1" meant nothing to a reader. Left
+        // out when the drive does not say.
+        if (widget.item.signatureType case final version?)
+          DetailsPanelItem(
+            leading: Text(
+              appLocalizationsOf(context).driveKeyWalletSignature(version),
+              textAlign: TextAlign.right,
+            ),
+            itemTitle: appLocalizationsOf(context).driveKeyFrom,
           ),
-          // TODO: Localize
-          itemTitle: 'Signature type',
-        ),
         if (_ownsSignedIn(state.drive.ownerAddress)) ...[
           sizedBoxHeight16px,
           RememberedOnThisDevice(driveId: state.drive.id),
@@ -597,14 +599,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       if (state.drive.isPrivate) ...[
         sizedBoxHeight16px,
-        DetailsPanelItem(
-          leading: Text(
-            widget.item.signatureType ?? '?',
-            textAlign: TextAlign.right,
+        // Named: a bare "Signature type: 1" meant nothing to a reader. Left
+        // out when the drive does not say.
+        if (widget.item.signatureType case final version?)
+          DetailsPanelItem(
+            leading: Text(
+              appLocalizationsOf(context).driveKeyWalletSignature(version),
+              textAlign: TextAlign.right,
+            ),
+            itemTitle: appLocalizationsOf(context).driveKeyFrom,
           ),
-          // TODO: Localize
-          itemTitle: 'Signature type',
-        ),
       ],
       const SizedBox(height: 24),
       // Sync is in the drive's menu in the panel's header.

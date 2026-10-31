@@ -438,6 +438,31 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// A table's columns: the chooser for which columns a table shows. The
+  /// icon font has no columns glyph, and a bare plus read as "add an item".
+  static ArDriveIcon columns({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.view_column_outlined,
+        size: size,
+        color: color,
+      );
+
+  /// A table of rows: a drive's file list exported as a spreadsheet. Not the
+  /// download arrow, because the export is a list of the files, not the
+  /// files themselves.
+  static ArDriveIcon table({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.table_view_outlined,
+        size: size,
+        color: color,
+      );
+
+  /// A clock turning back: a record of what happened, such as past syncs.
+  /// Not the info glyph, which More info uses.
+  static ArDriveIcon history({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.history,
+        size: size,
+        color: color,
+      );
+
   static ArDriveIcon cloudSync({double? size, Color? color}) => ArDriveIcon(
         icon: Icons.cloud_sync,
         size: size,

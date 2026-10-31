@@ -833,6 +833,21 @@ class SyncCubit extends Cubit<SyncState> {
     _schedulePendingConfirmation();
   }
 
+  /// After a sync that got through, the confirmation watch takes over what
+  /// it left pending.
+  ///
+  /// A sync writes every file's data transaction as pending, and its own
+  /// confirmation pass is budgeted for an ordinary sync: thirty seconds, at
+  /// nine ids a query. On a first sync of a drive that is thousands of ids,
+  /// so most were left pending, and nothing asked again: the watch started
+  /// only on a write. Every old file then read as "Waiting to be mined" until
+  /// the next sync, which settled a few hundred more. With nothing pending
+  /// this is one local read, and the watch stops.
+  void _settleWhatIsStillPending() {
+    if (isClosed) return;
+    watchForPendingConfirmations();
+  }
+
   void _schedulePendingConfirmation() {
     _pendingConfirmationWatch?.cancel();
 
@@ -1386,6 +1401,7 @@ class SyncCubit extends Cubit<SyncState> {
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
         trigger: trigger,
       ));
+      _settleWhatIsStillPending();
       unawaited(_recordSyncRun(
         SyncRunOutcome.completedWithErrors,
         trigger,
@@ -1394,6 +1410,7 @@ class SyncCubit extends Cubit<SyncState> {
     } else if (ranToCompletion) {
       _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
       _emitIfOpen(_syncComplete(trigger, deep: deepSync));
+      _settleWhatIsStillPending();
       unawaited(_recordSyncRun(
         SyncRunOutcome.completed,
         trigger,
@@ -1652,10 +1669,12 @@ class SyncCubit extends Cubit<SyncState> {
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
         trigger: trigger,
       ));
+      _settleWhatIsStillPending();
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
       _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
       _emitIfOpen(_syncComplete(trigger, deep: deepSync));
+      _settleWhatIsStillPending();
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
       // The failure stands - see the same branch in [startSync].

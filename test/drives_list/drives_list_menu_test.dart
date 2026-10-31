@@ -152,6 +152,54 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  // #30: More info on a drive not synced here went to its "not synced" card,
+  // and the request lingered to open the panel by itself later.
+  group('More info', () {
+    Future<void> openWith(
+      WidgetTester tester, {
+      required bool isSynced,
+      void Function(String id)? onShowDetails,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(host(Align(
+        alignment: Alignment.topLeft,
+        child: DriveActionsMenu(
+          isSynced: isSynced,
+          drive: drive(),
+          isOwner: true,
+          onShowDetails: onShowDetails,
+        ),
+      )));
+      await tester.tap(find.byType(DriveActionsMenu));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('on desktop opens the page\'s own details, synced or not',
+        (tester) async {
+      final shown = <String>[];
+      await openWith(tester, isSynced: false, onShowDetails: shown.add);
+
+      await tester.tap(find.text('More info'));
+      await tester.pumpAndSettle();
+
+      expect(shown, ['drive-a']);
+    });
+
+    testWidgets('on a phone is left out for a drive not synced here',
+        (tester) async {
+      await openWith(tester, isSynced: false);
+
+      expect(find.text('More info'), findsNothing);
+    });
+
+    testWidgets('on a phone is offered for a synced drive', (tester) async {
+      await openWith(tester, isSynced: true);
+
+      expect(find.text('More info'), findsOneWidget);
+    });
+  });
+
   group('the sync it offers, while a sync runs', () {
     ArDriveDropdownItemTile itemNamed(WidgetTester tester, String name) =>
         tester.widget<ArDriveDropdownItemTile>(
@@ -334,7 +382,7 @@ void main() {
         'More info',
         'Share drive',
         'Create snapshot',
-        'Export drive contents',
+        'Export contents',
         'Download',
         'Hide',
       ]);
@@ -350,7 +398,7 @@ void main() {
         'Sync this drive',
         'More info',
         'Share drive',
-        'Export drive contents',
+        'Export contents',
         'Download',
         'Detach drive',
       ]);
