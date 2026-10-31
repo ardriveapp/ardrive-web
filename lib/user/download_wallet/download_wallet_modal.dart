@@ -8,13 +8,15 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-void showDownloadWalletModal(BuildContext context) {
+/// Asks for the password, then downloads the wallet as a keyfile. [ioUtils]
+/// saves the file; a test passes its own.
+void showDownloadWalletModal(BuildContext context, {ArDriveIOUtils? ioUtils}) {
   showArDriveDialog(
     context,
     content: BlocProvider<DownloadWalletBloc>(
       create: (_) => DownloadWalletBloc(
         ardriveAuth: context.read<ArDriveAuth>(),
-        ardriveIOUtils: ArDriveIOUtils(),
+        ardriveIOUtils: ioUtils ?? ArDriveIOUtils(),
       ),
       child: DownloadWalletModal(),
     ),

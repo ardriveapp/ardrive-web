@@ -1132,20 +1132,15 @@ class _PointsToCell extends StatelessWidget {
   }
 }
 
-/// Links an ArNS wallet from the Names page or the profile card.
-Future<void> showArNSWalletDialog(
-  BuildContext context, {
-  bool changing = false,
-}) {
+/// Links an ArNS wallet from the Names page or Account and security.
+Future<void> showArNSWalletDialog(BuildContext context) {
   final strings = appLocalizationsOf(context);
   final walletCubit = context.read<ArNSWalletCubit>();
   final content = BlocProvider.value(
     value: walletCubit,
     child: Builder(
       builder: (dialogContext) => ArDriveStandardModalNew(
-        title: changing
-            ? strings.arnsChangeArNSWallet
-            : strings.arnsLinkSolanaWallet,
+        title: strings.arnsLinkSolanaWallet,
         width: 440,
         scrollableContent: true,
         content: Column(
@@ -1164,7 +1159,6 @@ Future<void> showArNSWalletDialog(
             ),
             const SizedBox(height: ArDriveSpacing.md),
             ArNSWalletChooser(
-              changing: changing,
               onLinked: () => Navigator.of(dialogContext).pop(),
             ),
           ],
@@ -1186,9 +1180,7 @@ Future<void> showArNSWalletDialog(
         child: Builder(
           builder: (sheetContext) => ArDriveBottomSheet(
             closeLabel: strings.close,
-            title: changing
-                ? strings.arnsChangeArNSWallet
-                : strings.arnsLinkSolanaWallet,
+            title: strings.arnsLinkSolanaWallet,
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
@@ -1205,7 +1197,6 @@ Future<void> showArNSWalletDialog(
                 ),
                 const SizedBox(height: ArDriveSpacing.md),
                 ArNSWalletChooser(
-                  changing: changing,
                   onLinked: () => Navigator.of(sheetContext).pop(),
                 ),
               ],

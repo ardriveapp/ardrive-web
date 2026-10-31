@@ -13,6 +13,8 @@ external Object get _globalThis;
 
 String? _activeProvider;
 
+String? activeProvider() => _activeProvider;
+
 dynamic _callBridge(String method, List<dynamic> args) {
   final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
   if (bridge == null) {

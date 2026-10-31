@@ -15,6 +15,7 @@ import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/account/presentation/account_page.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/arns/presentation/resume/arns_resume_scope.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
@@ -81,6 +82,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// Whether the Web pages page is what is on screen: what the user has
   /// published. Like the Names page, a drive stays selected under it.
   bool showingWebPages = false;
+
+  /// Whether the Account and security page is what is on screen, from the
+  /// profile menu. Like the Names page, a drive stays selected under it.
+  bool showingAccount = false;
+
+  /// What the Account and security page covers, for its back arrow on a
+  /// phone. Null when it was opened from its address.
+  ({bool drivesList, bool names, String? name, bool webPages})? _beforeAccount;
 
   /// The scope the drives list opens on, from a drive heading in the nav or
   /// the Web pages page's way to public drives.
@@ -388,6 +397,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         names: showingNames,
         arnsName: showingNames ? shownName : null,
         webPages: showingWebPages,
+        account: showingAccount,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -563,19 +573,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
               // Redirect the user away from sign in if they are already signed in.
               if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
-                signingIn = false;
-                gettingStarted = false;
-
-                // And land on the list of drives rather than inside one the
-                // app has not looked at yet. Only when there is nothing else
-                // to honour: a deep link - a drive, a folder, a shared file, a
-                // raw transaction - has already set its target in
-                // `setNewRoutePath`, and is left exactly as it was.
-                if (!hasARouteToHonour && !showingNames && !showingWebPages) {
-                  showingDrivesList = true;
-                }
-
-                notifyListeners();
+                landAfterSignIn();
               }
             },
             builder: (context, state) {
@@ -631,6 +629,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               } else if (gettingStarted) {
                 shellKey = 'getStarted';
                 shell = const LoginPage(gettingStarted: true);
+              } else if (showsAccount(state)) {
+                shellKey = 'account';
+                // The Names page's shape: the sidebar reads an explorer
+                // cubit, and a drive chosen in it opens that drive.
+                shell = BlocProvider(
+                  create: (context) => _driveDetailCubit(context, rootPath),
+                  child: AccountShell(onOpenDrive: openDriveFromList),
+                );
               } else if (showingNames &&
                   canShowDrivesList(state) &&
                   namesPageIsOn(context)) {
@@ -1127,6 +1133,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingDrivesList = false;
     showingNames = false;
     showingWebPages = false;
+    showingAccount = false;
     this.driveId = driveId;
 
     // A row tap has no folder in view and opens the drive at its root. A search
@@ -1204,6 +1211,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     drivesListScope = scope;
     showingNames = false;
     showingWebPages = false;
+    showingAccount = false;
     signingIn = false;
     gettingStarted = false;
     // Going back to the list abandons whatever a search asked for - all of it,
@@ -1241,14 +1249,76 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingNames = true;
     shownName = name;
     showingWebPages = false;
+    showingAccount = false;
     _leaveForAPage();
   }
 
   /// The Web pages page, from the nav's Web pages heading.
   void showWebPages() {
     showingWebPages = true;
+    showingAccount = false;
     showingNames = false;
     _leaveForAPage();
+  }
+
+  /// Off the sign-in page once signed in. It lands on the list of drives
+  /// rather than inside one the app has not looked at yet, but only when
+  /// there is nothing else to honour: a deep link (a drive, a folder, a
+  /// shared file, a raw transaction, or the Names, Web pages or Account and
+  /// security page) has already set its target in `setNewRoutePath`, and is
+  /// left exactly as it was.
+  @visibleForTesting
+  void landAfterSignIn() {
+    signingIn = false;
+    gettingStarted = false;
+
+    if (!hasARouteToHonour &&
+        !showingNames &&
+        !showingWebPages &&
+        !showingAccount) {
+      showingDrivesList = true;
+    }
+
+    notifyListeners();
+  }
+
+  /// Whether the Account and security page is what [build] shows: asked for,
+  /// and somebody signed in to show it to.
+  @visibleForTesting
+  bool showsAccount(ProfileState profileState) =>
+      showingAccount && canShowDrivesList(profileState);
+
+  /// The Account and security page, from the profile menu.
+  void showAccount() {
+    if (!showingAccount) {
+      _beforeAccount = (
+        drivesList: showingDrivesList,
+        names: showingNames,
+        name: shownName,
+        webPages: showingWebPages,
+      );
+    }
+    showingAccount = true;
+    showingNames = false;
+    showingWebPages = false;
+    _leaveForAPage();
+  }
+
+  /// Back from the Account and security page to what it covered: the drives
+  /// list when it was opened from its address.
+  void closeAccount() {
+    final before = _beforeAccount;
+    _beforeAccount = null;
+    showingAccount = false;
+    if (before == null) {
+      showDrivesList();
+      return;
+    }
+    showingDrivesList = before.drivesList;
+    showingNames = before.names;
+    shownName = before.name;
+    showingWebPages = before.webPages;
+    notifyListeners();
   }
 
   /// What the Names and Web pages pages leave behind: every other screen.
@@ -1360,6 +1430,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingNames = configuration.names;
     shownName = configuration.names ? configuration.arnsName : null;
     showingWebPages = configuration.webPages;
+    showingAccount = configuration.account;
+    _beforeAccount = null;
     drivesListScope = DriveScope.all;
     driveId = configuration.driveId;
     driveName = configuration.driveName;
@@ -1370,7 +1442,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _routeLink = configuration.driveId == null ||
             configuration.drivesList ||
             configuration.names ||
-            configuration.webPages
+            configuration.webPages ||
+            configuration.account
         ? null
         : RouteLink(
             driveId: configuration.driveId!,
@@ -1479,6 +1552,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingDrivesList = false;
     showingNames = false;
     showingWebPages = false;
+    showingAccount = false;
 
     this.driveId = driveId;
     driveName = null;
@@ -1513,6 +1587,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingDrivesList = false;
     showingNames = false;
     showingWebPages = false;
+    showingAccount = false;
     notifyListeners();
   }
 
@@ -1610,6 +1685,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingDrivesList = false;
     showingNames = false;
     showingWebPages = false;
+    showingAccount = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;
