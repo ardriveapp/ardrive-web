@@ -372,7 +372,9 @@ class NewButton extends StatelessWidget {
     return decideUploadStart(
       detailState: context.read<DriveDetailCubit>().state,
       showingDrivesList: router.showingDrivesList,
+      showingFolderlessPage: router.showingFolderlessPage,
       openDriveId: router.driveId,
+      openFolderId: router.driveFolderId,
       drivesState: context.read<DrivesCubit>().state,
     );
   }

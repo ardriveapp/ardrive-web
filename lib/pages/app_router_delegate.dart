@@ -333,6 +333,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   ProfileCubit? profileCubit;
 
   bool get tryingToViewDrive => driveId != null;
+
+  /// A page that holds no folder and is not the drives list: Names, a name's
+  /// page, Web pages. [driveId] and [driveFolderId] stay the last ones open.
+  bool get showingFolderlessPage => showingNames || showingWebPages;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
   bool get isViewingRawTransaction => rawTransactionId != null;

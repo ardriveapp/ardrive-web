@@ -49,6 +49,22 @@ final class UploadChooseDrive extends UploadStart {
   final List<Drive> drives;
 }
 
+/// On a page that is not a folder (Names, Web pages): where the files go is
+/// asked first, as Google Drive asks, in the drive picker. It opens on
+/// [driveId]'s [folderId] (its root when null), the last place the reader
+/// had open when that is one of [drives].
+final class UploadChooseFolder extends UploadStart {
+  const UploadChooseFolder(
+    this.drives, {
+    required this.driveId,
+    this.folderId,
+  });
+
+  final List<Drive> drives;
+  final String driveId;
+  final String? folderId;
+}
+
 /// The drives are not known yet, so nothing can be offered truthfully.
 final class UploadNotYet extends UploadStart {
   const UploadNotYet();
@@ -60,12 +76,28 @@ final class UploadNotYet extends UploadStart {
 /// is showing none. [showingDrivesList] wins over the explorer's state: the
 /// cubit the drives list provides is built against no drive, and what it
 /// reports says nothing about where the reader is.
+///
+/// [showingFolderlessPage] is a page such as Names or Web pages, which holds
+/// no folder. Its explorer cubit is built against no drive and stays
+/// loading, so it wins over the explorer's state too; [openDriveId] and
+/// [openFolderId] are then the drive and folder last open, kept by the
+/// router underneath.
 UploadStart decideUploadStart({
   required DriveDetailState detailState,
   required bool showingDrivesList,
   required String? openDriveId,
   required DrivesState drivesState,
+  bool showingFolderlessPage = false,
+  String? openFolderId,
 }) {
+  if (showingFolderlessPage) {
+    return _chooseFolder(
+      drivesState: drivesState,
+      openDriveId: openDriveId,
+      openFolderId: openFolderId,
+    );
+  }
+
   if (!showingDrivesList) {
     if (detailState is DriveDetailLoadSuccess) {
       return UploadHere(
@@ -104,4 +136,31 @@ UploadStart decideUploadStart({
   }
 
   return UploadChooseDrive(destinations);
+}
+
+UploadStart _chooseFolder({
+  required DrivesState drivesState,
+  required String? openDriveId,
+  required String? openFolderId,
+}) {
+  if (drivesState is! DrivesLoadSuccess) {
+    return const UploadNotYet();
+  }
+
+  final destinations = uploadDestinations(
+    ownedDrives: drivesState.userDrives,
+    lastSelectedDriveId: openDriveId ?? drivesState.selectedDriveId,
+  );
+
+  if (destinations.isEmpty) {
+    return const UploadNeedsDrive();
+  }
+
+  // The last drive used goes first; its folder only if it is that drive's.
+  final start = destinations.first;
+  return UploadChooseFolder(
+    destinations,
+    driveId: start.id,
+    folderId: start.id == openDriveId ? openFolderId : null,
+  );
 }

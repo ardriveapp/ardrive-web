@@ -76,11 +76,17 @@ import 'package:responsive_builder/responsive_builder.dart';
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
 import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
 
+/// Picks files for [parentFolderId] and opens the upload dialog for them.
+///
+/// [drive] is the drive [driveId] names. Left out, it is the one the
+/// explorer's [DriveDetailCubit] has open; a page with no drive open (Names,
+/// Web pages) hands it in.
 Future<void> promptToUpload(
   BuildContext context, {
   required String driveId,
   required String parentFolderId,
   required bool isFolderUpload,
+  Drive? drive,
   List<IOFile>? files,
   bool autoReplaceConflicts = false,
 }) async {
@@ -108,7 +114,8 @@ Future<void> promptToUpload(
   final createManifestCubit = CreateManifestCubit(
     profileCubit: context.read<ProfileCubit>(),
     manifestRepository: manifestRepository,
-    drive: (driveDetailCubit.state as DriveDetailLoadSuccess).currentDrive,
+    drive: drive ??
+        (driveDetailCubit.state as DriveDetailLoadSuccess).currentDrive,
     auth: context.read<ArDriveAuth>(),
     folderRepository: context.read<FolderRepository>(),
   );

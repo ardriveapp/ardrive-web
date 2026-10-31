@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/drive_create_form.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -44,7 +45,9 @@ Future<void> startUpload(
   final step = decideUploadStart(
     detailState: context.read<DriveDetailCubit>().state,
     showingDrivesList: router.showingDrivesList,
+    showingFolderlessPage: router.showingFolderlessPage,
     openDriveId: router.driveId,
+    openFolderId: router.driveFolderId,
     drivesState: drivesCubit.state,
   );
 
@@ -105,6 +108,30 @@ Future<void> startUpload(
             isFolderUpload,
           ),
         ),
+      );
+
+    case UploadChooseFolder(:final drives, :final driveId, :final folderId):
+      // Asked here, as Google Drive asks from a page that is no folder: the
+      // page has no drive open to upload into.
+      final strings = appLocalizationsOf(context);
+      await showDrivePicker(
+        context,
+        title: isFolderUpload ? strings.uploadFolder : strings.uploadFiles,
+        drives: drives,
+        driveId: driveId,
+        folderId: folderId,
+        showsPrivacy: true,
+        actionLabel: (_) => strings.uploadHere,
+        onChoose: (choice) {
+          if (!context.mounted) return;
+          promptToUpload(
+            context,
+            drive: choice.drive,
+            driveId: choice.drive.id,
+            parentFolderId: choice.folder.id,
+            isFolderUpload: isFolderUpload,
+          );
+        },
       );
 
     case UploadNeedsDrive():

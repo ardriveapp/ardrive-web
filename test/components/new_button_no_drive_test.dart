@@ -98,6 +98,7 @@ void main() {
     DrivesState? drivesState,
     Drive? drive,
     FolderWithContents? currentFolder,
+    bool webPages = false,
   }) async {
     // No drive open, unless a test says otherwise: what the drives list
     // route provides.
@@ -124,7 +125,8 @@ void main() {
         state is DriveDetailLoadSuccess ||
         openDriveId != null;
     router
-      ..showingDrivesList = !inDrive
+      ..showingDrivesList = !inDrive && !webPages
+      ..showingWebPages = webPages
       ..driveId = openDriveId ??
           (state is DriveDetailLoadUnsynced ? state.drive.id : null);
 
@@ -482,6 +484,28 @@ void main() {
         find.text('This drive is syncing. Try again once it finishes.'),
         findsOneWidget,
       );
+    });
+  });
+
+  /// Web pages holds no folder, and its explorer cubit stays loading with
+  /// the last drive still selected underneath. That read as a drive opening:
+  /// Upload queued an upload for an explorer that never came, and did
+  /// nothing. Upload now asks where; the folder actions, with no folder to
+  /// go into, are left out as on the drives list.
+  group('on Web pages', () {
+    testWidgets('offers uploading, and no folder actions', (tester) async {
+      await pumpMenu(
+        tester,
+        webPages: true,
+        openDriveId: 'photos',
+        state: DriveDetailLoadInProgress(),
+      );
+
+      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload folder').isDisabled, isFalse);
+      for (final action in ['New folder', 'New note', 'New file pin']) {
+        expect(find.text(action), findsNothing, reason: action);
+      }
     });
   });
 

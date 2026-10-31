@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:drift/drift.dart' show Selectable, Value;
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -18,6 +19,10 @@ import 'package:provider/provider.dart';
 import '../test_utils/utils.dart';
 
 class _MockActivityTracker extends Mock implements ActivityTracker {}
+
+class _MockFolderSelectable extends Mock implements Selectable<FolderEntry> {}
+
+class _MockFileSelectable extends Mock implements Selectable<FileEntry> {}
 
 final _work = Drive(
   id: 'work',
@@ -226,5 +231,67 @@ void main() {
     );
 
     await tester.pump(AppRouterDelegate.uploadWaitLimit);
+  });
+
+  /// Web pages and Names hold no folder, and their explorer cubit stays
+  /// loading. Upload there used to queue an upload for an explorer that
+  /// never opened, and did nothing. It asks where instead, opening on the
+  /// last drive and folder the reader had open.
+  testWidgets('on Web pages asks where, on the last folder open',
+      (tester) async {
+    syncState();
+    final root = FolderEntry(
+      id: _photos.rootFolderId,
+      driveId: _photos.id,
+      name: _photos.name,
+      path: '',
+      dateCreated: DateTime(2026),
+      lastUpdated: DateTime(2026),
+      isGhost: false,
+      isHidden: false,
+    );
+    final holidays = root.copyWith(
+      id: 'holidays',
+      name: 'Holidays',
+      parentFolderId: Value(root.id),
+    );
+    final driveDao = MockDriveDao();
+    void folder(FolderEntry entry, List<FolderEntry> subfolders) {
+      final one = _MockFolderSelectable();
+      when(() => one.getSingleOrNull()).thenAnswer((_) async => entry);
+      when(() => driveDao.folderById(folderId: entry.id)).thenReturn(one);
+      final many = _MockFolderSelectable();
+      when(() => many.get()).thenAnswer((_) async => subfolders);
+      when(() => driveDao.foldersInFolder(
+          driveId: _photos.id, parentFolderId: entry.id)).thenReturn(many);
+      final files = _MockFileSelectable();
+      when(() => files.get()).thenAnswer((_) async => const []);
+      when(() => driveDao.filesInFolder(
+          driveId: _photos.id, parentFolderId: entry.id)).thenReturn(files);
+    }
+
+    folder(root, [holidays]);
+    folder(holidays, const []);
+    router = AppRouterDelegate()
+      ..showingWebPages = true
+      ..driveId = _photos.id
+      ..driveFolderId = 'holidays';
+
+    await pressUpload(tester, driveDao: driveDao);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upload file(s)'), findsOneWidget);
+    expect(find.text('Holidays'), findsOneWidget);
+    expect(find.text('This folder is empty'), findsOneWidget);
+    expect(find.text('Upload here'), findsOneWidget);
+    expect(router.pendingUpload, isNull,
+        reason: 'nothing waits for an explorer that will not open');
+    verifyNever(() => drivesCubit.selectDrive(any()));
+
+    // Back to the drive's root, where Holidays is a folder to open.
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Photos'), findsOneWidget);
+    expect(find.text('Holidays'), findsOneWidget);
   });
 }

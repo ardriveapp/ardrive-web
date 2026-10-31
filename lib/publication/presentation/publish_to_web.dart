@@ -1,4 +1,7 @@
+import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -94,6 +97,50 @@ Future<void> openPublishToWeb(
   }
   if (!context.mounted) return;
   await promptToPublish(context, drive: drive, folder: folder);
+}
+
+/// Publish on the Web pages page: the drive picker, to choose a public
+/// drive, folder or file, then the same publishing its menu opens. Opens on
+/// the drive and folder last open, when that drive can be published.
+///
+/// Only public drives are offered, as a private drive's and folder's menus
+/// offer no publishing. A private file's page is still published from its
+/// own menu.
+Future<void> pickAndPublishToWeb(BuildContext context) {
+  final strings = appLocalizationsOf(context);
+  final router = context.read<AppRouterDelegate>();
+  final drivesState = context.read<DrivesCubit>().state;
+  final drives = [
+    if (drivesState is DrivesLoadSuccess)
+      for (final drive in drivesState.userDrives)
+        if (!drive.isHidden && offersPublishToWeb(context, drive)) drive,
+  ];
+  return showDrivePicker(
+    context,
+    title: strings.publishToWeb,
+    drives: drives,
+    driveId: router.driveId,
+    folderId: router.driveFolderId,
+    noDrivesMessage: strings.noPublicDrives,
+    // A pinned file's data belongs to someone else.
+    canChooseFile: (file) => !file.isPinned,
+    actionLabel: (state) => state.fileId != null
+        ? strings.webPagesPublishFile
+        : state.folder == null
+            ? strings.webPagesPublish
+            : state.atRoot
+                ? strings.webPagesPublishDrive
+                : strings.webPagesPublishFolder,
+    onChoose: (choice) {
+      if (!context.mounted) return;
+      openPublishToWeb(
+        context,
+        drive: choice.drive,
+        folderId: choice.folder.id,
+        fileId: choice.fileId,
+      );
+    },
+  );
 }
 
 /// A small web page mark beside a published drive or folder, "Published to web" on
