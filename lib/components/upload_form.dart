@@ -2445,6 +2445,19 @@ class _UploadFailureWidget extends StatelessWidget {
       );
     }
 
+    if (state.error == UploadErrors.cancelFailed) {
+      return ArDriveStandardModalNew(
+        title: appLocalizationsOf(context).uploadCancelFailedTitle,
+        description: appLocalizationsOf(context).uploadCancelFailedDescription,
+        actions: [
+          ModalAction(
+            action: () => Navigator.of(context).pop(false),
+            title: appLocalizationsOf(context).ok,
+          ),
+        ],
+      );
+    }
+
     final reviewed = context.read<UploadCubit>().lastReadyState;
     if (state.error == UploadErrors.turboPaymentRequired &&
         state.controller != null &&

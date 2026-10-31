@@ -332,6 +332,35 @@ void main() {
             ),
           ));
 
+  group('canceling an upload', () {
+    late _MockUploadController controller;
+
+    setUp(() {
+      controller = _MockUploadController();
+    });
+
+    blocTest<UploadCubit, UploadState>(
+      'says so when the cancel fails, instead of ending with no result',
+      build: () {
+        when(() => controller.cancel()).thenThrow(Exception('cancel failed'));
+        final cubit = getUploadCubitInstanceWith([]);
+        cubit.uploadFromReview(method: UploadMethod.turbo);
+        return cubit;
+      },
+      seed: () => UploadInProgress(
+        progress: UploadProgress.notStarted(),
+        totalProgress: 0.05,
+        controller: controller,
+        uploadMethod: UploadMethod.turbo,
+      ),
+      act: (cubit) => cubit.cancelUpload(),
+      expect: () => [
+        isA<UploadFailure>()
+            .having((s) => s.error, 'error', UploadErrors.cancelFailed),
+      ],
+    );
+  });
+
   /// The manifest re-upload path marks each manifest free/paid itself rather
   /// than going through UploadPaymentEvaluator, so it needs its own coverage:
   /// if every manifest is marked free, payment selection is skipped entirely.
