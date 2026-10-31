@@ -182,7 +182,9 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
             ArDriveCheckBox(
               key: const Key('recoverySaved'),
               checked: _saved,
-              title: s.recoverySaved,
+              // The last two words wrap together, so a phone never leaves
+              // one alone on the second line.
+              title: _keepLastWordsTogether(s.recoverySaved),
               onChange: (value) {
                 PlausibleEventTracker.trackClickBackedUpSeedPhraseCheckBox();
                 setState(() => _saved = value);
@@ -217,4 +219,12 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
       ),
     );
   }
+}
+
+/// [text] with its last space made non-breaking.
+String _keepLastWordsTogether(String text) {
+  final last = text.lastIndexOf(' ');
+  return last < 0
+      ? text
+      : '${text.substring(0, last)}\u00A0${text.substring(last + 1)}';
 }
