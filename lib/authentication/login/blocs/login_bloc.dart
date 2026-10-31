@@ -345,8 +345,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       PlausibleEventTracker.trackPageview(page: PlausiblePageView.signUpPage);
       emit(_logInPanel);
     } else {
-      await _handleCreateNewWalletEvent(
-          const CreateNewWallet(), emit);
+      await _handleCreateNewWalletEvent(const CreateNewWallet(), emit);
     }
   }
 
@@ -840,8 +839,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
 
-    final record =
-        await _arweaveService.findEthereumAccountRecord(arweaveNativeAddressForEth);
+    final record = await _arweaveService
+        .findEthereumAccountRecord(arweaveNativeAddressForEth);
     final String? ethFirstTxId = switch (record) {
       EthereumV1Record(:final txId) => txId,
       EthereumV2Marker(:final laterV1RecordId) => laterV1RecordId,
@@ -1549,18 +1548,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             derivedEthWallet: derivedEthWallet,
             sourceWalletAddress: _sourceWalletAddress,
             showWalletCreated: false));
-      case EthereumV2Marker(
-          :final txId,
-          :final accountAddress,
-          :final laterV1RecordId
-        ):
+      case EthereumV2Marker(:final records):
+        // Only a candidate until the account message is signed: a marker
+        // counts if it holds the address that signature derives.
         await _signInEthereumV2(
           emit,
           ethWallet: ethWallet,
           authWallet: derivedEthWallet,
-          expectedAddress:
-              accountAddress ?? await _markerAddressFromData(txId),
-          passwordAccountToo: laterV1RecordId != null,
+          records: records,
         );
       case null:
         // Nothing anywhere: a new account, or one made before 3.0 whose
@@ -1617,6 +1612,39 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     );
   }
 
+  /// The most tag-less markers whose data is read to find an address.
+  static const _maxMarkerDataReads = 3;
+
+  /// [records] with the earliest tag-less markers given an address from
+  /// their data. A marker whose data can't be read is left without one, so
+  /// it never matches: anyone can post such a record, and it must not fail
+  /// a sign-in.
+  Future<List<AccountRecordTx>> _withMarkerAddresses(
+    List<AccountRecordTx> records,
+  ) async {
+    final result = <AccountRecordTx>[];
+    var reads = 0;
+    for (final tx in records) {
+      final isMarker = tx.tags[ethereumAccountVersionTag] == '2';
+      if (!isMarker ||
+          tx.tags.containsKey(ethereumAccountAddressTag) ||
+          reads >= _maxMarkerDataReads) {
+        result.add(tx);
+        continue;
+      }
+      reads++;
+      final address = await _markerAddressFromData(tx.id);
+      result.add(address == null
+          ? tx
+          : AccountRecordTx(
+              id: tx.id,
+              height: tx.height,
+              tags: {...tx.tags, ethereumAccountAddressTag: address},
+            ));
+    }
+    return result;
+  }
+
   /// The Arweave address a version 2 marker [txId] holds as its data.
   Future<String?> _markerAddressFromData(String txId) async {
     try {
@@ -1633,10 +1661,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   /// is this device's key. See docs/ArweaveFS.md, "Browser wallet
   /// identities".
   ///
-  /// - An existing one ([expectedAddress], from its marker): the wallet
-  ///   derived must be that address. A MetaMask that signs differently each
-  ///   time (a smart-contract or MPC wallet) derives another one, and is
-  ///   refused loudly rather than opening an empty account.
+  /// - An existing one ([records], the auth key's records): the wallet
+  ///   derived must be the address of a marker among them. Markers for
+  ///   other addresses are ignored (anyone can post one under the auth
+  ///   key): with none left, a version 1 record means the password, and
+  ///   none at all means the "used ArDrive before?" question.
   /// - A new one ([newAccount]): the message is signed twice and the
   ///   signatures must match, for the same reason, and the marker is posted
   ///   before anything is saved here.
@@ -1644,16 +1673,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit, {
     required EthereumWallet ethWallet,
     required EthereumProviderWallet authWallet,
-    String? expectedAddress,
+    List<AccountRecordTx>? records,
     bool newAccount = false,
-    bool passwordAccountToo = false,
   }) async {
-    if (!newAccount && expectedAddress == null) {
-      emit(_logInPanel);
-      emit(const LoginFailure(EthereumAccountMarkerUnreadable()));
-      return;
-    }
-
     final cancel = _askWallet(
       emit,
       BrowserWallet.metamask,
@@ -1700,23 +1722,40 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     final address = await wallet.getAddress();
-    if (!newAccount && address != expectedAddress) {
-      _walletAnswered(cancel);
-      emit(_logInPanel);
-      if (passwordAccountToo) {
-        // A password account was made on this auth key after the marker
-        // (an old build, after a rollback): its password is the way in.
-        _ethNoRecord = false;
-        emit(PromptPassword(
-          wallet: ethWallet,
-          derivedEthWallet: authWallet,
-          sourceWalletAddress: _sourceWalletAddress,
-          showWalletCreated: false,
-        ));
+    if (!newAccount) {
+      var confirmed = classifyAccountRecords(
+        records ?? const [],
+        accountAddress: address,
+      );
+      if (confirmed is! EthereumV2Marker) {
+        // No marker with an address tag matches: markers that hold the
+        // address as their data only (read only now, and only a few).
+        confirmed = classifyAccountRecords(
+          await _withMarkerAddresses(records ?? const []),
+          accountAddress: address,
+        );
+      }
+      if (confirmed is! EthereumV2Marker) {
+        _walletAnswered(cancel);
+        emit(_logInPanel);
+        if (confirmed is EthereumV1Record) {
+          // No marker holds this wallet's address, and a password account
+          // came first (or after, from an old build after a rollback): its
+          // password is the way in.
+          _ethNoRecord = false;
+          emit(PromptPassword(
+            wallet: ethWallet,
+            derivedEthWallet: authWallet,
+            sourceWalletAddress: _sourceWalletAddress,
+            showWalletCreated: false,
+          ));
+        } else {
+          // Only markers for other addresses: no record.
+          _pendingEthereum = (ethWallet, authWallet);
+          emit(const LoginAskUsedMetaMaskBefore());
+        }
         return;
       }
-      emit(const LoginFailure(EthereumWalletSignsDifferently()));
-      return;
     }
 
     if (newAccount) {
@@ -2076,7 +2115,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             source = DeviceSecretSource.fromSecret(
                 DeviceUnlockMethod.ethereumAccount, signature);
           } else {
-            source = _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel);
+            source =
+                _CancellableSecret(EthereumDeviceSecret(ethWallet), cancel);
           }
           user = await _arDriveAuth.unlockWithWallet(source);
           profileType = ProfileType.json;

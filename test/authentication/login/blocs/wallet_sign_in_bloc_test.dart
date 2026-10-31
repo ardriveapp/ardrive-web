@@ -197,6 +197,26 @@ void main() {
         accountAddress = await wallet.getAddress();
       });
 
+      AccountRecordTx forged(String id, {int? height}) => AccountRecordTx(
+            id: id,
+            height: height,
+            tags: const {
+              'ArDrive-Account-Version': '2',
+              'ArDrive-Account-Address': 'forged-address',
+            },
+          );
+      AccountRecordTx real(String id, {int? height}) => AccountRecordTx(
+            id: id,
+            height: height,
+            tags: {
+              'ArDrive-Account-Version': '2',
+              'ArDrive-Account-Address': accountAddress,
+            },
+          );
+
+      EthereumV2Marker candidate(List<AccountRecordTx> txs) =>
+          classifyAccountRecords(txs) as EthereumV2Marker;
+
       void records(EthereumAccountRecord? record) =>
           when(() => arweave.findEthereumAccountRecord(any()))
               .thenAnswer((_) async => record);
@@ -221,8 +241,7 @@ void main() {
         'a version 2 marker whose address the account message derives: '
         'signed in with no password, and no marker posted again',
         build: bloc,
-        setUp: () =>
-            records(EthereumV2Marker('marker', accountAddress: accountAddress)),
+        setUp: () => records(candidate([real('marker')])),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 300),
         verify: (bloc) async {
@@ -248,18 +267,81 @@ void main() {
       );
 
       blocTest<LoginBloc, LoginState>(
-        'a version 2 marker for another address: the wallet signs '
-        'differently, and nothing opens',
+        'an earlier forged marker, then the real one: version 2 opens',
         build: bloc,
-        setUp: () =>
-            records(const EthereumV2Marker('marker', accountAddress: 'other')),
+        setUp: () => records(
+            candidate([forged('forged', height: 1), real('real', height: 2)])),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 300),
         verify: (bloc) {
-          expect(
-              bloc.state,
-              isA<LoginFailure>().having((s) => s.error, 'error',
-                  isA<EthereumWalletSignsDifferently>()));
+          expect(bloc.state, isA<LoginSuccess>());
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'an earlier forged marker, then a version 1 record: its password is '
+        'asked',
+        build: bloc,
+        setUp: () => records(candidate(
+            [forged('forged', height: 1), const AccountRecordTx(id: 'v1')])),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<PromptPassword>());
+          neverSignedIn();
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'only a forged marker: no record, so "used ArDrive before?" is asked',
+        build: bloc,
+        setUp: () => records(candidate([forged('forged', height: 1)])),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginAskUsedMetaMaskBefore>());
+          neverSignedIn();
+        },
+      );
+
+      const junk = {'ArDrive-Account-Version': '2'};
+
+      blocTest<LoginBloc, LoginState>(
+        'a real marker, then tag-less markers with unreadable data: the real '
+        'one still opens (they never fail a sign-in)',
+        build: bloc,
+        setUp: () => records(candidate([
+          real('real', height: 1),
+          for (var i = 0; i < 6; i++)
+            AccountRecordTx(id: 'junk$i', height: 2 + i, tags: junk),
+        ])),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginSuccess>());
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'only a tag-less marker with unreadable data: no record, no failure',
+        build: bloc,
+        setUp: () => records(candidate(
+            [const AccountRecordTx(id: 'junk', height: 1, tags: junk)])),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 300),
+        verify: (bloc) {
+          expect(bloc.state, isA<LoginAskUsedMetaMaskBefore>());
+        },
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a version 1 record before the real marker: still version 1',
+        build: bloc,
+        setUp: () => records(const EthereumV1Record('first-tx')),
+        act: (bloc) => bloc.add(const LoginWithMetamask()),
+        wait: const Duration(milliseconds: 200),
+        verify: (bloc) {
+          expect(bloc.state, isA<PromptPassword>());
           neverSignedIn();
         },
       );
@@ -268,8 +350,10 @@ void main() {
         'a marker for another address, with a version 1 record after it (an '
         'old build after a rollback): its password is asked, not a dead end',
         build: bloc,
-        setUp: () => records(const EthereumV2Marker('marker',
-            accountAddress: 'other', laterV1RecordId: 'late-v1')),
+        setUp: () => records(candidate([
+          forged('marker', height: 1),
+          const AccountRecordTx(id: 'late-v1')
+        ])),
         act: (bloc) => bloc.add(const LoginWithMetamask()),
         wait: const Duration(milliseconds: 300),
         verify: (bloc) {
