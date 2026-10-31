@@ -67,4 +67,18 @@ void main() {
     cubit.toggle(NavSection.sharedDrives);
     verify(() => preferences.saveFoldedNavSections({'sharedDrives'})).called(1);
   });
+
+  test('focus folds every other heading, and saves once', () async {
+    when(() => preferences.currentPreferences).thenReturn(_prefs(const {}));
+    final cubit = NavSectionsCubit(preferences: preferences);
+    addTearDown(cubit.close);
+
+    cubit.focus(NavSection.webPages);
+    cubit.focus(NavSection.webPages);
+
+    expect(cubit.state, {...NavSection.values}..remove(NavSection.webPages));
+    verify(() => preferences.saveFoldedNavSections(
+          {'publicDrives', 'privateDrives', 'sharedDrives', 'names'},
+        )).called(1);
+  });
 }

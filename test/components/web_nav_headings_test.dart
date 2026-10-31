@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
+import 'package:ardrive/components/nav_sections.dart';
 import 'package:ardrive/components/web_nav_headings.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
@@ -87,6 +88,7 @@ void main() {
     bool arns = true,
     bool publishing = true,
     bool showLabel = true,
+    NavSectionsCubit? sections,
   }) async {
     when(() => config.config).thenReturn(AppConfig(
       stripePublishableKey: '',
@@ -109,6 +111,8 @@ void main() {
               ),
               BlocProvider<ArNSNamesCubit>.value(value: names),
               BlocProvider<WebPagesCubit>.value(value: webPages),
+              if (sections != null)
+                BlocProvider<NavSectionsCubit>.value(value: sections),
             ],
             child: Scaffold(
               body: SingleChildScrollView(
@@ -278,6 +282,32 @@ void main() {
       expect(find.text('Web pages'), findsNothing);
       expect(find.text('Names'), findsOneWidget);
     });
+  });
+
+  // Phil: opening Web pages leaves only Web pages open in the nav.
+  testWidgets('opening a page folds every other heading and opens its own',
+      (tester) async {
+    namesAre([_name('maya')]);
+    pagesAre([_page(1)]);
+    final sections = NavSectionsCubit()..toggle(NavSection.webPages);
+    addTearDown(sections.close);
+    await pump(tester, sections: sections);
+    expect(find.text('Page 1'), findsNothing);
+    expect(find.text('maya'), findsOneWidget);
+
+    await tester.tap(find.text('Web pages'));
+    await tester.pump();
+
+    expect(find.text('Page 1'), findsOneWidget);
+    expect(find.text('maya'), findsNothing);
+    expect(sections.state, {...NavSection.values}..remove(NavSection.webPages));
+    expect(delegate.showingWebPages, isTrue);
+
+    await tester.tap(find.text('Names'));
+    await tester.pump();
+
+    expect(find.text('maya'), findsOneWidget);
+    expect(find.text('Page 1'), findsNothing);
   });
 
   testWidgets('the collapsed rail: one icon each, to their pages',
