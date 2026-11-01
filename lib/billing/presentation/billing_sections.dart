@@ -604,7 +604,10 @@ class _PurchaseActions extends StatelessWidget {
 /// The table's column widths, shared by the header and every row.
 const double _typeColumn = 96;
 const double _dateColumn = 140;
-const double _receiptColumn = 200;
+const double _amountColumn = 200;
+
+// The receipt or transaction takes the rest: an ID with its copy button
+// beside it reads as one thing, and a fixed column wrapped it in two.
 const double _creditsColumn = 120;
 
 class _PurchasesHeader extends StatelessWidget {
@@ -635,9 +638,9 @@ class _PurchasesHeader extends StatelessWidget {
       child: Row(
         children: [
           cell(strings.billingColumnType, width: _typeColumn),
-          cell(strings.billingColumnAmount),
+          cell(strings.billingColumnAmount, width: _amountColumn),
           cell(strings.billingColumnDate, width: _dateColumn),
-          cell(strings.billingColumnReceipt, width: _receiptColumn),
+          cell(strings.billingColumnReceipt),
           cell(
             strings.billingColumnCredits,
             width: _creditsColumn,
@@ -760,7 +763,8 @@ class _PurchaseRow extends StatelessWidget {
               width: _typeColumn,
               child: Align(alignment: Alignment.centerLeft, child: _Tag(tag)),
             ),
-            Expanded(
+            SizedBox(
+              width: _amountColumn,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -782,8 +786,7 @@ class _PurchaseRow extends StatelessWidget {
               width: _dateColumn,
               child: Text(p.dateLabel, style: small),
             ),
-            SizedBox(
-              width: _receiptColumn,
+            Expanded(
               child: Row(
                 children: [
                   if (referenceWidget != null) Flexible(child: referenceWidget),

@@ -24,6 +24,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  // A short label beside a right-aligned switch left the switch mid-row,
+  // at a different place in every row of a settings list.
+  testWidgets('a right-aligned switch sits at the end of its row',
+      (tester) async {
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => const MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 600,
+              child: ArDriveToggleSwitch(alignRight: true, text: 'Short'),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    final row = tester.getRect(find.byType(ArDriveToggleSwitch));
+    final switchBox = tester.getRect(find.byType(AnimatedContainer).first);
+    expect(switchBox.right, moreOrLessEquals(row.right, epsilon: 1));
+  });
+
   testWidgets('ToggleSwitch widget and its contents render', (tester) async {
     const toggleSwitch = ArDriveToggleSwitch(
       text: 'some text',
