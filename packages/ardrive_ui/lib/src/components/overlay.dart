@@ -90,6 +90,10 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
 
   /// What [ArDriveDropdown.onOpenChanged] and the row's scope last heard.
   bool _reportedOpen = false;
+
+  /// The row that heard it, kept so a menu removed while open can still say
+  /// it closed: its context can't be read once it is being disposed.
+  ValueChanged<bool>? _reportedTo;
   late Anchor _anchor;
 
   /// The menu's button, which takes focus back when a menu opened from the
@@ -125,6 +129,16 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
 
   @override
   void dispose() {
+    // Removed while open, as when a menu action deletes its own row's item:
+    // without this the row stayed highlighted for good.
+    if (_reportedOpen) {
+      final row = _reportedTo;
+      final onOpenChanged = widget.onOpenChanged;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onOpenChanged?.call(false);
+        row?.call(false);
+      });
+    }
     _triggerFocus.dispose();
     for (final node in _itemFocus) {
       node.dispose();
@@ -280,6 +294,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || visible == _reportedOpen) return;
         _reportedOpen = visible;
+        _reportedTo = rowScope;
         widget.onOpenChanged?.call(visible);
         rowScope?.call(visible);
       });

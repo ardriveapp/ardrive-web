@@ -93,6 +93,45 @@ void main() {
             (box) => box.checked,
           );
 
+  testWidgets('a menu removed while open tells its row it closed',
+      (tester) async {
+    final heard = <bool>[];
+    var showMenu = true;
+    late StateSetter setOuter;
+    await tester.pumpWidget(
+      ArDriveTheme(
+        themeData: theme,
+        child: MaterialApp(
+          home: Portal(
+            child: Scaffold(
+              body: StatefulBuilder(builder: (context, setState) {
+                setOuter = setState;
+                return ArDriveRowMenuScope(
+                  onOpenChanged: heard.add,
+                  child: showMenu
+                      ? ArDriveDropdown(
+                          items: menuItems,
+                          child: const Icon(Icons.more_vert, key: Key('k')),
+                        )
+                      : const SizedBox(),
+                );
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('k')));
+    await tester.pumpAndSettle();
+    expect(heard, [true]);
+
+    // As when Delete in the menu removes the row's own item.
+    setOuter(() => showMenu = false);
+    await tester.pumpAndSettle();
+
+    expect(heard, [true, false]);
+  });
+
   group('explorer table', () {
     testWidgets('a row is marked while its menu is open, and not after',
         (tester) async {
