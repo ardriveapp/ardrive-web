@@ -134,7 +134,7 @@ void main() {
     );
   });
 
-  Future<ArDriveAuthImpl> _authWith(DatabaseHelpers helpers) async =>
+  Future<ArDriveAuthImpl> authWith(DatabaseHelpers helpers) async =>
       ArDriveAuthImpl(
         arweave: arweave,
         userRepository: UserRepository(db.profileDao, arweave, _MockArioSDK()),
@@ -244,7 +244,7 @@ void main() {
     test('a failed wipe aborts the switch and saves nothing', () async {
       final other = await savePreviousAccount();
       final failing = _FailingHelpers(db);
-      final broken = await _authWith(failing);
+      final broken = await authWith(failing);
 
       await expectLater(
           broken.loginWithWallet(
@@ -336,7 +336,7 @@ void main() {
       await savePreviousAccount();
       when(() => tabs.announceSignedOut()).thenReturn(null);
       final wiped = _CountingWipe(db);
-      final counted = await _authWith(wiped);
+      final counted = await authWith(wiped);
 
       await counted.loginWithWallet(
           wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana));
