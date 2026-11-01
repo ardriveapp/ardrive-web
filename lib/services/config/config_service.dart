@@ -62,6 +62,11 @@ class ConfigService {
     }
   }
 
+  /// The config this flavor ships with, before anything was changed on this
+  /// device. Read from the asset each time: it is only asked for by Settings.
+  Future<AppConfig> loadDefaultConfig() async =>
+      _configFetcher.fetchAssetConfig(_flavor ?? await loadAppFlavor());
+
   Future<void> updateAppConfig(AppConfig newConfig) async {
     await _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
     _config = newConfig;

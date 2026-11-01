@@ -29,6 +29,63 @@ const double listPageBlockGap = 12;
 /// How far above and below its text the title row's tint reaches.
 const double listPageTitleInset = 8;
 
+/// How wide the readable pages (Account and security, Billing, Settings) let
+/// their content run before it stops, left-aligned with the title.
+const double pageContentMaxWidth = 880;
+
+/// [child] at most [pageContentMaxWidth] wide, left-aligned with the title.
+class PageContentColumn extends StatelessWidget {
+  const PageContentColumn({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: pageContentMaxWidth),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// The body of a readable page on desktop, under the chrome: the title, then
+/// [child] in a column of at most [pageContentMaxWidth], left-aligned with the
+/// title. A [child] that sizes its own sections (Billing's table runs the full
+/// width) passes `capWidth: false`.
+class ReadablePageBody extends StatelessWidget {
+  const ReadablePageBody({
+    super.key,
+    required this.title,
+    required this.child,
+    this.capWidth = true,
+  });
+
+  final String title;
+  final Widget child;
+  final bool capWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListPageTitleRow(title: ListPageTitleRow.text(context, title)),
+          const SizedBox(height: listPageBlockGap),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: listPagePadding),
+            child: capWidth ? PageContentColumn(child: child) : child,
+          ),
+          const SizedBox(height: listPageSectionGap),
+        ],
+      ),
+    );
+  }
+}
+
 /// The title row's height in all of its forms, so swapping one for another
 /// moves nothing below it.
 const double listPageTitleMinHeight = 56;

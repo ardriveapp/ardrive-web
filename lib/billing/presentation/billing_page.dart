@@ -48,26 +48,10 @@ class BillingPage extends StatelessWidget {
         child: content,
       ),
       desktop: (context) => ListPageChrome(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListPageTitleRow(
-                title: ListPageTitleRow.text(context, title),
-              ),
-              const SizedBox(height: listPageBlockGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: listPagePadding,
-                ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: content,
-                ),
-              ),
-              const SizedBox(height: listPageSectionGap),
-            ],
-          ),
+        child: ReadablePageBody(
+          title: title,
+          capWidth: false,
+          child: content,
         ),
       ),
     );

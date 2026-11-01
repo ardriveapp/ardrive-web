@@ -28,13 +28,19 @@ class ConfigFetcher {
   late Future<SelectedGateway?> Function() detectGateway =
       () => ArIOGatewayDetector.detectArIOGateway(alsoTryHost: publicationMode);
 
-  Future<AppConfig> fetchConfig(Flavor flavor) async {
-    // 1. Load default config from assets.
+  /// The flavor's shipped config, from its asset: what a settings reset
+  /// returns to.
+  Future<AppConfig> fetchAssetConfig(Flavor flavor) async {
     final flavorName = _parseFlavorToEnv(flavor);
     final defaultConfigString =
         await assetBundle.loadString('assets/config/$flavorName.json');
-    final defaultConfig = AppConfig.fromJson(
+    return AppConfig.fromJson(
         json.decode(defaultConfigString) as Map<String, dynamic>);
+  }
+
+  Future<AppConfig> fetchConfig(Flavor flavor) async {
+    // 1. Load default config from assets.
+    final defaultConfig = await fetchAssetConfig(flavor);
 
     if (publicationMode) return _fetchPublicationConfig(defaultConfig);
 

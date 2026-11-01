@@ -173,7 +173,9 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               widget.alignRight
-                  ? textWidget
+                  // Takes the row, so the switch sits at its end, and wraps
+                  // in a narrow space rather than running off it.
+                  ? Expanded(child: textWidget)
                   : Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: _toggle(),
@@ -181,7 +183,6 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
               const SizedBox(
                 width: 8,
               ),
-              widget.alignRight ? const Spacer() : const SizedBox(),
               widget.alignRight ? _toggle() : textWidget
             ],
           ),
