@@ -117,24 +117,8 @@ class _Form extends StatelessWidget {
           textInputAction: TextInputAction.newline,
           onChanged: cubit.setDescription,
         ),
-        const SizedBox(height: 16),
-        ArDriveTextFieldNew(
-          label: strings.publishDisplayNameLabel,
-          initialValue: state.ownerName,
-          maxLength: publicationOwnerNameMax,
-          onChanged: cubit.setOwnerName,
-        ),
-        _Hint(strings.publishDisplayNameHint),
-        const SizedBox(height: 16),
-        const _Keywords(),
         const SizedBox(height: 24),
-        _ImageField(
-          slot: PublicationImageSlot.icon,
-          label: strings.publishIconLabel,
-          hint: strings.publishIconHint,
-          aspect: 1,
-        ),
-        const SizedBox(height: 20),
+        // The pictures come right after the words, in view without a scroll.
         _ImageField(
           slot: PublicationImageSlot.cover,
           label: strings.publishCoverLabel,
@@ -143,14 +127,113 @@ class _Form extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _ImageField(
-          slot: PublicationImageSlot.social,
-          label: strings.publishSocialLabel,
-          hint: strings.publishSocialHint,
-          aspect: 1200 / 630,
+          slot: PublicationImageSlot.icon,
+          label: strings.publishIconLabel,
+          hint: strings.publishIconHint,
+          aspect: 1,
         ),
-        // Last: the page comes first, then the terms it is shared under.
-        const SizedBox(height: 24),
-        const _Licence(),
+        const SizedBox(height: 20),
+        _MoreOptions(
+          initiallyOpen: state.ownerName.trim().isNotEmpty ||
+              state.keywords.isNotEmpty ||
+              state.social != null ||
+              state.licence != null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ArDriveTextFieldNew(
+                label: strings.publishDisplayNameLabel,
+                initialValue: state.ownerName,
+                maxLength: publicationOwnerNameMax,
+                onChanged: cubit.setOwnerName,
+              ),
+              _Hint(strings.publishDisplayNameHint),
+              const SizedBox(height: 16),
+              const _Keywords(),
+              const SizedBox(height: 24),
+              _ImageField(
+                slot: PublicationImageSlot.social,
+                label: strings.publishSocialLabel,
+                hint: strings.publishSocialHint,
+                aspect: 1200 / 630,
+              ),
+              // Last: the page comes first, then the terms it is shared
+              // under.
+              const SizedBox(height: 24),
+              const _Licence(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The settings most pages leave alone, folded under one line, as the upload
+/// dialog folds its options. Open from the start when one already has a
+/// value, as on an update. Closed, the fields stay built (and keep what was
+/// typed) but are not shown.
+class _MoreOptions extends StatefulWidget {
+  const _MoreOptions({required this.initiallyOpen, required this.child});
+
+  final bool initiallyOpen;
+  final Widget child;
+
+  @override
+  State<_MoreOptions> createState() => _MoreOptionsState();
+}
+
+class _MoreOptionsState extends State<_MoreOptions> {
+  late bool _open = widget.initiallyOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    void toggle() => setState(() => _open = !_open);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: ArDriveFocusable(
+            onActivate: toggle,
+            child: ArDriveClickArea(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: toggle,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    (_open
+                        ? ArDriveIcons.carretDown
+                        : ArDriveIcons.carretRight)(
+                      size: 16,
+                      color: colors.textMid,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      appLocalizationsOf(context).publishMoreOptions,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.textHigh,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Visibility(
+          visible: _open,
+          maintainState: true,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: widget.child,
+          ),
+        ),
       ],
     );
   }
