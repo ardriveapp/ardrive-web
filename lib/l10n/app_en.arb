@@ -6041,6 +6041,8 @@
   "settingsChange": "Change",
   "@settingsChange": {"description": "Settings page: button on a network row that opens its dialog."},
   "settingsResetToDefault": "Reset to default",
+  "settingsNetworkChangeFailed": "That couldn't be changed. Check the address and try again.",
+  "@settingsNetworkChangeFailed": {"description": "Settings page: a gateway, GraphQL server or Turbo services change or reset failed."},
   "@settingsResetToDefault": {"description": "Settings page: button on a network row that restores the shipped address."},
   "billingColumnType": "Type",
   "@billingColumnType": {"description": "Billing purchases table: column heading for the kind of purchase."},

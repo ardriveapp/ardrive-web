@@ -291,6 +291,21 @@ void main() {
       expect(find.byKey(const Key('settingsGraphQLServerReset')), findsNothing);
     });
 
+    testWidgets('a reset that fails says so', (tester) async {
+      current = _config(graphQL: 'https://graphql.example');
+      when(() => arweave.updateGraphQLEndpoint(any()))
+          .thenThrow(StateError('gateway unreachable'));
+      await pump(tester);
+
+      await tester.tap(find.byKey(const Key('settingsGraphQLServerReset')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("That couldn't be changed. Check the address and try again."),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('no known defaults, no Reset', (tester) async {
       when(() => configService.loadDefaultConfig())
           .thenAnswer((_) async => throw StateError('no asset'));

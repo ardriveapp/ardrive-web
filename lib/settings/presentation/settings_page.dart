@@ -11,6 +11,7 @@ import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -96,9 +97,23 @@ class _SettingsSectionsState extends State<SettingsSections> {
     if (mounted) setState(() {});
   }
 
-  /// Runs a change to the network and shows the result.
+  /// Runs a change to the network and shows the result, or says it failed:
+  /// a reset reaches the gateway and can throw.
   Future<void> _then(Future<void> Function() change) async {
-    await change();
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final failed = appLocalizationsOf(context).settingsNetworkChangeFailed;
+    try {
+      await change();
+    } catch (e, stackTrace) {
+      logger.e('Could not change a network setting', e, stackTrace);
+      if (messenger != null) {
+        showArDriveToast(
+          messenger,
+          text: failed,
+          type: ArDriveStatusType.error,
+        );
+      }
+    }
     if (mounted) setState(() {});
   }
 
