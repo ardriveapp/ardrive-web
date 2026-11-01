@@ -215,4 +215,27 @@ void main() {
 
     expect((await pendingRow()).status, TransactionStatus.pending);
   });
+
+  group('a status pass token', () {
+    test('follows a sync cancelled later', () async {
+      final sync = SyncCancellationToken();
+      final pass = statusPassTokenFor(sync);
+      addTearDown(pass.dispose);
+
+      sync.cancel();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(pass.token.isCancelled, isTrue);
+    });
+
+    // The cancel stream is broadcast, so a sync stopped before the pass
+    // began sent its event to nobody and the pass ran on.
+    test('starts cancelled for a sync already cancelled', () {
+      final sync = SyncCancellationToken()..cancel();
+      final pass = statusPassTokenFor(sync);
+      addTearDown(pass.dispose);
+
+      expect(pass.token.isCancelled, isTrue);
+    });
+  });
 }

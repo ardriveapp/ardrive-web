@@ -184,7 +184,7 @@ class MonotonicProgressSink {
   /// work the sync has already stopped waiting for: `Future.timeout` does not
   /// cancel its source, so an abandoned `_updateTransactionStatuses` can still
   /// report for the moment it takes to notice it was cancelled (see
-  /// `_statusPassToken`), after the sync has finished and closed here. A throw
+  /// `statusPassTokenFor`), after the sync has finished and closed here. A throw
   /// there would be swallowed by the fired timeout. Reporting stops at close.
   SyncProgress add(SyncProgress progress) {
     final raised = raise(progress);
@@ -1229,7 +1229,7 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgressController.add(syncProgress);
 
         // Wrap transaction status update with cancellation check and timeout
-        final statusPass = _statusPassToken(token);
+        final statusPass = statusPassTokenFor(token);
         try {
           await Future.wait(
             [
@@ -1709,7 +1709,7 @@ class _SyncRepository implements SyncRepository {
         await _userPreferencesRepository.load();
         reportLocalRead();
 
-        final statusPass = _statusPassToken(token);
+        final statusPass = statusPassTokenFor(token);
         try {
           await _updateTransactionStatusesForDrive(
             driveDao: _driveDao,
@@ -2411,26 +2411,6 @@ class _SyncRepository implements SyncRepository {
         if ((ownerByDriveId[revision.driveId] ?? '').isNotEmpty)
           revision.dataTxId: ownerByDriveId[revision.driveId]!,
     };
-  }
-
-  /// A token for one status pass that follows [sync] and can also be stopped
-  /// on its own. `Future.timeout` abandons its source without stopping it, so
-  /// a pass that timed out would go on issuing batches next to the follow-up
-  /// pass that takes over from it. Cancelling this one is what stops it, and
-  /// the batches it already wrote stay written. Call [dispose] when the pass
-  /// is over.
-  ({SyncCancellationToken token, void Function() dispose}) _statusPassToken(
-    SyncCancellationToken sync,
-  ) {
-    final pass = SyncCancellationToken();
-    final sub = sync.onCancelled.listen((_) => pass.cancel());
-    return (
-      token: pass,
-      dispose: () {
-        sub.cancel();
-        pass.dispose();
-      },
-    );
   }
 
   Future<void> _updateTransactionStatuses({
@@ -3946,4 +3926,28 @@ Future<DrivesCompanion> _computeRefreshedDriveFromRevision({
           oldestRevision?.dateCreated ?? latestRevision.dateCreated.value,
         ),
       );
+}
+
+/// A token for one status pass that follows [sync] and can also be stopped
+/// on its own. `Future.timeout` abandons its source without stopping it, so
+/// a pass that timed out would go on issuing batches next to the follow-up
+/// pass that takes over from it. Cancelling this one is what stops it, and
+/// the batches it already wrote stay written. Call [dispose] when the pass
+/// is over.
+@visibleForTesting
+({SyncCancellationToken token, void Function() dispose}) statusPassTokenFor(
+  SyncCancellationToken sync,
+) {
+  final pass = SyncCancellationToken();
+  final sub = sync.onCancelled.listen((_) => pass.cancel());
+  // The stream is broadcast: a sync cancelled before this subscribed sent
+  // its event to nobody, so the pass would run on.
+  if (sync.isCancelled) pass.cancel();
+  return (
+    token: pass,
+    dispose: () {
+      sub.cancel();
+      pass.dispose();
+    },
+  );
 }
