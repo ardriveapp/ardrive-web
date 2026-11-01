@@ -253,8 +253,22 @@ void main() {
 
       final ids = (await db.select(db.profiles).get()).map((p) => p.id);
       expect(ids, isNot(contains(address)));
-      expect(ids.length <= 1, isTrue);
-      expect(other, isNotNull);
+      expect(ids, [await other.getAddress()]);
+      expect((await db.select(db.drives).get()).map((d) => d.id), ['theirs']);
+      verifyNever(() => tabs.announceSignedOut());
+    });
+
+    test('a secure store that throws still ends with the new profile saved',
+        () async {
+      await savePreviousAccount();
+      when(() => tabs.announceSignedOut()).thenReturn(null);
+      when(() => secure.remove(any())).thenThrow(Exception('storage'));
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana));
+
+      expect((await db.select(db.profiles).get()).map((p) => p.id), [address]);
+      expect(await db.select(db.drives).get(), isEmpty);
     });
 
     test(

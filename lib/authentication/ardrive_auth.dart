@@ -643,7 +643,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
           'Could not clear the previous account from this device');
     }
     _deviceTabs.announceSignedOut();
-    await _databaseHelpers.wipeAfterSignOut();
+    try {
+      await _databaseHelpers.wipeAfterSignOut();
+    } catch (e) {
+      logger.w('Could not finish wiping the previous account: $e');
+    }
   }
 
   /// Everything this device kept for the account that was here: the profile,
@@ -667,12 +671,25 @@ class ArDriveAuthImpl implements ArDriveAuth {
     if (strict) await _databaseHelpers.deleteAllTables(rethrowOnError: true);
     await _userRepository.deleteUser();
 
+    // Past the tables and the profile, a switch (strict) must still save the
+    // new account: whatever else fails here is logged and left behind. A
+    // sign-out keeps its own rule and reports the failure.
+    Future<void> step(Future<void> Function() run) async {
+      if (!strict) return run();
+      try {
+        await run();
+      } catch (e, stackTrace) {
+        logger.w('Could not clear all of the previous account: $e');
+        logger.d('$stackTrace');
+      }
+    }
+
     if (address != null) {
-      await _proofStore.clear(address);
+      await step(() => _proofStore.clear(address));
       if (disconnectWander) await _disconnectFromArConnect();
-      (await _metadataCache).clear();
-      await _secureKeyValueStore.remove('password');
-      await _secureKeyValueStore.remove('biometricEnabled');
+      await step(() async => (await _metadataCache).clear());
+      await step(() => _secureKeyValueStore.remove('password'));
+      await step(() => _secureKeyValueStore.remove('biometricEnabled'));
     }
 
     if (!strict) await _databaseHelpers.deleteAllTables();
@@ -683,9 +700,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
       _injectedDriveUnlocker?.session.clear();
       _deviceUnlocker.clear();
     }
-    await _permanenceCache.clear();
-    await _arnsWalletStore.clear();
-    await _arnsPendingActionStore.clear();
+    await step(_permanenceCache.clear);
+    await step(_arnsWalletStore.clear);
+    await step(_arnsPendingActionStore.clear);
     currentUser = null;
     _userStreamController.add(null);
   }
