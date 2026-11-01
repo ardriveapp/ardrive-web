@@ -242,6 +242,12 @@ class _ArNSNamesViewState extends State<ArNSNamesView> {
             onAction: () => showArNSWalletDialog(context),
             secondaryActionLabel: strings.arnsWhatIsArNS,
             onSecondaryAction: () => openUrl(url: arnsDocsUrl),
+            // Linking finds no names for someone who has none, and only then
+            // said where to get one.
+            footnote: strings.arnsNoNameYetAsk,
+            footnoteActionLabel: strings.arnsGetOneInConsole,
+            onFootnoteAction: () => openUrl(url: arnsGetNameUrl),
+            footnoteActionIsExternal: true,
           ),
         )),
       ];
@@ -323,6 +329,10 @@ class _ArNSNamesViewState extends State<ArNSNamesView> {
         )
       else
         rows,
+      // Names point at files and web pages; a folder or site gets there by
+      // being published.
+      if (AppRouterDelegate.webPagesAreOn(context))
+        padded(ArNSCaption(strings.arnsNameASiteHint)),
     ];
   }
 }

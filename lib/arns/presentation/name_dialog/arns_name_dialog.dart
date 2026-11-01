@@ -25,6 +25,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -457,6 +458,10 @@ class _ChooseContent extends StatelessWidget {
           _RecordSummary(state: state),
           const SizedBox(height: ArDriveSpacing.md),
           _ItemPicker(state: state),
+          if (AppRouterDelegate.webPagesAreOn(context)) ...[
+            const SizedBox(height: ArDriveSpacing.xs),
+            ArNSCaption(strings.arnsNameASiteHint),
+          ],
           const SizedBox(height: ArDriveSpacing.sm),
           _CacheTimeSection(state: state, folded: true),
         ]);

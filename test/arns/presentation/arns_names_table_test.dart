@@ -370,4 +370,58 @@ void main() {
           findsNothing);
     });
   });
+
+  // Gaps Phil approved: how to name a site, and where to get a name.
+  group('says how to get there', () {
+    void publishing(bool on) => when(() => config.config).thenReturn(AppConfig(
+          stripePublishableKey: '',
+          allowedDataItemSizeForTurbo: 100,
+          enableArNS: true,
+          enableDriveStatePublishing: on,
+        ));
+
+    testWidgets('under the names: publish a folder or site to name it',
+        (tester) async {
+      publishing(true);
+      await pump(tester);
+
+      expect(
+        find.text('To name a folder or site, publish it to the web first.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('not where Publish to web is off', (tester) async {
+      publishing(false);
+      await pump(tester);
+
+      expect(find.textContaining('publish it to the web'), findsNothing);
+    });
+
+    testWidgets(
+        'before linking: the wallet that holds your names, and where '
+        'to get one', (tester) async {
+      whenListen(
+        wallet,
+        const Stream<ArNSWalletState>.empty(),
+        initialState: const ArNSWalletState(
+          enabled: true,
+          profileAddress: 'profile',
+        ),
+      );
+      await pump(tester);
+
+      expect(
+          find.text('Link the wallet that holds your names'), findsOneWidget);
+      expect(find.text('Link your ArNS wallet'), findsNothing);
+      expect(find.text('No name\u00A0yet?'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ArDriveLink &&
+            w.text == 'Get one in the ar.io Console' &&
+            w.external),
+        findsOneWidget,
+      );
+    });
+  });
 }
