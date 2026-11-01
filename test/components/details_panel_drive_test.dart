@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -114,8 +115,11 @@ void main() {
     WidgetTester tester, {
     bool withSync = true,
     bool? driveIsSynced,
+    bool private = false,
     Future<List<DriveEntity>?> Function()? networkHistory,
   }) async {
+    final shown =
+        private ? drive.copyWith(privacy: DrivePrivacyTag.private) : drive;
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     // What `MediaQuery` reports, which is what picks the panel's desktop
@@ -178,12 +182,12 @@ void main() {
                       width: 420,
                       child: DetailsPanel(
                         item: DriveDataTableItemMapper.fromDrive(
-                          drive,
+                          shown,
                           (_) {},
                           0,
                           true,
                         ),
-                        currentDrive: drive,
+                        currentDrive: shown,
                         canNavigateThroughImages: false,
                         onClose: () => closed++,
                         onSync: withSync ? () => synced++ : null,
@@ -243,6 +247,22 @@ void main() {
   Finder toolbarAction(String tooltip) => find.byWidgetPredicate(
         (w) => w is ArDriveIconButton && w.tooltip == tooltip,
       );
+
+  testWidgets('a private drive has its lock after the name', (tester) async {
+    await pumpPanel(tester, private: true);
+
+    expect(find.byType(PrivateDriveLock), findsOneWidget);
+
+    await takeDown(tester);
+  });
+
+  testWidgets('a public drive has no lock', (tester) async {
+    await pumpPanel(tester);
+
+    expect(find.byType(PrivateDriveLock), findsNothing);
+
+    await takeDown(tester);
+  });
 
   testWidgets('says what it knows, not a spinner', (tester) async {
     await pumpPanel(tester);

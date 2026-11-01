@@ -222,6 +222,27 @@ void main() {
     });
   });
 
+  testWidgets('the add button is at least 40 square to press', (tester) async {
+    balance = BigInt.from(1500000000000);
+    await tester.runAsync(() async {
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.text('1.5000'));
+
+      final press = find
+          .ancestor(
+            of: find.byIcon(Icons.add),
+            matching: find.byType(GestureDetector),
+          )
+          .first;
+      final size = tester.getSize(press);
+      expect(size.width, greaterThanOrEqualTo(40));
+      expect(size.height, greaterThanOrEqualTo(40));
+
+      await takeDown(tester);
+    });
+  });
+
   testWidgets('the address has a named copy button', (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.runAsync(() async {
