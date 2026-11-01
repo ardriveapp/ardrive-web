@@ -1,4 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
+import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/device_unlock/data/device_tabs.dart';
 import 'package:ardrive/device_unlock/domain/device_key.dart';
@@ -11,19 +13,43 @@ import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
+import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/graphql_retry.dart' show GraphQLException;
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:arweave/arweave.dart' show Wallet;
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stash_memory/stash_memory.dart';
 
-import '../test_utils/locked_drive_fixtures.dart' show MemoryKeyValueStore;
+import '../test_utils/locked_drive_fixtures.dart'
+    show MemoryKeyValueStore, makeWebPrivateDrive;
 import '../test_utils/utils.dart';
 
 class _MockArioSDK extends Mock implements ArioSDK {}
 
 class _MockDeviceTabs extends Mock implements DeviceTabs {}
+
+class _CountingWipe extends DatabaseHelpers {
+  _CountingWipe(super.db);
+  var wipes = 0;
+
+  @override
+  Future<List<String>> wipeAfterSignOut() async {
+    wipes++;
+    return const [];
+  }
+}
+
+class _FailingHelpers extends DatabaseHelpers {
+  _FailingHelpers(super.db);
+
+  @override
+  Future<void> deleteAllTables({bool rethrowOnError = false}) async {
+    if (rethrowOnError) throw StateError('disk full');
+  }
+}
 
 /// A wallet that always gives the same signature, as an ordinary account
 /// does.
@@ -53,6 +79,11 @@ void main() {
   late MockArweaveService arweave;
   late DriveUnlockSession session;
   late DeviceUnlocker deviceUnlocker;
+  late _MockDeviceTabs tabs;
+  late MockSecureKeyValueStore secure;
+  late MemoryKeyValueStore arnsKv;
+  late DatabaseHelpers helpers;
+  late SignInPasswordProofStore proofs;
   final wallet = getTestWallet();
   late String address;
 
@@ -71,16 +102,24 @@ void main() {
     deviceUnlocker = DeviceUnlocker();
     final biometrics = MockBiometricAuthentication();
     when(() => biometrics.isEnabled()).thenAnswer((_) async => false);
-    final tabs = _MockDeviceTabs();
+    tabs = _MockDeviceTabs();
+    secure = MockSecureKeyValueStore();
+    when(() => secure.remove(any())).thenAnswer((_) async => true);
+    arnsKv = MemoryKeyValueStore();
+    helpers = DatabaseHelpers(db);
+    proofs = SignInPasswordProofStore(store: () async => MemoryKeyValueStore());
 
     auth = ArDriveAuthImpl(
       arweave: arweave,
       userRepository: UserRepository(db.profileDao, arweave, _MockArioSDK()),
       crypto: ArDriveCrypto(),
       biometricAuthentication: biometrics,
-      secureKeyValueStore: MockSecureKeyValueStore(),
+      secureKeyValueStore: secure,
+      arnsWalletStore: ArNSWalletStore(openStore: () async => arnsKv),
+      arnsPendingActionStore:
+          ArNSPendingActionStore(openStore: () async => arnsKv),
       arConnectService: MockArConnectService(),
-      databaseHelpers: DatabaseHelpers(db),
+      databaseHelpers: helpers,
       metadataCache:
           await MetadataCache.fromCacheStore(await newMemoryCacheStore()),
       driveUnlocker: DriveUnlocker(
@@ -90,11 +129,26 @@ void main() {
         session: session,
       ),
       deviceTabs: tabs,
-      signInPasswordProofStore:
-          SignInPasswordProofStore(store: () async => MemoryKeyValueStore()),
+      signInPasswordProofStore: proofs,
       deviceUnlocker: deviceUnlocker,
     );
   });
+
+  Future<ArDriveAuthImpl> authWith(DatabaseHelpers helpers) async =>
+      ArDriveAuthImpl(
+        arweave: arweave,
+        userRepository: UserRepository(db.profileDao, arweave, _MockArioSDK()),
+        crypto: ArDriveCrypto(),
+        biometricAuthentication: MockBiometricAuthentication(),
+        secureKeyValueStore: secure,
+        arConnectService: MockArConnectService(),
+        databaseHelpers: helpers,
+        deviceTabs: tabs,
+        deviceUnlocker: DeviceUnlocker(),
+        signInPasswordProofStore: proofs,
+        metadataCache:
+            await MetadataCache.fromCacheStore(await newMemoryCacheStore()),
+      );
 
   tearDown(() => db.close());
 
@@ -125,6 +179,242 @@ void main() {
         expect(session.signInPasswordProven(address), isNull);
       });
     }
+
+    test('H1: a saved keyfile account is never what a Solana sign-in opens',
+        () async {
+      final other = await Wallet.generate();
+      final otherAddress = await other.getAddress();
+      await db.profileDao
+          .addProfile('user.username', 'pw', other, ProfileType.json);
+
+      final user = await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana),
+          sourceWalletAddress: 'solana-source');
+
+      expect(user.walletAddress, address);
+      expect(user.walletAddress, isNot(otherAddress));
+      expect(user.sourceWalletAddress, 'solana-source');
+      final rows = await db.select(db.profiles).get();
+      expect(rows.map((r) => r.id), [address]);
+      expect(auth.currentUser.walletAddress, address);
+    });
+
+    Future<Wallet> savePreviousAccount() async {
+      final other = await Wallet.generate();
+      final otherAddress = await other.getAddress();
+      await db.profileDao
+          .addProfile('user.username', 'pw', other, ProfileType.json);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'theirs',
+            rootFolderId: 'r',
+            ownerAddress: otherAddress,
+            name: 'Theirs',
+            privacy: 'public',
+          ));
+      await ArNSWalletStore(openStore: () async => arnsKv)
+          .link(otherAddress, const LinkedArNSWallet(address: 'sol-names'));
+      return other;
+    }
+
+    test('switching account does what a sign-out does', () async {
+      final other = await savePreviousAccount();
+      final otherAddress = await other.getAddress();
+      when(() => tabs.announceSignedOut()).thenReturn(null);
+      final signedOut = <User?>[];
+      auth.onAuthStateChanged().listen(signedOut.add);
+      await proofs.markUnproven(otherAddress);
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana),
+          sourceWalletAddress: 'solana-source');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+          await ArNSWalletStore(openStore: () async => arnsKv)
+              .linked(otherAddress),
+          isNull);
+      expect(await proofs.isUnproven(otherAddress), isFalse);
+      expect(signedOut.first, isNull,
+          reason: 'preferences clear on the signed-out event');
+      verify(() => secure.remove('password')).called(1);
+      verify(() => secure.remove('biometricEnabled')).called(1);
+      verify(() => tabs.announceSignedOut()).called(1);
+    });
+
+    test('a failed wipe aborts the switch and saves nothing', () async {
+      final other = await savePreviousAccount();
+      final failing = _FailingHelpers(db);
+      final broken = await authWith(failing);
+
+      await expectLater(
+          broken.loginWithWallet(
+              wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana)),
+          throwsA(isA<AuthenticationUnknownException>()));
+
+      final ids = (await db.select(db.profiles).get()).map((p) => p.id);
+      expect(ids, isNot(contains(address)));
+      expect(ids, [await other.getAddress()]);
+      expect((await db.select(db.drives).get()).map((d) => d.id), ['theirs']);
+      verifyNever(() => tabs.announceSignedOut());
+    });
+
+    test('a secure store that throws still ends with the new profile saved',
+        () async {
+      await savePreviousAccount();
+      when(() => tabs.announceSignedOut()).thenReturn(null);
+      when(() => secure.remove(any())).thenThrow(Exception('storage'));
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana));
+
+      expect((await db.select(db.profiles).get()).map((p) => p.id), [address]);
+      expect(await db.select(db.drives).get(), isEmpty);
+    });
+
+    test(
+        'a password sign-in keeps the session state it just made for the '
+        'new account', () async {
+      await savePreviousAccount();
+      when(() => tabs.announceSignedOut()).thenReturn(null);
+      when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+          maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => []);
+
+      await auth.loginWithWallet(
+        wallet,
+        ProfileType.json,
+        _wallet(DeviceUnlockMethod.ethereum),
+        sourceWalletAddress: '0xabc',
+        password: 'their password',
+      );
+
+      expect(session.signInPasswordProven(address), isTrue);
+    });
+
+    Future<void> expectPreviousAccountKept(Wallet other) async {
+      final ids = (await db.select(db.profiles).get()).map((p) => p.id);
+      expect(ids, [await other.getAddress()]);
+      expect((await db.select(db.drives).get()).map((d) => d.id), ['theirs']);
+    }
+
+    test('a declined wallet prompt keeps the previous account', () async {
+      final other = await savePreviousAccount();
+
+      await expectLater(
+          auth.loginWithWallet(wallet, ProfileType.arConnect, _Refusing()),
+          throwsA(isA<DeviceUnlockRefusedException>()));
+
+      await expectPreviousAccountKept(other);
+      verifyNever(() => tabs.announceSignedOut());
+    });
+
+    test('a wrong MetaMask password keeps the previous account', () async {
+      final other = await savePreviousAccount();
+      final drive = await makeWebPrivateDrive(
+          wallet: wallet,
+          driveId: '6939b9e0-cc98-42cb-bae0-5888eca78885',
+          password: 'right');
+      when(() => arweave.cachedUserDriveCreationTimes(any())).thenReturn({});
+      when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+              maxRetries: any(named: 'maxRetries')))
+          .thenAnswer((_) async => [drive.tx]);
+      when(() => arweave.getEntityDataBytes(drive.tx.id,
+              configuredGatewayOnly: any(named: 'configuredGatewayOnly')))
+          .thenAnswer((_) async => drive.data);
+
+      await expectLater(
+          auth.loginWithWallet(
+              wallet, ProfileType.json, _wallet(DeviceUnlockMethod.ethereum),
+              sourceWalletAddress: '0xabc', password: 'typo'),
+          throwsA(isA<PasswordOpensNoDriveException>()));
+
+      await expectPreviousAccountKept(other);
+      verifyNever(() => tabs.announceSignedOut());
+    });
+
+    test('a gateway failure keeps the previous account', () async {
+      final other = await savePreviousAccount();
+      when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+              maxRetries: any(named: 'maxRetries')))
+          .thenThrow(GraphQLException('down'));
+
+      await expectLater(
+          auth.loginWithWallet(
+              wallet, ProfileType.json, _wallet(DeviceUnlockMethod.ethereum),
+              sourceWalletAddress: '0xabc', password: 'pw'),
+          throwsA(isA<AuthenticationGatewayException>()));
+
+      await expectPreviousAccountKept(other);
+    });
+
+    test('a switch runs the post-sign-out wipe', () async {
+      await savePreviousAccount();
+      when(() => tabs.announceSignedOut()).thenReturn(null);
+      final wiped = _CountingWipe(db);
+      final counted = await authWith(wiped);
+
+      await counted.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana));
+
+      expect(wiped.wipes, 1);
+    });
+
+    test('a same-address MetaMask sign-in keeps its drives', () async {
+      await db.profileDao
+          .addProfile('user.username', 'pw', wallet, ProfileType.json);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'mine',
+            rootFolderId: 'r',
+            ownerAddress: address,
+            name: 'Mine',
+            privacy: 'public',
+          ));
+      when(() => arweave.getUniqueUserDriveEntityTxs(any(),
+          maxRetries: any(named: 'maxRetries'))).thenAnswer((_) async => []);
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.ethereum),
+          sourceWalletAddress: '0xabc', password: 'pw');
+
+      expect((await db.select(db.drives).get()).map((d) => d.id), ['mine']);
+    });
+
+    test('the same account keeps its drives', () async {
+      await db.profileDao
+          .addProfile('user.username', 'pw', wallet, ProfileType.json);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'mine',
+            rootFolderId: 'r',
+            ownerAddress: address,
+            name: 'Mine',
+            privacy: 'public',
+          ));
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana));
+
+      expect((await db.select(db.drives).get()).map((d) => d.id), ['mine']);
+      verifyNever(() => tabs.announceSignedOut());
+    });
+
+    test('H4: the account it replaces leaves no drives behind', () async {
+      final other = await Wallet.generate();
+      final otherAddress = await other.getAddress();
+      await db.profileDao
+          .addProfile('user.username', 'pw', other, ProfileType.json);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'theirs',
+            rootFolderId: 'r',
+            ownerAddress: otherAddress,
+            name: 'Theirs',
+            privacy: 'public',
+          ));
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana),
+          sourceWalletAddress: 'solana-source');
+
+      expect(await db.select(db.drives).get(), isEmpty);
+    });
 
     test('a refused approval saves nothing', () async {
       final refusing = _Refusing();

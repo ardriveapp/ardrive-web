@@ -381,11 +381,20 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }) async {
     assert(source.method != DeviceUnlockMethod.password);
     try {
+      final address = await wallet.getAddress();
+
+      // Another account on this device: what the session holds in memory
+      // goes now, so nothing of it is mixed into this sign-in. Nothing saved
+      // goes until the wallet and the checks below have answered: a "no"
+      // must not cost the account that is here.
+      final previous = await _userRepository.getSavedProfile();
+      final switching = previous != null && previous.id != address;
+      if (switching) await _clearSessionState();
+
       if (password.isNotEmpty && !skipDriveCheck) {
         await _validateUser(wallet, password);
       }
 
-      final address = await wallet.getAddress();
       final deviceSalt = newDeviceSalt();
       Uint8List? keyCheck;
 
@@ -402,6 +411,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         throw DeviceUnlockRefusedException(outcome.status);
       }
 
+      if (switching) await _forgetSwitchedAccount(previous.id, source);
       await _replaceSavedProfile(address);
       await _userRepository.saveUserWithDeviceKey(
         wallet: wallet,
@@ -589,27 +599,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     logger.i('Logging out user');
 
     try {
-      await _userRepository.deleteUser();
-
-      if (_currentUser != null) {
-        await _proofStore.clear(_currentUser!.walletAddress);
-        await _disconnectFromArConnect();
-        (await _metadataCache).clear();
-        await _secureKeyValueStore.remove('password');
-        await _secureKeyValueStore.remove('biometricEnabled');
-      }
-
-      await _databaseHelpers.deleteAllTables();
-      await _databaseHelpers.clearSessionMemory();
-      // Locked drives, wallet signatures and proven passwords: memory only,
-      // and none of it may outlive the session.
-      _injectedDriveUnlocker?.session.clear();
-      _deviceUnlocker.clear();
-      await _permanenceCache.clear();
-      await _arnsWalletStore.clear();
-      await _arnsPendingActionStore.clear();
-      currentUser = null;
-      _userStreamController.add(null);
+      await _forgetPreviousAccount(address: _currentUser?.walletAddress);
     } catch (e, stacktrace) {
       logger.e('Failed to logout user', e, stacktrace);
       throw AuthenticationUnknownException('Failed to logout user');
@@ -619,6 +609,102 @@ class ArDriveAuthImpl implements ArDriveAuth {
     // that a tab working on a session copy reaches the database that lasts.
     if (!fromAnotherTab) _deviceTabs.announceSignedOut();
     await _databaseHelpers.wipeAfterSignOut();
+  }
+
+  /// What the session holds in memory: signed Turbo headers, drive keys read
+  /// from the tables, locked drives, wallet signatures and proven passwords.
+  /// None of it may outlive the session or reach another account's.
+  Future<void> _clearSessionState() async {
+    TurboSignatureHeadersManager.clearSession();
+    await _databaseHelpers.clearSessionMemory();
+    _injectedDriveUnlocker?.session.clear();
+    _deviceUnlocker.clear();
+  }
+
+  /// A sign-in with another account, once its wallet and checks have
+  /// answered and just before its profile is saved: the saved account goes
+  /// like a sign-out does, and other tabs hear of it. The session state is
+  /// the new account's by now, so it stays. Throws when the tables can't be
+  /// emptied, so nothing is saved over what is still there.
+  Future<void> _forgetSwitchedAccount(
+    String previousAddress,
+    DeviceSecretSource source,
+  ) async {
+    try {
+      await _forgetPreviousAccount(
+        address: previousAddress,
+        disconnectWander: source.method != DeviceUnlockMethod.wander,
+        strict: true,
+        clearSession: false,
+      );
+    } catch (e, stackTrace) {
+      logger.e('Could not clear the previous account', e, stackTrace);
+      throw AuthenticationUnknownException(
+          'Could not clear the previous account from this device');
+    }
+    _deviceTabs.announceSignedOut();
+    try {
+      await _databaseHelpers.wipeAfterSignOut();
+    } catch (e) {
+      logger.w('Could not finish wiping the previous account: $e');
+    }
+  }
+
+  /// Everything this device kept for the account that was here: the profile,
+  /// the database, the session's keys and signatures, caches, stores and
+  /// preferences (they clear on the signed-out event). [logout] and
+  /// [_forgetSwitchedAccount] share it. [address] is that account's, when
+  /// known; [strict] throws when the tables can't be emptied;
+  /// [disconnectWander] is false when the new sign-in is through Wander
+  /// itself; [clearSession] is false when the session state is already the
+  /// next account's.
+  Future<void> _forgetPreviousAccount({
+    String? address,
+    bool disconnectWander = true,
+    bool strict = false,
+    bool clearSession = true,
+  }) async {
+    // Signed Turbo headers belong to the account that signed them.
+    if (clearSession) TurboSignatureHeadersManager.clearSession();
+
+    // Strict: the tables first, so a failure leaves the account whole.
+    if (strict) await _databaseHelpers.deleteAllTables(rethrowOnError: true);
+    await _userRepository.deleteUser();
+
+    // Past the tables and the profile, a switch (strict) must still save the
+    // new account: whatever else fails here is logged and left behind. A
+    // sign-out keeps its own rule and reports the failure.
+    Future<void> step(Future<void> Function() run) async {
+      if (!strict) return run();
+      try {
+        await run();
+      } catch (e, stackTrace) {
+        logger.w('Could not clear all of the previous account: $e');
+        logger.d('$stackTrace');
+      }
+    }
+
+    if (address != null) {
+      await step(() => _proofStore.clear(address));
+      if (disconnectWander) await _disconnectFromArConnect();
+      await step(() async => (await _metadataCache).clear());
+      await step(() => _secureKeyValueStore.remove('password'));
+      await step(() => _secureKeyValueStore.remove('biometricEnabled'));
+    }
+
+    if (!strict) await _databaseHelpers.deleteAllTables();
+    if (clearSession) {
+      await _databaseHelpers.clearSessionMemory();
+      // Locked drives, wallet signatures and proven passwords: memory only,
+      // and none of it may outlive the session.
+      _injectedDriveUnlocker?.session.clear();
+      _deviceUnlocker.clear();
+    }
+    await step(_permanenceCache.clear);
+    await step(_arnsWalletStore.clear);
+    await step(_arnsPendingActionStore.clear);
+    currentUser = null;
+    _userStreamController.add(null);
   }
 
   /// The drives this device was told not to keep a key for; none if that

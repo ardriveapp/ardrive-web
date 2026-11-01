@@ -9,7 +9,10 @@ class DatabaseHelpers {
 
   DriveDao get driveDao => _db.driveDao;
 
-  Future<void> deleteAllTables() async {
+  /// A failure is logged and swallowed, so a sign-out finishes; with
+  /// [rethrowOnError] it is thrown, for a caller that must not go on over
+  /// data that is still there.
+  Future<void> deleteAllTables({bool rethrowOnError = false}) async {
     try {
       logger.d('Deleting all tables');
       await _db.transaction(() async {
@@ -19,6 +22,7 @@ class DatabaseHelpers {
       });
     } catch (e) {
       logger.e('Error deleting all tables', e);
+      if (rethrowOnError) rethrow;
     }
   }
 
