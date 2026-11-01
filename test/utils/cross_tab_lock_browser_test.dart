@@ -11,10 +11,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('two bodies under one name run one after the other', () async {
     final events = <String>[];
+    final firstStarted = Completer<void>();
     final firstMayFinish = Completer<void>();
 
     final first = runExclusiveAcrossTabs('cross-tab-test', () async {
       events.add('first starts');
+      firstStarted.complete();
       await firstMayFinish.future;
       events.add('first ends');
       return 1;
@@ -24,7 +26,11 @@ void main() {
       return 2;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    // Waits for the lock to be granted rather than guessing how long that
+    // takes: on a busy machine 50 ms wasn't enough. Then a moment more, in
+    // which the second must not start while the first holds the lock.
+    await firstStarted.future.timeout(const Duration(seconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(events, ['first starts']);
 
     firstMayFinish.complete();
