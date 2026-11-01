@@ -158,24 +158,27 @@ class NewButton extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                           horizontal: ArDriveSpacing.xs,
                         ),
-                        child: ArDriveHoverWidget(
-                          hoverColor: ArDriveTheme.of(context)
-                              .themeData
-                              .dropdownTheme
-                              .hoverColor,
-                          defaultColor: null,
-                          showMouseCursor: !item.isDisabled,
-                          child: ArDriveDropdownItemTile(
-                            iconAlignment: item.iconAlignment,
-                            icon: item.icon.copyWith(size: 24),
-                            name: item.name,
-                            isDisabled: item.isDisabled,
-                            fontStyle:
-                                ArDriveTypographyNew.of(context).paragraphLarge(
-                              fontWeight: ArFontWeight.semiBold,
-                              color: item.isDisabled
-                                  ? colorTokens.textXLow
-                                  : colorTokens.textHigh,
+                        child: _withDisabledTooltip(
+                          item,
+                          ArDriveHoverWidget(
+                            hoverColor: ArDriveTheme.of(context)
+                                .themeData
+                                .dropdownTheme
+                                .hoverColor,
+                            defaultColor: null,
+                            showMouseCursor: !item.isDisabled,
+                            child: ArDriveDropdownItemTile(
+                              iconAlignment: item.iconAlignment,
+                              icon: item.icon.copyWith(size: 24),
+                              name: item.name,
+                              isDisabled: item.isDisabled,
+                              fontStyle: ArDriveTypographyNew.of(context)
+                                  .paragraphLarge(
+                                fontWeight: ArFontWeight.semiBold,
+                                color: item.isDisabled
+                                    ? colorTokens.textXLow
+                                    : colorTokens.textHigh,
+                              ),
                             ),
                           ),
                         ),
@@ -278,25 +281,36 @@ class NewButton extends StatelessWidget {
           item.onClick();
         }
       },
-      widget: ArDriveHoverWidget(
-        hoverColor: ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
-        defaultColor:
-            ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
-        showMouseCursor: !item.isDisabled,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 24.0),
-              child: ArDriveDropdownItemTile(
-                icon: item.icon,
-                name: item.name,
-                isDisabled: item.isDisabled,
+      widget: _withDisabledTooltip(
+        item,
+        ArDriveHoverWidget(
+          hoverColor:
+              ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
+          defaultColor:
+              ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
+          showMouseCursor: !item.isDisabled,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 24.0),
+                child: ArDriveDropdownItemTile(
+                  icon: item.icon,
+                  name: item.name,
+                  isDisabled: item.isDisabled,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Widget _withDisabledTooltip(ArDriveNewButtonItem item, Widget child) {
+    final message = item.disabledTooltip;
+    if (!item.isDisabled || message == null) return child;
+
+    return ArDriveTooltip(message: message, child: child);
   }
 
   List<ArDriveNewButtonItem> _getAdvancedItems(BuildContext context) {
@@ -407,6 +421,7 @@ class NewButton extends StatelessWidget {
     final appLocalizations = appLocalizationsOf(context);
 
     final bool isDisabled;
+    var readingDrives = false;
     if (driveDetailState is DriveDetailLoadSuccess && drive != null) {
       isDisabled = !driveDetailState.hasWritePermissions || !canUpload;
     } else if (driveDetailState is DriveDetailLoadUnsynced) {
@@ -423,8 +438,11 @@ class NewButton extends StatelessWidget {
     } else {
       // Greyed in the moment before the drive list is known, when there is
       // nowhere yet for it to lead.
-      isDisabled = !canUpload || _uploadStart(context) is UploadNotYet;
+      readingDrives = canUpload && _uploadStart(context) is UploadNotYet;
+      isDisabled = !canUpload || readingDrives;
     }
+    final disabledTooltip =
+        readingDrives ? appLocalizations.readingYourDrives : null;
 
     void upload({required bool isFolderUpload}) {
       if (driveDetailState is DriveDetailLoadSuccess && drive != null) {
@@ -443,12 +461,14 @@ class NewButton extends StatelessWidget {
       ArDriveNewButtonItem(
         onClick: () => upload(isFolderUpload: false),
         isDisabled: isDisabled,
+        disabledTooltip: disabledTooltip,
         name: appLocalizations.uploadFiles,
         icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
       ),
       ArDriveNewButtonItem(
         onClick: () => upload(isFolderUpload: true),
         isDisabled: isDisabled,
+        disabledTooltip: disabledTooltip,
         name: appLocalizations.uploadFolder,
         icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
       ),
@@ -728,10 +748,14 @@ class ArDriveNewButtonItem extends ArDriveNewButtonComponent {
     this.isDisabled = false,
     this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
     this.display = true,
+    this.disabledTooltip,
   });
 
   final String name;
   final ArDriveIcon icon;
+
+  /// Says why the item is greyed, shown while [isDisabled].
+  final String? disabledTooltip;
   final VoidCallback onClick;
   final bool isDisabled;
   final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;

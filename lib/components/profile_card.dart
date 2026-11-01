@@ -947,23 +947,31 @@ class _ProfileCardState extends State<ProfileCard> {
                               onActivate: openTopUp,
                               radius: ArDriveRadius.control,
                               child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
                                 onTap: openTopUp,
                                 child: MouseRegion(
                                   cursor: SystemMouseCursors.click,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colorTokens.textMid,
-                                        width: 1,
+                                  // The circle stays 18; the press area is 40.
+                                  child: SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: Center(
+                                      child: Container(
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: colorTokens.textMid,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.add,
+                                          size: 12,
+                                          color: colorTokens.textMid,
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      Icons.add,
-                                      size: 12,
-                                      color: colorTokens.textMid,
                                     ),
                                   ),
                                 ),

@@ -936,7 +936,7 @@
   "@uploadWithThumbnails": {
     "description": "Upload options checkbox: also make and upload thumbnails for the images"
   },
-  "uploadFailedPartial": "Some files didn't finish uploading. They'll show as failed in your drive. Select Re-upload to try them again.",
+  "uploadFailedPartial": "Some files didn't finish uploading. Finished files were paid for. The rest were not charged. Select Re-upload to try them again.",
   "@uploadFailedPartial": {
     "description": "Upload problem dialog text when some Turbo uploads did not finish"
   },
@@ -1875,7 +1875,7 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
-  "leaveAnEmailToReceiveAReceipt": "To receive a receipt, please provide an email.",
+  "leaveAnEmailToReceiveAReceipt": "Email for a receipt (optional)",
   "@leaveAnEmailToReceiveAReceipt": {},
   "letsGetStartedEmphasized": "Let's get started",
   "@letsGetStartedEmphasized": {
@@ -4171,7 +4171,7 @@
   "@uploadInProgressKeepTabOpen": {
     "description": "Warning in the upload progress dialog while an upload paid from the wallet balance (AR) is running"
   },
-  "uploadFailedWalletFiles": "Some files didn't finish uploading. Select Re-upload to finish them.",
+  "uploadFailedWalletFiles": "Some files didn't finish uploading and may already be paid for. Select Re-upload to finish them.",
   "@uploadFailedWalletFiles": {
     "description": "Explanation in the upload problem dialog when files paid for from the wallet balance (AR) failed"
   },
@@ -4293,10 +4293,12 @@
   "@firstDriveFreeNote": {
     "description": "Note under a new user's empty first drive"
   },
-  "uploadReviewToPrivate": "To {folder}, private",
-  "@uploadReviewToPrivate": {"description": "Under the upload review's title: where the files go, in a private drive", "placeholders": {"folder": {"type": "String"}}},
-  "uploadReviewToPublic": "To {folder}, public",
-  "@uploadReviewToPublic": {"description": "Under the upload review's title: where the files go, in a public drive", "placeholders": {"folder": {"type": "String"}}},
+  "uploadReviewTo": "To {folder}",
+  "@uploadReviewTo": {"description": "Under the upload review's title: the folder the files go to. A private drive's lock follows it.", "placeholders": {"folder": {"type": "String"}}},
+  "cancelThisUploadTitle": "Cancel this upload?",
+  "@cancelThisUploadTitle": {"description": "Title of the warning shown when canceling an upload that is running"},
+  "readingYourDrives": "Reading your drives",
+  "@readingYourDrives": {"description": "Tooltip on Upload files and Upload folder while the app is still reading the drives, so they cannot be used yet"},
   "uploadCostLabel": "Cost",
   "@uploadCostLabel": {"description": "Label over the upload review's cost"},
   "uploadCostFree": "Free",
@@ -4559,7 +4561,7 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon.",
+  "yourCreditsWillBeAddedToYourAccount": "Your credits will arrive shortly.",
   "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPasswordCannotBeCahngedOrRetrivied": "Your password cannot be changed or retrieved, so please keep this safe.",
   "@yourPasswordCannotBeCahngedOrRetrivied": {},
@@ -4567,7 +4569,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "Your upload failed.",
+  "yourUploadFailed": "Your upload failed. Check your drive and your balance to see what was saved, then try again.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },

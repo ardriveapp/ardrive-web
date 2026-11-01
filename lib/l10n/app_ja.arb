@@ -2493,7 +2493,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "アップロードに失敗しました。失敗した試行に対しては請求されていません。",
+  "yourUploadFailed": "アップロードに失敗しました。保存された内容をドライブと残高で確認してから、もう一度お試しください。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
@@ -2510,5 +2510,22 @@
   "driveListClearSelectionTooltip": "選択を解除",
   "@driveListClearSelectionTooltip": {
     "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
+  },
+  "couldNotLoadCredits": "読み込めませんでした",
+  "@couldNotLoadCredits": {
+    "description": "Profile menu: shown in place of the credits figure when the balance could not be read."
+  },
+  "cancelThisUploadTitle": "このアップロードをキャンセルしますか?",
+  "@cancelThisUploadTitle": {
+    "description": "Title of the warning shown when canceling an upload that is running"
+  },
+  "readingYourDrives": "ドライブを読み込み中",
+  "@readingYourDrives": {
+    "description": "Tooltip on Upload files and Upload folder while the app is still reading the drives, so they cannot be used yet"
+  },
+  "uploadReviewTo": "{folder} へ",
+  "@uploadReviewTo": {
+    "description": "Under the upload review's title: the folder the files go to. A private drive's lock follows it.",
+    "placeholders": {"folder": {"type": "String"}}
   }
 }

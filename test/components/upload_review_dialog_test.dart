@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
@@ -113,7 +114,9 @@ void main() {
   });
 
   Widget host(UploadReviewSummary? s,
-          {Widget? notice, bool canShare = false}) =>
+          {Widget? notice,
+          bool canShare = false,
+          bool destinationIsPrivate = true}) =>
       ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
@@ -128,7 +131,8 @@ void main() {
             body: Center(
               child: UploadReviewDialog(
                 title: 'Upload 3 files',
-                destination: 'To My files, private',
+                destination: 'To My files',
+                destinationIsPrivate: destinationIsPrivate,
                 files: const [
                   (
                     name: 'recipes.pdf',
@@ -156,13 +160,18 @@ void main() {
       );
 
   Future<void> pump(WidgetTester tester, UploadReviewSummary? s,
-      {Widget? notice, bool canShare = false}) async {
+      {Widget? notice,
+      bool canShare = false,
+      bool destinationIsPrivate = true}) async {
     // Made in the test's own zone, so its futures complete as the test pumps.
     funding = _FakeFunding();
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(host(s, notice: notice, canShare: canShare));
+    await tester.pumpWidget(host(s,
+        notice: notice,
+        canShare: canShare,
+        destinationIsPrivate: destinationIsPrivate));
     await tester.pump();
   }
 
@@ -176,7 +185,7 @@ void main() {
     await pump(tester, summary(freeStatus: FreeUploadStatus.free));
 
     expect(find.text('Upload 3 files'), findsOneWidget);
-    expect(find.text('To My files, private'), findsOneWidget);
+    expect(find.text('To My files'), findsOneWidget);
     expect(find.text('grandma.jpg'), findsOneWidget);
     expect(find.text('Free', findRichText: true), findsOneWidget);
     expect(
@@ -192,6 +201,24 @@ void main() {
     expect(methods, [UploadMethod.turbo],
         reason: 'the upload is paid the way the review showed');
     expect(shown, 1);
+  });
+
+  testWidgets('a private drive shows a lock after the folder, not a word',
+      (tester) async {
+    await pump(tester, summary(freeStatus: FreeUploadStatus.free));
+
+    expect(find.text('To My files'), findsOneWidget);
+    expect(find.byType(PrivateDriveLock), findsOneWidget);
+    expect(find.textContaining('private'), findsNothing);
+  });
+
+  testWidgets('a public drive shows nothing after the folder', (tester) async {
+    await pump(tester, summary(freeStatus: FreeUploadStatus.free),
+        destinationIsPrivate: false);
+
+    expect(find.text('To My files'), findsOneWidget);
+    expect(find.byType(PrivateDriveLock), findsNothing);
+    expect(find.textContaining('public'), findsNothing);
   });
 
   testWidgets('not free and not covered: the notice, and no Upload',

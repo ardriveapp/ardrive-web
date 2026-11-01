@@ -2493,7 +2493,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "आपका अपलोड असफल रहा। असफल कोशिश के लिए आपसे शुल्क नहीं लिया गया है।",
+  "yourUploadFailed": "आपका अपलोड असफल रहा। क्या सेव हुआ, यह देखने के लिए अपनी ड्राइव और बैलेंस देखें, फिर दोबारा कोशिश करें।",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
@@ -2510,5 +2510,22 @@
   "driveListClearSelectionTooltip": "चयन हटाएं",
   "@driveListClearSelectionTooltip": {
     "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
+  },
+  "couldNotLoadCredits": "लोड नहीं हो सका",
+  "@couldNotLoadCredits": {
+    "description": "Profile menu: shown in place of the credits figure when the balance could not be read."
+  },
+  "cancelThisUploadTitle": "यह अपलोड रद्द करें?",
+  "@cancelThisUploadTitle": {
+    "description": "Title of the warning shown when canceling an upload that is running"
+  },
+  "readingYourDrives": "आपके ड्राइव पढ़े जा रहे हैं",
+  "@readingYourDrives": {
+    "description": "Tooltip on Upload files and Upload folder while the app is still reading the drives, so they cannot be used yet"
+  },
+  "uploadReviewTo": "{folder} में",
+  "@uploadReviewTo": {
+    "description": "Under the upload review's title: the folder the files go to. A private drive's lock follows it.",
+    "placeholders": {"folder": {"type": "String"}}
   }
 }

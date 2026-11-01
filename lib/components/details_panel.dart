@@ -10,6 +10,7 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/components/remembered_on_this_device.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -302,6 +303,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   item: widget.item,
                 ),
                 title: widget.item.name,
+                titleSuffix: widget.item is DriveDataItem &&
+                        widget.currentDrive?.isPrivate == true
+                    ? const PrivateDriveLock(size: 16)
+                    : null,
                 trailing: [
                   if (widget.item is FileDataTableItem &&
                       (widget.item as FileDataTableItem)
@@ -1799,11 +1804,15 @@ class DetailsPanelTitleCard extends StatelessWidget {
     super.key,
     required this.leading,
     required this.title,
+    this.titleSuffix,
     this.trailing = const [],
   });
 
   final Widget leading;
   final String title;
+
+  /// A mark that sits right after the name, such as a private drive's lock.
+  final Widget? titleSuffix;
   final List<Widget> trailing;
 
   @override
@@ -1819,15 +1828,25 @@ class DetailsPanelTitleCard extends StatelessWidget {
           leading,
           const SizedBox(width: 8),
           Expanded(
-            child: ArDriveTooltip(
-              message: title,
-              child: Text(
-                title,
-                style: typography.paragraphLarge(
-                  fontWeight: ArFontWeight.semiBold,
+            child: Row(
+              children: [
+                Flexible(
+                  child: ArDriveTooltip(
+                    message: title,
+                    child: Text(
+                      title,
+                      style: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                if (titleSuffix != null) ...[
+                  const SizedBox(width: 8),
+                  titleSuffix!,
+                ],
+              ],
             ),
           ),
           ...trailing,

@@ -455,7 +455,7 @@ class _UploadFormState extends State<UploadForm> {
             } else if (state is UploadSigningInProgress) {
               return _UploadSigningInProgressWidget(state: state);
             } else if (state is UploadInProgress) {
-              return _UploadInProgressWidget(
+              return UploadInProgressWidget(
                 state: state,
                 onChangeCancelWarning: (value) {
                   _isShowingCancelDialog = value;
@@ -464,7 +464,7 @@ class _UploadFormState extends State<UploadForm> {
             } else if (state is UploadCanceled) {
               return const _UploadCanceledWidget();
             } else if (state is UploadFailure) {
-              return _UploadFailureWidget(state: state);
+              return UploadFailureWidget(state: state);
             } else if (state is UploadShowingWarning) {
               // TODO: Fix use of startUpload
               return _UploadShowingWarningWidget(state: state);
@@ -1945,9 +1945,8 @@ class _UploadReadyWidget extends StatelessWidget {
 
           return UploadReviewDialog(
             title: l10n.uploadNFiles(state.numberOfFiles),
-            destination: state.uploadIsPublic
-                ? l10n.uploadReviewToPublic(folderName)
-                : l10n.uploadReviewToPrivate(folderName),
+            destination: l10n.uploadReviewTo(folderName),
+            destinationIsPrivate: !state.uploadIsPublic,
             files: uploadReviewFiles(info),
             summary: summary,
             primaryLabel: label,
@@ -2427,8 +2426,9 @@ class _UploadSigningInProgressWidget extends StatelessWidget {
   }
 }
 
-class _UploadFailureWidget extends StatelessWidget {
-  const _UploadFailureWidget({required this.state});
+@visibleForTesting
+class UploadFailureWidget extends StatelessWidget {
+  const UploadFailureWidget({super.key, required this.state});
 
   final UploadFailure state;
 
@@ -2753,8 +2753,10 @@ class _UploadCanceledWidget extends StatelessWidget {
   }
 }
 
-class _UploadInProgressWidget extends StatelessWidget {
-  const _UploadInProgressWidget({
+@visibleForTesting
+class UploadInProgressWidget extends StatelessWidget {
+  const UploadInProgressWidget({
+    super.key,
     required this.state,
     required this.onChangeCancelWarning,
   });
@@ -2803,7 +2805,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                       );
                     }
                     return ArDriveStandardModalNew(
-                      title: appLocalizationsOf(context).warning,
+                      title: appLocalizationsOf(context).cancelThisUploadTitle,
                       // What a cancel costs depends on how the upload is
                       // paid: credits for finished files are spent, while
                       // AR already sent from the wallet may still be charged.
@@ -2813,13 +2815,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                           : appLocalizationsOf(context)
                               .cancelUploadMayStillCharge,
                       actions: [
-                        ModalAction(
-                          action: () {
-                            onChangeCancelWarning(false);
-                            Navigator.pop(context);
-                          },
-                          title: appLocalizationsOf(context).keepUploading,
-                        ),
+                        // The safe action is last, so it is the primary.
                         ModalAction(
                           action: () {
                             onChangeCancelWarning(false);
@@ -2827,6 +2823,13 @@ class _UploadInProgressWidget extends StatelessWidget {
                             Navigator.pop(context);
                           },
                           title: appLocalizationsOf(context).cancelUpload,
+                        ),
+                        ModalAction(
+                          action: () {
+                            onChangeCancelWarning(false);
+                            Navigator.pop(context);
+                          },
+                          title: appLocalizationsOf(context).keepUploading,
                         ),
                       ],
                     );
@@ -3298,9 +3301,8 @@ class _UploadPaymentRequiredWidgetState
 
     return UploadReviewDialog(
       title: l10n.uploadNFiles(reviewed.numberOfFiles),
-      destination: reviewed.uploadIsPublic
-          ? l10n.uploadReviewToPublic(folderName)
-          : l10n.uploadReviewToPrivate(folderName),
+      destination: l10n.uploadReviewTo(folderName),
+      destinationIsPrivate: !reviewed.uploadIsPublic,
       files: uploadReviewFiles(reviewed.paymentInfo),
       summary: _summary,
       primaryLabel: l10n.upload,

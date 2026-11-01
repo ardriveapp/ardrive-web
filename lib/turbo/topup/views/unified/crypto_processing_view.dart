@@ -23,7 +23,9 @@ class CryptoProcessingView extends StatelessWidget {
             // One SDK call sends the payment and waits for the network, so
             // this covers both: the wallet's prompt and the confirmation.
             message = 'Approve the payment in your wallet';
-            submessage = 'Once you approve it, it can take a minute to confirm';
+            submessage =
+                'Once you approve it, it can take a minute to confirm.\n'
+                'To cancel, reject the request in your wallet.';
           } else if (state.txId != null) {
             message = 'Confirming transaction...';
             submessage = 'Waiting for network confirmation';

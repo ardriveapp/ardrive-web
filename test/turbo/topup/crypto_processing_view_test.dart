@@ -55,4 +55,39 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('while the wallet asks, it says how to cancel', (tester) async {
+    final bloc = _MockCryptoTopupBloc();
+    whenListen(
+      bloc,
+      const Stream<CryptoTopupState>.empty(),
+      initialState: const CryptoTopupProcessing(
+        token: CryptoToken.ethBase,
+        estimatedTime: Duration(minutes: 1),
+        isSubmitting: true,
+      ),
+    );
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BlocProvider<CryptoTopupBloc>.value(
+            value: bloc,
+            child: const CryptoProcessingView(),
+          ),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    expect(
+      find.textContaining('To cancel, reject the request in your wallet.'),
+      findsOneWidget,
+    );
+  });
 }
