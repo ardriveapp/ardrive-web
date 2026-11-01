@@ -84,7 +84,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                                     : colors.textLow
                                 : null;
                         return ListTile(
-                          leading: ArDriveIcons.addDrive(
+                          leading: ArDriveIcons.drive(
                             color: color,
                           ),
                           title: Text(
@@ -121,7 +121,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                                     : colors.textLow
                                 : null;
                         return ListTile(
-                          leading: ArDriveIcons.addDrive(
+                          leading: ArDriveIcons.drive(
                             color: color,
                           ),
                           title: Text(
