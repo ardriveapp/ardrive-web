@@ -2493,7 +2493,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
+  "yourUploadFailed": "上传失败。请查看你的网盘和余额，确认已保存的内容后重试。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },

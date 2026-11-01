@@ -2493,7 +2493,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "アップロードに失敗しました。失敗した試行に対しては請求されていません。",
+  "yourUploadFailed": "アップロードに失敗しました。保存された内容をドライブと残高で確認してから、もう一度お試しください。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },

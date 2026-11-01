@@ -2493,7 +2493,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "Falló la carga. No se le ha cobrado por el intento fallido.",
+  "yourUploadFailed": "Falló la carga. Revisa tu unidad y tu saldo para ver qué se guardó y vuelve a intentarlo.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },

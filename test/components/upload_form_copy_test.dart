@@ -53,15 +53,23 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('a failed upload says whether money moved', (tester) async {
+  // Which files were paid for depends on how: Turbo charges finished files,
+  // the wallet may have paid for unfinished ones. Without the file list the
+  // dialog can't know, so it says where to look rather than guessing.
+  testWidgets('a failed upload says where to check what was saved',
+      (tester) async {
     await pump(
       tester,
       UploadFailureWidget(state: UploadFailure(error: UploadErrors.unknown)),
     );
 
-    expect(find.textContaining('Files that finished uploading were paid for'),
-        findsOneWidget);
-    expect(find.textContaining('The rest were not'), findsOneWidget);
+    expect(
+      find.text('Your upload failed. Check your drive and your balance to '
+          'see what was saved, then try again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('were not'), findsNothing,
+        reason: 'no claim the dialog cannot back');
   });
 
   testWidgets('canceling asks a real question, and keeping is the primary',

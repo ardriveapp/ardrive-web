@@ -2493,7 +2493,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "您的上傳失敗。尚未向您收取失敗的嘗試費用。",
+  "yourUploadFailed": "上傳失敗。請查看你的檔案盤和餘額，確認已儲存的內容後再試。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },

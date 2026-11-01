@@ -4569,7 +4569,7 @@
   "@yourPrivateSecureAndPermanentDrive": {
     "description": "Your private, secure, and permanent hard drive."
   },
-  "yourUploadFailed": "Your upload failed. Files that finished uploading were paid for. The rest were not. Check your drive, then try again.",
+  "yourUploadFailed": "Your upload failed. Check your drive and your balance to see what was saved, then try again.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
