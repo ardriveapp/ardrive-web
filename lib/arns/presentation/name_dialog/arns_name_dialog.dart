@@ -384,7 +384,7 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     final strings = appLocalizationsOf(context);
     return switch (state.mode) {
       ArNSNameDialogMode.nameItem =>
-        state.changesName ? strings.arnsChangeName : strings.arnsAddName,
+        state.changesName ? strings.arnsChangeName : strings.arnsFlowNameRow,
       ArNSNameDialogMode.pointRecord ||
       ArNSNameDialogMode.cacheTime =>
         strings.arnsSave,
@@ -408,7 +408,7 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     }
     return switch (state.mode) {
       ArNSNameDialogMode.nameItem =>
-        state.changesName ? strings.arnsChangeName : strings.arnsAddName,
+        state.changesName ? strings.arnsChangeName : strings.arnsFlowNameRow,
       ArNSNameDialogMode.pointRecord => strings.arnsChangeWhatItPointsTo,
       ArNSNameDialogMode.cacheTime => strings.arnsCacheTime,
       ArNSNameDialogMode.remove => strings.arnsRemoveName,
@@ -1545,7 +1545,7 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
               Icon(arnsNameIcon, size: 18, color: colors.iconMid),
               const SizedBox(width: ArDriveSpacing.xs),
               Text(
-                strings.arnsAddName,
+                strings.arnsFlowNameRow,
                 style: typography.paragraphNormal(
                   color: colors.textHigh,
                   fontWeight: ArFontWeight.semiBold,

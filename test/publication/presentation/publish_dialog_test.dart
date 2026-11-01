@@ -1,4 +1,6 @@
 import 'package:ardrive/arns/data/arns_change_executor.dart';
+import 'package:ardrive/arns/domain/arns_names.dart';
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
@@ -22,6 +24,9 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockPublishCubit extends MockCubit<PublishState>
     implements PublishCubit {}
+
+class _MockWalletCubit extends MockCubit<ArNSWalletState>
+    implements ArNSWalletCubit {}
 
 class _MockNameCubit extends MockCubit<ArNSNameDialogState>
     implements ArNSFlowNameCubit {}
@@ -114,6 +119,118 @@ void main() {
     expect(find.text('Link'), findsOneWidget, reason: 'the rest stays');
     expect(find.text('Snapshot'), findsNothing);
     expect(find.textContaining('snapshot'), findsNothing);
+  });
+
+  testWidgets('the review no longer warns that publishing is permanent',
+      (tester) async {
+    await open(
+      tester,
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        cost: _freeCost,
+      ),
+    );
+
+    expect(find.text('Review and publish'), findsOneWidget);
+    expect(find.textContaining('permanent'), findsNothing);
+  });
+
+  testWidgets('the first step says what comes next', (tester) async {
+    await open(
+      tester,
+      const PublishState(stage: PublishStage.included, summary: _summary),
+    );
+
+    expect(
+      find.text('Next: a title. Images, a description and a name are '
+          'optional, and you can add them later.'),
+      findsOneWidget,
+    );
+  });
+
+  group('the review of an update', () {
+    ArNSNameRecord record(String name) => ArNSNameRecord(
+          name: name,
+          undername: '@',
+          transactionId: 'tx',
+          ttlSeconds: 900,
+        );
+
+    Future<void> review(WidgetTester tester, List<ArNSNameRecord> following,
+        {bool isUpdate = true}) async {
+      final names = _MockNameCubit();
+      whenListen(
+        names,
+        const Stream<ArNSNameDialogState>.empty(),
+        initialState: ArNSNameDialogState(
+          mode: ArNSNameDialogMode.nameItem,
+          stage: ArNSDialogStage.noNames,
+          following: following,
+        ),
+      );
+      when(() => names.ready).thenReturn(true);
+      when(() => names.hasWork).thenReturn(following.isNotEmpty);
+      when(() => names.repointing).thenReturn(null);
+      when(() => cubit.names).thenReturn(names);
+      final wallet = _MockWalletCubit();
+      whenListen(wallet, const Stream<ArNSWalletState>.empty(),
+          initialState: const ArNSWalletState());
+      when(() => cubit.state).thenReturn(PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        cost: _freeCost,
+        isUpdate: isUpdate,
+      ));
+      await tester.pumpWidget(app(BlocProvider<ArNSWalletCubit>.value(
+        value: wallet,
+        child: BlocProvider<PublishCubit>.value(
+          value: cubit,
+          child: const Material(
+            type: MaterialType.transparency,
+            child: SingleChildScrollView(child: PublishDialog()),
+          ),
+        ),
+      )));
+      await tester.pump();
+    }
+
+    testWidgets('without names, keeps the plain note', (tester) async {
+      await review(tester, const []);
+
+      expect(find.text('A new link. The current one keeps working.'),
+          findsOneWidget);
+    });
+
+    testWidgets('with one name, says it moves', (tester) async {
+      await review(tester, [record('maya')]);
+
+      expect(
+        find.text(
+            'A new link. maya.ar.io moves to it; the current link keeps working.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('with several names, says how many move', (tester) async {
+      await review(tester, [record('maya'), record('lake')]);
+
+      expect(
+        find.text(
+            'A new link. 2 names move to it; the current link keeps working.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the name row asks for a name like yours.ar.io',
+        (tester) async {
+      await review(tester, const [], isUpdate: false);
+
+      expect(find.text('Give it a name like yours.ar.io'), findsOneWidget);
+      expect(find.text('Add name'), findsNothing);
+    });
   });
 
   testWidgets('what is included counts files and folders, not their size',

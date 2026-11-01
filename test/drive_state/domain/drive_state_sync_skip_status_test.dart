@@ -127,6 +127,13 @@ void main() {
       expectUnknown(statusOf(coveredDriveIds: {otherDriveId}));
     });
 
+    test('an uncovered drive is told to sync in plain words', () {
+      expect(
+        statusOf(coveredDriveIds: {otherDriveId}).reason,
+        'Sync this drive first, so the page includes everything in it.',
+      );
+    });
+
     test('the last sync failed for this drive', () {
       expectUnknown(statusOf(
         syncState: SyncCompleteWithErrors(

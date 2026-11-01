@@ -77,27 +77,80 @@ void main() {
     return [...labels]..sort((a, b) => found[a]!.compareTo(found[b]!));
   }
 
-  const labels = [
+  Future<void> openMore(WidgetTester tester) async {
+    await tester.ensureVisible(find.text('More options'));
+    await tester.pump();
+    await tester.tap(find.text('More options'));
+    await tester.pump();
+  }
+
+  const everyLabel = [
     'Title',
     'Description',
+    'Cover',
+    'Icon',
     'Display name',
     'Keywords',
-    'Icon',
-    'Cover',
     'Social card',
     'License',
   ];
+  const hidden = ['Display name', 'Keywords', 'Social card', 'License'];
 
   for (final (name, size) in [
     ('on a phone', const Size(390, 844)),
     ('on a wide screen', const Size(1280, 900)),
   ]) {
-    testWidgets('the license is the last thing filled in, $name',
+    testWidgets('the pictures sit right under the words, $name',
         (tester) async {
       await pump(tester, size);
-      expect(order(tester, labels), labels);
+      await openMore(tester);
+      await tester.pump();
+      expect(order(tester, everyLabel), everyLabel);
     });
   }
+
+  testWidgets(
+      'display name, keywords, social card and license wait behind '
+      'More options', (tester) async {
+    await pump(tester, const Size(1280, 900));
+
+    for (final label in ['Title', 'Description', 'Cover', 'Icon']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.text('More options'), findsOneWidget);
+    for (final label in hidden) {
+      expect(find.text(label), findsNothing, reason: label);
+    }
+
+    await openMore(tester);
+    for (final label in hidden) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+  });
+
+  testWidgets('More options starts open when one has a value', (tester) async {
+    when(() => cubit.state).thenReturn(const PublishState(
+        stage: PublishStage.look, title: 'A', ownerName: 'Maya'));
+    await pump(tester, const Size(1280, 900));
+
+    for (final label in hidden) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+  });
+
+  testWidgets('the image hints say they are optional', (tester) async {
+    await pump(tester, const Size(1280, 900));
+    await openMore(tester);
+
+    expect(
+        find.text(
+            'Optional. Best at 1600 by 400 pixels; phones crop the sides.'),
+        findsOneWidget);
+    expect(find.text('Optional. Square, at least 512 pixels wide.'),
+        findsOneWidget);
+    expect(find.textContaining('Optional. Best at 1200 by 630 pixels. Until you pick one'),
+        findsOneWidget);
+  });
 
   group('a file page', () {
     setUp(() {

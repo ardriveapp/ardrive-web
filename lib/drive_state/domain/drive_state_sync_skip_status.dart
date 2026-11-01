@@ -160,8 +160,7 @@ DriveStateSyncSkipStatus driveStateSyncSkipStatus({
 
   if (coveredDriveIds != null && !coveredDriveIds.contains(driveId)) {
     return const DriveStateSyncSkipStatus.unknown(
-      'The last sync did not cover this drive, so there is nothing to confirm '
-      'it is complete. Sync this drive, then try again.',
+      'Sync this drive first, so the page includes everything in it.',
     );
   }
 

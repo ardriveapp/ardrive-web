@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/data/arns_change_executor.dart';
+import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -364,7 +365,10 @@ class PublishDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _Review(state: state, scopeName: cubit.scopeName),
+                      _Review(
+                          state: state,
+                          scopeName: cubit.scopeName,
+                          names: names),
                       if (names != null) ...[
                         const SizedBox(height: 16),
                         ArNSFlowNameSection(cubit: names),
@@ -667,16 +671,32 @@ class _Included extends StatelessWidget {
         const SizedBox(height: 16),
         Text(strings.publishIncludedNote,
             style: typography.paragraphSmall(color: colors.textLow)),
+        const SizedBox(height: 8),
+        Text(strings.publishNextTitleNote,
+            style: typography.paragraphSmall(color: colors.textLow)),
       ],
     );
   }
 }
 
 class _Review extends StatelessWidget {
-  const _Review({required this.state, required this.scopeName});
+  const _Review({required this.state, required this.scopeName, this.names});
 
   final PublishState state;
   final String scopeName;
+
+  /// The names that follow the page to its new version, on an update.
+  final ArNSFlowNameCubit? names;
+
+  String _updateLink(AppLocalizations strings) {
+    final moving = names?.state.moving ?? const <ArNSNameRecord>[];
+    if (moving.isEmpty) return strings.publishReviewUpdateLink;
+    if (moving.length == 1) {
+      return strings
+          .publishReviewUpdateLinkName(arnsHostFor(moving.single.literalName));
+    }
+    return strings.publishReviewUpdateLinkNames(moving.length);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -701,7 +721,7 @@ class _Review extends StatelessWidget {
           SummaryRow(
             strings.publishReviewLink,
             state.isUpdate
-                ? strings.publishReviewUpdateLink
+                ? _updateLink(strings)
                 : strings.publishReviewNewLink,
           ),
         ]),
@@ -744,20 +764,6 @@ class _Review extends StatelessWidget {
           Text(strings.publishUnaffordable,
               style: typography.paragraphSmall(color: colors.textRed)),
         ],
-        const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ArDriveIcons.triangle(size: 16, color: colors.iconMid),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(strings.publishPermanent,
-                  style: typography.paragraphNormal(
-                      color: colors.textHigh,
-                      fontWeight: ArFontWeight.semiBold)),
-            ),
-          ],
-        ),
       ],
     );
   }
