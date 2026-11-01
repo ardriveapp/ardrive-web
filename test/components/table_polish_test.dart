@@ -109,9 +109,9 @@ void main() {
                 return ArDriveRowMenuScope(
                   onOpenChanged: heard.add,
                   child: showMenu
-                      ? ArDriveDropdown(
+                      ? const ArDriveDropdown(
                           items: menuItems,
-                          child: const Icon(Icons.more_vert, key: Key('k')),
+                          child: Icon(Icons.more_vert, key: Key('k')),
                         )
                       : const SizedBox(),
                 );
