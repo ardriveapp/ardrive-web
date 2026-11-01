@@ -116,6 +116,36 @@ void main() {
         ArDriveColorTokens.darkMode().textMid);
   });
 
+  testWidgets('a footnote can end in a link, at its own size', (tester) async {
+    var tapped = 0;
+    await tester.pumpWidget(wrap(ArDriveEmptyState(
+      title: 'Link your wallet',
+      footnote: 'No name yet?',
+      footnoteActionLabel: 'Get one',
+      onFootnoteAction: () => tapped++,
+      footnoteActionIsExternal: true,
+    )));
+
+    final link = find.byWidgetPredicate((w) => w is ArDriveLink);
+    final widget = tester.widget<ArDriveLink>(link);
+    expect(widget.text, 'Get one');
+    expect(widget.external, isTrue);
+    expect(widget.style!.fontSize,
+        tester.widget<Text>(find.text('No name\u00A0yet?')).style!.fontSize);
+
+    await tester.tap(link);
+    expect(tapped, 1);
+  });
+
+  testWidgets('no footnote link without a label', (tester) async {
+    await tester.pumpWidget(wrap(const ArDriveEmptyState(
+      title: 'Drop files',
+      footnote: 'Small files upload free.',
+    )));
+
+    expect(find.byType(ArDriveLink), findsNothing);
+  });
+
   testWidgets('a footnote keeps its last two words on one line',
       (tester) async {
     final handle = tester.ensureSemantics();

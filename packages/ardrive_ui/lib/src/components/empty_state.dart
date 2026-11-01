@@ -20,6 +20,9 @@ class ArDriveEmptyState extends StatelessWidget {
     this.onSecondaryAction,
     this.framed = false,
     this.footnote,
+    this.footnoteActionLabel,
+    this.onFootnoteAction,
+    this.footnoteActionIsExternal = false,
   });
 
   /// Drawn at 32 px in iconLow when it is an [ArDriveIcon] without its own
@@ -47,6 +50,14 @@ class ArDriveEmptyState extends StatelessWidget {
   /// notice. No box, no icon, nothing to dismiss. Its last two words wrap
   /// together; a screen reader hears it as given.
   final String? footnote;
+
+  /// A link at the end of [footnote], in the footnote's size, for the one
+  /// place to go next that is not the main action.
+  final String? footnoteActionLabel;
+  final VoidCallback? onFootnoteAction;
+
+  /// Whether the footnote's link opens a new window.
+  final bool footnoteActionIsExternal;
 
   @override
   Widget build(BuildContext context) {
@@ -123,11 +134,28 @@ class ArDriveEmptyState extends StatelessWidget {
               ],
               if (footnote != null) ...[
                 const SizedBox(height: ArDriveSpacing.md),
-                Text(
-                  keepLastWordsTogether(footnote!),
-                  semanticsLabel: footnote,
-                  textAlign: TextAlign.center,
-                  style: typography.paragraphSmall(color: colorTokens.textMid),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: ArDriveSpacing.xs,
+                  children: [
+                    Text(
+                      keepLastWordsTogether(footnote!),
+                      semanticsLabel: footnote,
+                      textAlign: TextAlign.center,
+                      style:
+                          typography.paragraphSmall(color: colorTokens.textMid),
+                    ),
+                    if (footnoteActionLabel != null)
+                      ArDriveLink(
+                        text: footnoteActionLabel!,
+                        onTap: onFootnoteAction,
+                        external: footnoteActionIsExternal,
+                        style: typography.paragraphSmall(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ],
