@@ -178,8 +178,8 @@ class SyncProgress extends LinearProgress {
   @override
   final bool isIndeterminate;
 
-  /// True when the transaction status pass ran out of time and was stopped
-  /// with transactions still unresolved. The sync itself is complete; this
+  /// True when the transaction status pass ran out of time, as a whole or in
+  /// one of its batches, with transactions still unresolved. The sync itself is complete; this
   /// tells whoever owns the app's background work that the rest of the
   /// confirming is still owed, so it is not left to the next sync.
   final bool statusPassTimedOut;

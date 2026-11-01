@@ -45,6 +45,8 @@ void main() {
   late MockArweaveService arweave;
   late SyncRepository syncRepository;
   late _MockWallet wallet;
+  late MockConfigService configService;
+  late _MockUserPreferencesRepository userPreferences;
 
   /// How many confirmation queries were asked, and the slow answer to hold.
   late int asked;
@@ -60,8 +62,8 @@ void main() {
     wallet = _MockWallet();
     asked = 0;
     slowAnswer = Completer<Map<String?, int>>();
-    final configService = MockConfigService();
-    final userPreferences = _MockUserPreferencesRepository();
+    configService = MockConfigService();
+    userPreferences = _MockUserPreferencesRepository();
 
     when(() => wallet.getAddress()).thenAnswer((_) async => ownerAddress);
     when(() => configService.config).thenReturn(AppConfig(
@@ -156,6 +158,31 @@ void main() {
     final emitted = await syncAll();
 
     expect(emitted.last.statusPassTimedOut, isTrue);
+  });
+
+  // A batch that runs out of time keeps what it had and moves on, so the
+  // pass finishes in time with that batch's rest still pending: owed all the
+  // same, so the follow-up must be asked for.
+  test('a batch that ran out of time asks for the follow-up too', () async {
+    final repository = SyncRepository(
+      arweave: arweave,
+      driveDao: db.driveDao,
+      configService: configService,
+      batchProcessor: BatchProcessor(),
+      snapshotValidationService: _MockSnapshotValidationService(),
+      userPreferencesRepository: userPreferences,
+      statusUpdateTimeout: const Duration(seconds: 5),
+      statusBatchTimeout: const Duration(milliseconds: 50),
+    );
+
+    final emitted = await repository
+        .syncAllDrives(wallet: wallet)
+        .toList()
+        .timeout(const Duration(seconds: 4));
+
+    expect(emitted.last.statusMessage, 'Sync complete');
+    expect(emitted.last.statusPassTimedOut, isTrue);
+    expect((await pendingRow()).status, TransactionStatus.pending);
   });
 
   test('a pass that finishes in time says nothing', () async {

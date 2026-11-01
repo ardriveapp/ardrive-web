@@ -392,9 +392,13 @@ abstract class SyncRepository {
 
     /// Replaces [_txStatusUpdateTimeout] so a test need not wait thirty seconds.
     @visibleForTesting Duration? statusUpdateTimeout,
+
+    /// Replaces [_txConfirmationBatchTimeout], for the same reason.
+    @visibleForTesting Duration? statusBatchTimeout,
   }) {
     return _SyncRepository(
       statusUpdateTimeout: statusUpdateTimeout ?? _txStatusUpdateTimeout,
+      statusBatchTimeout: statusBatchTimeout ?? _txConfirmationBatchTimeout,
       arweave: arweave,
       driveDao: driveDao,
       configService: configService,
@@ -437,6 +441,7 @@ class _SyncRepository implements SyncRepository {
   }
 
   final Duration _statusUpdateTimeout;
+  final Duration _statusBatchTimeout;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final DriveUnlocker _driveUnlocker;
@@ -609,7 +614,9 @@ class _SyncRepository implements SyncRepository {
     DriveStateSyncSource? driveStateSyncSource,
     required DriveUnlocker driveUnlocker,
     required Duration statusUpdateTimeout,
+    required Duration statusBatchTimeout,
   })  : _statusUpdateTimeout = statusUpdateTimeout,
+        _statusBatchTimeout = statusBatchTimeout,
         _driveStateSyncSource = driveStateSyncSource,
         _driveUnlocker = driveUnlocker,
         _arweave = arweave,
@@ -1264,6 +1271,12 @@ class _SyncRepository implements SyncRepository {
                   syncProgress = syncProgress.copyWith(isIndeterminate: active);
                   syncProgress = syncProgressController.add(syncProgress);
                 },
+                // Part of a batch went unanswered: owed, like a timed out pass.
+                onBatchTimedOut: () {
+                  syncProgress =
+                      syncProgress.copyWith(statusPassTimedOut: true);
+                  syncProgress = syncProgressController.add(syncProgress);
+                },
               ).timeout(
                 _statusUpdateTimeout,
                 onTimeout: () {
@@ -1743,6 +1756,11 @@ class _SyncRepository implements SyncRepository {
               syncProgress = syncProgress.copyWith(isIndeterminate: active);
               syncProgress = syncProgressController.add(syncProgress);
             },
+            // See the same callback in [syncAllDrives].
+            onBatchTimedOut: () {
+              syncProgress = syncProgress.copyWith(statusPassTimedOut: true);
+              syncProgress = syncProgressController.add(syncProgress);
+            },
           ).timeout(
             _statusUpdateTimeout,
             onTimeout: () {
@@ -1892,6 +1910,10 @@ class _SyncRepository implements SyncRepository {
     /// Called with true when the gateway confirmation loop begins and false
     /// when it is over. See [_updateTransactionStatuses].
     void Function(bool active)? onGatewayPhase,
+
+    /// Called when a batch of the gateway's answers ran out of time, so some
+    /// of its transactions stay pending though the pass as a whole finished.
+    void Function()? onBatchTimedOut,
   }) async {
     cancellationToken?.checkCancellation();
 
@@ -2000,10 +2022,11 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        _txConfirmationBatchTimeout,
+        _statusBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
+          onBatchTimedOut?.call();
           return verified;
         },
       );
@@ -2437,6 +2460,10 @@ class _SyncRepository implements SyncRepository {
     /// when it is over. Nothing in here can measure that loop, so the bar is
     /// told to stop pretending to for its duration.
     void Function(bool active)? onGatewayPhase,
+
+    /// Called when a batch of the gateway's answers ran out of time, so some
+    /// of its transactions stay pending though the pass as a whole finished.
+    void Function()? onBatchTimedOut,
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
@@ -2567,10 +2594,11 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        _txConfirmationBatchTimeout,
+        _statusBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
+          onBatchTimedOut?.call();
           return verified;
         },
       );
