@@ -148,7 +148,7 @@ void main() {
         findsOneWidget);
     expect(find.text('Optional. Square, at least 512 pixels wide.'),
         findsOneWidget);
-    expect(find.textContaining('Optional. At least 1200 by 630 pixels.'),
+    expect(find.textContaining('Optional. Best at 1200 by 630 pixels. Until you pick one'),
         findsOneWidget);
   });
 

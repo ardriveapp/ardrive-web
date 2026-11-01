@@ -546,7 +546,7 @@ class _ImageField extends StatelessWidget {
         else if (picked?.isSmall ?? false)
           _Hint(strings.publishImageSmall, color: colors.textMid)
         else if (slot == PublicationImageSlot.social && picked == null)
-          _Hint('${strings.publishSocialGenerated} $hint')
+          _Hint('$hint ${strings.publishSocialGenerated}')
         else
           _Hint(hint),
       ],
