@@ -5,6 +5,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('a long label wraps beside a right-aligned switch',
+      (tester) async {
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 200,
+            child: ArDriveToggleSwitch(
+              alignRight: true,
+              text: 'A label far too long to fit beside the switch on one line',
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ToggleSwitch widget and its contents render', (tester) async {
     const toggleSwitch = ArDriveToggleSwitch(
       text: 'some text',
