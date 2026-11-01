@@ -2067,8 +2067,11 @@ class _SyncRepository implements SyncRepository {
       onGatewayPhase?.call(false);
     }
 
-    // Mark skipped transactions as confirmed
+    // Mark skipped transactions as confirmed. Not by a pass already stopped:
+    // with every pending one in a snapshot there is no gateway batch above
+    // to notice the stop, and an abandoned pass must write nothing.
     if (txsIdsToSkip.isNotEmpty) {
+      cancellationToken?.checkCancellation();
       await driveDao.insertNewNetworkTransactions(
         txsIdsToSkip
             .map((txId) => NetworkTransactionsCompanion(
@@ -2639,7 +2642,10 @@ class _SyncRepository implements SyncRepository {
       onGatewayPhase?.call(false);
     }
 
+    // As in [_updateTransactionStatusesForDrive]: a stopped pass writes
+    // nothing, these included.
     if (txsIdsToSkip.isNotEmpty) {
+      cancellationToken?.checkCancellation();
       await driveDao.insertNewNetworkTransactions(
         txsIdsToSkip
             .map((txId) => NetworkTransactionsCompanion(

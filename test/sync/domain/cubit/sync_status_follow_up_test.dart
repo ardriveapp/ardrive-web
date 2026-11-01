@@ -218,6 +218,43 @@ void main() {
         )).called(1);
   });
 
+  test('a single drive sync that timed out is followed by a refresh too',
+      () async {
+    when(() => syncRepository.syncSingleDrive(
+          driveId: any(named: 'driveId'),
+          syncDeep: any(named: 'syncDeep'),
+          wallet: any(named: 'wallet'),
+          password: any(named: 'password'),
+          cipherKey: any(named: 'cipherKey'),
+          cancellationToken: any(named: 'cancellationToken'),
+          txFechedCallback: any(named: 'txFechedCallback'),
+        )).thenAnswer((_) => Stream.value(
+          SyncProgress.emptySyncCompleted().copyWith(statusPassTimedOut: true),
+        ));
+    refreshRuns((_) async {});
+    final cubit = await cubitOwedFromNowOn();
+    addTearDown(cubit.close);
+
+    fakeAsync((async) {
+      bool? synced;
+      cubit.startSyncForDrive(driveId: 'drive').then((ran) => synced = ran);
+      async.flushMicrotasks();
+      expect(synced, isTrue);
+      verifyNever(() => syncRepository.refreshTransactionStatuses(
+            ownerAddress: any(named: 'ownerAddress'),
+            cancellationToken: any(named: 'cancellationToken'),
+          ));
+
+      async.elapse(const Duration(minutes: 1));
+      async.flushMicrotasks();
+    });
+
+    verify(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).called(1);
+  });
+
   test('a sync whose status pass finished is not followed by anything',
       () async {
     syncReports(timedOut: false);
