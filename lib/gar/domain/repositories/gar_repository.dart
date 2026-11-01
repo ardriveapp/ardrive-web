@@ -12,7 +12,7 @@ abstract class GarRepository {
   Future<Gateway> getSelectedGateway();
   Future<void> updateGateway(Gateway gateway);
   Future<bool> isGatewayActive(Gateway gateway);
-  
+
   // Custom gateway methods
   Future<GatewayValidationResult> validateCustomGateway(String gatewayUrl);
   Future<void> updateCustomGateway(String gatewayUrl);
@@ -45,8 +45,7 @@ class GarRepositoryImpl implements GarRepository {
 
   @override
   Future<Gateway> getSelectedGateway() async {
-    final currentGatewayUrl =
-        configService.config.arweaveGatewayForDataRequest;
+    final currentGatewayUrl = configService.config.arweaveGatewayForDataRequest;
     final currentGatewayDomain = Uri.parse(currentGatewayUrl.url).host;
 
     final currentGateway = _gateways.firstWhereOrNull(
@@ -107,14 +106,15 @@ class GarRepositoryImpl implements GarRepository {
   }
 
   @override
-  Future<GatewayValidationResult> validateCustomGateway(String gatewayUrl) async {
+  Future<GatewayValidationResult> validateCustomGateway(
+      String gatewayUrl) async {
     return await GatewayValidator.validateGateway(gatewayUrl);
   }
 
   @override
   Future<void> updateCustomGateway(String gatewayUrl) async {
     final cleanedUrl = cleanGatewayUrl(gatewayUrl);
-    
+
     await configService.updateAppConfig(
       configService.config.copyWith(
         arweaveGatewayForDataRequest: SelectedGateway(

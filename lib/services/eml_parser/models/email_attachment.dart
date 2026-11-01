@@ -31,7 +31,8 @@ class EmailAttachment extends Equatable {
 
     return EmailAttachment(
       filename: json['filename']?.toString() ?? 'unknown',
-      contentType: json['contentType']?.toString() ?? 'application/octet-stream',
+      contentType:
+          json['contentType']?.toString() ?? 'application/octet-stream',
       size: (json['size'] as num?)?.toInt() ?? 0,
       id: json['id']?.toString() ?? '',
       data: bytes,

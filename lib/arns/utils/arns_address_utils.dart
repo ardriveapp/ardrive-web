@@ -13,9 +13,7 @@ import 'package:ardrive/utils/constants.dart';
   required String domain,
   String? undername,
 }) {
-  final name = (undername != null &&
-          undername != '@' &&
-          undername.isNotEmpty)
+  final name = (undername != null && undername != '@' && undername.isNotEmpty)
       ? '${undername}_$domain'
       : domain;
 
