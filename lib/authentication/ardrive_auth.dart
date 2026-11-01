@@ -451,6 +451,13 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
     }
     await _userRepository.deleteUser();
+    if (saved.id != address) {
+      // Another account's: what it synced and the drive keys it wrapped are
+      // its alone. Left here, its drives would show under this account.
+      await _databaseHelpers.deleteAllTables();
+      await _databaseHelpers.clearSessionMemory();
+      _injectedDriveUnlocker?.session.clear();
+    }
   }
 
   @override

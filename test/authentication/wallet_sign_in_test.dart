@@ -13,6 +13,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:arweave/arweave.dart' show Wallet;
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -125,6 +126,45 @@ void main() {
         expect(session.signInPasswordProven(address), isNull);
       });
     }
+
+    test('H1: a saved keyfile account is never what a Solana sign-in opens',
+        () async {
+      final other = await Wallet.generate();
+      final otherAddress = await other.getAddress();
+      await db.profileDao
+          .addProfile('user.username', 'pw', other, ProfileType.json);
+
+      final user = await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana),
+          sourceWalletAddress: 'solana-source');
+
+      expect(user.walletAddress, address);
+      expect(user.walletAddress, isNot(otherAddress));
+      expect(user.sourceWalletAddress, 'solana-source');
+      final rows = await db.select(db.profiles).get();
+      expect(rows.map((r) => r.id), [address]);
+      expect(auth.currentUser.walletAddress, address);
+    });
+
+    test('H4: the account it replaces leaves no drives behind', () async {
+      final other = await Wallet.generate();
+      final otherAddress = await other.getAddress();
+      await db.profileDao
+          .addProfile('user.username', 'pw', other, ProfileType.json);
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: 'theirs',
+            rootFolderId: 'r',
+            ownerAddress: otherAddress,
+            name: 'Theirs',
+            privacy: 'public',
+          ));
+
+      await auth.loginWithWallet(
+          wallet, ProfileType.json, _wallet(DeviceUnlockMethod.solana),
+          sourceWalletAddress: 'solana-source');
+
+      expect(await db.select(db.drives).get(), isEmpty);
+    });
 
     test('a refused approval saves nothing', () async {
       final refusing = _Refusing();
