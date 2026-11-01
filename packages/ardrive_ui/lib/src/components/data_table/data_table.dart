@@ -691,8 +691,19 @@ class _ArDriveDataTableState<T extends IndexedItem>
     return true;
   }
 
+  /// Whether a key is the table's to take: not while a dialog is on top, nor
+  /// while a text field has focus, where Esc and select all mean its own.
+  bool get _keysAreTables {
+    if (!mounted) return false;
+    if (ModalRoute.of(context)?.isCurrent == false) return false;
+    final focus = FocusManager.instance.primaryFocus?.context;
+    return focus == null ||
+        focus.findAncestorWidgetOfExactType<EditableText>() == null &&
+            focus.widget is! EditableText;
+  }
+
   bool _handleEscapeKey(KeyEvent event) {
-    if (mounted) {
+    if (_keysAreTables) {
       if (HardwareKeyboard.instance
           .isLogicalKeyPressed(LogicalKeyboardKey.escape)) {
         setState(() {
@@ -710,7 +721,8 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   /// Selects all items c=with ctrl / command + a
   bool _handleSelectAllShortcut(KeyEvent event) {
-    if (HardwareKeyboard.instance
+    if (_keysAreTables &&
+        HardwareKeyboard.instance
             .isLogicalKeyPressed(LogicalKeyboardKey.keyA) &&
         _isCtrlPressed) {
       _selectAllItemsInPage();
@@ -817,9 +829,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
       double leftPadding = 0;
 
       if (widget.leading != null) {
-        leftPadding = 60;
+        leftPadding = 45;
       } else {
-        leftPadding = 20;
+        leftPadding = 5;
       }
       if (widget.trailing != null) {
         rightPadding = 20;
@@ -1224,7 +1236,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
   Color _rowColour(BuildContext context, {required bool selected}) {
     final table = ArDriveTheme.of(context).themeData.tableTheme;
     if (selected) return table.selectedItemColor;
-    return _RowHover.of(context) ? table.hoverItemColor : Colors.transparent;
+    return _RowHover.of(context) || _RowHover.menuOpenOf(context)
+        ? table.hoverItemColor
+        : Colors.transparent;
   }
 
   /// The widest [ArDriveDataTable.trailingWidth] over every row, so the
@@ -1298,7 +1312,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
                 _multiSelectColumn(false, index: index, row: row),
                 Flexible(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    // Nothing on the left: the checkbox column ends 14 from
+                    // its glyph, which is the gap to the content.
+                    padding: const EdgeInsets.only(right: 15),
                     child: Row(
                       children: [
                         if (widget.leading != null)
@@ -2032,12 +2048,25 @@ class _HoverableRow extends StatefulWidget {
 class _HoverableRowState extends State<_HoverableRow> {
   bool _isHovering = false;
 
+  /// A menu in the row is open: the row stays marked while the pointer is on
+  /// the menu. Visual only; the selection is the table's.
+  bool _menuOpen = false;
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
-      child: _RowHover(hovered: _isHovering, child: widget.child),
+      child: ArDriveRowMenuScope(
+        onOpenChanged: (open) {
+          if (mounted && open != _menuOpen) setState(() => _menuOpen = open);
+        },
+        child: _RowHover(
+          hovered: _isHovering,
+          menuOpen: _menuOpen,
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
@@ -2045,15 +2074,25 @@ class _HoverableRowState extends State<_HoverableRow> {
 /// Whether the pointer is on the row: the row's card paints the hover, see
 /// [_ArDriveDataTableState._rowColour].
 class _RowHover extends InheritedWidget {
-  const _RowHover({required this.hovered, required super.child});
+  const _RowHover({
+    required this.hovered,
+    required super.child,
+    this.menuOpen = false,
+  });
 
   final bool hovered;
+  final bool menuOpen;
 
   static bool of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_RowHover>()?.hovered ?? false;
 
+  static bool menuOpenOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_RowHover>()?.menuOpen ??
+      false;
+
   @override
-  bool updateShouldNotify(_RowHover oldWidget) => hovered != oldWidget.hovered;
+  bool updateShouldNotify(_RowHover oldWidget) =>
+      hovered != oldWidget.hovered || menuOpen != oldWidget.menuOpen;
 }
 
 /// Tells the second click of a double-click from a click, without holding

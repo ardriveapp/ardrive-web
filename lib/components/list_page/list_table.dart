@@ -19,7 +19,7 @@ const double listRowHorizontalPadding = 16;
 /// One constant for both so the ticks line up down the table - the usual
 /// failure is a header drawn inside the table's own padding and rows drawn
 /// outside it, which offsets the two by exactly that padding.
-const double listCheckboxColumn = 40;
+const double listCheckboxColumn = 32;
 
 /// Ticking rows, for a list that can act on several of them at once.
 ///
@@ -464,14 +464,16 @@ class ListTableRow extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: listRowHorizontalPadding,
-                          vertical: listRowVerticalPadding,
                         ),
                         // The box inside the row's tap target: shown, it
                         // takes its own tap and ticks; hidden, a tap passes
-                        // through to the row, so its spot is not dead.
+                        // through to the row, so its spot is not dead. The
+                        // vertical padding is inside the row's height, so the
+                        // box's column reaches the row's top and bottom.
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
-                            minHeight: listRowContentMinHeight,
+                            minHeight: listRowContentMinHeight +
+                                2 * listRowVerticalPadding,
                           ),
                           child: hasCheckbox
                               ? Row(
@@ -483,10 +485,22 @@ class ListTableRow extends StatelessWidget {
                                       )
                                     else
                                       const SizedBox(width: listCheckboxColumn),
-                                    Expanded(child: child),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: listRowVerticalPadding,
+                                        ),
+                                        child: child,
+                                      ),
+                                    ),
                                   ],
                                 )
-                              : child,
+                              : Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: listRowVerticalPadding,
+                                  ),
+                                  child: child,
+                                ),
                         ),
                       ),
                     ),
@@ -702,6 +716,10 @@ class _ListRowHighlightState extends State<ListRowHighlight> {
   /// with Tab.
   bool _hasFocus = false;
 
+  /// A menu in the row is open: the row stays marked while the pointer is on
+  /// the menu. Visual only; selection is the list's.
+  bool _menuOpen = false;
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -712,7 +730,7 @@ class _ListRowHighlightState extends State<ListRowHighlight> {
         // they are closed. Elsewhere, focus is the only sign a click landed.
         color: widget.selected || (widget.chosen ?? _hasFocus)
             ? widget.selectedColour
-            : _isHovering
+            : _isHovering || _menuOpen
                 ? widget.colour
                 : Colors.transparent,
         // Not focusable itself; it only hears when something inside the row
@@ -727,10 +745,17 @@ class _ListRowHighlightState extends State<ListRowHighlight> {
               widget.onFocusGained?.call();
             }
           },
-          child: _RowAttention(
-            hovered: _isHovering,
-            focused: _hasFocus,
-            child: widget.child,
+          child: ArDriveRowMenuScope(
+            onOpenChanged: (open) {
+              if (mounted && open != _menuOpen) {
+                setState(() => _menuOpen = open);
+              }
+            },
+            child: _RowAttention(
+              hovered: _isHovering,
+              focused: _hasFocus,
+              child: widget.child,
+            ),
           ),
         ),
       ),
