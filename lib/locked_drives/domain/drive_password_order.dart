@@ -1,8 +1,8 @@
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 
-/// When ArDrive 3.0, which decoupled drive passwords from signing in, was
-/// planned to ship. Set it to the release's deploy date when it ships.
+/// When ArDrive 3.0, which decoupled drive passwords from signing in,
+/// shipped: its production deploy date.
 ///
 /// Before 3.0 a private drive's password was the account's sign-in password
 /// in practice: web always used it, and the CLI made every drive use the
@@ -10,7 +10,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 /// before this date most likely opens with the password that opened the
 /// others. Only the order passwords are tried in depends on it: a drive that
 /// doesn't open still shows as locked, whatever this says.
-final drivePasswordEraCutoff = DateTime.utc(2026, 11, 1);
+final drivePasswordEraCutoff = DateTime.utc(2026, 11, 4);
 
 /// The `App-Name`s of the desktop apps, which let each private drive have
 /// its own password: ArDrive desktop, its older sync app, and the desktop MVP,
