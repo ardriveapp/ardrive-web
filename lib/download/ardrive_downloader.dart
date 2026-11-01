@@ -8,8 +8,7 @@ import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_utils/ardrive_utils.dart'
-    show listIntToUint8ListTransformer;
+import 'package:ardrive_utils/ardrive_utils.dart' show listIntToUint8ListTransformer;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
@@ -1214,7 +1213,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// arrives, if no subsequent chunk arrives within [_stallTimeout], emits
   /// a [DownloadStalledException]. If the stream completes before any chunks
   /// (empty file), no stall error is raised.
-  Stream<List<int>> _withStallDetection(Stream<List<int>> source, String txId) {
+  Stream<List<int>> _withStallDetection(
+      Stream<List<int>> source, String txId) {
     final controller = StreamController<List<int>>();
     Timer? stallTimer;
     late final StreamSubscription<List<int>> subscription;
@@ -1740,7 +1740,8 @@ class DownloadResumeNotSupportedException implements Exception {
   final String? reason;
 
   @override
-  String toString() => 'Cannot resume $txId from byte $requestedOffset because '
+  String toString() =>
+      'Cannot resume $txId from byte $requestedOffset because '
       '${reason ?? 'the gateway did not serve the range'}'
       '${statusCode == null ? '' : ' (HTTP $statusCode)'}';
 }

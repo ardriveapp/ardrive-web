@@ -50,8 +50,7 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
       } else if (event is SyncShowHiddenState) {
         // Only update local state from stream updates, don't save back
         if (event.showHidden) {
-          emit(
-              ShowingHiddenItems(userHasHiddenDrive: event.userHasHiddenItems));
+          emit(ShowingHiddenItems(userHasHiddenDrive: event.userHasHiddenItems));
         } else {
           emit(HiddingItems(userHasHiddenDrive: event.userHasHiddenItems));
         }

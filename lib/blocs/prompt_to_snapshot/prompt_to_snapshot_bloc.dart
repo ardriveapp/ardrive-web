@@ -78,7 +78,7 @@ class PromptToSnapshotBloc
   ) async {
     logger.d(
       '[PROMPT TO SNAPSHOT] Counting ${event.txsSyncedWithGqlCount} TXs for drive ${event.driveId}',
-    );
+  );
 
     if (event.wasDeepSync) {
       logger.d('[PROMPT TO SNAPSHOT] The count came from a deep sync');

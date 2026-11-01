@@ -383,24 +383,13 @@ class ArDriveAuthImpl implements ArDriveAuth {
     try {
       final address = await wallet.getAddress();
 
-      // Another account's data goes first, before anything below fills the
-      // session for this one. If it can't go, nothing is saved over it.
+      // Another account on this device: what the session holds in memory
+      // goes now, so nothing of it is mixed into this sign-in. Nothing saved
+      // goes until the wallet and the checks below have answered: a "no"
+      // must not cost the account that is here.
       final previous = await _userRepository.getSavedProfile();
-      if (previous != null && previous.id != address) {
-        try {
-          await _forgetPreviousAccount(
-            address: previous.id,
-            disconnectWander: source.method != DeviceUnlockMethod.wander,
-            strict: true,
-          );
-        } catch (e, stackTrace) {
-          logger.e('Could not clear the previous account', e, stackTrace);
-          throw AuthenticationUnknownException(
-              'Could not clear the previous account from this device');
-        }
-        _deviceTabs.announceSignedOut();
-        await _databaseHelpers.wipeAfterSignOut();
-      }
+      final switching = previous != null && previous.id != address;
+      if (switching) await _clearSessionState();
 
       if (password.isNotEmpty && !skipDriveCheck) {
         await _validateUser(wallet, password);
@@ -422,6 +411,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         throw DeviceUnlockRefusedException(outcome.status);
       }
 
+      if (switching) await _forgetSwitchedAccount(previous.id, source);
       await _replaceSavedProfile(address);
       await _userRepository.saveUserWithDeviceKey(
         wallet: wallet,
@@ -621,21 +611,60 @@ class ArDriveAuthImpl implements ArDriveAuth {
     await _databaseHelpers.wipeAfterSignOut();
   }
 
+  /// What the session holds in memory: signed Turbo headers, drive keys read
+  /// from the tables, locked drives, wallet signatures and proven passwords.
+  /// None of it may outlive the session or reach another account's.
+  Future<void> _clearSessionState() async {
+    TurboSignatureHeadersManager.clearSession();
+    await _databaseHelpers.clearSessionMemory();
+    _injectedDriveUnlocker?.session.clear();
+    _deviceUnlocker.clear();
+  }
+
+  /// A sign-in with another account, once its wallet and checks have
+  /// answered and just before its profile is saved: the saved account goes
+  /// like a sign-out does, and other tabs hear of it. The session state is
+  /// the new account's by now, so it stays. Throws when the tables can't be
+  /// emptied, so nothing is saved over what is still there.
+  Future<void> _forgetSwitchedAccount(
+    String previousAddress,
+    DeviceSecretSource source,
+  ) async {
+    try {
+      await _forgetPreviousAccount(
+        address: previousAddress,
+        disconnectWander: source.method != DeviceUnlockMethod.wander,
+        strict: true,
+        clearSession: false,
+      );
+    } catch (e, stackTrace) {
+      logger.e('Could not clear the previous account', e, stackTrace);
+      throw AuthenticationUnknownException(
+          'Could not clear the previous account from this device');
+    }
+    _deviceTabs.announceSignedOut();
+    await _databaseHelpers.wipeAfterSignOut();
+  }
+
   /// Everything this device kept for the account that was here: the profile,
   /// the database, the session's keys and signatures, caches, stores and
-  /// preferences (they clear on the signed-out event). Shared by [logout]
-  /// and a sign-in with another account ([loginWithWallet]). [address] is
-  /// that account's, when known; [strict] throws when the tables can't be
-  /// emptied; [disconnectWander] is false when the new
-  /// sign-in is through Wander itself.
+  /// preferences (they clear on the signed-out event). [logout] and
+  /// [_forgetSwitchedAccount] share it. [address] is that account's, when
+  /// known; [strict] throws when the tables can't be emptied;
+  /// [disconnectWander] is false when the new sign-in is through Wander
+  /// itself; [clearSession] is false when the session state is already the
+  /// next account's.
   Future<void> _forgetPreviousAccount({
     String? address,
     bool disconnectWander = true,
     bool strict = false,
+    bool clearSession = true,
   }) async {
     // Signed Turbo headers belong to the account that signed them.
-    TurboSignatureHeadersManager.clearSession();
+    if (clearSession) TurboSignatureHeadersManager.clearSession();
 
+    // Strict: the tables first, so a failure leaves the account whole.
+    if (strict) await _databaseHelpers.deleteAllTables(rethrowOnError: true);
     await _userRepository.deleteUser();
 
     if (address != null) {
@@ -646,16 +675,14 @@ class ArDriveAuthImpl implements ArDriveAuth {
       await _secureKeyValueStore.remove('biometricEnabled');
     }
 
-    if (strict) {
-      await _databaseHelpers.deleteAllTables(rethrowOnError: true);
-    } else {
-      await _databaseHelpers.deleteAllTables();
+    if (!strict) await _databaseHelpers.deleteAllTables();
+    if (clearSession) {
+      await _databaseHelpers.clearSessionMemory();
+      // Locked drives, wallet signatures and proven passwords: memory only,
+      // and none of it may outlive the session.
+      _injectedDriveUnlocker?.session.clear();
+      _deviceUnlocker.clear();
     }
-    await _databaseHelpers.clearSessionMemory();
-    // Locked drives, wallet signatures and proven passwords: memory only,
-    // and none of it may outlive the session.
-    _injectedDriveUnlocker?.session.clear();
-    _deviceUnlocker.clear();
     await _permanenceCache.clear();
     await _arnsWalletStore.clear();
     await _arnsPendingActionStore.clear();

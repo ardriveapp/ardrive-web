@@ -69,8 +69,7 @@ class DownloadSizeLimit {
   bool isExceededBy(int sizeBytes) => !allows(sizeBytes);
 
   @override
-  String toString() =>
-      'DownloadSizeLimit(${maxBytes ?? 'none'}, ${source.name})';
+  String toString() => 'DownloadSizeLimit(${maxBytes ?? 'none'}, ${source.name})';
 }
 
 /// Every size gate on the download path, in one place.

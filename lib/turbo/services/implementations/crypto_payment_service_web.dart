@@ -32,7 +32,6 @@ class CryptoPaymentService {
   final ArDriveHTTP _httpClient;
   final WalletSignerCache _signerCache;
   final CryptoPriceService _priceService;
-
   /// Arweave gateway URL for Turbo SDK (tx_anchor, price).
   final String _arweaveGatewayUrl;
 
@@ -107,9 +106,8 @@ class CryptoPaymentService {
 
       // Calculate storage estimate (guard against zero divisor)
       final wincPerGiBDouble = wincPerGiB.toDouble();
-      final storageGiB = wincPerGiBDouble > 0
-          ? priceResult.winc.toDouble() / wincPerGiBDouble
-          : 0.0;
+      final storageGiB =
+          wincPerGiBDouble > 0 ? priceResult.winc.toDouble() / wincPerGiBDouble : 0.0;
 
       // Parse adjustment if present
       Adjustment? adjustment;
@@ -121,10 +119,8 @@ class CryptoPaymentService {
       // Both values must use same units (cents) for correct calculation
       double? originalCreditsDisplay;
       if (adjustment != null) {
-        final quotedCents =
-            priceResult.quotedPaymentAmount ?? (usdAmount * 100);
-        final actualCents =
-            priceResult.actualPaymentAmount ?? (usdAmount * 100);
+        final quotedCents = priceResult.quotedPaymentAmount ?? (usdAmount * 100);
+        final actualCents = priceResult.actualPaymentAmount ?? (usdAmount * 100);
         if (actualCents != 0) {
           originalCreditsDisplay =
               quotedCents * (priceResult.winc.toDouble() / actualCents) / 1e12;
@@ -185,9 +181,8 @@ class CryptoPaymentService {
 
       // Calculate storage estimate (guard against zero divisor)
       final wincPerGiBDouble = wincPerGiB.toDouble();
-      final storageGiB = wincPerGiBDouble > 0
-          ? priceResult.winc.toDouble() / wincPerGiBDouble
-          : 0.0;
+      final storageGiB =
+          wincPerGiBDouble > 0 ? priceResult.winc.toDouble() / wincPerGiBDouble : 0.0;
 
       // Parse adjustment if present
       Adjustment? adjustment;
@@ -336,8 +331,7 @@ class CryptoPaymentService {
       logger.e('Unexpected error executing payment: $e\n$stackTrace');
       return CryptoPaymentResult.failure(
         status: CryptoPaymentStatus.failed,
-        errorMessage:
-            'An unexpected error occurred while processing the payment',
+        errorMessage: 'An unexpected error occurred while processing the payment',
         token: token,
       );
     }
@@ -468,14 +462,14 @@ class CryptoPaymentService {
         // The SDK requires: { getSigner: () => { signMessage, getAddress } }
         final injectedProvider = jsify({
           'getSigner': allowInterop(() => jsify({
-                'signMessage': allowInterop((dynamic message) {
-                  final messageArg = message is String
-                      ? message
-                      : getProperty(message, 'raw') ?? message;
-                  return callMethod(ethersSigner, 'signMessage', [messageArg]);
-                }),
-                'getAddress': allowInterop(() => Future.value(ethAddress)),
-              })),
+            'signMessage': allowInterop((dynamic message) {
+              final messageArg = message is String
+                  ? message
+                  : getProperty(message, 'raw') ?? message;
+              return callMethod(ethersSigner, 'signMessage', [messageArg]);
+            }),
+            'getAddress': allowInterop(() => Future.value(ethAddress)),
+          })),
         });
 
         // Create InjectedEthereumSigner with the provider wrapper
@@ -631,8 +625,7 @@ class CryptoPaymentService {
       );
     } catch (e, stackTrace) {
       logger.e('Error getting ARIO balance: $e', e, stackTrace);
-      return TokenBalance.error(
-          CryptoToken.arioAO, 'Unable to fetch token balance');
+      return TokenBalance.error(CryptoToken.arioAO, 'Unable to fetch token balance');
     }
   }
 
@@ -781,21 +774,18 @@ class CryptoPaymentService {
     );
 
     // Get the wallet address
-    final ethAddress =
-        await promiseToFuture(callMethod(ethersSigner, 'getAddress', []));
+    final ethAddress = await promiseToFuture(callMethod(ethersSigner, 'getAddress', []));
 
     // Create the injected provider wrapper that InjectedEthereumSigner expects
     // The SDK requires: { getSigner: () => { signMessage, getAddress } }
     final injectedProvider = jsify({
       'getSigner': allowInterop(() => jsify({
-            'signMessage': allowInterop((dynamic message) {
-              final messageArg = message is String
-                  ? message
-                  : getProperty(message, 'raw') ?? message;
-              return callMethod(ethersSigner, 'signMessage', [messageArg]);
-            }),
-            'getAddress': allowInterop(() => Future.value(ethAddress)),
-          })),
+        'signMessage': allowInterop((dynamic message) {
+          final messageArg = message is String ? message : getProperty(message, 'raw') ?? message;
+          return callMethod(ethersSigner, 'signMessage', [messageArg]);
+        }),
+        'getAddress': allowInterop(() => Future.value(ethAddress)),
+      })),
     });
 
     // Create InjectedEthereumSigner with the provider wrapper
