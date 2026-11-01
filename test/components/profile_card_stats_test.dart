@@ -12,6 +12,8 @@ import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/theme/theme_switcher_bloc.dart';
+import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -36,6 +38,9 @@ class _MockPaymentService extends Mock implements PaymentService {}
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
+
+class _MockThemeBloc extends MockBloc<ThemeSwitcherEvent, ThemeSwitcherState>
+    implements ThemeSwitcherBloc {}
 
 class _MockPermanenceCache extends Mock implements PermanenceCache {}
 
@@ -148,6 +153,13 @@ void main() {
       initialState: const ProfileNameInitial(walletAddress),
     );
 
+    final themeBloc = _MockThemeBloc();
+    whenListen(
+      themeBloc,
+      const Stream<ThemeSwitcherState>.empty(),
+      initialState: ThemeSwitcherLightTheme(),
+    );
+
     final preferences = _MockUserPreferencesRepository();
     when(() => preferences.watch()).thenAnswer((_) => const Stream.empty());
     when(() => preferences.currentPreferences).thenReturn(null);
@@ -173,6 +185,8 @@ void main() {
           providers: [
             BlocProvider<ProfileCubit>.value(value: profileCubit),
             BlocProvider<ProfileNameBloc>.value(value: names),
+            // The menu's quick theme switch reads it.
+            BlocProvider<ThemeSwitcherBloc>.value(value: themeBloc),
             ListenableProvider<AppRouterDelegate>.value(
               value: AppRouterDelegate(),
             ),
