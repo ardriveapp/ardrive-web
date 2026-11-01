@@ -525,6 +525,22 @@ void main() {
     expect(tile(tester, 'Upload folder').isDisabled, isTrue);
   });
 
+  Finder readingTooltip() => find.byWidgetPredicate(
+        (w) => w is ArDriveTooltip && w.message == 'Reading your drives',
+      );
+
+  testWidgets('and says why while it is greyed', (tester) async {
+    await pumpMenu(tester, drivesState: DrivesLoadInProgress());
+
+    expect(readingTooltip(), findsNWidgets(2));
+  });
+
+  testWidgets('and offers no such tooltip once Upload works', (tester) async {
+    await pumpMenu(tester);
+
+    expect(readingTooltip(), findsNothing);
+  });
+
   /// It sat at the top of the plus menu and inside Advanced, so a public
   /// drive listed it twice. Advanced is where the sidebar menu keeps it.
   testWidgets('the plus menu lists Import from manifest only under Advanced',

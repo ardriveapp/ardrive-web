@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -84,6 +85,7 @@ class UploadReviewDialog extends StatefulWidget {
     super.key,
     required this.title,
     required this.destination,
+    this.destinationIsPrivate = false,
     required this.files,
     required this.summary,
     required this.primaryLabel,
@@ -104,8 +106,11 @@ class UploadReviewDialog extends StatefulWidget {
 
   final String title;
 
-  /// Where the files go, such as "To My files, private".
+  /// Where the files go, such as "To My files".
   final String destination;
+
+  /// Puts a private drive's lock after [destination].
+  final bool destinationIsPrivate;
   final List<UploadReviewFile> files;
 
   /// Null while the price is being read.
@@ -312,7 +317,11 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
       hasCloseButton: true,
       close: widget.onCancel,
       closeLabel: l10n.cancel,
-      titleWidget: _Heading(title: widget.title, subtitle: widget.destination),
+      titleWidget: _Heading(
+        title: widget.title,
+        subtitle: widget.destination,
+        subtitleIsPrivate: widget.destinationIsPrivate,
+      ),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -513,10 +522,15 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
 
 /// The title, and under it where the files go.
 class _Heading extends StatelessWidget {
-  const _Heading({required this.title, required this.subtitle});
+  const _Heading({
+    required this.title,
+    required this.subtitle,
+    this.subtitleIsPrivate = false,
+  });
 
   final String title;
   final String subtitle;
+  final bool subtitleIsPrivate;
 
   @override
   Widget build(BuildContext context) {
@@ -531,9 +545,20 @@ class _Heading extends StatelessWidget {
           style: typography.heading3(fontWeight: ArFontWeight.bold),
         ),
         const SizedBox(height: ArDriveSpacing.xxs),
-        Text(
-          subtitle,
-          style: typography.paragraphNormal(color: colorTokens.textMid),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                subtitle,
+                style: typography.paragraphNormal(color: colorTokens.textMid),
+              ),
+            ),
+            if (subtitleIsPrivate) ...[
+              const SizedBox(width: ArDriveSpacing.xs),
+              const PrivateDriveLock(size: 16),
+            ],
+          ],
         ),
       ],
     );
@@ -675,9 +700,9 @@ class UploadCostBlock extends StatelessWidget {
             children: [
               Text(
                 l10n.uploadCostLabel,
-                style: typography.paragraphSmall(
+                style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textLow,
+                  color: colorTokens.textMid,
                 ),
               ),
               const SizedBox(height: ArDriveSpacing.xxs),
