@@ -10,6 +10,9 @@ import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/components/icon_theme_switcher.dart';
+import 'package:ardrive/theme/theme_switcher_bloc.dart';
+import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -32,6 +35,9 @@ class _MockPaymentService extends Mock implements PaymentService {}
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
+
+class _MockThemeBloc extends MockBloc<ThemeSwitcherEvent, ThemeSwitcherState>
+    implements ThemeSwitcherBloc {}
 
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -103,6 +109,13 @@ void main() {
       initialState: const ProfileNameInitial(walletAddress),
     );
 
+    final themeBloc = _MockThemeBloc();
+    whenListen(
+      themeBloc,
+      const Stream<ThemeSwitcherState>.empty(),
+      initialState: ThemeSwitcherLightTheme(),
+    );
+
     final preferences = _MockUserPreferencesRepository();
     when(() => preferences.watch()).thenAnswer((_) => const Stream.empty());
     when(() => preferences.currentPreferences).thenReturn(null);
@@ -128,6 +141,7 @@ void main() {
           providers: [
             BlocProvider<ProfileCubit>.value(value: profileCubit),
             BlocProvider<ProfileNameBloc>.value(value: names),
+            BlocProvider<ThemeSwitcherBloc>.value(value: themeBloc),
             ListenableProvider<AppRouterDelegate>.value(
               value: router,
             ),
@@ -317,6 +331,37 @@ void main() {
       expect(router.showingBilling, isTrue);
       expect(router.showingAccount, isFalse);
       expect(find.byKey(const Key('profileBilling')), findsNothing);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets(
+      'Settings sits under Billing, opens the page, and keeps the theme toggle',
+      (tester) async {
+    await tester.runAsync(() async {
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.byKey(const Key('profileSettings')));
+
+      final billing =
+          tester.getTopLeft(find.byKey(const Key('profileBilling')));
+      final settings =
+          tester.getTopLeft(find.byKey(const Key('profileSettings')));
+      expect(settings.dy, greaterThan(billing.dy));
+
+      // The old accordion is gone; the quick theme switch stays.
+      expect(find.text('Switch gateway'), findsNothing);
+      expect(find.text('Automatic sync'), findsNothing);
+      expect(find.byType(ArDriveAccordion), findsNothing);
+      expect(find.byType(IconThemeSwitcher), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('profileSettings')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(router.showingSettings, isTrue);
+      expect(find.byKey(const Key('profileSettings')), findsNothing);
 
       await takeDown(tester);
     });

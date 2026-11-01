@@ -17,6 +17,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/account/presentation/account_page.dart';
 import 'package:ardrive/billing/presentation/billing_page.dart';
+import 'package:ardrive/settings/presentation/settings_page.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/arns/presentation/resume/arns_resume_scope.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
@@ -93,7 +94,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// drive stays selected under it.
   bool showingBilling = false;
 
-  /// What the Account and security or Billing page covers, for its back arrow
+  /// Whether the Settings page is what is on screen, from the profile menu:
+  /// appearance, sync, uploads and the network. Like the Account page, a
+  /// drive stays selected under it.
+  bool showingSettings = false;
+
+  /// What the Account and security, Billing or Settings page covers, for its back arrow
   /// on a phone. Null when it was opened from its address.
   ({bool drivesList, bool names, String? name, bool webPages})? _beforeAccount;
 
@@ -419,6 +425,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         webPages: showingWebPages,
         account: showingAccount,
         billing: showingBilling,
+        settings: showingSettings,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -663,6 +670,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = BlocProvider(
                   create: (context) => _driveDetailCubit(context, rootPath),
                   child: BillingShell(onOpenDrive: openDriveFromList),
+                );
+              } else if (showsSettings(state)) {
+                shellKey = 'settings';
+                shell = BlocProvider(
+                  create: (context) => _driveDetailCubit(context, rootPath),
+                  child: SettingsShell(onOpenDrive: openDriveFromList),
                 );
               } else if (showingNames &&
                   canShowDrivesList(state) &&
@@ -1190,6 +1203,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = false;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     this.driveId = driveId;
 
     // A row tap has no folder in view and opens the drive at its root. A search
@@ -1269,6 +1283,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = false;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     signingIn = false;
     gettingStarted = false;
     // Going back to the list abandons whatever a search asked for - all of it,
@@ -1311,6 +1326,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = false;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     _leaveForAPage();
   }
 
@@ -1319,6 +1335,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = true;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     showingNames = false;
     _leaveForAPage();
   }
@@ -1343,8 +1360,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// Off the sign-in page once signed in. It lands on the list of drives
   /// rather than inside one the app has not looked at yet, but only when
   /// there is nothing else to honour: a deep link (a drive, a folder, a
-  /// shared file, a raw transaction, or the Names, Web pages or Account and
-  /// security page) has already set its target in `setNewRoutePath`, and is
+  /// shared file, a raw transaction, or the Names, Web pages, Account and
+  /// security, Billing or Settings page) has already set its target in `setNewRoutePath`, and is
   /// left exactly as it was.
   @visibleForTesting
   void landAfterSignIn() {
@@ -1355,7 +1372,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         !showingNames &&
         !showingWebPages &&
         !showingAccount &&
-        !showingBilling) {
+        !showingBilling &&
+        !showingSettings) {
       showingDrivesList = true;
     }
 
@@ -1374,9 +1392,50 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool showsBilling(ProfileState profileState) =>
       showingBilling && canShowDrivesList(profileState);
 
+  /// Whether the Settings page is what [build] shows: asked for, and somebody
+  /// signed in to show it to.
+  @visibleForTesting
+  bool showsSettings(ProfileState profileState) =>
+      showingSettings && canShowDrivesList(profileState);
+
+  /// The Settings page, from the profile menu.
+  void showSettings() {
+    if (!showingSettings && !showingBilling && !showingAccount) {
+      _beforeAccount = (
+        drivesList: showingDrivesList,
+        names: showingNames,
+        name: shownName,
+        webPages: showingWebPages,
+      );
+    }
+    showingSettings = true;
+    showingBilling = false;
+    showingAccount = false;
+    showingNames = false;
+    showingWebPages = false;
+    _leaveForAPage();
+  }
+
+  /// Back from the Settings page to what it covered: the drives list when it
+  /// was opened from its address.
+  void closeSettings() {
+    final before = _beforeAccount;
+    _beforeAccount = null;
+    showingSettings = false;
+    if (before == null) {
+      showDrivesList();
+      return;
+    }
+    showingDrivesList = before.drivesList;
+    showingNames = before.names;
+    shownName = before.name;
+    showingWebPages = before.webPages;
+    notifyListeners();
+  }
+
   /// The Billing page, from the profile menu.
   void showBilling() {
-    if (!showingBilling && !showingAccount) {
+    if (!showingBilling && !showingAccount && !showingSettings) {
       _beforeAccount = (
         drivesList: showingDrivesList,
         names: showingNames,
@@ -1386,6 +1445,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     }
     showingBilling = true;
     showingAccount = false;
+    showingSettings = false;
     showingNames = false;
     showingWebPages = false;
     _leaveForAPage();
@@ -1397,6 +1457,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     final before = _beforeAccount;
     _beforeAccount = null;
     showingBilling = false;
+    showingSettings = false;
     if (before == null) {
       showDrivesList();
       return;
@@ -1410,7 +1471,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   /// The Account and security page, from the profile menu.
   void showAccount() {
-    if (!showingAccount && !showingBilling) {
+    if (!showingAccount && !showingBilling && !showingSettings) {
       _beforeAccount = (
         drivesList: showingDrivesList,
         names: showingNames,
@@ -1420,6 +1481,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     }
     showingAccount = true;
     showingBilling = false;
+    showingSettings = false;
     showingNames = false;
     showingWebPages = false;
     _leaveForAPage();
@@ -1432,6 +1494,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _beforeAccount = null;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     if (before == null) {
       showDrivesList();
       return;
@@ -1554,6 +1617,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = configuration.webPages;
     showingAccount = configuration.account;
     showingBilling = configuration.billing;
+    showingSettings = configuration.settings;
     _beforeAccount = null;
     drivesListScope = DriveScope.all;
     driveId = configuration.driveId;
@@ -1567,7 +1631,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             configuration.names ||
             configuration.webPages ||
             configuration.account ||
-            configuration.billing
+            configuration.billing ||
+            configuration.settings
         ? null
         : RouteLink(
             driveId: configuration.driveId!,
@@ -1678,6 +1743,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = false;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
 
     this.driveId = driveId;
     driveName = null;
@@ -1714,6 +1780,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = false;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     notifyListeners();
   }
 
@@ -1813,6 +1880,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingWebPages = false;
     showingAccount = false;
     showingBilling = false;
+    showingSettings = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;

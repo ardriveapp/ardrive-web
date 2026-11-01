@@ -38,6 +38,10 @@ class AppRoutePath {
   /// purchases and shared credits.
   final bool billing;
 
+  /// Whether the app is showing the Settings page - `/settings`: appearance,
+  /// sync, uploads and the network.
+  final bool settings;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -104,6 +108,7 @@ class AppRoutePath {
     this.webPages = false,
     this.account = false,
     this.billing = false,
+    this.settings = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -141,6 +146,9 @@ class AppRoutePath {
 
   /// The Billing page.
   factory AppRoutePath.billing() => const AppRoutePath(billing: true);
+
+  /// The Settings page.
+  factory AppRoutePath.settings() => const AppRoutePath(settings: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({
