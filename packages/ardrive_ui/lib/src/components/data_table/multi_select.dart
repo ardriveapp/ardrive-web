@@ -88,28 +88,91 @@ class _ArDriveMultiSelectBoxState extends State<ArDriveMultiSelectBox> {
   Widget build(BuildContext context) {
     final visible = widget.visible || _focused;
 
-    return SizedBox(
-      width: widget.width,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Focus(
-          canRequestFocus: false,
-          skipTraversal: true,
-          includeSemantics: false,
-          onFocusChange: (focused) => setState(() => _focused = focused),
-          child: _PointerPassThrough(
-            passThrough: !visible,
-            child: AnimatedOpacity(
-              opacity: visible ? 1 : 0,
-              duration: ArDriveMultiSelect.fade,
-              // Transparent is not gone: a screen reader still finds it.
-              alwaysIncludeSemantics: true,
-              child: widget.child,
+    return _FullHeightTap(
+        enabled: visible,
+        child: SizedBox(
+          width: widget.width,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Focus(
+              canRequestFocus: false,
+              skipTraversal: true,
+              includeSemantics: false,
+              onFocusChange: (focused) => setState(() => _focused = focused),
+              child: _PointerPassThrough(
+                passThrough: !visible,
+                child: AnimatedOpacity(
+                  opacity: visible ? 1 : 0,
+                  duration: ArDriveMultiSelect.fade,
+                  // Transparent is not gone: a screen reader still finds it.
+                  alwaysIncludeSemantics: true,
+                  child: widget.child,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        ));
+  }
+}
+
+/// Makes a shown box's whole column, at the height of the row it sits in, its
+/// tap target: a finger a few pixels off the 18 px glyph ticks the box rather
+/// than opening the row.
+///
+/// The box does not grow, so the row's layout does not change; a tap in the
+/// column outside the glyph is handed to the glyph.
+class _FullHeightTap extends SingleChildRenderObjectWidget {
+  const _FullHeightTap({required this.enabled, super.child});
+
+  final bool enabled;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderFullHeightTap(enabled);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderFullHeightTap renderObject,
+  ) =>
+      renderObject.enabled = enabled;
+}
+
+class _RenderFullHeightTap extends RenderProxyBox {
+  _RenderFullHeightTap(this.enabled);
+
+  bool enabled;
+
+  /// Inside the glyph, which is at the column's left and centred.
+  static const _glyphX = 8.0;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final data = parentData;
+    final rowParent = parent;
+    if (!enabled ||
+        child == null ||
+        data is! BoxParentData ||
+        rowParent is! RenderBox ||
+        !rowParent.hasSize) {
+      return super.hitTest(result, position: position);
+    }
+    final rowHeight = rowParent.size.height;
+    final top = data.offset.dy;
+    final inColumn = position.dx >= 0 &&
+        position.dx < size.width &&
+        position.dy + top >= 0 &&
+        position.dy + top < rowHeight;
+    if (!inColumn) return false;
+    if (size.contains(position) && super.hitTest(result, position: position)) {
+      return true;
+    }
+    final onGlyph = Offset(_glyphX, size.height / 2);
+    if (hitTestChildren(result, position: onGlyph)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return false;
   }
 }
 

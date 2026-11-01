@@ -6,6 +6,26 @@ import 'package:flutter/rendering.dart';
 export 'package:flutter_portal/flutter_portal.dart'
     show Anchor, Aligned, AxisFlag, Filled;
 
+/// Tells a list row that a menu inside it is open, so the row can stay
+/// highlighted while the pointer is on the menu, as Google Drive and Finder
+/// do. An [ArDriveDropdown] below it reports on its own.
+class ArDriveRowMenuScope extends InheritedWidget {
+  const ArDriveRowMenuScope({
+    super.key,
+    required this.onOpenChanged,
+    required super.child,
+  });
+
+  final ValueChanged<bool> onOpenChanged;
+
+  static ValueChanged<bool>? maybeOf(BuildContext context) => context
+      .getInheritedWidgetOfExactType<ArDriveRowMenuScope>()
+      ?.onOpenChanged;
+
+  @override
+  bool updateShouldNotify(ArDriveRowMenuScope oldWidget) => false;
+}
+
 class ArDriveDropdown extends StatefulWidget {
   const ArDriveDropdown({
     super.key,
@@ -27,6 +47,7 @@ class ArDriveDropdown extends StatefulWidget {
     this.hasBorder = true,
     this.header,
     this.fitContent = false,
+    this.onOpenChanged,
   });
 
   final double height;
@@ -52,6 +73,10 @@ class ArDriveDropdown extends StatefulWidget {
   /// as its text, which a fixed height either cuts off or pads out.
   final bool fitContent;
 
+  /// Called with whether the menu is open, after each change. A row of a list
+  /// hears it too through [ArDriveRowMenuScope], without being given it.
+  final ValueChanged<bool>? onOpenChanged;
+
   /// The menu's follower alignment, given whether it opens up: in the lower
   /// half of the screen, or when it fits better above (see `_placeMenu`).
   final Alignment Function(bool)? calculateVerticalAlignment;
@@ -62,6 +87,13 @@ class ArDriveDropdown extends StatefulWidget {
 
 class _ArDriveDropdownState extends State<ArDriveDropdown> {
   bool visible = false;
+
+  /// What [ArDriveDropdown.onOpenChanged] and the row's scope last heard.
+  bool _reportedOpen = false;
+
+  /// The row that heard it, kept so a menu removed while open can still say
+  /// it closed: its context can't be read once it is being disposed.
+  ValueChanged<bool>? _reportedTo;
   late Anchor _anchor;
 
   /// The menu's button, which takes focus back when a menu opened from the
@@ -97,6 +129,16 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
 
   @override
   void dispose() {
+    // Removed while open, as when a menu action deletes its own row's item:
+    // without this the row stayed highlighted for good.
+    if (_reportedOpen) {
+      final row = _reportedTo;
+      final onOpenChanged = widget.onOpenChanged;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onOpenChanged?.call(false);
+        row?.call(false);
+      });
+    }
     _triggerFocus.dispose();
     for (final node in _itemFocus) {
       node.dispose();
@@ -246,6 +288,17 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
             dividers * ArDriveDropdownItem.dividerHeight;
 
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
+
+    if (visible != _reportedOpen) {
+      final rowScope = ArDriveRowMenuScope.maybeOf(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || visible == _reportedOpen) return;
+        _reportedOpen = visible;
+        _reportedTo = rowScope;
+        widget.onOpenChanged?.call(visible);
+        rowScope?.call(visible);
+      });
+    }
 
     // An open menu is placed again when the window changes size. Only an
     // open one depends on it, so closed rows don't rebuild on a resize.
