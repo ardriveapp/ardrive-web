@@ -5991,5 +5991,15 @@
   "billingArUnavailable": "Couldn't load",
   "@billingArUnavailable": {"description": "Billing page: shown in place of the AR amount when it could not be read. Never shown as 0."},
   "billingCsvPartial": "Exported your latest {count} purchases. Your full history is longer than one file can hold.",
-  "@billingCsvPartial": {"description": "Billing page: the CSV stopped at its page limit, so older purchases are not in it.", "placeholders": {"count": {"type": "int"}}}
+  "@billingCsvPartial": {"description": "Billing page: the CSV stopped at its page limit, so older purchases are not in it.", "placeholders": {"count": {"type": "int"}}},
+  "billingColumnType": "Type",
+  "@billingColumnType": {"description": "Billing purchases table: column heading for the kind of purchase."},
+  "billingColumnAmount": "Amount",
+  "@billingColumnAmount": {"description": "Billing purchases table: column heading for what was paid."},
+  "billingColumnDate": "Date",
+  "@billingColumnDate": {"description": "Billing purchases table: column heading for when it happened."},
+  "billingColumnReceipt": "Receipt",
+  "@billingColumnReceipt": {"description": "Billing purchases table: column heading for the receipt or transaction."},
+  "billingColumnCredits": "Credits",
+  "@billingColumnCredits": {"description": "Billing purchases table: column heading for the Turbo Credits added or spent."}
 }

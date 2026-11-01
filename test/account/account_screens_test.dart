@@ -174,9 +174,7 @@ void main() {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: listPagePadding),
-                                  child: ConstrainedBox(
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 640),
+                                  child: PageContentColumn(
                                     child: AccountSections(
                                       solanaProvider: solanaProvider,
                                     ),

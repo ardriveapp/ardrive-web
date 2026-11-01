@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/account/presentation/account_page.dart';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/billing/presentation/billing_sections.dart';
@@ -1068,6 +1069,80 @@ void main() {
         Purchase.fromJson({'type': 'crypto', 'usdEquivalent': 0}).usdText,
         isNull,
       );
+    });
+  });
+
+  group('widths', () {
+    void twoPurchases() => historyIs([
+          _page([
+            _card('2026-10-12T10:00:00.000Z', 500, 1),
+            _crypto('2026-09-03T10:00:00.000Z'),
+          ]),
+        ]);
+
+    testWidgets(
+        'the balance card stops at 880 px, the purchases table runs full width',
+        (tester) async {
+      twoPurchases();
+      await pumpPage(tester, user: _user(), size: const Size(1400, 1600));
+
+      final sections = find.byType(PageSection);
+      final balance = sections.at(0);
+      final purchases = sections.at(1);
+      // The page body pads 16 a side.
+      expect(tester.getSize(balance).width, 880);
+      expect(tester.getTopLeft(balance).dx, 16);
+      expect(tester.getSize(purchases).width, 1400 - 32);
+
+      final header = find.byKey(const Key('billingPurchasesHeader'));
+      expect(header, findsOneWidget);
+      for (final column in ['Type', 'Amount', 'Date', 'Receipt', 'Credits']) {
+        expect(
+          find.descendant(of: header, matching: find.text(column)),
+          findsOneWidget,
+          reason: column,
+        );
+      }
+      // The same rows as on a phone.
+      expect(find.text('\$5.00'), findsOneWidget);
+      expect(find.text('Card'), findsOneWidget);
+      expect(find.text('Crypto'), findsOneWidget);
+    });
+
+    testWidgets('the columns line up across rows', (tester) async {
+      twoPurchases();
+      await pumpPage(tester, user: _user(), size: const Size(1400, 1600));
+
+      final date = find.text('Oct 12, 2026');
+      final other = find.text('Sep 3, 2026');
+      expect(date, findsOneWidget);
+      expect(other, findsOneWidget);
+      expect(
+        tester.getTopLeft(date).dx,
+        tester.getTopLeft(other).dx,
+      );
+      expect(
+        tester.getTopLeft(date).dx,
+        tester.getTopLeft(find.text('Date')).dx,
+      );
+    });
+
+    testWidgets('on a phone the rows stack: no header, no overflow',
+        (tester) async {
+      twoPurchases();
+      await pumpPage(tester, user: _user(), size: const Size(390, 1600));
+
+      expect(find.byKey(const Key('billingPurchasesHeader')), findsNothing);
+      expect(find.text('\$5.00'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a section too narrow for the columns stacks', (tester) async {
+      twoPurchases();
+      await pumpPage(tester, user: _user(), size: const Size(700, 1600));
+
+      expect(find.byKey(const Key('billingPurchasesHeader')), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 

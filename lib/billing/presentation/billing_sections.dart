@@ -5,6 +5,7 @@ import 'package:ardrive/billing/bloc/billing_cubit.dart';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/components/list_page/list_page_layout.dart';
 import 'package:ardrive/account/data/ethereum_wallet_detection.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -121,13 +122,22 @@ class _BillingBody extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _BalanceSection(kind: kind, walletName: walletName, state: state),
+            PageContentColumn(
+              child: _BalanceSection(
+                kind: kind,
+                walletName: walletName,
+                state: state,
+              ),
+            ),
             _PurchasesSection(
               kind: kind,
               walletName: walletName,
               state: state,
             ),
-            if (hasShares) _SharedCreditsSection(balance: state.balance),
+            if (hasShares)
+              PageContentColumn(
+                child: _SharedCreditsSection(balance: state.balance),
+              ),
           ],
         );
       },
@@ -409,6 +419,10 @@ class _SourceCreditsRow extends StatelessWidget {
 
 // ---- purchases --------------------------------------------------------------
 
+/// The narrowest the purchases section goes as a table. Under it the rows
+/// stack, as on a phone.
+const double _purchasesTableMinWidth = 720;
+
 class _PurchasesSection extends StatelessWidget {
   const _PurchasesSection({
     required this.kind,
@@ -422,6 +436,14 @@ class _PurchasesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A table where the columns fit, stacked rows where they would not.
+    return LayoutBuilder(
+      builder: (context, constraints) => _build(context,
+          wide: constraints.maxWidth >= _purchasesTableMinWidth),
+    );
+  }
+
+  Widget _build(BuildContext context, {required bool wide}) {
     final strings = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
@@ -482,8 +504,9 @@ class _PurchasesSection extends StatelessWidget {
         ),
       ));
     } else {
+      if (wide) rows.add(const _PurchasesHeader());
       for (final purchase in view.rows) {
-        rows.add(_PurchaseRow(purchase: purchase));
+        rows.add(_PurchaseRow(purchase: purchase, wide: wide));
       }
       rows.add(_PurchaseActions(state: state));
     }
@@ -578,10 +601,61 @@ class _PurchaseActions extends StatelessWidget {
   }
 }
 
+/// The table's column widths, shared by the header and every row.
+const double _typeColumn = 96;
+const double _dateColumn = 140;
+const double _receiptColumn = 200;
+const double _creditsColumn = 120;
+
+class _PurchasesHeader extends StatelessWidget {
+  const _PurchasesHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final style = ArDriveTypographyNew.of(context).paragraphSmall(
+      color: colors.textLow,
+      fontWeight: ArFontWeight.semiBold,
+    );
+
+    Widget cell(String text, {double? width, TextAlign? align}) {
+      final label = Text(text, style: style, textAlign: align);
+      return width == null
+          ? Expanded(child: label)
+          : SizedBox(width: width, child: label);
+    }
+
+    return Padding(
+      key: const Key('billingPurchasesHeader'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.md,
+        vertical: ArDriveSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          cell(strings.billingColumnType, width: _typeColumn),
+          cell(strings.billingColumnAmount),
+          cell(strings.billingColumnDate, width: _dateColumn),
+          cell(strings.billingColumnReceipt, width: _receiptColumn),
+          cell(
+            strings.billingColumnCredits,
+            width: _creditsColumn,
+            align: TextAlign.end,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PurchaseRow extends StatelessWidget {
-  const _PurchaseRow({required this.purchase});
+  const _PurchaseRow({required this.purchase, this.wide = false});
 
   final Purchase purchase;
+
+  /// Columns, for a section wide enough for them; stacked otherwise.
+  final bool wide;
 
   String _short(String value) => value.length <= 12 ? value : shortenId(value);
 
@@ -656,6 +730,79 @@ class _PurchaseRow extends StatelessWidget {
       }
     }
 
+    final creditsWidget = p.creditsText.isEmpty
+        ? null
+        : Text(
+            p.isSpend ? p.creditsText : '+${p.creditsText}',
+            style: typography.paragraphNormal(
+              // Credits added are green; credits a name cost are not.
+              color: p.isSpend ? colors.textMid : colors.statusSuccessFg,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          );
+    final copyWidget = reference != null && !reference.isTransaction
+        ? AddressCopyButton(
+            address: reference.value,
+            label: strings.billingCopyReceipt,
+          )
+        : null;
+
+    if (wide) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: ArDriveSpacing.md,
+          vertical: ArDriveSpacing.sm,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: _typeColumn,
+              child: Align(alignment: Alignment.centerLeft, child: _Tag(tag)),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (amount != null)
+                    Text(
+                      amount,
+                      style: typography.paragraphNormal(
+                        color: colors.textHigh,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                  if (usd != null) Text(usd, style: small),
+                  if (p.giftMessage != null)
+                    Text('"${p.giftMessage}"', style: small),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: _dateColumn,
+              child: Text(p.dateLabel, style: small),
+            ),
+            SizedBox(
+              width: _receiptColumn,
+              child: Row(
+                children: [
+                  if (referenceWidget != null) Flexible(child: referenceWidget),
+                  if (copyWidget != null) copyWidget,
+                ],
+              ),
+            ),
+            SizedBox(
+              width: _creditsColumn,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: creditsWidget,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: ArDriveSpacing.md,
@@ -705,20 +852,8 @@ class _PurchaseRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (p.creditsText.isNotEmpty)
-                Text(
-                  p.isSpend ? p.creditsText : '+${p.creditsText}',
-                  style: typography.paragraphNormal(
-                    // Credits added are green; credits a name cost are not.
-                    color: p.isSpend ? colors.textMid : colors.statusSuccessFg,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              if (reference != null && !reference.isTransaction)
-                AddressCopyButton(
-                  address: reference.value,
-                  label: strings.billingCopyReceipt,
-                ),
+              if (creditsWidget != null) creditsWidget,
+              if (copyWidget != null) copyWidget,
             ],
           ),
         ],

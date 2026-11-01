@@ -195,29 +195,9 @@ class AccountPage extends StatelessWidget {
         child: body,
       ),
       desktop: (context) => ListPageChrome(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListPageTitleRow(
-                title: ListPageTitleRow.text(
-                  context,
-                  appLocalizationsOf(context).accountAndSecurity,
-                ),
-              ),
-              const SizedBox(height: listPageBlockGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: listPagePadding,
-                ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: body,
-                ),
-              ),
-              const SizedBox(height: listPageSectionGap),
-            ],
-          ),
+        child: ReadablePageBody(
+          title: appLocalizationsOf(context).accountAndSecurity,
+          child: body,
         ),
       ),
     );
