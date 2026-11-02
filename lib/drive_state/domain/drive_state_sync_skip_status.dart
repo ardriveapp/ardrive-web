@@ -126,48 +126,45 @@ DriveStateSyncSkipStatus driveStateSyncSkipStatus({
 }) {
   if (syncState is SyncInProgress) {
     return const DriveStateSyncSkipStatus.unknown(
-      'A sync is running. Wait for it to finish, then try again.',
+      'A sync is running. Try again when it finishes.',
     );
   }
 
   if (syncState is SyncLoadingDrives) {
     return const DriveStateSyncSkipStatus.unknown(
-      'Your drives are still loading. Wait for the sync to finish, then try '
-      'again.',
+      'Your drives are still loading. Try again in a moment.',
     );
   }
 
   if (syncState is SyncCancelled) {
     return const DriveStateSyncSkipStatus.unknown(
-      'The last sync was cancelled, so there is no record of what it left '
-      'out. Sync this drive again, then try again.',
+      'The last sync was stopped. Sync this drive first, so nothing in it is '
+      'left out.',
     );
   }
 
   if (syncState is SyncWalletMismatch) {
     return const DriveStateSyncSkipStatus.unknown(
-      'The connected wallet changed since the last sync. Sync this drive '
-      'again, then try again.',
+      'Your wallet changed since the last sync. Sync this drive first.',
     );
   }
 
   if (lastSyncCompletedAt == null) {
     return const DriveStateSyncSkipStatus.unknown(
-      'No sync has finished yet, so there is nothing to confirm this drive is '
-      'complete. Sync this drive, then try again.',
+      'Sync this drive first, so nothing in it is left out.',
     );
   }
 
   if (coveredDriveIds != null && !coveredDriveIds.contains(driveId)) {
     return const DriveStateSyncSkipStatus.unknown(
-      'Sync this drive first, so the page includes everything in it.',
+      'Sync this drive first, so nothing in it is left out.',
     );
   }
 
   if (syncState is SyncCompleteWithErrors &&
       syncState.failedDriveIds.contains(driveId)) {
     return const DriveStateSyncSkipStatus.unknown(
-      'The last sync failed for this drive. Sync it again, then try again.',
+      'The last sync of this drive failed. Sync it again first.',
     );
   }
 
@@ -175,10 +172,9 @@ DriveStateSyncSkipStatus driveStateSyncSkipStatus({
   if (skipped.isNotEmpty) {
     return DriveStateSyncSkipStatus.skipped(
       skippedEntityCount: skipped.length,
-      reason: 'The last sync of this drive could not read ${skipped.length} '
-          '${skipped.length == 1 ? 'item' : 'items'}. A snapshot now would '
-          'record that gap permanently. Sync this drive again, then try '
-          'again.',
+      reason: "The last sync couldn't read ${skipped.length} "
+          '${skipped.length == 1 ? 'item' : 'items'} in this drive. Sync it '
+          "again first, so they aren't left out for good.",
     );
   }
 
