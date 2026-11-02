@@ -4,6 +4,8 @@
 library;
 
 import 'dart:async';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js_util' as js_util;
 
 import 'package:ardrive/utils/cross_tab_lock/cross_tab_lock.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,10 +13,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('two bodies under one name run one after the other', () async {
     final events = <String>[];
+    final firstStarted = Completer<void>();
     final firstMayFinish = Completer<void>();
 
     final first = runExclusiveAcrossTabs('cross-tab-test', () async {
       events.add('first starts');
+      firstStarted.complete();
       await firstMayFinish.future;
       events.add('first ends');
       return 1;
@@ -24,7 +28,11 @@ void main() {
       return 2;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    // No guessed timing: wait until the first body holds the lock and the
+    // browser reports the second request queued behind it. The second must
+    // not have started while the first still holds the lock.
+    await firstStarted.future.timeout(const Duration(seconds: 10));
+    await _untilHeldWithOneWaiting('cross-tab-test');
     expect(events, ['first starts']);
 
     firstMayFinish.complete();
@@ -45,4 +53,33 @@ void main() {
       3,
     );
   });
+}
+
+/// Polls the browser's lock manager until [name] is held and one request for
+/// it is pending.
+Future<void> _untilHeldWithOneWaiting(String name) async {
+  final locks = js_util.getProperty<Object>(
+    js_util.getProperty<Object>(js_util.globalThis, 'navigator'),
+    'locks',
+  );
+  int count(Object snapshot, String list) {
+    final entries =
+        js_util.getProperty<List<Object?>>(snapshot, list).cast<Object>();
+    return entries
+        .where((e) => js_util.getProperty<String?>(e, 'name') == name)
+        .length;
+  }
+
+  final deadline = DateTime.now().add(const Duration(seconds: 10));
+  while (true) {
+    final snapshot = await js_util
+        .promiseToFuture<Object>(js_util.callMethod(locks, 'query', []));
+    if (count(snapshot, 'held') == 1 && count(snapshot, 'pending') == 1) {
+      return;
+    }
+    if (DateTime.now().isAfter(deadline)) {
+      fail('the lock was never held with one request waiting');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
 }
