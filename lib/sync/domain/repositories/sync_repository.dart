@@ -66,7 +66,9 @@ const _txConfirmationBatchTimeout = Duration(seconds: 15);
 
 /// Overall timeout for a drive's transaction-status update (across batches).
 /// Sits above [_txConfirmationBatchTimeout] so at least one slow-but-successful
-/// batch can complete; remaining work resumes on the next sync.
+/// batch can complete. What is left is stopped and reported on
+/// [SyncProgress.statusPassTimedOut], and `SyncCubit` finishes it in the
+/// background, outside the sync.
 const _txStatusUpdateTimeout = Duration(seconds: 30);
 
 /// Where each phase of a sync ends on the 0..1 progress bar.
@@ -180,11 +182,10 @@ class MonotonicProgressSink {
   ///
   /// Publishing to a closed controller throws, and this sink is reachable from
   /// work the sync has already stopped waiting for: `Future.timeout` does not
-  /// cancel its source, so an abandoned `_updateTransactionStatuses` goes on
-  /// issuing confirmation batches while the sync finishes and closes here. A
-  /// throw there would abort the batches it had left, silently - the fired
-  /// timeout swallows the error - and leave transaction statuses unwritten.
-  /// Reporting stops at close; the work does not.
+  /// cancel its source, so an abandoned `_updateTransactionStatuses` can still
+  /// report for the moment it takes to notice it was cancelled (see
+  /// `statusPassTokenFor`), after the sync has finished and closed here. A throw
+  /// there would be swallowed by the fired timeout. Reporting stops at close.
   SyncProgress add(SyncProgress progress) {
     final raised = raise(progress);
     if (!_controller.isClosed) {
@@ -388,8 +389,16 @@ abstract class SyncRepository {
     /// unlocker; a test that leaves it out gets a fresh one with its own
     /// session.
     DriveUnlocker? driveUnlocker,
+
+    /// Replaces [_txStatusUpdateTimeout] so a test need not wait thirty seconds.
+    @visibleForTesting Duration? statusUpdateTimeout,
+
+    /// Replaces [_txConfirmationBatchTimeout], for the same reason.
+    @visibleForTesting Duration? statusBatchTimeout,
   }) {
     return _SyncRepository(
+      statusUpdateTimeout: statusUpdateTimeout ?? _txStatusUpdateTimeout,
+      statusBatchTimeout: statusBatchTimeout ?? _txConfirmationBatchTimeout,
       arweave: arweave,
       driveDao: driveDao,
       configService: configService,
@@ -431,6 +440,8 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  final Duration _statusUpdateTimeout;
+  final Duration _statusBatchTimeout;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final DriveUnlocker _driveUnlocker;
@@ -602,7 +613,11 @@ class _SyncRepository implements SyncRepository {
     required UserPreferencesRepository userPreferencesRepository,
     DriveStateSyncSource? driveStateSyncSource,
     required DriveUnlocker driveUnlocker,
-  })  : _driveStateSyncSource = driveStateSyncSource,
+    required Duration statusUpdateTimeout,
+    required Duration statusBatchTimeout,
+  })  : _statusUpdateTimeout = statusUpdateTimeout,
+        _statusBatchTimeout = statusBatchTimeout,
+        _driveStateSyncSource = driveStateSyncSource,
         _driveUnlocker = driveUnlocker,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -1221,6 +1236,7 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgressController.add(syncProgress);
 
         // Wrap transaction status update with cancellation check and timeout
+        final statusPass = statusPassTokenFor(token);
         try {
           await Future.wait(
             [
@@ -1230,7 +1246,7 @@ class _SyncRepository implements SyncRepository {
                 // Scope the gateway query to the logged-in wallet for selectivity.
                 ownerAddress: walletAddress,
                 txsIdsToSkip: confirmedFileTxIds,
-                cancellationToken: token,
+                cancellationToken: statusPass.token,
                 onLocalProgress: (fraction) {
                   syncProgress = syncProgress.copyWith(
                     progress: _phaseProgress(
@@ -1255,17 +1271,27 @@ class _SyncRepository implements SyncRepository {
                   syncProgress = syncProgress.copyWith(isIndeterminate: active);
                   syncProgress = syncProgressController.add(syncProgress);
                 },
+                // Part of a batch went unanswered: owed, like a timed out pass.
+                onBatchTimedOut: () {
+                  syncProgress =
+                      syncProgress.copyWith(statusPassTimedOut: true);
+                  syncProgress = syncProgressController.add(syncProgress);
+                },
               ).timeout(
-                _txStatusUpdateTimeout,
+                _statusUpdateTimeout,
                 onTimeout: () {
                   // Check if cancelled before timing out
                   token.checkCancellation();
                   logger.w('Transaction status update timed out after '
-                      '${_txStatusUpdateTimeout.inSeconds}s');
+                      '${_statusUpdateTimeout.inSeconds}s');
+                  // Stop the abandoned pass, so the follow-up that
+                  // `SyncCubit` starts on the flag below is the only one.
+                  statusPass.token.cancel();
                   // Update status message to indicate timeout but don't treat as error
                   syncProgress = syncProgress.copyWith(
                     statusMessage: 'Completing sync...',
                     isIndeterminate: false,
+                    statusPassTimedOut: true,
                   );
                   syncProgress = syncProgressController.add(syncProgress);
                   // Continue without updating transaction statuses
@@ -1280,6 +1306,8 @@ class _SyncRepository implements SyncRepository {
           }
           logger.w('Failed to update transaction statuses, continuing: $e');
           // Don't fail the entire sync if transaction status update fails
+        } finally {
+          statusPass.dispose();
         }
 
         // The gateway is done with, however that went - answered, failed or
@@ -1694,6 +1722,7 @@ class _SyncRepository implements SyncRepository {
         await _userPreferencesRepository.load();
         reportLocalRead();
 
+        final statusPass = statusPassTokenFor(token);
         try {
           await _updateTransactionStatusesForDrive(
             driveDao: _driveDao,
@@ -1702,7 +1731,7 @@ class _SyncRepository implements SyncRepository {
             // Scope the gateway query to this drive's owner for selectivity.
             ownerAddress: drive.ownerAddress,
             txsIdsToSkip: confirmedFileTxIds,
-            cancellationToken: token,
+            cancellationToken: statusPass.token,
             onLocalProgress: (fraction) {
               syncProgress = syncProgress.copyWith(
                 progress: _phaseProgress(
@@ -1727,15 +1756,23 @@ class _SyncRepository implements SyncRepository {
               syncProgress = syncProgress.copyWith(isIndeterminate: active);
               syncProgress = syncProgressController.add(syncProgress);
             },
+            // See the same callback in [syncAllDrives].
+            onBatchTimedOut: () {
+              syncProgress = syncProgress.copyWith(statusPassTimedOut: true);
+              syncProgress = syncProgressController.add(syncProgress);
+            },
           ).timeout(
-            _txStatusUpdateTimeout,
+            _statusUpdateTimeout,
             onTimeout: () {
               token.checkCancellation();
               logger.w('Transaction status update timed out after '
-                  '${_txStatusUpdateTimeout.inSeconds}s for single drive');
+                  '${_statusUpdateTimeout.inSeconds}s for single drive');
+              // See the same branch in [syncAllDrives].
+              statusPass.token.cancel();
               syncProgress = syncProgress.copyWith(
                 statusMessage: 'Completing sync...',
                 isIndeterminate: false,
+                statusPassTimedOut: true,
               );
               syncProgress = syncProgressController.add(syncProgress);
             },
@@ -1746,6 +1783,8 @@ class _SyncRepository implements SyncRepository {
           }
           logger.w(
               'Failed to update transaction statuses for single drive, continuing: $e');
+        } finally {
+          statusPass.dispose();
         }
 
         // The gateway is done with, however that went. The phase closes on its
@@ -1871,6 +1910,10 @@ class _SyncRepository implements SyncRepository {
     /// Called with true when the gateway confirmation loop begins and false
     /// when it is over. See [_updateTransactionStatuses].
     void Function(bool active)? onGatewayPhase,
+
+    /// Called when a batch of the gateway's answers ran out of time, so some
+    /// of its transactions stay pending though the pass as a whole finished.
+    void Function()? onBatchTimedOut,
   }) async {
     cancellationToken?.checkCancellation();
 
@@ -1979,10 +2022,11 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        _txConfirmationBatchTimeout,
+        _statusBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
+          onBatchTimedOut?.call();
           return verified;
         },
       );
@@ -2046,8 +2090,11 @@ class _SyncRepository implements SyncRepository {
       onGatewayPhase?.call(false);
     }
 
-    // Mark skipped transactions as confirmed
+    // Mark skipped transactions as confirmed. Not by a pass already stopped:
+    // with every pending one in a snapshot there is no gateway batch above
+    // to notice the stop, and an abandoned pass must write nothing.
     if (txsIdsToSkip.isNotEmpty) {
+      cancellationToken?.checkCancellation();
       await driveDao.insertNewNetworkTransactions(
         txsIdsToSkip
             .map((txId) => NetworkTransactionsCompanion(
@@ -2413,6 +2460,10 @@ class _SyncRepository implements SyncRepository {
     /// when it is over. Nothing in here can measure that loop, so the bar is
     /// told to stop pretending to for its duration.
     void Function(bool active)? onGatewayPhase,
+
+    /// Called when a batch of the gateway's answers ran out of time, so some
+    /// of its transactions stay pending though the pass as a whole finished.
+    void Function()? onBatchTimedOut,
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
@@ -2543,10 +2594,11 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        _txConfirmationBatchTimeout,
+        _statusBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
+          onBatchTimedOut?.call();
           return verified;
         },
       );
@@ -2618,7 +2670,10 @@ class _SyncRepository implements SyncRepository {
       onGatewayPhase?.call(false);
     }
 
+    // As in [_updateTransactionStatusesForDrive]: a stopped pass writes
+    // nothing, these included.
     if (txsIdsToSkip.isNotEmpty) {
+      cancellationToken?.checkCancellation();
       await driveDao.insertNewNetworkTransactions(
         txsIdsToSkip
             .map((txId) => NetworkTransactionsCompanion(
@@ -3905,4 +3960,28 @@ Future<DrivesCompanion> _computeRefreshedDriveFromRevision({
           oldestRevision?.dateCreated ?? latestRevision.dateCreated.value,
         ),
       );
+}
+
+/// A token for one status pass that follows [sync] and can also be stopped
+/// on its own. `Future.timeout` abandons its source without stopping it, so
+/// a pass that timed out would go on issuing batches next to the follow-up
+/// pass that takes over from it. Cancelling this one is what stops it, and
+/// the batches it already wrote stay written. Call [dispose] when the pass
+/// is over.
+@visibleForTesting
+({SyncCancellationToken token, void Function() dispose}) statusPassTokenFor(
+  SyncCancellationToken sync,
+) {
+  final pass = SyncCancellationToken();
+  final sub = sync.onCancelled.listen((_) => pass.cancel());
+  // The stream is broadcast: a sync cancelled before this subscribed sent
+  // its event to nobody, so the pass would run on.
+  if (sync.isCancelled) pass.cancel();
+  return (
+    token: pass,
+    dispose: () {
+      sub.cancel();
+      pass.dispose();
+    },
+  );
 }

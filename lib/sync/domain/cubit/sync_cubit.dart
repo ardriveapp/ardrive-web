@@ -447,6 +447,28 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
+  /// Finishes confirming, outside the sync, what the sync's status pass ran
+  /// out of time on.
+  ///
+  /// The sync does not wait for it and the UI is not blocked: the watch below
+  /// is the existing timer-driven refresh, which runs one pass at a time, asks
+  /// the gateway through the same batched query, defers while a sync runs and
+  /// stops on close. Rows update as each batch lands.
+  void _finishTimedOutStatusPass() {
+    if (_syncProgress.statusPassTimedOut) {
+      watchForPendingConfirmations();
+    }
+  }
+
+  /// Stops a standalone status refresh that is in flight. A sync ends with
+  /// its own status pass, so one starting must not run beside a refresh; the
+  /// confirmation watch asks again once the sync is over.
+  void _stopStatusRefresh() {
+    _statusRefreshToken?.cancel();
+    _statusRefreshToken?.dispose();
+    _statusRefreshToken = null;
+  }
+
   /// The token for the standalone status refresh above.
   ///
   /// Its own, not [_currentSyncToken]: that one is cancelled and replaced by
@@ -1169,6 +1191,7 @@ class SyncCubit extends Cubit<SyncState> {
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose(); // Clean up any previous token
     _currentSyncToken = SyncCancellationToken();
+    _stopStatusRefresh();
 
     /// Set only where the progress stream ran to its natural end. Everything
     /// after the `catch` below runs for a failed sync as well as a successful
@@ -1429,6 +1452,8 @@ class SyncCubit extends Cubit<SyncState> {
       _emitIfOpen(SyncIdle());
     }
 
+    if (!threw) _finishTimedOutStatusPass();
+
     // See the single-drive path below: whether a sync actually ran.
     return !threw;
   }
@@ -1495,6 +1520,7 @@ class SyncCubit extends Cubit<SyncState> {
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose();
     _currentSyncToken = SyncCancellationToken();
+    _stopStatusRefresh();
 
     /// See [_recordExaminedDrives] - the same reason as in [startSync].
     var reachedTheEnd = false;
@@ -1683,6 +1709,8 @@ class SyncCubit extends Cubit<SyncState> {
     } else {
       _emitIfOpen(SyncIdle());
     }
+
+    if (!threw) _finishTimedOutStatusPass();
 
     // What the contract says: whether a sync actually ran. A sync that threw
     // before fetching anything did not, and returning true for it told
@@ -2042,9 +2070,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     // Same argument as the sync token below: logout empties the tables before
     // this runs, so anything still writing has to be told to stop.
-    _statusRefreshToken?.cancel();
-    _statusRefreshToken?.dispose();
-    _statusRefreshToken = null;
+    _stopStatusRefresh();
 
     // First, so the sync begins unwinding while the subscriptions below are
     // being torn down rather than after.
