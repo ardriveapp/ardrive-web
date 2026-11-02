@@ -214,7 +214,7 @@ void main() {
 
       // A typed name proves nothing, so the address is always there too, in
       // monospace.
-      expect(find.textContaining('By Phil ', findRichText: true), findsWidgets);
+      expect(find.text('By Phil'), findsOneWidget);
       final address = tester.widget<ArDriveIdText>(find.byType(ArDriveIdText));
       expect(address.text, startsWith('iKryOe'));
       expect(address.style.fontFamily, ArDriveMonospace.family);
@@ -227,7 +227,7 @@ void main() {
           config: withOwnerName('Phil', title: 'ArDrive Photos Drive'),
           ownerVerified: false);
 
-      expect(find.textContaining('By Phil ', findRichText: true), findsWidgets);
+      expect(find.text('By Phil'), findsOneWidget);
       final address = tester.widget<ArDriveIdText>(find.byType(ArDriveIdText));
       expect(address.text, startsWith('iKryOe'));
       expect(find.textContaining('79 files'), findsOneWidget);
@@ -238,8 +238,8 @@ void main() {
     testWidgets('or by their address, shortened', (tester) async {
       await header(tester, config: withOwnerName(null));
 
-      // The address is set apart in monospace inside the sentence.
-      expect(find.textContaining('By ', findRichText: true), findsWidgets);
+      // The address is set apart in monospace, after a wallet icon.
+      expect(find.text('By'), findsOneWidget);
       final address = tester.widget<ArDriveIdText>(find.byType(ArDriveIdText));
       expect(address.text, startsWith('iKryOe'));
       expect(address.style.fontFamily, ArDriveMonospace.family);

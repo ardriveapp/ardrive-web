@@ -203,7 +203,8 @@ class PublicationHeader extends StatelessWidget {
     if (config == null) return const SizedBox.shrink();
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final cover = config.images.cover;
+    final cover = collapsed ? null : config.images.cover;
+    final icon = collapsed ? null : config.images.icon;
 
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,38 +223,11 @@ class PublicationHeader extends StatelessWidget {
       ],
     );
 
-    return Column(
+    // The actions beside the title only, so the lines under it have the
+    // width.
+    final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AnimatedSize(
-          duration: _fold,
-          alignment: Alignment.topCenter,
-          child: cover == null || collapsed
-              ? const SizedBox(width: double.infinity)
-              : Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      height: coverHeight,
-                      width: double.infinity,
-                      child: Image.network(
-                        Uri.base.resolve(cover).toString(),
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        frameBuilder: (context, image, frame, sync) =>
-                            frame != null || sync
-                                ? image
-                                : const PublicationImagePlaceholder(),
-                        errorBuilder: (_, __, ___) =>
-                            const PublicationImagePlaceholder(),
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-        // The actions beside the title only, so the lines under it have the
-        // width.
         Row(
           children: [
             Expanded(
@@ -276,12 +250,50 @@ class PublicationHeader extends StatelessWidget {
             ),
           ],
         ),
-        AnimatedSize(
-          duration: _fold,
-          alignment: Alignment.topCenter,
-          child: collapsed ? const SizedBox(width: double.infinity) : details,
-        ),
+        if (!collapsed) details,
       ],
+    );
+
+    final Widget head;
+    if (cover != null && icon != null) {
+      head = PublicationCoverLayout(
+        cover: _CoverImage(path: cover, height: coverHeight),
+        icon: _HeaderIcon(path: icon, size: compact ? 64 : 88),
+        iconSize: compact ? 64 : 88,
+        ringWidth: 4,
+        ringColor: colors.containerL0,
+        inset: compact ? 12 : 16,
+        // A phone's title block gets the full width, below the icon.
+        beside: !compact,
+        body: titleBlock,
+      );
+    } else if (cover != null) {
+      head = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _CoverImage(path: cover, height: coverHeight),
+          const SizedBox(height: 16),
+          titleBlock,
+        ],
+      );
+    } else if (icon != null) {
+      final size = compact ? 48.0 : 56.0;
+      head = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderIcon(path: icon, size: size),
+          SizedBox(width: compact ? ArDriveSpacing.sm : ArDriveSpacing.md),
+          Expanded(child: titleBlock),
+        ],
+      );
+    } else {
+      head = titleBlock;
+    }
+
+    return AnimatedSize(
+      duration: _fold,
+      alignment: Alignment.topCenter,
+      child: head,
     );
   }
 
@@ -303,34 +315,20 @@ class PublicationFileHead extends StatelessWidget {
 
   final PublicationConfig config;
 
+  /// Below this width the head is a phone's: a smaller icon, with the title
+  /// below it rather than beside it.
+  static const _compactBelow = 560.0;
+
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final cover = config.images.cover;
-    return Column(
+    final icon = config.images.icon;
+    final text = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (cover != null) ...[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: AspectRatio(
-              aspectRatio: 4,
-              child: Image.network(
-                Uri.base.resolve(cover).toString(),
-                fit: BoxFit.cover,
-                frameBuilder: (context, image, frame, sync) =>
-                    frame != null || sync
-                        ? image
-                        : const PublicationImagePlaceholder(),
-                errorBuilder: (_, __, ___) =>
-                    const PublicationImagePlaceholder(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
         Text(
           config.title,
           style: typography.heading4(
@@ -342,6 +340,188 @@ class PublicationFileHead extends StatelessWidget {
           const SizedBox(height: 8),
           Text(config.description,
               style: typography.paragraphNormal(color: colors.textMid)),
+        ],
+      ],
+    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < _compactBelow;
+      if (cover != null && icon != null) {
+        final size = compact ? 64.0 : 88.0;
+        return PublicationCoverLayout(
+          cover: _CoverImage(path: cover, aspectRatio: 4),
+          icon: _HeaderIcon(path: icon, size: size),
+          iconSize: size,
+          ringWidth: 4,
+          // The share page's own surface, behind the head.
+          ringColor:
+              ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          inset: compact ? 12 : 16,
+          beside: !compact,
+          body: text,
+        );
+      }
+      if (cover != null) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _CoverImage(path: cover, aspectRatio: 4),
+            const SizedBox(height: 16),
+            text,
+          ],
+        );
+      }
+      if (icon != null) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _HeaderIcon(path: icon, size: compact ? 48 : 56),
+            SizedBox(width: compact ? ArDriveSpacing.sm : ArDriveSpacing.md),
+            Expanded(child: text),
+          ],
+        );
+      }
+      return text;
+    });
+  }
+}
+
+/// A publication's cover as a banner, with its rounded corners: [height] tall,
+/// or [aspectRatio] wide to high. A square holds its place while it loads.
+class _CoverImage extends StatelessWidget {
+  const _CoverImage({required this.path, this.height, this.aspectRatio});
+
+  final String path;
+  final double? height;
+  final double? aspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    final image = Image.network(
+      Uri.base.resolve(path).toString(),
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      frameBuilder: (context, image, frame, sync) =>
+          frame != null || sync ? image : const PublicationImagePlaceholder(),
+      errorBuilder: (_, __, ___) => const PublicationImagePlaceholder(),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: aspectRatio != null
+          ? AspectRatio(aspectRatio: aspectRatio!, child: image)
+          : SizedBox(height: height, width: double.infinity, child: image),
+    );
+  }
+}
+
+/// A publication's icon in the head: a rounded square. Unlike
+/// [PublicationIcon] it never falls back to ArDrive's mark, which would read
+/// as the page's maker; a square holds its place instead.
+class _HeaderIcon extends StatelessWidget {
+  const _HeaderIcon({required this.path, required this.size});
+
+  final String path;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = PublicationImagePlaceholder(width: size, height: size);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(ArDriveRadius.md),
+      child: Image.network(
+        Uri.base.resolve(path).toString(),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        frameBuilder: (context, image, frame, sync) =>
+            frame != null || sync ? image : placeholder,
+        errorBuilder: (_, __, ___) => placeholder,
+      ),
+    );
+  }
+}
+
+/// A cover with the publication's icon cut into its bottom-left edge, half on
+/// the cover and half below it, as on a profile page. [ringColor] is the
+/// surface behind the head, drawn round the icon so it reads as cut out. The
+/// [body] (title and the lines under it) sits beside the lower half of the
+/// icon when [beside], else below it, so nothing collides with the overlap.
+class PublicationCoverLayout extends StatelessWidget {
+  const PublicationCoverLayout({
+    super.key,
+    required this.cover,
+    required this.icon,
+    required this.iconSize,
+    required this.ringWidth,
+    required this.ringColor,
+    required this.inset,
+    required this.beside,
+    required this.body,
+    this.iconRadius = ArDriveRadius.md,
+    this.gap = ArDriveSpacing.md,
+    this.bodyTop = ArDriveSpacing.sm,
+  });
+
+  /// The cover, sized by its own constraints.
+  final Widget cover;
+
+  /// The icon, [iconSize] square, without its ring.
+  final Widget icon;
+  final double iconSize;
+  final double ringWidth;
+  final Color ringColor;
+
+  /// From the cover's left edge to the icon's ring.
+  final double inset;
+  final bool beside;
+  final Widget body;
+
+  /// The icon's own corner radius; the ring is concentric with it.
+  final double iconRadius;
+
+  /// From the icon's right edge to the [body] when [beside].
+  final double gap;
+
+  /// From the cover's bottom edge to the [body] when [beside].
+  final double bodyTop;
+
+  @override
+  Widget build(BuildContext context) {
+    final outer = iconSize + ringWidth * 2;
+    final overlap = outer / 2;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            cover,
+            Positioned(
+              left: inset,
+              bottom: -overlap,
+              child: Container(
+                padding: EdgeInsets.all(ringWidth),
+                decoration: BoxDecoration(
+                  color: ringColor,
+                  borderRadius: BorderRadius.circular(iconRadius + ringWidth),
+                ),
+                child: icon,
+              ),
+            ),
+          ],
+        ),
+        if (beside)
+          ConstrainedBox(
+            constraints: BoxConstraints(minHeight: overlap + ArDriveSpacing.xs),
+            child: Padding(
+              padding: EdgeInsets.only(left: inset + outer + gap, top: bodyTop),
+              child: body,
+            ),
+          )
+        else ...[
+          SizedBox(height: overlap + ArDriveSpacing.xs),
+          body,
         ],
       ],
     );
@@ -445,9 +625,9 @@ class _LabelledButton extends StatelessWidget {
   }
 }
 
-/// "By <owner> · N files · size · published <date>". The owner is their
-/// address shortened, after the name they chose when there is one, since a
-/// typed name proves nothing; the whole address is a hover away and a click
+/// "By <owner> · N files · size · published <date>". The owner is the name
+/// they chose when there is one, then their address shortened, since a typed
+/// name proves nothing; the whole address is a hover away and a click
 /// copies it. The address is the identity: a page whose snapshot someone
 /// else signed is refused before it gets here.
 class _Byline extends StatelessWidget {
@@ -463,8 +643,6 @@ class _Byline extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final style = typography.paragraphNormal(color: colors.textMid);
     final address = shortenId(config.owner);
-    final name = config.ownerName;
-    final by = strings.publicationBy(name == null ? address : '$name $address');
     final publishedAt = config.publishedAt;
     final stats = this.stats;
 
@@ -488,17 +666,11 @@ class _Byline extends StatelessWidget {
                     await Clipboard.setData(ClipboardData(text: config.owner));
                     if (context.mounted) _sayCopied(context);
                   },
-                  // A name in the body face, the address always beside it in
-                  // monospace.
-                  child: Text.rich(
-                    TextSpan(
-                      style: style,
-                      children: ArDriveIdText.spansIn(
-                        by,
-                        address,
-                        idStyle: typography.code(color: colors.textMid),
-                      ),
-                    ),
+                  child: PublicationOwnerLabel(
+                    name: config.ownerName,
+                    address: address,
+                    style: style,
+                    idStyle: typography.code(color: colors.textLow),
                   ),
                 ),
               ),
@@ -551,6 +723,51 @@ class _Byline extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// "By <name>", then a wallet icon and the shortened [address] in monospace,
+/// lighter than the name: the address is the identity, so it is always there,
+/// and a typed name never runs into it. Without a [name] it is "By", the icon
+/// and the address.
+class PublicationOwnerLabel extends StatelessWidget {
+  const PublicationOwnerLabel({
+    super.key,
+    required this.name,
+    required this.address,
+    required this.style,
+    required this.idStyle,
+  });
+
+  final String? name;
+  final String address;
+
+  /// The body face of "By <name>".
+  final TextStyle style;
+
+  /// The monospace face of the address, in the colour of the wallet icon.
+  final TextStyle idStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final by = appLocalizationsOf(context).publicationBy(name ?? '').trim();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: Text(by, style: style)),
+        const SizedBox(width: ArDriveSpacing.xs),
+        // A screen reader reads the name and the address, not the icon.
+        ExcludeSemantics(
+          child: Icon(
+            Icons.account_balance_wallet_outlined,
+            size: (style.fontSize ?? 14) * 1.15,
+            color: idStyle.color,
+          ),
+        ),
+        const SizedBox(width: ArDriveSpacing.xxs),
+        ArDriveIdText(address, style: idStyle),
+      ],
     );
   }
 }
