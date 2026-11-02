@@ -9,6 +9,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish_to_web.dart'
     show publishButton;
@@ -708,14 +709,102 @@ class _HeaderPreview extends StatelessWidget {
     final summary = state.summary;
     // The page always shows the address, beside a name when there is one.
     final address = shortenId(context.read<PublishCubit>().drive.ownerAddress);
-    final hasName = state.ownerName.trim().isNotEmpty;
-    final owner = hasName ? '${state.ownerName.trim()} $address' : address;
+    final name = state.ownerName.trim();
     final bylineStyle = typography.paragraphSmall(color: colors.textMid);
-    final byline = [
-      strings.publicationBy(owner),
+    // The rest of the byline, after the owner; no-break spaces keep a wrapped
+    // line from starting with a middle dot, as on the page.
+    final rest = [
       if (summary != null) strings.publishFileCount(summary.fileCount),
       if (state.licence != null) state.licence!.meta.shortName,
-    ].join(' · ');
+    ].map((part) => '\u00a0· $part').join();
+    final title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          state.title.trim().isEmpty ? ' ' : state.title.trim(),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: typography.paragraphLarge(
+              color: colors.textHigh, fontWeight: ArFontWeight.bold),
+        ),
+        const SizedBox(height: 2),
+        // A name in the body face and the address beside it in monospace
+        // after a wallet icon, as on the published page.
+        Text.rich(
+          TextSpan(
+            style: bylineStyle,
+            children: [
+              WidgetSpan(
+                alignment: PlaceholderAlignment.baseline,
+                baseline: TextBaseline.alphabetic,
+                child: PublicationOwnerLabel(
+                  name: name.isEmpty ? null : name,
+                  address: address,
+                  style: bylineStyle,
+                  idStyle: typography.code(
+                    color: colors.textLow,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              if (rest.isNotEmpty) TextSpan(text: rest),
+            ],
+          ),
+        ),
+        if (state.description.trim().isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            state.description.trim(),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphSmall(color: colors.textMid),
+          ),
+        ],
+      ],
+    );
+    final cover = state.cover != null
+        ? AspectRatio(
+            aspectRatio: 4,
+            child: RawImage(image: state.cover!.preview, fit: BoxFit.cover),
+          )
+        : AspectRatio(
+            aspectRatio: 4,
+            child: Container(color: colors.containerL2),
+          );
+    final icon = state.icon;
+    // The same layout as the page's head at a smaller scale: the icon cut into
+    // the cover's bottom-left edge, the title beside it.
+    final head = icon != null
+        ? PublicationCoverLayout(
+            cover: cover,
+            icon: SizedBox(
+              width: 40,
+              height: 40,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(ArDriveRadius.control),
+                child: RawImage(image: icon.preview, fit: BoxFit.cover),
+              ),
+            ),
+            iconSize: 40,
+            ringWidth: 3,
+            ringColor: colors.containerL0,
+            inset: 12,
+            iconRadius: ArDriveRadius.control,
+            gap: 12,
+            bodyTop: ArDriveSpacing.xs,
+            beside: true,
+            body: Padding(
+              padding: const EdgeInsets.only(right: 12, bottom: 12),
+              child: title,
+            ),
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              cover,
+              Padding(padding: const EdgeInsets.all(12), child: title),
+            ],
+          );
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -726,73 +815,7 @@ class _HeaderPreview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: 4,
-            child: state.cover != null
-                ? RawImage(image: state.cover!.preview, fit: BoxFit.cover)
-                : Container(color: colors.containerL2),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (state.icon != null) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(ArDriveRadius.control),
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: RawImage(
-                          image: state.icon!.preview, fit: BoxFit.cover),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        state.title.trim().isEmpty ? ' ' : state.title.trim(),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.paragraphLarge(
-                            color: colors.textHigh,
-                            fontWeight: ArFontWeight.bold),
-                      ),
-                      const SizedBox(height: 2),
-                      // A name in the body face and the address beside it
-                      // in monospace, as on the published page.
-                      Text.rich(
-                        TextSpan(
-                          style: bylineStyle,
-                          children: ArDriveIdText.spansIn(
-                            byline,
-                            address,
-                            idStyle: typography.code(
-                              color: colors.textMid,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (state.description.trim().isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          state.description.trim(),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              typography.paragraphSmall(color: colors.textMid),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          head,
           // A file page shows its file under the header: what a visitor
           // opens and downloads. A private file's name stays hidden until
           // the key opens it.

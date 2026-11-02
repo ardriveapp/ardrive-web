@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_look_step.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -148,8 +149,68 @@ void main() {
         findsOneWidget);
     expect(find.text('Optional. Square, at least 512 pixels wide.'),
         findsOneWidget);
-    expect(find.textContaining('Optional. Best at 1200 by 630 pixels. Until you pick one'),
+    expect(
+        find.textContaining(
+            'Optional. Best at 1200 by 630 pixels. Until you pick one'),
         findsOneWidget);
+  });
+
+  group('the page preview', () {
+    Future<PickedImage> picked() async {
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder);
+      return PickedImage(
+        preview: await recorder.endRecording().toImage(4, 4),
+        image: const NewPublicationImage({}),
+      );
+    }
+
+    testWidgets('cuts the icon into the cover, the title beside it',
+        (tester) async {
+      final cover = await tester.runAsync(picked);
+      final icon = await tester.runAsync(picked);
+      when(() => cubit.state).thenReturn(PublishState(
+        stage: PublishStage.look,
+        title: 'Field recordings',
+        cover: cover,
+        icon: icon,
+      ));
+      await pump(tester, const Size(1280, 900));
+
+      // The form's own thumbnails are other sizes: the preview's icon is the
+      // 40 px one, and its cover the 4:1 one.
+      final rects = [
+        for (final e in find.byType(RawImage, skipOffstage: false).evaluate())
+          tester.getRect(find.byWidget(e.widget)),
+      ];
+      final iconRect =
+          rects.singleWhere((r) => r.size == const Size.square(40));
+      final coverRect = rects.singleWhere((r) => r.width / r.height == 4);
+      expect(iconRect.size, const Size.square(40));
+      // Centred on the cover's bottom edge.
+      expect(iconRect.top, lessThan(coverRect.bottom));
+      expect(iconRect.bottom, greaterThan(coverRect.bottom));
+      expect(iconRect.left - coverRect.left, 12 + 3);
+      final title = tester.getRect(find
+          .byWidgetPredicate((w) => w is Text && w.data == 'Field recordings'));
+      expect(title.left, greaterThanOrEqualTo(iconRect.right + 3 + 12));
+      expect(title.top, greaterThan(coverRect.bottom));
+      expect(title.top, lessThan(iconRect.bottom));
+    });
+
+    testWidgets('shows the wallet icon and the address in the byline',
+        (tester) async {
+      when(() => cubit.state).thenReturn(const PublishState(
+          stage: PublishStage.look, title: 'A', ownerName: 'Maya'));
+      await pump(tester, const Size(390, 844));
+
+      expect(find.text('By Maya', skipOffstage: false), findsOneWidget);
+      expect(
+          find.byIcon(Icons.account_balance_wallet_outlined,
+              skipOffstage: false),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('a file page', () {

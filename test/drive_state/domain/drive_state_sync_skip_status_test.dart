@@ -63,7 +63,7 @@ void main() {
       expect(status.state, DriveStateSyncSkipState.skipped);
       expect(status.skippedEntityCount, 3);
       expect(status.reason, contains('3 items'));
-      expect(status.reason, contains('Sync this drive again'));
+      expect(status.reason, contains('Sync it again first'));
     });
 
     test('one skipped entity is still a gap', () {
@@ -130,7 +130,7 @@ void main() {
     test('an uncovered drive is told to sync in plain words', () {
       expect(
         statusOf(coveredDriveIds: {otherDriveId}).reason,
-        'Sync this drive first, so the page includes everything in it.',
+        'Sync this drive first, so nothing in it is left out.',
       );
     });
 
