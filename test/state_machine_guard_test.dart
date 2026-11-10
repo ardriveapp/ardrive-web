@@ -80,6 +80,42 @@ void main() {
     );
   });
 
+  group('the scanners match what they say', () {
+    test('a cast of the state', () {
+      expect(_stateCast.hasMatch('final ready = state as UploadReady;'), true);
+      expect(_stateCast.hasMatch('if (state case final UploadReady r)'), false);
+    });
+
+    test('a throwaway key anywhere in props', () {
+      for (final props in [
+        'List<Object?> get props => [UniqueKey()];',
+        'List<Object?> get props => [id, UniqueKey()];',
+        'List<Object?> get props {\n    return [id, UniqueKey()];\n  }',
+        'emit(UploadInProgress(equatableBust: key));',
+      ]) {
+        expect(_equalityBust.hasMatch(props), true, reason: props);
+      }
+      expect(
+        _equalityBust.hasMatch('List<Object?> get props => [id, sequence];'),
+        false,
+      );
+    });
+
+    test('an abstract state family that is not sealed', () {
+      for (final base in [
+        'abstract class UploadState extends Equatable {',
+        'abstract base class UploadState extends Equatable {',
+        'abstract class UploadState\n    extends  Equatable {',
+      ]) {
+        expect(_abstractState.hasMatch(base), true, reason: base);
+      }
+      expect(
+        _abstractState.hasMatch('sealed class UploadState extends Equatable {'),
+        false,
+      );
+    });
+  });
+
   test('every exception and legacy count is still needed', () {
     final stale = <String>[
       ..._underCount(sources, _stateCast, _legacyCasts),
@@ -110,8 +146,9 @@ void main() {
 
 final _stateCast = RegExp(r'\bstate\s+as\s+[A-Z]');
 
-final _equalityBust =
-    RegExp(r'props\s*=>\s*\[\s*UniqueKey\(\)|\bequatableBust\s*:');
+final _equalityBust = RegExp(
+  r'get\s+props\b[^;]*\bUniqueKey\(\)|\bequatableBust\s*:',
+);
 
 final _abstractState = RegExp(
   r'^abstract (?:base |interface )?class (\w+State)\b[^{]*?\bextends\s+Equatable\b',
