@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -355,9 +357,64 @@ void main() {
       ),
       act: (cubit) => cubit.cancelUpload(),
       expect: () => [
+        isA<UploadInProgress>()
+            .having((s) => s.isCanceling, 'isCanceling', true),
         isA<UploadFailure>()
             .having((s) => s.error, 'error', UploadErrors.cancelFailed),
       ],
+    );
+
+    // The cancel button reads Canceling while the upload stops, which can
+    // take a while: it used to emit a state equal to the last one, so the
+    // button never changed.
+    blocTest<UploadCubit, UploadState>(
+      'says it is canceling, then that it canceled',
+      build: () {
+        when(() => controller.cancel()).thenAnswer((_) async {});
+        final cubit = getUploadCubitInstanceWith([]);
+        cubit.uploadFromReview(method: UploadMethod.turbo);
+        return cubit;
+      },
+      seed: () => UploadInProgress(
+        progress: UploadProgress.notStarted(),
+        totalProgress: 0.05,
+        controller: controller,
+        uploadMethod: UploadMethod.turbo,
+      ),
+      act: (cubit) => cubit.cancelUpload(),
+      expect: () => [
+        isA<UploadInProgress>()
+            .having((s) => s.isCanceling, 'isCanceling', true),
+        isA<UploadCanceled>(),
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'a second cancel while canceling does nothing more',
+      build: () {
+        final stopped = Completer<void>();
+        when(() => controller.cancel()).thenAnswer((_) => stopped.future);
+        final cubit = getUploadCubitInstanceWith([]);
+        cubit.uploadFromReview(method: UploadMethod.turbo);
+        addTearDown(() => stopped.isCompleted ? null : stopped.complete());
+        return cubit;
+      },
+      seed: () => UploadInProgress(
+        progress: UploadProgress.notStarted(),
+        totalProgress: 0.05,
+        controller: controller,
+        uploadMethod: UploadMethod.turbo,
+      ),
+      // The first cancel is still stopping the upload.
+      act: (cubit) async {
+        unawaited(cubit.cancelUpload());
+        await cubit.cancelUpload();
+      },
+      expect: () => [
+        isA<UploadInProgress>()
+            .having((s) => s.isCanceling, 'isCanceling', true),
+      ],
+      verify: (_) => verify(() => controller.cancel()).called(1),
     );
   });
 
