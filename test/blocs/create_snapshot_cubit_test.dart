@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
@@ -403,6 +405,30 @@ void main() {
             isA<SnapshotUploadFailure>(),
           ],
         );
+
+        // The Upload button stays enabled while the wallet is checked, so a
+        // second tap reaches the cubit before the first has signed anything.
+        test('a second tap while the wallet is checked uploads once', () async {
+          final checked = Completer<bool>();
+          when(() => profileCubit.logoutIfWalletMismatch())
+              .thenAnswer((_) => checked.future);
+          final cubit = build();
+          addTearDown(cubit.close);
+          await cubit.confirmDriveAndHeighRange(
+            'driveId',
+            range: Range(start: 0, end: 1),
+          );
+          clearInteractions(arweave);
+
+          final first = cubit.confirmSnapshotCreation();
+          final second = cubit.confirmSnapshotCreation();
+          checked.complete(false);
+          await Future.wait([first, second]);
+
+          expect(cubit.state, isA<SnapshotUploadSuccess>());
+          verify(() => arweave.prepareEntityDataItem(any(), any(),
+              skipSignature: any(named: 'skipSignature'))).called(1);
+        });
       });
 
       blocTest(
