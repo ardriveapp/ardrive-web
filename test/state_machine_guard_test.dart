@@ -114,8 +114,9 @@ final _equalityBust =
     RegExp(r'props\s*=>\s*\[\s*UniqueKey\(\)|\bequatableBust\s*:');
 
 final _abstractState = RegExp(
-    r'^abstract class (\w+State)\b[^{]*\bextends Equatable',
-    multiLine: true);
+  r'^abstract (?:base |interface )?class (\w+State)\b[^{]*?\bextends\s+Equatable\b',
+  multiLine: true,
+);
 
 /// A field that is out of props on purpose, and why.
 typedef _Exception = ({Set<String> fields, String reason});

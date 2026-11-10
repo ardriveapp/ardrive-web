@@ -120,10 +120,14 @@ switch, a timer, a callback after an `await`) can arrive in any state. The rules
 4. **A family of states is `sealed`,** and the UI `switch`es over it, so adding
    a state fails to compile wherever it is not handled.
 
-`test/state_machine_guard_test.dart` scans `lib/` for rules 1, 2 and 4. Code from
-before it is listed with counts that may only go down, and a deliberate
-exception goes in `_propsExceptions` with its reason. When you fix one, lower
-its entry; the test fails until you do.
+`test/state_machine_guard_test.dart` scans `lib/` for the common forms of rules
+1, 2 and 4: `state as X`, `UniqueKey()` or `equatableBust` in equality, `*State`
+classes whose `props` leave out a `final` field, and abstract `*State` bases that
+extend Equatable without being sealed. It can't see rule 3, or a cast spelled
+differently, so those are for review. Code from before the test is listed with
+counts that may only go down, and a deliberate exception goes in
+`_propsExceptions` with its reason. When you fix one, lower its entry; the test
+fails until you do.
 
 ### Main Directory Structure
 
