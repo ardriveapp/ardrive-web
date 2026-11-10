@@ -114,62 +114,62 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   }
 
   void _registerEventHandlers() {
-    on<CryptoTopupStarted>(_onStarted);
-    on<CryptoTopupBackPressed>(_onBackPressed);
-    on<CryptoTopupTokenSelected>(_onTokenSelected);
-    on<CryptoTopupWalletConnectionRequested>(_onWalletConnectionRequested);
-    on<CryptoTopupConnectWallet>(_onConnectWallet);
-    on<CryptoTopupWalletConnected>(_onWalletConnected);
-    on<CryptoTopupWalletConnectionFailed>(_onWalletConnectionFailed);
-    on<CryptoTopupWalletDisconnected>(_onWalletDisconnected);
-    on<CryptoTopupAccountChanged>(_onAccountChanged);
-    on<CryptoTopupAOConnectSignatureRequested>(_onAOConnectSignatureRequested);
-    on<CryptoTopupAOConnectSignatureCompleted>(_onAOConnectSignatureCompleted);
-    on<CryptoTopupAOConnectSignatureFailed>(_onAOConnectSignatureFailed);
-    on<CryptoTopupAmountChanged>(_onAmountChanged);
-    on<CryptoTopupInputModeChanged>(_onInputModeChanged);
-    on<CryptoTopupPromoCodeSubmitted>(_onPromoCodeSubmitted);
-    on<CryptoTopupPromoCodeCleared>(_onPromoCodeCleared);
-    on<CryptoTopupQuoteRefreshRequested>(_onQuoteRefreshRequested);
-    on<CryptoTopupQuoteRefreshed>(_onQuoteRefreshed);
-    on<CryptoTopupProceedToConfirmation>(_onProceedToConfirmation);
-    on<CryptoTopupNetworkSwitchRequested>(_onNetworkSwitchRequested);
-    on<CryptoTopupNetworkSwitchCompleted>(_onNetworkSwitchCompleted);
-    on<CryptoTopupNetworkSwitchFailed>(_onNetworkSwitchFailed);
-    on<CryptoTopupNetworkAddRequested>(_onNetworkAddRequested);
-    on<CryptoTopupNetworkAddCompleted>(_onNetworkAddCompleted);
-    on<CryptoTopupNetworkAddFailed>(_onNetworkAddFailed);
-    on<CryptoTopupManualNetworkCheckRequested>(_onManualNetworkCheckRequested);
-    on<CryptoTopupPaymentConfirmed>(_onPaymentConfirmed);
-    on<CryptoTopupPaymentSucceeded>(_onPaymentSucceeded);
-    on<CryptoTopupPaymentFailed>(_onPaymentFailed);
-    on<CryptoTopupRetryTransaction>(_onRetryTransaction);
-    on<CryptoTopupPriceVolatilityAccepted>(_onPriceVolatilityAccepted);
-    on<CryptoTopupPriceVolatilityRejected>(_onPriceVolatilityRejected);
-    on<CryptoTopupSessionExpired>(_onSessionExpired);
-    on<CryptoTopupConcurrentSessionDetected>(_onConcurrentSessionDetected);
-    on<CryptoTopupTakeOverSession>(_onTakeOverSession);
-    on<CryptoTopupBalanceFetched>(_onBalanceFetched);
-    on<CryptoTopupRefreshBalance>(_onRefreshBalance);
+    _on<CryptoTopupStarted>(_onStarted);
+    _on<CryptoTopupBackPressed>(_onBackPressed);
+    _on<CryptoTopupTokenSelected>(_onTokenSelected);
+    _on<CryptoTopupWalletConnectionRequested>(_onWalletConnectionRequested);
+    _on<CryptoTopupConnectWallet>(_onConnectWallet);
+    _on<CryptoTopupWalletConnected>(_onWalletConnected);
+    _on<CryptoTopupWalletConnectionFailed>(_onWalletConnectionFailed);
+    _on<CryptoTopupWalletDisconnected>(_onWalletDisconnected);
+    _on<CryptoTopupAccountChanged>(_onAccountChanged);
+    _on<CryptoTopupAOConnectSignatureRequested>(_onAOConnectSignatureRequested);
+    _on<CryptoTopupAOConnectSignatureCompleted>(_onAOConnectSignatureCompleted);
+    _on<CryptoTopupAOConnectSignatureFailed>(_onAOConnectSignatureFailed);
+    _on<CryptoTopupAmountChanged>(_onAmountChanged);
+    _on<CryptoTopupInputModeChanged>(_onInputModeChanged);
+    _on<CryptoTopupPromoCodeSubmitted>(_onPromoCodeSubmitted);
+    _on<CryptoTopupPromoCodeCleared>(_onPromoCodeCleared);
+    _on<CryptoTopupQuoteRefreshRequested>(_onQuoteRefreshRequested);
+    _on<CryptoTopupQuoteRefreshed>(_onQuoteRefreshed);
+    _on<CryptoTopupProceedToConfirmation>(_onProceedToConfirmation);
+    _on<CryptoTopupNetworkSwitchRequested>(_onNetworkSwitchRequested);
+    _on<CryptoTopupNetworkSwitchCompleted>(_onNetworkSwitchCompleted);
+    _on<CryptoTopupNetworkSwitchFailed>(_onNetworkSwitchFailed);
+    _on<CryptoTopupNetworkAddRequested>(_onNetworkAddRequested);
+    _on<CryptoTopupNetworkAddCompleted>(_onNetworkAddCompleted);
+    _on<CryptoTopupNetworkAddFailed>(_onNetworkAddFailed);
+    _on<CryptoTopupManualNetworkCheckRequested>(_onManualNetworkCheckRequested);
+    _on<CryptoTopupPaymentConfirmed>(_onPaymentConfirmed);
+    _on<CryptoTopupPaymentSucceeded>(_onPaymentSucceeded);
+    _on<CryptoTopupPaymentFailed>(_onPaymentFailed);
+    _on<CryptoTopupRetryTransaction>(_onRetryTransaction);
+    _on<CryptoTopupPriceVolatilityAccepted>(_onPriceVolatilityAccepted);
+    _on<CryptoTopupPriceVolatilityRejected>(_onPriceVolatilityRejected);
+    _on<CryptoTopupSessionExpired>(_onSessionExpired);
+    _on<CryptoTopupConcurrentSessionDetected>(_onConcurrentSessionDetected);
+    _on<CryptoTopupTakeOverSession>(_onTakeOverSession);
+    _on<CryptoTopupBalanceFetched>(_onBalanceFetched);
+    _on<CryptoTopupRefreshBalance>(_onRefreshBalance);
 
     // UI-friendly event aliases
-    on<CryptoTopupSelectToken>(_onSelectToken);
-    on<CryptoTopupGoBack>(_onGoBack);
-    on<CryptoTopupUpdateAmount>(_onUpdateAmount);
-    on<CryptoTopupToggleAmountMode>(_onToggleAmountMode);
-    on<CryptoTopupRefreshQuote>(_onRefreshQuote);
-    on<CryptoTopupApplyPromoCode>(_onApplyPromoCode);
-    on<CryptoTopupRemovePromoCode>(_onRemovePromoCode);
-    on<CryptoTopupConfirmPayment>(_onConfirmPayment);
-    on<CryptoTopupSwitchNetwork>(_onSwitchNetwork);
-    on<CryptoTopupShowManualNetworkSwitch>(_onShowManualNetworkSwitch);
-    on<CryptoTopupRetry>(_onRetry);
-    on<CryptoTopupClose>(_onClose);
-    on<CryptoTopupResumePendingTransaction>(_onResumePendingTransaction);
-    on<CryptoTopupCancelAccountChange>(_onCancelAccountChange);
-    on<CryptoTopupAcceptAccountChange>(_onAcceptAccountChange);
-    on<CryptoTopupRejectNewQuote>(_onRejectNewQuote);
-    on<CryptoTopupAcceptNewQuote>(_onAcceptNewQuote);
+    _on<CryptoTopupSelectToken>(_onSelectToken);
+    _on<CryptoTopupGoBack>(_onGoBack);
+    _on<CryptoTopupUpdateAmount>(_onUpdateAmount);
+    _on<CryptoTopupToggleAmountMode>(_onToggleAmountMode);
+    _on<CryptoTopupRefreshQuote>(_onRefreshQuote);
+    _on<CryptoTopupApplyPromoCode>(_onApplyPromoCode);
+    _on<CryptoTopupRemovePromoCode>(_onRemovePromoCode);
+    _on<CryptoTopupConfirmPayment>(_onConfirmPayment);
+    _on<CryptoTopupSwitchNetwork>(_onSwitchNetwork);
+    _on<CryptoTopupShowManualNetworkSwitch>(_onShowManualNetworkSwitch);
+    _on<CryptoTopupRetry>(_onRetry);
+    _on<CryptoTopupClose>(_onClose);
+    _on<CryptoTopupResumePendingTransaction>(_onResumePendingTransaction);
+    _on<CryptoTopupCancelAccountChange>(_onCancelAccountChange);
+    _on<CryptoTopupAcceptAccountChange>(_onAcceptAccountChange);
+    _on<CryptoTopupRejectNewQuote>(_onRejectNewQuote);
+    _on<CryptoTopupAcceptNewQuote>(_onAcceptNewQuote);
   }
 
   /// Calculates storage values based on the current quote.
@@ -1234,7 +1234,6 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         // has time to be included in a block before we check status
         logger.d('Waiting 3 seconds for blockchain propagation...');
         await Future.delayed(const Duration(seconds: 3));
-        if (isClosed) return;
 
         // Emit success - credits should now be available
         add(CryptoTopupPaymentSucceeded(
@@ -1579,6 +1578,23 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     });
   }
 
+  /// Registers [handler] for [E] with an emitter that keeps the payment
+  /// rule in [_leavesPaymentEarly], so every handler, including one added
+  /// later, keeps it.
+  void _on<E extends CryptoTopupEvent>(
+    EventHandler<E, CryptoTopupState> handler,
+  ) {
+    on<E>((event, emit) => handler(event, _PaymentKeepingEmitter(emit, this)));
+  }
+
+  /// Follow-up events from a payment can land after the dialog has closed
+  /// it; they have nothing left to do.
+  @override
+  void add(CryptoTopupEvent event) {
+    if (isClosed) return;
+    super.add(event);
+  }
+
   /// Whether a payment is in flight, so [why] must leave it alone.
   ///
   /// From confirm to success or failure the money is moving whatever the
@@ -1859,4 +1875,58 @@ String _readableOr(Object error, String fallback) {
         ? text.substring('Exception: '.length)
         : text,
   );
+}
+
+/// From [CryptoTopupProcessing] the only way out is the payment's outcome.
+///
+/// Handlers that started on the confirmation screen (a quote refresh, a
+/// network check, Back) can finish after the person has confirmed. Their late
+/// state would put the confirmation screen back over a payment in flight, and
+/// a second confirm from it would pay twice.
+bool _leavesPaymentEarly(CryptoTopupState current, CryptoTopupState next) =>
+    current is CryptoTopupProcessing &&
+    next is! CryptoTopupProcessing &&
+    next is! CryptoTopupSuccess &&
+    next is! CryptoTopupError;
+
+/// The emitter every [CryptoTopupBloc] handler gets: it drops a state that
+/// would leave a payment in flight before its outcome.
+class _PaymentKeepingEmitter implements Emitter<CryptoTopupState> {
+  _PaymentKeepingEmitter(this._emit, this._bloc);
+
+  final Emitter<CryptoTopupState> _emit;
+  final CryptoTopupBloc _bloc;
+
+  @override
+  void call(CryptoTopupState next) {
+    if (_leavesPaymentEarly(_bloc.state, next)) {
+      logger.w('[crypto top-up] ${next.runtimeType} arrived while a payment '
+          'was in flight; the payment finishes first');
+      return;
+    }
+    _emit(next);
+  }
+
+  @override
+  bool get isDone => _emit.isDone;
+
+  @override
+  Future<void> onEach<T>(
+    Stream<T> stream, {
+    required void Function(T data) onData,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) =>
+      _emit.onEach(stream, onData: onData, onError: onError);
+
+  @override
+  Future<void> forEach<T>(
+    Stream<T> stream, {
+    required CryptoTopupState Function(T data) onData,
+    CryptoTopupState Function(Object error, StackTrace stackTrace)? onError,
+  }) =>
+      _emit.onEach(
+        stream,
+        onData: (data) => call(onData(data)),
+        onError: onError == null ? null : (e, s) => call(onError(e, s)),
+      );
 }

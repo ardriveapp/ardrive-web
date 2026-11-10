@@ -32,6 +32,7 @@ class _MockNetwork extends Mock implements CryptoNetworkConfig {}
 /// of them may take the payment's screen or its data away: the money moves
 /// either way.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   const token = CryptoToken.sol;
   final quote = CryptoQuote(
     token: token,
@@ -108,6 +109,10 @@ void main() {
           ethereumWallet: any(named: 'ethereumWallet'),
           solanaWallet: any(named: 'solanaWallet'),
         )).thenAnswer((_) => payment.future);
+    when(() => payments.estimateNetworkFee(
+          token: any(named: 'token'),
+          ethereumWallet: any(named: 'ethereumWallet'),
+        )).thenAnswer((_) async => 0.01);
 
     when(() => storage.savePendingTransaction(any())).thenAnswer((_) async {});
     when(() => storage.removePendingTransaction(any()))
@@ -236,6 +241,43 @@ void main() {
     payment.complete(paid);
     await next<CryptoTopupSuccess>(bloc);
 
+    verify(() => payments.executePayment(
+          token: any(named: 'token'),
+          quote: any(named: 'quote'),
+          arweaveAddress: any(named: 'arweaveAddress'),
+          ethereumWallet: any(named: 'ethereumWallet'),
+          solanaWallet: any(named: 'solanaWallet'),
+        )).called(1);
+  });
+
+  test(
+      'a quote refresh finishing after confirm can\'t bring the confirm '
+      'screen back', () async {
+    final bloc = newBloc();
+    await toConfirmation(bloc);
+    final refreshed = Completer<CryptoQuote>();
+    when(() => payments.getQuote(
+          token: any(named: 'token'),
+          usdAmount: any(named: 'usdAmount'),
+          promoCode: any(named: 'promoCode'),
+          destinationAddress: any(named: 'destinationAddress'),
+        )).thenAnswer((_) => refreshed.future);
+
+    // The quote timer fires on the confirmation screen, and the person
+    // confirms while the new quote is on its way.
+    bloc.add(const CryptoTopupQuoteRefreshRequested());
+    await pumpEventQueue();
+    final seen = await confirm(bloc);
+    refreshed.complete(quote);
+    await pumpEventQueue();
+
+    expect(bloc.state, isA<CryptoTopupProcessing>());
+    bloc.add(const CryptoTopupConfirmPayment());
+    await pumpEventQueue();
+    payment.complete(paid);
+    await next<CryptoTopupSuccess>(bloc);
+
+    expect(seen.whereType<CryptoTopupConfirmation>(), isEmpty);
     verify(() => payments.executePayment(
           token: any(named: 'token'),
           quote: any(named: 'quote'),
