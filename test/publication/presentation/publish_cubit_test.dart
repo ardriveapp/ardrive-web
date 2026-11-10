@@ -670,6 +670,27 @@ void main() {
           .called(1);
     });
 
+    test('Back while the wallet is checked publishes nothing', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+
+      final publishing = c.publish();
+      c.back();
+      checked.complete(false);
+      await publishing;
+
+      expect(c.state.stage, PublishStage.look);
+      verifyNever(
+          () => publisher.publish(any(), any(), onStep: any(named: 'onStep')));
+    });
+
     test('a second Try again while the wallet is checked publishes once',
         () async {
       discovery.candidates = [freshSnapshot()];

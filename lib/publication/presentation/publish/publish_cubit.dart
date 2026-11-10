@@ -992,7 +992,9 @@ class PublishCubit extends Cubit<PublishState> {
     } finally {
       _checkingWallet = false;
     }
-    if (isClosed) return;
+    // The dialog stays live while the wallet is checked: closed, or Back to
+    // an earlier step, means the owner left the review and nothing is sent.
+    if (isClosed || state.stage != PublishStage.review) return;
     // The job keeps the method it was priced with unless the owner switched.
     final run = job.method == state.method
         ? job
