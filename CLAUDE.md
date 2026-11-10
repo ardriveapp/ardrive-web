@@ -100,6 +100,31 @@ The app uses Flutter BLoC extensively:
 
 Dependencies are injected via constructor. Streams are combined using `Rx.combineLatest()` from RxDart.
 
+### State machines
+
+Every cubit and bloc is a state machine, and the bugs live where its states are
+implicit. Bloc drops a state equal to the last one, and a late event (a wallet
+switch, a timer, a callback after an `await`) can arrive in any state. The rules:
+
+1. **Equality covers every field.** A field missing from `props` is a rebuild
+   that never happens. A state that must re-emit an equal value carries a
+   sequence or revision field in `props`, not `[UniqueKey()]`.
+2. **A transition checks the state it starts from.** Write
+   `if (state case final UploadReady ready)`, not `state as UploadReady`, so a
+   late event does nothing instead of throwing. Re-check the state (or an
+   attempt token) after every `await` before emitting.
+3. **A flow's data travels in its state.** What a later step needs (the token,
+   the quote, the payment in flight) is a field of the state that step starts
+   from, not a mutable field of the cubit that anything can clear. One-shot
+   flags become states.
+4. **A family of states is `sealed`,** and the UI `switch`es over it, so adding
+   a state fails to compile wherever it is not handled.
+
+`test/state_machine_guard_test.dart` scans `lib/` for rules 1, 2 and 4. Code from
+before it is listed with counts that may only go down, and a deliberate
+exception goes in `_propsExceptions` with its reason. When you fix one, lower
+its entry; the test fails until you do.
+
 ### Main Directory Structure
 
 ```text
