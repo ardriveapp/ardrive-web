@@ -543,6 +543,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupWalletDisconnected event,
     Emitter<CryptoTopupState> emit,
   ) {
+    if (_paymentInFlight('the wallet disconnected')) return;
+
     // Return to token selection with warning
     _selectedToken = null;
     _currentQuote = null;
@@ -560,6 +562,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupAccountChanged event,
     Emitter<CryptoTopupState> emit,
   ) {
+    if (_paymentInFlight('the wallet account changed')) return;
+
     // Clear all payment state and AO signature cache
     _signerCache.clearAll();
     _currentQuote = null;
@@ -1167,10 +1171,13 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupPaymentConfirmed event,
     Emitter<CryptoTopupState> emit,
   ) async {
-    if (_selectedToken == null || _currentQuote == null) return;
+    // A payment starts from the screen that asked for it, and only once: a
+    // second confirm (a double click) finds the payment already processing.
+    final confirming = state;
+    if (confirming is! CryptoTopupConfirmation) return;
 
-    final token = _selectedToken!;
-    final quote = _currentQuote!;
+    final token = confirming.token;
+    final quote = confirming.quote;
 
     emit(CryptoTopupProcessing(
       token: token,
@@ -1227,11 +1234,14 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         // has time to be included in a block before we check status
         logger.d('Waiting 3 seconds for blockchain propagation...');
         await Future.delayed(const Duration(seconds: 3));
+        if (isClosed) return;
 
         // Emit success - credits should now be available
         add(CryptoTopupPaymentSucceeded(
           txId: txId,
           creditsAdded: BigInt.from((quote.creditsDisplay * 1e12).toInt()),
+          token: token,
+          quote: quote,
         ));
       } else {
         add(CryptoTopupPaymentFailed(
@@ -1262,15 +1272,19 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Calculate new balance from current + credits added
     final newBalance = currentTurboBalance + event.creditsAdded;
 
+    // What was paid travels with the event: the flow's fields may have been
+    // cleared while the payment was in flight.
+    final quote = event.quote;
+
     // Get storage estimates from the quote
     String? storageEstimate;
     String? newBalanceStorageEstimate;
 
-    if (_currentQuote != null) {
-      storageEstimate = _currentQuote!.formattedStorage;
+    if (quote != null) {
+      storageEstimate = quote.formattedStorage;
 
       // Calculate new balance storage using the same method as confirmation
-      final storageValues = _calculateStorageValues(_currentQuote!);
+      final storageValues = _calculateStorageValues(quote);
       newBalanceStorageEstimate = storageValues.newStorage;
     }
 
@@ -1280,9 +1294,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     emit(CryptoTopupSuccess(
       txId: event.txId,
       creditsAdded: event.creditsAdded,
-      token: _selectedToken!,
-      tokenAmountSpent: _currentQuote?.tokenAmountDisplay ?? 0,
-      usdValue: _currentQuote?.usdValue,
+      token: event.token,
+      tokenAmountSpent: quote?.tokenAmountDisplay ?? 0,
+      usdValue: quote?.usdValue,
       newBalance: newBalance,
       storageEstimate: storageEstimate,
       newBalanceStorage: newBalanceStorageEstimate,
@@ -1312,11 +1326,12 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupRetryTransaction event,
     Emitter<CryptoTopupState> emit,
   ) async {
-    if (_selectedToken == null) return;
+    final token = _selectedToken;
+    if (token == null || state is CryptoTopupProcessing) return;
 
     emit(CryptoTopupProcessing(
       txId: event.txId,
-      token: _selectedToken!,
+      token: token,
       isSubmitting: true,
     ));
 
@@ -1335,12 +1350,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
       final result = await _paymentService.submitPendingTransaction(
         pendingTx,
-        ethereumWallet: _selectedToken!.walletType == WalletType.ethereum
+        ethereumWallet: token.walletType == WalletType.ethereum
             ? _ethereumWalletService
             : null,
-        solanaWallet: _selectedToken!.walletType == WalletType.solana
-            ? _solanaWalletService
-            : null,
+        solanaWallet:
+            token.walletType == WalletType.solana ? _solanaWalletService : null,
       );
 
       if (result.success) {
@@ -1348,12 +1362,14 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           txId: event.txId,
           creditsAdded:
               BigInt.from(((result.creditsAdded ?? 0) * 1e12).toInt()),
+          token: token,
+          quote: _currentQuote,
         ));
       } else if (result.status == CryptoPaymentStatus.pending ||
           result.status == CryptoPaymentStatus.confirmationTimeout) {
         emit(CryptoTopupProcessing(
           txId: event.txId,
-          token: _selectedToken!,
+          token: token,
           isSubmitting: false,
         ));
       } else {
@@ -1408,6 +1424,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupSessionExpired event,
     Emitter<CryptoTopupState> emit,
   ) {
+    if (_paymentInFlight('the session expired')) return;
+
     _cancelAllTimers();
     emit(const CryptoTopupSessionTimeout());
   }
@@ -1559,6 +1577,19 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     _sessionTimer = Timer(_sessionTimeout, () {
       add(const CryptoTopupSessionExpired());
     });
+  }
+
+  /// Whether a payment is in flight, so [why] must leave it alone.
+  ///
+  /// From confirm to success or failure the money is moving whatever the
+  /// wallet or the clock does next, so the screen stays on the payment and
+  /// its data stays put. A payment that fails offers a retry of the same
+  /// transaction, and starting over reads the connected wallets afresh.
+  bool _paymentInFlight(String why) {
+    if (state is! CryptoTopupProcessing) return false;
+    logger.w('[crypto top-up] $why while a payment was in flight; '
+        'it finishes first');
+    return true;
   }
 
   void _startQuoteTimer() {
