@@ -1198,13 +1198,14 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) {
+        // Canceling flushes a last update, after the cancel is shown.
+        if (_uploadCanceled) return;
         emit(
           UploadInProgress(
             totalProgress: progress.progressInPercentage,
             equatableBust: UniqueKey(),
             progress: progress,
             controller: uploadController,
-            isCanceling: _uploadCanceled,
             uploadMethod: _uploadMethod!,
           ),
         );
@@ -1259,13 +1260,14 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) async {
+        // Canceling flushes a last update, after the cancel is shown.
+        if (_uploadCanceled) return;
         emit(
           UploadInProgress(
             progress: progress,
             totalProgress: progress.progressInPercentage,
             controller: uploadController,
             equatableBust: UniqueKey(),
-            isCanceling: _uploadCanceled,
             uploadMethod: _uploadMethod!,
           ),
         );

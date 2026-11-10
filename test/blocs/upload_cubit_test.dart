@@ -1250,6 +1250,61 @@ void main() {
         },
       );
 
+      // Canceling sends a last progress update per task through a debounced
+      // stream that flushes on close, so one can arrive after Canceled. It
+      // used to bring the upload screen back; with isCanceling it would be
+      // stuck on Canceling with a cancel that does nothing.
+      test('a progress update after the cancel leaves it canceled', () async {
+        final controller = _MockUploadController();
+        void Function(UploadProgress)? onProgress;
+        when(() => controller.onProgressChange(any())).thenAnswer((i) {
+          onProgress = i.positionalArguments.single;
+        });
+        when(() => controller.cancel()).thenAnswer((_) async {});
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((_) async => false);
+        when(() => mockUploadRepository.uploadFiles(
+              files: any(named: 'files'),
+              targetDrive: any(named: 'targetDrive'),
+              conflictingFiles: any(named: 'conflictingFiles'),
+              licenseStateConfigured: any(named: 'licenseStateConfigured'),
+              targetFolder: any(named: 'targetFolder'),
+              uploadMethod: any(named: 'uploadMethod'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              paidBy: any(named: 'paidBy'),
+            )).thenAnswer((_) async => controller);
+        final cubit = getUploadCubitInstanceWith(tNoConflictingFiles);
+        addTearDown(cubit.close);
+        await cubit.startUploadPreparation();
+        cubit.setUploadMethod(
+          UploadMethod.turbo,
+          UploadPaymentMethodInfo(
+            uploadMethod: UploadMethod.turbo,
+            costEstimateTurbo: costEstimate,
+            costEstimateAr: costEstimate,
+            hasNoTurboBalance: false,
+            isTurboUploadPossible: true,
+            arBalance: '0',
+            sufficientArBalance: true,
+            turboCredits: '0',
+            sufficentCreditsBalance: true,
+            freeStatus: FreeUploadStatus.free,
+            totalSize: 1,
+          ),
+          true,
+        );
+        await cubit.startUpload(uploadPlanForAr: await plan());
+        onProgress!(UploadProgress.notStarted());
+        expect(cubit.state, isA<UploadInProgress>());
+
+        await cubit.cancelUpload();
+        expect(cubit.state, isA<UploadCanceled>());
+        onProgress!(UploadProgress.notStarted());
+        await pumpEventQueue();
+
+        expect(cubit.state, isA<UploadCanceled>());
+      });
+
       blocTest<UploadCubit, UploadState>(
         'on another wallet, says so and uploads nothing',
         setUp: () {
