@@ -77,6 +77,9 @@ class CryptoConfirmationView extends StatelessWidget {
                 child: QuoteTimer(
                   expiresAt: state.quote.expiresAt,
                   isLoading: state.isRefreshingQuote,
+                  onExpired: () {
+                    bloc.add(const CryptoTopupQuoteRefreshRequested());
+                  },
                   onRefresh: () {
                     bloc.add(const CryptoTopupQuoteRefreshRequested());
                   },

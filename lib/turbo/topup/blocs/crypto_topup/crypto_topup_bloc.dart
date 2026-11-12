@@ -356,6 +356,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           balance: balance,
           quote: _currentQuote,
           currentAmount: _currentAmountUsd,
+          isUsdMode: !_isCurrentAmountInTokens,
           promoCode: _promoCode,
           promoCodeState:
               _promoCode != null ? PromoCodeState.valid : PromoCodeState.none,
@@ -372,6 +373,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           balance: balance,
           quote: _currentQuote,
           currentAmount: _currentAmountUsd,
+          isUsdMode: !_isCurrentAmountInTokens,
         ));
       }
     }
@@ -668,7 +670,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       return;
     }
 
-    _currentAmountUsd = event.isUsd ? amount : 0;
+    // The amount and its mode are kept as entered: a refresh re-quotes the
+    // same amount, in tokens or in dollars.
+    _currentAmountUsd = amount;
+    _isCurrentAmountInTokens = !event.isUsd;
 
     // Show loading state
     emit(currentState.copyWith(
@@ -739,7 +744,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     try {
       final validation = await _paymentService.validatePromoCode(
         code: event.code,
-        usdAmount: _currentAmountUsd,
+        usdAmount: _currentAmountInUsd,
         destinationAddress: arweaveWalletAddress,
       );
 
@@ -752,7 +757,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         // Refresh quote with promo code
         add(CryptoTopupAmountChanged(
           amount: _currentAmountUsd,
-          isUsd: true,
+          isUsd: !_isCurrentAmountInTokens,
         ));
       } else {
         emit(currentState.copyWith(
@@ -785,9 +790,31 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     if (_currentAmountUsd > 0) {
       add(CryptoTopupAmountChanged(
         amount: _currentAmountUsd,
-        isUsd: true,
+        isUsd: !_isCurrentAmountInTokens,
       ));
     }
+  }
+
+  /// The dollar value of the amount, for the calls that only take dollars.
+  double get _currentAmountInUsd => _isCurrentAmountInTokens
+      ? (_currentQuote?.usdValue ?? 0)
+      : _currentAmountUsd;
+
+  /// Quotes [amount] the way it was entered: in dollars or in tokens.
+  Future<CryptoQuote> _quoteCurrentAmount(CryptoToken token) {
+    return _isCurrentAmountInTokens
+        ? _paymentService.getQuoteByTokenAmount(
+            token: token,
+            tokenAmount: _currentAmountUsd,
+            promoCode: _promoCode,
+            destinationAddress: arweaveWalletAddress,
+          )
+        : _paymentService.getQuote(
+            token: token,
+            usdAmount: _currentAmountUsd,
+            promoCode: _promoCode,
+            destinationAddress: arweaveWalletAddress,
+          );
   }
 
   Future<void> _onQuoteRefreshRequested(
@@ -800,16 +827,12 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     // If we're in the confirmation state, refresh the quote directly
     if (currentState is CryptoTopupConfirmation) {
+      if (currentState.isRefreshingQuote) return;
       // Emit loading state (update the confirmation with a loading indicator)
       emit(currentState.copyWith(isRefreshingQuote: true));
 
       try {
-        final quote = await _paymentService.getQuote(
-          token: _selectedToken!,
-          usdAmount: _currentAmountUsd,
-          promoCode: _promoCode,
-          destinationAddress: arweaveWalletAddress,
-        );
+        final quote = await _quoteCurrentAmount(_selectedToken!);
 
         _currentQuote = quote;
         _startQuoteTimer();
@@ -845,7 +868,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Otherwise, use the standard amount changed flow for amount entry state
     add(CryptoTopupAmountChanged(
       amount: _currentAmountUsd,
-      isUsd: true,
+      isUsd: !_isCurrentAmountInTokens,
     ));
   }
 
@@ -1179,6 +1202,12 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     final token = confirming.token;
     final quote = confirming.quote;
+
+    // A quote that ran out is never paid: get a fresh one to confirm.
+    if (quote.isExpired) {
+      add(const CryptoTopupQuoteRefreshRequested());
+      return;
+    }
 
     emit(CryptoTopupProcessing(
       token: token,
