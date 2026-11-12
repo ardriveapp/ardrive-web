@@ -174,7 +174,7 @@ Data-End: <last block where there's data on the snapshot>
 { Snapshot Data }
 ```
 
-The snapshot data is a JSON array of objects containing `gqlNode` and `jsonMetadata` fields. The `gqlNode` field contains the transaction node returned from GQL, and the `jsonMetadata` field contains the transaction's JSON metadata (Base64-encoded if private).
+The snapshot data is a JSON array of objects containing `gqlNode` and `jsonMetadata` fields. The `gqlNode` field contains the transaction node returned from GQL, and the `jsonMetadata` field contains the transaction's JSON metadata (Base64-encoded if private). It is `null` for entities whose body is not JSON metadata: snapshots, drive state artifacts and publications. Their nodes are still listed, and readers that need their data fetch it by transaction ID.
 
 ```Snapshot Data
 [

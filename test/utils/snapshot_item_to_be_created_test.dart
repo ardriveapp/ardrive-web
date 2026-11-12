@@ -105,6 +105,59 @@ void main() {
         );
       });
 
+      // A drive's history carries entities snapshots are not made of. The
+      // drive-state artifact's body is a SQLite file: bytes that are not
+      // UTF-8, so serializing it as the string `jsonMetadata` throws inside
+      // `jsonEncode` ("Converting object to an encodable object failed").
+      // Sync never reads these bodies either, so none is fetched or stored.
+      for (final entityType in ['drive-state', 'publication']) {
+        test(
+            'a $entityType entity is listed without its body, which is never '
+            'fetched', () async {
+          final fetched = <String>[];
+          final snapshotItem = SnapshotItemToBeCreated(
+            driveId: 'DRIVE_ID',
+            blockStart: 0,
+            blockEnd: 10,
+            subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
+            source: Stream.fromIterable([
+              DriveEntityHistoryTransactionModel(
+                transactionCommonMixin:
+                    DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                        .fromJson({
+                  'id': 'tx-state',
+                  'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                  'owner': {'address': '1234567890'},
+                  'tags': [
+                    {'name': 'Entity-Type', 'value': entityType},
+                  ],
+                  'block': {'height': 7, 'timestamp': 700},
+                }),
+              ),
+            ]),
+            jsonMetadataOfTxId: (txId) async {
+              fetched.add(txId);
+              // The SQLite header, then bytes no UTF-8 decoder accepts.
+              return Uint8List.fromList(
+                [...utf8.encode('SQLite format 3'), 0x00, 0xff, 0xfe, 0x80],
+              );
+            },
+          );
+
+          final snapshotData = (await snapshotItem
+                  .getSnapshotData()
+                  .map(utf8.decoder.convert)
+                  .toList())
+              .join();
+
+          expect(fetched, isEmpty);
+          expect(
+            snapshotData,
+            '{"txSnapshots":[{"gqlNode":{"id":"tx-state","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[{"name":"Entity-Type","value":"$entityType"}]},"jsonMetadata":null}]}',
+          );
+        });
+      }
+
       test('the returned data preserves the order of the source', () async {
         final snapshotItem = SnapshotItemToBeCreated(
             driveId: 'DRIVE_ID',

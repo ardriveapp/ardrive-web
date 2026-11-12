@@ -92,8 +92,15 @@ bool syncFetchesEntityData(
   required bool isPrivateDrive,
 }) {
   if (isPrivateDrive && tags[EntityTag.cipherIv] == null) return false;
-  return !_entityTypesSyncNeverReads.contains(tags[EntityTag.entityType]);
+  return entityTypeBodyIsRead(tags[EntityTag.entityType]);
 }
+
+/// Whether the body of an entity of [entityType] is ArFS metadata that a
+/// drive's history is read for. False for the types in
+/// [_entityTypesSyncNeverReads]: sync never fetches them, and a snapshot
+/// must not either - a drive-state body is a SQLite file, not text.
+bool entityTypeBodyIsRead(Object? entityType) =>
+    !_entityTypesSyncNeverReads.contains(entityType);
 
 class ArweaveService {
   Arweave client;
