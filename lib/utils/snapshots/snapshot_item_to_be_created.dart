@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/services/arweave/arweave_service.dart'
+    show entityTypeBodyIsRead;
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
@@ -95,7 +97,11 @@ class SnapshotItemToBeCreated {
         ? node.block!.height
         : _dataEnd;
 
-    if (_isSnapshotTx(node)) {
+    // A snapshot lists these entities but carries no body for them: a
+    // snapshot's is its own, and the others are not metadata at all (a
+    // drive-state artifact is a SQLite file, which `TxSnapshot.toJson` cannot
+    // turn into a string). Sync skips the same bodies when reading.
+    if (_isSnapshotTx(node) || !_hasMetadataBody(node)) {
       return TxSnapshot(gqlNode: node, jsonMetadata: null);
     } else {
       var metadata = await _jsonMetadataOfTxId(node.id);
@@ -109,5 +115,12 @@ class SnapshotItemToBeCreated {
         tags.where((tag) => tag.name == EntityTag.entityType);
 
     return entityTypeTags.any((tag) => tag.value == EntityTypeTag.snapshot);
+  }
+
+  bool _hasMetadataBody(TransactionCommonMixin node) {
+    final entityType =
+        node.tags.where((tag) => tag.name == EntityTag.entityType);
+
+    return entityType.every((tag) => entityTypeBodyIsRead(tag.value));
   }
 }
