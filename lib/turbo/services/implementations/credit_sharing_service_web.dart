@@ -21,11 +21,24 @@ class CreditSharingService {
   CreditSharingService({
     required SolanaWalletService solanaWalletService,
     required String paymentServiceUrl,
+    required String solanaRpcUrl,
+    String? uploadServiceUrl,
   })  : _solanaWalletService = solanaWalletService,
-        _paymentServiceUrl = paymentServiceUrl;
+        _paymentServiceUrl = paymentServiceUrl,
+        _solanaRpcUrl = solanaRpcUrl,
+        _uploadServiceUrl = uploadServiceUrl;
 
   final SolanaWalletService _solanaWalletService;
   final String _paymentServiceUrl;
+
+  /// The Solana RPC the SDK's Solana signer talks to. The SDK refuses to
+  /// build a client without a URL here ("Endpoint URL must start with
+  /// http:"), so without it no approval was ever asked for.
+  final String _solanaRpcUrl;
+
+  /// Where the SDK sends the approval, which is an upload-service call. Left
+  /// out, the SDK uses production's, so a dev build's approval went there.
+  final String? _uploadServiceUrl;
 
   final WalletSignerCache _signerCache = WalletSignerCache();
 
@@ -39,6 +52,8 @@ class CreditSharingService {
     return CreditSharingService(
       solanaWalletService: SolanaWalletService(networkConfig: networkConfig),
       paymentServiceUrl: config.defaultTurboPaymentUrl!,
+      solanaRpcUrl: networkConfig.solanaRpcUrl,
+      uploadServiceUrl: config.defaultTurboUploadUrl,
     );
   }
 
@@ -87,6 +102,8 @@ class CreditSharingService {
     final turbo = await createAuthenticatedTurboWithSolanaAdapter(
       solanaWalletAdapter: adapter,
       paymentServiceUrl: _paymentServiceUrl,
+      gatewayUrl: _solanaRpcUrl,
+      uploadServiceUrl: _uploadServiceUrl,
     );
 
     await shareCredits(
