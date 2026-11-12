@@ -131,8 +131,16 @@ class RetrySignInPassword extends LoginEvent {
 
 /// "Continue" after [LoginPasswordOpensNoDrives]: sign in with the drives the
 /// password didn't open locked.
+///
+/// Carries the password typed again: Continue saves the first one as this
+/// device's password, so it goes ahead only if the second entry matches.
 class ContinueSignInWithLockedDrives extends LoginEvent {
-  const ContinueSignInWithLockedDrives();
+  const ContinueSignInWithLockedDrives(this.confirmPassword);
+
+  final String confirmPassword;
+
+  @override
+  List<Object> get props => [confirmPassword];
 }
 
 class FinishOnboarding extends LoginEvent {

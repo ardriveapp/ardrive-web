@@ -280,6 +280,8 @@ void main() {
         );
 
     setUpAll(() => registerFallbackValue(const RetrySignInPassword()));
+    setUp(() =>
+        when(() => loginBloc.signInPasswordMatches(any())).thenReturn(true));
 
     testWidgets('the dialog says so, and offers Try again and Continue',
         (tester) async {
@@ -311,10 +313,47 @@ void main() {
 
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(const Key('confirmSignInPassword')), 'typo');
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      verify(() => loginBloc.add(const ContinueSignInWithLockedDrives()))
+      verify(() => loginBloc.add(const ContinueSignInWithLockedDrives('typo')))
           .called(1);
+    });
+
+    testWidgets('Continue with a different second entry stays and says so',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      when(() => loginBloc.signInPasswordMatches(any()))
+          .thenAnswer((i) => i.positionalArguments.first == 'typo');
+
+      await tester.pumpWidget(app(Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showPasswordOpensNoDrivesDialog(
+              context: context, loginBloc: loginBloc),
+          child: const Text('open'),
+        ),
+      )));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('confirmSignInPassword')), 'real');
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.byKey(const Key('passwordOpensNoDrivesDialog')), findsOneWidget);
+      expect(find.text('The confirmation password does not match.'),
+          findsOneWidget);
+      verifyNever(() =>
+          loginBloc.add(any(that: isA<ContinueSignInWithLockedDrives>())));
+
+      // Try again is still there.
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      verify(() => loginBloc.add(const RetrySignInPassword())).called(1);
     });
 
     testWidgets('Try again puts focus back in the field, its text selected',
