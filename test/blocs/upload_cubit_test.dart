@@ -30,6 +30,7 @@ import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -295,9 +296,12 @@ void main() {
       totalSize: 100,
       usdUploadCost: 100);
 
-  UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
+  UploadCubit getUploadCubitInstanceWith(
+    List<UploadFile> files, {
+    ActivityTracker? activityTracker,
+  }) {
     final cubit = UploadCubit(
-      activityTracker: MockActivityTracker(),
+      activityTracker: activityTracker ?? MockActivityTracker(),
       arDriveUploadManager: mockArDriveUploadPreparationManager,
       uploadFileSizeChecker: mockUploadFileSizeChecker,
       driveId: tDriveId,
@@ -1180,6 +1184,156 @@ void main() {
             folderDataItemUploadHandles: {},
             turboUploadService: DontUseUploadService(),
           );
+
+      group('lowers the uploading flag however the upload ends', () {
+        late ActivityTracker tracker;
+        late _MockUploadController controller;
+        void Function(List<UploadTask>)? onError;
+        void Function(UploadProgress)? onProgress;
+
+        setUp(() {
+          tracker = ActivityTracker();
+          controller = _MockUploadController();
+          onError = null;
+          onProgress = null;
+          when(() => controller.onError(any())).thenAnswer((i) {
+            onError =
+                i.positionalArguments[0] as void Function(List<UploadTask>);
+          });
+          when(() => controller.onProgressChange(any())).thenAnswer((i) {
+            onProgress =
+                i.positionalArguments[0] as void Function(UploadProgress);
+          });
+          when(() => mockProfileCubit!.checkIfWalletMismatch())
+              .thenAnswer((_) async => false);
+          when(() => mockUploadRepository.uploadFiles(
+                files: any(named: 'files'),
+                targetDrive: any(named: 'targetDrive'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                licenseStateConfigured: any(named: 'licenseStateConfigured'),
+                targetFolder: any(named: 'targetFolder'),
+                uploadMethod: any(named: 'uploadMethod'),
+                uploadThumbnail: any(named: 'uploadThumbnail'),
+                paidBy: any(named: 'paidBy'),
+              )).thenAnswer((_) async => controller);
+        });
+
+        Future<UploadCubit> startedUpload() async {
+          final cubit = getUploadCubitInstanceWith(tNoConflictingFiles,
+              activityTracker: tracker);
+          await cubit.startUploadPreparation();
+          cubit.setUploadMethod(
+            UploadMethod.turbo,
+            UploadPaymentMethodInfo(
+              uploadMethod: UploadMethod.turbo,
+              costEstimateTurbo: costEstimate,
+              costEstimateAr: costEstimate,
+              hasNoTurboBalance: false,
+              isTurboUploadPossible: true,
+              arBalance: '0',
+              sufficientArBalance: true,
+              turboCredits: '0',
+              sufficentCreditsBalance: true,
+              freeStatus: FreeUploadStatus.free,
+              totalSize: 1,
+            ),
+            true,
+          );
+          await cubit.startUpload(uploadPlanForAr: await plan());
+          expect(tracker.isUploading, isTrue, reason: 'upload started');
+          return cubit;
+        }
+
+        test('canceled', () async {
+          when(() => controller.cancel()).thenAnswer((_) async {});
+          final cubit = await startedUpload();
+          onProgress!(UploadProgress.notStarted());
+          await cubit.cancelUpload();
+          expect(cubit.state, isA<UploadCanceled>());
+          expect(tracker.isUploading, isFalse);
+          await cubit.close();
+        });
+
+        test('failed', () async {
+          final cubit = await startedUpload();
+          onError!([]);
+          expect(cubit.state, isA<UploadFailure>());
+          expect(tracker.isUploading, isFalse);
+          await cubit.close();
+        });
+
+        test('a failed cancel keeps it up, as the upload goes on', () async {
+          when(() => controller.cancel()).thenThrow(Exception('no'));
+          final cubit = await startedUpload();
+          onProgress!(UploadProgress.notStarted());
+          await cubit.cancelUpload();
+          expect(
+              cubit.state,
+              isA<UploadFailure>()
+                  .having((s) => s.error, 'error', UploadErrors.cancelFailed));
+          expect(tracker.isUploading, isTrue);
+          await cubit.close();
+          expect(tracker.isUploading, isFalse, reason: 'dialog closed');
+        });
+
+        test('completed', () async {
+          void Function(List<UploadTask>)? onDone;
+          when(() => controller.onDone(any())).thenAnswer((i) {
+            onDone =
+                i.positionalArguments[0] as void Function(List<UploadTask>);
+          });
+          when(() => mockProfileCubit!.refreshBalance())
+              .thenAnswer((_) async {});
+          final cubit = await startedUpload();
+          onDone!([]);
+          await Future<void>.delayed(Duration.zero);
+          expect(cubit.state, isA<UploadComplete>());
+          expect(tracker.isUploading, isFalse);
+          await cubit.close();
+        });
+
+        test('Re-upload after a failure raises it again until it ends',
+            () async {
+          final retry = Completer<void>();
+          when(() => mockArDriveAuth.currentUser).thenReturn(getFakeUser());
+          when(() => controller.retryFailedTasks(any()))
+              .thenAnswer((_) => retry.future);
+          final cubit = await startedUpload();
+          onError!([]);
+          expect(tracker.isUploading, isFalse);
+          final retrying = cubit.retryUploads();
+          expect(tracker.isUploading, isTrue);
+          onError!([]);
+          expect(tracker.isUploading, isFalse);
+          retry.complete();
+          await retrying;
+          await cubit.close();
+        });
+
+        test('a retry refused while the try before finishes keeps it up',
+            () async {
+          when(() => mockArDriveAuth.currentUser).thenReturn(getFakeUser());
+          when(() => controller.retryFailedTasks(any()))
+              .thenThrow(PreviousAttemptStillRunning());
+          final cubit = await startedUpload();
+          onError!([]);
+          await cubit.retryUploads();
+          expect(
+              cubit.state,
+              isA<UploadFailure>().having(
+                  (s) => s.lastTryStillFinishing, 'still finishing', isTrue));
+          expect(tracker.isUploading, isTrue);
+          await cubit.close();
+          expect(tracker.isUploading, isFalse, reason: 'dialog closed');
+        });
+
+        test('a cubit that never uploaded leaves it alone', () async {
+          tracker.setUploading(true);
+          await getUploadCubitInstanceWith([], activityTracker: tracker)
+              .close();
+          expect(tracker.isUploading, isTrue);
+        });
+      });
 
       // Broken since the warning was added: the first call left the
       // upload marked in progress, so "Upload anyway" did nothing.
