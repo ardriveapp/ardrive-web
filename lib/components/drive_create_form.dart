@@ -240,10 +240,11 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                         controller: _driveNameController,
                         autofocus: true,
                         onFieldSubmitted: (value) {
-                          if (_isDriveNameValid) {
-                            context
-                                .read<FolderCreateCubit>()
-                                .submit(folderName: value);
+                          // The same path as the button, and its guard.
+                          if (_isDriveNameValid &&
+                              (!needsPassword ||
+                                  _drivePassword.text.isNotEmpty)) {
+                            _create(cubit);
                           }
                         },
                         hintText: appLocalizationsOf(context).driveName,

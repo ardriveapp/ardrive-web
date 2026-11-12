@@ -155,4 +155,19 @@ void main() {
         matching: find.byType(TextField)));
     expect(textField.autofillHints, [AutofillHints.password]);
   });
+
+  testWidgets('Enter in the name field creates the drive once', (tester) async {
+    when(() => cubit.needsDrivePassword).thenReturn(false);
+    when(() => cubit.drivePasswordAsk).thenReturn(null);
+    when(() => cubit.submit(any())).thenAnswer((_) async {});
+    await pump(tester);
+
+    await tester.enterText(find.byType(EditableText).first, 'Drive');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.submit('Drive')).called(1);
+    expect(tester.takeException(), isNull);
+  });
 }

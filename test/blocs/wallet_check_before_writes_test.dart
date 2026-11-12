@@ -17,12 +17,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/utils.dart';
 
+class _FakeEntity extends Fake implements Entity {}
+
 /// Every write below asks first whether Wander is still on the saved
 /// account's wallet. On another wallet, nothing is written; when Wander
 /// couldn't be reached and the person chose Cancel, nothing is written and
 /// the flow ends somewhere the person can close.
-class _FakeEntity extends Fake implements Entity {}
-
 void main() {
   const driveId = 'drive-id';
   const rootFolderId = 'root-folder-id';
