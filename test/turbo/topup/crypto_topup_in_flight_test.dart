@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/topup/models/crypto_payment_result.dart';
 import 'package:ardrive/turbo/topup/models/crypto_quote.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/pending_transaction.dart';
+import 'package:ardrive/turbo/topup/models/session_lock.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -285,6 +286,51 @@ void main() {
           ethereumWallet: any(named: 'ethereumWallet'),
           solanaWallet: any(named: 'solanaWallet'),
         )).called(1);
+  });
+
+  test('a quote refresh finishing while paying leaves the payment alone',
+      () async {
+    final bloc = newBloc();
+    await toConfirmation(bloc);
+    final seen = await confirm(bloc);
+
+    // More than 5% off the original quote: outside a payment this warns.
+    bloc.add(CryptoTopupQuoteRefreshed(CryptoQuote(
+      token: token,
+      tokenAmount: quote.tokenAmount,
+      wincAmount: quote.wincAmount,
+      creditsDisplay: quote.creditsDisplay * 2,
+      estimatedStorageGiB: quote.estimatedStorageGiB,
+      usdValue: quote.usdValue,
+      expiresAt: quote.expiresAt,
+    )));
+    await pumpEventQueue();
+    expect(bloc.state, isA<CryptoTopupProcessing>());
+    payment.complete(paid);
+
+    await next<CryptoTopupSuccess>(bloc);
+    expect(seen.whereType<CryptoTopupPriceVolatilityWarning>(), isEmpty);
+  });
+
+  test('another tab opening a session while paying leaves the payment alone',
+      () async {
+    when(() => storage.getSessionLock()).thenAnswer((_) async =>
+        CryptoTopupSessionLock(
+            timestamp: DateTime.now(), tabId: 'other', state: 'confirming'));
+    final bloc = newBloc();
+    await toConfirmation(bloc);
+    final seen = await confirm(bloc);
+
+    bloc.add(const CryptoTopupConcurrentSessionDetected());
+    await pumpEventQueue();
+    expect(bloc.state, isA<CryptoTopupProcessing>());
+    // It returns before touching the timers or the lock, not only before
+    // emitting: the emitter alone would hide the warning but still stop them.
+    verifyNever(() => storage.getSessionLock());
+    payment.complete(paid);
+
+    await next<CryptoTopupSuccess>(bloc);
+    expect(seen.whereType<CryptoTopupConcurrentSessionWarning>(), isEmpty);
   });
 
   test('a wallet account change before paying still warns', () async {

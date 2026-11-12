@@ -853,6 +853,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupQuoteRefreshed event,
     Emitter<CryptoTopupState> emit,
   ) {
+    if (_paymentInFlight('a quote refresh finished')) return;
     // Check for price volatility (>5% change)
     if (_originalQuote != null) {
       final originalCredits = _originalQuote!.creditsDisplay;
@@ -1433,6 +1434,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupConcurrentSessionDetected event,
     Emitter<CryptoTopupState> emit,
   ) async {
+    if (_paymentInFlight('another tab opened a session')) return;
     _cancelAllTimers(); // Cancel all timers when concurrent session detected
     final lock = await _transactionStorage.getSessionLock();
     if (lock != null) {

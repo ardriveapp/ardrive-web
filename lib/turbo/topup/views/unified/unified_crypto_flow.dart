@@ -326,51 +326,17 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
     // Warnings that stop the flow. Each says what happened and offers a way
     // out; without them these states fell through to the spinner below.
-    if (state is CryptoTopupAccountChangedWarning) {
+    final notice = cryptoNoticeFor(state);
+    if (notice != null) {
+      final closeEvent = notice.closeEvent;
       return CryptoNoticeView(
-        key: const ValueKey('account_changed'),
-        title: 'Account changed',
-        message: 'Your wallet switched accounts. Start again with the account '
-            'you want to pay from.',
-        actionTitle: 'Start again',
-        onAction: () => _bloc!.add(const CryptoTopupRetry()),
-        onClose: widget.onCancel,
-      );
-    }
-
-    if (state is CryptoTopupSessionTimeout) {
-      return CryptoNoticeView(
-        key: const ValueKey('session_timeout'),
-        title: 'Session timed out',
-        message: 'This top-up took too long. Start again.',
-        actionTitle: 'Start again',
-        onAction: () => _bloc!.add(const CryptoTopupRetry()),
-        onClose: widget.onCancel,
-      );
-    }
-
-    if (state is CryptoTopupConcurrentSessionWarning) {
-      return CryptoNoticeView(
-        key: const ValueKey('concurrent_session'),
-        title: 'Top-up open in another tab',
-        message: 'Another tab is topping up. Use this tab instead, or close.',
-        actionTitle: 'Use this tab',
-        onAction: () => _bloc!.add(const CryptoTopupTakeOverSession()),
-        onClose: widget.onCancel,
-      );
-    }
-
-    if (state is CryptoTopupPriceVolatilityWarning) {
-      final change = state.percentChange;
-      return CryptoNoticeView(
-        key: const ValueKey('price_volatility'),
-        title: 'Price changed',
-        message: 'The credits you get changed by '
-            '${change.abs().toStringAsFixed(1)}%. Continue at the new price, '
-            'or go back.',
-        actionTitle: 'Continue',
-        onAction: () => _bloc!.add(const CryptoTopupPriceVolatilityAccepted()),
-        onClose: () => _bloc!.add(const CryptoTopupPriceVolatilityRejected()),
+        key: ValueKey(notice.key),
+        title: notice.title,
+        message: notice.message,
+        actionTitle: notice.actionTitle,
+        onAction: () => _bloc!.add(notice.action),
+        onClose:
+            closeEvent == null ? widget.onCancel : () => _bloc!.add(closeEvent),
       );
     }
 
