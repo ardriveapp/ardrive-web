@@ -1095,6 +1095,8 @@ class UploadCubit extends Cubit<UploadState> {
     final controller = current.controller;
     if (controller == null) return;
     _retrying = true;
+    // The failure lowered the flag; the retry writes files again.
+    _holdUploadingFlag();
     emit(UploadPreparationInProgress());
     try {
       await controller.retryFailedTasks(_auth.currentUser.wallet);
@@ -1390,8 +1392,14 @@ class UploadCubit extends Cubit<UploadState> {
   /// a cancel or a failure no drive opened again until a reload.
   bool _holdsUploadingFlag = false;
 
+  /// Whether files started uploading at any point, for redrawing the drive
+  /// once the dialog closes.
+  bool get startedUploading => _startedUploading;
+  bool _startedUploading = false;
+
   void _holdUploadingFlag() {
     _holdsUploadingFlag = true;
+    _startedUploading = true;
     _activityTracker.setUploading(true);
   }
 
@@ -1405,11 +1413,14 @@ class UploadCubit extends Cubit<UploadState> {
   void onChange(Change<UploadState> change) {
     super.onChange(change);
     final next = change.nextState;
-    // A cancel that failed leaves the upload running, so the flag stays up
-    // until it reports how it ended, or the dialog closes.
+    // A cancel that failed, or a retry refused because the try before is
+    // still finishing, leaves an upload running, so the flag stays up until it
+    // reports how it ended, or the dialog closes.
     if (next is UploadComplete ||
         next is UploadCanceled ||
-        (next is UploadFailure && next.error != UploadErrors.cancelFailed)) {
+        (next is UploadFailure &&
+            next.error != UploadErrors.cancelFailed &&
+            !next.lastTryStillFinishing)) {
       _releaseUploadingFlag();
     }
     if (next is UploadReady) _lastReadyState = next;

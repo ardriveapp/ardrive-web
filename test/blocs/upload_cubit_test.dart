@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -1214,6 +1216,57 @@ void main() {
               cubit.state,
               isA<UploadFailure>()
                   .having((s) => s.error, 'error', UploadErrors.cancelFailed));
+          expect(tracker.isUploading, isTrue);
+          await cubit.close();
+          expect(tracker.isUploading, isFalse, reason: 'dialog closed');
+        });
+
+        test('completed', () async {
+          void Function(List<UploadTask>)? onDone;
+          when(() => controller.onDone(any())).thenAnswer((i) {
+            onDone =
+                i.positionalArguments[0] as void Function(List<UploadTask>);
+          });
+          when(() => mockProfileCubit!.refreshBalance())
+              .thenAnswer((_) async {});
+          final cubit = await startedUpload();
+          onDone!([]);
+          await Future<void>.delayed(Duration.zero);
+          expect(cubit.state, isA<UploadComplete>());
+          expect(tracker.isUploading, isFalse);
+          await cubit.close();
+        });
+
+        test('Re-upload after a failure raises it again until it ends',
+            () async {
+          final retry = Completer<void>();
+          when(() => mockArDriveAuth.currentUser).thenReturn(getFakeUser());
+          when(() => controller.retryFailedTasks(any()))
+              .thenAnswer((_) => retry.future);
+          final cubit = await startedUpload();
+          onError!([]);
+          expect(tracker.isUploading, isFalse);
+          final retrying = cubit.retryUploads();
+          expect(tracker.isUploading, isTrue);
+          onError!([]);
+          expect(tracker.isUploading, isFalse);
+          retry.complete();
+          await retrying;
+          await cubit.close();
+        });
+
+        test('a retry refused while the try before finishes keeps it up',
+            () async {
+          when(() => mockArDriveAuth.currentUser).thenReturn(getFakeUser());
+          when(() => controller.retryFailedTasks(any()))
+              .thenThrow(PreviousAttemptStillRunning());
+          final cubit = await startedUpload();
+          onError!([]);
+          await cubit.retryUploads();
+          expect(
+              cubit.state,
+              isA<UploadFailure>().having(
+                  (s) => s.lastTryStillFinishing, 'still finishing', isTrue));
           expect(tracker.isUploading, isTrue);
           await cubit.close();
           expect(tracker.isUploading, isFalse, reason: 'dialog closed');

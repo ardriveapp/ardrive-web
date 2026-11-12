@@ -193,11 +193,11 @@ Future<void> _showUploadForm(
     insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
   );
 
-  // A canceled or failed upload may have written some of its files while the
-  // drive view was dropping redraws; this draws what it missed. A completed
-  // upload already did, from the form.
-  final ended = cubit.state;
-  if ((ended is UploadCanceled || ended is UploadFailure) &&
+  // An upload that did not complete may have written some of its files while
+  // the drive view was dropping redraws; this draws what it missed. A
+  // completed upload already did, from the form.
+  if (cubit.startedUploading &&
+      cubit.state is! UploadComplete &&
       !driveDetailCubit.isClosed) {
     driveDetailCubit.refreshDriveDataTable();
   }
