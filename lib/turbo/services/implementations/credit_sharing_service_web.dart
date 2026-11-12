@@ -53,7 +53,7 @@ class CreditSharingService {
       solanaWalletService: SolanaWalletService(networkConfig: networkConfig),
       paymentServiceUrl: config.defaultTurboPaymentUrl!,
       solanaRpcUrl: networkConfig.solanaRpcUrl,
-      uploadServiceUrl: config.defaultTurboUploadUrl,
+      uploadServiceUrl: networkConfig.turboUploadUrl,
     );
   }
 
