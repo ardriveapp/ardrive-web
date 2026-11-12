@@ -308,5 +308,69 @@ void main() {
       expect(connect.token, token);
       verify(() => storage.forceReleaseSessionLock()).called(1);
     });
+
+    test('the amount picked under the notice is quoted after Use this tab',
+        () async {
+      stubTokenQuote(() => quote);
+      final bloc = newBloc();
+      bloc
+        ..add(const CryptoTopupStarted())
+        ..add(const CryptoTopupUpdateAmount(0.1, isUsd: false))
+        ..add(const CryptoTopupSelectToken(token));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CryptoTopupConcurrentSessionWarning>());
+
+      when(() => storage.getSessionLock()).thenAnswer((_) async => null);
+      bloc.add(const CryptoTopupTakeOverSession());
+      await next<CryptoTopupWalletConnection>(bloc);
+      bloc.add(const CryptoTopupWalletConnectionRequested(
+        walletType: WalletType.solana,
+      ));
+      await next<CryptoTopupAmountEntry>(bloc, (s) => s.quote != null);
+      bloc.add(const CryptoTopupProceedToConfirmation());
+
+      await next<CryptoTopupConfirmation>(bloc);
+      verify(() => payments.getQuoteByTokenAmount(
+            token: token,
+            tokenAmount: 0.1,
+            promoCode: any(named: 'promoCode'),
+            destinationAddress: any(named: 'destinationAddress'),
+          )).called(1);
+    });
+
+    test('Use this tab is refused while the other tab is paying', () async {
+      when(() => storage.getSessionLock()).thenAnswer((_) async =>
+          CryptoTopupSessionLock(
+              timestamp: DateTime.now(), tabId: 'other', state: 'processing'));
+      final bloc = newBloc();
+      bloc.add(const CryptoTopupStarted());
+      await pumpEventQueue();
+
+      bloc.add(const CryptoTopupTakeOverSession());
+      await pumpEventQueue();
+
+      final warning = bloc.state as CryptoTopupConcurrentSessionWarning;
+      expect(warning.otherTabPaying, isTrue);
+      verifyNever(() => storage.forceReleaseSessionLock());
+    });
+  });
+
+  test('confirming marks the session lock as paying', () async {
+    when(() => storage.updateSessionLockState(any()))
+        .thenAnswer((_) async => true);
+    final bloc = newBloc();
+    await toConfirmation(bloc);
+    bloc.add(const CryptoTopupConfirmPayment());
+    await next<CryptoTopupProcessing>(bloc);
+    await pumpEventQueue();
+
+    verify(() => storage.updateSessionLockState('processing')).called(1);
+    payment.complete(CryptoPaymentResult.success(
+      transactionId: 'tx-1',
+      token: token,
+      creditsAdded: 1,
+      newBalance: 1,
+    ));
+    await next<CryptoTopupSuccess>(bloc);
   });
 }

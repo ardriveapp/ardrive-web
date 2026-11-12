@@ -59,6 +59,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   int? _connectedChainId;
   String? _connectedSolAddress;
   double _currentAmountUsd = 0;
+  static const _lockStatePaying = 'processing';
   CryptoToken? _tokenPickedUnderWarning;
   bool _isCurrentAmountInTokens = false; // True if amount is in token units
   String? _promoCode;
@@ -1216,6 +1217,13 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       isSubmitting: true,
     ));
 
+    // Tell the other tabs: from here on this session is not to be taken over.
+    try {
+      await _transactionStorage.updateSessionLockState(_lockStatePaying);
+    } catch (e) {
+      logger.w('Could not mark the session lock as paying: $e');
+    }
+
     try {
       final result = await _paymentService.executePayment(
         token: token,
@@ -1336,10 +1344,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     ));
   }
 
-  void _onPaymentFailed(
+  Future<void> _onPaymentFailed(
     CryptoTopupPaymentFailed event,
     Emitter<CryptoTopupState> emit,
-  ) {
+  ) async {
     // Cancel timers when payment fails - user will need to retry or restart
     _cancelQuoteTimer();
     _balanceRefreshTimer?.cancel();
@@ -1354,6 +1362,15 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       canRetry: event.canRetry,
       token: _selectedToken,
     ));
+
+    // Nothing was sent: the session may be taken over again.
+    if (event.txId == null) {
+      try {
+        await _transactionStorage.updateSessionLockState('token_selection');
+      } catch (e) {
+        logger.w('Could not reset the session lock: $e');
+      }
+    }
   }
 
   Future<void> _onRetryTransaction(
@@ -1483,6 +1500,20 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupTakeOverSession event,
     Emitter<CryptoTopupState> emit,
   ) async {
+    // A tab that is paying keeps its session: taking over would cut it off.
+    final lock = await _transactionStorage.getSessionLock();
+    if (lock != null &&
+        lock.isValid &&
+        lock.isDifferentTab(_transactionStorage.tabId) &&
+        lock.state == _lockStatePaying) {
+      emit(CryptoTopupConcurrentSessionWarning(
+        otherSessionStartedAt: lock.timestamp,
+        otherTabId: lock.tabId,
+        otherTabPaying: true,
+      ));
+      return;
+    }
+
     // Force release old lock and acquire new one
     await _transactionStorage.forceReleaseSessionLock();
     await _transactionStorage.acquireSessionLock('token_selection');
@@ -1630,7 +1661,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       // tab" or Close: nothing else may start a flow under it. A token the
       // screen picked meanwhile is kept for when this tab takes over.
       if (state is CryptoTopupConcurrentSessionWarning &&
-          !_leavesWarning(event)) {
+          !_mayRunUnderWarning(event)) {
         if (event is CryptoTopupSelectToken) {
           _tokenPickedUnderWarning = event.token;
         }
@@ -1640,8 +1671,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     });
   }
 
-  /// The events that may act while the other-tab notice shows.
-  bool _leavesWarning(CryptoTopupEvent event) =>
+  /// The events that may act while the other-tab notice shows. The amount
+  /// only stores a field (it emits nothing outside amount entry), and the
+  /// flow needs it once this tab takes over.
+  bool _mayRunUnderWarning(CryptoTopupEvent event) =>
+      event is CryptoTopupUpdateAmount ||
       event is CryptoTopupStarted ||
       event is CryptoTopupTakeOverSession ||
       event is CryptoTopupClose ||

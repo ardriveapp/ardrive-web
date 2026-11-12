@@ -224,6 +224,16 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       // Amount entry - automatically proceed to confirmation
       // (we already have the amount from the unified pay view)
       if (state is CryptoTopupAmountEntry) {
+        // No quote is coming: say so, with a way out, not a spinner.
+        if (state.error != null &&
+            state.quote == null &&
+            !state.isLoadingQuote) {
+          return CryptoErrorView(
+            key: const ValueKey('quote_error'),
+            onRetry: () => _bloc!.add(const CryptoTopupRetry()),
+            onClose: widget.onCancel,
+          );
+        }
         // Trigger proceed to confirmation
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _bloc!.add(const CryptoTopupProceedToConfirmation());
