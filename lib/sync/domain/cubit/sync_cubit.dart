@@ -733,11 +733,11 @@ class SyncCubit extends Cubit<SyncState> {
   /// was created or renamed elsewhere still appears. Not syncing must not mean
   /// not noticing drives.
   ///
-  /// Then, and only then, the one case where a full sync is still owed: an
-  /// upload whose transaction has not been resolved yet. Nothing but a sync
-  /// resolves it, so a sync that finishes work the user already started is the
-  /// only one this path will run. It is a local read and makes no network
-  /// request.
+  /// Then, and only then, the one thing still owed: an upload whose
+  /// transaction has not been resolved yet. That is answered by
+  /// [refreshPendingStatuses] and [watchForPendingConfirmations], which ask
+  /// the gateway about those transactions and walk no drive, so this path
+  /// never starts a sync. Whether anything is pending is a local read.
   ///
   /// Deliberately NOT "and sync when the database is empty". A first login
   /// with this setting off shows the drive list with no contents, and each
@@ -781,16 +781,20 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     }
 
-    logger.i('Syncing on login: transactions are still pending');
+    logger.i('Resolving pending transactions on login without a sync');
 
-    await startSync(
-      skipTabVisibilityCheck: true,
-      trigger: SyncTrigger.background,
-    );
+    // Asks the gateway about the transactions already known to be waiting.
+    // It walks no drive, so "only the drive you open is read" stays true, and
+    // it covers every pending row the full sync's own status pass did: data,
+    // metadata and snapshot transactions, and the drives and folders written
+    // locally.
+    await refreshPendingStatuses();
 
-    // One sync is not enough to confirm an upload. A transaction takes several
-    // blocks to mine, so the sync that runs the moment a login notices
-    // something pending will usually find it still pending.
+    if (isClosed) return;
+
+    // One check is not enough to confirm an upload. A transaction takes
+    // several blocks to mine, so the check that runs the moment a login
+    // notices something pending will usually find it still pending.
     watchForPendingConfirmations();
   }
 
