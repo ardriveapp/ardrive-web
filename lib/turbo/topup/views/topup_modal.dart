@@ -72,6 +72,7 @@ void _showTurboModal(
 }) {
   final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
+  var paidByCrypto = false;
   final appConfig = context.read<ConfigService>().config;
 
   // Shared signer cache for the modal session
@@ -163,13 +164,17 @@ void _showTurboModal(
       child: TurboModal(
         parentContext: modalContext,
         cardAmountUsd: cardAmountUsd,
+        onCryptoPaid: () => paidByCrypto = true,
       ),
     ),
     barrierDismissible: false,
   ).then((value) {
     logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
 
-    if (turbo.paymentStatus == PaymentStatus.success) {
+    if (turboTopupSucceeded(
+      cardStatus: turbo.paymentStatus,
+      paidByCrypto: paidByCrypto,
+    )) {
       logger.d('Turbo payment success');
       PlausibleEventTracker.trackPageview(
           page: PlausiblePageView.turboTopUpSuccess);
@@ -189,8 +194,23 @@ void _showTurboModal(
   });
 }
 
+/// Whether a top-up went through, by card or by crypto.
+///
+/// Only the card path sets the Turbo session's payment status, so a crypto
+/// payment is reported by the flow itself. Either way it is one success.
+@visibleForTesting
+bool turboTopupSucceeded({
+  required PaymentStatus? cardStatus,
+  required bool paidByCrypto,
+}) =>
+    cardStatus == PaymentStatus.success || paidByCrypto;
+
 class TurboModal extends StatefulWidget {
   final BuildContext parentContext;
+
+  /// Called when a crypto payment goes through, so the caller refreshes what
+  /// the payment changed (balances, purchases) as it does after a card one.
+  final VoidCallback? onCryptoPaid;
 
   /// The amount to pay by card, already chosen. The modal prices it and opens
   /// on the card details, Back from there closes it, and a payment that goes
@@ -201,6 +221,7 @@ class TurboModal extends StatefulWidget {
     super.key,
     required this.parentContext,
     this.cardAmountUsd,
+    this.onCryptoPaid,
   });
 
   @override
@@ -417,6 +438,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
               String? newBalanceCredits,
               String? newBalanceStorage,
             }) {
+              // The caller hears of it when the modal closes, as for a card.
+              widget.onCryptoPaid?.call();
               // Pop the modal and show success dialog (same as credit card flow)
               Navigator.of(context).pop();
               _showSuccessDialog(
