@@ -444,7 +444,6 @@ const _legacyUnsealed = <String>{
   'lib/pages/raw_transaction_view/raw_transaction_view_state.dart RawTransactionViewState',
   'lib/sync/domain/cubit/sync_state.dart SyncState',
   'lib/theme/theme_switcher_state.dart ThemeSwitcherState',
-  'lib/turbo/topup/blocs/crypto_topup/crypto_topup_state.dart CryptoTopupState',
   'lib/turbo/topup/blocs/payment_form/payment_form_state.dart PaymentFormState',
   'lib/turbo/topup/blocs/payment_review/payment_review_state.dart PaymentReviewState',
   'lib/turbo/topup/blocs/topup_estimation_state.dart TopupEstimationState',
