@@ -10,7 +10,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 /// before this date most likely opens with the password that opened the
 /// others. Only the order passwords are tried in depends on it: a drive that
 /// doesn't open still shows as locked, whatever this says.
-final drivePasswordEraCutoff = DateTime.utc(2026, 11, 4);
+final drivePasswordEraCutoff = DateTime.utc(2026, 11, 17);
 
 /// The `App-Name`s of the desktop apps, which let each private drive have
 /// its own password: ArDrive desktop, its older sync app, and the desktop MVP,
