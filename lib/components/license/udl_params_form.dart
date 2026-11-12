@@ -91,7 +91,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                     validationMessages:
                         kValidationMessages(appLocalizationsOf(context)),
                     choices: [
-                      for (final entry in udlCurrencyValues.entries)
+                      for (final entry in udlCurrencyLabels.entries)
                         ArDriveChoice(value: entry.key, label: entry.value),
                     ],
                   ),
