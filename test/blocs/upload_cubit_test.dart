@@ -1,4 +1,3 @@
-import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -38,6 +37,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
 
+import 'package:ardrive/core/activity_tracker.dart';
 import '../core/upload/uploader_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
