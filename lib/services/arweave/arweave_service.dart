@@ -1707,6 +1707,9 @@ class ArweaveService {
                   signatureType: DriveSignatureType.fromString(
                       driveTx.getTag(EntityTag.signatureType) ?? '1'),
                   lastUpdated: driveTx.getCommitTime(),
+                  createdAt: cachedUserDriveCreationTimes(
+                      driveTx.owner.address)[txDriveId],
+                  appName: driveTx.getTag(EntityTag.appName),
                 ),
               );
           }

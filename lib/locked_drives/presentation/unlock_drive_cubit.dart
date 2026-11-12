@@ -78,15 +78,21 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   bool get hasOtherLockedDrives => _unlocker.session.currentLockedDrives
       .any((drive) => drive.driveId != driveId);
 
-  /// Whether this drive was last written before 3.0
-  /// ([drivePasswordEraCutoff]), so its password is the one the user had with
-  /// ArDrive before: for a Wander account, the password it used to sign in
-  /// with. Its newest metadata date is the one date known without its key,
-  /// and a drive last written before the cutoff was made before it too.
+  /// Whether this drive's password is the one the user had with ArDrive
+  /// before 3.0: made before [drivePasswordEraCutoff] by an app that used one
+  /// password for every drive (web, the CLI), which is
+  /// [drivePasswordTryRank] 0. For a Wander account that is the password it
+  /// used to sign in with. Desktop drives, which allow a password per drive,
+  /// and drives made since are not. Its creation date is used when known,
+  /// else its newest metadata date, the one date known without its key.
   bool get madeBeforeThisRelease {
     for (final drive in _unlocker.session.currentLockedDrives) {
       if (drive.driveId == driveId) {
-        return drive.lastUpdated.isBefore(drivePasswordEraCutoff);
+        return drivePasswordTryRank(
+              createdAt: drive.createdAt ?? drive.lastUpdated,
+              appName: drive.appName,
+            ) ==
+            0;
       }
     }
     return false;

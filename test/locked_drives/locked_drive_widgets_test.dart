@@ -243,6 +243,8 @@ void main() {
       bool othersLocked = true,
       String? walletAddress,
       DateTime? lastUpdated,
+      DateTime? createdAt,
+      String? appName,
     }) async {
       session.setLockedDrives('owner', [
         for (final id in [_driveId, if (othersLocked) _otherId])
@@ -251,6 +253,8 @@ void main() {
             ownerAddress: 'owner',
             signatureType: DriveSignatureType.v2,
             lastUpdated: lastUpdated ?? DateTime(2026),
+            createdAt: createdAt,
+            appName: appName,
           ),
       ]);
 
@@ -303,6 +307,31 @@ void main() {
 
       expect(find.text('The password you used with ArDrive before'),
           findsOneWidget);
+    });
+
+    testWidgets(
+        'a drive made before 3.0 and written since still gets the hint: its '
+        'creation date counts', (tester) async {
+      await open(
+        tester,
+        createdAt: drivePasswordEraCutoff.subtract(const Duration(days: 30)),
+        lastUpdated: drivePasswordEraCutoff.add(const Duration(days: 1)),
+      );
+
+      expect(find.text('The password you used with ArDrive before'),
+          findsOneWidget);
+    });
+
+    testWidgets(
+        'a desktop drive from before 3.0 has no hint: desktop allowed a '
+        'password per drive', (tester) async {
+      await open(
+        tester,
+        createdAt: drivePasswordEraCutoff.subtract(const Duration(days: 30)),
+        appName: 'ArDrive-Desktop',
+      );
+
+      expect(find.byKey(const Key('unlockDriveOldPasswordHint')), findsNothing);
     });
 
     testWidgets('a drive made since 3.0 has no such hint', (tester) async {
