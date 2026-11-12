@@ -13,6 +13,7 @@ import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_confirmation_view.dart';
+import 'package:ardrive/turbo/topup/views/unified/crypto_notice_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_processing_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_result_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/inline_crypto_payment.dart';
@@ -320,6 +321,22 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
         onRetry:
             state.canRetry ? () => _bloc!.add(const CryptoTopupRetry()) : null,
         onClose: widget.onCancel,
+      );
+    }
+
+    // Warnings that stop the flow. Each says what happened and offers a way
+    // out; without them these states fell through to the spinner below.
+    final notice = cryptoNoticeFor(state);
+    if (notice != null) {
+      final closeEvent = notice.closeEvent;
+      return CryptoNoticeView(
+        key: ValueKey(notice.key),
+        title: notice.title,
+        message: notice.message,
+        actionTitle: notice.actionTitle,
+        onAction: () => _bloc!.add(notice.action),
+        onClose:
+            closeEvent == null ? widget.onCancel : () => _bloc!.add(closeEvent),
       );
     }
 
