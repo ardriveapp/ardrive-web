@@ -637,6 +637,21 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> confirmSnapshotCreation() async {
+    // The Upload button stays enabled while the wallet is checked, so a
+    // second tap lands here before the first has signed: it would pay twice.
+    if (_confirming || state is! ConfirmingSnapshotCreation) return;
+    _confirming = true;
+    try {
+      await _confirmSnapshotCreation();
+    } finally {
+      _confirming = false;
+    }
+  }
+
+  /// Whether [confirmSnapshotCreation] is running.
+  bool _confirming = false;
+
+  Future<void> _confirmSnapshotCreation() async {
     try {
       if (await _profileCubit.logoutIfWalletMismatch()) {
         logger.w('Failed to confirm the upload: Wallet mismatch');

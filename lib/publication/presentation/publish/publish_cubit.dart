@@ -975,6 +975,13 @@ class PublishCubit extends Cubit<PublishState> {
     final job = _job;
     final profile = _deps.profileCubit.state;
     if (job == null || profile is! ProfileLoggedIn || !state.canPublish) return;
+    // The Publish button stays enabled while the wallet is checked, so a
+    // second tap (or Try again) lands here before the first has left the
+    // review: it would publish, and pay, twice.
+    if (_checkingWallet || _publishing || state.stage != PublishStage.review) {
+      return;
+    }
+    _checkingWallet = true;
     try {
       if (await _deps.profileCubit.logoutIfWalletMismatch()) return;
     } on ArConnectUnavailableException catch (e) {
@@ -982,7 +989,12 @@ class PublishCubit extends Cubit<PublishState> {
       // published: the review stays, to try again or close.
       logger.w('[publication] could not check the wallet: $e');
       return;
+    } finally {
+      _checkingWallet = false;
     }
+    // The dialog stays live while the wallet is checked: closed, or Back to
+    // an earlier step, means the owner left the review and nothing is sent.
+    if (isClosed || state.stage != PublishStage.review) return;
     // The job keeps the method it was priced with unless the owner switched.
     final run = job.method == state.method
         ? job
@@ -1072,6 +1084,9 @@ class PublishCubit extends Cubit<PublishState> {
   /// Whether [publish] is still running, which can outlast the dialog: a
   /// route pop closes the cubit but not the upload.
   bool _publishing = false;
+
+  /// Whether [publish] is checking the wallet, before [_publishing].
+  bool _checkingWallet = false;
 
   /// Keeps the browser asking before the tab is closed while a publish runs:
   /// closing it midway leaves what was paid for half sent, and only this tab

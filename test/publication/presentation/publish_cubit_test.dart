@@ -645,6 +645,80 @@ void main() {
       verifyNever(
           () => publisher.publish(any(), any(), onStep: any(named: 'onStep')));
     });
+
+    // The Publish button stays enabled while the wallet is checked, so a
+    // second tap reaches the cubit before the first has left the review.
+    test('a second tap while the wallet is checked publishes once', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+
+      final first = c.publish();
+      final second = c.publish();
+      checked.complete(false);
+      await Future.wait([first, second]);
+
+      expect(c.state.stage, PublishStage.done);
+      verify(() =>
+              publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .called(1);
+    });
+
+    test('Back while the wallet is checked publishes nothing', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+
+      final publishing = c.publish();
+      c.back();
+      checked.complete(false);
+      await publishing;
+
+      expect(c.state.stage, PublishStage.look);
+      verifyNever(
+          () => publisher.publish(any(), any(), onStep: any(named: 'onStep')));
+    });
+
+    test('a second Try again while the wallet is checked publishes once',
+        () async {
+      discovery.candidates = [freshSnapshot()];
+      var attempts = 0;
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async {
+        if (attempts++ == 0) {
+          throw const PublicationFailure(PublicationStep.publication, 'Nope.');
+        }
+        return latest();
+      });
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.publish();
+      expect(c.state.stage, PublishStage.failed);
+
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final first = c.retry();
+      final second = c.retry();
+      checked.complete(false);
+      await Future.wait([first, second]);
+
+      expect(c.state.stage, PublishStage.done);
+      expect(attempts, 2, reason: 'the failed try, then one retry');
+    });
   });
 
   test('a failed publish says why and can be tried again', () async {
