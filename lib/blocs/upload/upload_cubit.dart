@@ -1398,10 +1398,6 @@ class UploadCubit extends Cubit<UploadState> {
   @override
   Future<void> close() {
     releaseLeavePageGuard(this);
-    // Every way the upload dialog ends (complete, cancel, failure, dismissed)
-    // closes this cubit, so this is the one place that clears the flag. Left
-    // up, every drive shows "Opening" until the page is reloaded.
-    _activityTracker.setUploading(false);
     return super.close();
   }
 }
