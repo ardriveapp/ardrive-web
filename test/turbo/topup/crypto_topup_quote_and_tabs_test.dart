@@ -248,4 +248,21 @@ void main() {
     });
   });
 
+  test(
+      'a quote the service rejects reads as a quote problem, not a network '
+      'failure', () async {
+    final bloc = newBloc();
+    await toConfirmation(bloc);
+    bloc.add(const CryptoTopupConfirmPayment());
+    await next<CryptoTopupProcessing>(bloc);
+    payment.complete(CryptoPaymentResult.failure(
+      status: CryptoPaymentStatus.quoteExpired,
+      token: token,
+    ));
+
+    final error = await next<CryptoTopupError>(bloc);
+    expect(error.errorType, CryptoTopupErrorType.quoteExpired);
+    expect(error.txId, isNull);
+  });
+
 }

@@ -1278,6 +1278,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           txId: result.transactionId,
           canRetry: result.canRetry,
           isUserRejected: result.status == CryptoPaymentStatus.userRejected,
+          errorType: result.status == CryptoPaymentStatus.quoteExpired
+              ? CryptoTopupErrorType.quoteExpired
+              : null,
         ));
       }
     } catch (e, s) {
@@ -1341,9 +1344,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     _balanceRefreshTimer?.cancel();
 
     emit(CryptoTopupError(
-      errorType: event.isUserRejected
-          ? CryptoTopupErrorType.transactionRejected
-          : CryptoTopupErrorType.transactionFailed,
+      errorType: event.errorType ??
+          (event.isUserRejected
+              ? CryptoTopupErrorType.transactionRejected
+              : CryptoTopupErrorType.transactionFailed),
       message: event.error,
       txId: event.txId,
       canRetry: event.canRetry,
