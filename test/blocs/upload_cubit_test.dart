@@ -334,45 +334,6 @@ void main() {
             ),
           ));
 
-  /// The upload dialog closes its cubit however it ends. The activity flag
-  /// used to be cleared only on complete, so after a cancel or a failure every
-  /// drive stayed on "Opening" until the page was reloaded.
-  group('the uploading flag', () {
-    late ActivityTracker tracker;
-
-    setUp(() {
-      tracker = ActivityTracker()..setUploading(true);
-    });
-
-    Future<void> endsWith(UploadState state) async {
-      final cubit = getUploadCubitInstanceWith([], activityTracker: tracker);
-      // Emitting is the cubit's own API surface here; the dialog then pops.
-      // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
-      cubit.emit(state);
-      expect(tracker.isUploading, isTrue, reason: 'still set until it closes');
-      await cubit.close();
-      expect(tracker.isUploading, isFalse);
-    }
-
-    test('is cleared when the upload is canceled', () async {
-      await endsWith(UploadCanceled());
-    });
-
-    test('is cleared when the upload fails', () async {
-      await endsWith(UploadFailure(error: UploadErrors.unknown));
-    });
-
-    test('is cleared when the dialog is dismissed mid-upload', () async {
-      final controller = _MockUploadController();
-      await endsWith(UploadInProgress(
-        progress: UploadProgress.notStarted(),
-        totalProgress: 0.1,
-        controller: controller,
-        uploadMethod: UploadMethod.turbo,
-      ));
-    });
-  });
-
   group('canceling an upload', () {
     late _MockUploadController controller;
 
@@ -636,6 +597,45 @@ void main() {
       isA<UploadComplete>(),
     ],
   );
+
+  /// The upload dialog closes its cubit however it ends. The activity flag
+  /// used to be cleared only on complete, so after a cancel or a failure every
+  /// drive stayed on "Opening" until the page was reloaded.
+  group('the uploading flag', () {
+    late ActivityTracker tracker;
+
+    setUp(() {
+      tracker = ActivityTracker()..setUploading(true);
+    });
+
+    Future<void> endsWith(UploadState state) async {
+      final cubit = getUploadCubitInstanceWith([], activityTracker: tracker);
+      // Emitting is the cubit's own API surface here; the dialog then pops.
+      // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+      cubit.emit(state);
+      expect(tracker.isUploading, isTrue, reason: 'still set until it closes');
+      await cubit.close();
+      expect(tracker.isUploading, isFalse);
+    }
+
+    test('is cleared when the upload is canceled', () async {
+      await endsWith(UploadCanceled());
+    });
+
+    test('is cleared when the upload fails', () async {
+      await endsWith(UploadFailure(error: UploadErrors.unknown));
+    });
+
+    test('is cleared when the dialog is dismissed mid-upload', () async {
+      final controller = _MockUploadController();
+      await endsWith(UploadInProgress(
+        progress: UploadProgress.notStarted(),
+        totalProgress: 0.1,
+        controller: controller,
+        uploadMethod: UploadMethod.turbo,
+      ));
+    });
+  });
 
   group('check if there are some conflicting file', () {
     setUp(() {
