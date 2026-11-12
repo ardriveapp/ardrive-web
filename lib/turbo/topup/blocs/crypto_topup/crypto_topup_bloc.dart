@@ -1211,18 +1211,22 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       return;
     }
 
-    emit(CryptoTopupProcessing(
-      token: token,
-      estimatedTime: token.estimatedConfirmationTime,
-      isSubmitting: true,
-    ));
-
-    // Tell the other tabs: from here on this session is not to be taken over.
+    // Tell the other tabs first: from here on this session is not to be taken
+    // over. The screen follows at once; only a lock write sits before it.
     try {
       await _transactionStorage.updateSessionLockState(_lockStatePaying);
     } catch (e) {
       logger.w('Could not mark the session lock as paying: $e');
     }
+    // A second confirm (a double click) passed the first check while the lock
+    // was being written: only the first finds the confirmation still here.
+    if (state is! CryptoTopupConfirmation) return;
+
+    emit(CryptoTopupProcessing(
+      token: token,
+      estimatedTime: token.estimatedConfirmationTime,
+      isSubmitting: true,
+    ));
 
     try {
       final result = await _paymentService.executePayment(

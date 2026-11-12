@@ -50,6 +50,18 @@ class CryptoTransactionStorage {
     return _instance!;
   }
 
+  /// Reads the backing store again. SharedPreferences answers from a cache
+  /// loaded once per page, so a value another tab wrote since (the session
+  /// lock, a pending transaction) is invisible without this. Called before
+  /// every read of cross-tab state, and so before every read-modify-write.
+  Future<void> _reload() async {
+    try {
+      await _prefs.reload();
+    } catch (e) {
+      logger.w('Could not reload the stored top-up state: $e');
+    }
+  }
+
   /// Current tab's unique identifier (same for all instances in this page load)
   String get tabId => _tabId;
 
@@ -120,6 +132,7 @@ class CryptoTransactionStorage {
   /// Get all pending transactions
   Future<List<PendingCryptoTransaction>> getAllPendingTransactions() async {
     try {
+      await _reload();
       final jsonString = _prefs.getString(_pendingTxKey);
       if (jsonString == null || jsonString.isEmpty) {
         return [];
@@ -243,6 +256,7 @@ class CryptoTransactionStorage {
   /// Get the current session lock (if any)
   Future<CryptoTopupSessionLock?> getSessionLock() async {
     try {
+      await _reload();
       final jsonString = _prefs.getString(_sessionLockKey);
       if (jsonString == null || jsonString.isEmpty) {
         return null;
