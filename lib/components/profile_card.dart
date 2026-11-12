@@ -720,9 +720,6 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildBalanceSection(BuildContext context, ProfileLoggedIn state) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     return BlocProvider(
       create: (context) => TurboBalanceCubit(
         paymentService: context.read<PaymentService>(),
@@ -751,88 +748,11 @@ class _ProfileCardState extends State<ProfileCard> {
             );
           }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Credits',
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: colorTokens.textMid,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (hasNoCredits)
-                      ArDriveButtonNew(
-                        key: const Key('profileAddCredits'),
-                        text: appLocalizationsOf(context).addCredits,
-                        typography: typography,
-                        variant: ButtonVariant.primary,
-                        size: ArDriveButtonSize.compact,
-                        onPressed: openTopUp,
-                      )
-                    else
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ProfileCreditsValue(
-                            state: turboState,
-                            onRetry: () =>
-                                context.read<TurboBalanceCubit>().getBalance(),
-                          ),
-                          const SizedBox(width: 8),
-                          Semantics(
-                            button: true,
-                            label: appLocalizationsOf(context).addCredits,
-                            onTap: openTopUp,
-                            excludeSemantics: true,
-                            child: ArDriveFocusable(
-                              onActivate: openTopUp,
-                              radius: ArDriveRadius.control,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: openTopUp,
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  // The circle stays 18; the press area is 40.
-                                  child: SizedBox(
-                                    width: 40,
-                                    height: 40,
-                                    child: Center(
-                                      child: Container(
-                                        width: 18,
-                                        height: 18,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: colorTokens.textMid,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.add,
-                                          size: 12,
-                                          color: colorTokens.textMid,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ],
-            ),
+          return ProfileCreditsRow(
+            state: turboState,
+            hasNoCredits: hasNoCredits,
+            onTopUp: openTopUp,
+            onRetry: () => context.read<TurboBalanceCubit>().getBalance(),
           );
         },
       ),
@@ -1437,6 +1357,125 @@ class ForgetAllOnThisDeviceDialog extends StatelessWidget {
   }
 }
 
+/// The "Credits" line of the profile card: the label, then the balance and a
+/// way to top up. The label never shrinks (it once wrapped a letter per line
+/// in the narrow card), and a balance that could not be read goes on its own
+/// line below, where its message and retry have room.
+class ProfileCreditsRow extends StatelessWidget {
+  const ProfileCreditsRow({
+    super.key,
+    required this.state,
+    required this.hasNoCredits,
+    required this.onTopUp,
+    required this.onRetry,
+  });
+
+  final TurboBalanceState state;
+  final bool hasNoCredits;
+  final VoidCallback onTopUp;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final turboState = state;
+    final openTopUp = onTopUp;
+    final failed = !hasNoCredits && turboState is TurboBalanceErrorState;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Credits',
+                softWrap: false,
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colorTokens.textMid,
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (hasNoCredits)
+                ArDriveButtonNew(
+                  key: const Key('profileAddCredits'),
+                  text: appLocalizationsOf(context).addCredits,
+                  typography: typography,
+                  variant: ButtonVariant.primary,
+                  size: ArDriveButtonSize.compact,
+                  onPressed: openTopUp,
+                )
+              else
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (!failed) ...[
+                        Flexible(
+                          child: ProfileCreditsValue(
+                            state: turboState,
+                            onRetry: onRetry,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Semantics(
+                        button: true,
+                        label: appLocalizationsOf(context).addCredits,
+                        onTap: openTopUp,
+                        excludeSemantics: true,
+                        child: ArDriveFocusable(
+                          onActivate: openTopUp,
+                          radius: ArDriveRadius.control,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: openTopUp,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              // The circle stays 18; the press area is 40.
+                              child: SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Center(
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colorTokens.textMid,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.add,
+                                      size: 12,
+                                      color: colorTokens.textMid,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          if (failed) ProfileCreditsValue(state: turboState, onRetry: onRetry),
+        ],
+      ),
+    );
+  }
+}
+
 /// The credits figure in the profile card. Only a balance that was read is
 /// shown as a number: while it loads there is a spinner, and when it could not
 /// be read it says so with a way to try again, so an outage never looks like
@@ -1475,7 +1514,6 @@ class ProfileCreditsValue extends StatelessWidget {
           Flexible(
             child: Text(
               appLocalizationsOf(context).couldNotLoadCredits,
-              overflow: TextOverflow.ellipsis,
               style: typography.paragraphNormal(color: colorTokens.textMid),
             ),
           ),
