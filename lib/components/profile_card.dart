@@ -1391,12 +1391,15 @@ class ProfileCreditsRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Credits',
-                softWrap: false,
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textMid,
+              Flexible(
+                child: Text(
+                  'Credits',
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textMid,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
