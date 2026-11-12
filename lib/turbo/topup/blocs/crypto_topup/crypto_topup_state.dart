@@ -1,7 +1,7 @@
 part of 'crypto_topup_bloc.dart';
 
 /// Base class for all CryptoTopup states
-abstract class CryptoTopupState extends Equatable {
+sealed class CryptoTopupState extends Equatable {
   const CryptoTopupState();
 
   @override

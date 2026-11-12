@@ -285,13 +285,21 @@ class CryptoTopupPaymentSucceeded extends CryptoTopupEvent {
   final String txId;
   final BigInt creditsAdded;
 
+  /// What was paid with, and the quote it was paid at when known (a resumed
+  /// payment may not have one). They travel with the event because the
+  /// flow's own fields can change while a payment is in flight.
+  final CryptoToken token;
+  final CryptoQuote? quote;
+
   const CryptoTopupPaymentSucceeded({
     required this.txId,
     required this.creditsAdded,
+    required this.token,
+    this.quote,
   });
 
   @override
-  List<Object?> get props => [txId, creditsAdded];
+  List<Object?> get props => [txId, creditsAdded, token, quote];
 }
 
 /// Payment failed
