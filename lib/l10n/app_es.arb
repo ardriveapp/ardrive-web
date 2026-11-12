@@ -2527,5 +2527,7 @@
   "@uploadReviewTo": {
     "description": "Under the upload review's title: the folder the files go to. A private drive's lock follows it.",
     "placeholders": {"folder": {"type": "String"}}
-  }
+  },
+  "unlockOldDrivePasswordHint": "La contraseña que usabas en ArDrive antes",
+  "@unlockOldDrivePasswordHint": {"description": "Under the password field in the unlock drive dialog, for a drive made before 3.0: its password is the one the user had with ArDrive then. Wallet accounts no longer type it to sign in, so they need the reminder."}
 }

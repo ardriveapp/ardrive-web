@@ -5722,6 +5722,8 @@
   "@lockedDriveName": {"description": "Stands in for a locked drive's name, which is encrypted and so unknown until it is unlocked."},
   "drivePasswordLabel": "Drive password",
   "@drivePasswordLabel": {"description": "Label of the password field in the unlock drive dialog."},
+  "unlockOldDrivePasswordHint": "The password you used with ArDrive before",
+  "@unlockOldDrivePasswordHint": {"description": "Under the password field in the unlock drive dialog, for a drive made before 3.0: its password is the one the user had with ArDrive then. Wallet accounts no longer type it to sign in, so they need the reminder."},
   "tryOnOtherLockedDrives": "Try on my other locked drives",
   "@tryOnOtherLockedDrives": {"description": "Checkbox in the unlock drive dialog: the password is also tried on every other locked drive."},
   "unlockWrongPassword": "Wrong password",

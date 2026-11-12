@@ -4,6 +4,7 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/domain/locked_drive.dart';
@@ -241,6 +242,7 @@ void main() {
       WidgetTester tester, {
       bool othersLocked = true,
       String? walletAddress,
+      DateTime? lastUpdated,
     }) async {
       session.setLockedDrives('owner', [
         for (final id in [_driveId, if (othersLocked) _otherId])
@@ -248,7 +250,7 @@ void main() {
             driveId: id,
             ownerAddress: 'owner',
             signatureType: DriveSignatureType.v2,
-            lastUpdated: DateTime(2026),
+            lastUpdated: lastUpdated ?? DateTime(2026),
           ),
       ]);
 
@@ -291,6 +293,24 @@ void main() {
 
     EditableText field(WidgetTester tester) =>
         tester.widget<EditableText>(find.byType(EditableText));
+
+    testWidgets(
+        'a drive from before 3.0 says its password is the one used with '
+        'ArDrive before', (tester) async {
+      await open(tester,
+          lastUpdated:
+              drivePasswordEraCutoff.subtract(const Duration(days: 1)));
+
+      expect(find.text('The password you used with ArDrive before'),
+          findsOneWidget);
+    });
+
+    testWidgets('a drive made since 3.0 has no such hint', (tester) async {
+      await open(tester,
+          lastUpdated: drivePasswordEraCutoff.add(const Duration(days: 1)));
+
+      expect(find.byKey(const Key('unlockDriveOldPasswordHint')), findsNothing);
+    });
 
     testWidgets(
         'Enter unlocks, trying the other locked drives by default; the '
@@ -384,9 +404,8 @@ void main() {
       final passwordElement = tester.element(find.descendant(
           of: find.byKey(const Key('unlockDrivePassword')),
           matching: find.byType(TextField)));
-      final usernameElement = tester.element(find.byKey(
-          const Key('passwordAutofillUsername'),
-          skipOffstage: false));
+      final usernameElement = tester.element(find
+          .byKey(const Key('passwordAutofillUsername'), skipOffstage: false));
       expect(AutofillGroup.of(passwordElement),
           same(AutofillGroup.of(usernameElement)));
     });

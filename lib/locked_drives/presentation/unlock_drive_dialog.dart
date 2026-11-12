@@ -242,6 +242,16 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                   },
                   onFieldSubmitted: (_) => _submit(),
                 )),
+                // A drive from before 3.0 opens with the password the user
+                // had then, which a wallet account no longer types to sign in.
+                if (cubit.madeBeforeThisRelease) ...[
+                  const SizedBox(height: ArDriveSpacing.xs),
+                  Text(
+                    strings.unlockOldDrivePasswordHint,
+                    key: const Key('unlockDriveOldPasswordHint'),
+                    style: typography.paragraphSmall(color: colors.textLow),
+                  ),
+                ],
                 if (state.status == UnlockDriveStatus.networkError ||
                     state.status == UnlockDriveStatus.walletFailed) ...[
                   const SizedBox(height: ArDriveSpacing.xs),

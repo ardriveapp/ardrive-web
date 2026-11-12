@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:arweave/arweave.dart';
@@ -76,6 +77,20 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   /// whether the dialog offers to.
   bool get hasOtherLockedDrives => _unlocker.session.currentLockedDrives
       .any((drive) => drive.driveId != driveId);
+
+  /// Whether this drive was last written before 3.0
+  /// ([drivePasswordEraCutoff]), so its password is the one the user had with
+  /// ArDrive before: for a Wander account, the password it used to sign in
+  /// with. Its newest metadata date is the one date known without its key,
+  /// and a drive last written before the cutoff was made before it too.
+  bool get madeBeforeThisRelease {
+    for (final drive in _unlocker.session.currentLockedDrives) {
+      if (drive.driveId == driveId) {
+        return drive.lastUpdated.isBefore(drivePasswordEraCutoff);
+      }
+    }
+    return false;
+  }
 
   /// [remember] is "Remember on this device": the drive keys that open are
   /// stored, wrapped by the device key; without it they are kept for this
