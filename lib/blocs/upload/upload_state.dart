@@ -259,7 +259,7 @@ class UploadInProgress extends UploadState {
   });
 
   @override
-  List<Object?> get props => [equatableBust];
+  List<Object?> get props => [equatableBust, isCanceling];
 }
 
 class UploadFailure extends UploadState {

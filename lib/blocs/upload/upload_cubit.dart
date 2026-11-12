@@ -1137,11 +1137,11 @@ class UploadCubit extends Cubit<UploadState> {
   bool _uploadCanceled = false;
 
   Future<void> cancelUpload() async {
-    if (state is UploadInProgress) {
+    // A second cancel while the first stops the upload does nothing more.
+    if (state case final UploadInProgress state when !_uploadCanceled) {
       _uploadCanceled = true;
       try {
-        final state = this.state as UploadInProgress;
-
+        // Stopping can take a while: the button says so meanwhile.
         emit(
           UploadInProgress(
             controller: state.controller,
@@ -1149,22 +1149,11 @@ class UploadCubit extends Cubit<UploadState> {
             progress: state.progress,
             totalProgress: state.totalProgress,
             isCanceling: true,
-            uploadMethod: _uploadMethod!,
+            uploadMethod: state.uploadMethod,
           ),
         );
 
         await state.controller.cancel();
-
-        emit(
-          UploadInProgress(
-            controller: state.controller,
-            equatableBust: state.equatableBust,
-            progress: state.progress,
-            totalProgress: state.totalProgress,
-            isCanceling: false,
-            uploadMethod: _uploadMethod!,
-          ),
-        );
 
         emit(UploadCanceled());
       } catch (e) {
@@ -1209,6 +1198,8 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) {
+        // Canceling flushes a last update, after the cancel is shown.
+        if (_uploadCanceled) return;
         emit(
           UploadInProgress(
             totalProgress: progress.progressInPercentage,
@@ -1269,6 +1260,8 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) async {
+        // Canceling flushes a last update, after the cancel is shown.
+        if (_uploadCanceled) return;
         emit(
           UploadInProgress(
             progress: progress,

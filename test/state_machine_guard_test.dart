@@ -189,7 +189,7 @@ const _legacyCasts = <String, int>{
   'lib/blocs/pin_file/pin_file_bloc.dart': 5,
   'lib/blocs/profile/profile_cubit.dart': 1,
   'lib/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart': 2,
-  'lib/blocs/upload/upload_cubit.dart': 20,
+  'lib/blocs/upload/upload_cubit.dart': 19,
   'lib/components/details_panel.dart': 1,
   'lib/components/pin_file_dialog.dart': 1,
   'lib/components/profile_card.dart': 1,
@@ -213,7 +213,7 @@ const _legacyCasts = <String, int>{
 };
 
 const _legacyEqualityBusts = <String, int>{
-  'lib/blocs/upload/upload_cubit.dart': 4,
+  'lib/blocs/upload/upload_cubit.dart': 3,
   'lib/blocs/upload/upload_state.dart': 2,
 };
 
@@ -324,7 +324,6 @@ const _legacyPropsGaps = <String, Set<String>>{
   },
   'lib/blocs/upload/upload_state.dart UploadInProgress': {
     'controller',
-    'isCanceling',
     'progress',
     'totalProgress',
     'uploadMethod'
