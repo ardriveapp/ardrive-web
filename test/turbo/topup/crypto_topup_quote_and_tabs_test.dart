@@ -265,4 +265,48 @@ void main() {
     expect(error.txId, isNull);
   });
 
+  group('another tab holds the top-up', () {
+    setUp(() {
+      when(() => storage.tabId).thenReturn('this-tab');
+      when(() => storage.getSessionLock()).thenAnswer((_) async =>
+          CryptoTopupSessionLock(
+              timestamp: DateTime.now(), tabId: 'other', state: 'confirming'));
+      when(() => storage.acquireSessionLock(any()))
+          .thenAnswer((_) async => true);
+      when(() => storage.forceReleaseSessionLock()).thenAnswer((_) async {});
+      when(() => storage.getPendingTransaction(any()))
+          .thenAnswer((_) async => null);
+    });
+
+    test('picking a token right after Started leaves the notice up', () async {
+      final bloc = newBloc();
+      final seen = <CryptoTopupState>[];
+      bloc.stream.listen(seen.add);
+      bloc
+        ..add(const CryptoTopupStarted())
+        ..add(const CryptoTopupUpdateAmount(10))
+        ..add(const CryptoTopupSelectToken(token));
+      await pumpEventQueue();
+
+      expect(bloc.state, isA<CryptoTopupConcurrentSessionWarning>());
+      expect(seen.whereType<CryptoTopupWalletConnection>(), isEmpty);
+    });
+
+    test('Use this tab starts the flow with the token that was picked',
+        () async {
+      final bloc = newBloc();
+      bloc
+        ..add(const CryptoTopupStarted())
+        ..add(const CryptoTopupSelectToken(token));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CryptoTopupConcurrentSessionWarning>());
+
+      when(() => storage.getSessionLock()).thenAnswer((_) async => null);
+      bloc.add(const CryptoTopupTakeOverSession());
+
+      final connect = await next<CryptoTopupWalletConnection>(bloc);
+      expect(connect.token, token);
+      verify(() => storage.forceReleaseSessionLock()).called(1);
+    });
+  });
 }

@@ -59,6 +59,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   int? _connectedChainId;
   String? _connectedSolAddress;
   double _currentAmountUsd = 0;
+  CryptoToken? _tokenPickedUnderWarning;
   bool _isCurrentAmountInTokens = false; // True if amount is in token units
   String? _promoCode;
 
@@ -1486,8 +1487,13 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     await _transactionStorage.forceReleaseSessionLock();
     await _transactionStorage.acquireSessionLock('token_selection');
 
-    // Start fresh
-    add(const CryptoTopupStarted());
+    // Start fresh, with the token the screen had asked for.
+    await _onStarted(const CryptoTopupStarted(), emit);
+    final token = _tokenPickedUnderWarning;
+    _tokenPickedUnderWarning = null;
+    if (token != null && state is CryptoTopupTokenSelection) {
+      await _onTokenSelected(CryptoTopupTokenSelected(token), emit);
+    }
   }
 
   void _onBalanceFetched(
@@ -1619,8 +1625,27 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   void _on<E extends CryptoTopupEvent>(
     EventHandler<E, CryptoTopupState> handler,
   ) {
-    on<E>((event, emit) => handler(event, _PaymentKeepingEmitter(emit, this)));
+    on<E>((event, emit) {
+      // The notice that another tab has the top-up stands until "Use this
+      // tab" or Close: nothing else may start a flow under it. A token the
+      // screen picked meanwhile is kept for when this tab takes over.
+      if (state is CryptoTopupConcurrentSessionWarning &&
+          !_leavesWarning(event)) {
+        if (event is CryptoTopupSelectToken) {
+          _tokenPickedUnderWarning = event.token;
+        }
+        return Future<void>.value();
+      }
+      return handler(event, _PaymentKeepingEmitter(emit, this));
+    });
   }
+
+  /// The events that may act while the other-tab notice shows.
+  bool _leavesWarning(CryptoTopupEvent event) =>
+      event is CryptoTopupStarted ||
+      event is CryptoTopupTakeOverSession ||
+      event is CryptoTopupClose ||
+      event is CryptoTopupConcurrentSessionDetected;
 
   /// Follow-up events from a payment can land after the dialog has closed
   /// it; they have nothing left to do.
