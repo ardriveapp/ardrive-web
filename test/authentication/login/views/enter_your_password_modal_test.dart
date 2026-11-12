@@ -356,6 +356,39 @@ void main() {
       verify(() => loginBloc.add(const RetrySignInPassword())).called(1);
     });
 
+    testWidgets('after a mismatch on Enter, typing still edits the field',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      when(() => loginBloc.signInPasswordMatches(any()))
+          .thenAnswer((i) => i.positionalArguments.first == 'typo');
+
+      await tester.pumpWidget(app(Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showPasswordOpensNoDrivesDialog(
+              context: context, loginBloc: loginBloc),
+          child: const Text('open'),
+        ),
+      )));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final field = find.descendant(
+          of: find.byKey(const Key('confirmSignInPassword')),
+          matching: find.byType(EditableText));
+      await tester.enterText(field, 'real');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('The confirmation password does not match.'),
+          findsOneWidget);
+
+      // The text is selected, so typing replaces it, with no click first.
+      tester.testTextInput.enterText('typo');
+      await tester.pumpAndSettle();
+      expect(tester.widget<EditableText>(field).controller.text, 'typo');
+      expect(tester.widget<EditableText>(field).focusNode.hasFocus, isTrue);
+    });
+
     testWidgets('Try again puts focus back in the field, its text selected',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
