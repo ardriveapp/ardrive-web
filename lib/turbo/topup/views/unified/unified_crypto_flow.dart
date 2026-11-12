@@ -13,6 +13,7 @@ import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_confirmation_view.dart';
+import 'package:ardrive/turbo/topup/views/unified/crypto_notice_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_processing_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_result_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/inline_crypto_payment.dart';
@@ -320,6 +321,56 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
         onRetry:
             state.canRetry ? () => _bloc!.add(const CryptoTopupRetry()) : null,
         onClose: widget.onCancel,
+      );
+    }
+
+    // Warnings that stop the flow. Each says what happened and offers a way
+    // out; without them these states fell through to the spinner below.
+    if (state is CryptoTopupAccountChangedWarning) {
+      return CryptoNoticeView(
+        key: const ValueKey('account_changed'),
+        title: 'Account changed',
+        message: 'Your wallet switched accounts. Start again with the account '
+            'you want to pay from.',
+        actionTitle: 'Start again',
+        onAction: () => _bloc!.add(const CryptoTopupRetry()),
+        onClose: widget.onCancel,
+      );
+    }
+
+    if (state is CryptoTopupSessionTimeout) {
+      return CryptoNoticeView(
+        key: const ValueKey('session_timeout'),
+        title: 'Session timed out',
+        message: 'This top-up took too long. Start again.',
+        actionTitle: 'Start again',
+        onAction: () => _bloc!.add(const CryptoTopupRetry()),
+        onClose: widget.onCancel,
+      );
+    }
+
+    if (state is CryptoTopupConcurrentSessionWarning) {
+      return CryptoNoticeView(
+        key: const ValueKey('concurrent_session'),
+        title: 'Top-up open in another tab',
+        message: 'Another tab is topping up. Use this tab instead, or close.',
+        actionTitle: 'Use this tab',
+        onAction: () => _bloc!.add(const CryptoTopupTakeOverSession()),
+        onClose: widget.onCancel,
+      );
+    }
+
+    if (state is CryptoTopupPriceVolatilityWarning) {
+      final change = state.percentChange;
+      return CryptoNoticeView(
+        key: const ValueKey('price_volatility'),
+        title: 'Price changed',
+        message: 'The credits you get changed by '
+            '${change.abs().toStringAsFixed(1)}%. Continue at the new price, '
+            'or go back.',
+        actionTitle: 'Continue',
+        onAction: () => _bloc!.add(const CryptoTopupPriceVolatilityAccepted()),
+        onClose: () => _bloc!.add(const CryptoTopupPriceVolatilityRejected()),
       );
     }
 
