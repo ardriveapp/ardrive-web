@@ -716,7 +716,7 @@ class _HeaderPreview extends StatelessWidget {
     final rest = [
       if (summary != null) strings.publishFileCount(summary.fileCount),
       if (state.licence != null) state.licence!.meta.shortName,
-    ].map((part) => '\u00a0· $part').join();
+    ].map((part) => '\u00a0$arDriveSeparator $part').join();
     final title = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

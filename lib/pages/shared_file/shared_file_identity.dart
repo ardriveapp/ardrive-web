@@ -231,7 +231,7 @@ class SharedFileIdentity extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('·', style: style),
+                Text(arDriveSeparator, style: style),
                 const SizedBox(width: 8),
                 Flexible(child: parts[i]),
               ],
@@ -319,7 +319,13 @@ class SharedFileIdentity extends StatelessWidget {
       return null;
     }
 
-    final subtype = contentType.split('/').last.split(';').first.trim();
+    final mime = contentType.split(';').first.trim().toLowerCase();
+    // The two generic types say nothing as a subtype ("OCTET-ST" was the
+    // first eight letters of "octet-stream"): name what they mean.
+    if (mime == 'application/octet-stream') return 'Binary';
+    if (mime == 'text/plain') return 'Text';
+
+    final subtype = mime.split('/').last.trim();
 
     if (subtype.isEmpty) {
       return null;
@@ -331,9 +337,8 @@ class SharedFileIdentity extends StatelessWidget {
             ? subtype.split('.').last
             : subtype;
 
-    return withoutVendorPrefix.length > 8
-        ? withoutVendorPrefix.toUpperCase().substring(0, 8)
-        : withoutVendorPrefix.toUpperCase();
+    // Whole, not cut: the row ellipsizes a type too long for the card.
+    return withoutVendorPrefix.toUpperCase();
   }
 }
 

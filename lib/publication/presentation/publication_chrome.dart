@@ -680,23 +680,23 @@ class _Byline extends StatelessWidget {
           if (stats == null && publishedAt != null)
             TextSpan(
                 text:
-                    '\u00a0· ${strings.publishedOn(formatDate(publishedAt))}'),
+                    '\u00a0$arDriveSeparator ${strings.publishedOn(formatDate(publishedAt))}'),
           if (stats != null)
             TextSpan(
               text:
-                  '\u00a0· ${(publishedAt == null ? strings.publicationCountSummary(
+                  '\u00a0$arDriveSeparator ${(publishedAt == null ? strings.publicationCountSummary(
                       stats.fileCount,
                       filesize(stats.totalSize),
                     ) : strings.publicationCoverSummary(
                       stats.fileCount,
                       filesize(stats.totalSize),
                       formatDate(publishedAt),
-                    )).replaceAll(' · ', '\u00a0· ')}',
+                    )).replaceAll(' · ', '\u00a0$arDriveSeparator ')}',
             ),
           // The licence its owner set for everything in it, named and linked
           // to the transaction that defines it.
           if (config.license case final license?) ...[
-            const TextSpan(text: '\u00a0· '),
+            const TextSpan(text: '\u00a0$arDriveSeparator '),
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,
