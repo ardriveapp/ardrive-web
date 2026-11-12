@@ -91,4 +91,12 @@ void main() {
     await tester.pump();
     expect(find.text('abc'), findsNothing);
   });
+
+  testWidgets('the currency says what U is, not the bare letter',
+      (tester) async {
+    await pump(tester, 390);
+
+    expect(find.text('U (stablecoin)'), findsOneWidget);
+    expect(find.text('U'), findsNothing);
+  });
 }

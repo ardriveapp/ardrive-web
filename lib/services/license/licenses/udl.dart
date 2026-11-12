@@ -28,6 +28,13 @@ Map<UdlCurrency, String> udlCurrencyValues = {
   UdlCurrency.ar: 'AR',
 };
 
+/// What a person reads in the currency choice: the tag values above are for
+/// the wire, and a bare "U" names nothing.
+Map<UdlCurrency, String> udlCurrencyLabels = {
+  UdlCurrency.u: 'U (stablecoin)',
+  UdlCurrency.ar: 'AR',
+};
+
 enum UdlCommercialUse {
   unspecified,
   allowed,

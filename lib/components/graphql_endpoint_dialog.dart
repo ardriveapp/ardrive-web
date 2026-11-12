@@ -142,13 +142,13 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
                             Icon(
                               Icons.error,
                               size: 16,
-                              color: colorTokens.buttonPrimaryPress,
+                              color: colorTokens.statusErrorFg,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Invalid GraphQL endpoint',
                               style: typography.paragraphSmall(
-                                color: colorTokens.buttonPrimaryPress,
+                                color: colorTokens.statusErrorFg,
                               ),
                             ),
                           ],

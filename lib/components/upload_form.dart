@@ -1249,7 +1249,11 @@ class LicenseReviewInfo extends StatelessWidget {
             color: colorTokens.textLow,
           ),
         ),
-        Row(
+        // A wrap, so on a phone "View" drops below the name instead of
+        // running out past the dialog's padding.
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
           children: [
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 300),
@@ -1272,9 +1276,6 @@ class LicenseReviewInfo extends StatelessWidget {
               Text.rich(
                 TextSpan(
                   children: [
-                    const WidgetSpan(
-                      child: SizedBox(width: 16),
-                    ),
                     viewLicenseDefinitionTextSpan(
                       context,
                       licenseState.meta.licenseDefinitionTxId,

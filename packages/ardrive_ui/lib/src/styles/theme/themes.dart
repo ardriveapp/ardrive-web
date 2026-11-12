@@ -118,10 +118,12 @@ class ArDriveThemeData {
     this.toggleTheme = toggleTheme ??
         ArDriveToggleTheme(
           backgroundOffDisabled: colorTokens.buttonDisabled,
-          backgroundOffColor: colorTokens.containerL0,
+          // A track that shows on every surface: containerL0 was the colour
+          // of the page and cards in light theme, so only the knob showed.
+          backgroundOffColor: colorTokens.iconLow,
           backgroundOnColor: const Color(0xff139310),
           indicatorColorDisabled: colorTokens.textXLow,
-          indicatorColorOff: colorTokens.iconMid,
+          indicatorColorOff: Colors.white,
         );
     this.tableTheme = tableTheme ??
         ArDriveTableTheme(

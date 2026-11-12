@@ -164,7 +164,8 @@ class _PublishedViewState extends State<PublishedView> {
                   const SizedBox(height: 4),
                   Text(
                     config?.fileCount != null
-                        ? strings.publishedOnWithFiles(date, config!.fileCount!)
+                        ? withSeparatorDots(strings.publishedOnWithFiles(
+                            date, config!.fileCount!))
                         : strings.publishedOn(date),
                     style: typography.paragraphNormal(color: colors.textMid),
                   ),

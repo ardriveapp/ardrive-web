@@ -676,8 +676,10 @@ class AnimatedTextFieldLabelNewState extends State<AnimatedTextFieldLabelNew> {
             );
           },
           child: widget.showing
-              ? SizedBox(
-                  height: 22,
+              // At least a line tall, and as tall as the message needs: a
+              // fixed 22 clipped a message that wraps in a narrow field.
+              ? ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 22),
                   key: const ValueKey(true),
                   child: TextFieldLabelNew(
                     style: widget.style,

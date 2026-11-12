@@ -67,6 +67,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// Whether a redraw was dropped by the throttle and not yet made good.
   bool _droppedFolderRedraw = false;
 
+  /// Makes good a dropped redraw once the throttle window has passed, so the
+  /// last tick of a burst lands without waiting for the sync to end.
+  Timer? _trailingRedraw;
+
+  /// Drives this screen saw with a block height of 0: never walked on this
+  /// device. The drive state import sets the height early, so the height alone
+  /// stops saying "first walk" while the files are still being written. Held
+  /// until a sync finishes the drive.
+  final _firstWalkDrives = <String>{};
+
   /// What was last drawn, so a tick that changes nothing can be recognised.
   FolderWithContents? _lastFolderContents;
 
@@ -280,6 +290,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
+        if (drive != null && (drive.lastBlockHeight ?? 0) == 0) {
+          _firstWalkDrives.add(driveId);
+        }
+
         // Or if the session ended during it. This sits behind
         // `waitCurrentSync()`, which parks for the whole length of a running
         // sync; a logout in that window drops every local table, so the drive
@@ -321,7 +335,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// reads no folder.
   bool contentsMayStillArrive(Drive drive) {
     if (_rootFromNetwork[drive.id] != true ||
-        (drive.lastBlockHeight ?? 0) > 0) {
+        ((drive.lastBlockHeight ?? 0) > 0 &&
+            !_firstWalkDrives.contains(drive.id))) {
       return false;
     }
 
@@ -423,6 +438,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   void _listenForSyncCompletion() {
     _syncSubscription = _syncCubit.stream.listen((syncState) {
       if (SyncCubit.syncHasFinished(syncState)) {
+        _firstWalkDrives.removeAll(_syncCubit.completedDriveIds);
         _recoverIfStillWaiting();
         _refreshAfterDroppedRedraws();
       }
@@ -862,6 +878,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // opened.
     _lastFolderRedraw = null;
     _droppedFolderRedraw = false;
+    _trailingRedraw?.cancel();
+    _trailingRedraw = null;
     _lastFolderContents = null;
     _lastDrive = null;
 
@@ -945,6 +963,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
+          if (drive != null && (drive.lastBlockHeight ?? 0) == 0) {
+            _firstWalkDrives.add(driveId);
+          }
+
           // Most ticks carry nothing new, so the cheapest question first.
           //
           // Drift re-runs a watched query when the *tables* it reads change,
@@ -1011,6 +1033,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               // of what was written, with nothing else coming to correct it -
               // see [_refreshAfterDroppedRedraws].
               _droppedFolderRedraw = true;
+
+              // And redrawn when the window ends, so the last tick of a burst
+              // (the one carrying the imported files) is not left until the
+              // sync finishes.
+              _trailingRedraw ??=
+                  Timer(_folderRedrawInterval - now.difference(last), () {
+                _trailingRedraw = null;
+                _refreshAfterDroppedRedraws();
+              });
               return;
             }
 
@@ -2051,6 +2082,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _folderSubscription?.cancel();
     _forgetLinkedFolder();
     _syncSubscription?.cancel();
+    _trailingRedraw?.cancel();
     _allImagesOfCurrentFolder = null;
     return super.close();
   }
