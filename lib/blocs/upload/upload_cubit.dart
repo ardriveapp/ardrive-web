@@ -1180,7 +1180,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> _uploadFolders({
     LicenseState? licenseStateConfigured,
   }) async {
-    _activityTracker.setUploading(true);
+    _holdUploadingFlag();
 
     final uploadController = await _uploadRepository.uploadFolders(
       files: _files,
@@ -1238,7 +1238,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> _uploadFiles({
     LicenseState? licenseStateConfigured,
   }) async {
-    _activityTracker.setUploading(true);
+    _holdUploadingFlag();
 
     /// Creates the uploader and starts the upload.
     final uploadController = await _uploadRepository.uploadFiles(
@@ -1383,10 +1383,35 @@ class UploadCubit extends Cubit<UploadState> {
   UploadReady? get lastReadyState => _lastReadyState;
   UploadReady? _lastReadyState;
 
+  /// Whether this upload raised [ActivityTracker.isUploading]. It is up while
+  /// files are being written, and the drive view drops its redraws meanwhile,
+  /// so every way out of an upload must lower it: complete, canceled, failed,
+  /// or the dialog closed. Only the form's complete handler used to, so after
+  /// a cancel or a failure no drive opened again until a reload.
+  bool _holdsUploadingFlag = false;
+
+  void _holdUploadingFlag() {
+    _holdsUploadingFlag = true;
+    _activityTracker.setUploading(true);
+  }
+
+  void _releaseUploadingFlag() {
+    if (!_holdsUploadingFlag) return;
+    _holdsUploadingFlag = false;
+    _activityTracker.setUploading(false);
+  }
+
   @override
   void onChange(Change<UploadState> change) {
     super.onChange(change);
     final next = change.nextState;
+    // A cancel that failed leaves the upload running, so the flag stays up
+    // until it reports how it ended, or the dialog closes.
+    if (next is UploadComplete ||
+        next is UploadCanceled ||
+        (next is UploadFailure && next.error != UploadErrors.cancelFailed)) {
+      _releaseUploadingFlag();
+    }
     if (next is UploadReady) _lastReadyState = next;
     if (isWalletPaidUploadAtRisk(change.nextState)) {
       holdLeavePageGuard(this);
@@ -1398,6 +1423,7 @@ class UploadCubit extends Cubit<UploadState> {
   @override
   Future<void> close() {
     releaseLeavePageGuard(this);
+    _releaseUploadingFlag();
     return super.close();
   }
 }

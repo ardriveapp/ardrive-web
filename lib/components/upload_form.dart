@@ -192,6 +192,15 @@ Future<void> _showUploadForm(
     // The review fills a phone less a 16 margin.
     insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
   );
+
+  // A canceled or failed upload may have written some of its files while the
+  // drive view was dropping redraws; this draws what it missed. A completed
+  // upload already did, from the form.
+  final ended = cubit.state;
+  if ((ended is UploadCanceled || ended is UploadFailure) &&
+      !driveDetailCubit.isClosed) {
+    driveDetailCubit.refreshDriveDataTable();
+  }
 }
 
 class UploadForm extends StatefulWidget {
@@ -362,8 +371,6 @@ class _UploadFormState extends State<UploadForm> {
                   _showSaved(navigatorContext, state);
                   _applyNames(navigatorContext, state);
                 }
-                context.read<ActivityTracker>().setUploading(false);
-
                 // The file is already in the local database, so nothing needs
                 // syncing for it to be *seen*. What it does need is
                 // confirming: this asks again every few minutes until the
