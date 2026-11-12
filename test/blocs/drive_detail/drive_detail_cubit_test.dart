@@ -540,6 +540,96 @@ void main() {
       },
     );
 
+    /// The drive state import advances the block height at once, then writes
+    /// the contents. An empty root in between is not a drive read and found
+    /// empty, so it must not draw the brand new drive card.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'keeps reading after an artifact import moves the block height',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+        syncingThisDrive();
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(cubit.state, isA<DriveDetailLoadInProgress>());
+
+        await driveDao.writeToDrive(const DrivesCompanion(
+          id: Value(driveId),
+          lastBlockHeight: Value(500),
+        ));
+        await insertRootFolderRevision();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(cubit.state, isA<DriveDetailLoadInProgress>(),
+            reason: 'the files have not landed yet');
+
+        await insertSubfolder('subfolder-1');
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      },
+      verify: (cubit) {
+        expect(cubit.state, isA<DriveDetailLoadSuccess>());
+        expect((cubit.state as DriveDetailLoadSuccess).driveIsEmpty, isFalse);
+      },
+      expect: () => everyElement(isNot(predicate(showsAnEmptyDrive))),
+    );
+
+    /// And a drive that really is empty says so once its first sync ends.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'shows an empty drive when the first sync ends after an import',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+        syncingThisDrive();
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await driveDao.writeToDrive(const DrivesCompanion(
+          id: Value(driveId),
+          lastBlockHeight: Value(500),
+        ));
+        await insertRootFolderRevision();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(cubit.state, isA<DriveDetailLoadInProgress>());
+
+        syncEnds();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      },
+      verify: (cubit) {
+        expect(showsAnEmptyDrive(cubit.state), isTrue);
+        expect((cubit.state as DriveDetailLoadSuccess).contentsStillArriving,
+            isFalse);
+      },
+    );
+
+    /// A tick inside the coalescing window is dropped; it must still be drawn
+    /// when the window ends, not when the sync does.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'redraws a dropped tick when the window ends, mid-sync',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 100);
+        await insertRootFolderRevision();
+        await insertSubfolder('subfolder-1');
+        syncingThisDrive();
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(cubit.state, isA<DriveDetailLoadSuccess>());
+
+        await insertSubfolder('subfolder-2');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await insertSubfolder('subfolder-3');
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+      },
+      verify: (cubit) {
+        final folders = (cubit.state as DriveDetailLoadSuccess)
+            .folderInView
+            .subfolders
+            .length;
+        expect(folders, 3, reason: 'sync is still running');
+      },
+    );
+
     /// Its emptiness was read by an earlier sync, not assumed.
     blocTest<DriveDetailCubit, DriveDetailState>(
       'opens a drive synced before straight away',
