@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_rename/drive_rename_cubit.dart';
 import 'package:ardrive/blocs/ghost_fixer/ghost_fixer_cubit.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -18,6 +21,8 @@ import '../test_utils/utils.dart';
 /// account's wallet. On another wallet, nothing is written; when Wander
 /// couldn't be reached and the person chose Cancel, nothing is written and
 /// the flow ends somewhere the person can close.
+class _FakeEntity extends Fake implements Entity {}
+
 void main() {
   const driveId = 'drive-id';
   const rootFolderId = 'root-folder-id';
@@ -36,10 +41,24 @@ void main() {
   void wanderUnavailable() =>
       when(() => profile.logoutIfWalletMismatch()).thenThrow(unavailable);
 
+  /// The wallet check stays pending until the returned completer completes,
+  /// as it does while Wander is asked: the window a second click lands in.
+  Completer<bool> walletCheckPending() {
+    final completer = Completer<bool>();
+    when(() => profile.logoutIfWalletMismatch())
+        .thenAnswer((_) => completer.future);
+    return completer;
+  }
+
   Future<int> folderCount() async =>
       (await db.select(db.folderEntries).get()).length;
 
   Future<int> driveCount() async => (await db.select(db.drives).get()).length;
+
+  setUpAll(() {
+    registerFallbackValue(_FakeEntity());
+    registerFallbackValue(getTestWallet());
+  });
 
   setUp(() async {
     db = getTestDb();
@@ -110,6 +129,28 @@ void main() {
         expect(await driveCount(), 1);
       },
     );
+
+    late Completer<bool> check;
+
+    // The unstubbed arweave fails the one that goes ahead after it signed,
+    // which is all the test needs: how many went ahead.
+    blocTest<DriveCreateCubit, DriveCreateState>(
+      'two rapid submits make one drive',
+      setUp: () => check = walletCheckPending(),
+      build: build,
+      act: (cubit) async {
+        final first = cubit.submit('new drive');
+        final second = cubit.submit('new drive');
+        check.complete(false);
+        await Future.wait([first, second]);
+      },
+      errors: () => [isA<TypeError>()],
+      verify: (_) {
+        verify(() => profile.logoutIfWalletMismatch()).called(1);
+        verify(() => arweave.prepareEntityDataItem(any(), any(),
+            key: any(named: 'key'))).called(1);
+      },
+    );
   });
 
   group('creating a folder', () {
@@ -143,6 +184,25 @@ void main() {
       verify: (_) async {
         verifyZeroInteractions(arweave);
         expect(await folderCount(), 2);
+      },
+    );
+
+    late Completer<bool> check;
+
+    blocTest<FolderCreateCubit, FolderCreateState>(
+      'two rapid submits make one folder',
+      setUp: () => check = walletCheckPending(),
+      build: build,
+      act: (cubit) async {
+        final first = cubit.submit(folderName: 'new folder');
+        final second = cubit.submit(folderName: 'new folder');
+        check.complete(false);
+        await Future.wait([first, second]);
+      },
+      errors: () => [isA<TypeError>()],
+      verify: (_) {
+        verify(() => profile.logoutIfWalletMismatch()).called(1);
+        verify(() => arweave.prepareEntityTx(any(), any(), any())).called(1);
       },
     );
   });

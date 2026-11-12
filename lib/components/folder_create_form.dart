@@ -65,6 +65,19 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
 
   bool _isFolderNameValid = false;
 
+  /// Between the click and the answer, so a second click does nothing.
+  bool _submitting = false;
+
+  Future<void> _submit(BuildContext context, String folderName) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await context.read<FolderCreateCubit>().submit(folderName: folderName);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FolderCreateCubit, FolderCreateState>(
@@ -113,7 +126,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
               autofocus: true,
               onFieldSubmitted: (value) {
                 if (_isFolderNameValid) {
-                  context.read<FolderCreateCubit>().submit(folderName: value);
+                  _submit(context, value);
                 }
               },
               validator: (value) {
@@ -136,9 +149,8 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
             ),
             ModalAction(
               isEnable: _isFolderNameValid,
-              action: () => context
-                  .read<FolderCreateCubit>()
-                  .submit(folderName: _folderNameController.text),
+              isLoading: _submitting,
+              action: () => _submit(context, _folderNameController.text),
               title: appLocalizationsOf(context).createFolderEmphasized,
             ),
           ],

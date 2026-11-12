@@ -209,6 +209,34 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     String? drivePassword,
     String? newDrivePassword,
   }) async {
+    // The button stays enabled while the drive password and the wallet are
+    // checked, so a second click lands here before the first has left the
+    // form: it would make a second drive.
+    if (_submitting ||
+        state is DriveCreateInProgress ||
+        state is DriveCreateSuccess) {
+      return;
+    }
+    _submitting = true;
+    try {
+      await _submit(
+        driveName,
+        drivePassword: drivePassword,
+        newDrivePassword: newDrivePassword,
+      );
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  /// Whether [submit] is running.
+  bool _submitting = false;
+
+  Future<void> _submit(
+    String driveName, {
+    String? drivePassword,
+    String? newDrivePassword,
+  }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final ask = drivePasswordAsk;
 

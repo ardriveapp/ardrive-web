@@ -35,7 +35,27 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         _driveDao = driveDao,
         super(FolderCreateInitial());
 
+  /// Whether [submit] is running.
+  bool _submitting = false;
+
   Future<void> submit({required String folderName}) async {
+    // The button stays enabled while the wallet and the name are checked, so
+    // a second click lands here before the first has left the form: it would
+    // make a second folder.
+    if (_submitting ||
+        state is FolderCreateInProgress ||
+        state is FolderCreateSuccess) {
+      return;
+    }
+    _submitting = true;
+    try {
+      await _submit(folderName);
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<void> _submit(String folderName) async {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
 
