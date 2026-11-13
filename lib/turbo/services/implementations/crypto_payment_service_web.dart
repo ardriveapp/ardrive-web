@@ -14,6 +14,7 @@ import 'package:ardrive/turbo/topup/models/crypto_quote.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/pending_transaction.dart';
+import 'package:ardrive/turbo/topup/models/wallet_decline.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -329,6 +330,14 @@ class CryptoPaymentService {
       );
     } catch (e, stackTrace) {
       logger.e('Unexpected error executing payment: $e\n$stackTrace');
+      // The Turbo SDK sends the transaction, so a decline in the wallet
+      // arrives here as a raw error. Nothing was sent.
+      if (isWalletDecline(e)) {
+        return CryptoPaymentResult.failure(
+          status: CryptoPaymentStatus.userRejected,
+          token: token,
+        );
+      }
       return CryptoPaymentResult.failure(
         status: CryptoPaymentStatus.failed,
         errorMessage: 'An unexpected error occurred while processing the payment',

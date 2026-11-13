@@ -12,6 +12,7 @@ import 'package:ardrive/turbo/topup/models/crypto_quote.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/pending_transaction.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
+import 'package:ardrive/turbo/topup/models/wallet_decline.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/opaque_error_text.dart';
@@ -1298,6 +1299,15 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       }
     } catch (e, s) {
       logger.e('Payment error', e, s);
+      // Declined in the wallet: nothing was sent.
+      if (isWalletDecline(e)) {
+        add(const CryptoTopupPaymentFailed(
+          error: '',
+          canRetry: true,
+          isUserRejected: true,
+        ));
+        return;
+      }
       // The screen's own notice says the payment failed; the details line
       // shows the error only when it can be read.
       add(CryptoTopupPaymentFailed(error: _readableOr(e, ''), canRetry: true));
@@ -1835,12 +1845,12 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     if (currentState is CryptoTopupError && currentState.txId != null) {
       add(CryptoTopupRetryTransaction(currentState.txId!));
     } else {
-      // Clear state and restart - emit token selection directly to avoid
-      // async gaps that can leave the UI in an unhandled state
-      _selectedToken = null;
+      // Clear the quote and restart - emit token selection directly to avoid
+      // async gaps that can leave the UI in an unhandled state. The token and
+      // the amount stay: a flow that opened with its token chosen shows the
+      // wallet connect screen again, and connecting needs both.
       _currentQuote = null;
       _originalQuote = null;
-      _currentAmountUsd = 0;
 
       // Start session timer
       _startSessionTimer();
