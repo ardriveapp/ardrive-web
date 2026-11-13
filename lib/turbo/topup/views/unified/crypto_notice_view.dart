@@ -92,6 +92,16 @@ CryptoNotice? cryptoNoticeFor(CryptoTopupState state) {
       action: CryptoTopupRetry(),
     );
   }
+  if (state is CryptoTopupConcurrentSessionWarning && state.otherTabPaying) {
+    return const CryptoNotice(
+      key: 'concurrent_session_paying',
+      title: 'A payment is in progress in another tab',
+      message: 'Wait for it to finish, then check again. Taking over now could '
+          'cut it off.',
+      actionTitle: 'Check again',
+      action: CryptoTopupTakeOverSession(),
+    );
+  }
   if (state is CryptoTopupConcurrentSessionWarning) {
     return const CryptoNotice(
       key: 'concurrent_session',

@@ -407,9 +407,11 @@ class _ChargeNotice extends StatelessWidget {
     final state = this.state;
     final txId = state is CryptoTopupError ? state.txId : null;
 
-    // Declined in the wallet: nothing was sent.
-    if (state is CryptoTopupError &&
-        state.errorType == CryptoTopupErrorType.transactionRejected) {
+    // Declined in the wallet, or a quote that ran out first: nothing was sent.
+    // Not an error state at all (no quote could be had): no payment began.
+    if (state is! CryptoTopupError ||
+        state.errorType == CryptoTopupErrorType.transactionRejected ||
+        state.errorType == CryptoTopupErrorType.quoteExpired) {
       return const ArDriveNotice(
         type: ArDriveNoticeType.info,
         message: 'No payment was made.',

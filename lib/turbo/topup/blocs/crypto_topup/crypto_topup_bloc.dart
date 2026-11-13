@@ -59,6 +59,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   int? _connectedChainId;
   String? _connectedSolAddress;
   double _currentAmountUsd = 0;
+  static const _lockStatePaying = 'processing';
+  CryptoToken? _tokenPickedUnderWarning;
   bool _isCurrentAmountInTokens = false; // True if amount is in token units
   String? _promoCode;
 
@@ -356,6 +358,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           balance: balance,
           quote: _currentQuote,
           currentAmount: _currentAmountUsd,
+          isUsdMode: !_isCurrentAmountInTokens,
           promoCode: _promoCode,
           promoCodeState:
               _promoCode != null ? PromoCodeState.valid : PromoCodeState.none,
@@ -372,6 +375,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           balance: balance,
           quote: _currentQuote,
           currentAmount: _currentAmountUsd,
+          isUsdMode: !_isCurrentAmountInTokens,
         ));
       }
     }
@@ -668,7 +672,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       return;
     }
 
-    _currentAmountUsd = event.isUsd ? amount : 0;
+    // The amount and its mode are kept as entered: a refresh re-quotes the
+    // same amount, in tokens or in dollars.
+    _currentAmountUsd = amount;
+    _isCurrentAmountInTokens = !event.isUsd;
 
     // Show loading state
     emit(currentState.copyWith(
@@ -739,7 +746,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     try {
       final validation = await _paymentService.validatePromoCode(
         code: event.code,
-        usdAmount: _currentAmountUsd,
+        usdAmount: _currentAmountInUsd,
         destinationAddress: arweaveWalletAddress,
       );
 
@@ -752,7 +759,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
         // Refresh quote with promo code
         add(CryptoTopupAmountChanged(
           amount: _currentAmountUsd,
-          isUsd: true,
+          isUsd: !_isCurrentAmountInTokens,
         ));
       } else {
         emit(currentState.copyWith(
@@ -785,9 +792,31 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     if (_currentAmountUsd > 0) {
       add(CryptoTopupAmountChanged(
         amount: _currentAmountUsd,
-        isUsd: true,
+        isUsd: !_isCurrentAmountInTokens,
       ));
     }
+  }
+
+  /// The dollar value of the amount, for the calls that only take dollars.
+  double get _currentAmountInUsd => _isCurrentAmountInTokens
+      ? (_currentQuote?.usdValue ?? 0)
+      : _currentAmountUsd;
+
+  /// Quotes [amount] the way it was entered: in dollars or in tokens.
+  Future<CryptoQuote> _quoteCurrentAmount(CryptoToken token) {
+    return _isCurrentAmountInTokens
+        ? _paymentService.getQuoteByTokenAmount(
+            token: token,
+            tokenAmount: _currentAmountUsd,
+            promoCode: _promoCode,
+            destinationAddress: arweaveWalletAddress,
+          )
+        : _paymentService.getQuote(
+            token: token,
+            usdAmount: _currentAmountUsd,
+            promoCode: _promoCode,
+            destinationAddress: arweaveWalletAddress,
+          );
   }
 
   Future<void> _onQuoteRefreshRequested(
@@ -800,16 +829,12 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     // If we're in the confirmation state, refresh the quote directly
     if (currentState is CryptoTopupConfirmation) {
+      if (currentState.isRefreshingQuote) return;
       // Emit loading state (update the confirmation with a loading indicator)
       emit(currentState.copyWith(isRefreshingQuote: true));
 
       try {
-        final quote = await _paymentService.getQuote(
-          token: _selectedToken!,
-          usdAmount: _currentAmountUsd,
-          promoCode: _promoCode,
-          destinationAddress: arweaveWalletAddress,
-        );
+        final quote = await _quoteCurrentAmount(_selectedToken!);
 
         _currentQuote = quote;
         _startQuoteTimer();
@@ -845,7 +870,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Otherwise, use the standard amount changed flow for amount entry state
     add(CryptoTopupAmountChanged(
       amount: _currentAmountUsd,
-      isUsd: true,
+      isUsd: !_isCurrentAmountInTokens,
     ));
   }
 
@@ -1180,6 +1205,23 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     final token = confirming.token;
     final quote = confirming.quote;
 
+    // A quote that ran out is never paid: get a fresh one to confirm.
+    if (quote.isExpired) {
+      add(const CryptoTopupQuoteRefreshRequested());
+      return;
+    }
+
+    // Tell the other tabs first: from here on this session is not to be taken
+    // over. The screen follows at once; only a lock write sits before it.
+    try {
+      await _transactionStorage.updateSessionLockState(_lockStatePaying);
+    } catch (e) {
+      logger.w('Could not mark the session lock as paying: $e');
+    }
+    // A second confirm (a double click) passed the first check while the lock
+    // was being written: only the first finds the confirmation still here.
+    if (state is! CryptoTopupConfirmation) return;
+
     emit(CryptoTopupProcessing(
       token: token,
       estimatedTime: token.estimatedConfirmationTime,
@@ -1249,6 +1291,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           txId: result.transactionId,
           canRetry: result.canRetry,
           isUserRejected: result.status == CryptoPaymentStatus.userRejected,
+          errorType: result.status == CryptoPaymentStatus.quoteExpired
+              ? CryptoTopupErrorType.quoteExpired
+              : null,
         ));
       }
     } catch (e, s) {
@@ -1303,23 +1348,33 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     ));
   }
 
-  void _onPaymentFailed(
+  Future<void> _onPaymentFailed(
     CryptoTopupPaymentFailed event,
     Emitter<CryptoTopupState> emit,
-  ) {
+  ) async {
     // Cancel timers when payment fails - user will need to retry or restart
     _cancelQuoteTimer();
     _balanceRefreshTimer?.cancel();
 
     emit(CryptoTopupError(
-      errorType: event.isUserRejected
-          ? CryptoTopupErrorType.transactionRejected
-          : CryptoTopupErrorType.transactionFailed,
+      errorType: event.errorType ??
+          (event.isUserRejected
+              ? CryptoTopupErrorType.transactionRejected
+              : CryptoTopupErrorType.transactionFailed),
       message: event.error,
       txId: event.txId,
       canRetry: event.canRetry,
       token: _selectedToken,
     ));
+
+    // Nothing was sent: the session may be taken over again.
+    if (event.txId == null) {
+      try {
+        await _transactionStorage.updateSessionLockState('token_selection');
+      } catch (e) {
+        logger.w('Could not reset the session lock: $e');
+      }
+    }
   }
 
   Future<void> _onRetryTransaction(
@@ -1449,12 +1504,31 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupTakeOverSession event,
     Emitter<CryptoTopupState> emit,
   ) async {
+    // A tab that is paying keeps its session: taking over would cut it off.
+    final lock = await _transactionStorage.getSessionLock();
+    if (lock != null &&
+        lock.isValid &&
+        lock.isDifferentTab(_transactionStorage.tabId) &&
+        lock.state == _lockStatePaying) {
+      emit(CryptoTopupConcurrentSessionWarning(
+        otherSessionStartedAt: lock.timestamp,
+        otherTabId: lock.tabId,
+        otherTabPaying: true,
+      ));
+      return;
+    }
+
     // Force release old lock and acquire new one
     await _transactionStorage.forceReleaseSessionLock();
     await _transactionStorage.acquireSessionLock('token_selection');
 
-    // Start fresh
-    add(const CryptoTopupStarted());
+    // Start fresh, with the token the screen had asked for.
+    await _onStarted(const CryptoTopupStarted(), emit);
+    final token = _tokenPickedUnderWarning;
+    _tokenPickedUnderWarning = null;
+    if (token != null && state is CryptoTopupTokenSelection) {
+      await _onTokenSelected(CryptoTopupTokenSelected(token), emit);
+    }
   }
 
   void _onBalanceFetched(
@@ -1586,8 +1660,30 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   void _on<E extends CryptoTopupEvent>(
     EventHandler<E, CryptoTopupState> handler,
   ) {
-    on<E>((event, emit) => handler(event, _PaymentKeepingEmitter(emit, this)));
+    on<E>((event, emit) {
+      // The notice that another tab has the top-up stands until "Use this
+      // tab" or Close: nothing else may start a flow under it. A token the
+      // screen picked meanwhile is kept for when this tab takes over.
+      if (state is CryptoTopupConcurrentSessionWarning &&
+          !_mayRunUnderWarning(event)) {
+        if (event is CryptoTopupSelectToken) {
+          _tokenPickedUnderWarning = event.token;
+        }
+        return Future<void>.value();
+      }
+      return handler(event, _PaymentKeepingEmitter(emit, this));
+    });
   }
+
+  /// The events that may act while the other-tab notice shows. The amount
+  /// only stores a field (it emits nothing outside amount entry), and the
+  /// flow needs it once this tab takes over.
+  bool _mayRunUnderWarning(CryptoTopupEvent event) =>
+      event is CryptoTopupUpdateAmount ||
+      event is CryptoTopupStarted ||
+      event is CryptoTopupTakeOverSession ||
+      event is CryptoTopupClose ||
+      event is CryptoTopupConcurrentSessionDetected;
 
   /// Follow-up events from a payment can land after the dialog has closed
   /// it; they have nothing left to do.

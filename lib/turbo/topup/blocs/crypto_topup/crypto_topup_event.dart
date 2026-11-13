@@ -309,15 +309,20 @@ class CryptoTopupPaymentFailed extends CryptoTopupEvent {
   final bool canRetry;
   final bool isUserRejected;
 
+  /// Set when the failure is known to be something other than a failed
+  /// transaction, such as a quote that expired before anything was sent.
+  final CryptoTopupErrorType? errorType;
+
   const CryptoTopupPaymentFailed({
     required this.error,
     this.txId,
     this.canRetry = true,
     this.isUserRejected = false,
+    this.errorType,
   });
 
   @override
-  List<Object?> get props => [error, txId, canRetry, isUserRejected];
+  List<Object?> get props => [error, txId, canRetry, isUserRejected, errorType];
 }
 
 /// Retry a pending transaction

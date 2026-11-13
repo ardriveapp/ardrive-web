@@ -95,13 +95,18 @@ class CryptoTopupConcurrentSessionWarning extends CryptoTopupState {
   final DateTime otherSessionStartedAt;
   final String? otherTabId;
 
+  /// The other tab is paying: taking over would cut a payment in flight.
+  final bool otherTabPaying;
+
   const CryptoTopupConcurrentSessionWarning({
     required this.otherSessionStartedAt,
     this.otherTabId,
+    this.otherTabPaying = false,
   });
 
   @override
-  List<Object?> get props => [otherSessionStartedAt, otherTabId];
+  List<Object?> get props =>
+      [otherSessionStartedAt, otherTabId, otherTabPaying];
 }
 
 // ============================================
