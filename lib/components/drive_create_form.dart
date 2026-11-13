@@ -65,16 +65,21 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
   bool _rejectionSeen = false;
 
   Future<void> _create(DriveCreateCubit cubit) async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    try {
+      await _createChecked(cubit);
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _createChecked(DriveCreateCubit cubit) async {
     // Arweave is asked before a drive password is set: the list here may
     // not show drives the user has. If it finds one, the field to enter the
     // drive password appears instead.
     if (cubit.drivePasswordAsk == DrivePasswordAsk.set) {
-      setState(() => _checking = true);
-      try {
-        await cubit.confirmDrivePasswordAsk();
-      } finally {
-        if (mounted) setState(() => _checking = false);
-      }
+      await cubit.confirmDrivePasswordAsk();
       if (!mounted) return;
       if (cubit.drivePasswordAsk == DrivePasswordAsk.enter) return;
     }
@@ -99,16 +104,9 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
         break;
     }
 
-    setState(() {
-      _checking = true;
-      _rejectionSeen = false;
-    });
-    try {
-      await cubit.submit(_driveNameController.text,
-          drivePassword: _drivePassword.text);
-    } finally {
-      if (mounted) setState(() => _checking = false);
-    }
+    setState(() => _rejectionSeen = false);
+    await cubit.submit(_driveNameController.text,
+        drivePassword: _drivePassword.text);
   }
 
   String? _drivePasswordError(BuildContext context, DriveCreateState state) {
@@ -242,10 +240,11 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                         controller: _driveNameController,
                         autofocus: true,
                         onFieldSubmitted: (value) {
-                          if (_isDriveNameValid) {
-                            context
-                                .read<FolderCreateCubit>()
-                                .submit(folderName: value);
+                          // The same path as the button, and its guard.
+                          if (_isDriveNameValid &&
+                              (!needsPassword ||
+                                  _drivePassword.text.isNotEmpty)) {
+                            _create(cubit);
                           }
                         },
                         hintText: appLocalizationsOf(context).driveName,
