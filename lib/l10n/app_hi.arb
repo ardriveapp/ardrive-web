@@ -8085,7 +8085,7 @@
   "@cryptoPaymentNotCompleted": {"description": "Crypto top-up failure notice when a transaction reached the network and failed. The transaction id is shortened.", "placeholders": {"txId": {"type": "String"}}},
   "cryptoCheckWalletFirst": "दोबारा कोशिश करने से पहले अपना वॉलेट जांचें, ताकि आप दो बार भुगतान न करें।",
   "@cryptoCheckWalletFirst": {"description": "Crypto top-up failure notice when it is unknown whether the payment was sent."},
-  "profileYourPermanence": "आपकी स्थायित्व",
+  "profileYourPermanence": "आपका स्थायी संग्रह",
   "@profileYourPermanence": {"description": "Profile card button that opens the permanence panel."},
   "profileArioTokens": "ARIO टोकन",
   "@profileArioTokens": {"description": "Profile card label above the ARIO token balance."},
