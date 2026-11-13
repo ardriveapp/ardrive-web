@@ -412,16 +412,16 @@ class _ChargeNotice extends StatelessWidget {
     if (state is! CryptoTopupError ||
         state.errorType == CryptoTopupErrorType.transactionRejected ||
         state.errorType == CryptoTopupErrorType.quoteExpired) {
-      return const ArDriveNotice(
+      return ArDriveNotice(
         type: ArDriveNoticeType.info,
-        message: 'No payment was made.',
+        message: appLocalizationsOf(context).cryptoNoPaymentMade,
       );
     }
 
     // A transaction reached the network and failed there.
     if (txId != null && txId.isNotEmpty) {
-      final message = 'The payment was not completed. Your wallet may have '
-          'paid a network fee for transaction ${_short(txId)}.';
+      final message =
+          appLocalizationsOf(context).cryptoPaymentNotCompleted(_short(txId));
       return ArDriveNotice(
         type: ArDriveNoticeType.warning,
         content: Text.rich(TextSpan(
@@ -436,10 +436,9 @@ class _ChargeNotice extends StatelessWidget {
     }
 
     // It may or may not have been sent.
-    return const ArDriveNotice(
+    return ArDriveNotice(
       type: ArDriveNoticeType.warning,
-      message: 'Check your wallet before trying again, so you don\'t pay '
-          'twice.',
+      message: appLocalizationsOf(context).cryptoCheckWalletFirst,
     );
   }
 
