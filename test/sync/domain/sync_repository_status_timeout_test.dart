@@ -222,6 +222,47 @@ void main() {
     expect(await db.driveDao.hasPendingTransactions(), isFalse);
   });
 
+  test('a login refresh confirms every kind of pending row and reads no drive',
+      () async {
+    // Data, metadata and snapshot transactions are all rows in one table, and
+    // the refresh reads that table, not the drives.
+    const otherIds = ['pending-metadata-tx', 'pending-snapshot-tx'];
+    await db.driveDao.insertNewNetworkTransactions([
+      for (final id in otherIds)
+        NetworkTransactionsCompanion(
+          id: Value(id),
+          status: const Value(TransactionStatus.pending),
+          dateCreated: Value(DateTime.now()),
+        ),
+    ]);
+    // One of them is not mined yet: it must stay pending, not be called failed.
+    slowAnswer.complete({
+      pendingTxId: kRequiredTxConfirmationCount,
+      otherIds[0]: kRequiredTxConfirmationCount,
+      otherIds[1]: 0,
+    });
+
+    await syncRepository.refreshTransactionStatuses(
+      ownerAddress: ownerAddress,
+      cancellationToken: SyncCancellationToken(),
+    );
+
+    expect((await pendingRow()).status, TransactionStatus.confirmed);
+    final rows = {
+      for (final r in await db.select(db.networkTransactions).get())
+        r.id: r.status,
+    };
+    expect(rows[otherIds[0]], TransactionStatus.confirmed);
+    expect(rows[otherIds[1]], TransactionStatus.pending);
+    verifyNever(() => arweave.getSegmentedTransactionsFromDrive(
+          any(),
+          ownerAddress: any(named: 'ownerAddress'),
+          minBlockHeight: any(named: 'minBlockHeight'),
+          maxBlockHeight: any(named: 'maxBlockHeight'),
+          strategy: any(named: 'strategy'),
+        ));
+  });
+
   test('stopping the sync stops the status pass as well', () async {
     final token = SyncCancellationToken();
     final errors = <Object>[];

@@ -212,16 +212,25 @@ void main() {
         )).called(1);
   });
 
-  test('an upload left unresolved makes the login sync anyway', () async {
-    // Nothing but a sync resolves a pending transaction, so this is the one
-    // case where there is real work and the login has to do it.
+  test('an upload left unresolved is resolved without syncing any drive',
+      () async {
+    // The setting promises that only the drive you open is read. A pending
+    // transaction is answered by asking the gateway about it, which walks no
+    // drive, so the login does exactly that and nothing more.
     somethingIsPending();
+    when(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).thenAnswer((_) async {});
     final cubit = buildCubit(syncAllDrivesOnLogin: false);
 
     final triggers = await loginTriggers(cubit);
-    await cubit.close();
 
-    verify(() => syncRepository.syncAllDrives(
+    verify(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).called(1);
+    verifyNever(() => syncRepository.syncAllDrives(
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
@@ -229,11 +238,34 @@ void main() {
           onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
+        ));
+    expect(triggers, isEmpty);
+
+    // The drive list is still refreshed, once.
+    verify(() => syncRepository.updateUserDrives(
+          wallet: any(named: 'wallet'),
+          password: any(named: 'password'),
+          cipherKey: any(named: 'cipherKey'),
+          askWalletAgain: any(named: 'askWalletAgain'),
+          askWalletAgainFor: any(named: 'askWalletAgainFor'),
+          onDriveRead: any(named: 'onDriveRead'),
+          onDriveUnlocked: any(named: 'onDriveUnlocked'),
         )).called(1);
 
-    // Nobody asked for it, so it may not hold the app - the whole surface
-    // beneath this depends on a login sync being a background one.
-    expect(triggers, [SyncTrigger.background]);
+    await cubit.close();
+  });
+
+  test('a quiet login does not ask the gateway about anything', () async {
+    nothingIsPending();
+    final cubit = buildCubit(syncAllDrivesOnLogin: false);
+
+    await loginTriggers(cubit);
+    await cubit.close();
+
+    verifyNever(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        ));
   });
 
   test('the user who opted in still gets the full sync', () async {
@@ -255,6 +287,10 @@ void main() {
           txFechedCallback: any(named: 'txFechedCallback'),
         )).called(1);
     verifyNever(() => syncRepository.hasPendingTransactions());
+    verifyNever(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        ));
     expect(triggers, [SyncTrigger.background]);
   });
   test('an empty database is not a reason to override the setting', () async {
