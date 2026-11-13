@@ -260,6 +260,9 @@ void main() {
               'user rejected action (action="sendTransaction", code=ACTION_REJECTED)')),
           isTrue);
       expect(isWalletDecline(Exception('{code: 4001}')), isTrue);
+      expect(
+          isWalletDecline(Exception('{"code": 4001, "message": "x"}')), isTrue);
+      expect(isWalletDecline(Exception('code=4001')), isTrue);
       expect(isWalletDecline(Exception('User denied transaction signature')),
           isTrue);
     });
@@ -269,6 +272,27 @@ void main() {
       expect(isWalletDecline(Exception('execution reverted')), isFalse);
       expect(isWalletDecline(Exception('insufficient funds for gas')), isFalse);
       expect(isWalletDecline(Exception('tx 0xab14001cd failed')), isFalse);
+      // 4001 that is not an error code: an ethers request id after a send,
+      // an amount, a port, a status.
+      expect(
+          isWalletDecline(Exception(
+              'missing response for request (value=[ ], info={ "payload": { "id": 4001, "method": "eth_getTransactionByHash" } }, code=BAD_DATA)')),
+          isFalse);
+      expect(isWalletDecline(Exception('amount 0.4001 too low')), isFalse);
+      expect(
+          isWalletDecline(
+              Exception('connect to https://rpc.example:4001/v1 failed')),
+          isFalse);
+      expect(isWalletDecline(Exception('status 4001')), isFalse);
+      // Anything that names a sent transaction, even with decline words.
+      expect(
+          isWalletDecline(Exception(
+              "Failed to submit fund transaction! Save this Transaction ID and try again with 'turbo.submitFundTransaction(id)': 0xabc")),
+          isFalse);
+      expect(
+          isWalletDecline(
+              Exception('user rejected follow-up for 0x${'a' * 64}')),
+          isFalse);
     });
   });
 }

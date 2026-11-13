@@ -6,13 +6,26 @@
 /// a raw script error and not as a wallet exception. A wallet only reports a
 /// decline before it signs, so nothing was sent. Any other text, including a
 /// failure after a send, is not a decline.
+///
+/// Calling a sent payment a decline would tell someone who paid that no
+/// payment was made, so this errs towards false: anything that names a
+/// transaction is never a decline, and 4001 counts only as an error code,
+/// never as a request id, an amount or a port.
 bool isWalletDecline(Object error) {
   final text = error.toString().toLowerCase();
+  if (_namesATransaction.hasMatch(text)) return false;
   return text.contains('action_rejected') ||
       text.contains('user rejected') ||
       text.contains('user denied') ||
       text.contains('user declined') ||
       text.contains('user_rejected') ||
-      // A bare code, not digits inside a longer id or hash.
-      RegExp(r'(?<![0-9a-z])4001(?![0-9a-z])').hasMatch(text);
+      _declineCode.hasMatch(text);
 }
+
+/// `code: 4001`, `"code": 4001`, `code=4001`, `error: 4001`.
+final _declineCode =
+    RegExp(r'''(?:code|error)["']?\s*[:=]\s*4001(?![0-9a-z])''');
+
+/// The SDK's after-send failure, or an EVM transaction hash.
+final _namesATransaction =
+    RegExp(r'failed to submit fund transaction|0x[0-9a-f]{64}');
