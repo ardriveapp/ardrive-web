@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/constants.dart';
@@ -336,7 +337,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
     // Warnings that stop the flow. Each says what happened and offers a way
     // out; without them these states fell through to the spinner below.
-    final notice = cryptoNoticeFor(state);
+    final notice = cryptoNoticeFor(state, appLocalizationsOf(context));
     if (notice != null) {
       final closeEvent = notice.closeEvent;
       return CryptoNoticeView(

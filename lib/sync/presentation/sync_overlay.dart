@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -48,7 +49,11 @@ class SyncOverlay extends StatelessWidget {
             bottom: 0,
             right: 20,
             child: Text(
-              'Using gateway: ${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}',
+              appLocalizationsOf(context).syncUsingGateway(context
+                  .read<ConfigService>()
+                  .config
+                  .arweaveGatewayForDataRequest
+                  .url),
               style: ArDriveTypographyNew.of(context).paragraphLarge(
                 fontWeight: ArFontWeight.semiBold,
               ),

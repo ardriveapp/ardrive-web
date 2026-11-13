@@ -555,7 +555,7 @@ class _ProfileCardState extends State<ProfileCard> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Your permanence',
+                              appLocalizationsOf(context).profileYourPermanence,
                               style: typography.caption(
                                 color: colorTokens.textRed,
                                 fontWeight: ArFontWeight.semiBold,
@@ -779,7 +779,7 @@ class _ProfileCardState extends State<ProfileCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ARIO Tokens',
+                    appLocalizationsOf(context).profileArioTokens,
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textHigh,
@@ -804,7 +804,7 @@ class _ProfileCardState extends State<ProfileCard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Error fetching ARIO balance',
+                          appLocalizationsOf(context).profileArioBalanceError,
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
                             color: ArDriveTheme.of(context)
@@ -1393,7 +1393,7 @@ class ProfileCreditsRow extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  'Credits',
+                  appLocalizationsOf(context).credits,
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
                   style: typography.paragraphNormal(

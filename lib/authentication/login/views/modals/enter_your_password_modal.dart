@@ -164,14 +164,14 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           Align(
             alignment: Alignment.topCenter,
             child: Text(
-              'Welcome back',
+              appLocalizationsOf(context).welcomeBackTitle,
               style: typography.heading2(
                   color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Enter your password to unlock your drives.',
+            appLocalizationsOf(context).enterPasswordUnlockDrives,
             textAlign: TextAlign.center,
             style: typography.paragraphNormal(
                 color: colorTokens.textLow, fontWeight: ArFontWeight.semiBold),
@@ -214,7 +214,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
             ),
           ),
           const SizedBox(height: ArDriveSpacing.xl),
-          Text('Password',
+          Text(appLocalizationsOf(context).password,
               style: typography.paragraphNormal(
                   color: colorTokens.textLow,
                   fontWeight: ArFontWeight.semiBold)),
@@ -223,7 +223,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
             key: const Key('signInPassword'),
             controller: _passwordController,
             focusNode: _passwordFocus,
-            hintText: 'Enter your password',
+            hintText: appLocalizationsOf(context).enterPasswordHint,
             showObfuscationToggle: true,
             obscureText: true,
             autofocus: true,
@@ -254,8 +254,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 _isPasswordFailed = false;
               });
             },
-            errorMessage:
-                widget.failureMessage ?? 'Invalid password. Please try again.',
+            errorMessage: widget.failureMessage ??
+                appLocalizationsOf(context).welcomeBackWrongPassword,
             showErrorMessage: _isPasswordFailed,
           ),
           Align(
@@ -280,7 +280,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           ArDriveButtonNew(
               size: ArDriveButtonSize.large,
               maxWidth: double.infinity,
-              text: 'Continue',
+              text: appLocalizationsOf(context).continueEmphasized,
               // The spinner and the label as one centred group, rather than a
               // spinner pinned to the left edge with the label centred in what
               // is left of the button.
@@ -409,17 +409,17 @@ class ForgetWalletDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Forget wallet',
-      description: 'Are you sure you want to forget this wallet?',
+      title: appLocalizationsOf(context).forgetWalletDialogTitle,
+      description: appLocalizationsOf(context).forgetWalletDialogDescription,
       actions: [
         ModalAction(
-          title: 'Cancel',
+          title: appLocalizationsOf(context).cancel,
           action: () {
             Navigator.of(context).pop();
           },
         ),
         ModalAction(
-          title: 'Confirm',
+          title: appLocalizationsOf(context).confirm,
           action: () {
             Navigator.of(context).pop();
             if (closesDialogBelow) Navigator.of(context).pop();
