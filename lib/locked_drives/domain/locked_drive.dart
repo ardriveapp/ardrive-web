@@ -16,6 +16,8 @@ class LockedDrive extends Equatable {
     required this.ownerAddress,
     required this.signatureType,
     required this.lastUpdated,
+    this.createdAt,
+    this.appName,
   });
 
   final String driveId;
@@ -28,10 +30,20 @@ class LockedDrive extends Equatable {
   /// its key.
   final DateTime lastUpdated;
 
+  /// When the drive was made, when known: the commit time of its oldest
+  /// transaction. Null when the listing didn't have it; [lastUpdated] is the
+  /// fallback.
+  final DateTime? createdAt;
+
+  /// The newest drive transaction's `App-Name`: which app wrote it, used with
+  /// [createdAt] to tell drives that share one password from desktop drives,
+  /// which allow one per drive. See `drivePasswordTryRank`.
+  final String? appName;
+
   /// The three emoji that identify this drive. See [driveFingerprint].
   String get fingerprint => driveFingerprint(driveId);
 
   @override
   List<Object?> get props =>
-      [driveId, ownerAddress, signatureType, lastUpdated];
+      [driveId, ownerAddress, signatureType, lastUpdated, createdAt, appName];
 }

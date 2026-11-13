@@ -8044,5 +8044,7 @@
   "billingColumnCredits": "クレジット",
   "@billingColumnCredits": {
     "description": "Billing purchases table: column heading for the Turbo Credits added or spent."
-  }
+  },
+  "unlockOldDrivePasswordHint": "以前 ArDrive で使っていたパスワード",
+  "@unlockOldDrivePasswordHint": {"description": "Under the password field in the unlock drive dialog, for a drive made before 3.0 in the web app or the CLI, which used one password for every drive: its password is the one the user had with ArDrive then. Wallet accounts no longer type it to sign in, so they need the reminder."}
 }

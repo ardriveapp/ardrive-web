@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/locked_drives/data/sign_in_password_proof_store.dart';
+import 'package:ardrive/locked_drives/domain/drive_password_order.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:arweave/arweave.dart';
@@ -76,6 +77,26 @@ class UnlockDriveCubit extends Cubit<UnlockDriveState> {
   /// whether the dialog offers to.
   bool get hasOtherLockedDrives => _unlocker.session.currentLockedDrives
       .any((drive) => drive.driveId != driveId);
+
+  /// Whether this drive's password is the one the user had with ArDrive
+  /// before 3.0: made before [drivePasswordEraCutoff] by an app that used one
+  /// password for every drive (web, the CLI), which is
+  /// [drivePasswordTryRank] 0. For a Wander account that is the password it
+  /// used to sign in with. Desktop drives, which allow a password per drive,
+  /// and drives made since are not. Its creation date is used when known,
+  /// else its newest metadata date, the one date known without its key.
+  bool get madeBeforeThisRelease {
+    for (final drive in _unlocker.session.currentLockedDrives) {
+      if (drive.driveId == driveId) {
+        return drivePasswordTryRank(
+              createdAt: drive.createdAt ?? drive.lastUpdated,
+              appName: drive.appName,
+            ) ==
+            0;
+      }
+    }
+    return false;
+  }
 
   /// [remember] is "Remember on this device": the drive keys that open are
   /// stored, wrapped by the device key; without it they are kept for this
