@@ -8,12 +8,13 @@
 /// failure after a send, is not a decline.
 ///
 /// Calling a sent payment a decline would tell someone who paid that no
-/// payment was made, so this errs towards false: anything that names a
-/// transaction is never a decline, and 4001 counts only as an error code,
-/// never as a request id, an amount or a port.
+/// payment was made, so this errs towards false: the SDK's after-send failure
+/// is never a decline, and 4001 counts only as an error code, never as a
+/// request id, an amount or a port. (A real decline carries the request's
+/// hex calldata, so long hex is no sign that anything was sent.)
 bool isWalletDecline(Object error) {
   final text = error.toString().toLowerCase();
-  if (_namesATransaction.hasMatch(text)) return false;
+  if (text.contains('failed to submit fund transaction')) return false;
   return text.contains('action_rejected') ||
       text.contains('user rejected') ||
       text.contains('user denied') ||
@@ -25,7 +26,3 @@ bool isWalletDecline(Object error) {
 /// `code: 4001`, `"code": 4001`, `code=4001`, `error: 4001`.
 final _declineCode =
     RegExp(r'''(?:code|error)["']?\s*[:=]\s*4001(?![0-9a-z])''');
-
-/// The SDK's after-send failure, or an EVM transaction hash.
-final _namesATransaction =
-    RegExp(r'failed to submit fund transaction|0x[0-9a-f]{64}');

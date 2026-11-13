@@ -263,6 +263,13 @@ void main() {
       expect(
           isWalletDecline(Exception('{"code": 4001, "message": "x"}')), isTrue);
       expect(isWalletDecline(Exception('code=4001')), isTrue);
+      // As ethers really reports a MetaMask decline: the request payload
+      // carries the hex calldata of the transaction that was never sent.
+      final calldata = '0x${'7475726f43726564697444657374696e6174696f6e' * 4}';
+      expect(
+          isWalletDecline(Exception(
+              'Error: user rejected action (action="sendTransaction", reason="rejected", info={ "error": { "code": 4001, "message": "ethers-user-denied: User rejected the request." }, "payload": { "id": 6, "jsonrpc": "2.0", "method": "eth_sendTransaction", "params": [ { "data": "$calldata" } ] } }, code=ACTION_REJECTED, version=6.13.4)')),
+          isTrue);
       expect(isWalletDecline(Exception('User denied transaction signature')),
           isTrue);
     });
@@ -284,14 +291,10 @@ void main() {
               Exception('connect to https://rpc.example:4001/v1 failed')),
           isFalse);
       expect(isWalletDecline(Exception('status 4001')), isFalse);
-      // Anything that names a sent transaction, even with decline words.
+      // The SDK's failure after a send, even with decline words in it.
       expect(
           isWalletDecline(Exception(
-              "Failed to submit fund transaction! Save this Transaction ID and try again with 'turbo.submitFundTransaction(id)': 0xabc")),
-          isFalse);
-      expect(
-          isWalletDecline(
-              Exception('user rejected follow-up for 0x${'a' * 64}')),
+              "Failed to submit fund transaction! Save this Transaction ID and try again with 'turbo.submitFundTransaction(id)': 0xabc user rejected")),
           isFalse);
     });
   });
