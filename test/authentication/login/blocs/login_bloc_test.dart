@@ -585,6 +585,33 @@ void main() {
       );
 
       blocTest<LoginBloc, LoginState>(
+        '$name: Continue with a different second entry signs nothing in and '
+        'saves nothing; Try again still works',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.profileType = type;
+          bloc.lastKnownWalletAddress = 'some address';
+          bloc.add(LoginWithPassword(
+              wallet: wallet, password: 'typo', showWalletCreated: false));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.signInPasswordMatches('real'), isFalse);
+          bloc.add(const ContinueSignInWithLockedDrives('real'));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.signInPasswordMatches('typo'), isTrue);
+          bloc.add(const RetrySignInPassword());
+        },
+        expect: () => [
+          LoginCheckingPassword(),
+          const LoginPasswordOpensNoDrives(),
+          const LoginPasswordRetry(),
+        ],
+        verify: (_) => verifyNever(() => mockArDriveAuth.login(
+            any(), any(), any(),
+            sourceWalletAddress: any(named: 'sourceWalletAddress'),
+            skipDriveCheck: true)),
+      );
+
+      blocTest<LoginBloc, LoginState>(
         '$name: Continue signs in, keeping the password, with the drives '
         'it didn\'t open locked',
         build: createBloc,
@@ -594,7 +621,7 @@ void main() {
           bloc.add(LoginWithPassword(
               wallet: wallet, password: 'typo', showWalletCreated: false));
           await Future<void>.delayed(Duration.zero);
-          bloc.add(const ContinueSignInWithLockedDrives());
+          bloc.add(const ContinueSignInWithLockedDrives('typo'));
         },
         expect: () => [
           LoginCheckingPassword(),
@@ -619,7 +646,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((_) async => 'another address');
-        bloc.add(const ContinueSignInWithLockedDrives());
+        bloc.add(const ContinueSignInWithLockedDrives('typo'));
       },
       expect: () => [
         LoginCheckingPassword(),
@@ -639,7 +666,7 @@ void main() {
       build: createBloc,
       act: (bloc) {
         bloc.add(const RetrySignInPassword());
-        bloc.add(const ContinueSignInWithLockedDrives());
+        bloc.add(const ContinueSignInWithLockedDrives('x'));
       },
       expect: () => <LoginState>[],
     );
@@ -1362,7 +1389,6 @@ void main() {
   });
 
   group('testing LoginBloc LoginWithSolana event', () {
-
     LoginBloc createSolanaBloc() {
       return LoginBloc(
         arDriveAuth: mockArDriveAuth,

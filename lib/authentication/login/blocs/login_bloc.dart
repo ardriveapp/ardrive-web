@@ -206,7 +206,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else if (event is UnlockWithWallet) {
       await _handleUnlockWithWallet(emit);
     } else if (event is ContinueSignInWithLockedDrives) {
-      await _handleContinueSignInWithLockedDrives(emit);
+      await _handleContinueSignInWithLockedDrives(emit, event.confirmPassword);
     }
   }
 
@@ -239,16 +239,25 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(const LoginPasswordRetry());
   }
 
+  /// Whether [confirmation] is the password the held-back sign-in was made
+  /// with. Continue saves that password on this device, so a typo must not
+  /// get through: it can't be typed the same twice.
+  bool signInPasswordMatches(String confirmation) =>
+      _pendingSignIn?.password == confirmation;
+
   /// Signs in anyway: the drives the password didn't open stay locked.
+  /// Only if [confirmation] matches the password typed first.
   Future<void> _handleContinueSignInWithLockedDrives(
     Emitter<LoginState> emit,
+    String confirmation,
   ) async {
     final pending = _pendingSignIn;
-    _pendingSignIn = null;
 
-    if (pending == null) {
+    // A mismatch changes nothing: the dialog stays open, Try again too.
+    if (pending == null || pending.password != confirmation) {
       return;
     }
+    _pendingSignIn = null;
 
     emit(LoginCheckingPassword());
 

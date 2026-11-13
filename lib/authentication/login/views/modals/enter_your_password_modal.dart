@@ -449,33 +449,100 @@ Future<void> showPasswordOpensNoDrivesDialog({
       content: PasswordOpensNoDrivesDialog(loginBloc: loginBloc),
     );
 
-class PasswordOpensNoDrivesDialog extends StatelessWidget {
+class PasswordOpensNoDrivesDialog extends StatefulWidget {
   const PasswordOpensNoDrivesDialog({super.key, required this.loginBloc});
 
   final LoginBloc loginBloc;
 
   @override
+  State<PasswordOpensNoDrivesDialog> createState() =>
+      _PasswordOpensNoDrivesDialogState();
+}
+
+class _PasswordOpensNoDrivesDialogState
+    extends State<PasswordOpensNoDrivesDialog> {
+  final _controller = TextEditingController();
+  final _focus = FocusNode(debugLabel: 'confirmSignInPassword');
+  bool _mismatch = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// Back to the field, its text selected, so the next try is typed
+  /// straight over the last.
+  void _refocus() {
+    _focus.requestFocus();
+    _controller.selection =
+        TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
+  }
+
+  /// Continue saves the typed password on this device, so it asks for it
+  /// again and goes ahead only if the two match.
+  void _continue() {
+    if (!widget.loginBloc.signInPasswordMatches(_controller.text)) {
+      setState(() => _mismatch = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _refocus();
+      });
+      return;
+    }
+    Navigator.of(context).pop();
+    widget.loginBloc.add(ContinueSignInWithLockedDrives(_controller.text));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveStandardModalNew(
       key: const Key('passwordOpensNoDrivesDialog'),
       title: strings.passwordOpensNoDrivesTitle,
-      description: strings.passwordOpensNoDrivesBody,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(strings.passwordOpensNoDrivesBody,
+              style: typography.paragraphNormal(color: colorTokens.textMid)),
+          const SizedBox(height: 24),
+          Text(strings.password,
+              style: typography.paragraphNormal(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold)),
+          const SizedBox(height: 8),
+          ArDriveTextFieldNew(
+            key: const Key('confirmSignInPassword'),
+            controller: _controller,
+            focusNode: _focus,
+            hintText: strings.confirmPasswordHint,
+            showObfuscationToggle: true,
+            obscureText: true,
+            autofocus: true,
+            onFieldSubmitted: (_) => _continue(),
+            onChanged: (_) {
+              if (_mismatch) setState(() => _mismatch = false);
+            },
+            errorMessage: strings.passwordMismatch,
+            showErrorMessage: _mismatch,
+          ),
+        ],
+      ),
       actions: [
         ModalAction.dismiss(
           title: strings.tryAgain,
           action: () {
             Navigator.of(context).pop();
-            loginBloc.add(const RetrySignInPassword());
+            widget.loginBloc.add(const RetrySignInPassword());
           },
         ),
         ModalAction(
           title: strings.continueEmphasized,
-          action: () {
-            Navigator.of(context).pop();
-            loginBloc.add(const ContinueSignInWithLockedDrives());
-          },
+          action: _continue,
         ),
       ],
     );
