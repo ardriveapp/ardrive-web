@@ -574,6 +574,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       isSizeEligible: true,
       byteCount: snapshotSize,
       allowance: freeAllowance,
+      // An allowance that could not be read is not a promise of free: the
+      // price shows instead.
+      unknownIsFree: false,
     );
   }
 

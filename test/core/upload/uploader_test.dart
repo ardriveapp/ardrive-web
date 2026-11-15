@@ -30,6 +30,8 @@ class MockFileV2Uploader extends Mock implements FileV2Uploader {}
 
 class MockBundleUploadHandle extends Mock implements BundleUploadHandle {}
 
+class MockDataItem extends Mock implements DataItem {}
+
 class MockFileV2UploadHandle extends Mock implements FileV2UploadHandle {}
 
 class MockTurboUploadService extends Mock implements TurboUploadService {}
@@ -495,6 +497,46 @@ void main() {
               reason: '"could not check" must not be reported as "used up"');
           // 500 credits cover the 400 it costs, so Turbo still pays.
           expect(result.defaultPaymentMethod, UploadMethod.turbo);
+        });
+
+        group('a single data item (manifest)', () {
+          Future<UploadPaymentInfo> info() {
+            final dataItem = MockDataItem();
+            when(dataItem.getSize).thenReturn(100);
+            return uploadPaymentEvaluator.getUploadPaymentInfoForEntities(
+              dataItem: dataItem,
+            );
+          }
+
+          test('is not free when the allowance is unknown', () async {
+            when(() => turboBalanceRetriever.getFreeAllowance(any()))
+                .thenAnswer((_) async => const TurboFreeAllowance.unknown());
+
+            final result = await info();
+
+            expect(result.freeStatus, FreeUploadStatus.unknown);
+            expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+            expect(result.isFreeAllowanceExhausted, isFalse);
+          });
+
+          test('is free when a known allowance covers it', () async {
+            when(() => turboBalanceRetriever.getFreeAllowance(any()))
+                .thenAnswer((_) async => TurboFreeAllowance.bytes(1000000));
+
+            final result = await info();
+
+            expect(result.freeStatus, FreeUploadStatus.free);
+          });
+
+          test('is used up when the known allowance is gone', () async {
+            when(() => turboBalanceRetriever.getFreeAllowance(any()))
+                .thenAnswer((_) async => const TurboFreeAllowance.disabled());
+
+            final result = await info();
+
+            expect(result.freeStatus, FreeUploadStatus.allowanceUsedUp);
+            expect(result.isFreeAllowanceExhausted, isTrue);
+          });
         });
 
         test(
