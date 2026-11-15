@@ -247,7 +247,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add Turbo Credits'), findsOneWidget);
-    expect(find.text('This upload needs 5.8750 credits. Credits never expire.'),
+    expect(find.text('This upload needs 5.8750 credits.'),
         findsOneWidget);
     for (final amount in ['\$10', '\$25', '\$50', '\$100']) {
       expect(find.text(amount), findsOneWidget);
