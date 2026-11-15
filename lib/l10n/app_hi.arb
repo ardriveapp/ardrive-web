@@ -4583,7 +4583,7 @@
   "@addTurboCreditsTitle": {
     "description": "Title of the step that adds Turbo Credits for an upload"
   },
-  "addCreditsUploadNeeds": "इस अपलोड के लिए {cost} क्रेडिट्स चाहिए। क्रेडिट्स कभी खत्म नहीं होते।",
+  "addCreditsUploadNeeds": "इस अपलोड के लिए {cost} क्रेडिट्स चाहिए।",
   "@addCreditsUploadNeeds": {
     "description": "Under the Add Turbo Credits title",
     "placeholders": {
@@ -4661,7 +4661,7 @@
   "@changePriceUnavailable": {
     "description": "Notice when Turbo's price, balance or free upload allowance can't be read, so a change such as a license can't be saved"
   },
-  "addCreditsChangeNeeds": "इस बदलाव के लिए {cost} क्रेडिट्स चाहिए। क्रेडिट्स कभी खत्म नहीं होते।",
+  "addCreditsChangeNeeds": "इस बदलाव के लिए {cost} क्रेडिट्स चाहिए।",
   "@addCreditsChangeNeeds": {
     "description": "Under the Add Turbo Credits title, for a change such as a license",
     "placeholders": {

@@ -4583,7 +4583,7 @@
   "@addTurboCreditsTitle": {
     "description": "Title of the step that adds Turbo Credits for an upload"
   },
-  "addCreditsUploadNeeds": "此次上載需要 {cost} 積分。積分永不過期。",
+  "addCreditsUploadNeeds": "此次上載需要 {cost} 積分。",
   "@addCreditsUploadNeeds": {
     "description": "Under the Add Turbo Credits title",
     "placeholders": {
@@ -4661,7 +4661,7 @@
   "@changePriceUnavailable": {
     "description": "Notice when Turbo's price, balance or free upload allowance can't be read, so a change such as a license can't be saved"
   },
-  "addCreditsChangeNeeds": "此次變更需要 {cost} 積分。積分永不過期。",
+  "addCreditsChangeNeeds": "此次變更需要 {cost} 積分。",
   "@addCreditsChangeNeeds": {
     "description": "Under the Add Turbo Credits title, for a change such as a license",
     "placeholders": {
