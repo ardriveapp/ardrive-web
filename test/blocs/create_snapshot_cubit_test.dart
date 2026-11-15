@@ -9,6 +9,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -252,6 +253,52 @@ void main() {
           buildNumber: 'buildNumber',
           buildSignature: 'buildSignature',
         );
+      });
+
+      group('the free status follows what is known about the allowance', () {
+        // The snapshot is small enough for the free tier (limit 100 bytes in
+        // setUp), so only the allowance decides.
+        Future<ConfirmingSnapshotCreation> confirming(
+          TurboFreeAllowance allowance,
+        ) async {
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => allowance);
+          final cubit = CreateSnapshotCubit(
+            arweave: arweave,
+            profileCubit: profileCubit,
+            driveDao: driveDao,
+            tabVisibility: tabVisibility,
+            pst: pst,
+            auth: auth,
+            configService: configService,
+            paymentService: paymentService,
+            turboBalanceRetriever: turboBalanceRetriever,
+            turboService: turboService,
+          );
+          addTearDown(cubit.close);
+          await cubit.confirmDriveAndHeighRange(
+            driveId,
+            range: Range(start: 0, end: 1),
+          );
+          return cubit.state as ConfirmingSnapshotCreation;
+        }
+
+        test('an unknown allowance is not free, so a price shows', () async {
+          final state = await confirming(const TurboFreeAllowance.unknown());
+          expect(state.freeStatus, FreeUploadStatus.unknown);
+          expect(state.isFreeThanksToTurbo, isFalse);
+          expect(state.isFreeAllowanceExhausted, isFalse);
+        });
+
+        test('a known allowance that covers it is free', () async {
+          final state = await confirming(TurboFreeAllowance.bytes(1000000));
+          expect(state.freeStatus, FreeUploadStatus.free);
+        });
+
+        test('a used up allowance is reported as used up', () async {
+          final state = await confirming(const TurboFreeAllowance.disabled());
+          expect(state.freeStatus, FreeUploadStatus.allowanceUsedUp);
+        });
       });
 
       blocTest(

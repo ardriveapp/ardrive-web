@@ -322,6 +322,8 @@ class DriveStatePublishCostEstimator {
         () => _turboBalanceRetriever.getFreeAllowance(wallet),
       );
     } catch (e) {
+      // getFreeAllowance does not throw (it returns an unknown allowance), so
+      // this is reached only by the leg timeout or a different retriever.
       logger.w(
         '[drive-state] Turbo could not report a free allowance; the artifact '
         'is priced as a paid upload: $e',
@@ -333,6 +335,9 @@ class DriveStatePublishCostEstimator {
       isSizeEligible: true,
       byteCount: sizeInBytes,
       allowance: allowance,
+      // An allowance that could not be read is not a promise of free: the
+      // price shows instead.
+      unknownIsFree: false,
     );
   }
 

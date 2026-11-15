@@ -117,6 +117,30 @@ void main() {
         walletBalance: BigInt.from(1000000),
       );
 
+  group('the free status follows what is known about the allowance', () {
+    test('an unknown allowance is not free, so a price shows', () async {
+      when(() => turboBalanceRetriever.getFreeAllowance(any()))
+          .thenAnswer((_) async => const TurboFreeAllowance.unknown());
+      final cost = await estimate();
+      expect(cost.freeStatus, FreeUploadStatus.unknown);
+      expect(cost.isFree, isFalse);
+    });
+
+    test('a known allowance that covers it is free', () async {
+      when(() => turboBalanceRetriever.getFreeAllowance(any()))
+          .thenAnswer((_) async => TurboFreeAllowance.bytes(10 * 1024 * 1024));
+      final cost = await estimate();
+      expect(cost.freeStatus, FreeUploadStatus.free);
+    });
+
+    test('a used up allowance is reported as used up', () async {
+      when(() => turboBalanceRetriever.getFreeAllowance(any()))
+          .thenAnswer((_) async => const TurboFreeAllowance.disabled());
+      final cost = await estimate();
+      expect(cost.freeStatus, FreeUploadStatus.allowanceUsedUp);
+    });
+  });
+
   group('several items: the free allowance is per item', () {
     // Production's per-item limit, and a publication's items: each under it,
     // their total over it.

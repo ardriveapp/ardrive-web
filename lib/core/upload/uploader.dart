@@ -398,6 +398,9 @@ class UploadPaymentEvaluator {
       isSizeEligible: dataItemSize <= allowedDataItemSizeForTurbo,
       byteCount: dataItemSize,
       allowance: freeAllowance,
+      // An allowance that could not be read is not a promise of free: the
+      // price shows instead.
+      unknownIsFree: false,
     );
 
     uploadMethod = await _determineUploadMethod(
@@ -406,6 +409,7 @@ class UploadPaymentEvaluator {
       allowedDataItemSizeForTurbo,
       _isTurboAvailableToUploadAllFiles,
       freeAllowance,
+      unknownAllowanceIsFree: false,
     );
 
     return UploadPaymentInfo(
