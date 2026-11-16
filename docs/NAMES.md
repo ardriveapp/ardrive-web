@@ -398,7 +398,7 @@ program IDs and RPC and the action client at the sandbox together.
 | Browser bridge: reads, Wallet Standard connection, message and transaction signing, controller writes | `packages/ario_sdk/web/src/` (built to `web/js/ario_sdk.min.js`) |
 | Dart API over the bridge | `packages/ario_sdk/lib/` |
 | Turbo ArNS action client (price, create, sign, status) | `lib/arns/data/` |
-| Names repository: the names an Solana wallet owns or manages, their records, mapped to ArDrive items; the local cache | `lib/arns/data/`, `lib/arns/domain/` |
+| Names repository: the names a Solana wallet owns or manages, their records, mapped to ArDrive items; the local cache | `lib/arns/data/`, `lib/arns/domain/` |
 | UI: picker dialog, details Name section, row chip, Names page, profile row | `lib/arns/presentation/` |
 | Flag | `enableArNS` in `assets/config/*.json` and `AppConfig`, with a dev-tools toggle |
 

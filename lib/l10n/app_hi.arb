@@ -5815,7 +5815,7 @@
   "@arnsPointsTo": {
     "description": "Column heading: what an ArNS name opens."
   },
-  "arnsPointsElsewhere": "कहीं और इशारा करता है",
+  "arnsPointsElsewhere": "कहीं और जाता है",
   "@arnsPointsElsewhere": {
     "description": "Picker row: a name that points outside ArDrive."
   },
