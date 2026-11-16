@@ -5141,6 +5141,8 @@
   "@arnsName": {"description": "Label: an ArNS name, such as ardrive.ar.io."},
   "arnsPointsTo": "Points to",
   "@arnsPointsTo": {"description": "Column heading: what an ArNS name opens."},
+  "arnsPointsElsewhere": "Points elsewhere",
+  "@arnsPointsElsewhere": {"description": "Picker row: a name that points outside ArDrive."},
   "arnsCacheTime": "Cache time",
   "@arnsCacheTime": {"description": "How long gateways may keep the old answer after a name changes."},
   "arnsWallet": "Solana wallet",

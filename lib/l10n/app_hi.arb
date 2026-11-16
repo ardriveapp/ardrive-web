@@ -5815,6 +5815,10 @@
   "@arnsPointsTo": {
     "description": "Column heading: what an ArNS name opens."
   },
+  "arnsPointsElsewhere": "कहीं और इशारा करता है",
+  "@arnsPointsElsewhere": {
+    "description": "Picker row: a name that points outside ArDrive."
+  },
   "arnsCacheTime": "कैश समय",
   "@arnsCacheTime": {
     "description": "How long gateways may keep the old answer after a name changes."

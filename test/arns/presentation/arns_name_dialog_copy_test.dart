@@ -10,6 +10,7 @@ import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -232,6 +233,20 @@ void main() {
       expect(find.text('Change what it points to'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
     });
+  });
+
+  testWidgets('an elsewhere record shows Points elsewhere, and no ID',
+      (tester) async {
+    await openDialog(
+      tester,
+      mode: ArNSNameDialogMode.nameItem,
+      item: _item,
+      names: [_acme()],
+    );
+
+    expect(find.textContaining('Points elsewhere'), findsWidgets);
+    expect(find.textContaining(shortenId(_elseTx)), findsNothing);
+    expect(find.textContaining('Points to'), findsNothing);
   });
 
   testWidgets('no names: the dialog keeps its own Get a name button',

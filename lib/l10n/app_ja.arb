@@ -5815,6 +5815,10 @@
   "@arnsPointsTo": {
     "description": "Column heading: what an ArNS name opens."
   },
+  "arnsPointsElsewhere": "別の場所を指しています",
+  "@arnsPointsElsewhere": {
+    "description": "Picker row: a name that points outside ArDrive."
+  },
   "arnsCacheTime": "キャッシュ時間",
   "@arnsCacheTime": {
     "description": "How long gateways may keep the old answer after a name changes."

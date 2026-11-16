@@ -1,5 +1,4 @@
 import 'package:ardrive/publication/domain/publication_config.dart';
-import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
@@ -735,7 +734,6 @@ class _NameGroup extends StatelessWidget {
             title: arnsHostFor(name.name),
             emphasized: true,
             subtitle: _pointsTo(context, apex),
-            subtitleId: apex == null ? null : shortenId(apex.transactionId),
             tag: name.role == ArNSRole.controller
                 ? strings.arnsController
                 : null,
@@ -749,7 +747,6 @@ class _NameGroup extends StatelessWidget {
               indent: true,
               title: arnsHostFor(record.literalName),
               subtitle: _pointsTo(context, record),
-              subtitleId: shortenId(record.transactionId),
               onTap: () => cubit.choose(name.name, record.undername),
             ),
             if (isChosen(record.undername)) ..._below(),
@@ -833,6 +830,11 @@ class _NameGroup extends StatelessWidget {
 
   String? _pointsTo(BuildContext context, ArNSNameRecord? record) {
     if (record == null) return null;
+    // Q22: no ID in the picker; the Names page keeps it.
+    if (arnsPointsToKind(record, placeholder: state.placeholderTxId) ==
+        ArNSPointsToKind.elsewhere) {
+      return appLocalizationsOf(context).arnsPointsElsewhere;
+    }
     return arnsPointsToLabel(context, record,
         placeholder: state.placeholderTxId);
   }
