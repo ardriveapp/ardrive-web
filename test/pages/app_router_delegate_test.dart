@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
@@ -288,6 +289,39 @@ void main() {
         expect(delegate.tryingToViewDrive, isTrue);
       }
       expect(notifications, 2);
+    });
+  });
+
+  group('a drive reported missing after signing out', () {
+    // The explorer can find its drive gone once the session has signed out:
+    // the profile has left logging out, and the route no longer names a
+    // drive. Attach must not open, empty, over the sign-in screen.
+    test('is not offered for attaching', () async {
+      await delegate.setNewRoutePath(
+        AppRoutePath.driveDetail(driveId: driveId),
+      );
+
+      delegate.clearState();
+
+      expect(delegate.driveId, isNull);
+      expect(delegate.canOfferAttach, isFalse);
+    });
+
+    test('is not offered when the explorer fell back to the empty id', () {
+      // The drives cubit selects no drive, and the explorer, still on
+      // screen, rebuilds with the root path.
+      delegate.onDriveSelected(null);
+      delegate.driveId = rootPath;
+
+      expect(delegate.canOfferAttach, isFalse);
+    });
+
+    test('is offered when a link names a drive this browser lacks', () async {
+      await delegate.setNewRoutePath(
+        AppRoutePath.driveDetail(driveId: driveId),
+      );
+
+      expect(delegate.canOfferAttach, isTrue);
     });
   });
 
