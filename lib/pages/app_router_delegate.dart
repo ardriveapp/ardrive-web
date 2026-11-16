@@ -355,6 +355,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   bool get tryingToViewDrive => driveId != null;
 
+  /// Whether a drive the explorer could not find is one to offer to attach:
+  /// only one that was asked for by id. Signing out empties the tables, so
+  /// the drives cubit selects no drive and [driveId] becomes null, or the
+  /// empty [rootPath] the explorer is built with, while the explorer is still
+  /// on screen and reports its drive missing.
+  @visibleForTesting
+  bool get canOfferAttach => driveId != null && driveId != rootPath;
+
   /// Whether a page that holds no folder and is not the drives list is on
   /// screen: Names, a name's page, Web pages. [driveId] and [driveFolderId]
   /// stay the last ones open. Only where the page's feature is on: with it
@@ -845,6 +853,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                     'Drive not found, but user is logging out. Not prompting to attach drive.');
 
                                 clearState();
+
+                                return;
+                              }
+
+                              // Signing out empties the tables before the
+                              // profile says it is logging out, so the drive
+                              // being viewed goes missing with no drive left to
+                              // name. Nothing to attach: the form would open
+                              // empty over the sign-in screen.
+                              if (!canOfferAttach) {
+                                logger.d(
+                                    'Drive not found, but no drive is open. Not prompting to attach drive.');
 
                                 return;
                               }
