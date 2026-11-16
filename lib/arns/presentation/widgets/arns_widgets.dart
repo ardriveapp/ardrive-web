@@ -63,9 +63,12 @@ class ArNSWaitingLine extends StatelessWidget {
 
 /// A wallet with no names: where to get one.
 class ArNSNoNames extends StatelessWidget {
-  const ArNSNoNames({super.key, this.onClose});
+  const ArNSNoNames({super.key, this.onClose, this.showAction = true});
 
   final VoidCallback? onClose;
+
+  /// The Get a name button; off where the page already has one.
+  final bool showAction;
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +78,8 @@ class ArNSNoNames extends StatelessWidget {
       icon: Icon(arnsNameIcon, size: 32, color: colors.iconLow),
       title: strings.arnsNoNamesTitle,
       message: strings.arnsNoNamesBody,
-      actionLabel: strings.arnsGetANameInConsole,
-      onAction: () => openUrl(url: arnsGetNameUrl),
+      actionLabel: showAction ? strings.arnsGetANameInConsole : null,
+      onAction: showAction ? () => openUrl(url: arnsGetNameUrl) : null,
       // The ar.io Console, in a new window.
       actionIsExternal: true,
     );

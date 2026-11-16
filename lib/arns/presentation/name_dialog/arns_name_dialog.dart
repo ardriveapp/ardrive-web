@@ -383,12 +383,11 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
   String _commitLabel(BuildContext context, ArNSNameDialogState state) {
     final strings = appLocalizationsOf(context);
     return switch (state.mode) {
-      ArNSNameDialogMode.nameItem =>
-        state.changesName ? strings.arnsChangeName : strings.arnsFlowNameRow,
+      ArNSNameDialogMode.nameItem ||
       ArNSNameDialogMode.pointRecord ||
       ArNSNameDialogMode.cacheTime =>
         strings.arnsSave,
-      ArNSNameDialogMode.remove => strings.arnsRemoveName,
+      ArNSNameDialogMode.remove => strings.arnsRemove,
     };
   }
 
@@ -408,9 +407,9 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     }
     return switch (state.mode) {
       ArNSNameDialogMode.nameItem =>
-        state.changesName ? strings.arnsChangeName : strings.arnsFlowNameRow,
+        state.changesName ? strings.arnsChangeName : strings.arnsAddName,
       ArNSNameDialogMode.pointRecord => strings.arnsChangeWhatItPointsTo,
-      ArNSNameDialogMode.cacheTime => strings.arnsCacheTime,
+      ArNSNameDialogMode.cacheTime => strings.arnsChangeCacheTime,
       ArNSNameDialogMode.remove => strings.arnsRemoveName,
     };
   }

@@ -236,7 +236,6 @@ class _ArNSNamesViewState extends State<ArNSNamesView> {
         box(ListPageMessage(
           child: ArDriveEmptyState(
             icon: Icon(arnsNameIcon, size: 32, color: colors.iconLow),
-            title: strings.arnsLinkWalletTitle,
             message: strings.arnsLinkWalletPageBody,
             actionLabel: strings.arnsLinkSolanaWallet,
             onAction: () => showArNSWalletDialog(context),
@@ -280,7 +279,9 @@ class _ArNSNamesViewState extends State<ArNSNamesView> {
         if (!name.isExpired(now)) name,
     ]);
     if (shown.isEmpty) {
-      return [box(const ListPageMessage(child: ArNSNoNames()))];
+      return [
+        box(const ListPageMessage(child: ArNSNoNames(showAction: false)))
+      ];
     }
 
     final rows = SliverList(
@@ -1157,16 +1158,7 @@ Future<void> showArNSWalletDialog(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArNSBodyText(strings.arnsLinkWalletPageBody),
-            const SizedBox(height: ArDriveSpacing.xs),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: ArDriveLink(
-                text: strings.arnsWhatIsArNS,
-                external: true,
-                onTap: () => openUrl(url: arnsDocsUrl),
-              ),
-            ),
+            ArNSBodyText(strings.arnsLinkWalletDialogBody),
             const SizedBox(height: ArDriveSpacing.md),
             ArNSWalletChooser(
               onLinked: () => Navigator.of(dialogContext).pop(),
@@ -1195,16 +1187,7 @@ Future<void> showArNSWalletDialog(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
-                ArNSBodyText(strings.arnsLinkWalletPageBody),
-                const SizedBox(height: ArDriveSpacing.xs),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: ArDriveLink(
-                    text: strings.arnsWhatIsArNS,
-                    external: true,
-                    onTap: () => openUrl(url: arnsDocsUrl),
-                  ),
-                ),
+                ArNSBodyText(strings.arnsLinkWalletDialogBody),
                 const SizedBox(height: ArDriveSpacing.md),
                 ArNSWalletChooser(
                   onLinked: () => Navigator.of(sheetContext).pop(),

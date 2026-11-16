@@ -42,7 +42,7 @@ These words are used in every ArDrive app, help article and release note.
 | Undername | A name under a name: `blog` in `blog_ardrive.ar.io`. ar.io's own word. | subdomain |
 | Points to | What a name opens: an ArDrive item or a transaction. | target, transactionId |
 | Cache time | How long gateways may keep the old answer after a change. 5 minutes by default. | TTL |
-| ArNS wallet | The Solana wallet linked to approve name changes. | Solana signer, secondary wallet |
+| Solana wallet | The wallet linked to approve name changes. Users see "Solana wallet", never "ArNS wallet". | ArNS wallet, Solana signer, secondary wallet |
 | Wallet | Your ArDrive wallet: your account, and what pays in credits. | primary wallet (in the app) |
 | Deployment | A manifest: a folder served as a website or app. | manifest |
 | Publication | A published drive or folder page. | library page |
@@ -55,7 +55,7 @@ These words are used in every ArDrive app, help article and release note.
   and a publication while publishing. The Names page is an overview, not the
   only door.
 - **One account, one way to pay.** Your ArDrive wallet is your account and
-  pays in credits. The ArNS wallet only approves name changes, and only when
+  pays in credits. The Solana wallet only approves name changes, and only when
   you act.
 - **The chain is the truth.** What a name points to is read from ArNS, so
   changes made in the console show up in ArDrive. What ArDrive writes into
@@ -104,15 +104,15 @@ This follows the ar.io console.
   address is cleared on sign-out.
 - **Asked for at commit.** The action button itself becomes the next step:
   "Link a Solana wallet", then "Reconnect Solana wallet". The line under it:
-  "Link the wallet that holds your names to approve this. Your ArDrive
-  account stays the same."
-- **Signed in with Solana?** That wallet is the ArNS wallet already.
-- **Credits pay; the ArNS wallet approves.** Turbo allows the payer and the
+  "Link the Solana wallet that holds your names. Your ArDrive account stays
+  the same."
+- **Signed in with Solana?** That wallet is the Solana wallet already.
+- **Credits pay; the Solana wallet approves.** Turbo allows the payer and the
   owner to be different wallets. The ArDrive wallet signs the payment and its
-  credits are debited; the ArNS wallet signs a proof message for each change.
-  When Turbo is not a controller of the name, the ArNS wallet also signs one
+  credits are debited; the Solana wallet signs a proof message for each change.
+  When Turbo is not a controller of the name, the Solana wallet also signs one
   transaction that Turbo has already paid for, so the wallet may ask twice.
-  The ArNS wallet never needs SOL.
+  The Solana wallet never needs SOL.
 - **Cost first.** Read from Turbo's price endpoint before the prompt, never
   "free". On 2026-10-25: about 0.12 credits to point or repoint a name, 0.001
   credits to remove an undername. The cost line covers the name change and the
@@ -126,7 +126,7 @@ This follows the ar.io console.
 - **After a reload.** The next load reads the status of each change the
   page left unfinished, once, and never creates it again. Completed: "Name
   saved". Failed: the credits come back. Expired, or still awaiting the
-  ArNS wallet's approval: "The change to blog_acme.ar.io wasn't approved in
+  Solana wallet's approval: "The change to blog_acme.ar.io wasn't approved in
   time, so it wasn't made. Your credits come back within 15 minutes." A change still awaiting
   approval can't be finished after a reload, because Turbo's status read
   never returns its transaction, so it is left to expire and is refunded.
@@ -134,15 +134,15 @@ This follows the ar.io console.
   again on the next load, and anything still unresolved after a day is
   dropped.
 - **Names you manage for someone else** (Q23). Turbo sponsors only a name's
-  owner and rejects a controller's proof. A controller's ArNS wallet signs the
+  owner and rejects a controller's proof. A controller's Solana wallet signs the
   change itself and pays the Solana fee: about 0.000005 SOL to repoint, about
   0.003 SOL of rent for a new undername. Said once, under the amount in the
-  cost line: "You manage this name for its owner, so your ArNS wallet pays
+  cost line: "You manage this name for its owner, so your Solana wallet pays
   this network fee instead of credits." A wallet without enough SOL is told
   so before anything is signed.
   This is the only exception to credits only.
 - **Wrong account connected.** If the wallet is on a different account from
-  the linked one: "Switch to 7xKp…q2Fd in your wallet, or change your ArNS
+  the linked one: "Switch to 7xKp…q2Fd in your wallet, or change your Solana
   wallet."
 - **No Solana wallet on this device.** Common on phones, where wallets only
   inject inside their own app browsers: "No Solana wallet found", with links to
@@ -150,7 +150,7 @@ This follows the ar.io console.
   from the remembered address.
 - **Account and security.** Under Addresses, "Solana, for names": Link when
   none is linked, otherwise the shortened address in monospace with Copy and
-  Unlink. A Phantom or Solflare account's sign-in address is its ArNS
+  Unlink. A Phantom or Solflare account's sign-in address is its Solana
   wallet by default, shown as "Solana, for sign-in and names", with no
   Link. If another wallet was linked since (the name dialog's Change
   wallet), the sign-in address reads "Solana, for sign-in" and the linked
@@ -170,7 +170,9 @@ This follows the ar.io console.
    points to *Last year's site*. Point it here instead?" (Q11)
 4. Advanced, folded away: **Cache time** 1 min, **5 min**, 15 min, 1 hour,
    1 day, with one line on the trade-off (Q8, Q16).
-5. The cost line, then **Add name**. The ArNS wallet approves; Turbo makes the
+5. The cost line, then **Save**. (The dialog's title is "Add name", or "Change
+   name" when the item has one; its button is "Save", and "Remove" when
+   removing.) The Solana wallet approves; Turbo makes the
    change; the details panel shows the name with "Live within about 5
    minutes".
 6. ArDrive writes the name into the item's metadata as a public hint (Q6).
@@ -193,7 +195,7 @@ characters. `@` is the name itself.
 
 Publish, Create deployment and uploading exactly one file to a public drive
 have an optional name step, folded away, with the dialog's picker and cost
-line. The flow's button waits until the step is priced and the ArNS wallet
+line. The flow's button waits until the step is priced and the Solana wallet
 is connected. The record change runs once the item's transaction exists;
 the flow's success screen shows the name, or says plainly which name wasn't
 changed (the upload stands). Files get the metadata hint in a small
@@ -239,7 +241,7 @@ fails, the flow says so; the upload stands.
 ### The Names page
 
 Every name and undername you own or manage, with no wallet address in the
-header (Account and security has it, where the ArNS wallet is linked), and:
+header (Account and security has it, where the Solana wallet is linked), and:
 
 - what each points to: the ArDrive item when recognised, "Empty page" for a
   main name on the empty page, otherwise "Points elsewhere" (Q22), which you
@@ -248,7 +250,12 @@ header (Account and security has it, where the ArNS wallet is linked), and:
 - its cache time, changeable here (Q16);
 - Change and Remove actions;
 - "Controller" on names you control but don't own (Q23): a tag on the name's page and in the picker, and "Role: Controller" in its details panel, never on the list rows;
-- a prompt to use a name with nothing linked;
+- a prompt to use a name with nothing linked: no heading, "Names are web
+  addresses like maya.ar.io for your pages and files. Link the Solana wallet
+  that holds yours to manage them here." The Link a Solana wallet dialog says
+  "Choose the wallet that holds your names.";
+- with a wallet linked and no names: "No names yet" and "Get one in the ar.io
+  Console.", with the one Get a name button at the top right;
 - console links for buying, renewing and ownership.
 
 **Lease ends.** Each leased name shows its end date. From 30 days out:
@@ -345,7 +352,7 @@ over HTTP, with only the Solana signatures in JavaScript, so no key crosses
 into the bridge and the 17 MB turbo bundle isn't needed.
 
 1. **Price.** `GET {payment}/v1/arns/actions/{action}/price`, no auth.
-2. **Owner proof.** The ArNS wallet signs `message + proofNonce`, where
+2. **Owner proof.** The Solana wallet signs `message + proofNonce`, where
    `message` is newline-joined: `arns`, the action, then its fields.
    - `set-record`: `antId`, `undername`, `transactionId`, `ttlSeconds`
    - `remove-record`: `antId`, `undername`
@@ -362,7 +369,7 @@ into the bridge and the 17 MB turbo bundle isn't needed.
    response's `nonce` is the idempotency key: persist it before any further
    prompt. Never re-create an action to retry. A 402 means not enough credits.
 4. **Branch on `status`, never on the action.** `completed`: done.
-   `awaiting-signature`: Turbo was not a controller; the ArNS wallet signs the
+   `awaiting-signature`: Turbo was not a controller; the Solana wallet signs the
    returned base64 `transaction` as is (Turbo has already signed as fee payer)
    within about 30 seconds.
 5. **Sign.** `POST {payment}/v1/arns/actions/{nonce}/sign` with
@@ -378,7 +385,7 @@ into the bridge and the 17 MB turbo bundle isn't needed.
 Always pass `ttlSeconds` (300 by default): Turbo's own default is 3600.
 
 **Controllers** write directly with `@ar.io/sdk`'s ANT writer, signing and
-paying with the ArNS wallet (the console's `antWriter.ts`).
+paying with the Solana wallet (the console's `antWriter.ts`).
 
 **Devnet.** Turbo's sandbox, `https://payment.services.ar-io.dev`, runs ArNS
 on Solana devnet. The dev-tools devnet switch points the bridge at devnet
@@ -391,7 +398,7 @@ program IDs and RPC and the action client at the sandbox together.
 | Browser bridge: reads, Wallet Standard connection, message and transaction signing, controller writes | `packages/ario_sdk/web/src/` (built to `web/js/ario_sdk.min.js`) |
 | Dart API over the bridge | `packages/ario_sdk/lib/` |
 | Turbo ArNS action client (price, create, sign, status) | `lib/arns/data/` |
-| Names repository: the names an ArNS wallet owns or manages, their records, mapped to ArDrive items; the local cache | `lib/arns/data/`, `lib/arns/domain/` |
+| Names repository: the names an Solana wallet owns or manages, their records, mapped to ArDrive items; the local cache | `lib/arns/data/`, `lib/arns/domain/` |
 | UI: picker dialog, details Name section, row chip, Names page, profile row | `lib/arns/presentation/` |
 | Flag | `enableArNS` in `assets/config/*.json` and `AppConfig`, with a dev-tools toggle |
 
@@ -419,12 +426,12 @@ One PR, `arns-names`, kept off `dev` until the publishing release ships, and
 behind `enableArNS` after that.
 
 1. **Foundation.** `@ar.io/sdk` 4.5.x in the bridge; the Wallet Standard
-   connector and remembered ArNS wallet; the Turbo action client; the names
+   connector and remembered Solana wallet; the Turbo action client; the names
    repository; the flag; devnet.
 2. **Naming.** The picker, add, repoint with confirm, remove, cache time, the
    cost line and the approval flow; the metadata hint; the details panel's
    Name section, the row chip and search by name.
-3. **Placement.** The On the web group and the Names page; the ArNS wallet
+3. **Placement.** The On the web group and the Names page; the Solana wallet
    row on Account and security.
 4. **Flows.** The name step in Publish, Create deployment and single-file
    upload; names moving with new versions; the empty page;
@@ -467,7 +474,7 @@ undername slots.
 |---|---|
 | Q1 | Naming actions and a Names page in ArDrive; buying, renewing, ownership and controllers link to the console. |
 | Q2 | Buying with credits is phase 2. |
-| Q3 | The console's wallet model: one linked ArNS wallet, remembered, asked for at commit, automatic for Solana sign-in, shown on Account and security. |
+| Q3 | The console's wallet model: one linked Solana wallet, remembered, asked for at commit, automatic for Solana sign-in, shown on Account and security. |
 | Q4 | Credits only, cost shown before the wallet prompt. One exception: controllers (Q23). |
 | Q5 | Nameable: deployments, public files, publications (public or private). Never private files. |
 | Q6 | Keep writing names into metadata as a hint; the owner sees the chain, visitors see a name only after the gateway confirms it. |

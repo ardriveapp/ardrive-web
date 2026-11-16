@@ -5819,7 +5819,7 @@
   "@arnsCacheTime": {
     "description": "How long gateways may keep the old answer after a name changes."
   },
-  "arnsWallet": "ArNSウォレット",
+  "arnsWallet": "Solanaウォレット",
   "@arnsWallet": {
     "description": "The Solana wallet linked to approve ArNS name changes."
   },
@@ -5841,7 +5841,7 @@
   },
   "arnsChange": "変更",
   "@arnsChange": {
-    "description": "Action: change an ArNS name or the ArNS wallet."
+    "description": "Action: change an ArNS name or the Solana wallet."
   },
   "arnsRemove": "削除",
   "@arnsRemove": {
@@ -5909,13 +5909,9 @@
   "@arnsShowingLastRead": {
     "description": "The ArNS names shown may be out of date."
   },
-  "arnsLinkWalletExplainer": "これを承認するには、名前を保有するウォレットをリンクしてください。ArDriveアカウントは変わりません。",
+  "arnsLinkWalletExplainer": "名前を保有するSolanaウォレットをリンクしてください。ArDriveアカウントは変わりません。",
   "@arnsLinkWalletExplainer": {
     "description": "Why a Solana wallet is needed to name an item."
-  },
-  "arnsLinkWalletTitle": "名前を保有するウォレットをリンク",
-  "@arnsLinkWalletTitle": {
-    "description": "Names page empty state title when no Solana wallet is linked."
   },
   "arnsNoNameYetAsk": "まだ名前がありませんか？",
   "@arnsNoNameYetAsk": {
@@ -5929,15 +5925,23 @@
   "@arnsNameASiteHint": {
     "description": "Names page and the dialog that changes what a name points to: names point at files and web pages, so a folder or site needs publishing first."
   },
-  "arnsLinkWalletPageBody": "ArNS名は、ページやファイルのためのmaya.ar.ioのようなウェブアドレスです。ここで管理するには、名前を保有するSolanaウォレットをリンクしてください。",
+  "arnsLinkWalletPageBody": "名前は、ページやファイルのためのmaya.ar.ioのようなウェブアドレスです。ここで管理するには、名前を保有するSolanaウォレットをリンクしてください。",
   "@arnsLinkWalletPageBody": {
-    "description": "Names page and wallet dialog: why a Solana wallet is linked."
+    "description": "Names page, before a wallet is linked: why a Solana wallet is linked."
+  },
+  "arnsLinkWalletDialogBody": "名前を保有するウォレットを選択してください。",
+  "@arnsLinkWalletDialogBody": {
+    "description": "The Link a Solana wallet dialog opened from the Names page: asks to pick the wallet."
+  },
+  "arnsNotConnected": "接続されませんでした。もう一度お試しいただくか、別のウォレットを選択してください。",
+  "@arnsNotConnected": {
+    "description": "Under the Solana wallet list when the connect prompt was rejected or failed."
   },
   "arnsWhatIsArNS": "ArNSとは？",
   "@arnsWhatIsArNS": {
     "description": "Names page link to the ar.io docs explaining ArNS names."
   },
-  "arnsReconnectExplainer": "この変更を承認するには、ArNSウォレットを再接続してください。",
+  "arnsReconnectExplainer": "この変更を承認するには、Solanaウォレットを再接続してください。",
   "@arnsReconnectExplainer": {
     "description": "Shown when the linked Solana wallet is not connected."
   },
@@ -5949,7 +5953,7 @@
   "@arnsReconnectSolanaWallet": {
     "description": "Button that reconnects the linked Solana wallet."
   },
-  "arnsChangeArNSWallet": "ArNSウォレットを変更",
+  "arnsChangeArNSWallet": "Solanaウォレットを変更",
   "@arnsChangeArNSWallet": {
     "description": "Action that links a different Solana wallet."
   },
@@ -5962,7 +5966,7 @@
       }
     }
   },
-  "arnsSwitchAccount": "ウォレットで{address}に切り替えるか、ArNSウォレットを変更してください。",
+  "arnsSwitchAccount": "ウォレットで{address}に切り替えるか、Solanaウォレットを変更してください。",
   "@arnsSwitchAccount": {
     "description": "The connected Solana wallet is on another account than the linked one.",
     "placeholders": {
@@ -5993,7 +5997,7 @@
   },
   "arnsConnected": "接続済み",
   "@arnsConnected": {
-    "description": "The ArNS wallet is connected."
+    "description": "The Solana wallet is connected."
   },
   "arnsOtherAccount": "別のアカウント",
   "@arnsOtherAccount": {
@@ -6001,13 +6005,13 @@
   },
   "arnsUnlink": "リンク解除",
   "@arnsUnlink": {
-    "description": "Action that forgets the ArNS wallet."
+    "description": "Action that forgets the Solana wallet."
   },
   "arnsNoNamesTitle": "まだ名前がありません",
   "@arnsNoNamesTitle": {
-    "description": "Empty state: the ArNS wallet has no names."
+    "description": "Empty state: the Solana wallet has no names."
   },
-  "arnsNoNamesBody": "ArNSウォレットにはまだ名前がありません。ar.io Consoleで取得してください。",
+  "arnsNoNamesBody": "ar.io Consoleで取得してください。",
   "@arnsNoNamesBody": {
     "description": "Empty state body."
   },
@@ -6159,7 +6163,7 @@
   "@arnsWorkingOutCost": {
     "description": "Shown while the price is read."
   },
-  "arnsControllerPaysSol": "この名前は所有者に代わってあなたが管理しているため、クレジットの代わりにArNSウォレットがこのネットワーク手数料を支払います。",
+  "arnsControllerPaysSol": "この名前は所有者に代わってあなたが管理しているため、クレジットの代わりにSolanaウォレットがこのネットワーク手数料を支払います。",
   "@arnsControllerPaysSol": {
     "description": "Under the cost of a change to a managed name, paid in SOL."
   },
@@ -6167,7 +6171,7 @@
   "@arnsNotEnoughCreditsBody": {
     "description": "Credit balance too low."
   },
-  "arnsNotEnoughSol": "ArNSウォレットのSOLがこの手数料に足りません。追加してから、もう一度お試しください。",
+  "arnsNotEnoughSol": "SolanaウォレットのSOLがこの手数料に足りません。追加してから、もう一度お試しください。",
   "@arnsNotEnoughSol": {
     "description": "SOL balance too low for a managed name's fee."
   },
@@ -6237,7 +6241,7 @@
       }
     }
   },
-  "arnsApproveInWallet": "ArNSウォレットで変更を承認してください。",
+  "arnsApproveInWallet": "Solanaウォレットで変更を承認してください。",
   "@arnsApproveInWallet": {
     "description": "Progress: waiting for the wallet."
   },
@@ -6245,7 +6249,7 @@
   "@arnsMakingTheChange": {
     "description": "Progress."
   },
-  "arnsApproveSecondPrompt": "ArNSウォレットでもう一度承認してください。",
+  "arnsApproveSecondPrompt": "Solanaウォレットでもう一度承認してください。",
   "@arnsApproveSecondPrompt": {
     "description": "Progress: the second wallet prompt."
   },
@@ -6281,7 +6285,7 @@
   },
   "arnsResumeExpired": "{name}への変更が時間内に承認されなかったため、行われませんでした。クレジットは15分以内に戻ります。",
   "@arnsResumeExpired": {
-    "description": "After a reload: a name change that was still running when the page closed expired, or still awaited the ArNS wallet's approval, which can't be given after a reload. Turbo refunds the credits on its own. The name is a host, like blog_acme.ar.io.",
+    "description": "After a reload: a name change that was still running when the page closed expired, or still awaited the Solana wallet's approval, which can't be given after a reload. Turbo refunds the credits on its own. The name is a host, like blog_acme.ar.io.",
     "placeholders": {
       "name": {
         "type": "String"

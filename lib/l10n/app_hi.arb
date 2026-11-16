@@ -5819,7 +5819,7 @@
   "@arnsCacheTime": {
     "description": "How long gateways may keep the old answer after a name changes."
   },
-  "arnsWallet": "ArNS वॉलेट",
+  "arnsWallet": "Solana वॉलेट",
   "@arnsWallet": {
     "description": "The Solana wallet linked to approve ArNS name changes."
   },
@@ -5841,7 +5841,7 @@
   },
   "arnsChange": "बदलें",
   "@arnsChange": {
-    "description": "Action: change an ArNS name or the ArNS wallet."
+    "description": "Action: change an ArNS name or the Solana wallet."
   },
   "arnsRemove": "हटाएं",
   "@arnsRemove": {
@@ -5909,13 +5909,9 @@
   "@arnsShowingLastRead": {
     "description": "The ArNS names shown may be out of date."
   },
-  "arnsLinkWalletExplainer": "इसे मंज़ूरी देने के लिए वह वॉलेट लिंक करें जिसमें आपके नाम हैं। आपका ArDrive अकाउंट वैसा ही रहता है।",
+  "arnsLinkWalletExplainer": "वह Solana वॉलेट लिंक करें जिसमें आपके नाम हैं। आपका ArDrive अकाउंट वैसा ही रहता है।",
   "@arnsLinkWalletExplainer": {
     "description": "Why a Solana wallet is needed to name an item."
-  },
-  "arnsLinkWalletTitle": "वह वॉलेट लिंक करें जिसमें आपके नाम हैं",
-  "@arnsLinkWalletTitle": {
-    "description": "Names page empty state title when no Solana wallet is linked."
   },
   "arnsNoNameYetAsk": "अभी कोई नाम नहीं है?",
   "@arnsNoNameYetAsk": {
@@ -5929,15 +5925,23 @@
   "@arnsNameASiteHint": {
     "description": "Names page and the dialog that changes what a name points to: names point at files and web pages, so a folder or site needs publishing first."
   },
-  "arnsLinkWalletPageBody": "ArNS नाम आपके पेज और फ़ाइलों के लिए maya.ar.io जैसे वेब एड्रेस होते हैं। उन्हें यहां मैनेज करने के लिए वह Solana वॉलेट लिंक करें जिसमें आपके नाम हैं।",
+  "arnsLinkWalletPageBody": "नाम आपके पेज और फ़ाइलों के लिए maya.ar.io जैसे वेब एड्रेस होते हैं। उन्हें यहां मैनेज करने के लिए वह Solana वॉलेट लिंक करें जिसमें आपके नाम हैं।",
   "@arnsLinkWalletPageBody": {
-    "description": "Names page and wallet dialog: why a Solana wallet is linked."
+    "description": "Names page, before a wallet is linked: why a Solana wallet is linked."
+  },
+  "arnsLinkWalletDialogBody": "वह वॉलेट चुनें जिसमें आपके नाम हैं।",
+  "@arnsLinkWalletDialogBody": {
+    "description": "The Link a Solana wallet dialog opened from the Names page: asks to pick the wallet."
+  },
+  "arnsNotConnected": "कनेक्ट नहीं हुआ। दोबारा कोशिश करें या कोई दूसरा वॉलेट चुनें।",
+  "@arnsNotConnected": {
+    "description": "Under the Solana wallet list when the connect prompt was rejected or failed."
   },
   "arnsWhatIsArNS": "ArNS क्या है?",
   "@arnsWhatIsArNS": {
     "description": "Names page link to the ar.io docs explaining ArNS names."
   },
-  "arnsReconnectExplainer": "इस बदलाव को मंज़ूरी देने के लिए अपना ArNS वॉलेट दोबारा कनेक्ट करें।",
+  "arnsReconnectExplainer": "इस बदलाव को मंज़ूरी देने के लिए अपना Solana वॉलेट दोबारा कनेक्ट करें।",
   "@arnsReconnectExplainer": {
     "description": "Shown when the linked Solana wallet is not connected."
   },
@@ -5949,7 +5953,7 @@
   "@arnsReconnectSolanaWallet": {
     "description": "Button that reconnects the linked Solana wallet."
   },
-  "arnsChangeArNSWallet": "ArNS वॉलेट बदलें",
+  "arnsChangeArNSWallet": "Solana वॉलेट बदलें",
   "@arnsChangeArNSWallet": {
     "description": "Action that links a different Solana wallet."
   },
@@ -5962,7 +5966,7 @@
       }
     }
   },
-  "arnsSwitchAccount": "अपने वॉलेट में {address} पर स्विच करें, या अपना ArNS वॉलेट बदलें।",
+  "arnsSwitchAccount": "अपने वॉलेट में {address} पर स्विच करें, या अपना Solana वॉलेट बदलें।",
   "@arnsSwitchAccount": {
     "description": "The connected Solana wallet is on another account than the linked one.",
     "placeholders": {
@@ -5993,7 +5997,7 @@
   },
   "arnsConnected": "कनेक्टेड",
   "@arnsConnected": {
-    "description": "The ArNS wallet is connected."
+    "description": "The Solana wallet is connected."
   },
   "arnsOtherAccount": "दूसरा अकाउंट",
   "@arnsOtherAccount": {
@@ -6001,13 +6005,13 @@
   },
   "arnsUnlink": "अनलिंक करें",
   "@arnsUnlink": {
-    "description": "Action that forgets the ArNS wallet."
+    "description": "Action that forgets the Solana wallet."
   },
   "arnsNoNamesTitle": "अभी कोई नाम नहीं",
   "@arnsNoNamesTitle": {
-    "description": "Empty state: the ArNS wallet has no names."
+    "description": "Empty state: the Solana wallet has no names."
   },
-  "arnsNoNamesBody": "आपके ArNS वॉलेट में अभी कोई नाम नहीं है। ar.io Console में एक पाएं।",
+  "arnsNoNamesBody": "ar.io Console में एक पाएं।",
   "@arnsNoNamesBody": {
     "description": "Empty state body."
   },
@@ -6159,7 +6163,7 @@
   "@arnsWorkingOutCost": {
     "description": "Shown while the price is read."
   },
-  "arnsControllerPaysSol": "आप इस नाम को उसके मालिक के लिए मैनेज करते हैं, इसलिए क्रेडिट्स की जगह आपका ArNS वॉलेट यह नेटवर्क शुल्क देता है।",
+  "arnsControllerPaysSol": "आप इस नाम को उसके मालिक के लिए मैनेज करते हैं, इसलिए क्रेडिट्स की जगह आपका Solana वॉलेट यह नेटवर्क शुल्क देता है।",
   "@arnsControllerPaysSol": {
     "description": "Under the cost of a change to a managed name, paid in SOL."
   },
@@ -6167,7 +6171,7 @@
   "@arnsNotEnoughCreditsBody": {
     "description": "Credit balance too low."
   },
-  "arnsNotEnoughSol": "इस शुल्क के लिए आपके ArNS वॉलेट में काफ़ी SOL नहीं है। कुछ जोड़ें, फिर दोबारा कोशिश करें।",
+  "arnsNotEnoughSol": "इस शुल्क के लिए आपके Solana वॉलेट में काफ़ी SOL नहीं है। कुछ जोड़ें, फिर दोबारा कोशिश करें।",
   "@arnsNotEnoughSol": {
     "description": "SOL balance too low for a managed name's fee."
   },
@@ -6237,7 +6241,7 @@
       }
     }
   },
-  "arnsApproveInWallet": "अपने ArNS वॉलेट में बदलाव को मंज़ूरी दें।",
+  "arnsApproveInWallet": "अपने Solana वॉलेट में बदलाव को मंज़ूरी दें।",
   "@arnsApproveInWallet": {
     "description": "Progress: waiting for the wallet."
   },
@@ -6245,7 +6249,7 @@
   "@arnsMakingTheChange": {
     "description": "Progress."
   },
-  "arnsApproveSecondPrompt": "अपने ArNS वॉलेट में एक बार और मंज़ूरी दें।",
+  "arnsApproveSecondPrompt": "अपने Solana वॉलेट में एक बार और मंज़ूरी दें।",
   "@arnsApproveSecondPrompt": {
     "description": "Progress: the second wallet prompt."
   },
@@ -6281,7 +6285,7 @@
   },
   "arnsResumeExpired": "{name} में बदलाव को समय पर मंज़ूरी नहीं मिली, इसलिए वह नहीं हुआ। आपके क्रेडिट्स 15 मिनट के अंदर वापस आ जाएंगे।",
   "@arnsResumeExpired": {
-    "description": "After a reload: a name change that was still running when the page closed expired, or still awaited the ArNS wallet's approval, which can't be given after a reload. Turbo refunds the credits on its own. The name is a host, like blog_acme.ar.io.",
+    "description": "After a reload: a name change that was still running when the page closed expired, or still awaited the Solana wallet's approval, which can't be given after a reload. Turbo refunds the credits on its own. The name is a host, like blog_acme.ar.io.",
     "placeholders": {
       "name": {
         "type": "String"
