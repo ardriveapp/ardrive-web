@@ -7,8 +7,11 @@ import {
   SealError,
   canonicalJson,
   fromB64u,
+  MAX_PUBLICATION_JSON_BYTES,
+  MAX_SEALED_BYTES,
   looksLikeKey,
   openPage,
+  parsePublicationText,
   ownerKek,
   passwordKek,
   unwrapKey,
@@ -128,6 +131,26 @@ test('the out-of-bounds slots would open their page if a reader ran them', () =>
     const key = unwrapKey(kek, bytes(slot.iv), bytes(slot.wrapped), config.publicationId);
     assert.ok(openPage({ config, sealedBytes: bytes(v.sealed), input: key.toString('base64url') }), v.name);
   }
+});
+
+test('a broken link key still lets a password open the page', () => {
+  const v = vectors.pages.find((p) => p.password === 'correct horse battery staple');
+  const config = JSON.parse(v.publicationJson);
+  for (const linkKey of ['B'.repeat(43), 'short', `${v.linkKey}x`]) {
+    const opened = openPage({ config, sealedBytes: bytes(v.sealed), linkKey, input: v.password });
+    assert.equal(opened.via, 'password', linkKey);
+  }
+});
+
+test('size caps', () => {
+  const v = vectors.pages[0];
+  const padded = v.publicationJson.replace('"title"', `"pad": "${'x'.repeat(MAX_PUBLICATION_JSON_BYTES)}",\n  "title"`);
+  assert.throws(() => parsePublicationText(padded), (e) => e instanceof SealError && e.code === 'invalid');
+  assert.deepEqual(parsePublicationText(v.publicationJson), JSON.parse(v.publicationJson));
+  assert.throws(
+    () => openPage({ config: JSON.parse(v.publicationJson), sealedBytes: Buffer.alloc(MAX_SEALED_BYTES + 1), linkKey: v.linkKey }),
+    (e) => e instanceof SealError && e.code === 'invalid',
+  );
 });
 
 test('keys have one spelling', () => {

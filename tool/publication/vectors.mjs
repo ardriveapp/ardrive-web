@@ -107,7 +107,6 @@ function sealedBlockFor({ folderId, label }) {
         'Entity-Type': 'drive-state',
       },
     },
-    fileCount: 2,
     files: {
       [FILE_A]: b64u(fixed(`${label}|file key A`)),
       [FILE_B]: b64u(fixed(`${label}|file key B`)),
@@ -126,7 +125,14 @@ function page({ label, folderId, password, title = '' }) {
   const driveKey = fixed(`${label}|drive key`);
   const block = sealedBlockFor({ folderId, label });
   const sealedIv = fixed(`${label}|sealed iv`, 12);
-  const sealedBytes = sealBlock(publicationKey, sealedIv, block, publicationId);
+  const header = {
+    publicationId,
+    driveId: DRIVE_ID,
+    owner: OWNER,
+    scope: folderId ? { type: 'folder', folderId } : { type: 'drive' },
+    title,
+  };
+  const sealedBytes = sealBlock(publicationKey, sealedIv, block, header);
   const slots = [];
   if (password != null) {
     slots.push(
@@ -167,18 +173,27 @@ function page({ label, folderId, password, title = '' }) {
  * A password slot for a good page's key, made without the reader's bounds,
  * as a hostile or broken writer could. Settings start from the fastest ones.
  */
-function unboundedSlot(good, { t = FAST.t, saltBytes = 16 }) {
+function unboundedSlot(good, { m = FAST.m, t = FAST.t, p = FAST.p, saltBytes = 16 }) {
   const config = JSON.parse(good.publicationJson);
-  const salt = fixed(`unbounded|salt|${t}|${saltBytes}`, saltBytes);
-  const iv = fixed(`unbounded|iv|${t}|${saltBytes}`, 12);
+  const label = `unbounded|${m}|${t}|${p}|${saltBytes}`;
+  const salt = Buffer.concat([fixed(`${label}|salt`), fixed(`${label}|salt 2`), fixed(`${label}|salt 3`)]).subarray(0, saltBytes);
+  const iv = fixed(`${label}|iv`, 12);
   const kek = crypto.argon2Sync('argon2id', {
     message: Buffer.from(good.password.normalize('NFC'), 'utf8'),
-    nonce: salt, parallelism: FAST.p, tagLength: 32, memory: FAST.m, passes: t,
+    nonce: salt, parallelism: p, tagLength: 32, memory: m, passes: t,
   });
   return {
-    type: 'password', kdf: 'argon2id', salt: b64u(salt), m: FAST.m, t, p: FAST.p, cipher: CIPHER,
+    type: 'password', kdf: 'argon2id', salt: b64u(salt), m, t, p, cipher: CIPHER,
     iv: b64u(iv), wrapped: b64u(wrapKey(kek, iv, Buffer.from(good.linkKey, 'base64url'), config.publicationId)),
   };
+}
+
+/** The same bytes spelled with one of the unused low bits set. */
+function looseSpelling(text) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const loose = text.slice(0, -1) + alphabet[alphabet.indexOf(text.at(-1)) ^ 1];
+  if (!Buffer.from(loose, 'base64url').equals(Buffer.from(text, 'base64url'))) throw new Error('no unused bits');
+  return loose;
 }
 
 /** Pages a reader must refuse, each made from a good page by one change. */
@@ -196,12 +211,11 @@ function refusals(good) {
   // must not open a block that describes something else.
   const otherScope = JSON.parse(good.sealedPlaintext);
   otherScope.scope.folderId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
-  const publicationId = config().publicationId;
   const resealed = sealBlock(
     Buffer.from(good.linkKey, 'base64url'),
     Buffer.from(config().sealed.iv, 'base64url'),
     otherScope,
-    publicationId,
+    config(),
   );
 
   return [
@@ -218,10 +232,32 @@ function refusals(good) {
       linkKey: good.linkKey, input: good.password, error: 'no-match' },
     // Real slots that would open the page, made outside the bounds: a reader
     // must refuse to run them, not merely fail to open them.
-    { name: 'password slot above the passes bound is never run', sealed: good.sealed, outOfBounds: true,
-      publicationJson: edit((c) => { c.slots[0] = unboundedSlot(good, { t: 11 }); }), input: good.password, error: 'no-match' },
-    { name: 'password slot salt under 16 bytes is never run', sealed: good.sealed, outOfBounds: true,
-      publicationJson: edit((c) => { c.slots[0] = unboundedSlot(good, { saltBytes: 8 }); }), input: good.password, error: 'no-match' },
+    ...[
+      ['passes above the bound', { t: 11 }],
+      ['memory below the bound', { m: 4096 }],
+      ['memory above the bound', { m: 262145 }],
+      ['lanes above the bound', { m: 8192, p: 5 }],
+      ['salt under 16 bytes', { saltBytes: 8 }],
+      ['salt over 64 bytes', { saltBytes: 65 }],
+    ].map(([what, params]) => ({
+      name: `a password slot with ${what} is never run`, sealed: good.sealed, outOfBounds: true,
+      publicationJson: edit((c) => { c.slots[0] = unboundedSlot(good, params); }), input: good.password, error: 'no-match',
+    })),
+    { name: 'a password slot with a non-canonical salt is never run', sealed: good.sealed, outOfBounds: true,
+      publicationJson: edit((c) => { c.slots[0].salt = looseSpelling(c.slots[0].salt); }), input: good.password, error: 'no-match' },
+    { name: 'only the first password slot is read', sealed: good.sealed,
+      publicationJson: edit((c) => { c.slots = [unboundedSlot(good, { t: 11 }), c.slots[0], c.slots[1]]; }),
+      input: good.password, error: 'no-match' },
+    // The sealed part is bound to the page: reused under another drive,
+    // owner or title, the right key no longer opens it.
+    { name: 'driveId changed', sealed: good.sealed, linkKey: good.linkKey, error: 'no-match',
+      publicationJson: edit((c) => { c.driveId = '00000000-0000-4000-8000-000000000000'; }) },
+    { name: 'owner changed', sealed: good.sealed, linkKey: good.linkKey, error: 'no-match',
+      publicationJson: edit((c) => { c.owner = txId('another owner'); }) },
+    { name: 'title changed', sealed: good.sealed, linkKey: good.linkKey, error: 'no-match',
+      publicationJson: edit((c) => { c.title = 'Tax records'; }) },
+    { name: 'description added', sealed: good.sealed, linkKey: good.linkKey, error: 'no-match',
+      publicationJson: edit((c) => { c.description = 'Tax records'; }) },
     { name: 'sealed block describes another folder', publicationJson: good.publicationJson, sealed: b64u(resealed),
       linkKey: good.linkKey, error: 'invalid' },
     { name: 'version 3 cannot be public', sealed: good.sealed,
@@ -237,6 +273,17 @@ function refusals(good) {
 export function buildVectors() {
   const folderPage = page({ label: 'folder page with a password', folderId: FOLDER_ID, password: 'correct horse battery staple', title: 'Family photos' });
   const drivePage = page({ label: 'drive page, link only' });
+  // Passwords of 43 base64url characters look like keys. Whether or not they
+  // spell one, a reader tries them as a key, then against the slot.
+  const keyShaped = (password, canonical) => {
+    if (password.length !== 43) throw new Error('a key-shaped password is 43 characters');
+    if ((b64u(Buffer.from(password, 'base64url')) === password) !== canonical) throw new Error(`canonical must be ${canonical}`);
+    return page({ label: `drive page with a key-shaped password, ${canonical ? 'canonical' : 'not canonical'}`, password });
+  };
+  const keyShapedPages = [
+    keyShaped('correct-horse-battery-staple-and-two-more-R', false),
+    keyShaped('correct-horse-battery-staple-and-two-more-Q', true),
+  ];
 
   const ownerCase = { driveKey: fixed('owner kek|drive key'), publicationId: '3f1e2d4c-5b6a-4798-8a9b-0c1d2e3f4a5b' };
   const wrapCase = {
@@ -266,7 +313,7 @@ export function buildVectors() {
       aad: `ArDrive publication slot v1|${wrapCase.publicationId}`,
       wrapped: b64u(wrapKey(wrapCase.kek, wrapCase.iv, wrapCase.publicationKey, wrapCase.publicationId)),
     }],
-    pages: [folderPage, drivePage],
+    pages: [folderPage, drivePage, ...keyShapedPages],
     refusals: refusals(folderPage),
   };
 }

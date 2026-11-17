@@ -28,7 +28,7 @@ export const ARGON2_BOUNDS = Object.freeze({
   m: [8192, 262144],
   t: [1, 10],
   p: [1, 4],
-  saltBytes: 16,
+  saltBytes: [16, 64],
 });
 
 const KEY_BYTES = 32;
@@ -121,6 +121,7 @@ export function passwordKek(password, { salt, m, t, p }) {
  * one publication: the drive key itself is never used to wrap anything.
  */
 export function ownerKek(driveKey, publicationId) {
+  if (driveKey.length !== KEY_BYTES) throw new SealError('invalid', 'a drive key is 32 bytes');
   return Buffer.from(
     crypto.hkdfSync('sha256', driveKey, Buffer.alloc(0), Buffer.from(OWNER_INFO + publicationId, 'utf8'), KEY_BYTES),
   );
@@ -161,9 +162,6 @@ export function ownerSlot({ driveKey, iv, publicationKey, publicationId }) {
   };
 }
 
-/** The sealed block's bytes: canonical JSON under the publication key. */
-export const sealBlock = (publicationKey, iv, block, publicationId) =>
-  gcmEncrypt(publicationKey, iv, Buffer.from(canonicalJson(block), 'utf8'), SEALED_AAD + publicationId);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TX_ID = /^[A-Za-z0-9_-]{43}$/;
@@ -222,10 +220,54 @@ export function buildPrivatePublicationJson({
   return `${JSON.stringify(config, null, 2)}\n`;
 }
 
+/** A reader refuses a version 3 publication.json larger than this. */
+export const MAX_PUBLICATION_JSON_BYTES = 65536;
+
+/** A reader refuses a sealed part larger than this, before decrypting it. */
+export const MAX_SEALED_BYTES = 32 * 1024 * 1024;
+
+/** publication.json's text, size-checked and parsed. */
+export function parsePublicationText(text) {
+  need(Buffer.byteLength(text, 'utf8') <= MAX_PUBLICATION_JSON_BYTES, 'publication.json is too large');
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new SealError('invalid', 'publication.json is not JSON');
+  }
+}
+
+/** The page's scope with only the keys the spec defines. */
+const scopeOf = (scope) =>
+  scope.type === 'folder' ? { type: 'folder', folderId: scope.folderId } : { type: 'drive' };
+
+/**
+ * What the sealed block is bound to, as its associated data: the page's
+ * identity and the text everyone sees. A sealed part reused under another
+ * drive, owner, scope, title or description does not open.
+ */
+export function sealedAad(config) {
+  return SEALED_AAD + canonicalJson({
+    description: config.description ?? '',
+    driveId: config.driveId,
+    owner: config.owner,
+    publicationId: config.publicationId,
+    scope: scopeOf(config.scope),
+    title: config.title,
+  });
+}
+
+/** The sealed part's bytes: the block's canonical JSON, bound to its page. */
+export const sealBlock = (publicationKey, iv, block, config) =>
+  gcmEncrypt(publicationKey, iv, Buffer.from(canonicalJson(block), 'utf8'), sealedAad(config));
+
+const PASSWORD_SLOT = (slot) => slot.type === 'password';
+const OWNER_SLOT = (slot) => slot.type === 'owner';
+
 /**
  * The reader's checks on a version 3 publication.json, beyond JSON parsing.
- * Returns the usable slots: unknown slot types are ignored, and a password
- * slot outside the bounds is never run.
+ * Only the first slot of each type is read; a password slot that is
+ * malformed or outside the bounds is never run, and the page can still open
+ * by key.
  */
 export function readPrivatePublication(config) {
   need(isObject(config), 'publication.json must be an object');
@@ -241,8 +283,10 @@ export function readPrivatePublication(config) {
   }
   need(typeof config.owner === 'string' && TX_ID.test(config.owner), 'owner must be an Arweave address');
   need(typeof config.title === 'string', 'title must be a string, and may be empty');
-  need(config.snapshot === undefined && config.file === undefined && config.fileCount === undefined,
-    'a private page has no snapshot, file or fileCount');
+  need(config.description === undefined || typeof config.description === 'string', 'description must be a string');
+  for (const key of ['rootFolderId', 'snapshot', 'file', 'fileCount']) {
+    need(config[key] === undefined, `a private page has no ${key}`);
+  }
 
   const s = config.sealed;
   need(isObject(s), 'sealed must be an object');
@@ -252,43 +296,55 @@ export function readPrivatePublication(config) {
   const sealedIv = fromB64u(s.iv, { bytes: IV_BYTES, what: 'sealed.iv' });
 
   need(Array.isArray(config.slots), 'slots must be an array');
-  const passwordSlots = [];
-  const ownerSlots = [];
-  for (const slot of config.slots) {
-    if (!isObject(slot)) continue;
-    if (slot.type === 'password' && slot.kdf === 'argon2id' && slot.cipher === CIPHER) {
-      try {
-        checkArgon2Params(slot);
-        const salt = fromB64u(slot.salt, { what: 'slot salt' });
-        if (salt.length < ARGON2_BOUNDS.saltBytes) throw new SealError('out-of-bounds', 'a slot salt is at least 16 bytes');
-        passwordSlots.push({
-          salt,
-          m: slot.m,
-          t: slot.t,
-          p: slot.p,
-          iv: fromB64u(slot.iv, { bytes: IV_BYTES, what: 'slot iv' }),
-          wrapped: fromB64u(slot.wrapped, { bytes: KEY_BYTES + TAG_BYTES, what: 'slot wrapped' }),
-        });
-      } catch (e) {
-        if (!(e instanceof SealError)) throw e;
-        // Skipped, not fatal: the link key may still open the page.
+  const slots = config.slots.filter(isObject);
+
+  let passwordSlot = null;
+  const p = slots.find(PASSWORD_SLOT);
+  if (p) {
+    try {
+      need(p.kdf === 'argon2id' && p.cipher === CIPHER, 'unknown password slot');
+      checkArgon2Params(p);
+      const salt = fromB64u(p.salt, { what: 'slot salt' });
+      if (salt.length < ARGON2_BOUNDS.saltBytes[0] || salt.length > ARGON2_BOUNDS.saltBytes[1]) {
+        throw new SealError('out-of-bounds', 'a slot salt is 16 to 64 bytes');
       }
-    } else if (slot.type === 'owner' && slot.kdf === 'hkdf-sha256' && slot.cipher === CIPHER) {
-      ownerSlots.push({
-        iv: fromB64u(slot.iv, { bytes: IV_BYTES, what: 'slot iv' }),
-        wrapped: fromB64u(slot.wrapped, { bytes: KEY_BYTES + TAG_BYTES, what: 'slot wrapped' }),
-      });
+      passwordSlot = {
+        salt,
+        m: p.m,
+        t: p.t,
+        p: p.p,
+        iv: fromB64u(p.iv, { bytes: IV_BYTES, what: 'slot iv' }),
+        wrapped: fromB64u(p.wrapped, { bytes: KEY_BYTES + TAG_BYTES, what: 'slot wrapped' }),
+      };
+    } catch (e) {
+      if (!(e instanceof SealError)) throw e;
     }
   }
-  return { sealedIv, passwordSlots, ownerSlots };
+
+  let ownerSlot = null;
+  const o = slots.find(OWNER_SLOT);
+  if (o) {
+    try {
+      need(o.kdf === 'hkdf-sha256' && o.cipher === CIPHER, 'unknown owner slot');
+      ownerSlot = {
+        iv: fromB64u(o.iv, { bytes: IV_BYTES, what: 'slot iv' }),
+        wrapped: fromB64u(o.wrapped, { bytes: KEY_BYTES + TAG_BYTES, what: 'slot wrapped' }),
+      };
+    } catch (e) {
+      if (!(e instanceof SealError)) throw e;
+    }
+  }
+  return { sealedIv, passwordSlot, ownerSlot };
 }
+
+/** The ciphers whose IV a reader checks; any other is ignored and looked up as usual. */
+export const KNOWN_DATA_CIPHERS = Object.freeze(['AES256-GCM', 'AES256-CTR']);
 
 /** The checks on the decrypted sealed block. It must describe the page it came with. */
 export function readSealedBlock(block, config) {
   need(isObject(block), 'the sealed block must be an object');
   need(block.v === SEALED_VERSION, 'sealed v must be 1');
-  need(isObject(block.scope) && block.scope.type === config.scope.type &&
-    (block.scope.type !== 'folder' || block.scope.folderId === config.scope.folderId),
+  need(isObject(block.scope) && canonicalJson(scopeOf(block.scope)) === canonicalJson(scopeOf(config.scope)),
     "the sealed scope must be the page's scope");
   need(UUID.test(block.rootFolderId ?? ''), 'rootFolderId must be a lowercase UUID');
 
@@ -298,9 +354,9 @@ export function readSealedBlock(block, config) {
   need(typeof c.txId === 'string' && TX_ID.test(c.txId), 'catalog.txId must be a transaction ID');
   fromB64u(c.key, { bytes: KEY_BYTES, what: 'catalog.key' });
   need(isObject(c.tags) && Object.values(c.tags).every((v) => typeof v === 'string'), 'catalog.tags values are strings');
-  need(c.tags.Cipher === CIPHER && typeof c.tags['Cipher-IV'] === 'string', 'catalog.tags carry Cipher and Cipher-IV');
+  need(c.tags.Cipher === CIPHER, 'catalog.tags.Cipher must be AES256-GCM');
+  fromB64u(c.tags['Cipher-IV'], { bytes: IV_BYTES, what: 'catalog Cipher-IV' });
 
-  need(Number.isInteger(block.fileCount) && block.fileCount >= 0, 'fileCount must be a non-negative integer');
   need(isObject(block.files), 'files must be an object');
   for (const [fileId, key] of Object.entries(block.files)) {
     need(UUID.test(fileId), 'a files key must be a lowercase UUID');
@@ -309,8 +365,11 @@ export function readSealedBlock(block, config) {
   need(isObject(block.ciphers), 'ciphers must be an object');
   for (const [txId, entry] of Object.entries(block.ciphers)) {
     need(TX_ID.test(txId), 'a ciphers key must be a transaction ID');
-    need(isObject(entry) && typeof entry.cipher === 'string' && typeof entry.iv === 'string',
-      `ciphers.${txId} needs cipher and iv`);
+    need(isObject(entry) && typeof entry.cipher === 'string', `ciphers.${txId} needs a cipher`);
+    if (KNOWN_DATA_CIPHERS.includes(entry.cipher)) {
+      need(typeof entry.iv === 'string' && entry.iv.length > 0, `ciphers.${txId} needs an iv`);
+      fromB64u(entry.iv, { what: `ciphers.${txId}.iv` });
+    }
   }
   return block;
 }
@@ -318,67 +377,74 @@ export function readSealedBlock(block, config) {
 /** Whether typed text could be a pasted publication key: 43 base64url characters. */
 export const looksLikeKey = (text) => /^[A-Za-z0-9_-]{43}$/.test(text);
 
-function tryKey(key, config, sealedBytes, sealedIv) {
-  const plain = gcmDecrypt(key, sealedIv, sealedBytes, SEALED_AAD + config.publicationId);
-  let block;
+/** The key typed text spells, or null: a non-canonical spelling is not a key, and may be a password. */
+function keyFrom(text) {
+  if (typeof text !== 'string' || !looksLikeKey(text)) return null;
   try {
-    block = JSON.parse(plain.toString('utf8'));
+    return fromB64u(text, { bytes: KEY_BYTES, what: 'a key' });
   } catch {
-    throw new SealError('invalid', 'the sealed block is not JSON');
+    return null;
   }
-  return { publicationKey: key, block: readSealedBlock(block, config) };
 }
 
 /**
  * Opens a page. `linkKey` is the `k` in the link; `input` is what a visitor
  * typed (a pasted key or a password); `driveKey` is the owner's. Tried in
- * that order. Throws SealError 'no-match' when nothing opens it.
+ * that order: link key, typed key, password slot, owner slot. Throws
+ * SealError 'no-match' when nothing opens it, and 'invalid' when a key
+ * opens a block that breaks the rules.
  */
 export function openPage({ config, sealedBytes, linkKey, input, driveKey }) {
-  const { sealedIv, passwordSlots, ownerSlots } = readPrivatePublication(config);
+  const { sealedIv, passwordSlot, ownerSlot } = readPrivatePublication(config);
+  need(sealedBytes.length <= MAX_SEALED_BYTES, 'the sealed part is too large');
+  const aad = sealedAad(config);
+
   const attempt = (key) => {
+    let plain;
     try {
-      return tryKey(key, config, sealedBytes, sealedIv);
+      plain = gcmDecrypt(key, sealedIv, sealedBytes, aad);
+    } catch (e) {
+      if (e instanceof SealError && e.code === 'no-match') return null;
+      throw e;
+    }
+    let block;
+    try {
+      block = JSON.parse(plain.toString('utf8'));
+    } catch {
+      throw new SealError('invalid', 'the sealed block is not JSON');
+    }
+    return { publicationKey: key, block: readSealedBlock(block, config) };
+  };
+  const unwrapped = (kek, slot) => {
+    try {
+      return unwrapKey(kek, slot.iv, slot.wrapped, config.publicationId);
     } catch (e) {
       if (e instanceof SealError && e.code === 'no-match') return null;
       throw e;
     }
   };
 
-  if (linkKey != null) {
-    const opened = looksLikeKey(linkKey) && attempt(fromB64u(linkKey, { bytes: KEY_BYTES, what: 'the link key' }));
+  const fromLink = keyFrom(linkKey);
+  if (fromLink) {
+    const opened = attempt(fromLink);
     if (opened) return { ...opened, via: 'link' };
   }
-  if (input != null) {
-    if (looksLikeKey(input)) {
-      const opened = attempt(fromB64u(input, { bytes: KEY_BYTES, what: 'the typed key' }));
+  if (typeof input === 'string') {
+    const typed = keyFrom(input);
+    if (typed) {
+      const opened = attempt(typed);
       if (opened) return { ...opened, via: 'key' };
     }
-    for (const slot of passwordSlots) {
-      let key;
-      try {
-        key = unwrapKey(passwordKek(input, slot), slot.iv, slot.wrapped, config.publicationId);
-      } catch (e) {
-        if (e instanceof SealError && e.code === 'no-match') continue;
-        throw e;
-      }
-      const opened = attempt(key);
+    if (passwordSlot) {
+      const key = unwrapped(passwordKek(input, passwordSlot), passwordSlot);
+      const opened = key && attempt(key);
       if (opened) return { ...opened, via: 'password' };
     }
   }
-  if (driveKey != null) {
-    const kek = ownerKek(driveKey, config.publicationId);
-    for (const slot of ownerSlots) {
-      let key;
-      try {
-        key = unwrapKey(kek, slot.iv, slot.wrapped, config.publicationId);
-      } catch (e) {
-        if (e instanceof SealError && e.code === 'no-match') continue;
-        throw e;
-      }
-      const opened = attempt(key);
-      if (opened) return { ...opened, via: 'owner' };
-    }
+  if (driveKey != null && ownerSlot) {
+    const key = unwrapped(ownerKek(driveKey, config.publicationId), ownerSlot);
+    const opened = key && attempt(key);
+    if (opened) return { ...opened, via: 'owner' };
   }
   throw new SealError('no-match', 'nothing given opens this page');
 }

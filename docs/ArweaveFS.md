@@ -362,7 +362,7 @@ The publication key reaches a visitor in one of three ways:
 
 The owner gets it from the owner slot, with the drive key.
 
-Anyone who has the publication key can open every version of the publication. A file keeps its key across revisions, so they can also decrypt any revision of a file that was ever in scope. A writer cannot take access back: every version stays on Arweave and keeps its slots. So a writer must not offer to change or remove a password. It may add a password slot to a later version.
+Anyone who has the publication key can open every version of the publication. A file keeps its key across revisions, so they can also decrypt any revision of a file that was ever in scope. A writer cannot take access back: every version stays on Arweave and keeps its slots. So a writer must not offer to change or remove a password. It may add a password slot to a later version. A later version carries its slots forward byte for byte; a writer never wraps the key again under a key that was already used.
 
 #### Encodings
 
@@ -391,11 +391,11 @@ There is no `snapshot`, `files.html` or `sitemap.xml`. `sealed` and `catalog` ar
 | `privacy` | string | yes | `private`. A version 3 page is always private |
 | `owner` | string | yes | As in version 1 |
 | `sealed` | object | yes | `path` (a plain relative path), `txId` (the sealed block's transaction ID), `cipher` (`AES256-GCM`) and `iv` |
-| `slots` | array | yes | Objects, below. A writer writes exactly one owner slot and at most one password slot. A reader ignores a slot it does not know |
+| `slots` | array | yes | Objects, below. A writer writes exactly one owner slot and at most one password slot. A reader reads only the first slot of each `type` and ignores types it does not know |
 | `title` | string | yes | May be empty. A reader shows "Private page" for an empty title |
 | `description`, `ownerName`, `keywords`, `license`, `images`, `publishedAt`, `names`, `viewer` | | no | As in version 1 |
 
-A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` or `fileCount`. A reader refuses one that does. Nothing in it is secret: it holds no drive, folder or file name, no count of files and no key except wrapped ones.
+A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` or `fileCount`. A reader refuses one that does, and one larger than 64 KiB. Nothing in it is secret: it holds no drive, folder or file name, no count of files and no key except wrapped ones. What stays visible: whether the page has a password, and the sizes of `sealed` and `catalog`, which show roughly how many files and folders it has.
 
 **Password slot:**
 
@@ -408,7 +408,7 @@ A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` 
 2. Run Argon2id (RFC 9106, version 0x13) over it with the slot's `salt` (at least 16 random bytes), memory `m` in KiB, `t` passes and `p` lanes, with no secret and no associated data, for 32 bytes.
 3. Those 32 bytes are the key that wraps: `wrapped` is the AES-256-GCM encryption of the publication key under it, with the slot's `iv` and the associated data `ArDrive publication slot v1|<publicationId>` in UTF-8.
 
-A reader never runs a slot with `m` outside 8192 to 262144, `t` outside 1 to 10, `p` outside 1 to 4, or a salt under 16 bytes. It skips that slot. Writers use `m` 65536, `t` 3, `p` 1 unless a release raises them.
+A reader never runs a password slot with `m` outside 8192 to 262144, `t` outside 1 to 10, `p` outside 1 to 4, a salt outside 16 to 64 bytes, or any field it cannot read. The page can still open by key. Writers use a 16-byte salt and `m` 65536, `t` 3, `p` 1 unless a release raises them. The slot's associated data does not cover these settings. It doesn't need to: changing one changes the key that wraps.
 
 **Owner slot:**
 
@@ -416,21 +416,30 @@ A reader never runs a slot with `m` outside 8192 to 262144, `t` outside 1 to 10,
 { "type": "owner", "kdf": "hkdf-sha256", "cipher": "AES256-GCM", "iv": "…", "wrapped": "…" }
 ```
 
-The key that wraps is HKDF-SHA256 (RFC 5869) over the 32-byte drive key, with an empty salt and the info `ArDrive publication owner v1|<publicationId>` in UTF-8, for 32 bytes. It is made for this one publication, and the drive key itself never wraps anything. `wrapped` is as in a password slot.
+The key that wraps is HKDF-SHA256 (RFC 5869) over the drive key (32 bytes; a reader refuses any other length), with an empty salt and the info `ArDrive publication owner v1|<publicationId>` in UTF-8, for 32 bytes. It is made for this one publication, and the drive key itself never wraps anything. `wrapped` is as in a password slot.
 
 #### The sealed block
 
-The `sealed` path holds AES-256-GCM, under the publication key, with `sealed.iv` and the associated data `ArDrive publication sealed v1|<publicationId>`, of a JSON object in UTF-8. Writers write it with sorted keys and no whitespace. Readers accept any JSON.
+The `sealed` path holds AES-256-GCM, under the publication key, with `sealed.iv`, of a JSON object in UTF-8. Writers write it with sorted keys and no whitespace; readers accept any JSON. A reader refuses a sealed part larger than 32 MiB before decrypting it.
+
+Its associated data binds it to the page: `ArDrive publication sealed v1|` followed by this header as JSON with sorted keys and no whitespace, in UTF-8:
+
+```json
+{"description":"<description, or empty>","driveId":"…","owner":"…","publicationId":"…","scope":{…},"title":"…"}
+```
+
+`scope` holds only `type` and, for a folder, `folderId`. A sealed part copied under another drive, owner, scope, title or description does not open. Images and the manifest's other paths are not covered.
+
+A reader refuses a sealed block that breaks these rules:
 
 | Key | Type | Rule |
 |---|---|---|
 | `v` | integer | 1. A reader refuses other values |
-| `scope` | object | Equal to `publication.json`'s `scope`. A reader refuses a block that describes another page |
+| `scope` | object | Equal to `publication.json`'s `scope` |
 | `rootFolderId` | string | The drive's root folder: a lowercase UUID |
-| `catalog` | object | `path`, `txId`, `key` (the catalog key) and `tags` (string values: the tags an importer reads, as `snapshot.tags` in version 1, with `Cipher: AES256-GCM` and `Cipher-IV` describing the catalog's encryption) |
-| `fileCount` | integer | At least 0. The files in scope |
-| `files` | object | File ID to file key, for every file in the catalog |
-| `ciphers` | object | Transaction ID to `{"cipher", "iv"}`: the `Cipher` and `Cipher-IV` tags of each file's data and thumbnails. A transaction missing here is looked up as usual |
+| `catalog` | object | `path` (a plain relative path), `txId`, `key` (the catalog key, 32 bytes) and `tags` (string values: the tags an importer reads, as `snapshot.tags` in version 1, with `Cipher: AES256-GCM` and a 12-byte `Cipher-IV` describing the catalog's encryption) |
+| `files` | object | Lowercase file ID to file key (32 bytes), for every file in the catalog. The number of entries is the page's file count |
+| `ciphers` | object | Transaction ID to `{"cipher", "iv"}`: the `Cipher` and `Cipher-IV` tags of each file's data and thumbnails. For `AES256-GCM` and `AES256-CTR` the `iv` must be canonical base64url. An entry with another cipher is ignored, and a transaction missing here is looked up as usual |
 
 A reader ignores keys it does not know.
 
@@ -440,7 +449,7 @@ The catalog is a Drive State artifact ([DRIVE_STATE_ARTIFACT.md](DRIVE_STATE_ART
 
 #### Opening a version 3 page
 
-A reader tries, in order, the link's `k`, then what the visitor typed: as a publication key if it is 43 base64url characters, then as a password against each password slot. A key opens the page when the sealed block decrypts and passes the checks above. A failed attempt is not an error the visitor sees, only "That didn't open this page."
+A reader tries, in order: the link's `k`; what the visitor typed, as a publication key if it is the canonical spelling of 32 bytes, then as a password against the password slot; and, for the owner, the owner slot. A password of 43 base64url characters is therefore still tried as a password. A malformed `k` is passed over, not an error. A key opens the page when the sealed block decrypts and passes the checks above. A failed attempt is not an error the visitor sees, only "That didn't open this page."
 
 The test vectors in `test/publication/fixtures/sealed/vectors.json`, written by `tool/publication/vectors.mjs`, hold every step above, a page of each scope, and pages a reader must refuse. A client must pass them.
 
