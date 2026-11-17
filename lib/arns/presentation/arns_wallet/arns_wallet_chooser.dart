@@ -93,8 +93,13 @@ class _ArNSWalletChooserState extends State<ArNSWalletChooser> {
       } else {
         await cubit.link(wallet.name);
       }
-      if (cubit.state.status == ArNSWalletStatus.connected) {
+      final after = cubit.state;
+      if (after.status == ArNSWalletStatus.connected) {
         widget.onLinked?.call();
+      } else if (after.connectedAddress == null) {
+        // The wallet closed its prompt without an account and without an
+        // error: not connected all the same.
+        if (mounted) setState(() => _notConnected = true);
       }
     } catch (e) {
       // A rejected connection prompt: say so and offer it again.

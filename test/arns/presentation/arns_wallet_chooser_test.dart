@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_chooser.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -51,7 +52,8 @@ void main() {
       );
     });
 
-    Future<void> pump(WidgetTester tester) => tester.pumpWidget(
+    Future<void> pump(WidgetTester tester, {VoidCallback? onLinked}) =>
+        tester.pumpWidget(
           ArDriveApp(
             themeData: lightTheme(),
             builder: (context) => MaterialApp(
@@ -59,7 +61,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<ArNSWalletCubit>.value(
                 value: cubit,
-                child: const Scaffold(body: ArNSWalletChooser()),
+                child: Scaffold(body: ArNSWalletChooser(onLinked: onLinked)),
               ),
             ),
           ),
@@ -88,13 +90,38 @@ void main() {
     });
 
     testWidgets('is not shown when the connect works', (tester) async {
-      when(() => cubit.link(any())).thenAnswer((_) async {});
-      await pump(tester);
+      var current = cubit.state;
+      when(() => cubit.state).thenAnswer((_) => current);
+      when(() => cubit.link(any())).thenAnswer((_) async {
+        current = const ArNSWalletState(
+          enabled: true,
+          profileAddress: 'profile',
+          linked: LinkedArNSWallet(address: 'sol', walletName: 'Phantom'),
+          connectedAddress: 'sol',
+          connectedWalletName: 'Phantom',
+        );
+      });
+      var linkedCalls = 0;
+      await pump(tester, onLinked: () => linkedCalls++);
 
       await tester.tap(find.text('Phantom'));
       await tester.pump();
 
       expect(find.text(message), findsNothing);
+      expect(linkedCalls, 1);
+    });
+
+    testWidgets('says so when the wallet returns no account', (tester) async {
+      // link() completes without an error, but nothing connected.
+      when(() => cubit.link(any())).thenAnswer((_) async {});
+      var linkedCalls = 0;
+      await pump(tester, onLinked: () => linkedCalls++);
+
+      await tester.tap(find.text('Phantom'));
+      await tester.pump();
+
+      expect(find.text(message), findsOneWidget);
+      expect(linkedCalls, 0);
     });
   });
 }

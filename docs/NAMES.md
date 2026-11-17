@@ -112,7 +112,8 @@ This follows the ar.io console.
   credits are debited; the Solana wallet signs a proof message for each change.
   When Turbo is not a controller of the name, the Solana wallet also signs one
   transaction that Turbo has already paid for, so the wallet may ask twice.
-  The Solana wallet never needs SOL.
+  For a name you own, the Solana wallet never needs SOL. Names you manage
+  for someone else are the exception (below).
 - **Cost first.** Read from Turbo's price endpoint before the prompt, never
   "free". On 2026-10-25: about 0.12 credits to point or repoint a name, 0.001
   credits to remove an undername. The cost line covers the name change and the
