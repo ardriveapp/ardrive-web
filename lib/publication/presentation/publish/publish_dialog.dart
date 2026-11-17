@@ -982,6 +982,7 @@ class _How extends StatelessWidget {
                 title: strings.publishHowPage,
                 note: pageNote,
                 isSelected: state.how == FilePublishHow.page,
+                reservesCheck: true,
                 isChecking: state.how == FilePublishHow.page &&
                     state.filePages == FilePageAvailability.checking,
                 onTap: () {
@@ -1014,6 +1015,7 @@ class _HowOption extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.isChecking = false,
+    this.reservesCheck = false,
   });
 
   final String title;
@@ -1025,6 +1027,10 @@ class _HowOption extends StatelessWidget {
 
   /// Whether this choice is still being checked.
   final bool isChecking;
+
+  /// Whether the spinner's slot is kept while not checking, so the note does
+  /// not rewrap when the check starts or ends.
+  final bool reservesCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -1080,10 +1086,12 @@ class _HowOption extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (isChecking) ...[
+                  if (isChecking || reservesCheck) ...[
                     const SizedBox(width: 12),
-                    const SizedBox.square(
-                        dimension: 16, child: ArDriveSpinner()),
+                    SizedBox.square(
+                      dimension: 16,
+                      child: isChecking ? const ArDriveSpinner() : null,
+                    ),
                   ],
                 ],
               ),

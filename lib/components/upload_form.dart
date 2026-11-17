@@ -3160,10 +3160,10 @@ class _UploadLoadingFilesSuccessWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ArDriveStandardModalNew(
-      title: 'All set!',
-      description: 'We are ready to start preparing your upload.',
-    );
+    // Shown for a frame or two before preparing starts; a card here only
+    // flashed at a size the next step then replaced. Stay as empty as
+    // [_UploadLoadingFilesWidget] is while it waits.
+    return const SizedBox();
   }
 }
 

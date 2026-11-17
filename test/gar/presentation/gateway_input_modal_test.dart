@@ -84,7 +84,8 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField), 'https://ar-io.dev');
     await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
+    // The dialog grows to fit the result; Save is where it ends up.
+    await tester.pumpAndSettle();
 
     expect(saveButton(tester).isDisabled, isFalse);
     await tester.tap(find.text('Save'));

@@ -333,6 +333,54 @@ void main() {
     expect(await dialogWidthAt(tester, const Size(1440, 900)),
         lessThanOrEqualTo(350));
   });
+
+  group('ArDriveStandardModalNew size changes', () {
+    Widget host(double height, {bool reduceMotion = false}) => ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Builder(
+              builder: (context) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(disableAnimations: reduceMotion),
+                child: Center(
+                  child: ArDriveStandardModalNew(
+                    title: 'Title',
+                    content: SizedBox(key: const Key('body'), height: height),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('grows to its new content over time, not in one frame',
+        (tester) async {
+      await tester.pumpWidget(host(20));
+      final before = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      await tester.pumpWidget(host(300));
+      await tester.pump(const Duration(milliseconds: 50));
+      final during = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      await tester.pumpAndSettle();
+      final after = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      expect(after - before, closeTo(280, 1));
+      expect(during, greaterThan(before));
+      expect(during, lessThan(after));
+    });
+
+    testWidgets('is instant when the platform asks for reduced motion',
+        (tester) async {
+      await tester.pumpWidget(host(20, reduceMotion: true));
+      final before = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      await tester.pumpWidget(host(300, reduceMotion: true));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(tester.getSize(find.byType(ArDriveModalNew)).height - before,
+          closeTo(280, 1));
+    });
+  });
 }
 
 class _TestWidget extends StatelessWidget {

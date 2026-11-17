@@ -402,43 +402,67 @@ class ArDriveStandardModalNew extends StatelessWidget {
       contentPadding: scrollableContent
           ? const EdgeInsets.symmetric(vertical: 16)
           : const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      content: scrollableContent
-          ? ConstrainedBox(
-              // Bound the modal to most of the viewport and keep the actions
-              // in view, scrolling the title and content above them, as
-              // Flutter's own scrollable AlertDialog does. The actions used to
-              // scroll away with the content, so a long form had to be
-              // scrolled to its end to reach Next. The title scrolls too: at
-              // the largest text on a short screen there is no room to hold
-              // it as well.
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Shows that it scrolls: a scrollbar in the right margin
-                  // and a divider above the actions while more is below.
-                  Flexible(
-                    child: ArDriveScrollArea(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [...header, ...middle],
+      content: _AnimatedModalSize(
+        child: scrollableContent
+            ? ConstrainedBox(
+                // Bound the modal to most of the viewport and keep the actions
+                // in view, scrolling the title and content above them, as
+                // Flutter's own scrollable AlertDialog does. The actions used to
+                // scroll away with the content, so a long form had to be
+                // scrolled to its end to reach Next. The title scrolls too: at
+                // the largest text on a short screen there is no room to hold
+                // it as well.
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Shows that it scrolls: a scrollbar in the right margin
+                    // and a divider above the actions while more is below.
+                    Flexible(
+                      child: ArDriveScrollArea(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [...header, ...middle],
+                        ),
                       ),
                     ),
-                  ),
-                  ...footer,
-                ],
+                    ...footer,
+                  ],
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [...header, ...middle, ...footer],
               ),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [...header, ...middle, ...footer],
-            ),
+      ),
+    );
+  }
+}
+
+/// Lets a modal grow or shrink to its next content over about 200 ms rather
+/// than snapping when a loading stub gives way to the real thing. Instant when
+/// the platform asks for reduced motion.
+class _AnimatedModalSize extends StatelessWidget {
+  const _AnimatedModalSize({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // No AnimatedSize at all, rather than one with a zero duration, which
+    // asserts in layout.
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      alignment: Alignment.topLeft,
+      child: child,
     );
   }
 }
