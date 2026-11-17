@@ -17,6 +17,39 @@ class CollapsingHeaderExtent {
 
   /// Whether any of the header is still on screen.
   final headerOnScreen = ValueNotifier<bool>(true);
+
+  /// Whether the header's anchor row can still be seen: it has faded out
+  /// once the bar is 40% in, and then it is neither a target nor a Tab stop.
+  final anchorInteractive = ValueNotifier<bool>(true);
+}
+
+/// [child], the anchor row of a [SliverCollapsingHeader] (the widget its
+/// `anchorKey` is on), made unreachable by pointer, focus and screen reader
+/// once it has faded out.
+class CollapsingAnchorGate extends StatelessWidget {
+  const CollapsingAnchorGate({
+    super.key,
+    required this.extent,
+    required this.child,
+  });
+
+  final CollapsingHeaderExtent extent;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: extent.anchorInteractive,
+      builder: (_, interactive, child) => ExcludeSemantics(
+        excluding: !interactive,
+        child: ExcludeFocus(
+          excluding: !interactive,
+          child: IgnorePointer(ignoring: !interactive, child: child),
+        ),
+      ),
+      child: child,
+    );
+  }
 }
 
 /// A header that is part of its scroll view's content, with a slim bar pinned
@@ -138,6 +171,11 @@ class RenderSliverCollapsingHeader extends RenderSliver
 
   double _scrolled = 0;
 
+  /// How much of the bar's coming in the header's anchor row is gone by:
+  /// it fades out in the first of it, so the title and the actions are never
+  /// on screen twice.
+  static const double _anchorGoneBy = 0.4;
+
   RenderBox get _header => firstChild!;
   RenderBox get _bar => lastChild!;
 
@@ -149,6 +187,11 @@ class RenderSliverCollapsingHeader extends RenderSliver
   double get _barSlide => _barHeight;
 
   Offset _barOffset() => Offset(0, -(1 - _progress) * _barSlide);
+
+  /// The anchor row's fade pushes a layer inside a clip: the clip has to be
+  /// a layer too, or it is lost on the way.
+  @override
+  bool get alwaysNeedsCompositing => true;
 
   @override
   void setupParentData(RenderObject child) {
@@ -178,7 +221,8 @@ class RenderSliverCollapsingHeader extends RenderSliver
     var anchorTop = 0.0;
     final anchor = _anchorKey?.currentContext?.findRenderObject();
     if (anchor is RenderBox && anchor.attached && anchor.hasSize) {
-      anchorTop = anchor.localToGlobal(Offset.zero, ancestor: _header).dy;
+      final at = anchor.localToGlobal(Offset.zero, ancestor: _header);
+      anchorTop = at.dy;
     }
     final start = math.max(0.0, anchorTop - _barHeight);
     final end = math.min(
@@ -194,6 +238,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
     _publish(
       interactive: _progress >= _interactiveFrom,
       headerOnScreen: offset < height,
+      anchorInteractive: _progress < _anchorGoneBy,
     );
 
     final remaining = constraints.remainingPaintExtent;
@@ -211,16 +256,23 @@ class RenderSliverCollapsingHeader extends RenderSliver
   bool _publishScheduled = false;
   bool _interactive = false;
   bool _headerOnScreen = true;
+  bool _anchorInteractive = true;
 
   /// Tells [CollapsingHeaderExtent]'s notifiers, after this frame: a widget
   /// cannot be rebuilt from layout.
-  void _publish({required bool interactive, required bool headerOnScreen}) {
+  void _publish({
+    required bool interactive,
+    required bool headerOnScreen,
+    required bool anchorInteractive,
+  }) {
     _interactive = interactive;
     _headerOnScreen = headerOnScreen;
+    _anchorInteractive = anchorInteractive;
     final extent = _extent;
     if (extent == null || _publishScheduled) return;
     if (extent.barInteractive.value == interactive &&
-        extent.headerOnScreen.value == headerOnScreen) {
+        extent.headerOnScreen.value == headerOnScreen &&
+        extent.anchorInteractive.value == anchorInteractive) {
       return;
     }
     _publishScheduled = true;
@@ -231,6 +283,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
       if (extent == null) return;
       extent.barInteractive.value = _interactive;
       extent.headerOnScreen.value = _headerOnScreen;
+      extent.anchorInteractive.value = _anchorInteractive;
     });
   }
 
@@ -249,12 +302,54 @@ class RenderSliverCollapsingHeader extends RenderSliver
   @override
   void paint(PaintingContext context, Offset offset) {
     if (_scrolled < _header.size.height) {
-      context.paintChild(_header, offset + Offset(0, -_scrolled));
+      _paintHeader(context, offset);
     }
     // Opaque all the way: a bar fading over the header's lines would show
     // them through it. It slides down over them instead.
     if (_progress <= 0) return;
     context.paintChild(_bar, offset + _barOffset());
+  }
+
+  /// The header at its place. While the bar is coming in, its anchor row (the
+  /// title and the actions) fades out by [_anchorGoneBy], on its own: the
+  /// rest of the header goes on scrolling under the bar, but the bar's own
+  /// title and buttons are never drawn over a second pair.
+  void _paintHeader(PaintingContext context, Offset offset) {
+    final at = Offset(0, -_scrolled);
+    final box = _anchorKey?.currentContext?.findRenderObject();
+    if (_progress <= 0 || box is! RenderBox || !box.attached || !box.hasSize) {
+      context.paintChild(_header, offset + at);
+      return;
+    }
+    final alpha = (1 - _progress / _anchorGoneBy).clamp(0.0, 1.0);
+    final row = (box.localToGlobal(Offset.zero, ancestor: _header) & box.size)
+        .shift(at);
+    // Everything but the row, as bands around it: a clip with a hole in it
+    // did not hold on the web, so each band is a plain rectangle.
+    final whole = (Offset.zero & _header.size).shift(at).inflate(8);
+    final bands = [
+      Rect.fromLTRB(whole.left, whole.top, whole.right, row.top),
+      Rect.fromLTRB(whole.left, row.bottom, whole.right, whole.bottom),
+      Rect.fromLTRB(whole.left, row.top, row.left, row.bottom),
+      Rect.fromLTRB(row.right, row.top, whole.right, row.bottom),
+    ];
+    for (final band in bands) {
+      if (band.isEmpty) continue;
+      context.pushClipRect(
+        true,
+        offset,
+        band,
+        (context, offset) => context.paintChild(_header, offset + at),
+      );
+    }
+    if (alpha <= 0) return;
+    context.pushClipRect(true, offset, row, (context, offset) {
+      context.pushOpacity(
+        offset,
+        (alpha * 255).round(),
+        (context, offset) => context.paintChild(_header, offset + at),
+      );
+    });
   }
 
   @override

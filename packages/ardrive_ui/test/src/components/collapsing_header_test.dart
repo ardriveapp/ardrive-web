@@ -1,5 +1,8 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'dart:ui' as ui;
+
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -103,19 +106,25 @@ void main() {
                               height: 200,
                               child: CustomPaint(painter: _Probe()),
                             ),
-                            SizedBox(
-                              key: anchor,
-                              height: 40,
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                      child: Text('Title', key: _titleKey)),
-                                  TextButton(
-                                    focusNode: headerFocus,
-                                    onPressed: () => downloads++,
-                                    child: const Text('Download'),
+                            CollapsingAnchorGate(
+                              extent: extent,
+                              child: SizedBox(
+                                key: anchor,
+                                height: 40,
+                                child: ColoredBox(
+                                  color: const Color(0xFFFF0000),
+                                  child: Row(
+                                    children: [
+                                      const Expanded(
+                                          child: Text('Title', key: _titleKey)),
+                                      TextButton(
+                                        focusNode: headerFocus,
+                                        onPressed: () => downloads++,
+                                        child: const Text('Download'),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                             const SizedBox(height: 72),
@@ -279,6 +288,8 @@ void main() {
       // The header's own button works while the bar is not there.
       await tester.pumpAndSettle();
       await wheel(tester, -200);
+      await tester.pump();
+      await tester.pump();
       await tester.tap(find.text('Download'));
       expect(downloads, 1);
 
@@ -406,6 +417,73 @@ void main() {
         final row = tester.getRect(find.text('row $index'));
         expect(row.top, greaterThanOrEqualTo(_barHeight + 45));
         expect(row.bottom, lessThanOrEqualTo(900));
+      });
+    }
+
+    /// The window's pixel at [x], [y].
+    Future<Color> pixel(WidgetTester tester, int x, int y) async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byType(RepaintBoundary).first);
+      final image = await tester.runAsync(boundary.toImage);
+      final data = (await tester.runAsync(
+          () => image!.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+      final i = (y * image!.width + x) * 4;
+      return Color.fromARGB(
+        data.getUint8(i + 3),
+        data.getUint8(i),
+        data.getUint8(i + 1),
+        data.getUint8(i + 2),
+      );
+    }
+
+    testWidgets('the title row is never drawn under the bar as it comes in',
+        (tester) async {
+      await pump(tester, rows: 9);
+      // At rest the title row (red) is there, 200 down.
+      expect((await pixel(tester, 300, 220)).red, 255);
+      expect((await pixel(tester, 300, 220)).green, 0);
+
+      var wasPartial = false;
+      // Every step of the hand-over, a pixel at a time.
+      for (var i = 0; i < 40; i++) {
+        await wheel(tester, 5);
+        final progress = sliver(tester).progress;
+        final top = tester.getTopLeft(find.byKey(const Key('title'))).dy;
+        // A column through the title row, under the bar's bottom edge and
+        // away from the text.
+        final y = (top + 8).round();
+        if (y < 56 * progress + 2 || y >= 900) continue;
+        final c = await pixel(tester, 700, y);
+        if (progress >= 0.4) {
+          expect(c.green, greaterThan(200),
+              reason: 'the row shows at progress $progress, y $y');
+        } else if (progress > 0.05) {
+          // Half way out: neither the full row nor nothing.
+          if (c.green > 20 && c.green < 235) wasPartial = true;
+        }
+      }
+      expect(wasPartial, isTrue);
+    });
+
+    for (final at in [0.45, 0.6]) {
+      testWidgets('the faded title row is no target at progress $at',
+          (tester) async {
+        await pump(tester, rows: 9);
+        // The header's Download, where it is at rest.
+        final spot = tester.getCenter(find.text('Download'));
+        while (sliver(tester).progress < at) {
+          await wheel(tester, 2);
+        }
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Download').hitTestable(), findsNothing);
+        await tester.tap(find.text('Download'), warnIfMissed: false);
+        await tester.pump();
+        expect(downloads, 0);
+        // And Tab never lands on it.
+        final reached = await tabThrough(tester);
+        expect(reached, isNot(contains(headerFocus)));
+        expect(spot, isNotNull);
       });
     }
   });
