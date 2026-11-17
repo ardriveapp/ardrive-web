@@ -1,5 +1,6 @@
 library;
 
+export 'src/compression_policy.dart';
 export 'src/constants.dart';
 export 'src/ardrive_uploader.dart';
 export 'src/arfs_upload_metadata.dart';

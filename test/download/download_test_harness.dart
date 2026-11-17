@@ -63,7 +63,11 @@ class FakeDownloadSource implements DownloadSource {
     this.honorsRange = true,
     this.chunkSize = 256,
     this.onOpen,
+    this.contentEncoding,
   });
+
+  /// The `Content-Encoding` every response declares, for a file stored gzipped.
+  final String? contentEncoding;
 
   final Uint8List body;
 
@@ -126,6 +130,7 @@ class FakeDownloadSource implements DownloadSource {
           : chunkedThenFail(tail, chunkSize, failAfter, txId),
       startOffsetBytes: startOffsetBytes,
       statusCode: startOffsetBytes == 0 ? 200 : 206,
+      contentEncoding: contentEncoding,
       cancel: () => cancelCount++,
     );
   }

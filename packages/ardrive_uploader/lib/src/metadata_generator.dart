@@ -101,6 +101,7 @@ class ARFSUploadMetadataGenerator
         licenseAdditionalTags: arguments.licenseAdditionalTags,
         assignedName: arguments.assignedName,
         fallbackTxId: arguments.fallbackTxId,
+        compressDeployment: arguments.compressDeployment,
         paidBy: arguments.paidBy ?? [],
       )
         ..setDataTags(tags['data-item']!)
@@ -184,6 +185,10 @@ class ARFSUploadMetadataArgs extends Equatable {
   final String? fallbackTxId;
   final List<String>? paidBy;
 
+  /// The file is part of a deployment (a folder upload with a root
+  /// `index.html`) and may be gzipped. Ignored for private drives.
+  final bool compressDeployment;
+
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
     required String parentFolderId,
@@ -248,6 +253,7 @@ class ARFSUploadMetadataArgs extends Equatable {
     this.assignedName,
     this.fallbackTxId,
     this.paidBy,
+    this.compressDeployment = false,
   });
 
   @override
@@ -260,6 +266,7 @@ class ARFSUploadMetadataArgs extends Equatable {
         licenseDefinitionTxId,
         licenseAdditionalTags,
         assignedName,
+        compressDeployment,
       ];
 }
 

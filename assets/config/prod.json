@@ -1,5 +1,5 @@
 {
-  "configVersion": 6,
+  "configVersion": 7,
   "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
   "defaultArweaveGatewayForDataRequest": {
     "label": "Turbo Gateway",
@@ -18,5 +18,6 @@
   "enableArNS": true,
   "arnsPlaceholderTxId": "hAs_l8a7vXqD2LTZ8MtM09-HpwYo21ynvZwoJtbYaTk",
   "uploadThumbnails": true,
+  "compressDeployments": false,
   "autoSync": false
 }

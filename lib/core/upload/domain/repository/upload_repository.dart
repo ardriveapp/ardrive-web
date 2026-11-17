@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/web_folder.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
+import 'package:ardrive/core/upload/deployment_upload.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
@@ -48,6 +49,10 @@ abstract class UploadRepository {
     // IMPORTANT: This must only apply when uploading a single file inside a folder
     String? assignedName,
     List<String>? paidBy,
+
+    /// Sends the text and code of a deployment (a root `index.html` in the
+    /// folder) gzipped. Public drives only; ignored otherwise.
+    bool compressDeployments = false,
   });
 
   /// Picks files from the file system.
@@ -176,12 +181,16 @@ class _UploadRepositoryImpl implements UploadRepository {
     required bool uploadThumbnail,
     String? assignedName,
     List<String>? paidBy = const [],
+    bool compressDeployments = false,
   }) async {
     final private = targetDrive.isPrivate;
     final driveKey = private
         ? await _driveDao.getDriveKey(
             targetDrive.id, _auth.currentUser.cipherKey)
         : null;
+
+    final compress =
+        compressDeployments && !private && isDeploymentUpload(files);
 
     List<(ARFSUploadMetadataArgs, IOEntity)> entities = [];
 
@@ -231,6 +240,7 @@ class _UploadRepositoryImpl implements UploadRepository {
           licenseAdditionalTags:
               licenseStateResolved?.params?.toAdditionalTags(),
           assignedName: assignedName,
+          compressDeployment: compress,
           paidBy: paidBy);
 
       entities.add((fileMetadata, file.ioFile));
