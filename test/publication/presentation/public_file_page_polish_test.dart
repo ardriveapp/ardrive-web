@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 import 'package:ardrive/blocs/blocs.dart' show LinkVerification;
 import 'package:ardrive/pages/drive_detail/components/document_preview_widget.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
@@ -66,7 +67,7 @@ void main() {
             : tester.renderObject<RenderParagraph>(
                 find.descendant(of: f, matching: find.byType(RichText)).first);
         return paragraph.localToGlobal(Offset.zero).dy +
-            paragraph.computeDistanceToActualBaseline(TextBaseline.alphabetic)!;
+            paragraph.computeDistanceToActualBaseline(TextBaseline.alphabetic);
       }
 
       final by = baseline(find.text('By'));
