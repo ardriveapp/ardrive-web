@@ -1499,6 +1499,24 @@ void main() {
       expect(titleNamesFile('Launch', 'Spring launch'), isFalse);
     });
 
+    testWidgets('centres the facts line on the icon when the name is hidden',
+        (tester) async {
+      await pumpPage(tester, success(), publication: filePage());
+
+      final icon = find.descendant(
+        of: find.byType(SharedFileIdentity),
+        matching: find.byWidgetPredicate(
+            (w) => w is SizedBox && w.width == 44 && w.height == 44),
+      );
+      final facts = find.descendant(
+        of: find.byType(SharedFileIdentity),
+        matching: find.textContaining('MiB'),
+      );
+      expect(nameInCard('Q3 Report.pdf'), findsNothing);
+      expect(
+          tester.getCenter(facts).dy, closeTo(tester.getCenter(icon).dy, 1.0));
+    });
+
     testWidgets('does not say Verified when the link was not verified',
         (tester) async {
       await pumpPage(

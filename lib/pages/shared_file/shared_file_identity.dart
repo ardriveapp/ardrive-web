@@ -88,7 +88,11 @@ class SharedFileIdentity extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // With no name line the facts line is the only text beside the
+          // icon, so it is centred on it (and, in the wide header, on
+          // Download); with a name the two sit from the top as before.
+          crossAxisAlignment:
+              showName ? CrossAxisAlignment.start : CrossAxisAlignment.center,
           children: [
             _buildLeading(context),
             const SizedBox(width: 12),
