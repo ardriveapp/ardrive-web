@@ -89,15 +89,17 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> addDrive(String id) => db.into(db.drives).insert(
-        DrivesCompanion.insert(
-          id: id,
-          rootFolderId: '$id-root',
-          ownerAddress: walletAddress,
-          name: id,
-          privacy: DrivePrivacyTag.public,
-        ),
-      );
+  Future<void> addDrive(String id, {bool synced = true}) =>
+      db.into(db.drives).insert(
+            DrivesCompanion.insert(
+              id: id,
+              rootFolderId: '$id-root',
+              ownerAddress: walletAddress,
+              name: id,
+              privacy: DrivePrivacyTag.public,
+              lastBlockHeight: Value(synced ? 1 : null),
+            ),
+          );
 
   /// A file as a first sync writes it: its data marked pending.
   Future<void> addSyncedFile(String fileId, {required String driveId}) async {
@@ -261,7 +263,8 @@ void main() {
       await confirmAll();
       await waitFor(tester, find.textContaining('2 files'));
 
-      expect(find.textContaining('2 drives  ·  2 files'), findsOneWidget);
+      expect(find.textContaining('2 drives'), findsOneWidget);
+      expect(find.textContaining('2 files'), findsOneWidget);
       expect(find.text('Your permanence'), findsOneWidget);
 
       await takeDown(tester);
@@ -327,7 +330,25 @@ void main() {
       await openCard(tester);
       await waitFor(tester, find.textContaining('1 drive'));
 
-      expect(find.textContaining('1 drive  ·  0 files'), findsOneWidget);
+      expect(find.textContaining('1 drive'), findsOneWidget);
+      expect(find.textContaining('0 files'), findsOneWidget);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets('says no files or size while a drive is not synced here',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('synced');
+      await addDrive('unsynced', synced: false);
+
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('2 drives'));
+
+      expect(find.textContaining('0 files'), findsNothing);
+      expect(find.textContaining('KiB'), findsNothing);
 
       await takeDown(tester);
     });

@@ -8071,7 +8071,7 @@
   "@enterPasswordUnlockDrives": {"description": "On the sign-in password dialog, under the Welcome back title."},
   "enterPasswordHint": "अपना पासवर्ड दर्ज करें",
   "@enterPasswordHint": {"description": "Placeholder of the password field on the sign-in password dialog."},
-  "forgetWalletDialogTitle": "वॉलेट भूल जाएं",
+  "forgetWalletDialogTitle": "दूसरा अकाउंट इस्तेमाल करें?",
   "@forgetWalletDialogTitle": {"description": "Title of the dialog that confirms forgetting the wallet on this device."},
   "forgetWalletDialogDescription": "क्या आप वाकई इस वॉलेट को भूलना चाहते हैं?",
   "@forgetWalletDialogDescription": {"description": "Question in the dialog that confirms forgetting the wallet on this device."},

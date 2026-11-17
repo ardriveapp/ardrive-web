@@ -181,6 +181,7 @@ class _ProfileCardState extends State<ProfileCard> {
     final walletAddress = state.user.displayAddress;
 
     return ArDriveOverlay(
+      animate: true,
       onVisibleChange: (visible) {
         if (!visible) {
           setState(() {
@@ -397,17 +398,19 @@ class _ProfileCardState extends State<ProfileCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  [
+                _StatsLine(
+                  parts: [
                     permanenceCount(stats.driveCount, 'drive'),
-                    // "0 files" while every file is still waiting to be
-                    // confirmed reads as a statement about the account, so
-                    // the line waits for a figure that means something.
-                    if (!stats.isStillLanding) ...[
+                    // This line counts what this device has walked and had
+                    // confirmed. With a drive not synced here (or files still
+                    // landing) the true totals are not known, and it read
+                    // "42 files" or "0 files, 0 KiB" depending on what had
+                    // been synced this session. It waits for all of them.
+                    if (!stats.isStillLanding && stats.allSynced) ...[
                       permanenceCount(stats.fileCount, 'file'),
                       formatPermanenceSize(stats.permanentBytes),
                     ],
-                  ].join(permanenceSeparator),
+                  ],
                   style: typography.caption(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.book,
@@ -620,7 +623,9 @@ class _ProfileCardState extends State<ProfileCard> {
 
     final driveIds = [for (final drive in drives) drive.id];
     final version = await driveDao.permanentDataVersion();
-    final key = [walletAddress, ...driveIds, version].join('|');
+    final syncedHere = await driveDao.driveIdsSyncedHere();
+    final allSynced = driveIds.every(syncedHere.contains);
+    final key = [walletAddress, ...driveIds, version, allSynced].join('|');
 
     if (key == _countedStatsKey && _countedStats != null) {
       return _countedStats!;
@@ -635,6 +640,7 @@ class _ProfileCardState extends State<ProfileCard> {
       permanentByYear: permanentByYear,
       driveIds: driveIds,
       isStillLanding: fileCount == 0 && await driveDao.hasPendingData(driveIds),
+      allSynced: allSynced,
     );
     if (generation == _statsGeneration) {
       _countedStats = stats;
@@ -1299,6 +1305,10 @@ class _AccountStats {
   /// confirmed. See [DriveDao.hasPendingData].
   final bool isStillLanding;
 
+  /// Every counted drive has been synced on this device. Otherwise its files
+  /// are not in the totals and they are not the account's.
+  final bool allSynced;
+
   int get permanentBytes =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
 
@@ -1308,7 +1318,46 @@ class _AccountStats {
     this.permanentByYear = const {},
     this.driveIds = const [],
     this.isStillLanding = false,
+    this.allSynced = true,
   });
+}
+
+/// Figures separated by a drawn middot. The face sets its "·" glyph on the
+/// baseline, where it reads as a full stop between the figures.
+class _StatsLine extends StatelessWidget {
+  const _StatsLine({required this.parts, required this.style});
+
+  final List<String> parts;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = style.color ?? Colors.transparent;
+    return Text.rich(
+      TextSpan(
+        children: [
+          for (var i = 0; i < parts.length; i++) ...[
+            if (i > 0)
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Container(
+                    width: 3,
+                    height: 3,
+                    decoration:
+                        BoxDecoration(color: color, shape: BoxShape.circle),
+                  ),
+                ),
+              ),
+            TextSpan(text: parts[i]),
+          ],
+        ],
+      ),
+      style: style,
+      textAlign: TextAlign.center,
+    );
+  }
 }
 
 /// "Forget all on this device" once the confirmation is in: only

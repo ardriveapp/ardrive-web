@@ -258,6 +258,7 @@ class NewButton extends StatelessWidget {
             showMouseCursor: true,
             child: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).advanced,
+              alignLabelWithIcons: true,
               icon: ArDriveIcons.carretRight(size: defaultIconSize),
               isDisabled: false,
               iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,

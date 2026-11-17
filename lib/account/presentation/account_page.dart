@@ -137,6 +137,9 @@ class AddressCopyButton extends StatelessWidget {
   /// The tap target's side, whatever the icon's size.
   static const double targetSize = 40;
 
+  /// The icon's own size.
+  static const double iconSize = 20;
+
   @override
   Widget build(BuildContext context) {
     void copy() => copyWithToast(context, address);
@@ -163,7 +166,7 @@ class AddressCopyButton extends StatelessWidget {
               dimension: targetSize,
               child: Center(
                 child: ArDriveIcons.copy(
-                  size: 20,
+                  size: iconSize,
                   color: ArDriveTheme.of(context).themeData.colorTokens.iconMid,
                 ),
               ),
@@ -344,6 +347,7 @@ class AccountSections extends StatelessWidget {
                     title: strings.accountKeyfile,
                     trailing: PageRowButton(
                       key: const Key('accountKeyfileDownload'),
+                      minWidth: accountButtonMinWidth,
                       text: strings.accountDownload,
                       // Asks for the password before it downloads.
                       onPressed: () =>
@@ -480,6 +484,7 @@ class NamesWalletRow extends StatelessWidget {
             title: strings.accountSolanaForNames,
             trailing: PageRowButton(
               key: const Key('accountNamesLink'),
+              minWidth: accountButtonMinWidth,
               text: strings.accountLink,
               onPressed: () => showArNSWalletDialog(context),
             ),
@@ -492,6 +497,7 @@ class NamesWalletRow extends StatelessWidget {
           copyLabel: strings.accountCopyAddress('Solana'),
           action: PageRowButton(
             key: const Key('accountNamesUnlink'),
+            minWidth: accountButtonMinWidth,
             text: strings.arnsUnlink,
             onPressed: cubit.unlink,
           ),
@@ -534,6 +540,7 @@ class _RememberedDrivesRow extends StatelessWidget {
           title: strings.accountDrivesRemembered(count),
           trailing: PageRowButton(
             key: const Key('accountForgetDrives'),
+            minWidth: accountButtonMinWidth,
             text: strings.forget,
             onPressed: () async {
               final confirmed = await showArDriveDialogWithBuilder<bool>(
@@ -729,8 +736,22 @@ class _AddressRow extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AddressCopyButton(address: address, label: copyLabel),
-          if (action != null) ...[
+          // Alone, the copy icon's drawn edge is the buttons' right edge: its
+          // 40 px target hangs out past the row's padding by the margin
+          // round the icon, instead of the icon sitting 10 px inside it.
+          if (action == null)
+            Transform.translate(
+              offset: const Offset(
+                // Plus the 2 px the glyph keeps inside its own box.
+                (AddressCopyButton.targetSize - AddressCopyButton.iconSize) /
+                        2 +
+                    2,
+                0,
+              ),
+              child: AddressCopyButton(address: address, label: copyLabel),
+            )
+          else ...[
+            AddressCopyButton(address: address, label: copyLabel),
             const SizedBox(width: ArDriveSpacing.sm),
             action,
           ],
@@ -740,11 +761,24 @@ class _AddressRow extends StatelessWidget {
   }
 }
 
+/// The width the Account page's row buttons share, so Download, Forget, Link
+/// and Unlink make one column with one left edge. Download's label alone made
+/// it 2 px wider than the others.
+const double accountButtonMinWidth = 112;
+
 class PageRowButton extends StatelessWidget {
-  const PageRowButton({super.key, required this.text, required this.onPressed});
+  const PageRowButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.minWidth = ArDriveButtonNew.minLabelWidth,
+  });
 
   final String text;
   final VoidCallback onPressed;
+
+  /// At least this wide; wider when the label needs it.
+  final double minWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -753,6 +787,7 @@ class PageRowButton extends StatelessWidget {
       typography: ArDriveTypographyNew.of(context),
       variant: ButtonVariant.secondary,
       size: ArDriveButtonSize.compact,
+      maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: minWidth),
       onPressed: onPressed,
     );
   }

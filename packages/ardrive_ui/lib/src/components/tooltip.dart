@@ -136,7 +136,16 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
     }
   }
 
+  /// When a finger last went down on [child]. A phone's browser follows a
+  /// tap with a mouse move over the same spot, which showed the label for a
+  /// button the tap had already used: the drawer it opened covered the button,
+  /// so nothing ever sent the mouse away, and "Show menu" stayed up over the
+  /// drawer's New button.
+  DateTime? _lastTouchDown;
+  static const _touchHoverGrace = Duration(milliseconds: 1000);
+
   void _onPointerDown(PointerDownEvent event) {
+    if (event.kind == PointerDeviceKind.touch) _lastTouchDown = DateTime.now();
     if (!_longPressKinds.contains(event.kind)) return;
     // A long press here is the row's - see [ArDriveTooltipLongPressYields].
     if (context
@@ -196,7 +205,14 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
       controller: _overlay,
       overlayChildBuilder: _buildLabel,
       child: MouseRegion(
-        onEnter: (_) => _show(),
+        onEnter: (_) {
+          final touched = _lastTouchDown;
+          if (touched != null &&
+              DateTime.now().difference(touched) < _touchHoverGrace) {
+            return;
+          }
+          _show();
+        },
         onExit: (_) => _hide(delay: _hoverExitDelay),
         child: Listener(
           onPointerDown: _onPointerDown,

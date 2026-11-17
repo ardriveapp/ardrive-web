@@ -1156,7 +1156,7 @@ void main() {
       await pump(tester, const WelcomeBackView());
       await tester.tap(find.byKey(const Key('welcomeBackDifferentAccount')));
       await tester.pumpAndSettle();
-      expect(find.text('Forget wallet'), findsOneWidget);
+      expect(find.text('Use a different account?'), findsOneWidget);
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
       expect(added().single, isA<ForgetWallet>());

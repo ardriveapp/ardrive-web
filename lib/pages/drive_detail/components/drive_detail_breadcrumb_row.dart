@@ -77,8 +77,10 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         fontWeight: ArFontWeight.semiBold,
       );
 
+      // 4 either side, so the slash is spaced like a word break before the
+      // next name rather than closing up on it ("/Demo Drive").
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Text(
           '/',
           style: segmentStyle.copyWith(
