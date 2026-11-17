@@ -856,7 +856,7 @@ class PublicationOwnerLabel extends StatelessWidget {
         ExcludeSemantics(
           child: Baseline(
             // The glyph's foot on the text's baseline.
-            baseline: iconSize * 0.85,
+            baseline: iconSize * 0.72,
             baselineType: TextBaseline.alphabetic,
             child: Icon(
               Icons.account_balance_wallet_outlined,
