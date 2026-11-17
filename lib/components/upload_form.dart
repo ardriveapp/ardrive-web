@@ -2013,6 +2013,11 @@ class _UploadReadyWidget extends StatelessWidget {
                     ? cubit.uploadThumbnail
                     : null,
                 onThumbnailsChanged: cubit.changeUploadThumbnailOption,
+                // Never on by itself: the person's choice, off whenever a
+                // review opens.
+                compress:
+                    cubit.compressionOffered ? cubit.compressTextAndCode : null,
+                onCompressChanged: cubit.changeCompressTextAndCode,
                 summary: [
                   if (licenseCategory == null)
                     l10n.noLicense

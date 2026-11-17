@@ -194,7 +194,17 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
   /// public file; [size] stays the original length either way.
   final bool compressDeployment;
 
-  /// The size of the file in bytes.
+  /// How the stored data is encoded, written to the ArFS file metadata as
+  /// `dataContentEncoding` (`gzip` for compressed text and code on a public drive). Null,
+  /// and so absent from the JSON, when the data is stored as it is.
+  ///
+  /// Set by `prepareDataItems` for every preparation, in step with the data
+  /// that is signed: the metadata outlives a preparation (a retry prepares it
+  /// again), so it is never trusted from an earlier one.
+  String? dataContentEncoding;
+
+  /// The size of the file in bytes. The original length, also when the stored
+  /// data is encoded.
   final int size;
 
   /// The last modified date of the file.
@@ -251,6 +261,8 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
       'size': size,
       'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
       'dataContentType': dataContentType,
+      if (dataContentEncoding != null)
+        'dataContentEncoding': dataContentEncoding,
       'dataTxId': dataTxId,
       if (_thumbnailInfo != null)
         'thumbnail': {

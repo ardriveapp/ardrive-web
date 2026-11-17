@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/web_folder.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
-import 'package:ardrive/core/upload/deployment_upload.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
@@ -34,6 +33,10 @@ abstract class UploadRepository {
     String? assignedName,
     required bool uploadThumbnail,
     List<String>? paidBy,
+
+    /// Sends the text and code of the upload gzipped: the person's choice in
+    /// the review. Public drives only; ignored otherwise.
+    bool compressTextAndCode = false,
   });
 
   Future<UploadController> uploadFolders({
@@ -50,9 +53,9 @@ abstract class UploadRepository {
     String? assignedName,
     List<String>? paidBy,
 
-    /// Sends the text and code of a deployment (a root `index.html` in the
-    /// folder) gzipped. Public drives only; ignored otherwise.
-    bool compressDeployments = false,
+    /// Sends the text and code of the upload gzipped: the person's choice in
+    /// the review. Public drives only; ignored otherwise.
+    bool compressTextAndCode = false,
   });
 
   /// Picks files from the file system.
@@ -115,6 +118,7 @@ class _UploadRepositoryImpl implements UploadRepository {
     String? assignedName,
     required bool uploadThumbnail,
     List<String>? paidBy = const [],
+    bool compressTextAndCode = false,
   }) async {
     final private = targetDrive.isPrivate;
     final driveKey = private
@@ -145,6 +149,7 @@ class _UploadRepositoryImpl implements UploadRepository {
         licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
         licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
         assignedName: assignedName,
+        compressDeployment: compressTextAndCode && !private,
         paidBy: paidBy,
       );
 
@@ -181,17 +186,13 @@ class _UploadRepositoryImpl implements UploadRepository {
     required bool uploadThumbnail,
     String? assignedName,
     List<String>? paidBy = const [],
-    bool compressDeployments = false,
+    bool compressTextAndCode = false,
   }) async {
     final private = targetDrive.isPrivate;
     final driveKey = private
         ? await _driveDao.getDriveKey(
             targetDrive.id, _auth.currentUser.cipherKey)
         : null;
-
-    final deployments = compressDeployments && !private
-        ? deploymentRoots(files)
-        : const <String>{};
 
     List<(ARFSUploadMetadataArgs, IOEntity)> entities = [];
 
@@ -241,7 +242,7 @@ class _UploadRepositoryImpl implements UploadRepository {
           licenseAdditionalTags:
               licenseStateResolved?.params?.toAdditionalTags(),
           assignedName: assignedName,
-          compressDeployment: isInDeployment(file, deployments),
+          compressDeployment: compressTextAndCode && !private,
           paidBy: paidBy);
 
       entities.add((fileMetadata, file.ioFile));
@@ -320,6 +321,14 @@ class _UploadRepositoryImpl implements UploadRepository {
                 : [],
             // TODO: pinnedDataOwnerAddress
           );
+          // Kept with the row so a rename or move before the next sync still
+          // writes it: the data is stored as it was signed.
+          if (fileMetadata.dataContentEncoding != null) {
+            entity.customJsonMetadata = {
+              FileEntity.dataContentEncodingKey:
+                  fileMetadata.dataContentEncoding,
+            };
+          }
 
           LicensesCompanion? licensesCompanion;
           if (fileMetadata.licenseTxId != null) {
@@ -352,7 +361,10 @@ class _UploadRepositoryImpl implements UploadRepository {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            await _driveDao.writeFileEntity(entity);
+            await _driveDao.writeFileEntity(
+              entity,
+              replaceCustomMetadata: true,
+            );
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,

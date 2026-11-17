@@ -54,6 +54,23 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeIfNull: false)
   String? importSource;
 
+  /// How the stored data is encoded (`gzip` for compressed text and code
+  /// on a public drive), from the optional `dataContentEncoding` metadata field; null when
+  /// the field is absent or not a string.
+  ///
+  /// The field is deliberately not in [reservedJsonMetadataKeys]: it is kept
+  /// with the custom JSON metadata, which is stored with the file and written
+  /// back by every later revision (rename, move, hide), so those keep saying
+  /// the data is encoded without a column of their own. [size] stays the
+  /// original length either way.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  String? get dataContentEncoding {
+    final value = customJsonMetadata?[dataContentEncodingKey];
+    return value is String && value.isNotEmpty ? value : null;
+  }
+
+  static const String dataContentEncodingKey = 'dataContentEncoding';
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [

@@ -773,13 +773,17 @@ Future<UploadFilePreparation> prepareDataItems({
   Stream<Uint8List> Function([int, int?]) dataStream = file.openReadStream;
   var dataLength = await file.length;
 
-  // A deployment's text and code on a public drive travels gzipped. The tag
+  // Text and code on a public drive travel gzipped when asked. The tag
   // is added only when the gzip is what is signed, and the ArFS `size` of the
   // metadata keeps the original length.
   // The metadata outlives a preparation (a retry prepares it again), so a tag
   // an earlier preparation added must not be signed onto bytes that are not
   // gzipped this time. The generator never writes this tag itself.
+  // The same goes for the `dataContentEncoding` field of the metadata JSON,
+  // which is written in step with the tag (and, unlike it, is the only signal
+  // there would be on private data, which is never compressed here).
   metadata.removeDataTag(EntityTag.contentEncoding);
+  metadata.dataContentEncoding = null;
 
   if (key == null && !metadata.isPrivate && metadata.compressDeployment) {
     final gzipped = await _gzipForDeployment(file, dataLength);
@@ -789,6 +793,7 @@ Future<UploadFilePreparation> prepareDataItems({
       metadata.addDataTag(
         Tag(EntityTag.contentEncoding, CompressionPolicy.contentEncodingGzip),
       );
+      metadata.dataContentEncoding = CompressionPolicy.contentEncodingGzip;
     }
   }
 
