@@ -2,7 +2,7 @@
 
 A folder with a root `index.html`, uploaded to a **public** drive, has its text and code uploaded gzipped. The data item carries `Content-Encoding: gzip` and the file's own `Content-Type`; a gateway serves it with that header and the browser decodes it, the same as a site deployed with `@ar.io/deploy --compress gzip`. A typical site goes up at about a third of its size.
 
-Switch: `compressDeployments` in `AppConfig` (`assets/config/*.json`). On in development and staging. Production is off until it is turned on deliberately; remember that an edit to the JSON only reaches a user who already ran the app once if `configVersion` is bumped. The switch affects new uploads only: files already uploaded stay readable either way, because the readers below handle them with the switch off.
+Switch: `compressDeployments` in `AppConfig` (`assets/config/*.json`). On in development, staging and production (production since 3.0.0, after real-gateway checks; see the PR that turned it on). Remember that an edit to the JSON only reaches a user who already ran the app once if `configVersion` is bumped. The switch affects new uploads only: files already uploaded stay readable either way, because the readers below handle them with the switch off.
 
 ## What is compressed
 
