@@ -54,6 +54,10 @@ List<String> laterLoginImages() => [
       Resources.images.login.bentoBox.profile6,
       Resources.images.login.whatIsAKeyfile,
       Resources.images.login.aboutSecurity,
+      // The sidebar's wordmarks, so the app shell shows them on its first
+      // frame after sign-in.
+      Resources.images.brand.whiteLogo1,
+      Resources.images.brand.blackLogo1,
     ];
 
 /// The bento's feature slides after the first (5 s apart), for the theme in

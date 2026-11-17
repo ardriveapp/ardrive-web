@@ -440,6 +440,17 @@ class _AppSideBarState extends State<AppSideBar> {
                       : Resources.images.brand.whiteLogo1,
                   height: 32,
                   fit: BoxFit.contain,
+                  // Fades in if it has to be decoded, rather than popping in
+                  // a frame after the rest of the sidebar.
+                  frameBuilder: (context, child, frame, wasSynchronous) =>
+                      wasSynchronous
+                          ? child
+                          : AnimatedOpacity(
+                              opacity: frame == null ? 0 : 1,
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOut,
+                              child: child,
+                            ),
                 ),
               )
             : ArDriveImage(

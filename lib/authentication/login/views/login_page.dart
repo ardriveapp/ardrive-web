@@ -687,7 +687,6 @@ bool loginPanelRebuildsOn(LoginState current) {
       current is LoginProfileFromNewerVersion ||
       current is GatewayLoginFailure ||
       current is LoginPasswordFailedWithPrivateDriveNotFound;
-  final isSuccess = current is LoginSuccess;
   final isLoading = current is LoginLoading ||
       current is LoginShowLoader ||
       current is LoginShowBlockingDialog ||
@@ -710,8 +709,10 @@ bool loginPanelRebuildsOn(LoginState current) {
       current is LoginLoadingIfUserAlreadyExists ||
           current is LoginLoadingIfUserAlreadyExistsSuccess;
 
+  // Not LoginSuccess: the panel swaps to its waiting card then, so the step
+  // the user finished ("Enter your recovery phrase") is not left on screen
+  // behind the closing password dialog until the app takes over.
   return !(isFailure ||
-      isSuccess ||
       isLoading ||
       isPasswordDialog ||
       isPasswordChecking ||

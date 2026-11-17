@@ -976,7 +976,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     // With the real cause fixed the route updates its child on
                     // its own, so the key goes back to being a constant.
                     key: const ValueKey('AppShell'),
-                    child: shell,
+                    // Signing in or out crossfades between the sign-in page
+                    // and the app. Every other move keeps one key, so the
+                    // switcher leaves it alone.
+                    child: ShellFade(
+                      signedOutShell:
+                          shellKey == 'signIn' || shellKey == 'getStarted',
+                      child: shell,
+                    ),
                   ),
                 ],
                 onPopPage: (route, result) {
@@ -2001,4 +2008,37 @@ class _RouteLinkFollowerState extends State<_RouteLinkFollower> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// Crossfades when the shell changes between the sign-in page and the app,
+/// instead of cutting. Moves inside either side are not touched.
+@visibleForTesting
+class ShellFade extends StatelessWidget {
+  const ShellFade({
+    super.key,
+    required this.signedOutShell,
+    required this.child,
+  });
+
+  final bool signedOutShell;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.of(context).disableAnimations;
+
+    return AnimatedSwitcher(
+      duration: reduced ? Duration.zero : const Duration(milliseconds: 200),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeOut,
+      layoutBuilder: (current, previous) => Stack(
+        fit: StackFit.expand,
+        children: [...previous, if (current != null) current],
+      ),
+      child: KeyedSubtree(
+        key: ValueKey(signedOutShell ? 'signedOut' : 'signedIn'),
+        child: child,
+      ),
+    );
+  }
 }

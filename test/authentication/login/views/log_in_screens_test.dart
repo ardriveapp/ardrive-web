@@ -9,6 +9,7 @@ import 'package:ardrive/authentication/login/views/landing_view.dart';
 import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/authentication/components/max_device_sizes_constrained_box.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/used_metamask_before_view.dart';
@@ -35,6 +36,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
+import '../../../test_utils/fake_user.dart';
 import '../../../test_utils/utils.dart';
 import 'package:ardrive/utils/secret_blur.dart';
 
@@ -233,6 +235,13 @@ void main() {
       ]) {
         expect(loginPanelRebuildsOn(state), isFalse, reason: '$state');
       }
+    });
+
+    test('a finished sign-in swaps the panel to its waiting card', () {
+      final user = fakeUserJson;
+      expect(loginPanelRebuildsOn(LoginSuccess(user)), isTrue);
+      expect(loginPanelFor(LoginSuccess(user), loginBloc),
+          isA<MaxDeviceSizesConstrainedBox>());
     });
 
     test('each step has its panel', () {

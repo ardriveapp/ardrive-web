@@ -1,5 +1,9 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'dart:ui' as ui;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 // ignore: library_private_types_in_public_api
@@ -29,20 +33,90 @@ class ArDriveApp extends StatefulWidget {
   State<ArDriveApp> createState() => _ArDriveAppState();
 }
 
-class _ArDriveAppState extends State<ArDriveApp> {
+/// How long the old theme takes to fade out over the new one.
+const Duration _themeFadeDuration = Duration(milliseconds: 200);
+
+class _ArDriveAppState extends State<ArDriveApp>
+    with SingleTickerProviderStateMixin {
   bool isDefault = true;
 
   late ArDriveThemes _theme;
 
+  final GlobalKey _boundaryKey = GlobalKey();
+
+  late final AnimationController _fade;
+
+  /// The app as it looked just before a theme switch, drawn over the new theme
+  /// and faded out. Nearly every widget reads the theme tokens directly, so
+  /// there is no per-widget theme animation to lean on; fading a picture of the
+  /// old look costs one rebuild of the app, the one the switch needed anyway,
+  /// and never shows a frame where some widgets are old and others new.
+  ui.Image? _snapshot;
+
   void changeTheme(ArDriveThemes theme) {
+    // The app asks twice for one switch (two listeners on the same bloc).
+    if (theme == _theme) return;
+
+    final snapshot = _captureSnapshot();
+
+    _fade.value = 0;
     setState(() {
       _theme = theme;
+      _snapshot = snapshot;
     });
+
+    if (snapshot != null) {
+      // Not before the frame that rebuilds the app under the new theme: that
+      // frame can take a while, and an animation already running through it
+      // would be over by the time it was drawn.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fade.forward(from: 0);
+      });
+    }
+  }
+
+  ui.Image? _captureSnapshot() {
+    // Reduced motion: switch at once.
+    if (WidgetsBinding
+        .instance.platformDispatcher.accessibilityFeatures.disableAnimations) {
+      return null;
+    }
+
+    try {
+      final boundary = _boundaryKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+
+      if (boundary == null) return null;
+      // Only asserts in debug; reading it in release is undefined.
+      if (kDebugMode && boundary.debugNeedsPaint) return null;
+
+      // Synchronous, so it stays on the GPU: no read back and no wait before
+      // the theme changes.
+      final ratio = View.of(context).devicePixelRatio.clamp(1.0, 2.0);
+      return boundary.toImageSync(pixelRatio: ratio);
+    } catch (_) {
+      // No snapshot, no fade: the switch itself must never fail.
+      return null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    _snapshot?.dispose();
+    super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+
+    _fade = AnimationController(vsync: this, duration: _themeFadeDuration)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          setState(() => _snapshot = null);
+        }
+      });
 
     // ignore: deprecated_member_use
     var window = WidgetsBinding.instance.window;
@@ -75,13 +149,41 @@ class _ArDriveAppState extends State<ArDriveApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveTheme(
-      themeData: _getTheme(),
-      child: Portal(
-        child: Builder(builder: (context) {
-          return widget.builder(context);
-        }),
-      ),
+    final snapshot = _snapshot;
+
+    return Stack(
+      alignment: Alignment.topLeft,
+      fit: StackFit.passthrough,
+      children: [
+        RepaintBoundary(
+          key: _boundaryKey,
+          child: ArDriveTheme(
+            themeData: _getTheme(),
+            child: Portal(
+              child: Builder(builder: (context) {
+                return widget.builder(context);
+              }),
+            ),
+          ),
+        ),
+        if (snapshot != null)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _fade,
+                builder: (context, _) => Opacity(
+                  opacity:
+                      1 - Curves.easeOut.transform(_fade.value.clamp(0, 1)),
+                  child: RawImage(
+                    image: snapshot,
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.medium,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

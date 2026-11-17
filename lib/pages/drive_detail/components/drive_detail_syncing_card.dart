@@ -163,7 +163,12 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   ),
                 );
 
-                return _frame(context, content);
+                // A wait that is not a sync is almost always a fraction of a
+                // second: the panel only appears if it lasts.
+                return DelayedReveal(
+                  immediate: isSyncing,
+                  child: _frame(context, content),
+                );
               },
             );
           },
@@ -491,4 +496,83 @@ class _IndeterminateProgress extends LinearProgress {
 
   @override
   bool get isIndeterminate => true;
+}
+
+/// How long a short wait stays invisible before its panel fades in.
+const Duration _revealDelay = Duration(milliseconds: 300);
+const Duration _revealFade = Duration(milliseconds: 180);
+
+/// Shows [child] straight away when [immediate], otherwise only once the wait
+/// has lasted [delay], and then fades it in.
+///
+/// So a drive that opens in 400 ms goes from the list to the explorer without
+/// flashing a near-empty "Opening ..." page between them, while a long wait
+/// still shows its panel, and a running sync shows its progress at once.
+@visibleForTesting
+class DelayedReveal extends StatefulWidget {
+  const DelayedReveal({
+    super.key,
+    required this.immediate,
+    required this.child,
+    this.delay = _revealDelay,
+  });
+
+  final bool immediate;
+  final Duration delay;
+  final Widget child;
+
+  @override
+  State<DelayedReveal> createState() => _DelayedRevealState();
+}
+
+class _DelayedRevealState extends State<DelayedReveal> {
+  Timer? _timer;
+  bool _revealed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.immediate) {
+      _revealed = true;
+    } else {
+      _timer = Timer(widget.delay, () {
+        if (mounted) setState(() => _revealed = true);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(DelayedReveal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.immediate && !_revealed) {
+      _timer?.cancel();
+      _revealed = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.of(context).disableAnimations;
+    // Syncing shows at once, with no fade: it is already the right answer.
+    final fade = widget.immediate || reduced ? Duration.zero : _revealFade;
+
+    return IgnorePointer(
+      ignoring: !_revealed,
+      child: ExcludeSemantics(
+        excluding: !_revealed,
+        child: AnimatedOpacity(
+          opacity: _revealed ? 1 : 0,
+          duration: fade,
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
 }
