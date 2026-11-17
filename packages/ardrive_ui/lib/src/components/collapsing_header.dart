@@ -155,6 +155,11 @@ class RenderSliverCollapsingHeader extends RenderSliver
 
   Offset _barOffset() => Offset(0, -(1 - _progress) * _barSlide);
 
+  /// The anchor row's fade pushes a layer inside a clip: the clip has to be
+  /// a layer too, or it is lost on the way.
+  @override
+  bool get alwaysNeedsCompositing => true;
+
   @override
   void setupParentData(RenderObject child) {
     if (child.parentData is! _ParentData) child.parentData = _ParentData();
