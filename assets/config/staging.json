@@ -1,5 +1,5 @@
 {
-  "configVersion": 8,
+  "configVersion": 9,
   "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
   "defaultArweaveGatewayForDataRequest": {
     "label": "Turbo Gateway",
