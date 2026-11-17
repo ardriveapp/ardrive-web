@@ -62,7 +62,10 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   }) async {
     entity.bundledIn = bundledInTxId;
     await driveDao.transaction(() async {
-      await driveDao.writeFileEntity(entity);
+      await driveDao.writeFileEntity(
+        entity,
+        replaceCustomMetadata: true,
+      );
       await driveDao.insertFileRevision(
         entity.toRevisionCompanion(performedAction: revisionAction),
       );

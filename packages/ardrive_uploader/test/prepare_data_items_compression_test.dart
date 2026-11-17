@@ -106,6 +106,16 @@ void main() {
     return values.isEmpty ? null : values.single;
   }
 
+  // The ArFS file metadata JSON as signed: what readers on the network see.
+  Future<Map<String, dynamic>> signedMetadata(
+      UploadFilePreparation preparation) async {
+    final bytes = await _bytesOf(preparation.metadataSignedDataItemResult!);
+    final text = utf8.decode(bytes, allowMalformed: true);
+    final start = text.indexOf('{"name"');
+    return jsonDecode(text.substring(start, text.lastIndexOf('}') + 1))
+        as Map<String, dynamic>;
+  }
+
   group('prepareDataItems with a deployment flag', () {
     test('gzips a script, tags it, and keeps its type and ArFS size', () async {
       final (metadata, preparation, file) = await prepare('app.js', script);
@@ -144,6 +154,12 @@ void main() {
       // The ArFS entity still says how big the file is.
       expect(metadata.toJson()['size'], script.length);
       expect(metadata.toJson()['dataContentType'], file.contentType);
+
+      // And the metadata says the stored data is gzip, in the item signed.
+      expect(metadata.toJson()['dataContentEncoding'], 'gzip');
+      final signedJson = await signedMetadata(preparation);
+      expect(signedJson['dataContentEncoding'], 'gzip');
+      expect(signedJson['size'], script.length);
     });
 
     test('a second preparation signs the same bytes', () async {
@@ -196,6 +212,11 @@ void main() {
       );
 
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
+      expect(
+        (await signedMetadata(second)).containsKey('dataContentEncoding'),
+        isFalse,
+      );
       expect(second.dataSignedDataItemResult!.dataSize, noise.length);
       final tagged = second.dataItemFiles.where((f) => f.tags
           .map((t) => decodeBase64ToString(t.name))
@@ -208,6 +229,7 @@ void main() {
 
       expect(tag(metadata, _contentEncoding), isNull);
       expect(tag(metadata, 'Content-Type'), 'image/png');
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
       final signed = preparation.dataSignedDataItemResult!;
       expect(signed.dataSize, noise.length);
       expect(_endsWith(await _bytesOf(signed), noise), isTrue);
@@ -217,6 +239,7 @@ void main() {
       final (metadata, preparation, _) = await prepare('noise.js', noise);
 
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
       final signed = preparation.dataSignedDataItemResult!;
       expect(signed.dataSize, noise.length);
       expect(_endsWith(await _bytesOf(signed), noise), isTrue);
@@ -228,6 +251,7 @@ void main() {
           await prepare('app.js.gz', Uint8List.fromList(already));
 
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
       expect(preparation.dataSignedDataItemResult!.dataSize, already.length);
     });
 
@@ -249,6 +273,7 @@ void main() {
       );
 
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
       expect(preparation.dataSignedDataItemResult!.dataSize, manifest.length);
     });
   });
@@ -259,6 +284,7 @@ void main() {
           await prepare('app.js', script, compress: false);
 
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
       final signed = preparation.dataSignedDataItemResult!;
       expect(signed.dataSize, script.length);
       expect(_endsWith(await _bytesOf(signed), script), isTrue);
@@ -293,6 +319,7 @@ void main() {
       );
 
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
       expect(tag(metadata, 'Cipher'), isNotNull);
       expect(preparation.dataSignedDataItemResult!.dataSize,
           greaterThanOrEqualTo(script.length));
@@ -302,6 +329,7 @@ void main() {
         () async {
       final (metadata, _, _) = await prepare('app.js', script, isPrivate: true);
       expect(tag(metadata, _contentEncoding), isNull);
+      expect(metadata.toJson().containsKey('dataContentEncoding'), isFalse);
     });
   });
 
