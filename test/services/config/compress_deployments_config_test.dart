@@ -11,10 +11,10 @@ AppConfig _flavor(String name) => AppConfig.fromJson(
 
 void main() {
   group('compressDeployments', () {
-    test('is on in development and staging, off in production', () {
+    test('is on in every flavour', () {
       expect(_flavor('dev').compressDeployments, isTrue);
       expect(_flavor('staging').compressDeployments, isTrue);
-      expect(_flavor('prod').compressDeployments, isFalse);
+      expect(_flavor('prod').compressDeployments, isTrue);
     });
 
     test('is written in every flavour, so turning it on is a one-line change',
