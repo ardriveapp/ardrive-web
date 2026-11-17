@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
 import '../../../test_utils/utils.dart';
+import 'package:ardrive/utils/secret_blur.dart';
 
 class _MockLoginBloc extends MockBloc<LoginEvent, LoginState>
     implements LoginBloc {}
@@ -788,6 +789,10 @@ void main() {
           style: const TextStyle(color: Color(0xFF000000)),
           withComposing: false);
       expect(span.style!.color!.opacity, 0, reason: 'only the blur is drawn');
+      expect(
+          Shadow.convertRadiusToSigma(span.style!.shadows!.single.blurRadius),
+          closeTo(secretBlurSigma, 0.01),
+          reason: 'blurred too strongly to read a word');
 
       await tester.tap(find.byKey(const Key('phraseShow')));
       await tester.pump();

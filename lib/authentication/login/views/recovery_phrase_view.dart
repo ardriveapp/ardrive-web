@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:ardrive/authentication/components/login_card.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -12,6 +10,7 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ardrive/utils/secret_blur.dart';
 
 /// The last step of a new account, in the sign-in panel: save the 12 words
 /// that let you sign in on any device. A keyfile is the alternative, for
@@ -127,7 +126,7 @@ class _RecoveryPhraseViewState extends State<RecoveryPhraseView> {
                     child: ImageFiltered(
                       key: const Key('recoveryWords'),
                       enabled: !_shown,
-                      imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      imageFilter: secretBlurFilter,
                       child: GridView.count(
                         crossAxisCount: 3,
                         shrinkWrap: true,

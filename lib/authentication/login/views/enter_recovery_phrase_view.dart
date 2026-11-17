@@ -11,6 +11,7 @@ import 'package:arweave/arweave.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ardrive/utils/secret_blur.dart';
 
 /// What is wrong with a recovery phrase as typed.
 enum RecoveryPhraseProblem { empty, wordCount, invalid }
@@ -68,7 +69,7 @@ class RecoveryPhraseController extends TextEditingController {
       // The words are drawn only as their blurred shadow.
       style: style?.copyWith(
         color: color.withOpacity(0),
-        shadows: [Shadow(color: color, blurRadius: 8)],
+        shadows: [Shadow(color: color, blurRadius: secretBlurShadowRadius)],
       ),
       // The semantics value in place of the words. Not on the web, where
       // the DOM textarea underneath holds the plain text.
