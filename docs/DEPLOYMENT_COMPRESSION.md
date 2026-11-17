@@ -1,20 +1,20 @@
 # Compressing text and code
 
-Compression is the uploader's **explicit choice**, the way `gsutil cp -z` is: the upload review has a **Compress text and code** switch in its **Options** section (the section that also holds thumbnails, the license and Update deployments). It is off every time a review opens and is never remembered. With it on, every file the policy below allows is uploaded gzipped, whether a folder or loose files, wherever it sits in the tree. Nothing about a file's name or place (an `index.html`, say) turns it on. The data item carries `Content-Encoding: gzip` and the file's own `Content-Type`; a gateway serves it with that header and the browser decodes it, the same as a site deployed with `@ar.io/deploy --compress gzip`. A typical site goes up at about a third of its size. The hint under the switch says what it costs: "Smaller storage for websites and code. Other apps may need to unpack these files."
+Compression is the uploader's **explicit choice**, the way `gsutil cp -z` is: the upload review has a **Compress text and code** checkbox in its **Options** section (the section that also holds thumbnails, the license and Update deployments). It is off every time a review opens and is never remembered. With it on, every file the policy below allows is uploaded gzipped, whether a folder or loose files, wherever it sits in the tree. Nothing about a file's name or place (an `index.html`, say) turns it on. The data item carries `Content-Encoding: gzip` and the file's own `Content-Type`; a gateway serves it with that header and the browser decodes it, the same as a site deployed with `@ar.io/deploy --compress gzip`. A typical site goes up at about a third of its size. The hint under the checkbox says what it costs: "Smaller storage for websites and code. Other apps may need to unpack these files."
 
-The switch is offered only when **all** of these hold, decided by `offersCompression` (`lib/core/upload/compression_offer.dart`) when the upload is prepared:
+The checkbox is offered only when **all** of these hold, decided by `offersCompression` (`lib/core/upload/compression_offer.dart`) when the upload is prepared:
 
 - the drive is **public** (a private file is never stored gzipped);
-- `compressDeployments` in `AppConfig` (`assets/config/*.json`) is on. It no longer compresses anything by itself: it means "offer the switch". On in development and staging. Production is off until it is turned on deliberately; remember that an edit to the JSON only reaches a user who already ran the app once if `configVersion` is bumped;
-- at least one file in the upload is one the policy would compress (a batch of only images, audio or PDFs gets no switch).
+- `compressDeployments` in `AppConfig` (`assets/config/*.json`) is on. It no longer compresses anything by itself: it means "offer the checkbox". On in development and staging. Production is off until it is turned on deliberately; remember that an edit to the JSON only reaches a user who already ran the app once if `configVersion` is bumped;
+- at least one file in the upload is one the policy would compress (a batch of only images, audio or PDFs gets no checkbox).
 
-With the switch off, an upload is byte for byte what it was before this existed. It affects new uploads only: files already uploaded stay readable either way, because the readers below handle them with the switch off.
+With the checkbox unchecked, an upload is byte for byte what it was before this existed. It affects new uploads only: files already uploaded stay readable either way, because the readers below handle them either way.
 
 ## What is compressed
 
 Decided in one place, `CompressionPolicy` (`packages/ardrive_uploader/lib/src/compression_policy.dart`), called from `prepareDataItems`, which both Turbo and direct-to-node uploads go through.
 
-- Only when the uploader chose it (the switch, on a **public** drive). `UploadRepository` then marks every file of the upload; the policy below decides per file. Private drives, thumbnails, the manifest, snapshots, drive state and licences never are.
+- Only when the uploader chose it (the checkbox, on a **public** drive). `UploadRepository` then marks every file of the upload; the policy below decides per file. Private drives, thumbnails, the manifest, snapshots, drive state and licences never are.
 - Never an extension `@ar.io/deploy` 2.1.2 leaves alone: `.7z .avif .br .bz2 .gif .gz .heic .jpeg .jpg .m4a .mp3 .mp4 .ogg .opus .png .rar .webm .webp .woff .woff2 .xz .zip .zst`. ArDrive adds what is read by byte range or is compressed already: all audio and video, `.pdf`, every image except SVG, and archives (`.tgz .lz .lzma .jar .apk .dmg .iso .svgz` and the like). The content type is read too, and whichever says no wins.
 - Never a file over 8 MiB (the gzip is built in memory, and a data item's size is signed before it is sent), and never one that is a gzip already.
 - The gzip is kept only when it is **smaller**.
@@ -34,4 +34,4 @@ Decided in one place, `CompressionPolicy` (`packages/ardrive_uploader/lib/src/co
 
 ## Testing
 
-To check it end to end, upload a few loose `.js` and `.css` files (or a small site) to a public drive with the switch on and read the data items: each text file's item carries `Content-Encoding: gzip`, the original `Content-Type` and a gzip that decodes to the file; the png carries neither. No e2e helper is added to `docs/WEB_E2E_TESTING.md`.
+To check it end to end, upload a few loose `.js` and `.css` files (or a small site) to a public drive with the checkbox checked and read the data items: each text file's item carries `Content-Encoding: gzip`, the original `Content-Type` and a gzip that decodes to the file; the png carries neither. No e2e helper is added to `docs/WEB_E2E_TESTING.md`.
