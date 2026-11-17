@@ -195,7 +195,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
   final bool compressDeployment;
 
   /// How the stored data is encoded, written to the ArFS file metadata as
-  /// `dataContentEncoding` (`gzip` for a compressed deployment file). Null,
+  /// `dataContentEncoding` (`gzip` for compressed text and code on a public drive). Null,
   /// and so absent from the JSON, when the data is stored as it is.
   ///
   /// Set by `prepareDataItems` for every preparation, in step with the data

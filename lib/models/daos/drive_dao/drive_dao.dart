@@ -1260,6 +1260,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           : const Value(null),
       assignedNames: Value(_encodeAssignedNames(entity.assignedNames)),
       fallbackTxId: Value(entity.fallbackTxId),
+      // Only when the entity has some: an entity built without it (an upload
+      // writing its row) must never wipe what the row already holds.
+      customJsonMetadata: entity.customJsonMetadata?.isNotEmpty ?? false
+          ? Value(entity.customJsonMetadataAsString)
+          : const Value.absent(),
     );
 
     return into(fileEntries).insert(

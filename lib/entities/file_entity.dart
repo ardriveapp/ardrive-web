@@ -54,8 +54,8 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeIfNull: false)
   String? importSource;
 
-  /// How the stored data is encoded (`gzip` for a compressed deployment
-  /// file), from the optional `dataContentEncoding` metadata field; null when
+  /// How the stored data is encoded (`gzip` for compressed text and code
+  /// on a public drive), from the optional `dataContentEncoding` metadata field; null when
   /// the field is absent or not a string.
   ///
   /// The field is deliberately not in [reservedJsonMetadataKeys]: it is kept

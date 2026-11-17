@@ -48,7 +48,7 @@ Old entities stay valid. Readers must accept entities tagged `ArFS: 0.10` to `Ar
 | 0.14 | The optional `isHidden` field in File and Folder metadata JSON. A hidden entity stays on the drive but is not shown by default. |
 | 0.15 | The `Signature-Type` tag on Drive entities and the Drive Signature entity (see Drive privacy). |
 
-Two additions are not tied to a version bump. They were written under `ArFS: 0.15` and no later version exists:
+Three additions are not tied to a version bump. They were written under `ArFS: 0.15` and no later version exists:
 
 - Drive State and Publication entities (Drive State from August 2026, Publication from October 2026 in the ArDrive web repository).
 - The optional `dataContentEncoding` field in File metadata JSON (`"gzip"` when the stored data is gzip; November 2026 in the ArDrive web repository), the metadata side of the `Content-Encoding: gzip` data tag of a public file. A reader that does not know it ignores it.
@@ -164,7 +164,9 @@ A file whose stored data is gzip says so in its metadata with the optional `data
 
 A public file's data transaction MAY also carry `Content-Encoding: gzip`, written together with the field. A gateway sends the data with the same `Content-Encoding` header and a client decodes it, so a reader that goes through a gateway never has to know. A reader that fetches the bytes some other way (directly from a node, or from a bundle) does not get that decoding for free and must decode the data itself when `dataContentEncoding` is `gzip`. A reader that asks for a byte range of such a file is asking for ranges of the stored (gzipped) bytes, which cannot be resumed from a count of decoded bytes.
 
-Private data carries only the field, never the `Content-Encoding` tag: the tag is readable by anyone and a gateway cannot decode what it cannot decrypt. The field sits in the encrypted metadata, so the reader decrypts, then decodes. ArDrive writes compressed data for the text and code of a public deployment (see `docs/DEPLOYMENT_COMPRESSION.md`); it does not write compressed private data yet.
+The intended convention for private data, which ArDrive does not write yet: the file carries only the field and never the `Content-Encoding` tag, because the tag is readable by anyone and a gateway cannot decode what it cannot decrypt. The field sits in the encrypted metadata, so the reader decrypts, then decodes. Only unencrypted data is written compressed today, for compressed text and code (public drives; see `docs/DEPLOYMENT_COMPRESSION.md`).
+
+A reader that acts on the field should cross-check it against the response header, the data item's tag or the gzip magic bytes (`1f 8b`), and not trust the JSON alone.
 
 ## Snapshot
 
