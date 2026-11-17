@@ -312,7 +312,7 @@ class PublicationHeader extends StatelessWidget {
 
 /// The head of a file page (docs/PUBLICATIONS.md, "File pages"), above its
 /// file, in place of the share page's wordmark: the cover, the title, who it
-/// is by (with Verified, once the share view has checked the file) and its
+/// is by (with the share view's check of the file) and its
 /// description. The file's own card says what the file is; it leaves off the
 /// name and owner that this head already gives, for a public file.
 class PublicationFileHead extends StatelessWidget {
@@ -351,7 +351,7 @@ class PublicationFileHead extends StatelessWidget {
         _Byline(
           config: config,
           stats: null,
-          verified: verification == LinkVerification.verified,
+          verification: verification,
         ),
         if (config.description.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -651,14 +651,16 @@ class _Byline extends StatelessWidget {
   const _Byline({
     required this.config,
     required this.stats,
-    this.verified = false,
+    this.verification,
   });
 
   final PublicationConfig config;
   final PublicationStats? stats;
 
-  /// A file page's share view verified its file: "✓ Verified" after the owner.
-  final bool verified;
+  /// A file page's share view check of its file: the same badge its card
+  /// shows (Checking, Not checked, Verified) after the owner. A mismatch is
+  /// the card's warning, not a badge.
+  final LinkVerification? verification;
 
   @override
   Widget build(BuildContext context) {
@@ -700,13 +702,13 @@ class _Byline extends StatelessWidget {
               ),
             ),
           ),
-          if (verified) ...[
+          if (verification != null &&
+              verification != LinkVerification.mismatch) ...[
             const TextSpan(text: '\u00a0'),
-            const WidgetSpan(
+            WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,
-              child: SharedFileVerificationBadge(
-                  verification: LinkVerification.verified),
+              child: SharedFileVerificationBadge(verification: verification!),
             ),
           ],
           // A file page has no counts, only its date.

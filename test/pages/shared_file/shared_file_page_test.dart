@@ -1517,16 +1517,33 @@ void main() {
           tester.getCenter(facts).dy, closeTo(tester.getCenter(icon).dy, 1.0));
     });
 
-    testWidgets('does not say Verified when the link was not verified',
-        (tester) async {
-      await pumpPage(
-        tester,
-        success(verification: LinkVerification.unavailable),
-        publication: filePage(),
-      );
+    for (final (verification, text) in [
+      (LinkVerification.pending, 'Checking'),
+      (LinkVerification.unavailable, 'Not checked'),
+      (LinkVerification.verified, 'Verified'),
+    ]) {
+      testWidgets('the byline shows "$text" for $verification, once',
+          (tester) async {
+        await pumpPage(
+          tester,
+          success(verification: verification),
+          publication: filePage(),
+        );
 
-      expect(find.text('Verified'), findsNothing);
-    });
+        expect(
+          find.descendant(
+            of: find.byType(PublicationFileHead),
+            matching: find.textContaining(text),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining(text), findsOneWidget);
+        expect(sharedByLine, findsNothing);
+        if (verification != LinkVerification.verified) {
+          expect(find.text('Verified'), findsNothing);
+        }
+      });
+    }
 
     testWidgets('still warns, in the card, when the details do not match',
         (tester) async {
