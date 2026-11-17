@@ -313,7 +313,7 @@ editing the package, not `lib/blocs/upload/`.
 
 Text and code are gzipped in `prepareDataItems` only when the uploader turns on **Compress text and code**
 in the upload review's Options (public drives only, off every time; `AppConfig.compressDeployments` means
-"offer the switch"); see
+"offer the checkbox"); see
 `docs/DEPLOYMENT_COMPRESSION.md` before touching `ArDriveDownloader`'s resume path.
 
 Note the cipher used is size-dependent: files under `maxSizeSupportedByGCMEncryption`

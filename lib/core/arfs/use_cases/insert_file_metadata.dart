@@ -75,7 +75,10 @@ class InsertFileMetadata {
       // Perform the database transaction
       await _driveDao.transaction(() async {
         // Insert or update the file entity
-        await _driveDao.writeFileEntity(fileEntity);
+        await _driveDao.writeFileEntity(
+          fileEntity,
+          replaceCustomMetadata: true,
+        );
 
         // Insert the new revision
         await _driveDao.insertFileRevision(fileRevision);

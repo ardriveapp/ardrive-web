@@ -321,6 +321,14 @@ class _UploadRepositoryImpl implements UploadRepository {
                 : [],
             // TODO: pinnedDataOwnerAddress
           );
+          // Kept with the row so a rename or move before the next sync still
+          // writes it: the data is stored as it was signed.
+          if (fileMetadata.dataContentEncoding != null) {
+            entity.customJsonMetadata = {
+              FileEntity.dataContentEncodingKey:
+                  fileMetadata.dataContentEncoding,
+            };
+          }
 
           LicensesCompanion? licensesCompanion;
           if (fileMetadata.licenseTxId != null) {
@@ -353,7 +361,10 @@ class _UploadRepositoryImpl implements UploadRepository {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            await _driveDao.writeFileEntity(entity);
+            await _driveDao.writeFileEntity(
+              entity,
+              replaceCustomMetadata: true,
+            );
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,

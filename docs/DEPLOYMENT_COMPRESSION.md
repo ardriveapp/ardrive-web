@@ -19,12 +19,15 @@ Decided in one place, `CompressionPolicy` (`packages/ardrive_uploader/lib/src/co
 - Never a file over 8 MiB (the gzip is built in memory, and a data item's size is signed before it is sent), and never one that is a gzip already.
 - The gzip is kept only when it is **smaller**.
 - Level 9, with the header's modification time set to 0 and a fixed OS byte, so a retried upload signs the same bytes.
+- The file's ArFS metadata JSON says so too: `"dataContentEncoding": "gzip"` next to `dataContentType`, written only when the gzip is what was signed (`prepareDataItems` sets it, and clears it, on every preparation, so a retry that does not compress writes neither the field nor the tag). A file that is not compressed has no such field. The spec is in `docs/ArweaveFS.md`. A private file is never compressed here; if it ever is, it carries the field alone and never the `Content-Encoding` tag.
 - `ArFS` `size` stays the original byte count, so every reader that compares a decoded stream with `size` (previews, zip entries, share links) is unchanged.
 - The upload review still prices the **uncompressed** size. It can only be higher than what is paid, and a batch the review calls not free may in fact fit the free allowance. Pricing the stored size is planned for 3.0.1.
 
 `verifyIntegrity` in the downloader hashes the decoded bytes, so it must not be turned on for compressed items without a change (it is off, and nothing turns it on).
 
 ## Readers
+
+The app parses `dataContentEncoding` (`FileEntity.dataContentEncoding`) and keeps it with the file's custom JSON metadata, so a rename, move or hide of a compressed file writes it again. It does not act on it yet: the downloader still decides from the response header and the data item's tags.
 
 `lib/download/ardrive_downloader.dart`:
 
@@ -34,4 +37,4 @@ Decided in one place, `CompressionPolicy` (`packages/ardrive_uploader/lib/src/co
 
 ## Testing
 
-To check it end to end, upload a few loose `.js` and `.css` files (or a small site) to a public drive with the checkbox checked and read the data items: each text file's item carries `Content-Encoding: gzip`, the original `Content-Type` and a gzip that decodes to the file; the png carries neither. No e2e helper is added to `docs/WEB_E2E_TESTING.md`.
+To check it end to end, upload a few loose `.js` and `.css` files (or a small site) to a public drive with the checkbox checked and read the data items: each text file's item carries `Content-Encoding: gzip`, the original `Content-Type` and a gzip that decodes to the file, and its metadata item has `"dataContentEncoding":"gzip"`; the png carries none of these. No e2e helper is added to `docs/WEB_E2E_TESTING.md`.
