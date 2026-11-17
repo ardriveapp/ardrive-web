@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Switches between the light and dark themes: a moon in light, a sun in
-/// dark, both ardrive_ui's own (the sun was Material's, a different set). An
+/// dark, both from ardrive_ui's icons. An
 /// icon button, so a screen reader hears a named button; it was a bare
 /// gesture with a tooltip.
 class IconThemeSwitcher extends StatelessWidget {

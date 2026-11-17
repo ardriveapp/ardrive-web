@@ -782,20 +782,24 @@ class _OnlineTileState extends State<_OnlineTile> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  // Laid out at the whole name's width from
+                                  // its first letter, so the suffix stays
+                                  // where it is while the name types.
                                   _GradientName(
                                     names: _names,
+                                    reserve: _names[_example],
                                     typed:
                                         _names[_example].substring(0, _chars),
                                     style: address,
-                                  ),
-                                  Opacity(
-                                    opacity: !still && _caretOn ? 1 : 0,
-                                    child: Container(
-                                      width: 2,
-                                      height: 24,
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 1),
-                                      color: _brandRed(context),
+                                    trailing: Opacity(
+                                      opacity: !still && _caretOn ? 1 : 0,
+                                      child: Container(
+                                        width: 2,
+                                        height: 24,
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: 1),
+                                        color: _brandRed(context),
+                                      ),
                                     ),
                                   ),
                                   Text(
@@ -808,7 +812,14 @@ class _OnlineTileState extends State<_OnlineTile> {
                             ),
                             const SizedBox(height: 4),
                             AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 350),
+                              duration: const Duration(milliseconds: 400),
+                              // One after the other: the old label fades out
+                              // in the first half, the new one in during the
+                              // second, never both at half strength. The out
+                              // curve is run backwards by the switcher, so it
+                              // is the same interval.
+                              switchOutCurve: const Interval(0.5, 1),
+                              switchInCurve: const Interval(0.5, 1),
                               child: Text(
                                 labels[_example],
                                 key: ValueKey(_example),
@@ -846,11 +857,19 @@ class _OnlineTileState extends State<_OnlineTile> {
 class _GradientName extends StatefulWidget {
   const _GradientName({
     required this.names,
+    required this.reserve,
     required this.typed,
     required this.style,
+    this.trailing,
   });
 
   final List<String> names;
+
+  /// The name being typed, whole: the space the row keeps for it.
+  final String reserve;
+
+  /// Drawn right after the typed letters, inside the reserved space.
+  final Widget? trailing;
   final String typed;
   final TextStyle style;
 
@@ -892,8 +911,11 @@ class _GradientNameState extends State<_GradientName> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Holds the typed name's place in the row.
-        hidden(widget.typed),
+        // Holds the whole name's place in the row, and the caret's.
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          hidden(widget.reserve),
+          const SizedBox(width: 4),
+        ]),
         Positioned(
           left: 0,
           top: 0,
@@ -914,6 +936,17 @@ class _GradientNameState extends State<_GradientName> {
             ),
           ),
         ),
+        // The caret, right after the typed letters.
+        if (widget.trailing != null)
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [hidden(widget.typed), widget.trailing!],
+            ),
+          ),
       ],
     );
   }

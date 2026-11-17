@@ -102,6 +102,37 @@ void main() {
       expect(search.left, row.left);
     });
 
+    // The explorer's bar gives the row a bounded height; the search box
+    // must still start where a list page's does (32), not be centred in it
+    // or pushed down by a child that fills what it is given.
+    testWidgets('in the explorer\'s bar the search starts 32 px down',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 300);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(host(const Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 1000,
+          height: 110,
+          child: TopBarFrame(
+            child: TopBarControls(
+              search: SizedBox(
+                key: Key('search'),
+                width: double.infinity,
+                height: 52,
+              ),
+            ),
+          ),
+        ),
+      )));
+
+      final search = tester.getRect(find.byKey(const Key('search')));
+      final bar = tester.getRect(find.byType(TopBarFrame));
+      expect(search.height, 52);
+      expect(search.top - bar.top, 32);
+    });
+
     // B4: Phil moved showing hidden items to the explorer's columns menu.
     testWidgets('has no hidden-items eye', (tester) async {
       await pumpRow(tester);

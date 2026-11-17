@@ -506,6 +506,34 @@ void main() {
       await done(tester);
     });
 
+    testWidgets('the .ar.io suffix holds still while a name types',
+        (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final suffix = find.text('.ar.io');
+      final typed = <String>{};
+      final xs = <double>{};
+      // The first example, typed out and held: a name never changes width
+      // until it has been deleted.
+      for (var i = 0; i < 16; i++) {
+        await tester.pump(const Duration(milliseconds: 120));
+        typed.add(
+            tester.widget<Text>(find.byKey(const Key('bentoTypedName'))).data!);
+        xs.add(tester.getTopLeft(suffix).dx);
+      }
+      expect(typed.length, greaterThan(3), reason: 'the name typed');
+      expect(xs, hasLength(1));
+      // The caret follows the typed letters, not the reserved space.
+      final name = tester.getRect(find.byKey(const Key('bentoTypedName')));
+      final caret = tester.getRect(find.byWidgetPredicate((w) =>
+          w is Container &&
+          w.constraints?.maxWidth == 2 &&
+          w.constraints?.maxHeight == 24));
+      final typedWidth =
+          tester.getSize(find.byKey(const Key('bentoTypedName')));
+      expect(caret.left, closeTo(name.left + typedWidth.width, 3));
+      await done(tester);
+    });
+
     // The HTML renderer reads the first point of any drawPoints call, so a
     // leader squeezed too narrow for a dot, by a long label or a large text
     // size, threw there if it drew an empty list.

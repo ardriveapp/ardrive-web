@@ -25,6 +25,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// chrome, and everything it has to say is behind a tap on it.
 const double _topBarRowHeight = 110;
 
+/// Where the controls start, the same 32 px a list page's bar starts at.
+const double _topBarTopInset = 32;
+
+/// The controls in the explorer's 110 px bar, 32 px from the top as a list
+/// page's are, and as tall as they are, as they are there.
+///
+/// Centred in the bar, they sat 3 px higher than on Your drives, Account and
+/// Billing; and given the bar's bounded height, a child that fills its
+/// height made the row fill the rest of the bar and push the search down.
+class TopBarFrame extends StatelessWidget {
+  const TopBarFrame({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: _topBarTopInset),
+      child: OverflowBox(
+        alignment: Alignment.topCenter,
+        minHeight: 0,
+        maxHeight: double.infinity,
+        child: child,
+      ),
+    );
+  }
+}
+
 class AppTopBar extends StatelessWidget {
   const AppTopBar({super.key});
 
@@ -60,7 +88,7 @@ class AppTopBar extends StatelessWidget {
                   const PublicationTopBarActions(),
                 ],
               )
-            : const TopBarControls(search: SearchBox()),
+            : const TopBarFrame(child: TopBarControls(search: SearchBox())),
       ),
     );
   }
