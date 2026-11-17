@@ -1,5 +1,5 @@
 {
-  "configVersion": 7,
+  "configVersion": 8,
   "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
   "defaultArweaveGatewayForDataRequest": {
     "label": "Turbo Gateway",
@@ -12,7 +12,7 @@
   "allowedDataItemSizeForTurbo": 100000,
   "stripePublishableKey": "pk_live_51JUAtwC8apPOWkDLMQqNF9sPpfneNSPnwX8YZ8y1FNDl6v94hZIwzgFSYl27bWE4Oos8CLquunUswKrKcaDhDO6m002Yj9AeKj",
   "enableSyncFromDriveState": true,
-  "publicationViewer": "VlSUg49kTYX_VfZtxl4fhEyu2zssmJytblTpySrd7FI",
+  "publicationViewer": "rgZXIORU7ZKGiXUN5rK5AmzIJQrk37GBOlfPNnKgCp8",
   "publicationGatewayUrl": "https://ardrive.net",
   "enableDriveStatePublishing": true,
   "enableArNS": true,
