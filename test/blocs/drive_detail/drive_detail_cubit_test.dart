@@ -856,6 +856,53 @@ void main() {
       );
     }
 
+    /// The wait names the drive the cubit is loading, so the explorer can
+    /// keep that drive's header up: not the one the drive list has selected,
+    /// which is another drive when a link or a search opens one.
+    test('the wait says which drive it is waiting for', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertOtherDrive();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      unawaited(cubit.openFolder(otherDriveId: otherDriveId));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final waits = emitted.whereType<DriveDetailLoadInProgress>().toList();
+      expect(waits, isNotEmpty);
+      expect(waits.first.driveId, otherDriveId);
+      expect(waits.first.folderId, isNull);
+    });
+
+    test('a wait for a folder names the folder', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertOtherDrive();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      unawaited(cubit.openFolder(
+          otherDriveId: otherDriveId, folderId: 'some-folder'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final wait = emitted.whereType<DriveDetailLoadInProgress>().first;
+      expect(wait.driveId, otherDriveId);
+      expect(wait.folderId, 'some-folder');
+    });
+
     /// Clicking a drive while the login sync is still running used to produce
     /// nothing at all - no navigation, no spinner, no error, the drive the
     /// user had just left still on screen - for as long as the sync ran, which

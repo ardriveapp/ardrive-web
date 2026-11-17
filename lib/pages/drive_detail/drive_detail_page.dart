@@ -259,7 +259,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       // The folder's own header stays where the table will put
                       // it: without it the table, arriving, jumped down by the
                       // header's height.
-                      final waiting = _waitingDrive(context);
+                      final waiting = _waitingDrive(context, driveDetailState);
                       return ScreenTypeLayout.builder(
                         mobile: (context) => Scaffold(
                           drawer:
@@ -652,15 +652,21 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
-  /// The drive a wait in the explorer is for, when the drive list already
-  /// knows it: the one selected.
-  Drive? _waitingDrive(BuildContext context) {
+  /// The drive a wait in the explorer is for, when the explorer was told which
+  /// drive and it is the drive's root that it waits for: what the cubit is
+  /// loading, not what the drive list has selected, which can be another
+  /// drive. Null where either is not known, and the wait then has no header.
+  Drive? _waitingDrive(BuildContext context, DriveDetailLoadInProgress wait) {
+    final driveId = wait.driveId;
+    if (driveId == null) return null;
     final drives = context.read<DrivesCubit>().state;
-    if (drives is! DrivesLoadSuccess || drives.selectedDriveId == null) {
-      return null;
-    }
+    if (drives is! DrivesLoadSuccess) return null;
     for (final drive in [...drives.userDrives, ...drives.sharedDrives]) {
-      if (drive.id == drives.selectedDriveId) return drive;
+      if (drive.id != driveId) continue;
+      // A folder below the root has a trail this does not know.
+      final folderId = wait.folderId;
+      final atRoot = folderId == null || folderId == drive.rootFolderId;
+      return atRoot ? drive : null;
     }
     return null;
   }
