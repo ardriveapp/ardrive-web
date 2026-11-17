@@ -1623,7 +1623,7 @@ class _UploadFolderNameConflictWidget extends StatelessWidget {
       ),
       // Cancel first, so that Skip, the way on, is the primary button.
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -1780,7 +1780,7 @@ class _UploadFileConflictWidget extends StatelessWidget {
       // Cancel first and the main action last, as in the other upload
       // dialogs: the last button is the primary one.
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -1851,7 +1851,7 @@ class _UploadFileTooLargeWidget extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -2492,7 +2492,7 @@ class UploadFailureWidget extends StatelessWidget {
         title: appLocalizationsOf(context).freeAllowanceUsedUpTitle,
         description: appLocalizationsOf(context).freeAllowanceUsedUpDescription,
         actions: [
-          ModalAction.dismiss(
+          ModalAction.close(
             action: () => Navigator.of(context).pop(false),
             title: appLocalizationsOf(context).cancel,
           ),
@@ -2726,7 +2726,7 @@ class _UploadShowingWarningWidget extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),

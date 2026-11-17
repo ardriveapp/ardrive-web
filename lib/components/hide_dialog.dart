@@ -243,7 +243,7 @@ class HideDialog extends StatelessWidget {
   ) {
     if (state is FailureHideState) {
       return [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () {
             Navigator.of(context).pop();
           },

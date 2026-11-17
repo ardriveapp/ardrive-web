@@ -265,7 +265,7 @@ class FileDownloadDialog extends StatelessWidget {
       title: title,
       description: description,
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () => Navigator.pop(context),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -325,7 +325,7 @@ class FileDownloadDialog extends StatelessWidget {
             },
             title: appLocalizationsOf(context).ok,
           ),
-          ModalAction.dismiss(
+          ModalAction.close(
             action: () => Navigator.pop(context),
             title: appLocalizationsOf(context).cancel,
           ),

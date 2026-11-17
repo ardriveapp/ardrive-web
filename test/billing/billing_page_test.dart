@@ -342,6 +342,24 @@ void main() {
       expect(find.text("Couldn't load your balance"), findsNothing);
     });
 
+    testWidgets('the held storage line goes when there is no estimate',
+        (tester) async {
+      final balance = Completer<TurboBalanceDetails>();
+      when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))
+          .thenAnswer((_) => balance.future);
+      when(() => payments.getPriceForBytes(byteSize: any(named: 'byteSize')))
+          .thenThrow(Exception('no price'));
+      await pumpPage(tester, user: _user(), settle: false);
+      final addCredits = find.byKey(const Key('billingAddCredits'));
+      final held = tester.getTopLeft(addCredits).dy;
+
+      balance.complete(_details(own: 10, effective: 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('billingStorage')), findsNothing);
+      expect(tester.getTopLeft(addCredits).dy, lessThan(held - 10));
+    });
+
     testWidgets('an account Turbo has never seen has 0 credits, not an error',
         (tester) async {
       when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))

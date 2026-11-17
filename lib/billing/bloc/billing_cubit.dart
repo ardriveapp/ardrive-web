@@ -106,6 +106,7 @@ class BillingState {
   const BillingState({
     this.balance = const BalanceView(),
     this.storageGiB,
+    this.storageSettled = false,
     this.freeAllowance,
     this.ar = const ArView(),
     this.sourceCredits,
@@ -120,6 +121,10 @@ class BillingState {
 
   /// What the credits buy, in GiB; null when the price couldn't be read.
   final double? storageGiB;
+
+  /// Whether the storage estimate has been worked out, to a figure or to
+  /// none: until then its line is held, after it the line is gone if empty.
+  final bool storageSettled;
   final TurboFreeAllowance? freeAllowance;
   final ArView ar;
 
@@ -137,6 +142,7 @@ class BillingState {
     BalanceView? balance,
     double? storageGiB,
     bool clearStorage = false,
+    bool? storageSettled,
     TurboFreeAllowance? freeAllowance,
     ArView? ar,
     SourceWalletCredits? sourceCredits,
@@ -151,6 +157,7 @@ class BillingState {
       BillingState(
         balance: balance ?? this.balance,
         storageGiB: clearStorage ? null : storageGiB ?? this.storageGiB,
+        storageSettled: storageSettled ?? this.storageSettled,
         freeAllowance: freeAllowance ?? this.freeAllowance,
         ar: ar ?? this.ar,
         sourceCredits:
@@ -228,6 +235,7 @@ class BillingCubit extends Cubit<BillingState> {
 
   Future<void> loadBalance() async {
     _safeEmit(state.copyWith(
+      storageSettled: false,
       balance: BalanceView(
         status: LoadStatus.loading,
         own: state.balance.own,
@@ -266,19 +274,22 @@ class BillingCubit extends Cubit<BillingState> {
 
   Future<void> _loadStorage(BigInt credits) async {
     if (credits <= BigInt.zero) {
-      _safeEmit(state.copyWith(clearStorage: true));
+      _safeEmit(state.copyWith(clearStorage: true, storageSettled: true));
       return;
     }
     try {
       final perGiB = await paymentService.getPriceForBytes(byteSize: _gib);
-      if (perGiB <= BigInt.zero) return;
+      if (perGiB <= BigInt.zero) {
+        _safeEmit(state.copyWith(storageSettled: true));
+        return;
+      }
       // Credits and the price are both in winston: scaled so BigInt keeps the
       // fraction of a GiB.
       final gib = (credits * BigInt.from(1000000) ~/ perGiB).toInt() / 1000000;
-      _safeEmit(state.copyWith(storageGiB: gib));
+      _safeEmit(state.copyWith(storageGiB: gib, storageSettled: true));
     } catch (e) {
       logger.d('Billing: no storage estimate: $e');
-      _safeEmit(state.copyWith(clearStorage: true));
+      _safeEmit(state.copyWith(clearStorage: true, storageSettled: true));
     }
   }
 

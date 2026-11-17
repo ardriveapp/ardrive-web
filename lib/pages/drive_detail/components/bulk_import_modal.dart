@@ -115,7 +115,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                 ],
               ),
               actions: [
-                ModalAction.dismiss(
+                ModalAction.close(
                   action: () {
                     Navigator.pop(context);
                     Navigator.pop(context);
@@ -223,7 +223,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
               files: state.files,
             ),
             actions: [
-              ModalAction.dismiss(
+              ModalAction.close(
                 action: () {
                   Navigator.pop(context);
                 },

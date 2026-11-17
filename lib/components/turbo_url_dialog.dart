@@ -100,7 +100,7 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
         ),
       ),
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           title: 'Cancel',
           action: () => Navigator.of(context).pop(),
         ),

@@ -159,7 +159,7 @@ class _ArIOGatewaySelectorModalContentState
             description:
                 'An error occurred while loading the gateways. Please try again.',
             actions: [
-              ModalAction.dismiss(
+              ModalAction.close(
                 action: () {
                   Navigator.of(context).pop();
                 },

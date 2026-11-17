@@ -10,7 +10,7 @@ class MultiThumbnailCreationWarningModal extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () {
             Navigator.of(context).pop();
           },

@@ -113,7 +113,7 @@ class ModalAction {
     this.customWidth,
     this.variant,
     this.isLoading = false,
-  }) : isDismiss = false;
+  }) : closesDialog = false;
 
   /// An action that only closes the dialog, such as Cancel or Close. It is
   /// secondary even when it is the only action: red says "this does the
@@ -125,17 +125,30 @@ class ModalAction {
     this.customWidth,
   })  : isEnable = true,
         isLoading = false,
-        isDismiss = true,
+        closesDialog = false,
+        variant = ButtonVariant.secondary;
+
+  /// A [ModalAction.dismiss] that only closes the dialog: Cancel or Close,
+  /// not Back, Try again or anything that also stops work. A dialog with one
+  /// gets the close button by default, and the button runs this action, so
+  /// both give the caller the same result.
+  ModalAction.close({
+    required this.action,
+    required this.title,
+    this.customWidth,
+  })  : isEnable = true,
+        isLoading = false,
+        closesDialog = true,
         variant = ButtonVariant.secondary;
 
   final String title;
   final dynamic Function() action;
   final bool isEnable;
 
-  /// Whether this only closes the dialog (see [ModalAction.dismiss]). A
-  /// dialog with one can be closed, so [ArDriveStandardModalNew] gives it the
-  /// close button.
-  final bool isDismiss;
+  /// Whether this only closes the dialog (see [ModalAction.close]). A dialog
+  /// with one can be closed, so [ArDriveStandardModalNew] gives it the close
+  /// button.
+  final bool closesDialog;
 
   /// Draws a spinner in place of the title, and takes no press, while the
   /// action it started is still running. The button keeps its width, so
@@ -264,7 +277,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
 
   /// Whether the title row has the close button, in the same place on every
   /// dialog. Null, the default, shows it when the dialog can be dismissed:
-  /// it has a Cancel or Close ([ModalAction.dismiss]). Pass false for a
+  /// it has a Cancel or Close that only closes ([ModalAction.close]). Pass false for a
   /// dialog that has one but must not be closed from the corner, true for one
   /// whose own action closes it.
   final bool? hasCloseButton;
@@ -280,7 +293,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
         }
         // The X does what the dialog's own Cancel or Close does, so both
         // hand the caller the same result.
-        final dismiss = actions?.where((a) => a.isDismiss).firstOrNull;
+        final dismiss = actions?.where((a) => a.closesDialog).firstOrNull;
         if (dismiss != null) {
           dismiss.action();
         } else {
@@ -310,8 +323,8 @@ class ArDriveStandardModalNew extends StatelessWidget {
       maxWidth = modalStandardMaxWidthSize;
     }
 
-    final showsClose =
-        hasCloseButton ?? (actions?.any((action) => action.isDismiss) ?? false);
+    final showsClose = hasCloseButton ??
+        (actions?.any((action) => action.closesDialog) ?? false);
     final header = <Widget>[
       if (title != null || titleWidget != null) ...[
         Row(

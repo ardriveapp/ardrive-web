@@ -74,7 +74,7 @@ Future<void> promptToPublish(
         title: strings.publishToWeb,
         description: strings.publishCheckFailed,
         actions: [
-          ModalAction.dismiss(
+          ModalAction.close(
             title: strings.close,
             action: () => Navigator.of(context).pop(),
           ),
@@ -294,11 +294,11 @@ class PublishDialog extends StatelessWidget {
               content: _Blocked(state: state),
               actions: [
                 if (cubit.canSyncDrive) ...[
-                  ModalAction.dismiss(title: strings.close, action: close),
+                  ModalAction.close(title: strings.close, action: close),
                   ModalAction(
                       title: strings.publishSyncDrive, action: cubit.syncDrive),
                 ] else
-                  ModalAction.dismiss(title: strings.close, action: close),
+                  ModalAction.close(title: strings.close, action: close),
               ],
             );
           case PublishStage.how:
@@ -308,7 +308,7 @@ class PublishDialog extends StatelessWidget {
               step: strings.publishStepOf(1, 3),
               content: _How(state: state),
               actions: [
-                ModalAction.dismiss(title: strings.cancel, action: close),
+                ModalAction.close(title: strings.cancel, action: close),
                 ModalAction(
                   title: strings.next,
                   isEnable: state.howIsReady,
@@ -336,7 +336,7 @@ class PublishDialog extends StatelessWidget {
                   scopeName: cubit.scopeName,
                   isFolder: cubit.folder != null),
               actions: [
-                ModalAction.dismiss(title: strings.cancel, action: close),
+                ModalAction.close(title: strings.cancel, action: close),
                 ModalAction(title: strings.next, action: cubit.next),
               ],
             );
@@ -407,7 +407,7 @@ class PublishDialog extends StatelessWidget {
                 hasSnapshot: !cubit.isFile,
               ),
               actions: [
-                ModalAction.dismiss(title: strings.close, action: close)
+                ModalAction.close(title: strings.close, action: close)
               ],
             );
           case PublishStage.failed:
@@ -416,7 +416,7 @@ class PublishDialog extends StatelessWidget {
               title: strings.publishFailedTitle,
               content: _Failed(state: state),
               actions: [
-                ModalAction.dismiss(title: strings.close, action: close),
+                ModalAction.close(title: strings.close, action: close),
                 ModalAction(
                     title: strings.publishBackToReview, action: cubit.back),
                 if (state.canRetry)
@@ -488,7 +488,7 @@ class PublishDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
             title: appLocalizationsOf(context).cancel, action: close),
       ],
     );

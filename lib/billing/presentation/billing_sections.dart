@@ -321,9 +321,10 @@ class _BalanceCard extends StatelessWidget {
                 key: const Key('billingStorage'),
                 style: small,
               )
-            else
+            else if (!state.storageSettled)
               // The estimate arrives after the balance, so its line is held
-              // rather than pushing Add credits down when it does.
+              // rather than pushing Add credits down when it does; once there
+              // is none to show, the line goes.
               _HeldFor(text: '\u00A0', style: small, child: null),
             if (balance.shared > BigInt.zero)
               Text(

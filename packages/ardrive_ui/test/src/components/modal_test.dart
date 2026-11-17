@@ -358,10 +358,19 @@ void main() {
 
     testWidgets('a dialog with a Cancel gets it by default', (tester) async {
       await pump(tester, [
-        ModalAction.dismiss(action: () {}, title: 'Cancel'),
+        ModalAction.close(action: () {}, title: 'Cancel'),
         ModalAction(action: () {}, title: 'Go'),
       ]);
       expect(xIcon, findsOneWidget);
+    });
+
+    testWidgets('a Back or Try again dismiss does not give it one',
+        (tester) async {
+      await pump(tester, [
+        ModalAction.dismiss(action: () {}, title: 'Back'),
+        ModalAction(action: () {}, title: 'Go'),
+      ]);
+      expect(xIcon, findsNothing);
     });
 
     testWidgets('a dialog with no way to dismiss it has none', (tester) async {
@@ -384,7 +393,7 @@ void main() {
                       title: 'Title',
                       description: 'Text',
                       actions: [
-                        ModalAction.dismiss(
+                        ModalAction.close(
                           action: () => Navigator.of(context).pop(false),
                           title: 'Cancel',
                         ),
@@ -405,8 +414,35 @@ void main() {
       expect(result, false);
     });
 
+    testWidgets('an explicit close wins over a Back dismiss, as in the top-up',
+        (tester) async {
+      var closed = false;
+      var wentBack = false;
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Center(
+              child: ArDriveStandardModalNew(
+                title: 'Title',
+                description: 'Text',
+                hasCloseButton: true,
+                close: () => closed = true,
+                actions: [
+                  ModalAction.dismiss(
+                      action: () => wentBack = true, title: 'Back'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(xIcon);
+      expect(closed, isTrue);
+      expect(wentBack, isFalse);
+    });
+
     testWidgets('false hides it and true shows it', (tester) async {
-      await pump(tester, [ModalAction.dismiss(action: () {}, title: 'Cancel')],
+      await pump(tester, [ModalAction.close(action: () {}, title: 'Cancel')],
           hasCloseButton: false);
       expect(xIcon, findsNothing);
       await pump(tester, [ModalAction(action: () {}, title: 'Done')],

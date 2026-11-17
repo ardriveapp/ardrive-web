@@ -319,7 +319,7 @@ Widget _confirmModal(
       ),
     ),
     actions: [
-      ModalAction.dismiss(
+      ModalAction.close(
         title: 'Cancel',
         action: () => Navigator.of(context).pop(),
       ),
