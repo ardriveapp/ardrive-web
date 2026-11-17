@@ -75,6 +75,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:ardrive/publication/presentation/publication_header_fold.dart';
 
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
@@ -117,10 +118,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   /// A publication root's header folds away while the list beneath it is
   /// scrolled, so the list has the window, and unfolds at its top.
-  bool _publicationHeaderFolded = false;
+  final _publicationHeaderFold = PublicationHeaderFold();
   String? _publicationHeaderFolderId;
-  bool _publicationListCanScroll = false;
-  bool _publicationListAtTop = true;
 
   void _onMobileFolderShown(String folderId) {
     if (_mobileFolderId == folderId) {
@@ -617,9 +616,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       publicationConfigOf(context)?.scopeRootFolderId ==
       state.folderInView.folder.id;
 
-  void _foldPublicationHeader(bool folded) {
-    if (folded == _publicationHeaderFolded) return;
-    setState(() => _publicationHeaderFolded = folded);
+  /// Rebuilds when [changed]: a [PublicationHeaderFold] call that changed
+  /// the fold.
+  void _foldPublicationHeader(bool changed) {
+    if (changed) setState(() {});
   }
 
   /// [child] with the scrolling that folds a publication root's header: the list
@@ -636,14 +636,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             _ => null,
           };
           if (metrics == null || metrics.axis != Axis.vertical) return false;
-          _publicationListCanScroll = metrics.maxScrollExtent > 0;
-          _publicationListAtTop = metrics.pixels <= 0;
-          // Only a scroll that moved the list: the list growing as the
-          // header folds reports new metrics, and must not unfold it again.
-          if (notification is ScrollUpdateNotification &&
-              (notification.scrollDelta ?? 0) != 0) {
-            _foldPublicationHeader(metrics.pixels > 0);
-          }
+          // Only a scroll that moved the list folds or unfolds: the list
+          // growing as the header folds reports new metrics too.
+          _foldPublicationHeader(_publicationHeaderFold.onScroll(
+            pixels: metrics.pixels,
+            maxScrollExtent: metrics.maxScrollExtent,
+            moved: notification is ScrollUpdateNotification &&
+                (notification.scrollDelta ?? 0) != 0,
+          ));
           return false;
         },
         child: child,
@@ -656,8 +656,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   void _publicationFolderShown(String folderId) {
     if (_publicationHeaderFolderId == folderId) return;
     _publicationHeaderFolderId = folderId;
-    _publicationHeaderFolded = false;
-    _publicationListAtTop = true;
+    _publicationHeaderFold.reset();
   }
 
   /// [child] where the wheel, or a swipe on a touch screen, folds a publication
@@ -667,20 +666,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   Widget _turnsPublicationHeader(Widget child) => Listener(
         onPointerSignal: (event) {
           if (event is! PointerScrollEvent) return;
-          if (event.scrollDelta.dy > 0 && _publicationListCanScroll) {
-            _foldPublicationHeader(true);
-          } else if (event.scrollDelta.dy < 0 && _publicationListAtTop) {
-            _foldPublicationHeader(false);
-          }
+          _foldPublicationHeader(
+              _publicationHeaderFold.onWheel(event.scrollDelta.dy));
         },
         child: GestureDetector(
           onVerticalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0;
-            if (velocity < 0 && _publicationListCanScroll) {
-              _foldPublicationHeader(true);
-            } else if (velocity > 0 && _publicationListAtTop) {
-              _foldPublicationHeader(false);
-            }
+            _foldPublicationHeader(
+                _publicationHeaderFold.onSwipe(details.primaryVelocity ?? 0));
           },
           child: child,
         ),
@@ -717,7 +709,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     _publicationFolderShown(state.folderInView.folder.id);
     return _turnsPublicationHeader(PublicationHeader(
       coverHeight: compact ? 120 : 200,
-      collapsed: _publicationHeaderFolded,
+      collapsed: _publicationHeaderFold.folded,
       compact: compact,
       downloadsSelection: state.multiselect &&
           context.read<DriveDetailCubit>().selectedItems.isNotEmpty,
