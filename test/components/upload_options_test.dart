@@ -1,6 +1,7 @@
 import 'package:ardrive/components/upload_options.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -114,17 +115,17 @@ void main() {
     }
 
     testWidgets('is absent when the review does not offer it', (tester) async {
-      await pump(tester);
+      await pump(tester, thumbnails: null);
       await open(tester);
 
       expect(find.text(label), findsNothing);
       expect(find.text(hint), findsNothing);
-      expect(find.byType(ArDriveToggleSwitch), findsNothing);
+      expect(find.byType(ArDriveCheckBox), findsNothing);
     });
 
-    testWidgets('shows the label, the hint under it and the switch, off',
+    testWidgets('is a checkbox with the hint under the label, off',
         (tester) async {
-      await pump(tester, compress: false);
+      await pump(tester, thumbnails: null, compress: false);
 
       // Closed: nothing about it in the summary while it is off.
       expect(find.text('Compressed'), findsNothing);
@@ -133,28 +134,41 @@ void main() {
 
       expect(find.text(label), findsOneWidget);
       expect(find.text(hint), findsOneWidget);
-      final toggle =
-          tester.widget<ArDriveToggleSwitch>(find.byType(ArDriveToggleSwitch));
-      expect(toggle.value, isFalse);
-      expect(toggle.alignRight, isTrue);
-      // The hint is a caption under the label, the switch at the row's end.
+      expect(
+          tester.widget<ArDriveCheckBox>(find.byType(ArDriveCheckBox)).checked,
+          isFalse);
+      // The caption sits under the label and lines up with it, not the box.
       expect(tester.getTopLeft(find.text(hint)).dy,
           greaterThan(tester.getBottomLeft(find.text(label)).dy - 1));
-      expect(tester.getTopRight(find.byType(ArDriveToggleSwitch)).dx,
-          greaterThanOrEqualTo(tester.getTopRight(find.text(hint)).dx - 1));
+      expect(tester.getTopLeft(find.text(hint)).dx,
+          closeTo(tester.getTopLeft(find.text(label)).dx, 0.6));
+    });
+
+    testWidgets('has the same box size as the thumbnails checkbox',
+        (tester) async {
+      await pump(tester, compress: false);
+      await open(tester);
+
+      final boxes = tester
+          .widgetList<ArDriveCheckBox>(find.byType(ArDriveCheckBox))
+          .toList();
+      expect(boxes, hasLength(2));
+      expect(boxes[0].iconSize, boxes[1].iconSize);
+      expect(tester.getTopLeft(find.text('Upload with thumbnails')).dx,
+          closeTo(tester.getTopLeft(find.text(label)).dx, 0.6));
     });
 
     testWidgets('tapping it reports the choice, and the summary says so',
         (tester) async {
       bool? chosen;
       await pump(tester,
-          compress: false, onCompressChanged: (value) => chosen = value);
+          thumbnails: null,
+          compress: false,
+          onCompressChanged: (value) => chosen = value);
       await open(tester);
 
       await tester.tap(find.text(label));
-      // The switch animates, with a timer of its own, for a moment.
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
       expect(chosen, isTrue);
 
       await tester.tap(find.text('Options'));
@@ -162,23 +176,17 @@ void main() {
       expect(find.text('Compressed'), findsOneWidget);
     });
 
-    testWidgets('has a label and a toggled state for a screen reader',
-        (tester) async {
+    testWidgets('is a labelled checkbox to a screen reader', (tester) async {
       final handle = tester.ensureSemantics();
-      await pump(tester, compress: true);
+      await pump(tester, thumbnails: null, compress: true);
       await open(tester);
 
-      expect(
-        tester.getSemantics(find.text(label)),
-        matchesSemantics(
-          label: label,
-          hasToggledState: true,
-          isToggled: true,
-          hasEnabledState: true,
-          isEnabled: true,
-          hasTapAction: true,
-        ),
-      );
+      final node = tester.getSemantics(find.byType(ArDriveCheckBox));
+      expect(node.label, label);
+      expect(node.hasFlag(SemanticsFlag.hasCheckedState), isTrue);
+      expect(node.hasFlag(SemanticsFlag.isChecked), isTrue);
+      expect(node.hasFlag(SemanticsFlag.isEnabled), isTrue);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
       handle.dispose();
     });
 
@@ -188,16 +196,14 @@ void main() {
           thumbnails: null, compress: false, onCompressChanged: chosen.add);
       await open(tester);
 
-      // Tab order: the Options row first, then the switch.
+      // Tab order: the Options row first, then the checkbox.
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
 
       expect(chosen, [true, false]);
     });

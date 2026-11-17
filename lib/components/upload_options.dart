@@ -181,8 +181,9 @@ class _UploadOptionsState extends State<UploadOptions> {
   }
 }
 
-/// "Compress text and code": the label with the switch at the end of the row,
-/// and what it means as a note under it, the way the Settings rows read.
+/// "Compress text and code": a checkbox like the thumbnails one beside it,
+/// since the choice applies when Upload is pressed, with what it means as a
+/// caption under the label, lined up with the label rather than the box.
 class CompressTextAndCodeRow extends StatelessWidget {
   const CompressTextAndCodeRow({
     super.key,
@@ -193,6 +194,9 @@ class CompressTextAndCodeRow extends StatelessWidget {
   final bool value;
   final void Function(bool) onChanged;
 
+  /// The box and the gap the checkbox leaves before its label.
+  static const double _labelIndent = 18.5 + 8;
+
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -200,25 +204,26 @@ class CompressTextAndCodeRow extends StatelessWidget {
     final l10n = appLocalizationsOf(context);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        ArDriveToggleSwitch(
-          alignRight: true,
-          value: value,
-          text: l10n.compressTextAndCode,
-          textStyle: typography.paragraphNormal(
+        ArDriveCheckBox(
+          title: l10n.compressTextAndCode,
+          useNewIcons: true,
+          checked: value,
+          titleStyle: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colorTokens.textHigh,
           ),
-          onChanged: onChanged,
+          onChange: onChanged,
         ),
-        const SizedBox(height: ArDriveSpacing.xxs),
-        Text(
-          l10n.compressTextAndCodeHint,
-          style: typography.paragraphSmall(
-            fontWeight: ArFontWeight.book,
-            color: colorTokens.textMid,
+        Padding(
+          padding: const EdgeInsets.only(left: _labelIndent),
+          child: Text(
+            l10n.compressTextAndCodeHint,
+            style: typography.paragraphSmall(
+              fontWeight: ArFontWeight.book,
+              color: colorTokens.textMid,
+            ),
           ),
         ),
       ],
