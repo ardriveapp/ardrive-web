@@ -282,21 +282,26 @@ class RenderSliverCollapsingHeader extends RenderSliver
     final alpha = (1 - _progress / _anchorGoneBy).clamp(0.0, 1.0);
     final row = (box.localToGlobal(Offset.zero, ancestor: _header) & box.size)
         .shift(at);
+    // Everything but the row, as bands around it: a clip with a hole in it
+    // did not hold on the web, so each band is a plain rectangle.
     final whole = (Offset.zero & _header.size).shift(at).inflate(8);
-    final rest = Path.combine(
-      PathOperation.difference,
-      Path()..addRect(whole),
-      Path()..addRect(row),
-    );
-    context.pushClipPath(
-      needsCompositing,
-      offset,
-      whole,
-      rest,
-      (context, offset) => context.paintChild(_header, offset + at),
-    );
+    final bands = [
+      Rect.fromLTRB(whole.left, whole.top, whole.right, row.top),
+      Rect.fromLTRB(whole.left, row.bottom, whole.right, whole.bottom),
+      Rect.fromLTRB(whole.left, row.top, row.left, row.bottom),
+      Rect.fromLTRB(row.right, row.top, whole.right, row.bottom),
+    ];
+    for (final band in bands) {
+      if (band.isEmpty) continue;
+      context.pushClipRect(
+        true,
+        offset,
+        band,
+        (context, offset) => context.paintChild(_header, offset + at),
+      );
+    }
     if (alpha <= 0) return;
-    context.pushClipRect(needsCompositing, offset, row, (context, offset) {
+    context.pushClipRect(true, offset, row, (context, offset) {
       context.pushOpacity(
         offset,
         (alpha * 255).round(),
