@@ -44,7 +44,7 @@ void main() {
       ArDriveDownloader(
         ioFileAdapter: IOFileAdapter(),
         ardriveIo: io,
-        arweave: MockArweaveService(),
+        arweave: plainTagsFor(MockArweaveService()),
         source: source,
         decryptStream: positionalXorDecryptor,
         verifierFactory: verifierFactory ??

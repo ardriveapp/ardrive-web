@@ -154,8 +154,11 @@ The File data transaction contains limited information about the file, such as t
 Cipher?: AES256-GCM
 Cipher-IV?: <12 byte initialization vector as Base64>
 Content-Type: <file mime-type | application/octet-stream>
+Content-Encoding?: gzip
  { File data }
 ```
+
+A file data transaction MAY carry `Content-Encoding: gzip`; `size` in the file's metadata is the length of the decoded content, and `Content-Type` stays the type of the decoded content. A gateway sends the data with the same `Content-Encoding` header and a client decodes it, so a reader never has to know. A reader that asks for a byte range of such a file is asking for ranges of the stored (gzipped) bytes, which cannot be resumed from a count of decoded bytes. Only unencrypted data is written this way; ArDrive does it for the text and code of a deployment (see `docs/DEPLOYMENT_COMPRESSION.md`).
 
 ## Snapshot
 

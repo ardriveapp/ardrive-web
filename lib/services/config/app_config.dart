@@ -81,6 +81,14 @@ class AppConfig {
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
+
+  /// Whether a folder with a root `index.html`, uploaded to a public drive,
+  /// has its text and code gzipped (`Content-Encoding: gzip` on the data
+  /// item, like `@ar.io/deploy --compress gzip`). Affects new uploads only:
+  /// files already uploaded stay readable either way. A code default of off,
+  /// so a stored config written before the key existed leaves it off.
+  @JsonKey(defaultValue: false)
+  final bool compressDeployments;
   final int? configVersion;
   final String? solanaRpcUrl;
   final String? solanaCoreProgramId;
@@ -111,6 +119,7 @@ class AppConfig {
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
+    this.compressDeployments = false,
     this.configVersion,
     this.solanaRpcUrl,
     this.solanaCoreProgramId,
@@ -139,6 +148,7 @@ class AppConfig {
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
+    bool? compressDeployments,
     int? configVersion,
     String? solanaRpcUrl,
     String? solanaCoreProgramId,
@@ -175,6 +185,7 @@ class AppConfig {
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
+      compressDeployments: compressDeployments ?? this.compressDeployments,
       configVersion: configVersion ?? this.configVersion,
       solanaRpcUrl: solanaRpcUrl ?? this.solanaRpcUrl,
       solanaCoreProgramId: solanaCoreProgramId ?? this.solanaCoreProgramId,

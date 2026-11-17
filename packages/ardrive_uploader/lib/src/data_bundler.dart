@@ -729,6 +729,26 @@ class DataResultWithContents<T> {
   });
 }
 
+/// The gzip of [file], or null when it is to be uploaded as it is.
+Future<Uint8List?> _gzipForDeployment(IOFile file, int length) async {
+  if (!CompressionPolicy.isCompressible(
+    fileName: file.name,
+    contentType: file.contentType,
+    length: length,
+  )) {
+    return null;
+  }
+
+  final raw = await file.readAsBytes();
+  final gzipped = CompressionPolicy.compressIfSmaller(raw);
+  if (gzipped == null) {
+    logger.d('Not compressing ${file.name}: no smaller as gzip');
+  } else {
+    logger.d('Compressed ${file.name}: ${raw.length} -> ${gzipped.length}');
+  }
+  return gzipped;
+}
+
 Future<UploadFilePreparation> prepareDataItems({
   required IOFile file,
   required ARFSFileUploadMetadata metadata,
@@ -750,10 +770,32 @@ Future<UploadFilePreparation> prepareDataItems({
     );
   }
 
+  Stream<Uint8List> Function([int, int?]) dataStream = file.openReadStream;
+  var dataLength = await file.length;
+
+  // A deployment's text and code on a public drive travels gzipped. The tag
+  // is added only when the gzip is what is signed, and the ArFS `size` of the
+  // metadata keeps the original length.
+  // The metadata outlives a preparation (a retry prepares it again), so a tag
+  // an earlier preparation added must not be signed onto bytes that are not
+  // gzipped this time. The generator never writes this tag itself.
+  metadata.removeDataTag(EntityTag.contentEncoding);
+
+  if (key == null && !metadata.isPrivate && metadata.compressDeployment) {
+    final gzipped = await _gzipForDeployment(file, dataLength);
+    if (gzipped != null) {
+      dataStream = ([start = 0, end]) => Stream.value(gzipped);
+      dataLength = gzipped.length;
+      metadata.addDataTag(
+        Tag(EntityTag.contentEncoding, CompressionPolicy.contentEncodingGzip),
+      );
+    }
+  }
+
   // returns the encrypted or not file read stream and the cipherIv if it was encrypted
   final dataGenerator = await _dataGenerator(
-    dataStream: file.openReadStream,
-    fileLength: await file.length,
+    dataStream: dataStream,
+    fileLength: dataLength,
     metadataId: metadata.id,
     wallet: wallet,
     encryptionKey: key,

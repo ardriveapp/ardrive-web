@@ -143,6 +143,15 @@ mixin ARFSUploadData {
     );
   }
 
+  /// Adds one tag to the data transaction, after the ones already set. A tag
+  /// of the same name is replaced, so preparing a file twice signs one tag.
+  void addDataTag(Tag tag) =>
+      _dataTags = [..._dataTags.where((t) => t.name != tag.name), tag];
+
+  /// Removes the data tags named [name].
+  void removeDataTag(String name) =>
+      _dataTags = _dataTags.where((t) => t.name != name).toList();
+
   // Setter for data tags
   void setDataTags(List<Tag> dataTags) => _dataTags = dataTags;
 
@@ -176,8 +185,14 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
     required super.isPrivate,
     this.assignedName,
     this.fallbackTxId,
+    this.compressDeployment = false,
     super.paidBy = const [],
   });
+
+  /// Whether the file belongs to a deployment whose text and code are
+  /// uploaded gzipped (see `CompressionPolicy`). Only ever acted on for a
+  /// public file; [size] stays the original length either way.
+  final bool compressDeployment;
 
   /// The size of the file in bytes.
   final int size;

@@ -71,6 +71,7 @@ class UploadCubit extends Cubit<UploadState> {
         _activityTracker = activityTracker,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
+        _compressDeployments = configService.config.compressDeployments,
         _manifestRepository = manifestRepository,
         _createManifestCubit = createManifestCubit,
         _arDriveUploadManager = arDriveUploadManager,
@@ -87,6 +88,9 @@ class UploadCubit extends Cubit<UploadState> {
   final ManifestRepository _manifestRepository;
   final CreateManifestCubit _createManifestCubit;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
+
+  /// `AppConfig.compressDeployments`, read once like [_uploadThumbnail].
+  final bool _compressDeployments;
 
   final String _driveId;
   final String _parentFolderId;
@@ -1184,6 +1188,7 @@ class UploadCubit extends Cubit<UploadState> {
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
       paidBy: _paidBy,
+      compressDeployments: _compressDeployments,
     );
 
     uploadController.onError((tasks) {

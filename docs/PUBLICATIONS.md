@@ -260,6 +260,10 @@ serving it and the gateway it detected, nothing else.
 - CI warms the bundle after each deploy by reading every file once through
   turbo-gateway.com and ardrive.net.
 
+### Deployments made in the app
+
+A folder with a root `index.html` uploaded to a public drive (the files a manifest is later made over) has its text and code uploaded gzipped, as the release bundle is, behind `AppConfig.compressDeployments`. The manifest itself and the publication files are written by their own uploaders and are never compressed. See `docs/DEPLOYMENT_COMPRESSION.md`.
+
 ## Names
 
 **Status:** names phase 1 is built and `enableArNS` is on in every flavour

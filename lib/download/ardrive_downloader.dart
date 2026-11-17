@@ -886,6 +886,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
         keyData: keyData,
         verifierFuture: verifierFuture,
         firstResponse: firstResponse,
+        contentType: contentType,
         gcmTooLargeToBuffer: gcmTooLargeToBuffer,
         integrityCaveat: gcmTooLargeToBuffer ? _oversizedGcmCaveat : null,
       );
@@ -964,10 +965,22 @@ class _ArDriveDownloader implements ArDriveDownloader {
     required Uint8List? keyData,
     required Future<StreamedDataItemVerifier> verifierFuture,
     DownloadSourceResponse? firstResponse,
+    String? contentType,
     bool gcmTooLargeToBuffer = false,
     String? integrityCaveat,
   }) async* {
     final encrypted = cipher != null;
+
+    // Stored gzipped (`Content-Encoding: gzip`, a deployment's text and
+    // code): what is delivered is the decoded file, but a `Range` asks for
+    // stored bytes, so `delivered` is not an offset into anything. Resuming
+    // would splice the wrong bytes, so it is not attempted. `null` until it
+    // is known: the first response says, or else the tags, on the one
+    // occasion a resume is about to be made.
+    bool? storedEncoded = firstResponse?.isContentEncoded == true ? true : null;
+
+    // The first two bytes delivered, for the check at the end.
+    final head = <int>[];
 
     StreamedDataItemVerifier? verifier;
     var delivered = 0;
@@ -979,6 +992,25 @@ class _ArDriveDownloader implements ArDriveDownloader {
       while (true) {
         final resumeFrom = resumeOffsetFor(delivered, encrypted: encrypted);
         var toSkip = delivered - resumeFrom;
+
+        if (resumeFrom > 0 && !encrypted) {
+          storedEncoded ??= await _storedContentEncoding(txId);
+          // Only a file known not to be encoded is resumed. Unknown (the
+          // lookup failed or found nothing) is treated like encoded: a
+          // resume could append stored bytes to decoded ones.
+          if (storedEncoded != false) {
+            throw DownloadResumeNotSupportedException(
+              txId,
+              resumeFrom,
+              null,
+              storedEncoded == true
+                  ? 'the file is stored with a Content-Encoding, so the '
+                      'bytes delivered so far are not an offset into it'
+                  : 'it could not be checked whether the file is stored '
+                      'with a Content-Encoding',
+            );
+          }
+        }
 
         if (resumeFrom > 0 && verifyDownload) {
           // The chunk-level check the arweave client runs for L1 transactions
@@ -1018,6 +1050,20 @@ class _ArDriveDownloader implements ArDriveDownloader {
             _announceResume(txId, resumeFrom, attempts, e);
             await _backOffBeforeResume(attempts);
             continue;
+          }
+        }
+
+        if (response.isContentEncoded) {
+          storedEncoded = true;
+          if (resumeFrom > 0) {
+            response.cancel();
+            throw DownloadResumeNotSupportedException(
+              txId,
+              resumeFrom,
+              response.statusCode,
+              'the file is stored with a Content-Encoding, so the bytes '
+              'delivered so far are not an offset into it',
+            );
           }
         }
 
@@ -1073,13 +1119,32 @@ class _ArDriveDownloader implements ArDriveDownloader {
               toSkip = 0;
             }
 
+            if (!encrypted && head.length < 2) {
+              head.addAll(chunk.take(2 - head.length));
+            }
+
             delivered += chunk.length;
             yield chunk;
+          }
+
+          // A gateway or client that did not decode a gzipped body hands over
+          // the stored bytes: gzip magic on a file that is not a gzip, and a
+          // length that is not the file's. Never saved as if it were fine.
+          if (!encrypted &&
+              delivered != fileSize &&
+              head.length >= 2 &&
+              head[0] == 0x1f &&
+              head[1] == 0x8b &&
+              !_isGzipContentType(contentType)) {
+            throw DownloadNotDecodedException(txId, fileSize, delivered);
           }
 
           return;
         } catch (e) {
           response.cancel();
+
+          // Not a broken transport: asking again would get the same bytes.
+          if (e is DownloadNotDecodedException) rethrow;
 
           // An attempt that made progress earns a fresh budget — but only
           // against [_maxResumeAttempts]. [_maxTotalResumeAttempts] is what
@@ -1116,6 +1181,31 @@ class _ArDriveDownloader implements ArDriveDownloader {
           _completeIntegrity(_withIntegrityCaveat(result, integrityCaveat));
         }));
       }
+    }
+  }
+
+  static bool _isGzipContentType(String? contentType) =>
+      (contentType ?? '').toLowerCase().contains('gzip');
+
+  /// Whether the data item's tags say its data is stored with a
+  /// `Content-Encoding`: `true`, `false` (the tags were read and there is
+  /// none), or `null` when that could not be told. Asked once, only when a
+  /// resume is about to be attempted: the response headers are not always
+  /// visible to the client (a browser shows only what the gateway exposes),
+  /// the tags always are.
+  Future<bool?> _storedContentEncoding(String txId) async {
+    try {
+      final details = await _arweave.getTransactionDetails(txId);
+      if (details == null) return null;
+      for (final tag in details.tags) {
+        if (tag.name.toLowerCase() == 'content-encoding') {
+          return isEncodedContentEncoding(tag.value);
+        }
+      }
+      return false;
+    } catch (e) {
+      logger.w('Could not read the tags of $txId before resuming: $e');
+      return null;
     }
   }
 
@@ -1441,6 +1531,7 @@ class DownloadSourceResponse {
     required this.stream,
     required this.startOffsetBytes,
     this.statusCode,
+    this.contentEncoding,
     void Function()? cancel,
   }) : cancel = cancel ?? _noop;
 
@@ -1458,6 +1549,19 @@ class DownloadSourceResponse {
   /// The HTTP status, when there was one. `null` for sources that do not speak
   /// HTTP directly.
   final int? statusCode;
+
+  /// The `Content-Encoding` the gateway declared, when it did and the client
+  /// exposed it (`gzip` for a deployment's text and code).
+  ///
+  /// Every client in use decodes such a body before this stream sees it, so
+  /// the bytes delivered are the file's own while the offsets of a `Range`
+  /// request are the stored ones: a resume cannot be expressed. See
+  /// [isContentEncoded].
+  final String? contentEncoding;
+
+  /// Whether the body was stored encoded, so the stream is not addressable by
+  /// the offsets it has delivered.
+  bool get isContentEncoded => isEncodedContentEncoding(contentEncoding);
 
   /// Releases the underlying connection.
   final void Function() cancel;
@@ -1540,8 +1644,16 @@ class GatewayDownloadSource implements DownloadSource {
       final client = _clientFactory();
 
       try {
-        final request = http.Request('GET', Uri.parse('$origin/$txId'))
-          ..headers['Range'] = 'bytes=$offset-';
+        // A download from byte 0 is a plain GET. `Range: bytes=0-` says
+        // nothing a plain GET does not, and Chrome refuses to decode a ranged
+        // answer for a file stored with a `Content-Encoding` (a deployment's
+        // text and code): `net::ERR_CONTENT_DECODING_FAILED`, for any range
+        // and in any cache mode, measured against turbo-gateway.com with
+        // Chrome 130 and 158. Firefox decodes it. A resume is the only
+        // request that needs a range, and a file stored with a
+        // `Content-Encoding` is never resumed.
+        final request = http.Request('GET', Uri.parse('$origin/$txId'));
+        if (offset > 0) request.headers['Range'] = 'bytes=$offset-';
 
         final response =
             await client.send(request).timeout(_rangeRequestTimeout);
@@ -1577,6 +1689,7 @@ class GatewayDownloadSource implements DownloadSource {
           stream: response.stream,
           startOffsetBytes: start,
           statusCode: response.statusCode,
+          contentEncoding: response.headers['content-encoding'],
           cancel: client.close,
         );
       } catch (e) {
@@ -1721,6 +1834,39 @@ class DownloadIntegrityException implements Exception {
 /// with the whole body; writing that at the resume offset would corrupt the
 /// file, so the download is abandoned instead. Retrying from zero is safe and
 /// is what the caller should offer.
+/// Whether a `Content-Encoding` header value names a coding that is undone
+/// on the way in (`identity`, or nothing, does not).
+@visibleForTesting
+bool isEncodedContentEncoding(String? value) {
+  if (value == null) return false;
+  final coding = value.trim().toLowerCase();
+  return coding.isNotEmpty && coding != 'identity';
+}
+
+/// A public file that was stored gzipped arrived still gzipped, so saving it
+/// would write a `.gz` under the file's own name. It is reported rather than
+/// kept: the bytes are what they are, and nothing here can tell which client
+/// or gateway skipped the decoding.
+class DownloadNotDecodedException implements Exception {
+  const DownloadNotDecodedException(
+    this.txId,
+    this.expectedBytes,
+    this.deliveredBytes,
+  );
+
+  final String txId;
+
+  /// The size the file claims (the ArFS `size`: the decoded length).
+  final int expectedBytes;
+
+  final int deliveredBytes;
+
+  @override
+  String toString() =>
+      'The data of $txId arrived gzip-compressed and was not decoded '
+      '($deliveredBytes bytes, the file is $expectedBytes)';
+}
+
 class DownloadResumeNotSupportedException implements Exception {
   const DownloadResumeNotSupportedException(
     this.txId,
