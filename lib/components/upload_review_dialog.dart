@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -264,7 +265,8 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final dialogWidth = width < 600 ? min(358.0, width - 32) : 560.0;
+    final dialogWidth =
+        width < 600 ? min(358.0, width - 32) : kLargeDialogWidth;
 
     if (_step == _Step.credits && widget.summary != null) {
       return AddTurboCreditsStep(

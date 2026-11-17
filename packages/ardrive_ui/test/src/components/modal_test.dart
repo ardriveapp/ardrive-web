@@ -334,6 +334,51 @@ void main() {
         lessThanOrEqualTo(350));
   });
 
+  group('ArDriveStandardModalNew close button', () {
+    Future<void> pump(WidgetTester tester, List<ModalAction> actions,
+        {bool? hasCloseButton}) async {
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Center(
+              child: ArDriveStandardModalNew(
+                title: 'Title',
+                description: 'Text',
+                hasCloseButton: hasCloseButton,
+                actions: actions,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final xIcon = find.byWidgetPredicate(
+        (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x);
+
+    testWidgets('a dialog with a Cancel gets it by default', (tester) async {
+      await pump(tester, [
+        ModalAction.dismiss(action: () {}, title: 'Cancel'),
+        ModalAction(action: () {}, title: 'Go'),
+      ]);
+      expect(xIcon, findsOneWidget);
+    });
+
+    testWidgets('a dialog with no way to dismiss it has none', (tester) async {
+      await pump(tester, [ModalAction(action: () {}, title: 'Go')]);
+      expect(xIcon, findsNothing);
+    });
+
+    testWidgets('false hides it and true shows it', (tester) async {
+      await pump(tester, [ModalAction.dismiss(action: () {}, title: 'Cancel')],
+          hasCloseButton: false);
+      expect(xIcon, findsNothing);
+      await pump(tester, [ModalAction(action: () {}, title: 'Done')],
+          hasCloseButton: true);
+      expect(xIcon, findsOneWidget);
+    });
+  });
+
   group('ArDriveStandardModalNew size changes', () {
     Widget host(double height, {bool reduceMotion = false}) => ArDriveApp(
           builder: (context) => MaterialApp(

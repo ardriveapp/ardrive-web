@@ -1933,7 +1933,7 @@ class _UploadReadyWidget extends StatelessWidget {
     final summary = paymentBloc.state is UploadPaymentMethodLoading
         ? null
         : UploadReviewSummary.fromPaymentInfo(info);
-    final folderName = state.params.targetFolder.name;
+    final folderName = uploadDestinationName(state.params);
 
     return ReactiveForm(
       formGroup: context.watch<UploadCubit>().licenseCategoryForm,
@@ -3310,7 +3310,7 @@ class _UploadPaymentRequiredWidgetState
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
     final reviewed = widget.reviewed;
-    final folderName = reviewed.params.targetFolder.name;
+    final folderName = uploadDestinationName(reviewed.params);
 
     return UploadReviewDialog(
       title: l10n.uploadNFiles(reviewed.numberOfFiles),
@@ -3335,6 +3335,14 @@ class _UploadPaymentRequiredWidgetState
     );
   }
 }
+
+/// Where an upload goes, as the review names it: the drive's name when the
+/// target is its root folder (whose own name is an internal one, such as
+/// "Bundled Drive 10-18"), else the folder's.
+String uploadDestinationName(UploadParams params) =>
+    params.targetFolder.parentFolderId == null
+        ? params.targetDrive.name
+        : params.targetFolder.name;
 
 /// The note after an upload: how many files are saved, and Share.
 void showUploadSavedToast(

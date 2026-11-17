@@ -38,3 +38,11 @@ String formatUtcOffset(Duration offset) {
       ? 'GMT$sign$hours'
       : 'GMT$sign$hours:${rest.toString().padLeft(2, '0')}';
 }
+
+/// [formatDateTime] on two lines, the day then the time with its zone, for a
+/// narrow panel: it wraps between them, never inside either.
+String formatDateTimeStacked(DateTime date) {
+  final day = formatDate(date);
+  final full = formatDateTime(date);
+  return '${day.replaceAll(' ', '\u00A0')}\n${full.substring(day.length + 1)}';
+}

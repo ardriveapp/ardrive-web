@@ -113,7 +113,7 @@ class ModalAction {
     this.customWidth,
     this.variant,
     this.isLoading = false,
-  });
+  }) : isDismiss = false;
 
   /// An action that only closes the dialog, such as Cancel or Close. It is
   /// secondary even when it is the only action: red says "this does the
@@ -125,11 +125,17 @@ class ModalAction {
     this.customWidth,
   })  : isEnable = true,
         isLoading = false,
+        isDismiss = true,
         variant = ButtonVariant.secondary;
 
   final String title;
   final dynamic Function() action;
   final bool isEnable;
+
+  /// Whether this only closes the dialog (see [ModalAction.dismiss]). A
+  /// dialog with one can be closed, so [ArDriveStandardModalNew] gives it the
+  /// close button.
+  final bool isDismiss;
 
   /// Draws a spinner in place of the title, and takes no press, while the
   /// action it started is still running. The button keeps its width, so
@@ -240,7 +246,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.content,
     this.actions,
     this.width,
-    this.hasCloseButton = false,
+    this.hasCloseButton,
     this.close,
     this.closeLabel = 'Close',
     this.scrollableContent = false,
@@ -255,7 +261,13 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final List<ModalAction>? actions;
   final Widget? content;
   final double? width;
-  final bool hasCloseButton;
+
+  /// Whether the title row has the close button, in the same place on every
+  /// dialog. Null, the default, shows it when the dialog can be dismissed:
+  /// it has a Cancel or Close ([ModalAction.dismiss]). Pass false for a
+  /// dialog that has one but must not be closed from the corner, true for one
+  /// whose own action closes it.
+  final bool? hasCloseButton;
   final Function()? close;
 
   /// What a screen reader calls the close button.
@@ -291,6 +303,8 @@ class ArDriveStandardModalNew extends StatelessWidget {
       maxWidth = modalStandardMaxWidthSize;
     }
 
+    final showsClose =
+        hasCloseButton ?? (actions?.any((action) => action.isDismiss) ?? false);
     final header = <Widget>[
       if (title != null || titleWidget != null) ...[
         Row(
@@ -305,7 +319,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
                     ),
                   ),
             ),
-            if (hasCloseButton)
+            if (showsClose)
               // Named, so a screen reader says what it does; it was an
               // unlabelled icon.
               Semantics(

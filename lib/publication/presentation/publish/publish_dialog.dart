@@ -40,6 +40,7 @@ import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -293,7 +294,7 @@ class PublishDialog extends StatelessWidget {
               content: _Blocked(state: state),
               actions: [
                 if (cubit.canSyncDrive) ...[
-                  ModalAction(title: strings.close, action: close),
+                  ModalAction.dismiss(title: strings.close, action: close),
                   ModalAction(
                       title: strings.publishSyncDrive, action: cubit.syncDrive),
                 ] else
@@ -307,7 +308,7 @@ class PublishDialog extends StatelessWidget {
               step: strings.publishStepOf(1, 3),
               content: _How(state: state),
               actions: [
-                ModalAction(title: strings.cancel, action: close),
+                ModalAction.dismiss(title: strings.cancel, action: close),
                 ModalAction(
                   title: strings.next,
                   isEnable: state.howIsReady,
@@ -335,7 +336,7 @@ class PublishDialog extends StatelessWidget {
                   scopeName: cubit.scopeName,
                   isFolder: cubit.folder != null),
               actions: [
-                ModalAction(title: strings.cancel, action: close),
+                ModalAction.dismiss(title: strings.cancel, action: close),
                 ModalAction(title: strings.next, action: cubit.next),
               ],
             );
@@ -415,7 +416,7 @@ class PublishDialog extends StatelessWidget {
               title: strings.publishFailedTitle,
               content: _Failed(state: state),
               actions: [
-                ModalAction(title: strings.close, action: close),
+                ModalAction.dismiss(title: strings.close, action: close),
                 ModalAction(
                     title: strings.publishBackToReview, action: cubit.back),
                 if (state.canRetry)
@@ -506,7 +507,7 @@ Widget _modal(
   final colors = ArDriveTheme.of(context).themeData.colorTokens;
   return ArDriveStandardModalNew(
     title: title,
-    width: wide ? 860 : 520,
+    width: wide ? 860 : kLargeDialogWidth,
     scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
