@@ -115,8 +115,7 @@ void main() {
       expect(rowColour('b'), Colors.transparent);
     });
 
-    testWidgets('fills a hovered row, selected or not',
-        (tester) async {
+    testWidgets('fills a hovered row, selected or not', (tester) async {
       await pumpTable(tester, const [
         _Row(0, id: 'a', size: 640),
         _Row(1, id: 'b', size: 10),

@@ -369,6 +369,42 @@ void main() {
       expect(xIcon, findsNothing);
     });
 
+    testWidgets('the X runs the dismiss action, so both give the same result',
+        (tester) async {
+      Object? result = 'unset';
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => ArDriveStandardModalNew(
+                      title: 'Title',
+                      description: 'Text',
+                      actions: [
+                        ModalAction.dismiss(
+                          action: () => Navigator.of(context).pop(false),
+                          title: 'Cancel',
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(xIcon);
+      await tester.pumpAndSettle();
+      expect(result, false);
+    });
+
     testWidgets('false hides it and true shows it', (tester) async {
       await pump(tester, [ModalAction.dismiss(action: () {}, title: 'Cancel')],
           hasCloseButton: false);

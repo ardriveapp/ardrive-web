@@ -276,6 +276,13 @@ class ArDriveStandardModalNew extends StatelessWidget {
   VoidCallback _close(BuildContext context) => () {
         if (close != null) {
           close?.call();
+          return;
+        }
+        // The X does what the dialog's own Cancel or Close does, so both
+        // hand the caller the same result.
+        final dismiss = actions?.where((a) => a.isDismiss).firstOrNull;
+        if (dismiss != null) {
+          dismiss.action();
         } else {
           Navigator.pop(context);
         }
