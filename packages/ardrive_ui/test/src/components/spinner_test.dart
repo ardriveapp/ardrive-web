@@ -29,6 +29,21 @@ void main() {
     expect(ring.value, 0.75);
   });
 
+  testWidgets('ArDriveSpinner can go spinning, measured, spinning again',
+      (tester) async {
+    for (final value in [null, 0.5, null]) {
+      await tester.pumpWidget(wrap(ArDriveSpinner(value: value)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(tester.takeException(), isNull);
+    expect(
+        tester
+            .widget<CircularProgressIndicator>(
+                find.byType(CircularProgressIndicator))
+            .value,
+        0.75);
+  });
+
   testWidgets('ArDriveSpinner shows a measured value as given', (tester) async {
     await tester.pumpWidget(wrap(const ArDriveSpinner(value: 0.4)));
     expect(

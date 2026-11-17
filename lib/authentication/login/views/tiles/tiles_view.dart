@@ -1183,7 +1183,11 @@ class _FeatureSlidesState extends State<_FeatureSlides> with _Stepper {
               child: SizedBox.expand(
                 child: RepaintBoundary(
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
+                    duration: const Duration(milliseconds: 400),
+                    // Out, then in, the title and the art together: overlaid
+                    // fades left both at half strength, overprinted.
+                    switchOutCurve: const Interval(0.5, 1),
+                    switchInCurve: const Interval(0.5, 1),
                     child: Column(
                       key: ValueKey(index),
                       children: [

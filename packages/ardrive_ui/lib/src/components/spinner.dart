@@ -46,6 +46,8 @@ class _ArDriveSpinnerState extends State<ArDriveSpinner>
     with SingleTickerProviderStateMixin {
   AnimationController? _controller;
 
+  bool get _spinning => widget.value == null;
+
   @override
   void initState() {
     super.initState();
@@ -59,14 +61,16 @@ class _ArDriveSpinnerState extends State<ArDriveSpinner>
   }
 
   void _sync() {
+    // One controller for the state's life: a single ticker provider cannot
+    // make a second one after the first is disposed.
+    final controller = _controller ??= AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
     if (widget.value == null) {
-      _controller ??= AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 1000),
-      )..repeat();
+      if (!controller.isAnimating) controller.repeat();
     } else {
-      _controller?.dispose();
-      _controller = null;
+      controller.stop();
     }
   }
 
@@ -81,7 +85,7 @@ class _ArDriveSpinnerState extends State<ArDriveSpinner>
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final size = widget.size;
     final color = widget.color ?? colorTokens.iconMid;
-    final controller = _controller;
+    final controller = _spinning ? _controller : null;
     // Spinning: a fixed three-quarter arc, turned. Drawn by the same
     // indicator as a measured one, so it looks the same and a finder for it
     // still finds it.

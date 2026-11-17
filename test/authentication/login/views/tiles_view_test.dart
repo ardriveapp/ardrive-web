@@ -534,6 +534,26 @@ void main() {
       await done(tester);
     });
 
+    testWidgets('a feature slide fades out before the next fades in',
+        (tester) async {
+      await pumpBento(tester, size: const Size(390, 844), scrolling: true);
+      final title = find.byKey(const Key('bentoSlideTitle'));
+      // Run to the swap (5 s), then look at every frame of it.
+      await tester.pump(const Duration(milliseconds: 4900));
+      var overlapped = false;
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final visible = tester
+            .widgetList<FadeTransition>(
+                find.ancestor(of: title, matching: find.byType(FadeTransition)))
+            .where((f) => f.opacity.value > 0.01)
+            .length;
+        if (visible > 1) overlapped = true;
+      }
+      expect(overlapped, isFalse);
+      await done(tester);
+    });
+
     // The HTML renderer reads the first point of any drawPoints call, so a
     // leader squeezed too narrow for a dot, by a long label or a large text
     // size, threw there if it drew an empty list.
