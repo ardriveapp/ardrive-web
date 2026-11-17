@@ -5,7 +5,7 @@ Compression is the uploader's **explicit choice**, the way `gsutil cp -z` is: th
 The checkbox is offered only when **all** of these hold, decided by `offersCompression` (`lib/core/upload/compression_offer.dart`) when the upload is prepared:
 
 - the drive is **public** (a private file is never stored gzipped);
-- `compressDeployments` in `AppConfig` (`assets/config/*.json`) is on. It no longer compresses anything by itself: it means "offer the checkbox". On in development and staging. Production is off until it is turned on deliberately; remember that an edit to the JSON only reaches a user who already ran the app once if `configVersion` is bumped;
+- `compressDeployments` in `AppConfig` (`assets/config/*.json`) is on. It no longer compresses anything by itself: it means "offer the checkbox". On in development, staging and production (production since 3.0.0, after real-gateway checks). Remember that an edit to the JSON only reaches a user who already ran the app once if `configVersion` is bumped;
 - at least one file in the upload is one the policy would compress (a batch of only images, audio or PDFs gets no checkbox).
 
 With the checkbox unchecked, an upload is byte for byte what it was before this existed. It affects new uploads only: files already uploaded stay readable either way, because the readers below handle them either way.
