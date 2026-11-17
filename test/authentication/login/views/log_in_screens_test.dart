@@ -13,6 +13,7 @@ import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/used_metamask_before_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
+import 'package:ardrive/components/wallet_gradient_avatar.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -1028,6 +1029,94 @@ void main() {
       await tester.pump();
       expect(find.text('arie'), findsOneWidget);
       expect(find.text('iKryOe...oRjA'), findsOneWidget);
+    });
+
+    Future<void> pumpWithName(WidgetTester tester, String? logo) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      whenListen(
+        profileNameBloc,
+        const Stream<ProfileNameState>.empty(),
+        initialState: ProfileNameLoaded(
+            PrimaryNameDetails(primaryName: 'arie', logo: logo), address),
+      );
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+    }
+
+    Finder logoImage(String url) => find.byWidgetPredicate((w) =>
+        w is Image &&
+        w.image is NetworkImage &&
+        (w.image as NetworkImage).url == url);
+
+    testWidgets('shows the ArNS logo as the account picture', (tester) async {
+      await pumpWithName(tester, 'abc123txid');
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(avatar, findsOneWidget);
+      expect(tester.getSize(avatar), const Size(56, 56));
+      expect(
+          find.ancestor(
+              of: logoImage('https://turbo-gateway.com/abc123txid'),
+              matching: find.byType(ClipOval)),
+          findsOneWidget);
+      expect(logoImage('https://turbo-gateway.com/abc123txid'), findsOneWidget);
+    });
+
+    testWidgets('takes a logo URL as it is', (tester) async {
+      await pumpWithName(tester, 'https://example.com/a.png');
+      expect(logoImage('https://example.com/a.png'), findsOneWidget);
+    });
+
+    testWidgets('shows the wallet avatar when the name has no logo',
+        (tester) async {
+      await pumpWithName(tester, null);
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(find.descendant(of: avatar, matching: find.byType(Image)),
+          findsNothing);
+      expect(
+          tester
+              .widget<WalletGradientAvatar>(find.descendant(
+                  of: avatar, matching: find.byType(WalletGradientAvatar)))
+              .address,
+          address);
+    });
+
+    testWidgets('shows the wallet avatar while the name loads', (tester) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(tester.getSize(avatar), const Size(56, 56));
+      expect(
+          find.descendant(
+              of: avatar, matching: find.byType(WalletGradientAvatar)),
+          findsOneWidget);
+    });
+
+    testWidgets('falls back to the wallet avatar when the logo fails',
+        (tester) async {
+      await pumpWithName(tester, 'abc123txid');
+      // The test HTTP client answers 400, so the logo errors out.
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+      await tester.pump();
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(
+          find.descendant(
+              of: avatar, matching: find.byType(WalletGradientAvatar)),
+          findsOneWidget);
+    });
+
+    testWidgets('the wallet unlock shows the picture too', (tester) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      whenListen(
+        loginBloc,
+        const Stream<LoginState>.empty(),
+        initialState: const PromptWalletUnlock(wallet: BrowserWallet.wander),
+      );
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+      expect(find.byKey(const Key('welcomeBackAvatar')), findsOneWidget);
     });
 
     testWidgets('says the password is being checked, then that it was wrong',
