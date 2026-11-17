@@ -237,6 +237,36 @@ void main() {
       }
     });
 
+    testWidgets('a step change crossfades, and is instant when motion is off',
+        (tester) async {
+      Widget panel(String key, {bool reduced = false}) => MaterialApp(
+            home: Builder(
+              builder: (context) => MediaQuery(
+                data:
+                    MediaQuery.of(context).copyWith(disableAnimations: reduced),
+                child: LoginPanelFade(child: Text(key, key: Key(key))),
+              ),
+            ),
+          );
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('a')), findsOneWidget);
+      expect(find.byKey(const Key('b')), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byKey(const Key('a')), findsNothing);
+
+      // Instant with motion off (a fresh tree: the switcher's durations are
+      // fixed when a step arrives).
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(panel('x', reduced: true));
+      await tester.pumpWidget(panel('y', reduced: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(find.byKey(const Key('x')), findsNothing);
+      expect(find.byKey(const Key('y')), findsOneWidget);
+    });
+
     test('a finished sign-in swaps the panel to its waiting card', () {
       final user = fakeUserJson;
       expect(loginPanelRebuildsOn(LoginSuccess(user)), isTrue);

@@ -37,6 +37,32 @@ void main() {
     expect(find.byType(RawImage), findsOneWidget);
   });
 
+  testWidgets('quick switches free every snapshot', (tester) async {
+    final disposed = <Object>[];
+    debugOnThemeSnapshotDisposed = disposed.add;
+    addTearDown(() => debugOnThemeSnapshotDisposed = null);
+
+    await tester.pumpWidget(ArDriveApp(
+      key: arDriveAppKey,
+      builder: (context) => const SizedBox(),
+    ));
+    final state = arDriveAppKey.currentState!;
+    state.changeTheme(ArDriveThemes.light);
+    await tester.pump();
+    state.changeTheme(ArDriveThemes.dark);
+    await tester.pump();
+    state.changeTheme(ArDriveThemes.light);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(RawImage), findsNothing);
+    // Three snapshots taken, all freed (the last when the fade ended).
+    expect(disposed.length, 3);
+  });
+
   testWidgets('reduced motion switches at once', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);

@@ -729,14 +729,40 @@ Widget _buildContent(
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
     buildWhen: (previous, current) => loginPanelRebuildsOn(current),
-    builder: (context, loginState) => loginPanelFor(
-      loginState,
-      context.read<LoginBloc>(),
-      presence: loginState is LoginLoading
-          ? context.read<ProfileCubit>().presence
-          : ProfilePresence.unknown,
+    builder: (context, loginState) => LoginPanelFade(
+      child: loginPanelFor(
+        loginState,
+        context.read<LoginBloc>(),
+        presence: loginState is LoginLoading
+            ? context.read<ProfileCubit>().presence
+            : ProfilePresence.unknown,
+      ),
     ),
   );
+}
+
+/// Crossfades the sign-in panel when its step changes (a different key),
+/// instead of cutting; the same step updates in place. Instant under reduced
+/// motion.
+@visibleForTesting
+class LoginPanelFade extends StatelessWidget {
+  const LoginPanelFade({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: MediaQuery.of(context).disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
+      // One after the other, so two steps' text is never drawn on top of each
+      // other: the old one out in the first half, the new one in the second.
+      switchInCurve: const Interval(0.5, 1, curve: Curves.easeOut),
+      switchOutCurve: const Interval(0, 0.5, curve: Curves.easeOut),
+      child: child,
+    );
+  }
 }
 
 /// Whether the sign-in panel is usable: the check for an account on this

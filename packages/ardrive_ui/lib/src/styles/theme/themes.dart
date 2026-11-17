@@ -33,6 +33,10 @@ class ArDriveApp extends StatefulWidget {
   State<ArDriveApp> createState() => _ArDriveAppState();
 }
 
+/// Called with each theme-fade snapshot once it has been disposed.
+@visibleForTesting
+void Function(ui.Image image)? debugOnThemeSnapshotDisposed;
+
 /// How long the old theme takes to fade out over the new one.
 const Duration _themeFadeDuration = Duration(milliseconds: 200);
 
@@ -62,7 +66,7 @@ class _ArDriveAppState extends State<ArDriveApp>
     _fade.value = 0;
     setState(() {
       _theme = theme;
-      _snapshot = snapshot;
+      _swapSnapshot(snapshot);
     });
 
     if (snapshot != null) {
@@ -73,6 +77,19 @@ class _ArDriveAppState extends State<ArDriveApp>
         if (mounted) _fade.forward(from: 0);
       });
     }
+  }
+
+  /// Replaces the snapshot, and frees the old one once the frame that may
+  /// still be drawing it is done: a GPU image is not collected with its Dart
+  /// object.
+  void _swapSnapshot(ui.Image? next) {
+    final old = _snapshot;
+    _snapshot = next;
+    if (old == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      old.dispose();
+      debugOnThemeSnapshotDisposed?.call(old);
+    });
   }
 
   ui.Image? _captureSnapshot() {
@@ -104,6 +121,7 @@ class _ArDriveAppState extends State<ArDriveApp>
   void dispose() {
     _fade.dispose();
     _snapshot?.dispose();
+    _snapshot = null;
     super.dispose();
   }
 
@@ -114,7 +132,7 @@ class _ArDriveAppState extends State<ArDriveApp>
     _fade = AnimationController(vsync: this, duration: _themeFadeDuration)
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed && mounted) {
-          setState(() => _snapshot = null);
+          setState(() => _swapSnapshot(null));
         }
       });
 

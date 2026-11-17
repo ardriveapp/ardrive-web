@@ -53,18 +53,48 @@ void main() {
   });
 
   group('ShellFade', () {
-    testWidgets('crossfades between signed-out and signed-in', (tester) async {
-      Widget build(bool out, String label) => MaterialApp(
-            home: ShellFade(signedOutShell: out, child: Text(label)),
-          );
-      await tester.pumpWidget(build(true, 'login'));
-      await tester.pumpWidget(build(false, 'app'));
+    testWidgets('signing in fades the app in over the sign-in page, keeping it',
+        (tester) async {
+      var loginBuilds = 0;
+      final login = Builder(builder: (_) {
+        loginBuilds++;
+        return const Text('login');
+      });
+      await tester.pumpWidget(MaterialApp(
+        home: ShellFade(signedOutShell: true, child: login),
+      ));
+      final builds = loginBuilds;
+      await tester.pumpWidget(MaterialApp(
+        home: ShellFade(signedOutShell: false, child: const Text('app')),
+      ));
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('login'), findsOneWidget);
       expect(find.text('app'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 150));
+      expect(loginBuilds, builds, reason: 'not rebuilt or remounted');
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
       expect(find.text('login'), findsNothing);
       expect(find.text('app'), findsOneWidget);
+    });
+
+    testWidgets('signing out drops the app at once, never rebuilding it',
+        (tester) async {
+      var loggedOut = false;
+      final app = Builder(builder: (_) {
+        if (loggedOut) throw StateError('built after sign-out');
+        return const Text('app');
+      });
+      await tester.pumpWidget(MaterialApp(
+        home: ShellFade(signedOutShell: false, child: app),
+      ));
+      loggedOut = true;
+      await tester.pumpWidget(MaterialApp(
+        home: ShellFade(signedOutShell: true, child: const Text('login')),
+      ));
+      expect(find.text('app'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.takeException(), isNull);
+      expect(find.text('login'), findsOneWidget);
     });
 
     testWidgets('moves inside the app do not crossfade', (tester) async {

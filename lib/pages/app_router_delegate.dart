@@ -2010,10 +2010,16 @@ class _RouteLinkFollowerState extends State<_RouteLinkFollower> {
   Widget build(BuildContext context) => widget.child;
 }
 
-/// Crossfades when the shell changes between the sign-in page and the app,
-/// instead of cutting. Moves inside either side are not touched.
+/// Fades the app in over the sign-in page when signing in, instead of
+/// cutting.
+///
+/// Only that direction. On sign-out the signed-in shell is dropped in the same
+/// frame, as it always was: kept mounted for a fade it would rebuild against
+/// a signed-out profile, which its widgets do not expect. On sign-in the page
+/// kept underneath is the sign-in page, which is finished with the bloc state
+/// it is already in. Moves inside either side are not touched.
 @visibleForTesting
-class ShellFade extends StatelessWidget {
+class ShellFade extends StatefulWidget {
   const ShellFade({
     super.key,
     required this.signedOutShell,
@@ -2024,21 +2030,62 @@ class ShellFade extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    final reduced = MediaQuery.of(context).disableAnimations;
+  State<ShellFade> createState() => _ShellFadeState();
+}
 
-    return AnimatedSwitcher(
-      duration: reduced ? Duration.zero : const Duration(milliseconds: 200),
-      switchInCurve: Curves.easeOut,
-      switchOutCurve: Curves.easeOut,
-      layoutBuilder: (current, previous) => Stack(
-        fit: StackFit.expand,
-        children: [...previous, if (current != null) current],
-      ),
-      child: KeyedSubtree(
-        key: ValueKey(signedOutShell ? 'signedOut' : 'signedIn'),
-        child: child,
-      ),
+class _ShellFadeState extends State<ShellFade>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 200),
+    value: 1,
+  )..addStatusListener((status) {
+      if (status == AnimationStatus.completed && _outgoing != null && mounted) {
+        setState(() => _outgoing = null);
+      }
+    });
+
+  /// The sign-in page, kept under the app while it fades in.
+  Widget? _outgoing;
+
+  @override
+  void didUpdateWidget(ShellFade oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final signedIn = oldWidget.signedOutShell && !widget.signedOutShell;
+    if (signedIn && !MediaQuery.of(context).disableAnimations) {
+      _outgoing = oldWidget.child;
+      _fade.forward(from: 0);
+    } else if (widget.signedOutShell != oldWidget.signedOutShell) {
+      _outgoing = null;
+      _fade.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Each side is keyed on its own slot, so the sign-in page keeps its state
+    // (and its bloc) while the app fades in over it.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_outgoing != null)
+          FadeTransition(
+            key: const ValueKey('signedOut'),
+            opacity: kAlwaysCompleteAnimation,
+            child: _outgoing!,
+          ),
+        FadeTransition(
+          key: ValueKey(widget.signedOutShell ? 'signedOut' : 'signedIn'),
+          opacity: CurvedAnimation(parent: _fade, curve: Curves.easeOut),
+          child: widget.child,
+        ),
+      ],
     );
   }
 }

@@ -105,14 +105,14 @@ void main() {
 
       final bento = tester.getRect(find.byType(TilesView));
       // The panel's border box: the nearest Stack around the panel fills it,
-      // inside its 1 px border.
+      // inside its 1 px border. (The first is the step switcher's own.)
       final panel = tester
           .getRect(find
               .ancestor(
                 of: find.byKey(const Key('enterRecoveryPhraseView')),
                 matching: find.byType(Stack),
               )
-              .first)
+              .at(1))
           .inflate(1);
 
       expect(panel.top, bento.top, reason: 'tops');
