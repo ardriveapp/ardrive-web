@@ -9,6 +9,8 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/wallet_gradient_avatar.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
@@ -369,7 +371,13 @@ class _ProfileCardState extends State<ProfileCard> {
     if (_accountStatsFuture == null ||
         _accountStatsForWallet != walletAddress) {
       _accountStatsForWallet = walletAddress;
-      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
+      DriveUnlockSession? session;
+      try {
+        session = context.read<DriveUnlockSession>();
+      } catch (_) {
+        // No session provided: no drive is known to be locked.
+      }
+      _accountStatsFuture = _getAccountStats(driveDao, walletAddress, session);
     }
 
     return FutureBuilder<_AccountStats>(
@@ -597,6 +605,7 @@ class _ProfileCardState extends State<ProfileCard> {
   Future<_AccountStats> _getAccountStats(
     DriveDao driveDao,
     String walletAddress,
+    DriveUnlockSession? session,
   ) async {
     final generation = _statsGeneration;
 
@@ -624,8 +633,26 @@ class _ProfileCardState extends State<ProfileCard> {
     final driveIds = [for (final drive in drives) drive.id];
     final version = await driveDao.permanentDataVersion();
     final syncedHere = await driveDao.driveIdsSyncedHere();
-    final allSynced = driveIds.every(syncedHere.contains);
-    final key = [walletAddress, ...driveIds, version, allSynced].join('|');
+    // A private drive whose key this device does not have (see
+    // [DriveUnlockSession]) can never be synced here, so it must not hold the
+    // totals back for good. They then cover the other drives, while the drive
+    // count still counts every drive, locked ones included.
+    final lockedIds = {
+      for (final locked
+          in session?.currentLockedDrives ?? const <LockedDrive>[])
+        if (locked.ownerAddress == walletAddress) locked.driveId,
+    };
+    final lockedWithoutRow = lockedIds.difference(driveIds.toSet()).length;
+    final allSynced = driveIds
+        .where((id) => !lockedIds.contains(id))
+        .every(syncedHere.contains);
+    final key = [
+      walletAddress,
+      ...driveIds,
+      version,
+      allSynced,
+      lockedWithoutRow
+    ].join('|');
 
     if (key == _countedStatsKey && _countedStats != null) {
       return _countedStats!;
@@ -635,7 +662,7 @@ class _ProfileCardState extends State<ProfileCard> {
     final fileCount = await driveDao.permanentFileCount(driveIds);
 
     final stats = _AccountStats(
-      driveCount: drives.length,
+      driveCount: drives.length + lockedWithoutRow,
       fileCount: fileCount,
       permanentByYear: permanentByYear,
       driveIds: driveIds,

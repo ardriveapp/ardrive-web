@@ -354,10 +354,12 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                         final item = widget.items[index];
                         void pick() {
                           item.onClick?.call();
+                          // Closes, never toggles: a second press while the
+                          // menu fades out must not open it again.
                           setState(() {
-                            visible = !visible;
+                            visible = false;
                           });
-                          if (!visible) _closed();
+                          _closed();
                         }
 
                         return Semantics(
@@ -547,6 +549,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   /// 0 while the content is not shown, 1 when it is; an animated overlay's
   /// entry stays in the overlay while this runs back to 0.
   late final AnimationController _motion;
+  late final CurvedAnimation _curved;
   AnimationController _makeMotion() => AnimationController(
         vsync: this,
         duration: ArDriveOverlay.menuOpenDuration,
@@ -568,6 +571,11 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
     super.initState();
     _visible = widget.visible ?? false;
     _motion = _makeMotion();
+    _curved = CurvedAnimation(
+      parent: _motion,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeOut,
+    );
   }
 
   @override
@@ -600,6 +608,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
     _remove();
+    _curved.dispose();
     _motion.dispose();
     super.dispose();
   }
@@ -697,7 +706,10 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
     return Offstage(
       offstage: _covered,
       // A closing menu is already closed to the page: it takes no clicks.
-      child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
+      child: ExcludeFocus(
+        excluding: _closing,
+        child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
+      ),
     );
   }
 
@@ -753,11 +765,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   /// button. The barrier stays out of it: it is not part of the menu.
   Widget _wrapMotion(Widget content) {
     if (!widget.animate) return content;
-    final curved = CurvedAnimation(
-      parent: _motion,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeOut,
-    );
+    final curved = _curved;
     final anchor = widget.anchor;
     final origin = anchor is Aligned ? anchor.follower : Alignment.topLeft;
     return FadeTransition(

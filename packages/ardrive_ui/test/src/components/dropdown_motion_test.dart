@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A menu fades and settles in over about 150 ms and out over about 110 ms,
@@ -135,5 +136,22 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1));
     expect(find.text('Pick'), findsNothing);
+  });
+
+  testWidgets('Enter on the item during the fade-out does not open it again',
+      (tester) async {
+    await pump(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('Pick'), findsOneWidget, reason: 'open');
+
+    // Picks and closes, and again at once: the item is still focused.
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pick'), findsNothing, reason: 'stays closed');
+    expect(opens, [true, false]);
   });
 }
