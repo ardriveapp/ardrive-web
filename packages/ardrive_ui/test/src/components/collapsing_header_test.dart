@@ -1,6 +1,7 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Row extends IndexedItem {
@@ -37,21 +38,35 @@ void main() {
     final anchor = GlobalKey();
     var bars = 0;
     var downloads = 0;
+    late FocusNode headerFocus;
+    late FocusNode barFocus;
 
     Future<void> pump(
       WidgetTester tester, {
       required int rows,
       Size size = const Size(1440, 900),
       int? rowsPerPage,
+      double textScale = 1,
+      bool countOnOnePage = true,
+      int? reveal,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       bars = 0;
       downloads = 0;
+      headerFocus = FocusNode();
+      barFocus = FocusNode();
+      addTearDown(headerFocus.dispose);
+      addTearDown(barFocus.dispose);
       await tester.pumpWidget(
         ArDriveApp(
           builder: (context) => MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
             home: Scaffold(
               body: Padding(
                 padding: const EdgeInsets.only(right: 16),
@@ -68,7 +83,9 @@ void main() {
                   rowsPerPage: rowsPerPage,
                   rowsPerPageText: 'Rows per page',
                   headerDivider: true,
-                  countOnOnePage: true,
+                  countOnOnePage: countOnOnePage,
+                  revealRow:
+                      reveal == null ? null : _Row(reveal, 'row $reveal'),
                   onChangeMultiSelecting: (_) {},
                   leadingExtent: extent,
                   pinnedInset: _barHeight,
@@ -94,6 +111,7 @@ void main() {
                                   const Expanded(
                                       child: Text('Title', key: _titleKey)),
                                   TextButton(
+                                    focusNode: headerFocus,
                                     onPressed: () => downloads++,
                                     child: const Text('Download'),
                                   ),
@@ -110,6 +128,7 @@ void main() {
                           children: [
                             const Expanded(child: Text('Bar title')),
                             TextButton(
+                              focusNode: barFocus,
                               onPressed: () => bars++,
                               child: const Text('Bar download'),
                             ),
@@ -265,6 +284,8 @@ void main() {
 
       await wheel(tester, 400);
       expect(sliver(tester).progress, 1);
+      // Reachable from the next frame, which is when focus and pointer are told.
+      await tester.pump();
       await tester.tap(find.text('Bar download'));
       expect(bars, 1);
       expect(downloads, 1);
@@ -283,5 +304,109 @@ void main() {
       expect(sliver(tester).progress, 1);
       expect(tester.takeException(), isNull);
     });
+
+    Future<Set<FocusNode>> tabThrough(WidgetTester tester) async {
+      final reached = <FocusNode>{};
+      for (var i = 0; i < 12; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        for (final node in [headerFocus, barFocus]) {
+          if (node.hasPrimaryFocus) reached.add(node);
+        }
+      }
+      return reached;
+    }
+
+    testWidgets('Tab at rest reaches the header, never the hidden bar',
+        (tester) async {
+      await pump(tester, rows: 9);
+      final reached = await tabThrough(tester);
+      expect(reached, contains(headerFocus));
+      expect(reached, isNot(contains(barFocus)));
+    });
+
+    testWidgets('Tab once collapsed reaches the bar, never the header',
+        (tester) async {
+      await pump(tester, rows: 100);
+      await wheel(tester, 2000);
+      await tester.pump();
+      await tester.pump();
+      final offset = position(tester).pixels;
+      final reached = await tabThrough(tester);
+      expect(reached, contains(barFocus));
+      expect(reached, isNot(contains(headerFocus)));
+      // Focus on the bar does not scroll the page.
+      expect(position(tester).pixels, offset);
+      barFocus.requestFocus();
+      await tester.pump();
+      expect(position(tester).pixels, offset);
+    });
+
+    testWidgets('a pointer cannot reach the bar before it is in',
+        (tester) async {
+      await pump(tester, rows: 9);
+      expect(find.text('Bar download').hitTestable(), findsNothing);
+      await wheel(tester, 2000);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Bar download').hitTestable(), findsOneWidget);
+    });
+
+    testWidgets(
+        'the card ends a radius below the last row without an indicator',
+        (tester) async {
+      await pump(tester, rows: 9, countOnOnePage: false);
+      await wheel(tester, 2000);
+      final last = tester.getRect(find.text('row 8'));
+      final end = find.byWidgetPredicate((w) =>
+          w is ConstrainedBox &&
+          w.constraints.minHeight == cardDefaultBorderRadius &&
+          w.constraints.maxHeight == double.infinity);
+      expect(end, findsOneWidget);
+      expect(tester.getSize(end).height,
+          greaterThanOrEqualTo(cardDefaultBorderRadius));
+      expect(tester.getTopLeft(end).dy, greaterThan(last.center.dy));
+    });
+
+    for (final scale in [1.5, 2.0]) {
+      testWidgets('the headings hold their text at ${scale}x', (tester) async {
+        await pump(tester, rows: 30, textScale: scale);
+        await wheel(tester, 2000);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        final name = tester.getRect(find.text('Name'));
+        // The row is as tall as the text at this size, not squeezed to a
+        // fixed height.
+        expect(name.height, greaterThan(24));
+        // Under the bar, in its own row, and nothing over it.
+        expect(name.top, greaterThanOrEqualTo(_barHeight + 14));
+        expect(find.text('Name').hitTestable(), findsOneWidget);
+        // The hairline under the headings is below the text, whatever its size.
+        final hairline = find.byWidgetPredicate((w) =>
+            w is Container &&
+            w.constraints?.maxHeight == 1 &&
+            w.constraints?.minHeight == 1);
+        expect(hairline, findsOneWidget);
+        expect(tester.getTopLeft(hairline).dy,
+            greaterThanOrEqualTo(name.bottom - 0.5));
+        // The rows start below it: scrolled to the top of the first one, the
+        // first row's text is under the whole of the headings' row.
+        await wheel(tester, -2000);
+        await wheel(tester, 2000);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    for (final index in [0, 10, 24]) {
+      testWidgets('a revealed row ($index) ends below the bar and headings',
+          (tester) async {
+        await pump(tester, rows: 100, rowsPerPage: 25, reveal: index);
+        await tester.pumpAndSettle();
+        final row = tester.getRect(find.text('row $index'));
+        expect(row.top, greaterThanOrEqualTo(_barHeight + 45));
+        expect(row.bottom, lessThanOrEqualTo(900));
+      });
+    }
   });
 }

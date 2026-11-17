@@ -1042,8 +1042,31 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   /// The column headings' height in the collapsing layout: the air above
   /// them, the row, the air below and the hairline, which the card has.
-  static const double _headingsExtent = 14 + _headingsRowHeight + 6 + 1;
-  static const double _headingsRowHeight = 24;
+  double get _headingsExtent => 14 + _headingsRowHeight + 6 + 1;
+
+  /// The headings' row: a column's title at the reader's text size, and no
+  /// less than the checkbox or the sort arrow that can sit in it.
+  double get _headingsRowHeight {
+    final scaler = MediaQuery.textScalerOf(context);
+    var text = 0.0;
+    for (final column in _columns) {
+      if (!column.isVisible) continue;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: column.title,
+          style: column.textStyle ??
+              ArDriveTypographyNew.of(context)
+                  .paragraphNormal(fontWeight: ArFontWeight.bold),
+        ),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      text = max(text, painter.height);
+      painter.dispose();
+    }
+    return max(24, text + 4);
+  }
 
   /// The table as one scroll view, with [ArDriveDataTable.leadingSlivers]
   /// first. The card is a decoration behind its slivers, so its corners are
@@ -1055,6 +1078,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
     final radius = BorderRadius.circular(cardDefaultBorderRadius);
     final stroke = ArDriveTheme.of(context).themeData.colorTokens.strokeLow;
 
+    final headingsExtent = _headingsExtent;
     final headings = Column(
       children: [
         const SizedBox(height: 14),
@@ -1090,7 +1114,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
             SliverPersistentHeader(
               pinned: true,
               delegate: _PinnedHeadingsDelegate(
-                extent: _headingsExtent,
+                extent: headingsExtent,
                 color: cardColor,
                 radius: cardDefaultBorderRadius,
                 child: headings,
@@ -1112,7 +1136,15 @@ class _ArDriveDataTableState<T extends IndexedItem>
                     child: Padding(
                       padding:
                           const EdgeInsets.symmetric(horizontal: _tablePadding),
-                      child: _pageIndicator(),
+                      // However little the indicator has to say, the card
+                      // ends a corner's radius under the last row, so a
+                      // highlighted row never meets the rounded corners.
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: cardDefaultBorderRadius,
+                        ),
+                        child: _pageIndicator(),
+                      ),
                     ),
                   ),
                 ],
@@ -1563,8 +1595,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
     }
 
     final position = _scrollController.position;
+    final leading = widget.leadingExtent;
     _scrollController.jumpTo(
-      position.maxScrollExtent * index / max(1, _currentPage.length - 1),
+      leading == null
+          ? position.maxScrollExtent * index / max(1, _currentPage.length - 1)
+          // The rows start after the header and the headings; the row's top
+          // goes just under the bar and the pinned headings.
+          : (leading.value -
+                  widget.pinnedInset +
+                  index * ArDriveDataTable.rowHeight)
+              .clamp(0.0, position.maxScrollExtent),
     );
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _scrollRevealedRowIntoView(attempt + 1),

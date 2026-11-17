@@ -2,11 +2,21 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Where a [SliverCollapsingHeader] tells [SliverCollapseTail] how tall it
 /// is, in the same layout pass, so the tail never reads a stale value.
+///
+/// It also says, for focus, which of the header and the bar can be reached:
+/// the render object sets them after the frame, never during layout.
 class CollapsingHeaderExtent {
   double value = 0;
+
+  /// Whether the bar is in enough to be seen and used.
+  final barInteractive = ValueNotifier<bool>(false);
+
+  /// Whether any of the header is still on screen.
+  final headerOnScreen = ValueNotifier<bool>(true);
 }
 
 /// A header that is part of its scroll view's content, with a slim bar pinned
@@ -30,7 +40,32 @@ class SliverCollapsingHeader extends MultiChildRenderObjectWidget {
     required this.barHeight,
     this.anchorKey,
     this.extent,
-  }) : super(children: [header, bar]);
+  }) : super(
+          children: [
+            if (extent == null)
+              header
+            else
+              // Off screen it is no Tab stop: focus would scroll it back.
+              ValueListenableBuilder<bool>(
+                valueListenable: extent.headerOnScreen,
+                builder: (_, onScreen, child) =>
+                    ExcludeFocus(excluding: !onScreen, child: child!),
+                child: header,
+              ),
+            if (extent == null)
+              bar
+            else
+              // Not yet in, it is neither seen nor reachable.
+              ValueListenableBuilder<bool>(
+                valueListenable: extent.barInteractive,
+                builder: (_, interactive, child) => ExcludeFocus(
+                  excluding: !interactive,
+                  child: IgnorePointer(ignoring: !interactive, child: child),
+                ),
+                child: bar,
+              ),
+          ],
+        );
 
   final double barHeight;
 
@@ -156,6 +191,10 @@ class RenderSliverCollapsingHeader extends RenderSliver
     if (wasInteractive != (_progress >= _interactiveFrom)) {
       markNeedsSemanticsUpdate();
     }
+    _publish(
+      interactive: _progress >= _interactiveFrom,
+      headerOnScreen: offset < height,
+    );
 
     final remaining = constraints.remainingPaintExtent;
     final headerLeft = math.max(0.0, height - offset);
@@ -167,6 +206,32 @@ class RenderSliverCollapsingHeader extends RenderSliver
       cacheExtent: calculateCacheOffset(constraints, from: 0, to: height),
       hasVisualOverflow: true,
     );
+  }
+
+  bool _publishScheduled = false;
+  bool _interactive = false;
+  bool _headerOnScreen = true;
+
+  /// Tells [CollapsingHeaderExtent]'s notifiers, after this frame: a widget
+  /// cannot be rebuilt from layout.
+  void _publish({required bool interactive, required bool headerOnScreen}) {
+    _interactive = interactive;
+    _headerOnScreen = headerOnScreen;
+    final extent = _extent;
+    if (extent == null || _publishScheduled) return;
+    if (extent.barInteractive.value == interactive &&
+        extent.headerOnScreen.value == headerOnScreen) {
+      return;
+    }
+    _publishScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _publishScheduled = false;
+      // The latest, not what was seen when scheduled.
+      final extent = _extent;
+      if (extent == null) return;
+      extent.barInteractive.value = _interactive;
+      extent.headerOnScreen.value = _headerOnScreen;
+    });
   }
 
   @override
