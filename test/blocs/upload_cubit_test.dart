@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -1733,6 +1734,28 @@ void main() {
         files: [await file('photo.png', 'image/png')],
       );
       expect(cubit.compressionOffered, isFalse);
+    });
+
+    test('is withdrawn when skipping conflicts leaves nothing to compress',
+        () async {
+      // `${tRootFolderId}1` already exists in the folder (addTestFilesToDb),
+      // so it is the conflicting file; the png alone would not compress.
+      final cubit = await prepared(
+        switchOn: true,
+        files: [
+          await file('${tRootFolderId}1', 'text/javascript'),
+          await file('photo.png', 'image/png'),
+        ],
+      );
+      expect(cubit.compressionOffered, isTrue);
+      cubit.changeCompressTextAndCode(true);
+
+      await cubit.checkConflicts();
+      await cubit.prepareUploadPlanAndCostEstimates(
+          uploadAction: UploadActions.skip);
+
+      expect(cubit.compressionOffered, isFalse);
+      expect(cubit.compressTextAndCode, isFalse);
     });
 
     test('the choice is remembered by the cubit while the review is open',

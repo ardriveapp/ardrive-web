@@ -914,6 +914,16 @@ class UploadCubit extends Cubit<UploadState> {
       _removeSuccessfullyUploadedFiles();
     }
 
+    // Skipping files can leave nothing the option would compress: offer it
+    // only for the files that will actually be sent.
+    _compressionOffered = offersCompression(
+      switchOn: _compressDeployments,
+      isPublic: !_targetDrive.isPrivate,
+      files: _files,
+      lengths: _fileLengthCache,
+    );
+    if (!_compressionOffered) _compressTextAndCode = false;
+
     logger.d(
       'Upload preparation started. UploadMethod: $_uploadMethod',
     );
