@@ -792,6 +792,8 @@ void main() {
       expect(
           Shadow.convertRadiusToSigma(span.style!.shadows!.single.blurRadius),
           closeTo(secretBlurSigma, 0.01),
+          reason: 'the shared secret blur');
+      expect(secretBlurSigma, greaterThanOrEqualTo(10),
           reason: 'blurred too strongly to read a word');
 
       await tester.tap(find.byKey(const Key('phraseShow')));
