@@ -14,7 +14,8 @@ A publication is a permanent web page that shows one ArDrive drive, or one
 folder of it, to anyone who opens its link. It is ArDrive itself in a
 read-only "publication mode": the same file table, previews, search and downloads,
 under the owner's title, icon, social card and cover. A public publication opens
-as it is; a private one opens with the drive key.
+as it is; a private one opens with a key of its own, in the link or sent
+separately, or with a password.
 
 ## Vocabulary
 
@@ -324,14 +325,14 @@ its background, never an empty slot where the icon will be.
 
 ### Unlock screen (private publications)
 
-Same frame as the loading screen. Below the description: "This page is
-private. Paste the drive key you were given to open it." A `Drive key` field
-(`ArDriveTextFieldNew`, obscured, show/hide toggle), an **Open**
-primary button (disabled until the field is non-empty), and in small text "The
-key stays in this browser." A key in the link (`#/?driveKey=…`) skips this
-screen. A rejected key shows "This key doesn't open this page." under the
-field, and the field keeps its text for correction. A typed key is never
-written to the address bar.
+A private drive or folder page uses the private file page's locked view
+(`lib/pages/shared_file/shared_file_locked_view.dart`), not a screen of its
+own, in the same frame as the loading screen. Its one field takes the access
+key the visitor was sent, or the page's password when it has one. It keeps
+the opt-in "Remember this key for this tab". A key in the link skips the
+screen. Anything that doesn't open the page shows "That didn't open this
+page." under the field, which keeps its text. A change to this screen is made
+in the shared view, so every private page changes with it.
 
 ### Error screens
 
@@ -568,23 +569,39 @@ owner's transactions with `Entity-Type: publication`, grouped by
 
 ## Private publications
 
-Not built for drives and folders: the section below is a design, and the
-spec (`docs/ArweaveFS.md`) marks that form reserved. Private file pages are
-built (see File pages).
+Private file pages are built (see File pages). Private drive and folder pages
+are publication.json version 3; the format is in `docs/ArweaveFS.md`,
+"Private publications". Decided on 2026-11-17:
 
-- The key travels like a private drive link's, `#/?driveKey=…`, in the fragment
-  only. Typed keys are never written to the URL.
-- The snapshot and files decrypt in the browser with the existing derivation.
-- Nothing about the drive's contents is outside the encrypted snapshot: no
-  manifest file paths, no names in `publication.json` or tags.
-- The review step states the three facts above.
-
-**Risk to solve before phase 3 is built:** a private publication opens with
-the drive key, and a drive key opens the whole drive. A private *folder*
-publication must not hand out the key to everything else in the drive. The
-design has to solve that first (a key scoped to the folder, or a snapshot
-encrypted under a key of its own), or private publications ship for whole
-drives only.
+- **A key of its own.** Each page has a publication key. The drive key never
+  leaves the owner's device, so a folder page opens only that folder. The page
+  carries a catalog of its scope (a Drive State artifact under a random key)
+  and a sealed list of its file keys, both decrypted in the browser.
+- **The catalog holds the current version only.** Hidden items are left out
+  completely, with no row and no key.
+- **Ways in.** The link carries the key (`#/?k=…`, in the fragment only), or
+  the visitor pastes the key sent separately, or types the page's password if
+  it has one. A typed key or password is never written to the address bar.
+- **Access can't be taken back.** Every version stays on Arweave with its
+  slots, and the publication key never changes, so anyone who could open one
+  version can open the later ones. There is no Change password and no way to
+  remove one. A password is set when publishing, or added later in Update.
+  Giving files new keys so past visitors lose later revisions needs files
+  uploaded again, and gets its own design later.
+- **What everyone can see:** the title (empty by default, labelled "Visible to
+  everyone"; empty shows "Private page"), the description and images the owner
+  adds, and that the page exists. No generated social card, no file count, no
+  `files.html` or `sitemap.xml`, and `noindex`.
+- **The owner's copies.** Done, the published view and Web pages offer Copy
+  link, behind the same reveal control as a share link, and Update. Both need
+  the drive unlocked; the owner slot gives the key back from the drive key on
+  any device. Private rows on Web pages carry the lock the drive list puts
+  after a private drive's name.
+- **Passwords.** Any password, with a strength indicator and "Suggest one"
+  (a six-word passphrase from the sign-up word list). Argon2id runs in a
+  WebAssembly module in the browser; the cost settings live in each slot.
+- **Release.** Built on the `private-pages` branch and shipped in one release;
+  the capability marker goes to 3 there. No feature flag.
 
 ## File pages
 
@@ -663,7 +680,7 @@ transactions, which a share link already did. It never names the file.
 
 A file page runs the release `publicationViewer` names, which may be older
 than the app publishing it. Each release carries
-`publication-capabilities.json` (`{"publicationVersion": 2}`, held equal to
+`publication-capabilities.json` (`{"publicationVersion": 2}`, 3 once private drive and folder pages ship, held equal to
 `PublicationConfig.supportedVersion` by a test), and File page is offered only
 when the release lists version 2 or later; otherwise it reads "Available after
 the next ArDrive release". Delivery: once a production release carries the
@@ -681,7 +698,7 @@ page (decision 9).
 | 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging upload loads through turbo-gateway.com and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`; every path loads through ar-io.dev once it has fetched the upload (it may serve gzipped items decompressed, which is valid); first-visit transfer is measured |
 | 1 · Publication mode | The viewer, public publications, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
 | 2 · Publish (public) | The dialog, the published view, update, the globe, discovery, the publication entity | A public drive and folder publish from the app with Turbo and AR; an update with nothing changed reuses the snapshot and earlier images; what is left out matches the page (done 2026-10-24) |
-| 3 · Private (private file pages built; drive and folder pages not) | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `publication.json`, `index.html` or any tag |
+| 3 · Private (private file pages built; drive and folder pages on `private-pages`) | Unlock screen, publication keys, sealed key lists, scoped catalogs | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `publication.json`, `index.html` or any tag |
 | 4 · Names | The name step and the placeholder page | Built as names phase 1 (`docs/NAMES.md`). There is no unpublish |
 
 Phase 1 must reach a production release before any real page works, because a
