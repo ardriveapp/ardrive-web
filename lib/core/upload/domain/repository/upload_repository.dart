@@ -189,8 +189,9 @@ class _UploadRepositoryImpl implements UploadRepository {
             targetDrive.id, _auth.currentUser.cipherKey)
         : null;
 
-    final compress =
-        compressDeployments && !private && isDeploymentUpload(files);
+    final deployments = compressDeployments && !private
+        ? deploymentRoots(files)
+        : const <String>{};
 
     List<(ARFSUploadMetadataArgs, IOEntity)> entities = [];
 
@@ -240,7 +241,7 @@ class _UploadRepositoryImpl implements UploadRepository {
           licenseAdditionalTags:
               licenseStateResolved?.params?.toAdditionalTags(),
           assignedName: assignedName,
-          compressDeployment: compress,
+          compressDeployment: isInDeployment(file, deployments),
           paidBy: paidBy);
 
       entities.add((fileMetadata, file.ioFile));

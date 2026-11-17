@@ -776,6 +776,11 @@ Future<UploadFilePreparation> prepareDataItems({
   // A deployment's text and code on a public drive travels gzipped. The tag
   // is added only when the gzip is what is signed, and the ArFS `size` of the
   // metadata keeps the original length.
+  // The metadata outlives a preparation (a retry prepares it again), so a tag
+  // an earlier preparation added must not be signed onto bytes that are not
+  // gzipped this time. The generator never writes this tag itself.
+  metadata.removeDataTag(EntityTag.contentEncoding);
+
   if (key == null && !metadata.isPrivate && metadata.compressDeployment) {
     final gzipped = await _gzipForDeployment(file, dataLength);
     if (gzipped != null) {

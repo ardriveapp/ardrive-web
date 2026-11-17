@@ -69,52 +69,51 @@ UploadFile _file(String path, {String? relativeTo}) => UploadFile(
     );
 
 void main() {
-  group('isDeploymentUpload', () {
+  group('deploymentRoots', () {
+    Set<String> roots(List<String> paths) =>
+        deploymentRoots([for (final p in paths) _file(p)]);
+
     test('a folder with an index.html directly inside it is a site', () {
-      expect(
-        isDeploymentUpload([_file('site/index.html'), _file('site/app.js')]),
-        isTrue,
-      );
+      expect(roots(['site/index.html', 'site/app.js']), {'site'});
     });
 
-    test('so is a bare index.html, with no folder around it', () {
-      expect(isDeploymentUpload([_file('index.html')]), isTrue);
+    test('a bare index.html is a flat selection, not a site', () {
+      expect(roots(['index.html', 'app.js']), isEmpty);
     });
 
     test('a mobile path is read relative to the picked folder', () {
-      expect(
-        isDeploymentUpload([
-          _file('/storage/emulated/0/site/index.html',
-              relativeTo: '/storage/emulated/0'),
-          _file('/storage/emulated/0/site/app.js',
-              relativeTo: '/storage/emulated/0'),
-        ]),
-        isTrue,
-      );
+      final files = [
+        _file('/storage/emulated/0/site/index.html',
+            relativeTo: '/storage/emulated/0'),
+        _file('/storage/emulated/0/site/app.js',
+            relativeTo: '/storage/emulated/0'),
+      ];
+      expect(deploymentRoots(files), {'site'});
+      expect(isInDeployment(files.last, {'site'}), isTrue);
     });
 
-    test('an index.html further down is not the site root', () {
-      expect(
-        isDeploymentUpload([
-          _file('photos/2026/index.html'),
-          _file('photos/2026/a.js'),
-        ]),
-        isFalse,
-      );
+    test('an index.html only in a subfolder is not the site root', () {
+      expect(roots(['photos/2026/index.html', 'photos/2026/a.js']), isEmpty);
     });
 
-    test('a folder without an index.html is not a site', () {
-      expect(
-        isDeploymentUpload([_file('notes/a.txt'), _file('notes/b.js')]),
-        isFalse,
-      );
+    test('two folders: only the one with a root index.html is a site', () {
+      final files = [
+        _file('site/index.html'),
+        _file('site/app.js'),
+        _file('notes/a.js'),
+        _file('notes/sub/index.html'),
+      ];
+      final found = deploymentRoots(files);
+      expect(found, {'site'});
+      expect([for (final f in files) isInDeployment(f, found)],
+          [true, true, false, false]);
     });
 
     test('only the exact name counts', () {
-      expect(isDeploymentUpload([_file('site/Index.html')]), isFalse);
-      expect(isDeploymentUpload([_file('site/index.htm')]), isFalse);
-      expect(isDeploymentUpload([_file('site/myindex.html')]), isFalse);
-      expect(isDeploymentUpload(const []), isFalse);
+      expect(roots(['site/Index.html']), isEmpty);
+      expect(roots(['site/index.htm']), isEmpty);
+      expect(roots(['site/myindex.html']), isEmpty);
+      expect(roots(const []), isEmpty);
     });
   });
 
@@ -209,6 +208,29 @@ void main() {
         await compressFlags(
             paths: site, isPrivate: true, compressDeployments: true),
         [false, false, false],
+      );
+    });
+
+    test('two folders: only the files of the site folder are compressed',
+        () async {
+      expect(
+        await compressFlags(
+          paths: ['site/index.html', 'site/app.js', 'notes/a.js'],
+          isPrivate: false,
+          compressDeployments: true,
+        ),
+        [true, true, false],
+      );
+    });
+
+    test('a flat selection with an index.html is never compressed', () async {
+      expect(
+        await compressFlags(
+          paths: ['index.html', 'app.js'],
+          isPrivate: false,
+          compressDeployments: true,
+        ),
+        [false, false],
       );
     });
 

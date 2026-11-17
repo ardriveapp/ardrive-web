@@ -75,7 +75,7 @@ void main() {
       downloader: ArDriveDownloader(
         ioFileAdapter: IOFileAdapter(),
         ardriveIo: io,
-        arweave: MockArweaveService(),
+        arweave: plainTagsFor(MockArweaveService()),
         source: source,
         decryptStream: positionalXorDecryptor,
         verifierFactory: verifierFactory ??
@@ -314,7 +314,7 @@ void main() {
         http.StreamedResponse Function(http.BaseRequest request) respond,
       ) {
         final clients = <StubHttpClient>[];
-        final arweave = MockArweaveService();
+        final arweave = plainTagsFor(MockArweaveService());
         final client = MockArweave();
         final fallback = MockDataGatewayFallback();
 

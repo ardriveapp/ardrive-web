@@ -84,8 +84,8 @@ void main() {
       expect(_ok('.gz'), isFalse);
     });
 
-    test('stops at 32 MiB and at nothing', () {
-      const cap = 32 * 1024 * 1024;
+    test('stops at 8 MiB and at nothing', () {
+      const cap = 8 * 1024 * 1024;
       expect(CompressionPolicy.maxCompressibleBytes, cap);
       expect(_ok('a.js', length: cap), isTrue);
       expect(_ok('a.js', length: cap + 1), isFalse);

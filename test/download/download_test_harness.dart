@@ -4,6 +4,9 @@ import 'dart:typed_data';
 
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/download/download_exceptions.dart';
+import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/utils.dart';
@@ -627,4 +630,23 @@ Future<List<Object>> drainProgress(Stream<double> progress) {
   );
 
   return done.future;
+}
+
+class _PlainTransaction with TransactionCommonMixin {}
+
+/// Answers every tag lookup with a transaction that has no Content-Encoding,
+/// the case a resume is allowed for. Without it the lookup is unknown, and an
+/// unknown file is never resumed.
+ArweaveService plainTagsFor(ArweaveService arweave) {
+  when(() => arweave.getTransactionDetails(any()))
+      .thenAnswer((invocation) async {
+    return _PlainTransaction()
+      ..id = invocation.positionalArguments.first as String
+      ..tags = [
+        TransactionCommonMixin$Tag()
+          ..name = 'Content-Type'
+          ..value = 'application/octet-stream',
+      ];
+  });
+  return arweave;
 }

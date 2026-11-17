@@ -176,6 +176,33 @@ void main() {
       );
     });
 
+    test('a retry that does not compress does not sign a stale tag', () async {
+      final (metadata, first, _) = await prepare('app.js', script);
+      expect(tag(metadata, _contentEncoding), 'gzip');
+      expect(first.dataSignedDataItemResult!.dataSize, lessThan(script.length));
+
+      // The same metadata is prepared again, now over bytes that do not
+      // shrink: nothing is compressed, so nothing may be tagged.
+      final raw = await IOFile.fromData(
+        noise,
+        name: 'app.js',
+        lastModifiedDate: DateTime(2026, 11, 16),
+      );
+      final second = await prepareDataItems(
+        file: raw,
+        metadata: metadata,
+        wallet: wallet,
+        addThumbnail: false,
+      );
+
+      expect(tag(metadata, _contentEncoding), isNull);
+      expect(second.dataSignedDataItemResult!.dataSize, noise.length);
+      final tagged = second.dataItemFiles.where((f) => f.tags
+          .map((t) => decodeBase64ToString(t.name))
+          .contains(_contentEncoding));
+      expect(tagged, isEmpty);
+    });
+
     test('leaves a png alone: no tag, same bytes', () async {
       final (metadata, preparation, _) = await prepare('logo.png', noise);
 

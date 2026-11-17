@@ -994,14 +994,20 @@ class _ArDriveDownloader implements ArDriveDownloader {
         var toSkip = delivered - resumeFrom;
 
         if (resumeFrom > 0 && !encrypted) {
-          storedEncoded ??= await _isStoredContentEncoded(txId);
-          if (storedEncoded) {
+          storedEncoded ??= await _storedContentEncoding(txId);
+          // Only a file known not to be encoded is resumed. Unknown (the
+          // lookup failed or found nothing) is treated like encoded: a
+          // resume could append stored bytes to decoded ones.
+          if (storedEncoded != false) {
             throw DownloadResumeNotSupportedException(
               txId,
               resumeFrom,
               null,
-              'the file is stored with a Content-Encoding, so the bytes '
-              'delivered so far are not an offset into it',
+              storedEncoded == true
+                  ? 'the file is stored with a Content-Encoding, so the '
+                      'bytes delivered so far are not an offset into it'
+                  : 'it could not be checked whether the file is stored '
+                      'with a Content-Encoding',
             );
           }
         }
@@ -1182,25 +1188,25 @@ class _ArDriveDownloader implements ArDriveDownloader {
       (contentType ?? '').toLowerCase().contains('gzip');
 
   /// Whether the data item's tags say its data is stored with a
-  /// `Content-Encoding`. Asked once, only when a resume is about to be
-  /// attempted: the response headers are not always visible to the client
-  /// (a browser shows only what the gateway exposes), the tags always are.
-  ///
-  /// A lookup that fails answers `false`, which is how a resume has always
-  /// behaved; the resumed response is checked for the header too.
-  Future<bool> _isStoredContentEncoded(String txId) async {
+  /// `Content-Encoding`: `true`, `false` (the tags were read and there is
+  /// none), or `null` when that could not be told. Asked once, only when a
+  /// resume is about to be attempted: the response headers are not always
+  /// visible to the client (a browser shows only what the gateway exposes),
+  /// the tags always are.
+  Future<bool?> _storedContentEncoding(String txId) async {
     try {
       final details = await _arweave.getTransactionDetails(txId);
-      final tags = details?.tags ?? const [];
-      for (final tag in tags) {
+      if (details == null) return null;
+      for (final tag in details.tags) {
         if (tag.name.toLowerCase() == 'content-encoding') {
           return isEncodedContentEncoding(tag.value);
         }
       }
+      return false;
     } catch (e) {
       logger.w('Could not read the tags of $txId before resuming: $e');
+      return null;
     }
-    return false;
   }
 
   Future<void> _backOffBeforeResume(int attempt) {

@@ -148,6 +148,10 @@ mixin ARFSUploadData {
   void addDataTag(Tag tag) =>
       _dataTags = [..._dataTags.where((t) => t.name != tag.name), tag];
 
+  /// Removes the data tags named [name].
+  void removeDataTag(String name) =>
+      _dataTags = _dataTags.where((t) => t.name != name).toList();
+
   // Setter for data tags
   void setDataTags(List<Tag> dataTags) => _dataTags = dataTags;
 

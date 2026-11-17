@@ -19,7 +19,7 @@ class CompressionPolicy {
 
   /// The largest file compressed. Compression holds the file and its gzip in
   /// memory, and the data item's size must be known before it is signed.
-  static const int maxCompressibleBytes = 32 * 1024 * 1024;
+  static const int maxCompressibleBytes = 8 * 1024 * 1024;
 
   /// `Content-Encoding` value written on a compressed data item.
   static const String contentEncodingGzip = 'gzip';

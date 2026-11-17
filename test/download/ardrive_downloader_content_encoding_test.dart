@@ -161,16 +161,47 @@ void main() {
       expect(source.requestedOffsets, [0, 400]);
     });
 
-    test('a tag lookup that fails does not stop a resume', () async {
+    test('a tag lookup that fails is unknown: no resume', () async {
       when(() => arweave.getTransactionDetails(txId))
           .thenAnswer((_) async => throw Exception('graphql down'));
       final source = FakeDownloadSource(script, failAfterBytesOnFirstOpen: 400);
       final harness = build(source);
 
+      final errors =
+          await download(harness.downloader, fileSize: script.length);
+
       expect(
-          await download(harness.downloader, fileSize: script.length), isEmpty);
-      expect(harness.io.savedBytes, script);
-      expect(source.requestedOffsets, [0, 400]);
+          errors.whereType<DownloadResumeNotSupportedException>(), isNotEmpty);
+      expect(source.requestedOffsets, [0]);
+    });
+
+    test('a lookup that finds nothing is unknown: no resume', () async {
+      when(() => arweave.getTransactionDetails(txId))
+          .thenAnswer((_) async => null);
+      final source = FakeDownloadSource(script, failAfterBytesOnFirstOpen: 400);
+      final harness = build(source);
+
+      final errors =
+          await download(harness.downloader, fileSize: script.length);
+
+      expect(
+          errors.whereType<DownloadResumeNotSupportedException>(), isNotEmpty);
+      expect(source.requestedOffsets, [0]);
+    });
+
+    test(
+        'a gateway that hides Content-Encoding and tags that say gzip: no '
+        'resume', () async {
+      tagsSay('gzip');
+      final source = FakeDownloadSource(script, failAfterBytesOnFirstOpen: 400);
+      final harness = build(source);
+
+      final errors =
+          await download(harness.downloader, fileSize: script.length);
+
+      expect(
+          errors.whereType<DownloadResumeNotSupportedException>(), isNotEmpty);
+      expect(source.requestedOffsets, [0]);
     });
 
     test('an identity encoding is not an encoding', () {
