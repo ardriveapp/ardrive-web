@@ -138,6 +138,11 @@ class RenderSliverCollapsingHeader extends RenderSliver
 
   double _scrolled = 0;
 
+  /// How much of the bar's coming in the header's anchor row is gone by:
+  /// it fades out in the first of it, so the title and the actions are never
+  /// on screen twice.
+  static const double _anchorGoneBy = 0.4;
+
   RenderBox get _header => firstChild!;
   RenderBox get _bar => lastChild!;
 
@@ -178,7 +183,8 @@ class RenderSliverCollapsingHeader extends RenderSliver
     var anchorTop = 0.0;
     final anchor = _anchorKey?.currentContext?.findRenderObject();
     if (anchor is RenderBox && anchor.attached && anchor.hasSize) {
-      anchorTop = anchor.localToGlobal(Offset.zero, ancestor: _header).dy;
+      final at = anchor.localToGlobal(Offset.zero, ancestor: _header);
+      anchorTop = at.dy;
     }
     final start = math.max(0.0, anchorTop - _barHeight);
     final end = math.min(
@@ -249,12 +255,49 @@ class RenderSliverCollapsingHeader extends RenderSliver
   @override
   void paint(PaintingContext context, Offset offset) {
     if (_scrolled < _header.size.height) {
-      context.paintChild(_header, offset + Offset(0, -_scrolled));
+      _paintHeader(context, offset);
     }
     // Opaque all the way: a bar fading over the header's lines would show
     // them through it. It slides down over them instead.
     if (_progress <= 0) return;
     context.paintChild(_bar, offset + _barOffset());
+  }
+
+  /// The header at its place. While the bar is coming in, its anchor row (the
+  /// title and the actions) fades out by [_anchorGoneBy], on its own: the
+  /// rest of the header goes on scrolling under the bar, but the bar's own
+  /// title and buttons are never drawn over a second pair.
+  void _paintHeader(PaintingContext context, Offset offset) {
+    final at = Offset(0, -_scrolled);
+    final box = _anchorKey?.currentContext?.findRenderObject();
+    if (_progress <= 0 || box is! RenderBox || !box.attached || !box.hasSize) {
+      context.paintChild(_header, offset + at);
+      return;
+    }
+    final alpha = (1 - _progress / _anchorGoneBy).clamp(0.0, 1.0);
+    final row = (box.localToGlobal(Offset.zero, ancestor: _header) & box.size)
+        .shift(at);
+    final whole = (Offset.zero & _header.size).shift(at).inflate(8);
+    final rest = Path.combine(
+      PathOperation.difference,
+      Path()..addRect(whole),
+      Path()..addRect(row),
+    );
+    context.pushClipPath(
+      needsCompositing,
+      offset,
+      whole,
+      rest,
+      (context, offset) => context.paintChild(_header, offset + at),
+    );
+    if (alpha <= 0) return;
+    context.pushClipRect(needsCompositing, offset, row, (context, offset) {
+      context.pushOpacity(
+        offset,
+        (alpha * 255).round(),
+        (context, offset) => context.paintChild(_header, offset + at),
+      );
+    });
   }
 
   @override
