@@ -760,10 +760,27 @@ class LoginPanelFade extends StatelessWidget {
       // other: the old one out in the first half, the new one in the second.
       switchInCurve: const Interval(0.5, 1, curve: Curves.easeOut),
       switchOutCurve: const Interval(0, 0.5, curve: Curves.easeOut),
+      // The step on its way out takes no focus and no taps, so the step
+      // arriving can take its autofocus. Every entry is wrapped the same way
+      // (and keyed like its child), so none is remounted when it becomes the
+      // outgoing one.
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.center,
+        children: [
+          for (final entry in previous) _leaving(entry, true),
+          if (current != null) _leaving(current, false),
+        ],
+      ),
       child: child,
     );
   }
 }
+
+Widget _leaving(Widget entry, bool leaving) => ExcludeFocus(
+      key: entry.key,
+      excluding: leaving,
+      child: IgnorePointer(ignoring: leaving, child: entry),
+    );
 
 /// Whether the sign-in panel is usable: the check for an account on this
 /// device ([CheckIfUserIsLoggedIn]) is in. Until then the panel is drawn

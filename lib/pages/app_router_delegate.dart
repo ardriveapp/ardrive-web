@@ -2048,6 +2048,11 @@ class _ShellFadeState extends State<ShellFade>
   /// The sign-in page, kept under the app while it fades in.
   Widget? _outgoing;
 
+  /// Which sign-in page is on screen. A new one on every return to signed-out,
+  /// so one still fading out (signed in, then straight out again) is never
+  /// reused: it holds a bloc that is already finished.
+  int _generation = 0;
+
   @override
   void didUpdateWidget(ShellFade oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -2058,6 +2063,7 @@ class _ShellFadeState extends State<ShellFade>
     } else if (widget.signedOutShell != oldWidget.signedOutShell) {
       _outgoing = null;
       _fade.value = 1;
+      if (widget.signedOutShell) _generation++;
     }
   }
 
@@ -2076,12 +2082,13 @@ class _ShellFadeState extends State<ShellFade>
       children: [
         if (_outgoing != null)
           FadeTransition(
-            key: const ValueKey('signedOut'),
+            key: ValueKey('signedOut$_generation'),
             opacity: kAlwaysCompleteAnimation,
             child: _outgoing!,
           ),
         FadeTransition(
-          key: ValueKey(widget.signedOutShell ? 'signedOut' : 'signedIn'),
+          key: ValueKey(
+              widget.signedOutShell ? 'signedOut$_generation' : 'signedIn'),
           opacity: CurvedAnimation(parent: _fade, curve: Curves.easeOut),
           child: widget.child,
         ),

@@ -267,6 +267,75 @@ void main() {
       expect(find.byKey(const Key('y')), findsOneWidget);
     });
 
+    testWidgets('the step arriving takes its autofocus; the one leaving none',
+        (tester) async {
+      final aFocus = FocusNode();
+      final bFocus = FocusNode();
+      addTearDown(aFocus.dispose);
+      addTearDown(bFocus.dispose);
+      Widget panel(Key key, FocusNode node) => MaterialApp(
+            home: Material(
+              child: LoginPanelFade(
+                child: SizedBox(
+                  key: key,
+                  width: 200,
+                  child: TextField(focusNode: node, autofocus: true),
+                ),
+              ),
+            ),
+          );
+      await tester.pumpWidget(panel(const Key('a'), aFocus));
+      await tester.pump();
+      expect(aFocus.hasFocus, isTrue);
+      await tester.pumpWidget(panel(const Key('b'), bFocus));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('a')), findsOneWidget, reason: 'mid-fade');
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      expect(bFocus.hasFocus, isTrue);
+      expect(aFocus.hasFocus, isFalse);
+    });
+
+    testWidgets('the recovery phrase step has focus in its field once settled',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: ArDriveApp(
+            builder: (_) => const LoginPanelFade(
+              child: SizedBox(
+                key: Key('landing'),
+                child: TextField(autofocus: false),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: ArDriveApp(
+            builder: (_) => const LoginPanelFade(
+              child: SizedBox(
+                key: Key('enterRecoveryPhraseView'),
+                width: 400,
+                child: EnterRecoveryPhraseView(),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      final field = find.descendant(
+          of: find.byType(EnterRecoveryPhraseView),
+          matching: find.byType(EditableText));
+      expect(tester.widget<EditableText>(field).focusNode.hasFocus, isTrue);
+    });
+
     test('a finished sign-in swaps the panel to its waiting card', () {
       final user = fakeUserJson;
       expect(loginPanelRebuildsOn(LoginSuccess(user)), isTrue);

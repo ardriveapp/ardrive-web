@@ -64,8 +64,8 @@ void main() {
         home: ShellFade(signedOutShell: true, child: login),
       ));
       final builds = loginBuilds;
-      await tester.pumpWidget(MaterialApp(
-        home: ShellFade(signedOutShell: false, child: const Text('app')),
+      await tester.pumpWidget(const MaterialApp(
+        home: ShellFade(signedOutShell: false, child: Text('app')),
       ));
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('login'), findsOneWidget);
@@ -88,13 +88,30 @@ void main() {
         home: ShellFade(signedOutShell: false, child: app),
       ));
       loggedOut = true;
-      await tester.pumpWidget(MaterialApp(
-        home: ShellFade(signedOutShell: true, child: const Text('login')),
+      await tester.pumpWidget(const MaterialApp(
+        home: ShellFade(signedOutShell: true, child: Text('login')),
       ));
       expect(find.text('app'), findsNothing);
       await tester.pump(const Duration(milliseconds: 100));
       expect(tester.takeException(), isNull);
       expect(find.text('login'), findsOneWidget);
+    });
+
+    testWidgets('signing out again mid-fade mounts a fresh sign-in page',
+        (tester) async {
+      var created = 0;
+      Widget login() => _Probe(onCreate: () => created++);
+      Widget build(bool out, Widget child) => MaterialApp(
+            home: ShellFade(signedOutShell: out, child: child),
+          );
+      await tester.pumpWidget(build(true, login()));
+      expect(created, 1);
+      await tester.pumpWidget(build(false, const Text('app')));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(build(true, login()));
+      await tester.pump();
+      expect(created, 2, reason: 'the fading page is not reused');
+      expect(find.byType(_Probe), findsOneWidget);
     });
 
     testWidgets('moves inside the app do not crossfade', (tester) async {
@@ -107,4 +124,23 @@ void main() {
       expect(find.text('b'), findsOneWidget);
     });
   });
+}
+
+class _Probe extends StatefulWidget {
+  const _Probe({required this.onCreate});
+  final VoidCallback onCreate;
+
+  @override
+  State<_Probe> createState() => _ProbeState();
+}
+
+class _ProbeState extends State<_Probe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onCreate();
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('login');
 }
