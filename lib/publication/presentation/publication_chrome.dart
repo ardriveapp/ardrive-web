@@ -172,22 +172,21 @@ class MadeWithArDrive extends StatelessWidget {
 /// root's actions beside the title. Text never sits on the cover, which may
 /// be any picture.
 ///
-/// [collapsed] once the list beneath has scrolled: the cover and the lines
-/// under the title fold away and the title and actions stay, so the list
-/// has the window.
+/// On a page with a list it is the first thing in the list's scroll, and
+/// [PublicationBar] takes its place at the top as it leaves; [titleKey] marks
+/// the title row for the bar to follow.
 class PublicationHeader extends StatelessWidget {
   const PublicationHeader({
     super.key,
     required this.coverHeight,
-    required this.collapsed,
     required this.compact,
     required this.onDownload,
     required this.downloadsSelection,
     required this.onCopyLink,
+    this.titleKey,
   });
 
   final double coverHeight;
-  final bool collapsed;
 
   /// A phone's: the actions are icons.
   final bool compact;
@@ -197,8 +196,7 @@ class PublicationHeader extends StatelessWidget {
   /// whole publication, which its label then says.
   final bool downloadsSelection;
   final VoidCallback onCopyLink;
-
-  static const _fold = Duration(milliseconds: 200);
+  final GlobalKey? titleKey;
 
   @override
   Widget build(BuildContext context) {
@@ -206,8 +204,8 @@ class PublicationHeader extends StatelessWidget {
     if (config == null) return const SizedBox.shrink();
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final cover = collapsed ? null : config.images.cover;
-    final icon = collapsed ? null : config.images.icon;
+    final cover = config.images.cover;
+    final icon = config.images.icon;
 
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,13 +230,14 @@ class PublicationHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          key: titleKey,
           children: [
             Expanded(
               child: Text(
                 config.title,
-                maxLines: collapsed ? 1 : 2,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: (collapsed ? typography.heading5 : typography.heading4)(
+                style: typography.heading4(
                   color: colors.textHigh,
                   fontWeight: ArFontWeight.bold,
                 ),
@@ -253,13 +252,12 @@ class PublicationHeader extends StatelessWidget {
             ),
           ],
         ),
-        if (!collapsed) details,
+        details,
       ],
     );
 
-    final Widget head;
     if (cover != null && icon != null) {
-      head = PublicationCoverLayout(
+      return PublicationCoverLayout(
         cover: _CoverImage(path: cover, height: coverHeight),
         icon: _HeaderIcon(path: icon, size: compact ? 64 : 88),
         iconSize: compact ? 64 : 88,
@@ -271,7 +269,7 @@ class PublicationHeader extends StatelessWidget {
         body: titleBlock,
       );
     } else if (cover != null) {
-      head = Column(
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CoverImage(path: cover, height: coverHeight),
@@ -281,7 +279,7 @@ class PublicationHeader extends StatelessWidget {
       );
     } else if (icon != null) {
       final size = compact ? 48.0 : 56.0;
-      head = Row(
+      return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _HeaderIcon(path: icon, size: size),
@@ -289,15 +287,8 @@ class PublicationHeader extends StatelessWidget {
           Expanded(child: titleBlock),
         ],
       );
-    } else {
-      head = titleBlock;
     }
-
-    return AnimatedSize(
-      duration: _fold,
-      alignment: Alignment.topCenter,
-      child: head,
-    );
+    return titleBlock;
   }
 
   static PublicationStats? _statsOf(BuildContext context) {
@@ -307,6 +298,69 @@ class PublicationHeader extends StatelessWidget {
     } on ProviderNotFoundException {
       return null;
     }
+  }
+}
+
+/// The slim bar a publication root's header becomes once its title has left:
+/// the title on one line and the same actions, [height] tall. It is drawn by
+/// [SliverCollapsingHeader], which slides it in over the header with the scroll.
+class PublicationBar extends StatelessWidget {
+  const PublicationBar({
+    super.key,
+    required this.compact,
+    required this.onDownload,
+    required this.downloadsSelection,
+    required this.onCopyLink,
+    this.divider = false,
+  });
+
+  /// The bar's height, as the app's other headers.
+  static const double height = 56;
+
+  final bool compact;
+  final VoidCallback onDownload;
+  final bool downloadsSelection;
+  final VoidCallback onCopyLink;
+
+  /// A hairline under the bar, for a list with no card to end against.
+  final bool divider;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = publicationConfigOf(context);
+    if (config == null) return const SizedBox.shrink();
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.containerL0,
+        border: divider
+            ? Border(bottom: BorderSide(color: colors.strokeLow))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              config.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.heading5(
+                color: colors.textHigh,
+                fontWeight: ArFontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          _Actions(
+            compact: compact,
+            onDownload: onDownload,
+            downloadsSelection: downloadsSelection,
+            onCopyLink: onCopyLink,
+          ),
+        ],
+      ),
+    );
   }
 }
 

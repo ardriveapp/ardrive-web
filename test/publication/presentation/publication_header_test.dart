@@ -80,10 +80,9 @@ void main() {
     await tester.pump();
   }
 
-  Widget header({bool collapsed = false, bool compact = false}) =>
+  Widget header({bool compact = false}) =>
       PublicationHeader(
         coverHeight: compact ? 120 : 200,
-        collapsed: collapsed,
         compact: compact,
         onDownload: () {},
         downloadsSelection: false,
@@ -133,17 +132,6 @@ void main() {
           expect(title.top, greaterThan(coverRect.bottom));
           expect(title.top, lessThan(iconRect.bottom));
         }
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('has no cover and no icon once collapsed', (tester) async {
-        await pump(tester, header(collapsed: true, compact: compact),
-            size: size);
-
-        expect(cover(), findsNothing);
-        expect(icon(), findsNothing);
-        expect(find.text('Field recordings'), findsOneWidget);
-        expect(find.text('Rain, trains and rooms.'), findsNothing);
         expect(tester.takeException(), isNull);
       });
 

@@ -1,0 +1,269 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+
+/// Where a [SliverCollapsingHeader] tells [SliverCollapseTail] how tall it
+/// is, in the same layout pass, so the tail never reads a stale value.
+class CollapsingHeaderExtent {
+  double value = 0;
+}
+
+/// A header that is part of its scroll view's content, with a slim bar pinned
+/// at the top once [anchorKey]'s widget would leave.
+///
+/// [header] is laid out at its natural height and scrolls away one to one
+/// with the content under it: there is no state, no animation and no second
+/// layout, only the scroll offset. [bar] is [barHeight] tall and is drawn over
+/// the top of the viewport, sliding down over the header as the offset goes from
+/// where [anchorKey]'s top is [barHeight] below the viewport's top to where it
+/// reaches it. Past the header the bar stays, and a pinned sliver after it
+/// (such as a table's column header) sits under it, as it does under any
+/// pinned header.
+///
+/// It must be the first sliver of a vertical scroll view that reads down.
+class SliverCollapsingHeader extends MultiChildRenderObjectWidget {
+  SliverCollapsingHeader({
+    super.key,
+    required Widget header,
+    required Widget bar,
+    required this.barHeight,
+    this.anchorKey,
+    this.extent,
+  }) : super(children: [header, bar]);
+
+  final double barHeight;
+
+  /// A widget inside [header] whose top is where the bar takes over. Absent,
+  /// the bar starts when the header starts to move.
+  final GlobalKey? anchorKey;
+
+  /// Told the header's height, for [SliverCollapseTail].
+  final CollapsingHeaderExtent? extent;
+
+  @override
+  RenderSliverCollapsingHeader createRenderObject(BuildContext context) =>
+      RenderSliverCollapsingHeader(
+        barHeight: barHeight,
+        anchorKey: anchorKey,
+        extent: extent,
+      );
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    RenderSliverCollapsingHeader renderObject,
+  ) {
+    renderObject
+      ..barHeight = barHeight
+      ..anchorKey = anchorKey
+      ..extent = extent;
+  }
+}
+
+class _ParentData extends ContainerBoxParentData<RenderBox> {}
+
+class RenderSliverCollapsingHeader extends RenderSliver
+    with
+        ContainerRenderObjectMixin<RenderBox, _ParentData>,
+        RenderSliverHelpers {
+  RenderSliverCollapsingHeader({
+    required double barHeight,
+    GlobalKey? anchorKey,
+    CollapsingHeaderExtent? extent,
+  })  : _barHeight = barHeight,
+        _anchorKey = anchorKey,
+        _extent = extent;
+
+  double _barHeight;
+  double get barHeight => _barHeight;
+  set barHeight(double value) {
+    if (value == _barHeight) return;
+    _barHeight = value;
+    markNeedsLayout();
+  }
+
+  GlobalKey? _anchorKey;
+  set anchorKey(GlobalKey? value) {
+    if (value == _anchorKey) return;
+    _anchorKey = value;
+    markNeedsLayout();
+  }
+
+  CollapsingHeaderExtent? _extent;
+  set extent(CollapsingHeaderExtent? value) {
+    if (value == _extent) return;
+    _extent = value;
+    markNeedsLayout();
+  }
+
+  /// How far the bar has come in, 0 to 1, as of the last layout.
+  double _progress = 0;
+  double get progress => _progress;
+
+  double _scrolled = 0;
+
+  RenderBox get _header => firstChild!;
+  RenderBox get _bar => lastChild!;
+
+  /// Below this the bar is neither seen by a pointer nor by a screen reader.
+  static const double _interactiveFrom = 0.5;
+
+  /// How far above its place the bar starts, and slides down from: all of it,
+  /// so it is wholly off the top at rest.
+  double get _barSlide => _barHeight;
+
+  Offset _barOffset() => Offset(0, -(1 - _progress) * _barSlide);
+
+  @override
+  void setupParentData(RenderObject child) {
+    if (child.parentData is! _ParentData) child.parentData = _ParentData();
+  }
+
+  @override
+  void performLayout() {
+    assert(constraints.axis == Axis.vertical &&
+        constraints.growthDirection == GrowthDirection.forward &&
+        constraints.axisDirection == AxisDirection.down);
+    final width = constraints.crossAxisExtent;
+    _header.layout(
+      BoxConstraints(minWidth: width, maxWidth: width),
+      parentUsesSize: true,
+    );
+    _bar.layout(BoxConstraints.tightFor(width: width, height: _barHeight));
+
+    final height = _header.size.height;
+    _extent?.value = height;
+    final offset = math.max(0.0, constraints.scrollOffset);
+    _scrolled = offset;
+
+    // Where the bar starts to come in: when the anchor's top is a bar's
+    // height below the top. It is done by the time the anchor's top is at
+    // the top, or by the time the header's rest would slip under the bar.
+    var anchorTop = 0.0;
+    final anchor = _anchorKey?.currentContext?.findRenderObject();
+    if (anchor is RenderBox && anchor.attached && anchor.hasSize) {
+      anchorTop = anchor.localToGlobal(Offset.zero, ancestor: _header).dy;
+    }
+    final start = math.max(0.0, anchorTop - _barHeight);
+    final end = math.min(
+      start + _barHeight,
+      math.max(height - _barHeight, start + 1),
+    );
+    final progress = ((offset - start) / (end - start)).clamp(0.0, 1.0);
+    final wasInteractive = _progress >= _interactiveFrom;
+    _progress = progress;
+    if (wasInteractive != (_progress >= _interactiveFrom)) {
+      markNeedsSemanticsUpdate();
+    }
+
+    final remaining = constraints.remainingPaintExtent;
+    final headerLeft = math.max(0.0, height - offset);
+    geometry = SliverGeometry(
+      scrollExtent: height,
+      paintExtent: math.min(math.max(headerLeft, _barHeight), remaining),
+      layoutExtent: math.min(headerLeft, remaining),
+      maxPaintExtent: height,
+      cacheExtent: calculateCacheOffset(constraints, from: 0, to: height),
+      hasVisualOverflow: true,
+    );
+  }
+
+  @override
+  double childMainAxisPosition(RenderBox child) =>
+      identical(child, _header) ? -_scrolled : _barOffset().dy;
+
+  @override
+  double childCrossAxisPosition(RenderBox child) => 0;
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    transform.translate(0.0, childMainAxisPosition(child));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (_scrolled < _header.size.height) {
+      context.paintChild(_header, offset + Offset(0, -_scrolled));
+    }
+    // Opaque all the way: a bar fading over the header's lines would show
+    // them through it. It slides down over them instead.
+    if (_progress <= 0) return;
+    context.paintChild(_bar, offset + _barOffset());
+  }
+
+  @override
+  bool hitTestChildren(
+    SliverHitTestResult result, {
+    required double mainAxisPosition,
+    required double crossAxisPosition,
+  }) {
+    if (_progress >= _interactiveFrom) {
+      final barTop = _barOffset().dy;
+      if (mainAxisPosition >= barTop &&
+          mainAxisPosition < barTop + _barHeight) {
+        if (hitTestBoxChild(
+          BoxHitTestResult.wrap(result),
+          _bar,
+          mainAxisPosition: mainAxisPosition,
+          crossAxisPosition: crossAxisPosition,
+        )) {
+          return true;
+        }
+      }
+    }
+    // The header is under the bar while the bar is shown.
+    if (_progress < 1 || mainAxisPosition >= _barHeight) {
+      return hitTestBoxChild(
+        BoxHitTestResult.wrap(result),
+        _header,
+        mainAxisPosition: mainAxisPosition,
+        crossAxisPosition: crossAxisPosition,
+      );
+    }
+    return false;
+  }
+
+  @override
+  void visitChildrenForSemantics(RenderObjectVisitor visitor) {
+    if (_scrolled < _header.size.height) visitor(_header);
+    if (_progress >= _interactiveFrom) visitor(_bar);
+  }
+}
+
+/// The last sliver of a scroll view that has a [SliverCollapsingHeader]: room
+/// after the content, so that a short list can still be scrolled until what
+/// follows the header sits just under the [pinnedInset] the bar covers.
+///
+/// Without it a list shorter than the window has no scroll range, and the
+/// header could not collapse. The range it adds depends only on the window and
+/// the content, never on the offset, so it cannot move under the reader.
+class SliverCollapseTail extends StatelessWidget {
+  const SliverCollapseTail({
+    super.key,
+    required this.extent,
+    required this.pinnedInset,
+    this.minHeight = 0,
+  });
+
+  final CollapsingHeaderExtent extent;
+
+  /// What the pinned bar covers at the top of the window.
+  final double pinnedInset;
+
+  /// Room to leave under the content however tall it is.
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverLayoutBuilder(builder: (context, constraints) {
+      // Everything between the header and here.
+      final content = constraints.precedingScrollExtent - extent.value;
+      final height = math.max(
+        minHeight,
+        constraints.viewportMainAxisExtent - pinnedInset - content,
+      );
+      return SliverToBoxAdapter(child: SizedBox(height: height));
+    });
+  }
+}

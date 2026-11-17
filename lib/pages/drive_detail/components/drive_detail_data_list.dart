@@ -29,11 +29,29 @@ Widget _allItemsHidden(BuildContext context) => Center(
       ),
     );
 
+/// A publication root's header as it scrolls with the table: the slivers
+/// that go first in the table's scroll, and what to show above `emptyState`
+/// when there is no table to scroll it with.
+class _CollapsingHeader {
+  const _CollapsingHeader({
+    required this.slivers,
+    required this.extent,
+    required this.pinnedInset,
+    required this.staticHeader,
+  });
+
+  final List<Widget> slivers;
+  final CollapsingHeaderExtent extent;
+  final double pinnedInset;
+  final Widget staticHeader;
+}
+
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
-  Widget emptyState,
-) {
+  Widget emptyState, {
+  _CollapsingHeader? collapsingHeader,
+}) {
   return _buildDataListContent(
     context,
     state.currentFolderContents,
@@ -46,6 +64,7 @@ Widget _buildDataList(
     emptyState: emptyState,
     revealSelectedItem: state.revealSelectedItem,
     rowsPerPage: state.rowsPerPage,
+    collapsingHeader: collapsingHeader,
   );
 }
 
@@ -61,6 +80,7 @@ Widget _buildDataListContent(
   required Widget emptyState,
   bool revealSelectedItem = false,
   required int rowsPerPage,
+  _CollapsingHeader? collapsingHeader,
 }) {
   return LayoutBuilder(builder: (context, constraints) {
     final typography = ArDriveTypographyNew.of(context);
@@ -151,13 +171,22 @@ Widget _buildDataListContent(
           // Everything here is hidden: say so, with the way to show it. The
           // columns menu that holds that option belongs to the table, and
           // there is no table to open it from.
-          if (items.isNotEmpty) {
-            return _allItemsHidden(context);
-          }
-          return emptyState;
+          final Widget content =
+              items.isNotEmpty ? _allItemsHidden(context) : emptyState;
+          if (collapsingHeader == null) return content;
+          // The header has no list to scroll with.
+          return Column(
+            children: [
+              collapsingHeader.staticHeader,
+              Expanded(child: content),
+            ],
+          );
         }
 
         final table = ArDriveDataTable<ArDriveDataTableItem>(
+          leadingSlivers: collapsingHeader?.slivers,
+          leadingExtent: collapsingHeader?.extent,
+          pinnedInset: collapsingHeader?.pinnedInset ?? 0,
           headerDivider: PublicationMode.isOn,
           countOnOnePage: PublicationMode.isOn,
           key: ValueKey(
