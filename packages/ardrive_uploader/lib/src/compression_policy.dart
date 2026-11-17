@@ -2,10 +2,10 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
-/// Which files of a deployment are uploaded gzipped, and how.
+/// Which files are uploaded gzipped when the uploader chose to compress text
+/// and code (a public drive only), and how.
 ///
-/// A deployment (a folder with a root `index.html`, uploaded to a public
-/// drive) is served by gateways as a website. A gateway that finds
+/// A site on a public drive is served by gateways as a website. A gateway that finds
 /// `Content-Encoding: gzip` on a data item sends it as it is, and the browser
 /// decodes it, so text and code travel at about a third of their size. The
 /// list of what is left alone is the one `@ar.io/deploy` 2.1.2 uses

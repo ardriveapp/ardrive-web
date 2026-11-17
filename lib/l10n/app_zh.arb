@@ -2853,6 +2853,18 @@
   "@thumbnailsOn": {
     "description": "Upload options summary: thumbnails will be made for the images"
   },
+  "compressTextAndCode": "压缩文本和代码",
+  "@compressTextAndCode": {
+    "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
+  },
+  "compressTextAndCodeHint": "网站和代码占用的存储更少。其他应用可能需要解压这些文件。",
+  "@compressTextAndCodeHint": {
+    "description": "Upload options: what compressing text and code means for the files"
+  },
+  "compressedSummary": "已压缩",
+  "@compressedSummary": {
+    "description": "Upload options summary: text and code will be compressed"
+  },
   "totalUploadSize": "共 {size}",
   "@totalUploadSize": {
     "description": "Under the files of an upload: their combined size",

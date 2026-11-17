@@ -2853,6 +2853,18 @@
   "@thumbnailsOn": {
     "description": "Upload options summary: thumbnails will be made for the images"
   },
+  "compressTextAndCode": "टेक्स्ट और कोड कंप्रेस करें",
+  "@compressTextAndCode": {
+    "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
+  },
+  "compressTextAndCodeHint": "वेबसाइट और कोड के लिए कम स्टोरेज। दूसरे ऐप्स को इन फ़ाइलों को अनपैक करना पड़ सकता है।",
+  "@compressTextAndCodeHint": {
+    "description": "Upload options: what compressing text and code means for the files"
+  },
+  "compressedSummary": "कंप्रेस्ड",
+  "@compressedSummary": {
+    "description": "Upload options summary: text and code will be compressed"
+  },
   "totalUploadSize": "कुल {size}",
   "@totalUploadSize": {
     "description": "Under the files of an upload: their combined size",

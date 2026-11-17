@@ -2853,6 +2853,18 @@
   "@thumbnailsOn": {
     "description": "Upload options summary: thumbnails will be made for the images"
   },
+  "compressTextAndCode": "Comprimir texto y código",
+  "@compressTextAndCode": {
+    "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
+  },
+  "compressTextAndCodeHint": "Menos almacenamiento para sitios web y código. Otras aplicaciones pueden necesitar descomprimir estos archivos.",
+  "@compressTextAndCodeHint": {
+    "description": "Upload options: what compressing text and code means for the files"
+  },
+  "compressedSummary": "Comprimido",
+  "@compressedSummary": {
+    "description": "Upload options summary: text and code will be compressed"
+  },
   "totalUploadSize": "{size} en total",
   "@totalUploadSize": {
     "description": "Under the files of an upload: their combined size",

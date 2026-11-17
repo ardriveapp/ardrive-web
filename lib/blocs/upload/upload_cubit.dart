@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/upload/compression_offer.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
@@ -89,8 +90,18 @@ class UploadCubit extends Cubit<UploadState> {
   final CreateManifestCubit _createManifestCubit;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
 
-  /// `AppConfig.compressDeployments`, read once like [_uploadThumbnail].
+  /// `AppConfig.compressDeployments` (whether to offer the option), read once
+  /// like [_uploadThumbnail].
   final bool _compressDeployments;
+
+  /// Whether the review offers "Compress text and code": a public drive, the
+  /// config switch on, and a file the policy would compress. Set when the
+  /// upload is prepared.
+  bool _compressionOffered = false;
+
+  /// The person's choice for this upload. Off every time a review opens: it
+  /// is not remembered, and it is never on unless offered.
+  bool _compressTextAndCode = false;
 
   final String _driveId;
   final String _parentFolderId;
@@ -305,6 +316,16 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Whether this upload will make thumbnails for its images.
   bool get uploadThumbnail => _uploadThumbnail;
+
+  /// Whether the review shows the "Compress text and code" option.
+  bool get compressionOffered => _compressionOffered;
+
+  /// Whether this upload will be sent with its text and code compressed.
+  bool get compressTextAndCode => _compressionOffered && _compressTextAndCode;
+
+  void changeCompressTextAndCode(bool compress) {
+    _compressTextAndCode = compress;
+  }
 
   /// Settings
   void showSettings() {
@@ -777,6 +798,14 @@ class UploadCubit extends Cubit<UploadState> {
         _files[i].getIdentifier(): lengths[i],
     };
 
+    _compressionOffered = offersCompression(
+      switchOn: _compressDeployments,
+      isPublic: !_targetDrive.isPrivate,
+      files: _files,
+      lengths: _fileLengthCache,
+    );
+    if (!_compressionOffered) _compressTextAndCode = false;
+
     // TODO: check if the backend refreshed the balance instead of a timer
     if (isRetryingToPayWithTurbo) {
       emit(UploadPreparationInProgress());
@@ -1188,7 +1217,7 @@ class UploadCubit extends Cubit<UploadState> {
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
       paidBy: _paidBy,
-      compressDeployments: _compressDeployments,
+      compressTextAndCode: compressTextAndCode,
     );
 
     uploadController.onError((tasks) {
@@ -1248,6 +1277,7 @@ class UploadCubit extends Cubit<UploadState> {
       uploadMethod: _uploadMethod!,
       uploadThumbnail: _uploadThumbnail,
       paidBy: _paidBy,
+      compressTextAndCode: compressTextAndCode,
     );
 
     uploadController.onError((tasks) {

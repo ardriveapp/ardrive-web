@@ -311,8 +311,9 @@ transports — `turbo_streamed_upload.dart` (Turbo bundler service) and
 carry progress and cancellation back to the UI. Changing upload behavior usually means
 editing the package, not `lib/blocs/upload/`.
 
-Deployments (a folder upload with a root `index.html` to a public drive) have their text and
-code gzipped in `prepareDataItems`, behind `AppConfig.compressDeployments`; see
+Text and code are gzipped in `prepareDataItems` only when the uploader turns on **Compress text and code**
+in the upload review's Options (public drives only, off every time; `AppConfig.compressDeployments` means
+"offer the switch"); see
 `docs/DEPLOYMENT_COMPRESSION.md` before touching `ArDriveDownloader`'s resume path.
 
 Note the cipher used is size-dependent: files under `maxSizeSupportedByGCMEncryption`

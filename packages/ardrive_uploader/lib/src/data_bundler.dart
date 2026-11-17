@@ -773,7 +773,7 @@ Future<UploadFilePreparation> prepareDataItems({
   Stream<Uint8List> Function([int, int?]) dataStream = file.openReadStream;
   var dataLength = await file.length;
 
-  // A deployment's text and code on a public drive travels gzipped. The tag
+  // Text and code on a public drive travel gzipped when asked. The tag
   // is added only when the gzip is what is signed, and the ArFS `size` of the
   // metadata keeps the original length.
   // The metadata outlives a preparation (a retry prepares it again), so a tag

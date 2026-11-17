@@ -13,6 +13,8 @@ class UploadOptions extends StatefulWidget {
     super.key,
     required this.thumbnails,
     required this.onThumbnailsChanged,
+    this.compress,
+    this.onCompressChanged,
     required this.summary,
     required this.children,
   });
@@ -20,6 +22,11 @@ class UploadOptions extends StatefulWidget {
   /// Whether thumbnails will be made, or null when there are no images.
   final bool? thumbnails;
   final void Function(bool) onThumbnailsChanged;
+
+  /// Whether text and code will be compressed, or null when the review does
+  /// not offer it (a private drive, nothing it would compress).
+  final bool? compress;
+  final void Function(bool)? onCompressChanged;
 
   /// What the other options are set to, in a few words each.
   final List<String> summary;
@@ -32,6 +39,7 @@ class UploadOptions extends StatefulWidget {
 class _UploadOptionsState extends State<UploadOptions> {
   bool _open = false;
   late bool? _thumbnails = widget.thumbnails;
+  late bool? _compress = widget.compress;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +54,7 @@ class _UploadOptionsState extends State<UploadOptions> {
     final summary = [
       if (_thumbnails != null)
         _thumbnails! ? l10n.thumbnailsOn : l10n.thumbnailsOff,
+      if (_compress ?? false) l10n.compressedSummary,
       ...widget.summary,
     ];
 
@@ -148,6 +157,17 @@ class _UploadOptionsState extends State<UploadOptions> {
                       ],
                     ),
                   ),
+                if (_compress != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: CompressTextAndCodeRow(
+                      value: _compress!,
+                      onChanged: (value) {
+                        setState(() => _compress = value);
+                        widget.onCompressChanged?.call(value);
+                      },
+                    ),
+                  ),
                 for (final child in widget.children)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -156,6 +176,51 @@ class _UploadOptionsState extends State<UploadOptions> {
               ],
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// "Compress text and code": the label with the switch at the end of the row,
+/// and what it means as a note under it, the way the Settings rows read.
+class CompressTextAndCodeRow extends StatelessWidget {
+  const CompressTextAndCodeRow({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final void Function(bool) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ArDriveToggleSwitch(
+          alignRight: true,
+          value: value,
+          text: l10n.compressTextAndCode,
+          textStyle: typography.paragraphNormal(
+            fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textHigh,
+          ),
+          onChanged: onChanged,
+        ),
+        const SizedBox(height: ArDriveSpacing.xxs),
+        Text(
+          l10n.compressTextAndCodeHint,
+          style: typography.paragraphSmall(
+            fontWeight: ArFontWeight.book,
+            color: colorTokens.textMid,
+          ),
+        ),
       ],
     );
   }

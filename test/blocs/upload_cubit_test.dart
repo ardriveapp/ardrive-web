@@ -20,6 +20,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
@@ -1215,6 +1216,7 @@ void main() {
                 uploadMethod: any(named: 'uploadMethod'),
                 uploadThumbnail: any(named: 'uploadThumbnail'),
                 paidBy: any(named: 'paidBy'),
+                compressTextAndCode: any(named: 'compressTextAndCode'),
               )).thenAnswer((_) async => controller);
         });
 
@@ -1354,6 +1356,7 @@ void main() {
                 uploadMethod: any(named: 'uploadMethod'),
                 uploadThumbnail: any(named: 'uploadThumbnail'),
                 paidBy: any(named: 'paidBy'),
+                compressTextAndCode: any(named: 'compressTextAndCode'),
               )).thenAnswer((_) async => _MockUploadController());
         },
         tearDown: () {
@@ -1400,6 +1403,7 @@ void main() {
                 uploadMethod: any(named: 'uploadMethod'),
                 uploadThumbnail: any(named: 'uploadThumbnail'),
                 paidBy: any(named: 'paidBy'),
+                compressTextAndCode: any(named: 'compressTextAndCode'),
               )).called(1);
         },
       );
@@ -1426,6 +1430,7 @@ void main() {
               uploadMethod: any(named: 'uploadMethod'),
               uploadThumbnail: any(named: 'uploadThumbnail'),
               paidBy: any(named: 'paidBy'),
+              compressTextAndCode: any(named: 'compressTextAndCode'),
             )).thenAnswer((_) async => controller);
         final cubit = getUploadCubitInstanceWith(tNoConflictingFiles);
         addTearDown(cubit.close);
@@ -1618,6 +1623,169 @@ void main() {
         verify(() => mockProfileCubit!.checkIfWalletMismatch()).called(1);
       },
     );
+  });
+
+  group('compress text and code', () {
+    AppConfig configWith({required bool compress}) => AppConfig(
+          allowedDataItemSizeForTurbo: 1,
+          stripePublishableKey: 'stripePublishableKey',
+          defaultTurboUploadUrl: 'defaultTurboUploadUrl',
+          arweaveGatewayForDataRequest: const SelectedGateway(
+            label: 'Turbo Gateway',
+            url: 'https://turbo-gateway.com',
+          ),
+          compressDeployments: compress,
+        );
+
+    Future<UploadFile> file(String name, String contentType) async =>
+        UploadFile(
+          ioFile: await IOFile.fromData(Uint8List.fromList([1, 2, 3]),
+              name: name,
+              lastModifiedDate: tDefaultDate,
+              contentType: contentType),
+          parentFolderId: tRootFolderId,
+        );
+
+    Future<UploadPlan> plan() => UploadPlan.create(
+          useTurbo: false,
+          maxDataItemCount: 10,
+          fileV2UploadHandles: {},
+          fileDataItemUploadHandles: {},
+          folderDataItemUploadHandles: {},
+          turboUploadService: DontUseUploadService(),
+        );
+
+    late _MockUploadController controller;
+
+    setUp(() {
+      controller = _MockUploadController();
+      when(() => controller.onError(any())).thenAnswer((_) {});
+      when(() => controller.onProgressChange(any())).thenAnswer((_) {});
+      when(() => mockUploadFileSizeChecker.hasFileAboveWarningSizeLimit(
+          files: any(named: 'files'))).thenAnswer((_) async => false);
+      when(() => mockProfileCubit!.checkIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      when(() => mockProfileCubit!.isCurrentProfileArConnect())
+          .thenAnswer((_) async => false);
+      when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => tWalletAddress);
+      when(() => mockUploadRepository.uploadFiles(
+            files: any(named: 'files'),
+            targetDrive: any(named: 'targetDrive'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            licenseStateConfigured: any(named: 'licenseStateConfigured'),
+            targetFolder: any(named: 'targetFolder'),
+            uploadMethod: any(named: 'uploadMethod'),
+            uploadThumbnail: any(named: 'uploadThumbnail'),
+            paidBy: any(named: 'paidBy'),
+            compressTextAndCode: any(named: 'compressTextAndCode'),
+          )).thenAnswer((_) async => controller);
+    });
+
+    tearDown(() async {
+      // Back to what the rest of the file runs on.
+      when(() => mockConfigService.config)
+          .thenReturn(configWith(compress: false));
+      await (db.update(db.drives)..where((d) => d.id.equals(tDriveId)))
+          .write(const DrivesCompanion(privacy: Value('public')));
+    });
+
+    Future<UploadCubit> prepared({
+      required bool switchOn,
+      bool isPrivate = false,
+      List<UploadFile>? files,
+    }) async {
+      when(() => mockConfigService.config)
+          .thenReturn(configWith(compress: switchOn));
+      await (db.update(db.drives)..where((d) => d.id.equals(tDriveId))).write(
+          DrivesCompanion(privacy: Value(isPrivate ? 'private' : 'public')));
+      final cubit = getUploadCubitInstanceWith(
+          files ?? [await file('app.js', 'text/javascript')]);
+      await cubit.startUploadPreparation();
+      return cubit;
+    }
+
+    test('is offered on a public drive with the switch on and a js file',
+        () async {
+      final cubit = await prepared(switchOn: true);
+      expect(cubit.compressionOffered, isTrue);
+      // Never on by itself.
+      expect(cubit.compressTextAndCode, isFalse);
+    });
+
+    test('is not offered with the switch off', () async {
+      final cubit = await prepared(switchOn: false);
+      expect(cubit.compressionOffered, isFalse);
+      cubit.changeCompressTextAndCode(true);
+      expect(cubit.compressTextAndCode, isFalse);
+    });
+
+    test('is not offered on a private drive', () async {
+      final cubit = await prepared(switchOn: true, isPrivate: true);
+      expect(cubit.compressionOffered, isFalse);
+      cubit.changeCompressTextAndCode(true);
+      expect(cubit.compressTextAndCode, isFalse);
+    });
+
+    test('is not offered when nothing would compress', () async {
+      final cubit = await prepared(
+        switchOn: true,
+        files: [await file('photo.png', 'image/png')],
+      );
+      expect(cubit.compressionOffered, isFalse);
+    });
+
+    test('the choice is remembered by the cubit while the review is open',
+        () async {
+      final cubit = await prepared(switchOn: true);
+      cubit.changeCompressTextAndCode(true);
+      expect(cubit.compressTextAndCode, isTrue);
+      cubit.changeCompressTextAndCode(false);
+      expect(cubit.compressTextAndCode, isFalse);
+    });
+
+    Future<bool?> uploadedWith({required bool choose}) async {
+      final cubit = await prepared(switchOn: true);
+      if (choose) cubit.changeCompressTextAndCode(true);
+      cubit.setUploadMethod(
+        UploadMethod.turbo,
+        UploadPaymentMethodInfo(
+          uploadMethod: UploadMethod.turbo,
+          costEstimateTurbo: costEstimate,
+          costEstimateAr: costEstimate,
+          hasNoTurboBalance: false,
+          isTurboUploadPossible: true,
+          arBalance: '0',
+          sufficientArBalance: true,
+          turboCredits: '0',
+          sufficentCreditsBalance: true,
+          freeStatus: FreeUploadStatus.free,
+          totalSize: 1,
+        ),
+        true,
+      );
+      await cubit.startUpload(uploadPlanForAr: await plan());
+      return verify(() => mockUploadRepository.uploadFiles(
+            files: any(named: 'files'),
+            targetDrive: any(named: 'targetDrive'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            licenseStateConfigured: any(named: 'licenseStateConfigured'),
+            targetFolder: any(named: 'targetFolder'),
+            uploadMethod: any(named: 'uploadMethod'),
+            uploadThumbnail: any(named: 'uploadThumbnail'),
+            paidBy: any(named: 'paidBy'),
+            compressTextAndCode: captureAny(named: 'compressTextAndCode'),
+          )).captured.single as bool?;
+    }
+
+    test('an upload with the toggle on asks the repository to compress',
+        () async {
+      expect(await uploadedWith(choose: true), isTrue);
+    });
+
+    test('an upload with the toggle left alone does not', () async {
+      expect(await uploadedWith(choose: false), isFalse);
+    });
   });
 }
 
