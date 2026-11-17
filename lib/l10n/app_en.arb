@@ -910,6 +910,18 @@
   "@thumbnailsOn": {
     "description": "Upload options summary: thumbnails will be made for the images"
   },
+  "compressTextAndCode": "Compress text and code",
+  "@compressTextAndCode": {
+    "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
+  },
+  "compressTextAndCodeHint": "Smaller storage for websites and code. Other apps may need to unpack these files.",
+  "@compressTextAndCodeHint": {
+    "description": "Upload options: what compressing text and code means for the files"
+  },
+  "compressedSummary": "Compressed",
+  "@compressedSummary": {
+    "description": "Upload options summary: text and code will be compressed"
+  },
   "totalUploadSize": "{size} total",
   "@totalUploadSize": {
     "description": "Under the files of an upload: their combined size",

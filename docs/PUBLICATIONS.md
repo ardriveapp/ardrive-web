@@ -262,7 +262,7 @@ serving it and the gateway it detected, nothing else.
 
 ### Deployments made in the app
 
-A folder with a root `index.html` uploaded to a public drive (the files a manifest is later made over) has its text and code uploaded gzipped, as the release bundle is, behind `AppConfig.compressDeployments`. The manifest itself and the publication files are written by their own uploaders and are never compressed. See `docs/DEPLOYMENT_COMPRESSION.md`.
+An upload to a public drive with **Compress text and code** checked in the upload review (for example, the files a manifest is later made over) has its text and code uploaded gzipped, as the release bundle is; `AppConfig.compressDeployments` decides whether the review offers it. The manifest itself and the publication files are written by their own uploaders and are never compressed. See `docs/DEPLOYMENT_COMPRESSION.md`.
 
 ## Names
 
