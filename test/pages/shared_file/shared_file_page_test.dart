@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
 import 'package:ardrive/pages/shared_file/shared_file_page.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -139,6 +142,7 @@ void main() {
     bool showsLatestRevision = false,
     LinkVerification verification = LinkVerification.verified,
     SharedFileLinkPayload? payload,
+    SecretKey? fileKey,
     FileRevision? revision,
     FileRevision? linkRevision,
     List<FileRevision> activityRevisions = const [],
@@ -147,7 +151,7 @@ void main() {
   }) {
     return SharedFileLoadSuccess(
       fileRevisions: [revision ?? fileRevision()],
-      fileKey: null,
+      fileKey: fileKey,
       latestLicense: null,
       ownerAddress: 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e',
       payload: payload,
@@ -607,6 +611,18 @@ void main() {
       expect(find.text('Download'), findsOneWidget);
     });
   });
+
+  /// The card's own "Shared by <address>" line. The details drawer's
+  /// "Shared by" label is a different widget and stays.
+  final sharedByLine = find.byWidgetPredicate((w) =>
+      w is Text &&
+      (w.textSpan?.toPlainText().startsWith('Shared by ') ?? false));
+
+  /// [name] as the file's card writes it, not the head or the preview.
+  Finder nameInCard(String name) => find.descendant(
+        of: find.byType(SharedFileIdentity),
+        matching: find.text(name),
+      );
 
   group('READY', () {
     testWidgets('leads with Download and keeps transaction ids in the drawer',
@@ -1092,6 +1108,16 @@ void main() {
       expect(find.text('Verified'), findsOneWidget);
     });
 
+    testWidgets(
+        'a standalone link still has the name, who shared it and '
+        'Verified in the card', (tester) async {
+      await pumpPage(tester, success(verification: LinkVerification.verified));
+
+      expect(nameInCard('Q3 Report.pdf'), findsOneWidget);
+      expect(sharedByLine, findsOneWidget);
+      expect(find.text('Verified'), findsOneWidget);
+    });
+
     testWidgets('warns, without alarming, when the link cannot be checked',
         (tester) async {
       await pumpPage(
@@ -1370,6 +1396,192 @@ void main() {
       expect(cardWidth(tester), lessThanOrEqualTo(400));
       expect(find.byKey(sharedFilePreviewPaneKey), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('ON A FILE PAGE', () {
+    const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e';
+
+    _MockPublicationLoaderCubit filePage({
+      String privacy = 'public',
+      String title = 'Q3 Report.pdf',
+    }) {
+      final loader = _MockPublicationLoaderCubit();
+      when(() => loader.state).thenReturn(PublicationReady(
+        PublicationConfig(
+          version: 2,
+          driveId: 'c863be1f-a725-4554-9a9e-18268ed8a035',
+          rootFolderId: '41520b33-28c1-4892-886b-b845a5709085',
+          scope: const PublicationFileScope(fileId),
+          privacy: privacy,
+          owner: ownerAddress,
+          ownerName: 'ArDrive QA',
+          snapshot: null,
+          file: const PublicationFile(
+            dataTxId: 'FILEdata00000000000000000000000000000000000',
+            metadataTxId: 'FILEmeta00000000000000000000000000000000000',
+          ),
+          title: title,
+          description: '',
+          images: const PublicationImages(),
+          publishedAt: DateTime.utc(2026, 11, 14),
+          viewer: null,
+        ),
+        ownerVerified: true,
+      ));
+      return loader;
+    }
+
+    testWidgets(
+        'names the file and its owner once, and says Verified in the '
+        'byline', (tester) async {
+      await pumpPage(tester, success(), publication: filePage());
+
+      // The file's name is the page's title: once, not also in the card.
+      expect(nameInCard('Q3 Report.pdf'), findsNothing);
+      expect(find.text('Q3 Report.pdf'), findsWidgets);
+      // The owner is in the byline; the card has no "Shared by" line.
+      expect(sharedByLine, findsNothing);
+      expect(find.textContaining('By ArDrive QA'), findsOneWidget);
+      // Verified is in the head, beside the byline, and only once.
+      expect(find.text('Verified'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(PublicationFileHead),
+          matching: find.text('Verified'),
+        ),
+        findsOneWidget,
+      );
+      // The rest of the card is untouched.
+      expect(find.textContaining('PDF'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'drops the name when the title is the name without its '
+        'extension, ignoring case', (tester) async {
+      await pumpPage(
+        tester,
+        success(),
+        publication: filePage(title: ' q3 REPORT '),
+      );
+
+      expect(nameInCard('Q3 Report.pdf'), findsNothing);
+      expect(sharedByLine, findsNothing);
+    });
+
+    testWidgets('keeps the name when the owner typed a different title',
+        (tester) async {
+      await pumpPage(
+        tester,
+        success(),
+        publication: filePage(title: 'Quarterly numbers'),
+      );
+
+      expect(find.text('Quarterly numbers'), findsOneWidget);
+      expect(nameInCard('Q3 Report.pdf'), findsOneWidget);
+      expect(sharedByLine, findsNothing);
+      expect(find.text('Verified'), findsOneWidget);
+    });
+
+    test(
+        'titleNamesFile compares trimmed, case-insensitive, with or without '
+        'the extension', () {
+      expect(titleNamesFile('Spring launch', 'Spring launch.pdf'), isTrue);
+      expect(
+          titleNamesFile(' SPRING LAUNCH.PDF ', 'Spring launch.pdf'), isTrue);
+      expect(titleNamesFile('Spring', 'Spring launch.pdf'), isFalse);
+      expect(titleNamesFile('', ''), isFalse);
+      expect(titleNamesFile('.pdf', '.pdf'), isTrue);
+      expect(titleNamesFile('Launch', 'Spring launch'), isFalse);
+    });
+
+    testWidgets('centres the facts line on the icon when the name is hidden',
+        (tester) async {
+      await pumpPage(tester, success(), publication: filePage());
+
+      final icon = find.descendant(
+        of: find.byType(SharedFileIdentity),
+        matching: find.byWidgetPredicate(
+            (w) => w is SizedBox && w.width == 44 && w.height == 44),
+      );
+      final facts = find.descendant(
+        of: find.byType(SharedFileIdentity),
+        matching: find.textContaining('MiB'),
+      );
+      expect(nameInCard('Q3 Report.pdf'), findsNothing);
+      expect(
+          tester.getCenter(facts).dy, closeTo(tester.getCenter(icon).dy, 1.0));
+    });
+
+    for (final (verification, text) in [
+      (LinkVerification.pending, 'Checking'),
+      (LinkVerification.unavailable, 'Not checked'),
+      (LinkVerification.verified, 'Verified'),
+    ]) {
+      testWidgets('the byline shows "$text" for $verification, once',
+          (tester) async {
+        await pumpPage(
+          tester,
+          success(verification: verification),
+          publication: filePage(),
+        );
+
+        expect(
+          find.descendant(
+            of: find.byType(PublicationFileHead),
+            matching: find.textContaining(text),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining(text), findsOneWidget);
+        expect(sharedByLine, findsNothing);
+        if (verification != LinkVerification.verified) {
+          expect(find.text('Verified'), findsNothing);
+        }
+      });
+    }
+
+    testWidgets('still warns, in the card, when the details do not match',
+        (tester) async {
+      await pumpPage(
+        tester,
+        success(verification: LinkVerification.mismatch),
+        publication: filePage(),
+      );
+
+      expect(find.textContaining('don’t match'), findsOneWidget);
+      expect(find.text('Verified'), findsNothing);
+    });
+
+    testWidgets('keeps the newer version banner', (tester) async {
+      await pumpPage(
+        tester,
+        success(newerVersionAvailable: true),
+        publication: filePage(),
+      );
+
+      expect(find.textContaining('newer version'), findsOneWidget);
+      expect(find.text('Get latest'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a private file keeps its name in the card once unlocked, '
+        'with no Shared by line', (tester) async {
+      await pumpPage(
+        tester,
+        success(fileKey: SecretKey(List.filled(32, 1))),
+        publication: filePage(privacy: 'private', title: 'Plans for the lake'),
+      );
+
+      // The head carries the owner's title, which is not the file's name.
+      expect(find.text('Plans for the lake'), findsOneWidget);
+      expect(nameInCard('Q3 Report.pdf'), findsOneWidget);
+      expect(sharedByLine, findsNothing);
+      expect(find.text('Verified'), findsOneWidget);
     });
   });
 

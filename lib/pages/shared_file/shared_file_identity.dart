@@ -1,6 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
+import 'package:ardrive/publication/domain/publication_config.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart'
+    show publicationConfigOf;
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/truncate_string.dart';
@@ -70,13 +73,26 @@ class SharedFileIdentity extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final mismatch = verification == LinkVerification.mismatch;
-
+    // On a file page the head above the card already names the owner and
+    // says Verified, so the card leaves those off. It leaves the file's name
+    // off only when the head's title says the same thing (the owner left the
+    // title as the file's name): a different title keeps the name, and so
+    // does a private file, whose name is not in the head.
+    final page = publicationConfigOf(context);
+    final onFilePage = page?.scope is PublicationFileScope;
+    final showName = !onFilePage ||
+        isPrivate ||
+        (name != null && !titleNamesFile(page!.title, name!));
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // With no name line the facts line is the only text beside the
+          // icon, so it is centred on it (and, in the wide header, on
+          // Download); with a name the two sit from the top as before.
+          crossAxisAlignment:
+              showName ? CrossAxisAlignment.start : CrossAxisAlignment.center,
           children: [
             _buildLeading(context),
             const SizedBox(width: 12),
@@ -85,9 +101,11 @@ class SharedFileIdentity extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTitle(context),
-                  const SizedBox(height: 6),
-                  _buildMeta(context),
+                  if (showName) ...[
+                    _buildTitle(context),
+                    const SizedBox(height: 6),
+                  ],
+                  _buildMeta(context, showProvenance: !onFilePage),
                 ],
               ),
             ),
@@ -173,13 +191,13 @@ class SharedFileIdentity extends StatelessWidget {
   /// `4.60 MiB · PDF ·`, pointing at nothing. Separators now travel with the
   /// item they introduce, and the one place that reliably wrapped is not a
   /// wrap any more.
-  Widget _buildMeta(BuildContext context) {
+  Widget _buildMeta(BuildContext context, {required bool showProvenance}) {
     final style = ArDriveTypographyNew.of(context).paragraphNormal(
       color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
     );
 
     final facts = _buildFacts(context, style);
-    final provenance = _buildProvenance(context, style);
+    final provenance = showProvenance ? _buildProvenance(context, style) : null;
 
     if (facts == null && provenance == null) {
       return const SizedBox.shrink();
@@ -407,4 +425,18 @@ class _SharedFileSkeletonBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Whether a file page's [title] says what the file's [name] says: the same
+/// text ignoring case and outer spaces, or the name without its extension
+/// ("Spring launch" for "Spring launch.pdf").
+@visibleForTesting
+bool titleNamesFile(String title, String name) {
+  String norm(String s) => s.trim().toLowerCase();
+  final t = norm(title);
+  final n = norm(name);
+  if (t.isEmpty || n.isEmpty) return false;
+  if (t == n) return true;
+  final dot = n.lastIndexOf('.');
+  return dot > 0 && n.substring(0, dot).trim() == t;
 }
