@@ -50,7 +50,10 @@ class FileV2UploadHandle implements UploadHandle {
   Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
     if (hasError) return;
     await driveDao.transaction(() async {
-      await driveDao.writeFileEntity(entity);
+      await driveDao.writeFileEntity(
+        entity,
+        replaceCustomMetadata: true,
+      );
       await driveDao.insertFileRevision(
         entity.toRevisionCompanion(performedAction: revisionAction),
       );

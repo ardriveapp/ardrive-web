@@ -364,7 +364,10 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         newFileEntity.txId = fileDataItem.id;
       }
 
-      await _driveDao.writeFileEntity(newFileEntity);
+      await _driveDao.writeFileEntity(
+        newFileEntity,
+        replaceCustomMetadata: true,
+      );
       await _driveDao.insertFileRevision(newFileEntity.toRevisionCompanion(
         // FIXME: this is gonna change when we allow to ovewrite an existing file
         performedAction: RevisionAction.create,

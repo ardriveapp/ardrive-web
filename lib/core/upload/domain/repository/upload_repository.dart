@@ -360,7 +360,10 @@ class _UploadRepositoryImpl implements UploadRepository {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            await _driveDao.writeFileEntity(entity);
+            await _driveDao.writeFileEntity(
+              entity,
+              replaceCustomMetadata: true,
+            );
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,

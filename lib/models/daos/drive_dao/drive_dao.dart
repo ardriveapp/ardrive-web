@@ -1234,9 +1234,19 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToFile(Insertable<FileEntry> file) =>
       (update(fileEntries)..whereSamePrimaryKey(file)).write(file);
 
+  /// Writes the file's row.
+  ///
+  /// The custom JSON metadata column is left as it is when the entity has
+  /// none, so an entity built from the row's own fields cannot wipe it. A
+  /// caller that has just written a new metadata revision built from scratch
+  /// (an upload) passes [replaceCustomMetadata]: the row then holds exactly
+  /// what that revision carries, and none when it carries none. Otherwise a
+  /// replacement upload would keep the custom keys of the version it replaces
+  /// (`dataContentEncoding: gzip` on bytes that are no longer gzip).
   Future<void> writeFileEntity(
-    FileEntity entity,
-  ) {
+    FileEntity entity, {
+    bool replaceCustomMetadata = false,
+  }) {
     final companion = FileEntriesCompanion.insert(
       id: entity.id!,
       driveId: entity.driveId!,
@@ -1260,11 +1270,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           : const Value(null),
       assignedNames: Value(_encodeAssignedNames(entity.assignedNames)),
       fallbackTxId: Value(entity.fallbackTxId),
-      // Only when the entity has some: an entity built without it (an upload
-      // writing its row) must never wipe what the row already holds.
-      customJsonMetadata: entity.customJsonMetadata?.isNotEmpty ?? false
+      customJsonMetadata: (entity.customJsonMetadata?.isNotEmpty ?? false)
           ? Value(entity.customJsonMetadataAsString)
-          : const Value.absent(),
+          : replaceCustomMetadata
+              ? const Value(null)
+              : const Value.absent(),
     );
 
     return into(fileEntries).insert(

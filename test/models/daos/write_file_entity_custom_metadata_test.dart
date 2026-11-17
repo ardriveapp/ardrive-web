@@ -58,4 +58,34 @@ void main() {
     expect(row.name, 'again.js');
     expect(row.asEntity().dataContentEncoding, 'gzip');
   });
+
+  test('an uncompressed replacement upload drops the old field', () async {
+    await driveDao.writeFileEntity(
+      _entity(custom: {FileEntity.dataContentEncodingKey: 'gzip'}),
+      replaceCustomMetadata: true,
+    );
+    final replacement = _entity(name: 'app.js')..dataTxId = 'new-data-tx';
+    await driveDao.writeFileEntity(replacement, replaceCustomMetadata: true);
+
+    final entity =
+        (await driveDao.fileById(fileId: 'file-id').getSingle()).asEntity();
+    expect(entity.dataTxId, 'new-data-tx');
+    expect(entity.dataContentEncoding, isNull);
+    entity.name = 'renamed.js';
+    expect(entity.toJson().containsKey('dataContentEncoding'), isFalse);
+  });
+
+  test('a compressed replacement of an uncompressed file adds the field',
+      () async {
+    await driveDao.writeFileEntity(_entity(), replaceCustomMetadata: true);
+    await driveDao.writeFileEntity(
+      _entity(custom: {FileEntity.dataContentEncodingKey: 'gzip'})
+        ..dataTxId = 'new-data-tx',
+      replaceCustomMetadata: true,
+    );
+
+    final entity =
+        (await driveDao.fileById(fileId: 'file-id').getSingle()).asEntity();
+    expect(entity.dataContentEncoding, 'gzip');
+  });
 }
