@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/widgets/arns_widgets.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -32,14 +33,22 @@ const solflareDownloadUrl = 'https://solflare.com/download';
 
 /// The installed Solana wallets to link or reconnect, with their icons; or,
 /// where none injects, "No Solana wallet found" with ways to get one.
-class ArNSWalletChooser extends StatelessWidget {
+class ArNSWalletChooser extends StatefulWidget {
   const ArNSWalletChooser({super.key, this.onLinked, this.changing = false});
 
   /// After a wallet connected on the linked account.
   final VoidCallback? onLinked;
 
-  /// Choosing another ArNS wallet: whatever connects becomes the linked one.
+  /// Choosing another Solana wallet: whatever connects becomes the linked one.
   final bool changing;
+
+  @override
+  State<ArNSWalletChooser> createState() => _ArNSWalletChooserState();
+}
+
+class _ArNSWalletChooserState extends State<ArNSWalletChooser> {
+  /// The last attempt did not connect, such as a rejected prompt.
+  bool _notConnected = false;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +67,11 @@ class ArNSWalletChooser extends StatelessWidget {
                 semanticLabel: strings.arnsConnectWallet(wallet.name),
                 onTap: () => _choose(context, state, wallet),
               ),
+            if (_notConnected)
+              Padding(
+                padding: const EdgeInsets.only(top: ArDriveSpacing.xxs),
+                child: ArNSCaption(strings.arnsNotConnected),
+              ),
           ],
         );
       },
@@ -70,18 +84,27 @@ class ArNSWalletChooser extends StatelessWidget {
     SolanaWalletInfo wallet,
   ) async {
     final cubit = context.read<ArNSWalletCubit>();
+    if (_notConnected) setState(() => _notConnected = false);
     try {
       // With a wallet linked this reconnects it: another account connecting
-      // shows as the wrong account, with Change to make it the ArNS wallet.
-      if (state.linked != null && !changing) {
+      // shows as the wrong account, with Change to make it the linked one.
+      if (state.linked != null && !widget.changing) {
         await cubit.reconnect(walletName: wallet.name);
       } else {
         await cubit.link(wallet.name);
       }
-      if (cubit.state.status == ArNSWalletStatus.connected) onLinked?.call();
+      final after = cubit.state;
+      if (after.status == ArNSWalletStatus.connected) {
+        widget.onLinked?.call();
+      } else if (after.connectedAddress == null) {
+        // The wallet closed its prompt without an account and without an
+        // error: not connected all the same.
+        if (mounted) setState(() => _notConnected = true);
+      }
     } catch (e) {
-      // A rejected connection prompt: nothing to do but offer it again.
+      // A rejected connection prompt: say so and offer it again.
       logger.w('Solana wallet not connected: $e');
+      if (mounted) setState(() => _notConnected = true);
     }
   }
 }

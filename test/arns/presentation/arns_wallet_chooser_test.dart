@@ -1,5 +1,19 @@
+import 'dart:async';
+
+import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_chooser.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockWalletCubit extends MockCubit<ArNSWalletState>
+    implements ArNSWalletCubit {}
 
 void main() {
   group('walletBrowseTarget', () {
@@ -18,6 +32,96 @@ void main() {
 
     test('keeps the app address off the web', () {
       expect(walletBrowseTarget(base, isWeb: false), 'https://app.ardrive.io');
+    });
+  });
+
+  group('a rejected connect', () {
+    const message = 'Not connected. Try again or choose another wallet.';
+    late _MockWalletCubit cubit;
+
+    setUp(() {
+      cubit = _MockWalletCubit();
+      whenListen(
+        cubit,
+        const Stream<ArNSWalletState>.empty(),
+        initialState: const ArNSWalletState(
+          enabled: true,
+          profileAddress: 'profile',
+          installedWallets: [SolanaWalletInfo(name: 'Phantom', icon: '')],
+        ),
+      );
+    });
+
+    Future<void> pump(WidgetTester tester, {VoidCallback? onLinked}) =>
+        tester.pumpWidget(
+          ArDriveApp(
+            themeData: lightTheme(),
+            builder: (context) => MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: BlocProvider<ArNSWalletCubit>.value(
+                value: cubit,
+                child: Scaffold(body: ArNSWalletChooser(onLinked: onLinked)),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('says so, and clears on the next attempt', (tester) async {
+      when(() => cubit.link(any()))
+          .thenAnswer((_) async => throw Exception('User rejected'));
+      await pump(tester);
+      expect(find.text(message), findsNothing);
+
+      await tester.tap(find.text('Phantom'));
+      await tester.pump();
+      expect(find.text(message), findsOneWidget);
+
+      // The next attempt hangs on the wallet's prompt: the message is gone.
+      final prompt = Completer<void>();
+      when(() => cubit.link(any())).thenAnswer((_) => prompt.future);
+      await tester.tap(find.text('Phantom'));
+      await tester.pump();
+      expect(find.text(message), findsNothing);
+
+      prompt.completeError(Exception('User rejected'));
+      await tester.pump();
+      expect(find.text(message), findsOneWidget);
+    });
+
+    testWidgets('is not shown when the connect works', (tester) async {
+      var current = cubit.state;
+      when(() => cubit.state).thenAnswer((_) => current);
+      when(() => cubit.link(any())).thenAnswer((_) async {
+        current = const ArNSWalletState(
+          enabled: true,
+          profileAddress: 'profile',
+          linked: LinkedArNSWallet(address: 'sol', walletName: 'Phantom'),
+          connectedAddress: 'sol',
+          connectedWalletName: 'Phantom',
+        );
+      });
+      var linkedCalls = 0;
+      await pump(tester, onLinked: () => linkedCalls++);
+
+      await tester.tap(find.text('Phantom'));
+      await tester.pump();
+
+      expect(find.text(message), findsNothing);
+      expect(linkedCalls, 1);
+    });
+
+    testWidgets('says so when the wallet returns no account', (tester) async {
+      // link() completes without an error, but nothing connected.
+      when(() => cubit.link(any())).thenAnswer((_) async {});
+      var linkedCalls = 0;
+      await pump(tester, onLinked: () => linkedCalls++);
+
+      await tester.tap(find.text('Phantom'));
+      await tester.pump();
+
+      expect(find.text(message), findsOneWidget);
+      expect(linkedCalls, 0);
     });
   });
 }

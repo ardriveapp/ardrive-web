@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 class ArDriveEmptyState extends StatelessWidget {
   const ArDriveEmptyState({
     super.key,
-    required this.title,
+    this.title,
     this.icon,
     this.message,
     this.actionLabel,
@@ -28,7 +28,9 @@ class ArDriveEmptyState extends StatelessWidget {
   /// Drawn at 32 px in iconLow when it is an [ArDriveIcon] without its own
   /// size and colour.
   final Widget? icon;
-  final String title;
+
+  /// The heading; a page whose body says it all can leave it out.
+  final String? title;
   final String? message;
 
   /// The main thing to do next, as a primary button. A label with a null
@@ -87,16 +89,17 @@ class ArDriveEmptyState extends StatelessWidget {
                 ),
                 const SizedBox(height: ArDriveSpacing.md),
               ],
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: typography.heading5(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
+              if (title != null)
+                Text(
+                  title!,
+                  textAlign: TextAlign.center,
+                  style: typography.heading5(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.bold,
+                  ),
                 ),
-              ),
               if (message != null) ...[
-                const SizedBox(height: ArDriveSpacing.xs),
+                if (title != null) const SizedBox(height: ArDriveSpacing.xs),
                 Text(
                   message!,
                   textAlign: TextAlign.center,

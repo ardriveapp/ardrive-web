@@ -4,6 +4,7 @@ import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -112,6 +113,9 @@ void main() {
               ),
               BlocProvider<ArNSNamesCubit>.value(value: names),
               BlocProvider<ArNSWalletCubit>.value(value: wallet),
+              ChangeNotifierProvider<ActivityTracker>(
+                create: (_) => ActivityTracker(),
+              ),
             ],
             child: const Scaffold(body: ArNSNamesBody()),
           ),
@@ -371,6 +375,50 @@ void main() {
     });
   });
 
+  testWidgets('no names: one Get a name, at the top right', (tester) async {
+    whenListen(
+      names,
+      const Stream<ArNSNamesState>.empty(),
+      initialState: const ArNSNamesState(
+        status: ArNSNamesStatus.loaded,
+        address: 'sol',
+        names: [],
+      ),
+    );
+    await pump(tester);
+
+    expect(find.text('No names yet'), findsOneWidget);
+    expect(find.text('Get one in the ar.io Console.'), findsOneWidget);
+    expect(find.text('Get a name'), findsOneWidget);
+    expect(find.text('Your ArNS wallet has no names yet.'), findsNothing);
+  });
+
+  testWidgets('Link a Solana wallet dialog: its own body, no ArNS link',
+      (tester) async {
+    whenListen(
+      wallet,
+      const Stream<ArNSWalletState>.empty(),
+      initialState: const ArNSWalletState(
+        enabled: true,
+        profileAddress: 'profile',
+      ),
+    );
+    await pump(tester);
+    expect(find.text('What is ArNS?'), findsOneWidget);
+
+    await tester.tap(find.text('Link a Solana wallet'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Link a Solana wallet'), findsWidgets);
+    expect(
+        find.text('Choose the wallet that holds your names.'), findsOneWidget);
+    // Only the page's own link: the dialog no longer repeats it.
+    expect(find.text('What is ArNS?', skipOffstage: false), findsOneWidget);
+    expect(find.textContaining('Link the Solana wallet that holds yours'),
+        findsOneWidget,
+        reason: 'the page paragraph is not repeated in the dialog');
+  });
+
   // Gaps Phil approved: how to name a site, and where to get a name.
   group('says how to get there', () {
     void publishing(bool on) => when(() => config.config).thenReturn(AppConfig(
@@ -399,8 +447,8 @@ void main() {
     });
 
     testWidgets(
-        'before linking: the wallet that holds your names, and where '
-        'to get one', (tester) async {
+        'before linking: no heading, the page body, and where to get one',
+        (tester) async {
       whenListen(
         wallet,
         const Stream<ArNSWalletState>.empty(),
@@ -411,9 +459,17 @@ void main() {
       );
       await pump(tester);
 
-      expect(
-          find.text('Link the wallet that holds your names'), findsOneWidget);
+      expect(find.text('Link the wallet that holds your names'), findsNothing,
+          reason: 'the heading is gone; the body says it');
       expect(find.text('Link your ArNS wallet'), findsNothing);
+      expect(
+        find.text('Names are web addresses like maya.ar.io for your pages and '
+            'files. Link the Solana wallet that holds yours to manage them '
+            'here.'),
+        findsOneWidget,
+      );
+      expect(find.text('Link a Solana wallet'), findsOneWidget);
+      expect(find.text('What is ArNS?'), findsOneWidget);
       expect(find.text('No name\u00A0yet?'), findsOneWidget);
       expect(
         find.byWidgetPredicate((w) =>

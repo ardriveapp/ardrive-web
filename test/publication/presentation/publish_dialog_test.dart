@@ -364,7 +364,7 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('says when the ArNS wallet is waiting for approval',
+    testWidgets('says when the Solana wallet is waiting for approval',
         (tester) async {
       final names = _MockNameCubit();
       whenListen(
@@ -378,8 +378,8 @@ void main() {
       when(() => cubit.names).thenReturn(names);
       await open(tester, base.copyWith(namingStarted: true));
 
-      expect(
-          find.text('Approve the change in your ArNS wallet.'), findsOneWidget);
+      expect(find.text('Approve the change in your Solana wallet.'),
+          findsOneWidget);
     });
 
     testWidgets('says nothing about the wallet while Turbo works',
