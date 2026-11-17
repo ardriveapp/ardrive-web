@@ -833,6 +833,11 @@ class _NameGroup extends StatelessWidget {
     // Q22: no ID in the picker; the Names page keeps it.
     if (arnsPointsToKind(record, placeholder: state.placeholderTxId) ==
         ArNSPointsToKind.elsewhere) {
+      // Its target wasn't resolved, but it may be the item being named.
+      final item = state.item;
+      if (item != null && record.transactionId == item.dataTxId) {
+        return appLocalizationsOf(context).arnsPointsToItem(item.name);
+      }
       return appLocalizationsOf(context).arnsPointsElsewhere;
     }
     return arnsPointsToLabel(context, record,

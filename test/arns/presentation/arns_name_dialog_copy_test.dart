@@ -249,6 +249,22 @@ void main() {
     expect(find.textContaining('Points to'), findsNothing);
   });
 
+  testWidgets(
+      'an unresolved record that points at the item names the item, '
+      'not Points elsewhere', (tester) async {
+    await openDialog(
+      tester,
+      mode: ArNSNameDialogMode.nameItem,
+      item: _item,
+      names: [_acme(blogTx: _itemTx)],
+    );
+
+    expect(find.textContaining('Points to Spring launch'), findsOneWidget);
+    // The main name still points outside ArDrive.
+    expect(find.textContaining('Points elsewhere'), findsOneWidget);
+    expect(find.textContaining(shortenId(_itemTx)), findsNothing);
+  });
+
   testWidgets('no names: the dialog keeps its own Get a name button',
       (tester) async {
     await openDialog(
