@@ -51,6 +51,7 @@ Old entities stay valid. Readers must accept entities tagged `ArFS: 0.10` to `Ar
 Two additions are not tied to a version bump. They were written under `ArFS: 0.15` and no later version exists:
 
 - Drive State and Publication entities (Drive State from August 2026, Publication from October 2026 in the ArDrive web repository).
+- The optional `dataContentEncoding` field in File metadata JSON (`"gzip"` when the stored data is gzip; November 2026 in the ArDrive web repository), the metadata side of the `Content-Encoding: gzip` data tag of a public file. A reader that does not know it ignores it.
 - The optional `assignedNames` field in File metadata JSON, a list of ArNS names that point at the file. It is a hint: a reader checks a name against ArNS before showing it. It dates from September 2024, under `ArFS: 0.14`.
 
 These dates and fields come from the history of the ArDrive web code. The ArFS version number was bumped there at the commits that added the hide flag (0.14, December 2023) and the signature type (0.15, April 2025). The 0.13 bump (August 2023) came with the pin feature. This repository does not hold the original 0.13 and 0.14 specification texts, so the exact boundary of the earlier versions is taken from the code.
@@ -144,7 +145,8 @@ Unix-Time: <seconds since unix epoch>
     "size": <computed file size - int>,
     "lastModifiedDate": <timestamp for OS reported time of file's last modified date represented as milliseconds since unix epoch - int>
     "dataTxId": "<transaction id of stored data>",
-    "dataContentType": "<the mime type of the data associated with this file entity>"
+    "dataContentType": "<the mime type of the data associated with this file entity>",
+    "dataContentEncoding?": "gzip"
 }
 ```
 
@@ -158,7 +160,11 @@ Content-Encoding?: gzip
  { File data }
 ```
 
-A file data transaction MAY carry `Content-Encoding: gzip`; `size` in the file's metadata is the length of the decoded content, and `Content-Type` stays the type of the decoded content. A gateway sends the data with the same `Content-Encoding` header and a client decodes it, so a reader never has to know. A reader that asks for a byte range of such a file is asking for ranges of the stored (gzipped) bytes, which cannot be resumed from a count of decoded bytes. Only unencrypted data is written this way; ArDrive does it for the text and code of a deployment (see `docs/DEPLOYMENT_COMPRESSION.md`).
+A file whose stored data is gzip says so in its metadata with the optional `dataContentEncoding` field, `"gzip"` being the only value defined. A writer includes it whenever the stored data is gzip and leaves it out otherwise (never null, never an empty string); a reader ignores a value it does not know. `size` is the length of the decoded content, and `dataContentType` stays the type of the decoded content.
+
+A public file's data transaction MAY also carry `Content-Encoding: gzip`, written together with the field. A gateway sends the data with the same `Content-Encoding` header and a client decodes it, so a reader that goes through a gateway never has to know. A reader that fetches the bytes some other way (directly from a node, or from a bundle) does not get that decoding for free and must decode the data itself when `dataContentEncoding` is `gzip`. A reader that asks for a byte range of such a file is asking for ranges of the stored (gzipped) bytes, which cannot be resumed from a count of decoded bytes.
+
+Private data carries only the field, never the `Content-Encoding` tag: the tag is readable by anyone and a gateway cannot decode what it cannot decrypt. The field sits in the encrypted metadata, so the reader decrypts, then decodes. ArDrive writes compressed data for the text and code of a public deployment (see `docs/DEPLOYMENT_COMPRESSION.md`); it does not write compressed private data yet.
 
 ## Snapshot
 
@@ -388,6 +394,7 @@ For example a Music Sharing App could use the following expanded File Metadata f
     "lastModifiedDate": <timestamp for OS reported time of file's last modified date represented as milliseconds since unix epoch - int>
     "dataTxId": "<transaction id of stored data>",
     "dataContentType": "<the mime type of the data associated with this file entity>"
+    "dataContentEncoding?": "gzip"
     "bandName": "<the name of the band/artist>"
     "bandAlbum": "<the album of the band/artist>"
     "albumSong": "<the title of the song>"
