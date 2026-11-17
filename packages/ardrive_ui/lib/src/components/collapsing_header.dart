@@ -17,6 +17,39 @@ class CollapsingHeaderExtent {
 
   /// Whether any of the header is still on screen.
   final headerOnScreen = ValueNotifier<bool>(true);
+
+  /// Whether the header's anchor row can still be seen: it has faded out
+  /// once the bar is 40% in, and then it is neither a target nor a Tab stop.
+  final anchorInteractive = ValueNotifier<bool>(true);
+}
+
+/// [child], the anchor row of a [SliverCollapsingHeader] (the widget its
+/// `anchorKey` is on), made unreachable by pointer, focus and screen reader
+/// once it has faded out.
+class CollapsingAnchorGate extends StatelessWidget {
+  const CollapsingAnchorGate({
+    super.key,
+    required this.extent,
+    required this.child,
+  });
+
+  final CollapsingHeaderExtent extent;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: extent.anchorInteractive,
+      builder: (_, interactive, child) => ExcludeSemantics(
+        excluding: !interactive,
+        child: ExcludeFocus(
+          excluding: !interactive,
+          child: IgnorePointer(ignoring: !interactive, child: child),
+        ),
+      ),
+      child: child,
+    );
+  }
 }
 
 /// A header that is part of its scroll view's content, with a slim bar pinned
@@ -205,6 +238,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
     _publish(
       interactive: _progress >= _interactiveFrom,
       headerOnScreen: offset < height,
+      anchorInteractive: _progress < _anchorGoneBy,
     );
 
     final remaining = constraints.remainingPaintExtent;
@@ -222,16 +256,23 @@ class RenderSliverCollapsingHeader extends RenderSliver
   bool _publishScheduled = false;
   bool _interactive = false;
   bool _headerOnScreen = true;
+  bool _anchorInteractive = true;
 
   /// Tells [CollapsingHeaderExtent]'s notifiers, after this frame: a widget
   /// cannot be rebuilt from layout.
-  void _publish({required bool interactive, required bool headerOnScreen}) {
+  void _publish({
+    required bool interactive,
+    required bool headerOnScreen,
+    required bool anchorInteractive,
+  }) {
     _interactive = interactive;
     _headerOnScreen = headerOnScreen;
+    _anchorInteractive = anchorInteractive;
     final extent = _extent;
     if (extent == null || _publishScheduled) return;
     if (extent.barInteractive.value == interactive &&
-        extent.headerOnScreen.value == headerOnScreen) {
+        extent.headerOnScreen.value == headerOnScreen &&
+        extent.anchorInteractive.value == anchorInteractive) {
       return;
     }
     _publishScheduled = true;
@@ -242,6 +283,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
       if (extent == null) return;
       extent.barInteractive.value = _interactive;
       extent.headerOnScreen.value = _headerOnScreen;
+      extent.anchorInteractive.value = _anchorInteractive;
     });
   }
 

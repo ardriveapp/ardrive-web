@@ -708,6 +708,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           children: [
             PublicationHeader(
               titleKey: _publicationTitleKey,
+              anchorExtent: _publicationHeaderExtent,
               coverHeight: compact ? 120 : 200,
               compact: compact,
               downloadsSelection: selecting,

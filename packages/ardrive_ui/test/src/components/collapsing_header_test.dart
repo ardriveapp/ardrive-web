@@ -106,21 +106,24 @@ void main() {
                               height: 200,
                               child: CustomPaint(painter: _Probe()),
                             ),
-                            SizedBox(
-                              key: anchor,
-                              height: 40,
-                              child: ColoredBox(
-                                color: const Color(0xFFFF0000),
-                                child: Row(
-                                  children: [
-                                    const Expanded(
-                                        child: Text('Title', key: _titleKey)),
-                                    TextButton(
-                                      focusNode: headerFocus,
-                                      onPressed: () => downloads++,
-                                      child: const Text('Download'),
-                                    ),
-                                  ],
+                            CollapsingAnchorGate(
+                              extent: extent,
+                              child: SizedBox(
+                                key: anchor,
+                                height: 40,
+                                child: ColoredBox(
+                                  color: const Color(0xFFFF0000),
+                                  child: Row(
+                                    children: [
+                                      const Expanded(
+                                          child: Text('Title', key: _titleKey)),
+                                      TextButton(
+                                        focusNode: headerFocus,
+                                        onPressed: () => downloads++,
+                                        child: const Text('Download'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -285,6 +288,8 @@ void main() {
       // The header's own button works while the bar is not there.
       await tester.pumpAndSettle();
       await wheel(tester, -200);
+      await tester.pump();
+      await tester.pump();
       await tester.tap(find.text('Download'));
       expect(downloads, 1);
 
@@ -459,5 +464,27 @@ void main() {
       }
       expect(wasPartial, isTrue);
     });
+
+    for (final at in [0.45, 0.6]) {
+      testWidgets('the faded title row is no target at progress $at',
+          (tester) async {
+        await pump(tester, rows: 9);
+        // The header's Download, where it is at rest.
+        final spot = tester.getCenter(find.text('Download'));
+        while (sliver(tester).progress < at) {
+          await wheel(tester, 2);
+        }
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Download').hitTestable(), findsNothing);
+        await tester.tap(find.text('Download'), warnIfMissed: false);
+        await tester.pump();
+        expect(downloads, 0);
+        // And Tab never lands on it.
+        final reached = await tabThrough(tester);
+        expect(reached, isNot(contains(headerFocus)));
+        expect(spot, isNotNull);
+      });
+    }
   });
 }

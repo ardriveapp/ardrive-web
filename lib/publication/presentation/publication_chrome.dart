@@ -184,6 +184,7 @@ class PublicationHeader extends StatelessWidget {
     required this.downloadsSelection,
     required this.onCopyLink,
     this.titleKey,
+    this.anchorExtent,
   });
 
   final double coverHeight;
@@ -197,6 +198,10 @@ class PublicationHeader extends StatelessWidget {
   final bool downloadsSelection;
   final VoidCallback onCopyLink;
   final GlobalKey? titleKey;
+
+  /// The collapsing header this sits in, which gates the title row once the
+  /// bar has taken over.
+  final CollapsingHeaderExtent? anchorExtent;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +234,7 @@ class PublicationHeader extends StatelessWidget {
     final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        _gate(Row(
           key: titleKey,
           children: [
             Expanded(
@@ -251,7 +256,7 @@ class PublicationHeader extends StatelessWidget {
               onCopyLink: onCopyLink,
             ),
           ],
-        ),
+        )),
         details,
       ],
     );
@@ -290,6 +295,10 @@ class PublicationHeader extends StatelessWidget {
     }
     return titleBlock;
   }
+
+  Widget _gate(Widget row) => anchorExtent == null
+      ? row
+      : CollapsingAnchorGate(extent: anchorExtent!, child: row);
 
   static PublicationStats? _statsOf(BuildContext context) {
     try {
