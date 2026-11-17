@@ -175,7 +175,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
             ),
             actions: [
               if (state is DriveShareLoadFail) ...[
-                ModalAction(
+                ModalAction.dismiss(
                   action: () => Navigator.pop(context),
                   title: appLocalizationsOf(context).cancel,
                 ),

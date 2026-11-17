@@ -101,7 +101,7 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
               description:
                   'A drive with this name already exists. Do you want to proceed?',
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () => Navigator.of(context).pop(),
                   title: 'Cancel',
                 ),

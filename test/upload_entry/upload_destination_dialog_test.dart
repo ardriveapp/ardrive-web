@@ -157,6 +157,8 @@ void main() {
     testWidgets('lets a keyboard choose a drive', (tester) async {
       await openChooser(tester);
 
+      // The close button is first in the tab order, then the first drive.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);

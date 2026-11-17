@@ -194,7 +194,7 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () => Navigator.of(context).pop(),
           title: strings.cancel,
         ),

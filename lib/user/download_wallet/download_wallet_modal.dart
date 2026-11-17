@@ -94,7 +94,7 @@ class DownloadWalletModal extends StatelessWidget {
             ],
           ),
           actions: [
-            ModalAction(
+            ModalAction.dismiss(
               title: appLocalizationsOf(context).cancel,
               action: () {
                 Navigator.of(context).pop();
