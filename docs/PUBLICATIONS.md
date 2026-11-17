@@ -630,6 +630,14 @@ importing anything. The router then shows the share page for that file,
 pinned to the published version (`filePagePayload`), headed by the page's
 cover, title, byline and description in place of the ArDrive wordmark.
 
+The page names its file and its owner once. The byline reads "By <owner>
+✓ Verified · Published <date>" (Verified only when the share view's check
+succeeded; a mismatch warning stays in the card). The file's card, under the
+head, drops its "Shared by" line, and drops the file's name when it says what
+the title says (same text ignoring case and outer spaces, or the name without
+its extension); a different title keeps the name. A private file's card keeps
+its name, since the head never names it. A standalone share link is unchanged.
+
 A private file page's key travels as `#/?k=<file key>`: in the hash route, so
 it never reaches a server. The router keeps it in the address through its
 first report, so a reload still opens the page. Without it the share page is

@@ -111,6 +111,7 @@ class _SharedFilePageState extends State<SharedFilePage> {
       maxWidth: isWideReady
           ? SharedFileFrame.maxWideContentWidth
           : SharedFileFrame.maxContentWidth,
+      verification: state is SharedFileLoadSuccess ? state.verification : null,
       child: _buildState(context, state, isWide: isWideReady),
     );
   }

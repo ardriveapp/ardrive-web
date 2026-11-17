@@ -1,4 +1,7 @@
+import 'package:ardrive/blocs/blocs.dart' show LinkVerification;
 import 'package:ardrive/components/icon_theme_switcher.dart';
+import 'package:ardrive/pages/shared_file/shared_file_identity.dart'
+    show SharedFileVerificationBadge;
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_stats.dart';
 import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
@@ -309,11 +312,21 @@ class PublicationHeader extends StatelessWidget {
 
 /// The head of a file page (docs/PUBLICATIONS.md, "File pages"), above its
 /// file, in place of the share page's wordmark: the cover, the title, who it
-/// is by and its description. The file's own card says what the file is.
+/// is by (with Verified, once the share view has checked the file) and its
+/// description. The file's own card says what the file is; it leaves off the
+/// name and owner that this head already gives, for a public file.
 class PublicationFileHead extends StatelessWidget {
-  const PublicationFileHead({super.key, required this.config});
+  const PublicationFileHead({
+    super.key,
+    required this.config,
+    this.verification,
+  });
 
   final PublicationConfig config;
+
+  /// How the share view's check of the file went. The byline says Verified
+  /// when it succeeded, which is where the file's card used to say it.
+  final LinkVerification? verification;
 
   /// Below this width the head is a phone's: a smaller icon, with the title
   /// below it rather than beside it.
@@ -335,7 +348,11 @@ class PublicationFileHead extends StatelessWidget {
               color: colors.textHigh, fontWeight: ArFontWeight.bold),
         ),
         const SizedBox(height: 4),
-        _Byline(config: config, stats: null),
+        _Byline(
+          config: config,
+          stats: null,
+          verified: verification == LinkVerification.verified,
+        ),
         if (config.description.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(config.description,
@@ -631,10 +648,17 @@ class _LabelledButton extends StatelessWidget {
 /// copies it. The address is the identity: a page whose snapshot someone
 /// else signed is refused before it gets here.
 class _Byline extends StatelessWidget {
-  const _Byline({required this.config, required this.stats});
+  const _Byline({
+    required this.config,
+    required this.stats,
+    this.verified = false,
+  });
 
   final PublicationConfig config;
   final PublicationStats? stats;
+
+  /// A file page's share view verified its file: "✓ Verified" after the owner.
+  final bool verified;
 
   @override
   Widget build(BuildContext context) {
@@ -676,6 +700,15 @@ class _Byline extends StatelessWidget {
               ),
             ),
           ),
+          if (verified) ...[
+            const TextSpan(text: '\u00a0'),
+            const WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: SharedFileVerificationBadge(
+                  verification: LinkVerification.verified),
+            ),
+          ],
           // A file page has no counts, only its date.
           if (stats == null && publishedAt != null)
             TextSpan(

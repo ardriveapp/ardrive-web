@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -26,7 +27,11 @@ class SharedFileFrame extends StatelessWidget {
     super.key,
     required this.child,
     this.maxWidth = maxContentWidth,
+    this.verification,
   });
+
+  /// How the file's link checked out, for a file page's head to say so.
+  final LinkVerification? verification;
 
   /// Wide enough for a full width button (368) plus the card padding,
   /// and narrow enough to stay a readable single column on a desktop monitor.
@@ -78,7 +83,8 @@ class SharedFileFrame extends StatelessWidget {
                         // A file page is the owner's: their title and
                         // byline head it, and ArDrive is the link below.
                         if (publicationConfigOf(context) case final page?)
-                          PublicationFileHead(config: page)
+                          PublicationFileHead(
+                              config: page, verification: verification)
                         else
                           _buildTrustStrip(context),
                         const SizedBox(height: 24),
