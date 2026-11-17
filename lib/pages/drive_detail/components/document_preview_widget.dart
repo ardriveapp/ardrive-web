@@ -274,7 +274,10 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         Expanded(
           child: Stack(
             children: [
-              Container(
+              // Filling the box, however little the text is: it sat as a strip
+              // the height of its own line over the page's grey.
+              Positioned.fill(
+                  child: Container(
                 color: colorTokens.containerRaised,
                 child: ArDriveScrollBar(
                   controller: _scrollController,
@@ -289,7 +292,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     ),
                   ),
                 ),
-              ),
+              )),
               // Scroll to top button
               if (_showScrollToTop)
                 Positioned(

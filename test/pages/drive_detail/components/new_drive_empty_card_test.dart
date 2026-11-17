@@ -162,6 +162,13 @@ void main() {
         ),
       ),
     );
+    // The syncing panel's bar moves until there is a figure for it, so a tree
+    // showing it never settles.
+    if (contentsStillArriving) {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      return;
+    }
     await tester.pumpAndSettle();
   }
 

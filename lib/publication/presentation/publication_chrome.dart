@@ -762,7 +762,8 @@ class _Byline extends StatelessWidget {
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,
-              child: SharedFileVerificationBadge(verification: verification!),
+              child: SharedFileVerificationBadge.reserved(
+                  verification: verification!),
             ),
           ],
           // A file page has no counts, only its date.
@@ -841,17 +842,27 @@ class PublicationOwnerLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final by = appLocalizationsOf(context).publicationBy(name ?? '').trim();
+    final iconSize = (style.fontSize ?? 14) * 1.15;
+    // On one baseline: the words and the monospace address have different
+    // line heights, and centred, the words sat a couple of pixels low.
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         Flexible(child: Text(by, style: style)),
         const SizedBox(width: ArDriveSpacing.xs),
         // A screen reader reads the name and the address, not the icon.
         ExcludeSemantics(
-          child: Icon(
-            Icons.account_balance_wallet_outlined,
-            size: (style.fontSize ?? 14) * 1.15,
-            color: idStyle.color,
+          child: Baseline(
+            // The glyph's foot on the text's baseline.
+            baseline: iconSize * 0.85,
+            baselineType: TextBaseline.alphabetic,
+            child: Icon(
+              Icons.account_balance_wallet_outlined,
+              size: iconSize,
+              color: idStyle.color,
+            ),
           ),
         ),
         const SizedBox(width: ArDriveSpacing.xxs),

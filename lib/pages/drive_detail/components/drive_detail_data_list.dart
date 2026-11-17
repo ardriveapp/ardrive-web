@@ -29,6 +29,32 @@ Widget _allItemsHidden(BuildContext context) => Center(
       ),
     );
 
+/// How wide the explorer's list will be once the details panel has finished
+/// sliding in or out.
+///
+/// The list is squeezed over the panel's 300 ms slide, so a list that picks
+/// its columns from its own width drops them part-way through, or in one frame
+/// at the end. A list that takes the narrower of this and its own width
+/// decides at the start of an opening slide, and still follows a closing one.
+/// The same idea as `ListTargetWidth` on the list pages.
+class _ExplorerTargetWidth extends InheritedWidget {
+  const _ExplorerTargetWidth({required this.width, required super.child});
+
+  final double width;
+
+  /// [actual] narrowed to the target width, when there is one.
+  static double narrowed(BuildContext context, double actual) {
+    final target = context
+        .dependOnInheritedWidgetOfExactType<_ExplorerTargetWidth>()
+        ?.width;
+    return target == null ? actual : min(actual, target);
+  }
+
+  @override
+  bool updateShouldNotify(_ExplorerTargetWidth oldWidget) =>
+      width != oldWidget.width;
+}
+
 /// A publication root's header as it scrolls with the table: the slivers
 /// that go first in the table's scroll, and what to show above `emptyState`
 /// when there is no table to scroll it with.
@@ -83,6 +109,7 @@ Widget _buildDataListContent(
   _CollapsingHeader? collapsingHeader,
 }) {
   return LayoutBuilder(builder: (context, constraints) {
+    final width = _ExplorerTargetWidth.narrowed(context, constraints.maxWidth);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -97,44 +124,41 @@ Widget _buildDataListContent(
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 500)
+      // if (width > 500)
       TableColumn(
         appLocalizationsOf(context).size,
         3,
         index: 1,
         canHide: false,
-        isVisible:
-            (constraints.maxWidth > 500 && (columnVisibility[1] ?? true)),
+        isVisible: (width > 500 && (columnVisibility[1] ?? true)),
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 640)
+      // if (width > 640)
       TableColumn(
         appLocalizationsOf(context).lastUpdated,
         3,
         index: 2,
-        isVisible:
-            (constraints.maxWidth > 640 && (columnVisibility[2] ?? true)),
+        isVisible: (width > 640 && (columnVisibility[2] ?? true)),
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 700)
+      // if (width > 700)
       TableColumn(
         appLocalizationsOf(context).dateCreated,
         3,
         index: 3,
-        isVisible:
-            (constraints.maxWidth > 700 && (columnVisibility[3] ?? true)),
+        isVisible: (width > 700 && (columnVisibility[3] ?? true)),
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 820)
+      // if (width > 820)
       TableColumn(
         appLocalizationsOf(context).tableColumnLicense,
         2,
@@ -145,7 +169,7 @@ Widget _buildDataListContent(
         ),
         // Hidden by default unless something in the drive is licensed: in
         // most drives it was a column of blanks. The reader's choice wins.
-        isVisible: constraints.maxWidth > 820 &&
+        isVisible: width > 820 &&
             DriveDetailCubit.showsLicenseColumn(
               columnVisibility: columnVisibility,
               driveHasLicensedFiles: driveHasLicensedFiles,

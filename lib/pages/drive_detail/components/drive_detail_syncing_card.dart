@@ -1,6 +1,7 @@
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
@@ -192,13 +193,21 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         // No top padding: whoever places the card sets the gap above it.
         // Under a folder's heading that is the gap the table gets.
         padding: const EdgeInsets.only(bottom: 20),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: ArDriveCard(
-            width: double.infinity,
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-            content: content,
+        // Under a header it has the rest of the page, no more.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SizedBox(
+            height: constraints.hasBoundedHeight
+                ? math.min(
+                    MediaQuery.of(context).size.height * 0.8,
+                    constraints.maxHeight - 20,
+                  )
+                : MediaQuery.of(context).size.height * 0.8,
+            child: ArDriveCard(
+              width: double.infinity,
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+              content: content,
+            ),
           ),
         ),
       ),
@@ -439,6 +448,9 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
           key: const ValueKey('driveDetailSyncProgress'),
           percentage: _progress,
           initialPercentage: _initialProgress,
+          // Not a grey track that turns red: a bar with nothing to measure
+          // yet moves in the colour it will keep.
+          indeterminateAtZero: true,
         ),
       if (detail != null) ...[
         const SizedBox(height: 12),

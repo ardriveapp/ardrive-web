@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
@@ -10,6 +12,7 @@ import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// Who and what this link points at, in the recipient's language.
 ///
@@ -371,9 +374,18 @@ class SharedFileIdentity extends StatelessWidget {
 /// these has a word next to it, and that word is what a screen reader is given
 /// - the icon beside it is excluded so that the badge reads once, as one thing.
 class SharedFileVerificationBadge extends StatelessWidget {
-  const SharedFileVerificationBadge({super.key, required this.verification});
+  const SharedFileVerificationBadge({super.key, required this.verification})
+      : reserveWidth = false;
+
+  /// The badge in a line of text, given the width of the longest word it
+  /// takes while it is being checked: "Checking" becoming "Verified" must not
+  /// move what follows it.
+  const SharedFileVerificationBadge.reserved(
+      {super.key, required this.verification})
+      : reserveWidth = true;
 
   final LinkVerification verification;
+  final bool reserveWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -381,6 +393,37 @@ class SharedFileVerificationBadge extends StatelessWidget {
     // The standard status text, at the page's paragraph size.
     final style = ArDriveTypographyNew.of(context).paragraphNormal();
 
+    final badge = _badge(strings, style);
+    if (!reserveWidth) return badge;
+
+    // The width of whichever of the two states that follow each other is
+    // wider: "Checking" alone, or the tick, a gap and "Verified".
+    final scaler = MediaQuery.textScalerOf(context);
+    double wordWidth(String word) {
+      final painter = TextPainter(
+        text: TextSpan(text: word, style: style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    // The status text's tick is a little larger than its words, then a gap.
+    final tick = (style.fontSize ?? 14) + 4 + ArDriveSpacing.xxs;
+    final widest = math.max(
+      wordWidth(strings.sharedFileLinkChecking),
+      tick + wordWidth(strings.sharedFileLinkVerified),
+    );
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: widest),
+      child: badge,
+    );
+  }
+
+  Widget _badge(AppLocalizations strings, TextStyle style) {
     return switch (verification) {
       LinkVerification.verified => ArDriveStatusText(
           text: strings.sharedFileLinkVerified,
