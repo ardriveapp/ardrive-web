@@ -23,6 +23,7 @@ class ProgressBar extends StatelessWidget {
     super.key,
     required this.percentage,
     this.initialPercentage,
+    this.indeterminateAtZero = false,
   });
 
   final Stream<LinearProgress> percentage;
@@ -35,6 +36,11 @@ class ProgressBar extends StatelessWidget {
   /// at zero until the next progress event, which in the unmeasurable phase
   /// is up to half a minute of a bar claiming a number that is already wrong.
   final LinearProgress? initialPercentage;
+
+  /// Whether a bar at nothing moves rather than sits empty. An empty track is
+  /// grey, and a bar that is grey and then red looks like two things; the
+  /// sync modal wants the empty bar, the explorer's wait does not.
+  final bool indeterminateAtZero;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +60,9 @@ class ProgressBar extends StatelessWidget {
             : ((progress.progress * 100).roundToDouble() / 100).clamp(0.0, 1.0);
 
         return ArDriveLinearProgress(
-          value: isIndeterminate ? null : value,
+          value: isIndeterminate || (indeterminateAtZero && value == 0)
+              ? null
+              : value,
           duration: _barAnimation,
         );
       },

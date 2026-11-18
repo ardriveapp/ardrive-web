@@ -79,7 +79,37 @@ void main() {
 
     expect(find.text(line), findsNothing);
     // And it leaves nothing behind in the layout it was sharing.
-    expect(tester.getSize(find.byType(SyncingDriveNotice)), Size.zero);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.getSize(find.byType(SyncingDriveNotice)).height, 0);
+  });
+
+  testWidgets('it grows and shrinks, so what is under it glides',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    expect(tester.getSize(find.byType(SyncingDriveNotice)).height, 0);
+
+    stateController.add(SyncInProgress(trigger: SyncTrigger.background));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    final partway = tester.getSize(find.byType(SyncingDriveNotice)).height;
+    await tester.pump(const Duration(milliseconds: 400));
+    final whole = tester.getSize(find.byType(SyncingDriveNotice)).height;
+    expect(partway, greaterThan(0));
+    expect(partway, lessThan(whole));
+
+    stateController.add(SyncComplete(
+      entitiesSynced: 0,
+      completedAt: DateTime.now(),
+      sequence: 1,
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 64));
+    final shrinking = tester.getSize(find.byType(SyncingDriveNotice)).height;
+    expect(shrinking, greaterThan(0));
+    expect(shrinking, lessThan(whole));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.getSize(find.byType(SyncingDriveNotice)).height, 0);
   });
 
   test('the notice and the lock read the same condition', () {

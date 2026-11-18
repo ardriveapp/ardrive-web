@@ -408,9 +408,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
       return KeyEventResult.handled;
     }
 
+    // Like Space, only when the table itself has focus: a button inside it,
+    // such as one in a collapsing header, takes its own Enter.
     if (onRowOpen == null ||
         selected == null ||
         _isMultiSelecting ||
+        !node.hasPrimaryFocus ||
         event is! KeyDownEvent ||
         (event.logicalKey != LogicalKeyboardKey.enter &&
             event.logicalKey != LogicalKeyboardKey.numpadEnter)) {

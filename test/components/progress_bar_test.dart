@@ -147,4 +147,38 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('a bar with nothing yet can move rather than sit grey',
+      (tester) async {
+    await tester.pumpWidget(ArDriveTheme(
+      themeData: lightTheme(),
+      child: MaterialApp(
+        home: Scaffold(
+          body: ProgressBar(
+            percentage: progress.stream,
+            initialPercentage: at(0),
+            indeterminateAtZero: true,
+          ),
+        ),
+      ),
+    ));
+    await tester.pump();
+    expect(drawnValue(tester), isNull);
+
+    progress.add(at(0.3));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(settle);
+    expect(drawnValue(tester), closeTo(0.3, 0.001));
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('and the modal still shows its empty bar', (tester) async {
+    await tester.pumpWidget(wrap());
+    progress.add(at(0));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(settle);
+    expect(drawnValue(tester), 0);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

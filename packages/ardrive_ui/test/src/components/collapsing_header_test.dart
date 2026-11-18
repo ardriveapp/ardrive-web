@@ -53,6 +53,7 @@ void main() {
       bool countOnOnePage = true,
       int? reveal,
       double rowPx = 0,
+      void Function(_Row row)? onRowOpen,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -93,6 +94,7 @@ void main() {
                   revealRow:
                       reveal == null ? null : _Row(reveal, 'row $reveal'),
                   onChangeMultiSelecting: (_) {},
+                  onRowOpen: onRowOpen,
                   leadingExtent: extent,
                   pinnedInset: _barHeight,
                   leadingSlivers: [
@@ -331,6 +333,28 @@ void main() {
       return reached;
     }
 
+    testWidgets(
+        'Enter on a header button presses it; on the table it opens the row',
+        (tester) async {
+      final opened = <String>[];
+      await pump(tester, rows: 9, onRowOpen: (row) => opened.add(row.id));
+      await tester.tap(find.text('row 2'), kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle(kDoubleTapTimeout);
+
+      // The table has focus: Enter opens the chosen row.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(opened, ['row 2']);
+
+      // A button in the header has it: Enter is the button's.
+      headerFocus.requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(downloads, 1);
+      expect(opened, ['row 2'], reason: 'the row is not opened again');
+    });
+
     testWidgets('Tab at rest reaches the header, never the hidden bar',
         (tester) async {
       await pump(tester, rows: 9);
@@ -549,7 +573,8 @@ void main() {
       await pump(tester, rows: 100, rowsPerPage: 100, reveal: 99, rowPx: 100);
       await tester.pumpAndSettle();
       final row = tester.getRect(find.byWidgetPredicate((w) =>
-          w is ArDriveClickArea && w.key == const ValueKey(_Row(99, 'row 99'))));
+          w is ArDriveClickArea &&
+          w.key == const ValueKey(_Row(99, 'row 99'))));
       expect(row.top, greaterThanOrEqualTo(_barHeight + 45));
       expect(row.bottom, lessThanOrEqualTo(900));
     });

@@ -628,7 +628,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // This one already emits before it waits, which is the shape openFolder
     // now has too.
     if (drive == null) {
-      emit(DriveDetailLoadInProgress());
+      emit(DriveDetailLoadInProgress(driveId: driveId));
       // Same gate as openFolder. A single-drive sync of another drive cannot
       // discover this one - only a drive-list refresh does that, and
       // syncTouchesDrive already treats one as covering everything - so
@@ -907,7 +907,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             (otherDriveId ?? _driveId);
 
     if (!showingThisDriveAlready) {
-      emit(DriveDetailLoadInProgress());
+      emit(DriveDetailLoadInProgress(
+        driveId: otherDriveId ?? _driveId,
+        folderId: folderId,
+      ));
     }
 
     // No wait. A folder is read from committed transactions, so what comes

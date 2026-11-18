@@ -6,7 +6,20 @@ abstract class DriveDetailState extends Equatable {
   List<Object?> get props => [];
 }
 
-class DriveDetailLoadInProgress extends DriveDetailState {}
+class DriveDetailLoadInProgress extends DriveDetailState {
+  DriveDetailLoadInProgress({this.driveId, this.folderId});
+
+  /// The drive being waited for, when the wait is for a drive the cubit has
+  /// been told to open. Null where the cubit does not know, and the screen
+  /// then says nothing about which.
+  final String? driveId;
+
+  /// The folder being waited for: null for the drive's root.
+  final String? folderId;
+
+  @override
+  List<Object?> get props => [driveId, folderId];
+}
 
 class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
