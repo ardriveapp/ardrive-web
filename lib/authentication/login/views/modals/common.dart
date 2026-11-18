@@ -1,114 +1,72 @@
-// ignore_for_file: deprecated_member_use
-
-import 'package:ardrive/authentication/components/login_modal.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
 
-/// Completes when the dialog is closed.
+/// An error, on the standard dialog: its title, what happened, and Close.
+/// With [showShareLogsButton], Copy logs too, for sending to support.
+///
+/// It was a sign-in style card with a centred heading, an alert icon and
+/// full-width buttons, unlike every other dialog, and it is also shown when
+/// a drive can't be created. Completes when the dialog is closed.
 Future<void> showErrorDialog(
     {required BuildContext context,
     String? title,
     required String message,
     bool showShareLogsButton = false}) {
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  final typography = ArDriveTypographyNew.of(context);
-
   return showArDriveDialog(
     context,
     barrierDismissible: false,
     useRootNavigator: false,
-    content: ArDriveLoginModal(
-      width: 380,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-              child: SvgPicture.asset(
-            Resources.images.icons.alert,
-            color: colorTokens.strokeRed,
-            height: 48,
-          )),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Text(
-              title ?? appLocalizationsOf(context).error,
-              style: typography.heading2(
-                  color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(message,
-              textAlign: TextAlign.center,
-              style: typography.paragraphNormal(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold)),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: ArDriveButtonNew(
-                  size: ArDriveButtonSize.large,
-                  maxWidth: double.infinity,
-                  text: 'Close',
-                  typography: typography,
-                  variant: showShareLogsButton
-                      ? ButtonVariant.secondary
-                      : ButtonVariant.primary,
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-              if (showShareLogsButton) const SizedBox(width: 12),
-              if (showShareLogsButton)
-                const Flexible(
-                  child: CopyLogsButton(),
-                ),
-            ],
-          ),
-        ],
-      ),
+    content: _ErrorDialog(
+      title: title ?? appLocalizationsOf(context).error,
+      message: message,
+      showShareLogsButton: showShareLogsButton,
     ),
   );
 }
 
-class CopyLogsButton extends StatefulWidget {
-  const CopyLogsButton({super.key});
+class _ErrorDialog extends StatefulWidget {
+  const _ErrorDialog({
+    required this.title,
+    required this.message,
+    required this.showShareLogsButton,
+  });
+
+  final String title;
+  final String message;
+  final bool showShareLogsButton;
 
   @override
-  State<CopyLogsButton> createState() => _CopyLogsButtonState();
+  State<_ErrorDialog> createState() => _ErrorDialogState();
 }
 
-class _CopyLogsButtonState extends State<CopyLogsButton> {
-  bool copied = false;
+class _ErrorDialogState extends State<_ErrorDialog> {
+  bool _copied = false;
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    return ArDriveButtonNew(
-      size: ArDriveButtonSize.large,
-      maxWidth: double.infinity,
-      text: copied ? 'Copied' : 'Copy logs',
-      typography: typography,
-      variant: ButtonVariant.primary,
-      onPressed: () async {
-        final logs = await logger.getLogs();
-        Clipboard.setData(ClipboardData(text: logs));
-        setState(() {
-          copied = true;
-        });
-      },
+    final l10n = appLocalizationsOf(context);
+    return ArDriveStandardModalNew(
+      title: widget.title,
+      description: widget.message,
+      actions: [
+        ModalAction.close(
+          action: () => Navigator.pop(context),
+          title: l10n.close,
+        ),
+        if (widget.showShareLogsButton)
+          ModalAction(
+            title: _copied ? l10n.copied : l10n.copyLogs,
+            action: () async {
+              final logs = await logger.getLogs();
+              await Clipboard.setData(ClipboardData(text: logs));
+              if (mounted) setState(() => _copied = true);
+            },
+          ),
+      ],
     );
   }
 }

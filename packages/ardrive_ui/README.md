@@ -134,6 +134,20 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | Pick one of a few | `ArDriveSegmentedControl` with `ArDriveSegment`s | 40 high; the chosen segment is filled. `expand` shares the width equally (a row of amounts); otherwise it hugs its labels (a two-way switch). `wrap` puts a segment in a menu that opens from it |
 | Content on a surface that is dark in both themes, such as a video | `ArDriveOnDark` | Its child takes the dark theme's tokens, so text, spinners and buttons need no literal colours |
 
+### A dialog's work stays in it
+
+A dialog does its work in place, never with another dialog on top:
+
+- While it runs, the primary is busy (`ModalAction(isLoading: true)`) and
+  Cancel is held (`ModalAction.close(isEnable: false)`), which holds the
+  close button too. The rest of the dialog stays as it was.
+- When it fails, the dialog says so in an `ArDriveNotice` (error) above its
+  actions, with a way to fix or retry, and stays open.
+- When it succeeds, the dialog closes, or shows its result in place.
+
+The app's `test/design_system_guard_test.dart` fails on a progress dialog
+opened over a form.
+
 ### Menus
 
 Every menu looks the same: the dropdown card, with `ArDriveRadius.md` corners,

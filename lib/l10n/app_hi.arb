@@ -2584,6 +2584,7 @@
   "@congestionWarningShort": {
     "description": "Concise message shown inline when network is congested"
   },
+  "copyLogs": "लॉग कॉपी करें",
   "copied": "कॉपी हो गया",
   "@copied": {
     "description": "Shown beside a copy button once the text is on the clipboard"

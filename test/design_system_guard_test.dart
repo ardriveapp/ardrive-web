@@ -56,6 +56,17 @@ void main() {
     );
   });
 
+  test('a dialog\'s work stays in the dialog', () {
+    expect(
+      _violations(sources, _progressOverForm, _progressOverFormExceptions),
+      isEmpty,
+      reason: 'Keep the dialog open with its primary busy '
+          '(ModalAction(isLoading: true), Cancel held with isEnable: false) '
+          'and show a failure in it as an ArDriveNotice, or add the file to '
+          '_progressOverFormExceptions with a reason.',
+    );
+  });
+
   test('every exception still needs to be one', () {
     final stale = <String>[
       for (final path in _spinnerExceptions.keys)
@@ -66,10 +77,37 @@ void main() {
         if (!_matches(sources[path], _rawMenu)) path,
       for (final path in _shorteningExceptions.keys)
         if (!_matches(sources[path], _rawShortening)) path,
+      for (final path in _progressOverFormExceptions.keys)
+        if (!_matches(sources[path], _progressOverForm)) path,
     ];
     expect(stale, isEmpty, reason: 'Remove these from the exception lists.');
   });
 }
+
+/// A progress dialog opened over the dialog whose work it is (the design
+/// system: never a dialog on top of a dialog).
+final _progressOverForm = RegExp(r'\bshowProgressDialog\(');
+
+/// Each moves its wait into its own dialog in the dialog review's area PRs
+/// (18 Nov 2026); each PR takes its files off this list.
+const _progressOverFormExceptions = {
+  'lib/components/progress_dialog.dart':
+      'Where it is defined; it goes once no dialog uses it',
+  'lib/components/drive_create_form.dart':
+      'Moves into the dialog in its area PR',
+  'lib/components/drive_rename_form.dart':
+      'Moves into the dialog in its area PR',
+  'lib/components/folder_create_form.dart':
+      'Moves into the dialog in its area PR',
+  'lib/components/fs_entry_license_form.dart':
+      'Moves into the dialog in its area PR',
+  'lib/components/fs_entry_move_form.dart':
+      'Moves into the dialog in its area PR',
+  'lib/components/fs_entry_rename_form.dart':
+      'Moves into the dialog in its area PR',
+  'lib/components/ghost_fixer_form.dart':
+      'Moves into the dialog in its area PR',
+};
 
 /// A Material spinner or bar, drawn directly.
 final _rawProgress =
