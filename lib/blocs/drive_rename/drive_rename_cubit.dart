@@ -33,10 +33,25 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     }();
   }
 
+  /// Whether [submit] is running: the checks before the rename is posted
+  /// are awaited, so a second press lands here before the first shows
+  /// progress and must not post a second rename.
+  bool _submitting = false;
+
   Future<void> submit({
     required String newName,
     bool proceedIfHasConflicts = false,
   }) async {
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      await _submit(newName, proceedIfHasConflicts);
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<void> _submit(String newName, bool proceedIfHasConflicts) async {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
 

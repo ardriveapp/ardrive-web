@@ -296,6 +296,45 @@ void main() {
       ],
     );
 
+    // After one drive's attach fails the dialog stays open: a different ID
+    // must not attach the drive looked up for the last one.
+    test('the drive looked up belongs to the ID it was looked up for',
+        () async {
+      driveAttachCubit.driveIdController.text = validDriveId;
+      expect(await driveAttachCubit.driveNameLoader(), isTrue);
+      expect(driveAttachCubit.cachedDriveEntity, isNotNull);
+
+      driveAttachCubit.driveIdController.text = notFoundDriveId;
+      expect(driveAttachCubit.cachedDriveEntity, isNull);
+
+      driveAttachCubit.driveIdController.text = validDriveId;
+      expect(driveAttachCubit.cachedDriveEntity, isNotNull,
+          reason: 'a retry with the same ID reuses the lookup');
+    });
+
+    // The lookups put the drive's own name in the field.
+    blocTest<DriveAttachCubit, DriveAttachState>(
+      'a failed attach keeps the name the person typed',
+      build: () => driveAttachCubit,
+      setUp: () {
+        when(() => driveDao.writeDriveEntity(
+              name: any(named: 'name'),
+              entity: any(named: 'entity'),
+              driveKey: any(named: 'driveKey'),
+              profileKey: any(named: 'profileKey'),
+            )).thenThrow(Exception('disk full'));
+      },
+      act: (bloc) {
+        bloc.driveIdController.text = validDriveId;
+        bloc.driveNameController.text = 'my own name';
+        bloc.submit();
+      },
+      wait: const Duration(milliseconds: 500),
+      verify: (bloc) {
+        expect(bloc.driveNameController.text, 'my own name');
+      },
+    );
+
     blocTest<DriveAttachCubit, DriveAttachState>(
       'does nothing when submitted without valid form',
       build: () => driveAttachCubit,

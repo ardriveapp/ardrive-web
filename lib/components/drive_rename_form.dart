@@ -84,12 +84,33 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
     super.dispose();
   }
 
-  void _submit(BuildContext context, {bool proceedIfHasConflicts = false}) {
-    setState(() => _failed = false);
-    context.read<DriveRenameCubit>().submit(
-          newName: controller.text,
-          proceedIfHasConflicts: proceedIfHasConflicts,
-        );
+  // Set before the cubit is asked and cleared when it answers: the cubit
+  // checks the key, the wallet and the name before it reports progress, and
+  // a second press in that time must not start a second rename.
+  bool _inFlight = false;
+
+  bool _nameIsValid(BuildContext context) =>
+      controller.text != widget.driveName &&
+      validateEntityName(controller.text, context) == null;
+
+  Future<void> _submit(
+    BuildContext context, {
+    bool proceedIfHasConflicts = false,
+  }) async {
+    if (_inFlight || !_nameIsValid(context)) return;
+    final cubit = context.read<DriveRenameCubit>();
+    setState(() {
+      _failed = false;
+      _inFlight = true;
+    });
+    try {
+      await cubit.submit(
+        newName: controller.text,
+        proceedIfHasConflicts: proceedIfHasConflicts,
+      );
+    } finally {
+      if (mounted) setState(() => _inFlight = false);
+    }
   }
 
   @override
@@ -118,7 +139,7 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
           }
         },
         builder: (context, state) {
-          final busy = state is DriveRenameInProgress;
+          final busy = state is DriveRenameInProgress || _inFlight;
           final conflict = _conflictingName != null;
           final l10n = appLocalizationsOf(context);
 
@@ -162,9 +183,12 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
                   ArDriveNotice(
                     type: ArDriveNoticeType.error,
                     message: l10n.actionFailedTryAgain,
-                    actionLabel: l10n.tryAgain,
-                    onAction: () =>
-                        _submit(context, proceedIfHasConflicts: conflict),
+                    // Not offered for a name that can't be saved.
+                    actionLabel: _nameIsValid(context) ? l10n.tryAgain : null,
+                    onAction: _nameIsValid(context)
+                        ? () =>
+                            _submit(context, proceedIfHasConflicts: conflict)
+                        : null,
                     onDismiss: () => setState(() => _failed = false),
                     dismissLabel: l10n.close,
                   ),

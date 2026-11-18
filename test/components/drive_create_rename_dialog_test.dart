@@ -302,6 +302,47 @@ void main() {
           )).called(1);
     });
 
+    testWidgets('two quick presses of Rename ask the cubit once',
+        (tester) async {
+      final answer = Completer<void>();
+      when(() => cubit.submit(
+            newName: any(named: 'newName'),
+            proceedIfHasConflicts: any(named: 'proceedIfHasConflicts'),
+          )).thenAnswer((_) => answer.future);
+      await pumpRename(tester, const Stream.empty());
+
+      // Both land before a frame is drawn, as two fast clicks can.
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Rename'));
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Rename'));
+      await tester.pump();
+
+      verify(() => cubit.submit(
+            newName: 'Archive',
+            proceedIfHasConflicts: false,
+          )).called(1);
+      answer.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Try again is not offered for a name that cannot be saved',
+        (tester) async {
+      await pumpRename(
+        tester,
+        Stream.value(const DriveRenameFailure()),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Try again'), findsOneWidget);
+
+      await tester.enterText(find.byType(EditableText).first, '');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Try again'), findsNothing);
+      verifyNever(() => cubit.submit(
+            newName: any(named: 'newName'),
+            proceedIfHasConflicts: any(named: 'proceedIfHasConflicts'),
+          ));
+    });
+
     testWidgets('the name field is labelled', (tester) async {
       await pumpRename(tester, const Stream.empty());
       expect(find.text('Drive name'), findsOneWidget);

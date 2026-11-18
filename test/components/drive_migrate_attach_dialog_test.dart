@@ -58,7 +58,7 @@ void main() {
           .thenReturn(TextEditingController(text: 'Photos'));
       when(() => cubit.lookupNotifier).thenReturn(ValueNotifier(false));
       when(() => cubit.cachedDriveEntity).thenReturn(null);
-      when(() => cubit.submit()).thenReturn(null);
+      when(() => cubit.submit()).thenAnswer((_) async {});
     });
 
     Future<void> pumpAttach(

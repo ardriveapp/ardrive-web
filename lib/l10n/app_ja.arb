@@ -165,7 +165,7 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "クレジット購入",
-  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "actionFailedTryAgain": "問題が発生しました。接続を確認して、もう一度お試しください。",
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
   "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",

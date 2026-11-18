@@ -77,6 +77,20 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
   // the state is then in progress.
   bool _isPrivate = false;
 
+  // Set before the cubit is asked and cleared when it answers, so a second
+  // press before progress shows can't attach twice.
+  bool _inFlight = false;
+
+  Future<void> _attach() async {
+    if (_inFlight) return;
+    setState(() => _inFlight = true);
+    try {
+      await _cubit.submit();
+    } finally {
+      if (mounted) setState(() => _inFlight = false);
+    }
+  }
+
   late final DriveAttachCubit _cubit = context.read<DriveAttachCubit>();
 
   @override
@@ -135,7 +149,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
         }
       },
       builder: (context, state) {
-        final busy = state is DriveAttachInProgress;
+        final busy = state is DriveAttachInProgress || _inFlight;
         final showKey = state is DriveAttachPrivate || (busy && _isPrivate);
         final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
         final typography = ArDriveTypographyNew.of(context);
@@ -254,7 +268,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                   onAction: _problem == _AttachProblem.failed
                       ? () {
                           setState(() => _problem = _AttachProblem.none);
-                          _cubit.submit();
+                          _attach();
                         }
                       : null,
                   onDismiss: () =>
@@ -273,7 +287,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
             ModalAction(
               isEnable: _isFormValid,
               isLoading: busy,
-              action: () => _cubit.submit(),
+              action: _attach,
               title: l10n.attachEmphasized,
             ),
           ],

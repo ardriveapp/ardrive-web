@@ -95,6 +95,25 @@ void main() {
   tearDown(() => db.close());
 
   group('creating a drive', () {
+    // On the chain for good: Try again or any caller must not get an empty
+    // name through.
+    blocTest<DriveCreateCubit, DriveCreateState>(
+      'a drive without a name is not created',
+      build: () => DriveCreateCubit(
+        arweave: arweave,
+        turboUploadService: DontUseUploadService(),
+        driveDao: db.driveDao,
+        profileCubit: profile,
+        drivesCubit: MockDrivesCubit(),
+      ),
+      act: (cubit) => cubit.submit('   '),
+      expect: () => <DriveCreateState>[],
+      verify: (_) async {
+        verifyZeroInteractions(arweave);
+        verifyNever(() => profile.logoutIfWalletMismatch());
+      },
+    );
+
     DriveCreateCubit build() {
       return DriveCreateCubit(
         arweave: arweave,

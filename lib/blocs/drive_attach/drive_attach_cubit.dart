@@ -34,7 +34,20 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final driveIdController = TextEditingController();
 
   late DriveKey? _driveKey;
-  DriveEntity? cachedDriveEntity;
+  DriveEntity? _cachedEntity;
+  String? _cachedForId;
+
+  /// The drive looked up for the ID in the field, reused by [submit] so it
+  /// isn't fetched twice. Null once the ID changes: after a failed attach, a
+  /// different ID must not write the drive looked up for the last one.
+  DriveEntity? get cachedDriveEntity =>
+      _cachedForId == driveIdController.text ? _cachedEntity : null;
+
+  set cachedDriveEntity(DriveEntity? entity) {
+    _cachedEntity = entity;
+    _cachedForId = driveIdController.text;
+  }
+
   final ValueNotifier<bool> _lookupNotifier = ValueNotifier(false);
 
   ValueNotifier<bool> get lookupNotifier => _lookupNotifier;
@@ -124,7 +137,21 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     }
   }
 
-  void submit() async {
+  /// Whether [submit] is running: a second press, before the first has shown
+  /// its progress, must not attach twice.
+  bool _submitting = false;
+
+  Future<void> submit() async {
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      await _submit();
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<void> _submit() async {
     final driveId = driveIdController.text;
 
     // Read before the loaders below overwrite the field with the drive's own
@@ -247,6 +274,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       );
     } catch (err, stacktrace) {
       _handleError(err, stacktrace, previousState);
+      // The lookups put the drive's own name in the field; the person's own
+      // name is the one they typed, and stays for the next try.
+      if (typedDriveName.isNotEmpty && !isClosed) {
+        driveNameController.text = typedDriveName;
+      }
     }
   }
 

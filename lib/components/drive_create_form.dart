@@ -332,10 +332,13 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                             ? appLocalizationsOf(context)
                                 .walletCantCreatePrivateDrives
                             : appLocalizationsOf(context).actionFailedTryAgain,
-                        actionLabel: failure.walletCantMakeDriveKeys
+                        // Not offered with no name to create the drive under.
+                        actionLabel: failure.walletCantMakeDriveKeys ||
+                                !_isDriveNameValid
                             ? null
                             : appLocalizationsOf(context).tryAgain,
-                        onAction: failure.walletCantMakeDriveKeys
+                        onAction: failure.walletCantMakeDriveKeys ||
+                                !_isDriveNameValid
                             ? null
                             : () => _create(cubit),
                         onDismiss: () =>
