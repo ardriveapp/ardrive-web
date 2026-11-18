@@ -119,102 +119,106 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
   @override
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
-    return ArDriveBottomSheet(
-      title: l10n.uploadFiles,
-      hasCloseButton: !_isLoading,
-      content: _isLoading
-          ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.lg),
-              child: Center(
-                child: Column(
+    return PopScope(
+        canPop: !_isLoading,
+        child: ArDriveBottomSheet(
+          title: l10n.uploadFiles,
+          hasCloseButton: !_isLoading,
+          content: _isLoading
+              ? Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: ArDriveSpacing.lg),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+                        const SizedBox(height: ArDriveSpacing.md),
+                        Text(
+                          l10n.preparingYourFiles,
+                          style:
+                              ArDriveTypographyNew.of(context).paragraphNormal(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textMid,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const ArDriveSpinner(size: ArDriveSpinnerSize.large),
-                    const SizedBox(height: ArDriveSpacing.md),
-                    Text(
-                      l10n.preparingYourFiles,
-                      style: ArDriveTypographyNew.of(context).paragraphNormal(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colorTokens
-                            .textMid,
-                      ),
+                    _row(
+                      icon: ArDriveIcons.camera1(),
+                      label: l10n.camera,
+                      onTap: () => _run(() async {
+                        try {
+                          final content = await widget.pickFromCamera();
+
+                          widget.onClose(content);
+                        } catch (e) {
+                          if (e is FileSystemPermissionDeniedException) {
+                            // ignore: use_build_context_synchronously
+                            await _showCameraPermissionModal(context);
+                            logger.e('Camera permission denied', e);
+                          }
+                        }
+                      }),
+                    ),
+                    _row(
+                      icon: ArDriveIcons.image(),
+                      label: l10n.gallery,
+                      onTap: () => _run(() async {
+                        try {
+                          final isEnabled =
+                              await verifyStoragePermissionAndShowModalWhenDenied(
+                            context,
+                          );
+
+                          if (isEnabled) {
+                            final content = await widget.pickFromGallery();
+
+                            widget.onClose(content);
+
+                            logger.d('adding file from gallery');
+                          }
+                        } catch (e) {
+                          logger.e('Error while picking file from gallery', e);
+                        }
+                      }),
+                    ),
+                    _row(
+                      icon: ArDriveIcons.fileOutlined(),
+                      label: l10n.fileSystem,
+                      onTap: () => _run(() async {
+                        try {
+                          final isEnabled =
+                              await verifyStoragePermissionAndShowModalWhenDenied(
+                            context,
+                          );
+
+                          if (isEnabled) {
+                            final content = await widget.pickFromFileSystem();
+
+                            widget.onClose(content);
+
+                            logger.d('adding file from file system');
+                          }
+                        } catch (e) {
+                          logger.e(
+                            'Error while picking file from file system',
+                            e,
+                          );
+                        }
+                      }),
                     ),
                   ],
                 ),
-              ),
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _row(
-                  icon: ArDriveIcons.camera1(),
-                  label: l10n.camera,
-                  onTap: () => _run(() async {
-                    try {
-                      final content = await widget.pickFromCamera();
-
-                      widget.onClose(content);
-                    } catch (e) {
-                      if (e is FileSystemPermissionDeniedException) {
-                        // ignore: use_build_context_synchronously
-                        await _showCameraPermissionModal(context);
-                        logger.e('Camera permission denied', e);
-                      }
-                    }
-                  }),
-                ),
-                _row(
-                  icon: ArDriveIcons.image(),
-                  label: l10n.gallery,
-                  onTap: () => _run(() async {
-                    try {
-                      final isEnabled =
-                          await verifyStoragePermissionAndShowModalWhenDenied(
-                        context,
-                      );
-
-                      if (isEnabled) {
-                        final content = await widget.pickFromGallery();
-
-                        widget.onClose(content);
-
-                        logger.d('adding file from gallery');
-                      }
-                    } catch (e) {
-                      logger.e('Error while picking file from gallery', e);
-                    }
-                  }),
-                ),
-                _row(
-                  icon: ArDriveIcons.fileOutlined(),
-                  label: l10n.fileSystem,
-                  onTap: () => _run(() async {
-                    try {
-                      final isEnabled =
-                          await verifyStoragePermissionAndShowModalWhenDenied(
-                        context,
-                      );
-
-                      if (isEnabled) {
-                        final content = await widget.pickFromFileSystem();
-
-                        widget.onClose(content);
-
-                        logger.d('adding file from file system');
-                      }
-                    } catch (e) {
-                      logger.e(
-                        'Error while picking file from file system',
-                        e,
-                      );
-                    }
-                  }),
-                ),
-              ],
-            ),
-    );
+        ));
   }
 }
 

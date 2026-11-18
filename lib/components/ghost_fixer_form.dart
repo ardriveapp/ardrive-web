@@ -21,6 +21,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
     final driveDetailCubit = context.read<DriveDetailCubit>();
     return showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider(
         create: (context) => GhostFixerCubit(
           ghostFolder: ghostFolder,
@@ -63,6 +64,10 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
   /// The name the target folder already has, until the name or folder changes.
   bool _nameTaken = false;
 
+  /// The failure, kept until the next try, an edit or a move to another
+  /// folder: the folder list can update under it.
+  GhostFixerFailure? _failure;
+
   /// Making a folder in the target, in place of the list.
   bool _creatingFolder = false;
 
@@ -73,7 +78,10 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
   }
 
   void _submit(BuildContext context) {
-    setState(() => _nameTaken = false);
+    setState(() {
+      _nameTaken = false;
+      _failure = null;
+    });
     context.read<GhostFixerCubit>().submit(_folderNameController.text);
   }
 
@@ -88,6 +96,8 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
             Navigator.pop(context);
           } else if (state is GhostFixerNameConflict) {
             setState(() => _nameTaken = true);
+          } else if (state is GhostFixerFailure) {
+            setState(() => _failure = state);
           }
         },
         builder: (context, state) {
@@ -112,7 +122,7 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
           final typography = ArDriveTypographyNew.of(context);
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final busy = state is GhostFixerRepairInProgress;
-          final failure = state is GhostFixerFailure ? state : null;
+          final failure = _failure;
 
           return ArDriveStandardModalNew(
             width: folderPickerWidth(context),
@@ -150,7 +160,12 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                   label: l10n.folderName,
                   isEnabled: !busy,
                   onChanged: (_) {
-                    if (_nameTaken) setState(() => _nameTaken = false);
+                    if (_nameTaken || _failure != null) {
+                      setState(() {
+                        _nameTaken = false;
+                        _failure = null;
+                      });
+                    }
                   },
                   validator: (s) {
                     final validation = validateEntityName(s, context);
@@ -175,11 +190,17 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                   enabled: !busy,
                   isFolderEnabled: (f) => f.id != viewing.movingEntryId,
                   onOpenFolder: (id) {
-                    setState(() => _nameTaken = false);
+                    setState(() {
+                      _nameTaken = false;
+                      _failure = null;
+                    });
                     context.read<GhostFixerCubit>().loadFolder(id);
                   },
                   onBack: () {
-                    setState(() => _nameTaken = false);
+                    setState(() {
+                      _nameTaken = false;
+                      _failure = null;
+                    });
                     context.read<GhostFixerCubit>().loadParentFolder();
                   },
                   onCreateFolder: () => setState(() => _creatingFolder = true),

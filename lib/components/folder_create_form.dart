@@ -18,6 +18,7 @@ Future<void> promptToCreateFolder(
 }) =>
     showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider(
         create: (context) => FolderCreateCubit(
           driveId: driveId,

@@ -22,6 +22,7 @@ void promptToRenameModal(
 }) {
   showArDriveDialog(
     context,
+    barrierDismissible: false,
     content: MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -82,6 +83,10 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
   /// Kept for Try again, so a retry does not ask about the extension twice.
   bool _updateExtension = false;
 
+  /// The extension step's Rename was pressed: busy at once, so a quick second
+  /// press cannot send it twice.
+  bool _confirmingExtension = false;
+
   void _submit({bool? updateExtension}) {
     if (updateExtension != null) _updateExtension = updateExtension;
     setState(() => _takenName = null);
@@ -109,6 +114,7 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
         },
         builder: (context, state) {
           final l10n = appLocalizationsOf(context);
+          if (state is! UpdatingEntityExtension) _confirmingExtension = false;
           if (state is UpdatingEntityExtension) {
             return _extensionStep(context, state);
           }
@@ -222,10 +228,16 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
         ModalAction.dismiss(
           action: () => context.read<FsEntryRenameCubit>().reset(),
           title: l10n.back,
+          isEnable: !_confirmingExtension,
         ),
         ModalAction(
-          action: () => _submit(updateExtension: true),
+          action: () {
+            if (_confirmingExtension) return;
+            setState(() => _confirmingExtension = true);
+            _submit(updateExtension: true);
+          },
           title: l10n.renameEmphasized,
+          isLoading: _confirmingExtension,
         ),
       ],
     );

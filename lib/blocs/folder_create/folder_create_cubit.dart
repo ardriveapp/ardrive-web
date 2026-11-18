@@ -66,6 +66,9 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
       if (await _nameAlreadyExists(folderName)) {
         emit(FolderCreateNameAlreadyExists(folderName: folderName));
+        // Back to the start, so the next conflict is a change of state: the
+        // conflict state has no props, and an equal state is dropped.
+        emit(FolderCreateInitial());
 
         return;
       }

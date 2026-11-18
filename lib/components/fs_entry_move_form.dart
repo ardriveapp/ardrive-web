@@ -24,6 +24,7 @@ Future<void> promptToMove(
 }) {
   return showArDriveDialog(
     parentContext,
+    barrierDismissible: false,
     content: MultiBlocProvider(
       providers: [
         BlocProvider(

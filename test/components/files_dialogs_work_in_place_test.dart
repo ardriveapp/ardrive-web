@@ -233,6 +233,54 @@ void main() {
     });
   });
 
+  group('rename extension step', () {
+    testWidgets('Rename goes busy at once, so a second press sends nothing',
+        (tester) async {
+      final cubit = _MockRename();
+      final states = StreamController<FsEntryRenameState>.broadcast();
+      addTearDown(states.close);
+      whenListen(
+        cubit,
+        states.stream,
+        initialState: const FsEntryRenameInitialized(isRenamingFolder: false),
+      );
+      when(() => cubit.submit(
+            newName: any(named: 'newName'),
+            updateExtension: any(named: 'updateExtension'),
+          )).thenAnswer((_) async {});
+      await pump(
+        tester,
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<FsEntryRenameCubit>.value(value: cubit),
+            BlocProvider<DriveDetailCubit>.value(value: MockDriveDetailCubit()),
+          ],
+          child: const FsEntryRenameForm(entryName: 'photo.png'),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'holiday.jpg');
+      await tester.pump();
+      states.add(const UpdatingEntityExtension(
+        entityName: 'holiday.jpg',
+        newExtension: 'jpg',
+        previousExtension: 'png',
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.text('Rename'));
+      await tester.pump();
+      expect(find.byType(ArDriveSpinner), findsOneWidget);
+      await tester.tap(find.byType(ArDriveButtonNew).last, warnIfMissed: false);
+      await tester.pump();
+
+      verify(() => cubit.submit(
+            newName: 'holiday.jpg',
+            updateExtension: true,
+          )).called(1);
+    });
+  });
+
   group('create folder', () {
     late _MockCreate cubit;
     late StreamController<FolderCreateState> states;
@@ -413,6 +461,19 @@ void main() {
 
       await tester.tap(find.text('Try again'));
       verify(() => cubit.submit('Recovered')).called(1);
+    });
+
+    testWidgets('a failure stays when the folder list updates under it',
+        (tester) async {
+      await open(tester);
+
+      states
+        ..add(GhostFixerFailure())
+        ..add(loaded);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Could not recreate the folder'), findsOneWidget);
     });
 
     testWidgets('Create folder opens in place of the list, not over it',

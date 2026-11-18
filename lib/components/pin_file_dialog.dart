@@ -33,6 +33,7 @@ Future<void> showPinFileDialog({
     context,
     () => showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider(
         create: (context) {
           final FileIdResolver fileIdResolver = NetworkFileIdResolver(
@@ -128,6 +129,10 @@ class _PinFileDialogState extends State<PinFileDialog> {
     });
   }
 
+  void _clearCreateFailure() {
+    if (_createFailure != null) setState(() => _createFailure = null);
+  }
+
   @override
   void dispose() {
     _idFocusNode.dispose();
@@ -171,6 +176,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
                   showErrorMessage: idValidationError != null,
                   focusNode: _idFocusNode,
                   onChanged: (value) {
+                    _clearCreateFailure();
                     if (value.isEmpty) {
                       // A new ID is being started.
                       _idSettled = false;
@@ -216,6 +222,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
                   errorMessage: nameValidationError,
                   showErrorMessage: nameValidationError != null,
                   onChanged: (value) {
+                    _clearCreateFailure();
                     pinFileBloc.add(
                       FieldsChanged(id: state.id, name: value),
                     );
