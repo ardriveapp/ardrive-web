@@ -1924,9 +1924,6 @@ class _UploadReadyWidget extends StatelessWidget {
   }
 
   Widget _build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final l10n = appLocalizationsOf(context);
     final paymentBloc = context.watch<UploadPaymentMethodBloc>();
     final info = state.paymentInfo;
     // Read again after Add credits or Try again: no price until it is back.
@@ -1935,217 +1932,238 @@ class _UploadReadyWidget extends StatelessWidget {
         : UploadReviewSummary.fromPaymentInfo(info);
     final folderName = uploadDestinationName(state.params);
 
+    final uploadCubit = context.watch<UploadCubit>();
     return ReactiveForm(
-      formGroup: context.watch<UploadCubit>().licenseCategoryForm,
+      formGroup: uploadCubit.licenseCategoryForm,
       child: ReactiveFormConsumer(
         builder: (_, form, __) {
           final LicenseCategory? licenseCategory =
               form.control('licenseCategory').value;
-          final cubit = context.read<UploadCubit>();
-
-          // A license is set up, and manifests chosen, on steps of their own
-          // before the upload starts; the button goes to the first of them.
-          final label = licenseCategory != null
-              ? l10n.configure
-              : state.selectedManifestSelections.isNotEmpty
-                  ? l10n.review
-                  : l10n.upload;
-
-          return UploadReviewDialog(
-            title: l10n.uploadNFiles(state.numberOfFiles),
-            destination: l10n.uploadReviewTo(folderName),
-            destinationIsPrivate: !state.uploadIsPublic,
-            files: uploadReviewFiles(info),
-            summary: summary,
-            primaryLabel: label,
-            primaryEnabled: state.isNextButtonEnabled && (names?.ready ?? true),
-            // The way the review showed is the way it is paid, whatever the
-            // payment sheet defaulted to.
-            onUpload: (method) => cubit.uploadFromReview(
-              method: method,
-              licenseCategory: licenseCategory,
-            ),
-            onShown: () => PlausibleEventTracker.trackUploadReview(
-              drivePrivacy: state.uploadIsPublic
-                  ? DrivePrivacy.public
-                  : DrivePrivacy.private,
-              dragNDrop: state.isDragNDrop,
-            ),
-            onCancel: () => Navigator.of(context).pop(false),
-            funding: TurboCreditsFunding(
-              context,
-              onRefresh: () => paymentBloc
-                  .add(PrepareUploadPaymentMethod(params: state.params)),
-            ),
-            paymentChoice: RepositoryProvider.value(
-              value: context.read<ArDriveUploadPreparationManager>(),
-              child: UploadPaymentMethodView(
-                // The review says what is short, above the choice; only the
-                // wallet-only case keeps the selector's own messages.
-                showBalanceMessages: summary?.usesLegacySelector ?? false,
-                walletOnlyWhenChosen: !(summary?.usesLegacySelector ?? false),
-                onError: cubit.emitErrorFromPreparation,
-                onTurboTopupSucess: () => cubit.startUploadPreparation(
-                    isRetryingToPayWithTurbo: true),
-                onUploadMethodChanged: (method, info, canUpload) =>
-                    cubit.setUploadMethod(method, info, canUpload),
+          // The chosen license's own settings, inline under it: Upload waits
+          // for them to be complete.
+          final licenseSettings = switch (licenseCategory) {
+            LicenseCategory.udl => uploadCubit.licenseUdlParamsForm,
+            LicenseCategory.cc => uploadCubit.licenseCcTypeForm,
+            _ => uploadCubit.licenseCategoryForm,
+          };
+          return ReactiveForm(
+            formGroup: licenseSettings,
+            child: ReactiveFormConsumer(
+              builder: (_, __, ___) => _review(
+                context,
+                summary: summary,
+                folderName: folderName,
+                licenseCategory: licenseCategory,
               ),
             ),
-            canShareInApp: paymentBloc.canShareSourceWalletCredits,
-            sourceWalletNotice: info.sourceWalletCredits == null
-                ? null
-                : SourceWalletCreditsNotice(
-                    credits: info.sourceWalletCredits!,
-                    onShare: paymentBloc.canShareSourceWalletCredits
-                        ? paymentBloc.shareSourceWalletCredits
-                        : null,
-                  ),
-            extras: [
-              if (names != null) ArNSFlowNameSection(cubit: names!),
-              // Everything else is optional, and most uploads leave it as it
-              // is: one line saying what is set, opened on request.
-              UploadOptions(
-                key: const ValueKey('upload-options'),
-                // This upload's own choice, not the default it started from:
-                // coming back from the license screens must not undo it.
-                thumbnails: state
-                        .params.containsSupportedImageTypeForThumbnailGeneration
-                    ? cubit.uploadThumbnail
-                    : null,
-                onThumbnailsChanged: cubit.changeUploadThumbnailOption,
-                // Never on by itself: the person's choice, off whenever a
-                // review opens.
-                compress:
-                    cubit.compressionOffered ? cubit.compressTextAndCode : null,
-                onCompressChanged: cubit.changeCompressTextAndCode,
-                summary: [
-                  if (licenseCategory == null)
-                    l10n.noLicense
-                  else
-                    l10n.namedLicense(_licenseShortNames[licenseCategory] ??
-                        licenseCategoryNames[licenseCategory]!),
-                  if (state.shouldShowCustomManifestCheckbox &&
-                      state.uploadFileAsCustomManifest)
-                    l10n.uploadAsManifest,
-                  if (state.selectedManifestSelections.isNotEmpty)
-                    l10n.manifestsToUpdate(
-                        state.selectedManifestSelections.length),
-                ],
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        l10n.licenseHeading,
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ArDriveFocusable(
-                        onActivate: () =>
-                            showLicensingInfoModal(context: context),
-                        child: Semantics(
-                          button: true,
-                          label: l10n.learnMoreAboutLicenses,
-                          child: ArDriveClickArea(
-                            tooltip: l10n.learnMoreAboutLicenses,
-                            child: GestureDetector(
-                              onTap: () {
-                                showLicensingInfoModal(context: context);
-                              },
-                              // The same mark as the thumbnails option beside
-                              // it.
-                              child: ArDriveIcons.info(
-                                color: colorTokens.textMid,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
-                    child: ReactiveForm(
-                      formGroup: cubit.licenseCategoryForm,
-                      child: ReactiveArDriveSelectField<LicenseCategory?>(
-                        formControlName: 'licenseCategory',
-                        showErrors: (control) =>
-                            control.dirty && control.invalid,
-                        validationMessages: kValidationMessages(l10n),
-                        choices: [
-                          for (final value in [null, ...LicenseCategory.values])
-                            ArDriveChoice(
-                              value: value,
-                              label:
-                                  licenseCategoryNames[value] ?? l10n.noLicense,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (state.shouldShowCustomManifestCheckbox)
-                    ArDriveCheckBox(
-                      title: l10n.publishManifestAsDeployment,
-                      checked: state.uploadFileAsCustomManifest,
-                      useNewIcons: true,
-                      titleStyle: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                      onChange: cubit.setIsUploadingCustomManifest,
-                    ),
-                  if (state.canShowSettings && !state.showSettings)
-                    ArDriveLink(
-                      text: l10n.updateManifests,
-                      isAction: true,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textMid,
-                      ),
-                      onTap: cubit.showSettings,
-                    ),
-                ],
-              ),
-              // The deployments to update, in the review rather than a panel
-              // beside it, so the review keeps one width.
-              if (state.canShowSettings && state.showSettings)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.updateDeployments,
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
-                          ),
-                        ),
-                        ArDriveLink(
-                          text: l10n.close,
-                          isAction: true,
-                          style: typography.paragraphSmall(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.textMid,
-                          ),
-                          onTap: cubit.hideSettings,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: ArDriveSpacing.xs),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 240),
-                      child: const ManifestOptions(),
-                    ),
-                  ],
-                ),
-            ],
           );
         },
       ),
+    );
+  }
+
+  Widget _review(
+    BuildContext context, {
+    required UploadReviewSummary? summary,
+    required String folderName,
+    required LicenseCategory? licenseCategory,
+  }) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
+    final paymentBloc = context.watch<UploadPaymentMethodBloc>();
+    final info = state.paymentInfo;
+    final cubit = context.read<UploadCubit>();
+    final licenseComplete = licenseCategory == null ||
+        cubit.configuredLicense(licenseCategory) != null;
+    final hasDeployments =
+        state.canShowSettings && state.manifestFiles.isNotEmpty;
+
+    final optionsSummary = [
+      if (licenseCategory == null)
+        l10n.noLicense
+      else if (!licenseComplete)
+        l10n.chooseALicenseType
+      else
+        // The license as it is recorded: "CC-BY", not just "CC".
+        l10n.namedLicense(licenseCategory == LicenseCategory.cc
+            ? cubit.configuredLicense(licenseCategory)!.meta.shortName
+            : _licenseShortNames[licenseCategory] ??
+                licenseCategoryNames[licenseCategory]!),
+      if (state.shouldShowCustomManifestCheckbox &&
+          state.uploadFileAsCustomManifest)
+        l10n.uploadAsManifest,
+      if (state.selectedManifestSelections.isNotEmpty)
+        l10n.manifestsToUpdate(state.selectedManifestSelections.length),
+    ];
+
+    return UploadReviewDialog(
+      title: l10n.uploadNFiles(state.numberOfFiles),
+      destination: l10n.uploadReviewTo(folderName),
+      destinationIsPrivate: !state.uploadIsPublic,
+      files: uploadReviewFiles(info),
+      summary: summary,
+      primaryLabel: l10n.upload,
+      primaryEnabled: state.isNextButtonEnabled &&
+          licenseComplete &&
+          (names?.ready ?? true),
+      // The way the review showed is the way it is paid, whatever the
+      // payment sheet defaulted to.
+      onUpload: (method) => cubit.uploadFromReview(
+        method: method,
+        licenseCategory: licenseCategory,
+      ),
+      onShown: () => PlausibleEventTracker.trackUploadReview(
+        drivePrivacy:
+            state.uploadIsPublic ? DrivePrivacy.public : DrivePrivacy.private,
+        dragNDrop: state.isDragNDrop,
+      ),
+      onCancel: () => Navigator.of(context).pop(false),
+      funding: TurboCreditsFunding(
+        context,
+        onRefresh: () =>
+            paymentBloc.add(PrepareUploadPaymentMethod(params: state.params)),
+      ),
+      paymentChoice: RepositoryProvider.value(
+        value: context.read<ArDriveUploadPreparationManager>(),
+        child: UploadPaymentMethodView(
+          // The review says what is short, above the choice; only the
+          // wallet-only case keeps the selector's own messages.
+          showBalanceMessages: summary?.usesLegacySelector ?? false,
+          walletOnlyWhenChosen: !(summary?.usesLegacySelector ?? false),
+          onError: cubit.emitErrorFromPreparation,
+          onTurboTopupSucess: () =>
+              cubit.startUploadPreparation(isRetryingToPayWithTurbo: true),
+          onUploadMethodChanged: (method, info, canUpload) =>
+              cubit.setUploadMethod(method, info, canUpload),
+        ),
+      ),
+      canShareInApp: paymentBloc.canShareSourceWalletCredits,
+      sourceWalletNotice: info.sourceWalletCredits == null
+          ? null
+          : SourceWalletCreditsNotice(
+              credits: info.sourceWalletCredits!,
+              onShare: paymentBloc.canShareSourceWalletCredits
+                  ? paymentBloc.shareSourceWalletCredits
+                  : null,
+            ),
+      rows: [
+        if (names != null) ArNSFlowNameSection(cubit: names!),
+        // Everything else is optional, and most uploads leave it as it is:
+        // one row saying what is set, opened on request.
+        UploadOptions(
+          key: const ValueKey('upload-options'),
+          // This upload's own choice, not the default it started from.
+          thumbnails:
+              state.params.containsSupportedImageTypeForThumbnailGeneration
+                  ? cubit.uploadThumbnail
+                  : null,
+          onThumbnailsChanged: cubit.changeUploadThumbnailOption,
+          // Never on by itself: the person's choice, off whenever a review
+          // opens.
+          compress: cubit.compressionOffered ? cubit.compressTextAndCode : null,
+          onCompressChanged: cubit.changeCompressTextAndCode,
+          summary: optionsSummary,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    // A field's label, like the license's own fields under it.
+                    Text(
+                      l10n.licenseHeading,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textLow,
+                      ),
+                    ),
+                    const SizedBox(width: ArDriveSpacing.xs),
+                    ArDriveFocusable(
+                      onActivate: () =>
+                          showLicensingInfoModal(context: context),
+                      child: Semantics(
+                        button: true,
+                        label: l10n.learnMoreAboutLicenses,
+                        child: ArDriveClickArea(
+                          tooltip: l10n.learnMoreAboutLicenses,
+                          child: GestureDetector(
+                            onTap: () =>
+                                showLicensingInfoModal(context: context),
+                            // The same mark as the thumbnails option.
+                            child: ArDriveIcons.info(
+                              color: colorTokens.textMid,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: ArDriveSpacing.xs),
+                ReactiveForm(
+                  formGroup: cubit.licenseCategoryForm,
+                  child: ReactiveArDriveSelectField<LicenseCategory?>(
+                    formControlName: 'licenseCategory',
+                    showErrors: (control) => control.dirty && control.invalid,
+                    validationMessages: kValidationMessages(l10n),
+                    choices: [
+                      for (final value in [null, ...LicenseCategory.values])
+                        ArDriveChoice(
+                          value: value,
+                          label: licenseCategoryNames[value] ?? l10n.noLicense,
+                        ),
+                    ],
+                  ),
+                ),
+                // The license's settings, where its choice is: no step of
+                // their own before the upload.
+                if (licenseCategory == LicenseCategory.cc) ...[
+                  const SizedBox(height: ArDriveSpacing.md),
+                  CcTypeForm(formGroup: cubit.licenseCcTypeForm),
+                ] else if (licenseCategory == LicenseCategory.udl) ...[
+                  const SizedBox(height: ArDriveSpacing.md),
+                  UdlParamsForm(
+                    formGroup: cubit.licenseUdlParamsForm,
+                    onChangeLicenseFee: () {},
+                  ),
+                ],
+              ],
+            ),
+            if (state.shouldShowCustomManifestCheckbox)
+              ArDriveCheckBox(
+                title: l10n.publishManifestAsDeployment,
+                checked: state.uploadFileAsCustomManifest,
+                useNewIcons: true,
+                titleStyle: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+                onChange: cubit.setIsUploadingCustomManifest,
+              ),
+            // The deployments in this folder that can take these files.
+            if (hasDeployments)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.updateDeployments,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
+                  const SizedBox(height: ArDriveSpacing.xs),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: const ManifestOptions(),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

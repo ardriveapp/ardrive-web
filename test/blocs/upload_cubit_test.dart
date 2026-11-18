@@ -21,6 +21,8 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -576,18 +578,94 @@ void main() {
         bloc.setUploadMethod(UploadMethod.ar, stubPaymentInfo, false);
         await Future<void>.delayed(const Duration(milliseconds: 10));
         expect(bloc.state, isA<UploadReady>());
-        // The review showed Turbo Credits. With a license it goes on to the
-        // license step, which uploads later with the method set here.
+        // The review showed Turbo Credits. A CC license with no type picked
+        // yet holds the upload back, and keeps the method set here.
         bloc.uploadFromReview(
           method: UploadMethod.turbo,
-          licenseCategory: LicenseCategory.udl,
+          licenseCategory: LicenseCategory.cc,
         );
       },
       verify: (bloc) {
-        expect(bloc.state, isA<UploadConfiguringLicense>());
+        expect(bloc.state, isA<UploadReady>());
         expect(bloc.uploadMethod, UploadMethod.turbo);
       },
     );
+
+    // The license is set in the review's options now, with no step of its
+    // own: Upload must still record exactly the one they say.
+    test('Upload on the review records the license set in its options',
+        () async {
+      when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+          .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+      when(() => mockProfileCubit!.checkIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      Object? recorded = #none;
+      when(() => mockUploadRepository.uploadFiles(
+            files: any(named: 'files'),
+            targetDrive: any(named: 'targetDrive'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            licenseStateConfigured: any(named: 'licenseStateConfigured'),
+            targetFolder: any(named: 'targetFolder'),
+            uploadMethod: any(named: 'uploadMethod'),
+            uploadThumbnail: any(named: 'uploadThumbnail'),
+            paidBy: any(named: 'paidBy'),
+            compressTextAndCode: any(named: 'compressTextAndCode'),
+          )).thenAnswer((i) async {
+        recorded = i.namedArguments[#licenseStateConfigured];
+        return _MockUploadController();
+      });
+      final cubit = getUploadCubitInstanceWith([]);
+      addTearDown(cubit.close);
+      await cubit.startUploadPreparation();
+      await cubit.checkConflictingFiles();
+      final uploadPlan = await UploadPlan.create(
+        useTurbo: false,
+        maxDataItemCount: 10,
+        fileV2UploadHandles: {},
+        fileDataItemUploadHandles: {},
+        folderDataItemUploadHandles: {},
+        turboUploadService: DontUseUploadService(),
+      );
+      cubit.setUploadMethod(
+        UploadMethod.turbo,
+        stubPaymentInfo.copyWith(uploadPlanForAR: uploadPlan),
+        true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(cubit.state, isA<UploadReady>());
+
+      final type = ccLicensesEnabled[1];
+      cubit.licenseCcTypeForm.control('ccTypeField').value = type;
+      cubit.uploadFromReview(
+        method: UploadMethod.turbo,
+        licenseCategory: LicenseCategory.cc,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(recorded, isA<LicenseState>());
+      expect((recorded as LicenseState).meta, type);
+    });
+
+    /// The license's settings sit in the review's options, and the license
+    /// recorded is the one they say, as the old license step recorded.
+    test('the license comes from the settings in the review', () {
+      final cubit = getUploadCubitInstanceWith([]);
+
+      // No CC type is preselected: it is recorded with the file for good.
+      expect(cubit.configuredLicense(LicenseCategory.cc), isNull);
+      final type = ccLicensesEnabled.first;
+      cubit.licenseCcTypeForm.control('ccTypeField').value = type;
+      expect(cubit.configuredLicense(LicenseCategory.cc)!.meta, type);
+
+      // UDL starts complete, from its defaults.
+      final udl = cubit.configuredLicense(LicenseCategory.udl)!;
+      expect(udl.meta, udlLicenseDefault);
+      expect(udl.params, isNotNull);
+
+      // A fee that is not a number holds it back.
+      cubit.licenseUdlParamsForm.control('licenseFeeAmount').value = 'abc';
+      expect(cubit.configuredLicense(LicenseCategory.udl), isNull);
+    });
 
     blocTest<UploadCubit, UploadState>(
       'does not mark it free when the allowance is used up, so payment '

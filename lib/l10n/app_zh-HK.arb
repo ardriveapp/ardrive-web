@@ -2817,7 +2817,7 @@
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "另外 {count} 個",
+  "moreFiles": "顯示另外 {count} 個",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -2857,7 +2857,7 @@
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "網站和程式碼佔用的儲存空間更少。其他應用程式可能需要解壓這些檔案。",
+  "compressTextAndCodeHint": "網站和程式碼佔用的儲存空間更少。",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
   },
@@ -3174,6 +3174,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "已隱藏",
   "hiddenDrives": "已隱藏",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4547,7 +4548,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "由你的免費上載額度承擔。永久保存，一次付費。",
+  "uploadCostFreeNote": "由你的免費上載額度承擔",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4555,7 +4556,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "用 Turbo 積分一次付費。永久保存，無需訂閱。",
+  "uploadCostCreditsNote": "用 Turbo 積分付費",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4563,7 +4564,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "從你的錢包一次付費。永久保存，無需訂閱。",
+  "uploadCostWalletNote": "從你的錢包付費",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },

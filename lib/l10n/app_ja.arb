@@ -2817,7 +2817,7 @@
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "他{count}件",
+  "moreFiles": "他{count}件を表示",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -2857,7 +2857,7 @@
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "ウェブサイトとコードのストレージを節約できます。ほかのアプリでは、これらのファイルの展開が必要になる場合があります。",
+  "compressTextAndCodeHint": "ウェブサイトとコードのストレージを節約できます。",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
   },
@@ -3174,6 +3174,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "非表示",
   "hiddenDrives": "非表示",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4547,7 +4548,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "無料アップロード枠でまかなわれます。ずっと保存され、支払いは一度だけです。",
+  "uploadCostFreeNote": "無料アップロード枠でまかなわれます",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4555,7 +4556,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "Turboクレジットで一度だけ支払います。ずっと保存され、サブスクリプションはありません。",
+  "uploadCostCreditsNote": "Turboクレジットで支払います",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4563,7 +4564,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "ウォレットから一度だけ支払います。ずっと保存され、サブスクリプションはありません。",
+  "uploadCostWalletNote": "ウォレットから支払います",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },

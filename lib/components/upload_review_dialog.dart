@@ -98,6 +98,7 @@ class UploadReviewDialog extends StatefulWidget {
     this.sourceWalletNotice,
     this.canShareInApp = false,
     this.extras = const [],
+    this.rows = const [],
     this.onShown,
     this.leading = const [],
     this.onBack,
@@ -143,8 +144,12 @@ class UploadReviewDialog extends StatefulWidget {
   /// way forward.
   final bool canShareInApp;
 
-  /// The rest, below the cost: names, options.
+  /// The rest, below the cost, such as a notice.
   final List<Widget> extras;
+
+  /// Optional parts folded to one row each, such as the name to give it and
+  /// the options, stacked under the rest as one group.
+  final List<Widget> rows;
 
   /// Above the cost, after the files: what a change is, such as a license.
   final List<Widget> leading;
@@ -237,6 +242,14 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
   static const _maxRowsShown = 5;
   static const _collapsedRows = 4;
   var _showAllFiles = false;
+  static const double _fileRowHeight = 44;
+  final _filesScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _filesScroll.dispose();
+    super.dispose();
+  }
 
   Future<void> _payByCard(int amountUsd) async {
     _balanceBefore = widget.summary?.creditsBalance ?? BigInt.zero;
@@ -340,23 +353,35 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           else if (summary == null)
             const _Waiting()
           else ...[
-            if (!summary.priceUnavailable) UploadCostBlock(summary: summary),
+            if (!summary.priceUnavailable)
+              UploadCostBlock(
+                summary: summary,
+                // The choice under it already says how it is paid.
+                showNote: !_showsPaymentChoice(summary),
+              ),
             ..._notices(context, summary),
-            if (summary.offersPaymentChoice || summary.usesLegacySelector)
-              if (widget.paymentChoice != null) ...[
-                const SizedBox(height: ArDriveSpacing.md),
-                widget.paymentChoice!,
-              ],
+            if (_showsPaymentChoice(summary)) ...[
+              const SizedBox(height: ArDriveSpacing.md),
+              widget.paymentChoice!,
+            ],
           ],
           for (final extra in widget.extras) ...[
             const SizedBox(height: ArDriveSpacing.md),
             extra,
+          ],
+          if (widget.rows.isNotEmpty) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ...widget.rows,
           ],
         ],
       ),
       actions: actions,
     );
   }
+
+  bool _showsPaymentChoice(UploadReviewSummary summary) =>
+      (summary.offersPaymentChoice || summary.usesLegacySelector) &&
+      widget.paymentChoice != null;
 
   /// Short of credits, and the sign-in wallet's would cover it once shared,
   /// with their notice on screen and its Share credits button working here.
@@ -439,24 +464,30 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
     ];
   }
 
+  /// The files, in one card: every row up to [_maxRowsShown], otherwise the
+  /// first [_collapsedRows] and a way to see the rest, which then scroll
+  /// inside the card. With more than one file the card ends in the total.
   List<Widget> _fileRows(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final l10n = appLocalizationsOf(context);
     final files = widget.files;
     final collapsible = files.length > _maxRowsShown;
-    final shown =
-        collapsible && !_showAllFiles ? files.take(_collapsedRows) : files;
+    final shown = collapsible && !_showAllFiles
+        ? files.take(_collapsedRows).toList()
+        : files;
+    final divider = Divider(
+      height: 1,
+      thickness: 1,
+      indent: ArDriveSpacing.sm,
+      endIndent: ArDriveSpacing.sm,
+      color: colorTokens.strokeLow,
+    );
 
-    Widget row(UploadReviewFile file) => Padding(
-          padding: const EdgeInsets.only(bottom: ArDriveSpacing.xxs),
-          child: Container(
-            height: 44,
+    Widget row(UploadReviewFile file) => SizedBox(
+          height: _fileRowHeight,
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: ArDriveSpacing.sm),
-            decoration: BoxDecoration(
-              color: colorTokens.containerRaised,
-              borderRadius: BorderRadius.circular(ArDriveRadius.md),
-            ),
             child: Row(
               children: [
                 getIconForContentType(
@@ -488,36 +519,82 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           ),
         );
 
+    final rows = <Widget>[
+      for (var i = 0; i < shown.length; i++) ...[
+        if (i > 0) divider,
+        row(shown[i]),
+      ],
+    ];
+
     return [
-      for (final file in shown) row(file),
-      if (collapsible)
-        Padding(
-          padding: const EdgeInsets.only(top: ArDriveSpacing.xxs),
-          child: Row(
-            children: [
-              ArDriveLink(
-                text: _showAllFiles
-                    ? l10n.showFewerFiles
-                    : l10n.moreFiles(files.length - _collapsedRows),
-                isAction: true,
-                style: typography.paragraphSmall(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textMid,
+      Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: colorTokens.containerRaised,
+          borderRadius: BorderRadius.circular(ArDriveRadius.md),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_showAllFiles && collapsible)
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: _fileRowHeight * (_maxRowsShown + 0.5),
                 ),
-                onTap: () => setState(() => _showAllFiles = !_showAllFiles),
-              ),
-              const Spacer(),
-              Text(
-                l10n.totalUploadSize(
-                    filesize(files.fold<int>(0, (sum, f) => sum + f.size))),
-                style: typography.paragraphSmall(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textLow,
+                child: ArDriveScrollBar(
+                  controller: _filesScroll,
+                  alwaysVisible: true,
+                  child: ListView(
+                    controller: _filesScroll,
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    children: rows,
+                  ),
+                ),
+              )
+            else
+              ...rows,
+            if (files.length > 1) ...[
+              divider,
+              SizedBox(
+                height: _fileRowHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ArDriveSpacing.sm,
+                  ),
+                  child: Row(
+                    children: [
+                      if (collapsible)
+                        ArDriveLink(
+                          text: _showAllFiles
+                              ? l10n.showFewerFiles
+                              : l10n.moreFiles(files.length - _collapsedRows),
+                          isAction: true,
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textMid,
+                          ),
+                          onTap: () =>
+                              setState(() => _showAllFiles = !_showAllFiles),
+                        ),
+                      const Spacer(),
+                      Text(
+                        l10n.totalUploadSize(filesize(
+                            files.fold<int>(0, (sum, f) => sum + f.size))),
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
-          ),
+          ],
         ),
+      ),
     ];
   }
 }
@@ -658,9 +735,17 @@ String formatUsdCost(double usd) {
 /// The upload's cost: Free, a price in US dollars paid with Turbo Credits, or
 /// AR from the wallet, with a line on what that means.
 class UploadCostBlock extends StatelessWidget {
-  const UploadCostBlock({super.key, required this.summary});
+  const UploadCostBlock({
+    super.key,
+    required this.summary,
+    this.showNote = true,
+  });
 
   final UploadReviewSummary summary;
+
+  /// The line on how it is paid. Left out where a payment choice under the
+  /// cost says it.
+  final bool showNote;
 
   @override
   Widget build(BuildContext context) {
@@ -711,20 +796,16 @@ class UploadCostBlock extends StatelessWidget {
               _Figure(figure: figure, unit: unit),
             ],
           ),
-          const SizedBox(width: ArDriveSpacing.md),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 260),
-                child: Text(
-                  note,
-                  textAlign: TextAlign.right,
-                  style: typography.paragraphSmall(color: colorTokens.textMid),
-                ),
+          if (showNote) ...[
+            const SizedBox(width: ArDriveSpacing.md),
+            Expanded(
+              child: Text(
+                note,
+                textAlign: TextAlign.right,
+                style: typography.paragraphSmall(color: colorTokens.textMid),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

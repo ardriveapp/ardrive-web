@@ -2817,7 +2817,7 @@
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "+ {count} और",
+  "moreFiles": "{count} और दिखाएँ",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -2857,7 +2857,7 @@
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "वेबसाइट और कोड के लिए कम स्टोरेज। दूसरे ऐप्स को इन फ़ाइलों को अनपैक करना पड़ सकता है।",
+  "compressTextAndCodeHint": "वेबसाइट और कोड के लिए कम स्टोरेज।",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
   },
@@ -3174,6 +3174,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "छिपी हुई",
   "hiddenDrives": "छिपी हुई",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4547,7 +4548,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "आपकी मुफ़्त अपलोड लिमिट से कवर है। हमेशा के लिए सेव, एक बार भुगतान।",
+  "uploadCostFreeNote": "आपकी मुफ़्त अपलोड लिमिट से कवर है",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4555,7 +4556,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "Turbo क्रेडिट्स से एक बार भुगतान। हमेशा के लिए सेव, कोई सब्सक्रिप्शन नहीं।",
+  "uploadCostCreditsNote": "Turbo क्रेडिट्स से भुगतान",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4563,7 +4564,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "आपके वॉलेट से एक बार भुगतान। हमेशा के लिए सेव, कोई सब्सक्रिप्शन नहीं।",
+  "uploadCostWalletNote": "आपके वॉलेट से भुगतान",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },

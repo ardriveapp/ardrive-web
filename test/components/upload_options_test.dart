@@ -59,7 +59,7 @@ void main() {
     await pump(tester);
 
     await tester.tap(find.text('Options'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Upload with thumbnails'), findsOneWidget);
     expect(find.text('license field'), findsOneWidget);
@@ -71,11 +71,11 @@ void main() {
     await pump(tester, onThumbnailsChanged: (value) => changed = value);
 
     await tester.tap(find.text('Options'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Upload with thumbnails'));
     await tester.pump();
     await tester.tap(find.text('Options'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(changed, isFalse);
     expect(find.text('Thumbnails off'), findsOneWidget);
@@ -87,7 +87,7 @@ void main() {
     expect(find.textContaining('Thumbnails'), findsNothing);
 
     await tester.tap(find.text('Options'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Upload with thumbnails'), findsNothing);
   });
@@ -99,19 +99,18 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('license field'), findsOneWidget);
   });
 
   group('Compress text and code', () {
     const label = 'Compress text and code';
-    const hint =
-        'Smaller storage for websites and code. Other apps may need to unpack these files.';
+    const hint = 'Smaller storage for websites and code.';
 
     Future<void> open(WidgetTester tester) async {
       await tester.tap(find.text('Options'));
-      await tester.pump();
+      await tester.pumpAndSettle();
     }
 
     testWidgets('is absent when the review does not offer it', (tester) async {
@@ -172,7 +171,7 @@ void main() {
       expect(chosen, isTrue);
 
       await tester.tap(find.text('Options'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.text('Compressed'), findsOneWidget);
     });
 

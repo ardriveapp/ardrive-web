@@ -874,7 +874,7 @@
       }
     }
   },
-  "moreFiles": "+ {count} more",
+  "moreFiles": "Show {count} more",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -914,7 +914,7 @@
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "Smaller storage for websites and code. Other apps may need to unpack these files.",
+  "compressTextAndCodeHint": "Smaller storage for websites and code.",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
   },
@@ -1746,6 +1746,8 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "Hidden",
+  "@itemHiddenTag": {"description": "Tag after the name of a hidden item, such as a deployment in the upload options"},
   "hiddenDrives": "Hidden",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4315,15 +4317,15 @@
   "@uploadCostLabel": {"description": "Label over the upload review's cost"},
   "uploadCostFree": "Free",
   "@uploadCostFree": {"description": "The upload review's cost when the free upload allowance covers it"},
-  "uploadCostFreeNote": "Covered by your free upload allowance. Saved for good, paid once.",
+  "uploadCostFreeNote": "Covered by your free upload allowance",
   "@uploadCostFreeNote": {"description": "Beside the cost when an upload is free"},
   "uploadCostUsdUnit": "USD",
   "@uploadCostUsdUnit": {"description": "Unit after a cost in US dollars"},
-  "uploadCostCreditsNote": "Paid once with Turbo Credits. Saved for good, no subscription.",
+  "uploadCostCreditsNote": "Paid with Turbo Credits",
   "@uploadCostCreditsNote": {"description": "Beside the cost when Turbo Credits pay for an upload"},
   "uploadCostArUnit": "AR",
   "@uploadCostArUnit": {"description": "Unit after a cost in AR"},
-  "uploadCostWalletNote": "Paid once from your wallet. Saved for good, no subscription.",
+  "uploadCostWalletNote": "Paid from your wallet",
   "@uploadCostWalletNote": {"description": "Beside the cost when the wallet pays for an upload in AR"},
   "uploadOverFreeAllowance": "This upload is over your free upload allowance.",
   "@uploadOverFreeAllowance": {"description": "First sentence of the notice when an upload is not free and Turbo Credits do not cover it"},

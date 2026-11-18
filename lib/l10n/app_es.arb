@@ -2817,7 +2817,7 @@
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "+ {count} más",
+  "moreFiles": "Mostrar {count} más",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -2857,7 +2857,7 @@
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "Menos almacenamiento para sitios web y código. Otras aplicaciones pueden necesitar descomprimir estos archivos.",
+  "compressTextAndCodeHint": "Menos almacenamiento para sitios web y código.",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
   },
@@ -3174,6 +3174,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "Ocultas",
   "hiddenDrives": "Ocultas",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4547,7 +4548,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "Cubierto por tu cupo de carga gratuito. Guardado para siempre, pagado una sola vez.",
+  "uploadCostFreeNote": "Cubierto por tu cupo de carga gratuito",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4555,7 +4556,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "Pagado una sola vez con créditos de Turbo. Guardado para siempre, sin suscripción.",
+  "uploadCostCreditsNote": "Pagado con créditos de Turbo",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4563,7 +4564,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "Pagado una sola vez desde tu monedero. Guardado para siempre, sin suscripción.",
+  "uploadCostWalletNote": "Pagado desde tu monedero",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },

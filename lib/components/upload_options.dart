@@ -37,7 +37,6 @@ class UploadOptions extends StatefulWidget {
 }
 
 class _UploadOptionsState extends State<UploadOptions> {
-  bool _open = false;
   late bool? _thumbnails = widget.thumbnails;
   late bool? _compress = widget.compress;
 
@@ -46,137 +45,60 @@ class _UploadOptionsState extends State<UploadOptions> {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final l10n = appLocalizationsOf(context);
-    final summaryStyle = typography.paragraphSmall(
-      fontWeight: ArFontWeight.semiBold,
-      color: colorTokens.textLow,
-    );
 
-    final summary = [
+    final groups = <Widget>[
       if (_thumbnails != null)
-        _thumbnails! ? l10n.thumbnailsOn : l10n.thumbnailsOff,
-      if (_compress ?? false) l10n.compressedSummary,
-      ...widget.summary,
+        Row(
+          children: [
+            ArDriveCheckBox(
+              title: l10n.uploadWithThumbnails,
+              useNewIcons: true,
+              checked: _thumbnails!,
+              titleStyle: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+              ),
+              onChange: (value) {
+                setState(() => _thumbnails = value);
+                widget.onThumbnailsChanged(value);
+              },
+            ),
+            const SizedBox(width: ArDriveSpacing.xs),
+            ArDriveIconButton(
+              icon: ArDriveIcons.info(size: 16, color: colorTokens.textMid),
+              tooltip: l10n.thumbnailsCostNote,
+            ),
+          ],
+        ),
+      if (_compress != null)
+        CompressTextAndCodeRow(
+          value: _compress!,
+          onChanged: (value) {
+            setState(() => _compress = value);
+            widget.onCompressChanged?.call(value);
+          },
+        ),
+      ...widget.children,
     ];
 
-    // A dot drawn, not typed: in this font a typed one reads as a full stop.
-    Widget separator() => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Container(
-            width: 3,
-            height: 3,
-            decoration: BoxDecoration(
-              color: colorTokens.textLow,
-              shape: BoxShape.circle,
-            ),
-          ),
-        );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          button: true,
-          expanded: _open,
-          child: ArDriveFocusable(
-            onActivate: () => setState(() => _open = !_open),
-            child: ArDriveClickArea(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _open = !_open),
-                child: Row(
-                  children: [
-                    (_open
-                        ? ArDriveIcons.carretDown
-                        : ArDriveIcons.carretRight)(
-                      size: 16,
-                      color: colorTokens.textMid,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.uploadOptions,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textHigh,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Open, the options themselves say what is set.
-                    if (!_open)
-                      Expanded(
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            for (var i = 0; i < summary.length; i++) ...[
-                              if (i > 0) separator(),
-                              Text(summary[i], style: summaryStyle),
-                            ],
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        if (_open)
-          Padding(
-            padding: const EdgeInsets.only(left: 24, top: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_thumbnails != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        ArDriveCheckBox(
-                          title: l10n.uploadWithThumbnails,
-                          useNewIcons: true,
-                          checked: _thumbnails!,
-                          titleStyle: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                          onChange: (value) {
-                            setState(() => _thumbnails = value);
-                            widget.onThumbnailsChanged(value);
-                          },
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: ArDriveIconButton(
-                            icon: ArDriveIcons.info(
-                              size: 16,
-                              color: colorTokens.textMid,
-                            ),
-                            tooltip: l10n.thumbnailsCostNote,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (_compress != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: CompressTextAndCodeRow(
-                      value: _compress!,
-                      onChanged: (value) {
-                        setState(() => _compress = value);
-                        widget.onCompressChanged?.call(value);
-                      },
-                    ),
-                  ),
-                for (final child in widget.children)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: child,
-                  ),
-              ],
-            ),
-          ),
+    return ArDriveDisclosure(
+      icon: Icons.tune,
+      title: l10n.uploadOptions,
+      summary: [
+        if (_thumbnails != null)
+          _thumbnails! ? l10n.thumbnailsOn : l10n.thumbnailsOff,
+        if (_compress ?? false) l10n.compressedSummary,
+        ...widget.summary,
       ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < groups.length; i++) ...[
+            if (i > 0) const SizedBox(height: ArDriveSpacing.md),
+            groups[i],
+          ],
+        ],
+      ),
     );
   }
 }

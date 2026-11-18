@@ -448,6 +448,26 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  /// The license [category] records, from its settings: null while they
+  /// are not complete, as when no CC type is picked yet.
+  LicenseState? configuredLicense(LicenseCategory category) {
+    switch (category) {
+      case LicenseCategory.udl:
+        if (!_licenseUdlParamsForm.valid) return null;
+        return LicenseState(
+          meta: udlLicenseDefault,
+          params: udlFormToLicenseParams(_licenseUdlParamsForm),
+        );
+      case LicenseCategory.cc:
+        final LicenseMeta? licenseMeta =
+            _licenseCcTypeForm.control('ccTypeField').value;
+        if (licenseMeta == null) return null;
+        return LicenseState(meta: licenseMeta);
+      default:
+        throw StateError('Invalid license category: $category');
+    }
+  }
+
   /// License Settings
   void configuringLicenseBack() {
     if (state is UploadConfiguringLicense) {
@@ -461,24 +481,11 @@ class UploadCubit extends Cubit<UploadState> {
     if (state is UploadConfiguringLicense) {
       final configuringLicense = state as UploadConfiguringLicense;
 
-      late LicenseState licenseState;
-      switch (configuringLicense.licenseCategory) {
-        case LicenseCategory.udl:
-          licenseState = LicenseState(
-            meta: udlLicenseDefault,
-            params: udlFormToLicenseParams(_licenseUdlParamsForm),
-          );
-        case LicenseCategory.cc:
-          final LicenseMeta? licenseMeta =
-              _licenseCcTypeForm.control('ccTypeField').value;
-          // No type is preselected, and Next stays disabled until one is
-          // picked. If this is reached anyway, stay on this step.
-          if (licenseMeta == null) return;
-          licenseState = LicenseState(meta: licenseMeta);
-        default:
-          throw StateError(
-              'Invalid license category: ${configuringLicense.licenseCategory}');
-      }
+      final licenseState =
+          configuredLicense(configuringLicense.licenseCategory);
+      // No CC type is preselected, and Next stays disabled until one is
+      // picked. If this is reached anyway, stay on this step.
+      if (licenseState == null) return;
 
       emit(UploadReviewWithLicense(
         readyState: configuringLicense.readyState,
@@ -1161,16 +1168,27 @@ class UploadCubit extends Cubit<UploadState> {
   /// the payment sheet last defaulted to, which can be the wallet when credits
   /// are short or Turbo is down. Goes on to the license step when there is
   /// one, the manifest review when manifests are chosen, or the upload.
+  /// Upload on the review, which holds everything the upload needs: the
+  /// license's settings sit in its options and the deployments to update in
+  /// them too, so it starts the upload with no step after it.
   void uploadFromReview({
     required UploadMethod method,
     LicenseCategory? licenseCategory,
   }) {
     _uploadMethod = method;
+    final ready = state;
+    if (ready is! UploadReady) return;
+    LicenseState? license;
     if (licenseCategory != null) {
-      initialScreenNext(licenseCategory: licenseCategory);
-    } else {
-      initialScreenUpload();
+      license = configuredLicense(licenseCategory);
+      // The review holds Upload back until the settings are complete.
+      if (license == null) return;
     }
+    startUpload(
+      uploadPlanForAr: ready.paymentInfo.uploadPlanForAR!,
+      uploadPlanForTurbo: ready.paymentInfo.uploadPlanForTurbo,
+      licenseStateConfigured: license,
+    );
   }
 
   /// How this upload will be paid for.
