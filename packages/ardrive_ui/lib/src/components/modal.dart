@@ -265,7 +265,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.width,
     this.hasCloseButton,
     this.close,
-    this.closeLabel = 'Close',
+    this.closeLabel,
     this.scrollableContent = false,
   });
 
@@ -288,7 +288,12 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final Function()? close;
 
   /// What a screen reader calls the close button.
-  final String closeLabel;
+  ///
+  /// When not given, the title of the dialog's Cancel or Close
+  /// ([ModalAction.close]), which the app has already put in the reader's
+  /// language, since the button does what that action does; "Close" when
+  /// the dialog has none.
+  final String? closeLabel;
 
   VoidCallback _close(BuildContext context) => () {
         if (close != null) {
@@ -353,7 +358,9 @@ class ArDriveStandardModalNew extends StatelessWidget {
               Semantics(
                 container: true,
                 button: true,
-                label: closeLabel,
+                label: closeLabel ??
+                    actions?.where((a) => a.closesDialog).firstOrNull?.title ??
+                    'Close',
                 // Said only while held, so a screen reader hears it can't be
                 // pressed; otherwise as before.
                 enabled: closeEnabled ? null : false,
