@@ -15,7 +15,11 @@ enum ArDriveSpinnerSize {
 }
 
 /// Something is loading. Two sizes, one look.
-class ArDriveSpinner extends StatelessWidget {
+///
+/// Material's own indeterminate ring starts as a dot and grows for the first
+/// second, which reads as a speck or a glitch. This one is a full arc from
+/// the first frame, turning.
+class ArDriveSpinner extends StatefulWidget {
   const ArDriveSpinner({
     super.key,
     this.size = ArDriveSpinnerSize.small,
@@ -35,21 +39,83 @@ class ArDriveSpinner extends StatelessWidget {
   final String? semanticsLabel;
 
   @override
+  State<ArDriveSpinner> createState() => _ArDriveSpinnerState();
+}
+
+class _ArDriveSpinnerState extends State<ArDriveSpinner>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+
+  bool get _spinning => widget.value == null;
+
+  @override
+  void initState() {
+    super.initState();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(ArDriveSpinner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _sync();
+  }
+
+  void _sync() {
+    // One controller for the state's life: a single ticker provider cannot
+    // make a second one after the first is disposed.
+    final controller = _controller ??= AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    if (widget.value == null) {
+      if (!controller.isAnimating) controller.repeat();
+    } else {
+      controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final size = widget.size;
+    final color = widget.color ?? colorTokens.iconMid;
+    final controller = _spinning ? _controller : null;
+    // Spinning: a fixed three-quarter arc, turned. Drawn by the same
+    // indicator as a measured one, so it looks the same and a finder for it
+    // still finds it.
+    final ring = CircularProgressIndicator(
+      value: controller == null ? widget.value : _spinningArc,
+      strokeWidth: size.strokeWidth,
+      strokeCap: StrokeCap.round,
+      color: color,
+      backgroundColor: controller == null ? colorTokens.strokeLow : null,
+      semanticsLabel: widget.semanticsLabel,
+    );
     return SizedBox.square(
       dimension: size.dimension,
-      child: CircularProgressIndicator(
-        value: value,
-        strokeWidth: size.strokeWidth,
-        strokeCap: StrokeCap.round,
-        color: color ?? colorTokens.iconMid,
-        backgroundColor: value == null ? null : colorTokens.strokeLow,
-        semanticsLabel: semanticsLabel,
-      ),
+      child: controller == null
+          ? ring
+          // The arc is for the eye: a screen reader would read it out as 75%.
+          : Semantics(
+              label: widget.semanticsLabel,
+              child: ExcludeSemantics(
+                child: RepaintBoundary(
+                  child: RotationTransition(turns: controller, child: ring),
+                ),
+              ),
+            ),
     );
   }
 }
+
+/// How much of the ring a spinning one draws.
+const double _spinningArc = 0.75;
 
 /// A progress bar: how far something has got, or that it is under way when
 /// [value] is null.

@@ -493,8 +493,11 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// Material's sun, not the ArDriveIcons font's: that font's sun
+  /// glyph (0xe802) is a plain filled disc, so it read as a dot beside the
+  /// moon.
   static ArDriveIcon sun({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.sun,
+        icon: Icons.light_mode,
         size: size ?? 26,
         color: color,
       );
