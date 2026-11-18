@@ -52,6 +52,7 @@ void main() {
       double textScale = 1,
       bool countOnOnePage = true,
       int? reveal,
+      double rowPx = 0,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -80,7 +81,9 @@ void main() {
                   ],
                   rows: [for (var i = 0; i < rows; i++) _Row(i, 'row $i')],
                   buildRow: (row) => TableRowWidget([
-                    Text(row.id),
+                    rowPx > 0
+                        ? SizedBox(height: rowPx, child: Text(row.id))
+                        : Text(row.id),
                     const Text('1 B'),
                   ]),
                   rowsPerPage: rowsPerPage,
@@ -414,7 +417,12 @@ void main() {
           (tester) async {
         await pump(tester, rows: 100, rowsPerPage: 25, reveal: index);
         await tester.pumpAndSettle();
-        final row = tester.getRect(find.text('row $index'));
+        final row = tester.getRect(
+            find.byType(ArDriveClickArea).evaluate().isEmpty
+                ? find.byKey(ValueKey(_Row(index, 'row $index')))
+                : find.byWidgetPredicate((w) =>
+                    w is ArDriveClickArea &&
+                    w.key == ValueKey(_Row(index, 'row $index'))));
         expect(row.top, greaterThanOrEqualTo(_barHeight + 45));
         expect(row.bottom, lessThanOrEqualTo(900));
       });
@@ -494,5 +502,56 @@ void main() {
         expect(spot, isNotNull);
       });
     }
+
+    testWidgets(
+        'scrolling a row into view stops exactly under the bar and headings',
+        (tester) async {
+      await pump(tester, rows: 25);
+      await wheel(tester, 6000);
+      await tester.pump();
+      // A row that is partly under the headings, brought to the top.
+      final rows = [
+        for (var i = 0; i < 25; i++)
+          if (find.text('row $i').evaluate().isNotEmpty) i
+      ];
+      final hidden = rows.firstWhere(
+          (i) => tester.getTopLeft(find.text('row $i')).dy < _barHeight + 45);
+      Scrollable.ensureVisible(
+        tester.element(find.byWidgetPredicate((w) =>
+            w is ArDriveClickArea &&
+            w.key == ValueKey(_Row(hidden, 'row $hidden')))),
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+      );
+      await tester.pumpAndSettle();
+      final top = tester
+          .getRect(find.byWidgetPredicate((w) =>
+              w is ArDriveClickArea &&
+              w.key == ValueKey(_Row(hidden, 'row $hidden'))))
+          .top;
+      // To the pixel: the row's top is the headings' last line, and the
+      // headings start at the bar's bottom. No gap and no overlap.
+      final hairline = find.byWidgetPredicate((w) =>
+          w is Container &&
+          w.constraints?.maxHeight == 1 &&
+          w.constraints?.minHeight == 1);
+      expect(top, tester.getRect(hairline).bottom);
+      // The headings pinned right under the bar: 14 above their row, 6 below.
+      expect(tester.getTopLeft(find.text('Name')).dy,
+          greaterThanOrEqualTo(_barHeight + 14));
+      expect(
+          tester.getRect(hairline).top -
+              tester.getTopLeft(find.text('Name')).dy,
+          lessThan(40));
+    });
+
+    testWidgets('a revealed row far down a list of tall rows is found',
+        (tester) async {
+      await pump(tester, rows: 100, rowsPerPage: 100, reveal: 99, rowPx: 100);
+      await tester.pumpAndSettle();
+      final row = tester.getRect(find.byWidgetPredicate((w) =>
+          w is ArDriveClickArea && w.key == const ValueKey(_Row(99, 'row 99'))));
+      expect(row.top, greaterThanOrEqualTo(_barHeight + 45));
+      expect(row.bottom, lessThanOrEqualTo(900));
+    });
   });
 }

@@ -258,6 +258,9 @@ class RenderSliverCollapsingHeader extends RenderSliver
       maxPaintExtent: height,
       cacheExtent: calculateCacheOffset(constraints, from: 0, to: height),
       hasVisualOverflow: true,
+      // The bar is pinned over the top: scrolling something into view stops
+      // below it, as it does below a pinned app bar.
+      maxScrollObstructionExtent: _barHeight,
     );
   }
 
@@ -318,11 +321,36 @@ class RenderSliverCollapsingHeader extends RenderSliver
     context.paintChild(_bar, offset + _barOffset());
   }
 
+  bool _warnedOfBoundaries = false;
+
+  /// Debug only, once: says if the header holds a [RepaintBoundary], which the
+  /// banded painting of the anchor row cannot share between its bands.
+  bool _debugWarnOfRepaintBoundaries() {
+    if (_warnedOfBoundaries) return true;
+    _warnedOfBoundaries = true;
+    var found = false;
+    void visit(RenderObject object) {
+      if (!identical(object, _header) && object.isRepaintBoundary) found = true;
+      object.visitChildren(visit);
+    }
+
+    visit(_header);
+    if (found) {
+      debugPrint(
+        'SliverCollapsingHeader: the header contains a RepaintBoundary; its '
+        'anchor row is painted in bands, which a boundary layer does not '
+        'survive. Keep boundaries out of the header.',
+      );
+    }
+    return true;
+  }
+
   /// The header at its place. While the bar is coming in, its anchor row (the
   /// title and the actions) fades out by [_anchorGoneBy], on its own: the
   /// rest of the header goes on scrolling under the bar, but the bar's own
   /// title and buttons are never drawn over a second pair.
   void _paintHeader(PaintingContext context, Offset offset) {
+    assert(_debugWarnOfRepaintBoundaries());
     final at = Offset(0, -_scrolled);
     final box = _anchorKey?.currentContext?.findRenderObject();
     if (_progress <= 0 || box is! RenderBox || !box.attached || !box.hasSize) {
@@ -334,6 +362,12 @@ class RenderSliverCollapsingHeader extends RenderSliver
         .shift(at);
     // Everything but the row, as bands around it: a clip with a hole in it
     // did not hold on the web, so each band is a plain rectangle.
+    //
+    // The header is painted once per band, so it must hold no RepaintBoundary:
+    // a boundary child paints into a layer of its own, and a layer painted
+    // under several clips is not what a plain widget drawn several times is
+    // (it is the same layer attached twice). None exists in the header today;
+    // [_debugWarnOfRepaintBoundaries] says so in debug builds if one appears.
     final whole = (Offset.zero & _header.size).shift(at).inflate(8);
     final bands = [
       Rect.fromLTRB(whole.left, whole.top, whole.right, row.top),
