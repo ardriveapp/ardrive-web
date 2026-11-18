@@ -6,6 +6,7 @@ import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/upload_entry/domain/upload_destinations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/models.dart' show Drive;
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -13,12 +14,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ardrive/blocs/blocs.dart';
 
+/// [promptToUpload]'s shape, for the listener's tests.
+typedef SharedUploadPrompt = Future<void> Function(
+  BuildContext context, {
+  required String driveId,
+  required String parentFolderId,
+  required bool isFolderUpload,
+  Drive? drive,
+  List<IOFile>? files,
+});
+
 class SharingFileListener extends StatefulWidget {
-  const SharingFileListener(
-      {super.key, required this.child, required this.context});
+  const SharingFileListener({
+    super.key,
+    required this.child,
+    required this.context,
+    @visibleForTesting this.prompt,
+    @visibleForTesting this.read,
+  });
 
   final Widget child;
   final BuildContext context;
+
+  /// Stands in for [promptToUpload] in a test.
+  final SharedUploadPrompt? prompt;
+
+  /// Stands in for the local database's folder reads in a test.
+  final DrivePickerRead? read;
 
   @override
   State<SharingFileListener> createState() => _SharingFileListenerState();
@@ -40,14 +62,19 @@ class _SharingFileListenerState extends State<SharingFileListener> {
     final syncCubit = context.read<SyncCubit>();
     final driveDao = context.read<DriveDao>();
     final drivesState = context.read<DrivesCubit>().state;
+    final profile = context.read<ProfileCubit>().state;
+    final wallet = profile is ProfileLoggedIn ? profile.user.walletAddress : '';
     // Owned drives, the last one used first, as Upload anywhere offers them;
-    // before the drive list is known, all that this device holds.
+    // before the drive list is known, the ones this device holds that the
+    // wallet owns, never drives only attached to read.
     final drives = drivesState is DrivesLoadSuccess
         ? uploadDestinations(
             ownedDrives: drivesState.userDrives,
             lastSelectedDriveId: drivesState.selectedDriveId,
           )
-        : await driveDao.allDrives().get();
+        : (await driveDao.allDrives().get())
+            .where((drive) => drive.ownerAddress == wallet)
+            .toList();
     if (!outer.mounted) {
       sharingFileBloc.add(SharingFileCleared());
       return;
@@ -62,12 +89,13 @@ class _SharingFileListenerState extends State<SharingFileListener> {
       drives: drives,
       showsPrivacy: true,
       noDrivesMessage: strings.noDrives,
+      read: widget.read,
       sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
       syncRefusal: () => syncCubit.lastSingleSyncRefusal,
       actionLabel: (_) => strings.uploadHere,
       onChoose: (choice) {
         if (!outer.mounted) return;
-        promptToUpload(
+        (widget.prompt ?? promptToUpload)(
           outer,
           drive: choice.drive,
           driveId: choice.drive.id,
