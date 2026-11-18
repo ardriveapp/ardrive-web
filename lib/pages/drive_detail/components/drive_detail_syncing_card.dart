@@ -197,9 +197,10 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         child: LayoutBuilder(
           builder: (context, constraints) => SizedBox(
             height: constraints.hasBoundedHeight
+                // The padding above has already taken its 20 px off.
                 ? math.min(
                     MediaQuery.of(context).size.height * 0.8,
-                    constraints.maxHeight - 20,
+                    constraints.maxHeight,
                   )
                 : MediaQuery.of(context).size.height * 0.8,
             child: ArDriveCard(

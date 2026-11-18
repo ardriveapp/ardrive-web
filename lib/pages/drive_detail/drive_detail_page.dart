@@ -294,63 +294,72 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       // The folder's own header stays where the table will put
                       // it: without it the table, arriving, jumped down by the
                       // header's height.
-                      final waiting = _waitingDrive(context, driveDetailState);
-                      return ScreenTypeLayout.builder(
-                        mobile: (context) => Scaffold(
-                          drawer:
-                              PublicationMode.isOn ? null : const AppSideBar(),
-                          appBar: const MobileAppBar(),
-                          body: Column(
-                            children: [
-                              if (waiting != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: IgnorePointer(
-                                    child: MobileFolderNavigation(
-                                      driveName: waiting.name,
-                                      isPrivate: waiting.isPrivate,
-                                      // A drive's root has no trail below
-                                      // the drive, as when it is loaded.
-                                      path: const [],
-                                      isShowingHiddenFiles: false,
-                                    ),
-                                  ),
-                                ),
-                              const Expanded(child: DriveDetailSyncingCard()),
-                            ],
-                          ),
-                        ),
-                        desktop: (context) => Column(
-                          children: [
-                            const AppTopBar(),
-                            // The margin the unsynced card already has. Without
-                            // it this panel ran to the window's right edge
-                            // while every other full-panel state stopped short
-                            // of it.
-                            Expanded(
-                              child: Padding(
-                                // The gap to the top bar the card has none of
-                                // its own, when there is no header above it.
-                                padding: EdgeInsets.only(
-                                  top: waiting == null ? 20 : 0,
-                                  right: 16,
-                                ),
-                                child: Column(
+                      //
+                      // Read again when the drive list arrives: a link opened
+                      // before it had loaded has no drive to name yet.
+                      return WaitingDriveBuilder(
+                          wait: driveDetailState,
+                          builder: (context, waiting) {
+                            return ScreenTypeLayout.builder(
+                              mobile: (context) => Scaffold(
+                                drawer: PublicationMode.isOn
+                                    ? null
+                                    : const AppSideBar(),
+                                appBar: const MobileAppBar(),
+                                body: Column(
                                   children: [
-                                    if (waiting != null) ...[
-                                      ExplorerWaitingHeader(drive: waiting),
-                                      const SizedBox(
-                                          height: explorerHeadingGap),
-                                    ],
+                                    if (waiting != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: IgnorePointer(
+                                          child: MobileFolderNavigation(
+                                            driveName: waiting.name,
+                                            isPrivate: waiting.isPrivate,
+                                            // A drive's root has no trail below
+                                            // the drive, as when it is loaded.
+                                            path: const [],
+                                            isShowingHiddenFiles: false,
+                                          ),
+                                        ),
+                                      ),
                                     const Expanded(
                                         child: DriveDetailSyncingCard()),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
+                              desktop: (context) => Column(
+                                children: [
+                                  const AppTopBar(),
+                                  // The margin the unsynced card already has. Without
+                                  // it this panel ran to the window's right edge
+                                  // while every other full-panel state stopped short
+                                  // of it.
+                                  Expanded(
+                                    child: Padding(
+                                      // The gap to the top bar the card has none of
+                                      // its own, when there is no header above it.
+                                      padding: EdgeInsets.only(
+                                        top: waiting == null ? 20 : 0,
+                                        right: 16,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          if (waiting != null) ...[
+                                            ExplorerWaitingHeader(
+                                                drive: waiting),
+                                            const SizedBox(
+                                                height: explorerHeadingGap),
+                                          ],
+                                          const Expanded(
+                                              child: DriveDetailSyncingCard()),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          });
                     } else if (driveDetailState
                         is DriveDetailDrivesUnavailable) {
                       // The same chrome and the same panel as the wait above,
@@ -682,25 +691,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
       ),
     );
-  }
-
-  /// The drive a wait in the explorer is for, when the explorer was told which
-  /// drive and it is the drive's root that it waits for: what the cubit is
-  /// loading, not what the drive list has selected, which can be another
-  /// drive. Null where either is not known, and the wait then has no header.
-  Drive? _waitingDrive(BuildContext context, DriveDetailLoadInProgress wait) {
-    final driveId = wait.driveId;
-    if (driveId == null) return null;
-    final drives = context.read<DrivesCubit>().state;
-    if (drives is! DrivesLoadSuccess) return null;
-    for (final drive in [...drives.userDrives, ...drives.sharedDrives]) {
-      if (drive.id != driveId) continue;
-      // A folder below the root has a trail this does not know.
-      final folderId = wait.folderId;
-      final atRoot = folderId == null || folderId == drive.rootFolderId;
-      return atRoot ? drive : null;
-    }
-    return null;
   }
 
   /// Whether [state] is at a publication's root, where [PublicationHeader] takes the
@@ -1910,5 +1900,45 @@ class _DriveMenu extends StatelessWidget {
           (previous is SyncInProgress) != (current is SyncInProgress),
       builder: (context, state) => builder(context, state is SyncInProgress),
     );
+  }
+}
+
+/// Builds a wait in the explorer with the drive it is for, when the explorer
+/// was told which drive and it is the drive's root that it waits for: what
+/// the cubit is loading, not what the drive list has selected, which can be
+/// another drive. Null where either is not known, and the wait then has no
+/// header.
+///
+/// Built again when the drive list changes: a link opened before the list had
+/// loaded waits with no drive to name, and gets one when the list arrives.
+class WaitingDriveBuilder extends StatelessWidget {
+  const WaitingDriveBuilder({
+    super.key,
+    required this.wait,
+    required this.builder,
+  });
+
+  final DriveDetailLoadInProgress wait;
+  final Widget Function(BuildContext context, Drive? drive) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DrivesCubit, DrivesState>(
+      builder: (context, drives) => builder(context, _driveIn(drives)),
+    );
+  }
+
+  Drive? _driveIn(DrivesState drives) {
+    final driveId = wait.driveId;
+    if (driveId == null) return null;
+    if (drives is! DrivesLoadSuccess) return null;
+    for (final drive in [...drives.userDrives, ...drives.sharedDrives]) {
+      if (drive.id != driveId) continue;
+      // A folder below the root has a trail this does not know.
+      final folderId = wait.folderId;
+      final atRoot = folderId == null || folderId == drive.rootFolderId;
+      return atRoot ? drive : null;
+    }
+    return null;
   }
 }

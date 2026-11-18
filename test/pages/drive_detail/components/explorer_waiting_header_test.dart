@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -134,5 +136,39 @@ void main() {
     expect(tester.getRect(find.byType(ArDriveCard)).left, loadedCard.left);
     // Tall enough that the loaded header, with its menu, does not change it.
     expect(tester.getSize(find.byType(ArDriveCard)).height, loadedCard.height);
+  });
+
+  testWidgets('names the drive once the drive list arrives, if it was not yet',
+      (tester) async {
+    final drives = MockDrivesCubit();
+    final states = StreamController<DrivesState>();
+    addTearDown(states.close);
+    whenListen(drives, states.stream, initialState: DrivesLoadInProgress());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<DrivesCubit>.value(
+          value: drives,
+          child: WaitingDriveBuilder(
+            wait: DriveDetailLoadInProgress(driveId: drive.id),
+            builder: (context, waiting) =>
+                Text(waiting == null ? 'no header' : waiting.name),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('no header'), findsOneWidget);
+
+    // The drive list loads with the same drive selected: the explorer's
+    // cubit has nothing new to say, so this is the only notice.
+    states.add(DrivesLoadSuccess(
+      selectedDriveId: drive.id,
+      userDrives: [drive],
+      sharedDrives: const [],
+      drivesWithAlerts: const [],
+      canCreateNewDrive: true,
+    ));
+    await tester.pump();
+    expect(find.text('Demo Drive'), findsOneWidget);
   });
 }
