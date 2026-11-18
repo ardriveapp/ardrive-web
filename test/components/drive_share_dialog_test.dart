@@ -287,7 +287,11 @@ void main() {
           (tester) async {
         await pumpState(tester, state);
 
-        expect(find.bySemanticsLabel('Close'), findsOneWidget);
+        // The corner close button; its label is the dialog's own Cancel/Close.
+        expect(
+            find.byWidgetPredicate(
+                (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+            findsOneWidget);
       });
     }
   });

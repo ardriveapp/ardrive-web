@@ -146,7 +146,11 @@ void main() {
 
       expect(find.text('Drive ID'), findsOneWidget);
       expect(find.text('Drive name'), findsOneWidget);
-      expect(find.bySemanticsLabel('Close'), findsOneWidget);
+      // The corner close button; its label is the dialog's own Cancel/Close.
+      expect(
+          find.byWidgetPredicate(
+              (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+          findsOneWidget);
     });
   });
 
