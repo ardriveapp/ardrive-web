@@ -14,7 +14,6 @@ Future<void> showBiometricIsLocked({
   return showBiometricExceptionDialog(
     context,
     description: appLocalizationsOf(context).biometricTemporarilyDisabled,
-    actionTitle: appLocalizationsOf(context).goToDeviceSettings,
     cancelTitle: appLocalizationsOf(context).cancel,
     cancelAction: cancelAction,
   );
@@ -61,7 +60,8 @@ Future<void> showBiometricPermanentlyLockedOut({
 
       /// let the user use password/pin
       biometricsAuth.authenticate(
-          biometricOnly: false, localizedReason: 'TODO');
+          biometricOnly: false,
+          localizedReason: appLocalizationsOf(context).enableBiometricLogin);
     },
     cancelTitle: appLocalizationsOf(context).cancel,
     cancelAction: cancelAction,
@@ -114,7 +114,7 @@ Future<void> showBiometricExceptionDialog(
       title: appLocalizationsOf(context).enableBiometricLogin,
       description: description,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () {
             Navigator.pop(context);
 

@@ -34,50 +34,21 @@ class DownloadWalletModal extends StatelessWidget {
       listener: (context, state) {
         if (state is DownloadWalletSuccess) {
           Navigator.of(context).pop();
-        } else if (state is DownloadWalletFailure) {
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModalNew(
-              title: appLocalizationsOf(context).error,
-              content: ArDriveNotice(
-                type: ArDriveNoticeType.error,
-                message: appLocalizationsOf(context)
-                    .anErrorOccuredWhileDownloadingYourKeyfile,
-              ),
-              actions: [
-                ModalAction(
-                  title: appLocalizationsOf(context).ok,
-                  action: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-          );
         }
       },
       builder: (context, state) {
-        final typography = ArDriveTypographyNew.of(context);
         return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).downloadWalletKeyfile,
           content: Column(
             children: [
-              if (state is DownloadWalletWrongPassword) ...[
-                Text(
-                  appLocalizationsOf(context).validationPasswordIncorrect,
-                  style: typography.paragraphLarge(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colorTokens
-                        .statusErrorFg,
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
               ArDriveTextFieldNew(
                 autofocus: true,
                 controller: _passwordController,
-                label: appLocalizationsOf(context).pleaseEnterYourPassword,
+                label: appLocalizationsOf(context).password,
+                errorMessage: state is DownloadWalletWrongPassword
+                    ? appLocalizationsOf(context).validationPasswordIncorrect
+                    : null,
+                isEnabled: state is! DownloadWalletLoading,
                 obscureText: true,
                 showObfuscationToggle: true,
                 onFieldSubmitted: (_) {
@@ -86,7 +57,15 @@ class DownloadWalletModal extends StatelessWidget {
                       .add(DownloadWallet(_passwordController.text));
                 },
               ),
-              const SizedBox(height: 16),
+              if (state is DownloadWalletFailure) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                ArDriveNotice(
+                  type: ArDriveNoticeType.error,
+                  message: appLocalizationsOf(context)
+                      .anErrorOccuredWhileDownloadingYourKeyfile,
+                ),
+              ],
+              const SizedBox(height: ArDriveSpacing.md),
               ArDriveLink(
                 text: appLocalizationsOf(context).whatIsAKeyFile,
                 onTap: () => showKeyfileInfoModal(context: context),
@@ -96,13 +75,16 @@ class DownloadWalletModal extends StatelessWidget {
           actions: [
             ModalAction.close(
               title: appLocalizationsOf(context).cancel,
+              isEnable: state is! DownloadWalletLoading,
               action: () {
                 Navigator.of(context).pop();
               },
             ),
             ModalAction(
-              title: appLocalizationsOf(context).enter,
-              isEnable: state is! DownloadWalletLoading,
+              title: state is DownloadWalletFailure
+                  ? appLocalizationsOf(context).tryAgain
+                  : appLocalizationsOf(context).download,
+              isLoading: state is DownloadWalletLoading,
               action: () {
                 context
                     .read<DownloadWalletBloc>()

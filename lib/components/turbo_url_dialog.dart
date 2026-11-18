@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -53,47 +54,40 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
     return uri != null && uri.hasScheme && uri.hasAuthority;
   }
 
-  static String? _validateUrl(String? value) {
+  String? _validateUrl(String? value) {
+    final strings = appLocalizationsOf(context);
     if (value == null || value.isEmpty) {
-      return 'Please enter a URL';
+      return strings.urlRequired;
     }
     if (!_isValidUrl(value)) {
-      return 'Please enter a valid URL (e.g. https://upload.ardrive.io)';
+      return strings.urlInvalid;
     }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
+    final strings = appLocalizationsOf(context);
 
     return ArDriveStandardModalNew(
       width: 500,
-      title: 'Turbo Service URLs',
+      title: strings.turboServicesTitle,
       content: SizedBox(
         width: 500,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Configure the upload and payment service URLs.',
-              style: typography.paragraphNormal(
-                color: colorTokens.textMid,
-              ),
-            ),
-            const SizedBox(height: 16),
             ArDriveTextFieldNew(
               controller: _uploadController,
               hintText: 'https://upload.ardrive.io',
-              label: 'Upload Service URL',
+              label: strings.turboUploadUrlLabel,
               validator: _validateUrl,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             ArDriveTextFieldNew(
               controller: _paymentController,
               hintText: 'https://payment.ardrive.io',
-              label: 'Payment Service URL',
+              label: strings.turboPaymentUrlLabel,
               validator: _validateUrl,
             ),
           ],
@@ -101,11 +95,11 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
       ),
       actions: [
         ModalAction.close(
-          title: 'Cancel',
+          title: strings.cancel,
           action: () => Navigator.of(context).pop(),
         ),
         ModalAction(
-          title: 'Save',
+          title: strings.save,
           isEnable: _isValid,
           action: () {
             widget.onSave(

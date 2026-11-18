@@ -27,7 +27,7 @@ void showTurboPaymentRequiredDialog(BuildContext context) {
             Navigator.of(context).pop();
             showTurboTopupModal(context);
           },
-          title: appLocalizationsOf(context).buyCredits,
+          title: appLocalizationsOf(context).addCredits,
         ),
       ],
     ),

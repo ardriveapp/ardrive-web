@@ -333,15 +333,22 @@ class CryptoErrorView extends StatelessWidget {
         final action = canRetry ? onRetry : onClose;
 
         return TurboTopupScaffold(
-          title: 'Payment failed',
+          title: appLocalizationsOf(context).turboCryptoFailed,
           canClose: onClose != null,
           onClose: onClose,
           actions: [
-            ModalAction(
-              title: canRetry ? 'Try again' : 'Close',
-              isEnable: action != null,
-              action: action ?? () {},
-            ),
+            if (canRetry)
+              ModalAction(
+                title: appLocalizationsOf(context).tryAgain,
+                isEnable: action != null,
+                action: action ?? () {},
+              )
+            else
+              ModalAction.close(
+                title: appLocalizationsOf(context).close,
+                isEnable: action != null,
+                action: action ?? () {},
+              ),
           ],
           child: Column(
             mainAxisSize: MainAxisSize.min,

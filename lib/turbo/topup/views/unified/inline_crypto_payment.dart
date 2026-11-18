@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/components/network_indicator.dart';
 import 'package:ardrive/turbo/topup/models/detected_wallet.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,7 +40,7 @@ class InlineCryptoPayment extends StatelessWidget {
             showInternalBackButton || onBackToPaymentMethods != null;
 
         return TurboTopupScaffold(
-          title: 'Buy Turbo Credits',
+          title: appLocalizationsOf(context).turboBuyCredits,
           onClose: onCancel,
           canClose: onCancel != null,
           actions: [

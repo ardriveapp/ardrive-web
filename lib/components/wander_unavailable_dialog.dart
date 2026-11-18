@@ -102,7 +102,7 @@ class _WanderUnavailableDialogState extends State<WanderUnavailableDialog> {
       title: title,
       description: description,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: l10n.cancelEmphasized,
         ),

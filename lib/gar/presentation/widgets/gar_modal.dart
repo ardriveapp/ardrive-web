@@ -2,6 +2,7 @@ import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/bloc/gar_bloc.dart';
 import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -63,10 +64,11 @@ class _ArIOGatewaySelectorModalContentState
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final typography = ArDriveTypographyNew.of(context);
           final garBloc = context.read<GarBloc>();
+          final strings = appLocalizationsOf(context);
 
           return ArDriveStandardModalNew(
             width: 500,
-            title: 'Select AR.IO Gateway',
+            title: strings.gatewayChooseArio,
             content: SizedBox(
               height: 400,
               width: 500,
@@ -74,8 +76,8 @@ class _ArIOGatewaySelectorModalContentState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SearchTextField(
-                    labelText: 'Search gateway',
-                    hintText: 'Search for a gateway',
+                    labelText: strings.gatewaySearch,
+                    hintText: strings.gatewaySearch,
                     onChanged: (value) {
                       if (value.isEmpty) {
                         garBloc.add(CleanSearchResults());
@@ -88,11 +90,11 @@ class _ArIOGatewaySelectorModalContentState
                       garBloc.add(SearchGateways(query: value));
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: ArDriveSpacing.md),
                   Expanded(
                     child: ListView.separated(
                       separatorBuilder: (context, index) =>
-                          const SizedBox(height: 4),
+                          const SizedBox(height: ArDriveSpacing.xxs),
                       shrinkWrap: true,
                       itemCount: state.searchResults != null
                           ? state.searchResults!.length
@@ -142,47 +144,49 @@ class _ArIOGatewaySelectorModalContentState
               ),
             ),
             actions: [
-              ModalAction.dismiss(
+              ModalAction.close(
                 action: () {
                   Navigator.of(context).pop();
                 },
-                title: 'Cancel',
+                title: strings.cancel,
               ),
             ],
           );
         }
 
         if (state is GatewaysError) {
+          final strings = appLocalizationsOf(context);
           return ArDriveStandardModalNew(
-            hasCloseButton: true,
-            title: 'Error',
-            description:
-                'An error occurred while loading the gateways. Please try again.',
+            title: strings.gatewayLoadFailedTitle,
+            content: ArDriveNotice(
+              type: ArDriveNoticeType.error,
+              message: strings.gatewayLoadFailedBody,
+            ),
             actions: [
               ModalAction.close(
                 action: () {
                   Navigator.of(context).pop();
                 },
-                title: 'Close',
+                title: strings.close,
               ),
               ModalAction(
                 action: () {
                   context.read<GarBloc>().add(GetGateways());
                 },
-                title: 'Try again',
+                title: strings.tryAgain,
               ),
             ],
           );
         }
 
         return ProgressDialog(
-          title: 'Loading gateways',
+          title: appLocalizationsOf(context).gatewayLoading,
           actions: [
             ModalAction.dismiss(
               action: () {
                 Navigator.of(context).pop();
               },
-              title: 'Cancel',
+              title: appLocalizationsOf(context).cancel,
             ),
           ],
         );

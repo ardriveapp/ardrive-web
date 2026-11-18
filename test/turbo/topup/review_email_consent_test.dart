@@ -66,7 +66,7 @@ void main() {
     await tester.enterText(find.byType(EditableText).first, 'a@b.co');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Confirm & Pay'));
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Pay'));
     await tester.pump();
 
     final event = verify(() => review.add(captureAny())).captured.single

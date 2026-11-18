@@ -160,15 +160,10 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
                       padding: EdgeInsets.all(ArDriveSpacing.sm),
                       child: ArDriveSpinner(),
                     )
-                  : _validationResult != null
-                      ? _buildValidationIcon(colorTokens)
-                      : null,
+                  : null,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return strings.gatewayUrlRequired;
-                }
-                if (_validationResult != null && !_validationResult!.isValid) {
-                  return _validationResult!.message;
                 }
                 return null;
               },
@@ -219,21 +214,6 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
         GatewayWarningLevel.warning => ArDriveNoticeType.warning,
         GatewayWarningLevel.error => ArDriveNoticeType.error,
       };
-
-  Widget _buildValidationIcon(ArDriveColorTokens colorTokens) {
-    final (icon, color) = switch (_validationResult!.warningLevel) {
-      GatewayWarningLevel.none => (
-          Icons.check_circle,
-          colorTokens.statusSuccessFg
-        ),
-      GatewayWarningLevel.warning => (
-          Icons.warning,
-          colorTokens.statusWarningFg
-        ),
-      GatewayWarningLevel.error => (Icons.error, colorTokens.statusErrorFg),
-    };
-    return Icon(icon, color: color, size: 20);
-  }
 }
 
 Future<void> showGatewayInputModal(

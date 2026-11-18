@@ -1,5 +1,6 @@
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,7 +39,7 @@ class CryptoProcessingView extends StatelessWidget {
         // No close button: the payment is under way.
         return TurboTopupScaffold(
           // A heading for the dialog, which screen readers announce on open.
-          title: 'Payment in progress',
+          title: appLocalizationsOf(context).turboCryptoInProgress,
           canClose: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
@@ -85,9 +86,9 @@ class CryptoProcessingView extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Don't close warning
-                const ArDriveNotice(
+                ArDriveNotice(
                   type: ArDriveNoticeType.info,
-                  message: "Please don't close this window",
+                  message: appLocalizationsOf(context).turboKeepWindowOpen,
                 ),
               ],
             ),

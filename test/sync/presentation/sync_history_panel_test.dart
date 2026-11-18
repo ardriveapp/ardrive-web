@@ -563,7 +563,7 @@ void main() {
       expect(find.byType(SyncHistoryPanel), findsNothing);
       expect(find.text('12 items changed'), findsNothing);
       // The log export is still the modal's own action.
-      expect(find.text('Download'), findsOneWidget);
+      expect(find.text('Download logs'), findsOneWidget);
 
       // The modal scrolls, and the link sits below the fold on a default
       // test viewport - tapping it where it is not would hit the page behind.

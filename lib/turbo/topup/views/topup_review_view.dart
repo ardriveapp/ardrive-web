@@ -228,7 +228,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     );
   }
 
-  /// Back, and Confirm & Pay: disabled while the quote refreshes, without a
+  /// Back, and Pay: disabled while the quote refreshes, without a
   /// valid email or once the quote has expired, and saying so while paying.
   List<ModalAction> _actions(BuildContext context, PaymentReviewState state) {
     final isPaying = state is PaymentReviewLoading;
@@ -243,7 +243,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             .add(const TurboTopUpShowPaymentFormView(2)),
       ),
       ModalAction(
-        title: isPaying ? 'Processing...' : 'Confirm & Pay',
+        title: appLocalizationsOf(context).pay,
+        isLoading: isPaying,
         isEnable: !isPaying &&
             state is! PaymentReviewLoadingQuote &&
             // After a failure the card details go back to the form.

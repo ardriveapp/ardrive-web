@@ -1347,7 +1347,7 @@ class _Failed extends StatelessWidget {
       final address = context.read<ArNSWalletCubit>().state.linked?.address;
       return ArNSSwitchAccountText(address: address ?? '');
     }
-    return ArNSBodyText(text);
+    return ArDriveNotice(type: ArDriveNoticeType.error, message: text);
   }
 }
 

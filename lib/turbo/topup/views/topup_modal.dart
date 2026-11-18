@@ -31,6 +31,7 @@ import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -476,9 +477,9 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             },
           );
         } else {
-          view = const TurboTopupScaffold(
-            title: 'Buy Turbo Credits',
-            child: SizedBox(
+          view = TurboTopupScaffold(
+            title: appLocalizationsOf(context).turboBuyCredits,
+            child: const SizedBox(
               height: 400,
               child: Center(
                 child: ArDriveSpinner(size: ArDriveSpinnerSize.large),

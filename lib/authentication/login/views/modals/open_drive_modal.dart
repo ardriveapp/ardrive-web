@@ -234,7 +234,7 @@ class _InputStatus extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const ArDriveLinearProgress(),
-            const SizedBox(height: 6),
+            const SizedBox(height: ArDriveSpacing.xs),
             line(strings.attachDriveLookingUp, colorTokens.textLow),
           ],
         ),
