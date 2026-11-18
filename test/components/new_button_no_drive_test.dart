@@ -573,7 +573,7 @@ void main() {
 
   /// The deployment and file pin glyphs fill their font box, so at the menu's
   /// 20 px they drew about 20 px across while the rest drew 14 to 17. And
-  /// Import from manifest wore the deployment icon.
+  /// Import from deployment (was Import from manifest) wore the deployment icon.
   testWidgets(
       'the New menu draws its icons at one size, and import has its own icon',
       (tester) async {
@@ -611,7 +611,7 @@ void main() {
             find.descendant(of: iconOf(name), matching: find.byType(Icon)))
         .size!;
 
-    expect(glyphOf('Import from manifest'), isNot(glyphOf('New deployment')));
+    expect(glyphOf('Import from deployment'), isNot(glyphOf('New deployment')));
 
     const edgeToEdge = ['New deployment', 'New file pin'];
     final names = [
@@ -620,7 +620,7 @@ void main() {
         if (t.name != 'Advanced' && t.icon != null) t.name,
     ];
     expect(names,
-        containsAll([...edgeToEdge, 'Import from manifest', 'New folder']));
+        containsAll([...edgeToEdge, 'Import from deployment', 'New folder']));
 
     final labelLefts = <double>{};
     for (final name in names) {
