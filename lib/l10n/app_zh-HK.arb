@@ -2813,6 +2813,7 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "請檢查授權設定",
   "licenseHeading": "授權",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"

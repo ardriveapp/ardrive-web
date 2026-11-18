@@ -1983,7 +1983,11 @@ class _UploadReadyWidget extends StatelessWidget {
       if (licenseCategory == null)
         l10n.noLicense
       else if (!licenseComplete)
-        l10n.chooseALicenseType
+        // Only Creative Commons has a type to choose; an invalid UDL fee is
+        // a setting to check.
+        licenseCategory == LicenseCategory.cc
+            ? l10n.chooseALicenseType
+            : l10n.licenseCheckSettings
       else
         // The license as it is recorded: "CC-BY", not just "CC".
         l10n.namedLicense(licenseCategory == LicenseCategory.cc

@@ -860,6 +860,8 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "Check the license settings",
+  "@licenseCheckSettings": {"description": "Upload options summary while a license setting, such as the UDL fee, is not valid"},
   "licenseHeading": "License",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"

@@ -93,6 +93,44 @@ void main() {
         ArDriveDisclosure.rowHeight);
   });
 
+  testWidgets(
+      'on a narrow phone with large text the trailing link stays on screen, '
+      'under the title', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ArDriveApp(
+        themeData: lightTheme(),
+        builder: (context) => MaterialApp(
+          home: MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(2)),
+            child: Scaffold(
+              body: Column(children: [
+                ArDriveDisclosure(
+                  icon: Icons.sell_outlined,
+                  title: 'Give it a name like yours.ar.io',
+                  summary: const ['Optional'],
+                  trailing: ArDriveLink(text: 'Get a name', onTap: () {}),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    final link = tester.getRect(find.byType(ArDriveLink));
+    expect(link.right, lessThanOrEqualTo(320));
+    expect(
+        link.top,
+        greaterThan(
+            tester.getRect(find.text('Give it a name like yours.ar.io')).top));
+  });
+
   testWidgets('two of them stack with their titles in line', (tester) async {
     await pump(
       tester,
