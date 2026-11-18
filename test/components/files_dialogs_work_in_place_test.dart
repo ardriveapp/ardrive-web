@@ -49,6 +49,8 @@ class _MockGhost extends MockCubit<GhostFixerState>
 /// the primary is busy, Cancel is held, and a failure or a taken name is said
 /// in the dialog, which stays open.
 void main() {
+  setUpAll(() => registerFallbackValue(_FakeMoveEvent()));
+
   /// What the create folder step reads from the app to make its own cubit.
   Widget withServices(Widget child) => MultiProvider(
         providers: [
@@ -586,6 +588,7 @@ void main() {
 
       await tester.tap(find.text('Try again'));
       verify(() => bloc.add(any(that: isA<FsEntryMoveSubmit>()))).called(1);
+      await tester.pump(const Duration(seconds: 11));
     });
 
     testWidgets('Create folder opens in place of the list, not over it',
@@ -623,6 +626,127 @@ void main() {
       expect(find.text('Skip'), findsNothing);
       expect(button(tester, 'Skip and move the rest').variant,
           ButtonVariant.primary);
+    });
+  });
+
+  group('a quick second press starts nothing', () {
+    testWidgets('rename', (tester) async {
+      final cubit = _MockRename();
+      whenListen(
+        cubit,
+        const Stream<FsEntryRenameState>.empty(),
+        initialState: const FsEntryRenameInitialized(isRenamingFolder: false),
+      );
+      // The cubit is still checking: it has not reported it is busy.
+      final answer = Completer<void>();
+      when(() => cubit.submit(
+            newName: any(named: 'newName'),
+            updateExtension: any(named: 'updateExtension'),
+          )).thenAnswer((_) => answer.future);
+      await pump(
+        tester,
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<FsEntryRenameCubit>.value(value: cubit),
+            BlocProvider<DriveDetailCubit>.value(value: MockDriveDetailCubit()),
+          ],
+          child: const FsEntryRenameForm(entryName: 'photo.png'),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'holiday.png');
+      await tester.pump();
+
+      final rename = find.byWidgetPredicate(
+          (w) => w is ArDriveButtonNew && w.text == 'Rename');
+      await tester.tap(rename);
+      await tester.tap(rename, warnIfMissed: false);
+      await tester.pump();
+
+      verify(() => cubit.submit(
+            newName: 'holiday.png',
+            updateExtension: false,
+          )).called(1);
+      answer.complete();
+      await tester.pump();
+    });
+
+    testWidgets('create folder', (tester) async {
+      final cubit = _MockCreate();
+      whenListen(cubit, const Stream<FolderCreateState>.empty(),
+          initialState: FolderCreateInitial());
+      final answer = Completer<void>();
+      when(() => cubit.submit(folderName: any(named: 'folderName')))
+          .thenAnswer((_) => answer.future);
+      await pump(
+        tester,
+        BlocProvider<FolderCreateCubit>.value(
+          value: cubit,
+          child: const FolderCreateForm(),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'Receipts');
+      await tester.pump();
+
+      final create = find.byWidgetPredicate(
+          (w) => w is ArDriveButtonNew && w.text == 'Create folder');
+      await tester.tap(create);
+      await tester.tap(create, warnIfMissed: false);
+      await tester.pump();
+
+      verify(() => cubit.submit(folderName: 'Receipts')).called(1);
+      answer.complete();
+      await tester.pump();
+    });
+
+    testWidgets('move', (tester) async {
+      final bloc = _MockMove();
+      final loaded = FsEntryMoveLoadSuccess(
+        viewingRootFolder: true,
+        viewingFolder: FolderWithContents(
+          folder: FolderEntry(
+            id: 'root',
+            driveId: 'drive',
+            name: 'root',
+            path: '',
+            dateCreated: DateTime(2024),
+            lastUpdated: DateTime(2024),
+            isGhost: false,
+            isHidden: false,
+          ),
+          subfolders: const [],
+          files: const [],
+        ),
+        itemsToMove: const [],
+      );
+      whenListen(bloc, const Stream<FsEntryMoveState>.empty(),
+          initialState: loaded);
+      final hide = _MockGlobalHide();
+      whenListen(
+        hide,
+        const Stream<GlobalHideState>.empty(),
+        initialState: const GlobalHideInitial(userHasHiddenDrive: false),
+      );
+      await pump(
+        tester,
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<FsEntryMoveBloc>.value(value: bloc),
+            BlocProvider<GlobalHideBloc>.value(value: hide),
+            BlocProvider<DriveDetailCubit>.value(value: MockDriveDetailCubit()),
+          ],
+          child: const FsEntryMoveForm(),
+        ),
+      );
+
+      final move = find.byWidgetPredicate(
+          (w) => w is ArDriveButtonNew && w.text == 'Move here');
+      await tester.tap(move);
+      await tester.tap(move, warnIfMissed: false);
+      await tester.pump();
+
+      verify(() => bloc.add(any(that: isA<FsEntryMoveSubmit>()))).called(1);
+      // The flag lets go of a move that was turned back without a word.
+      await tester.pump(const Duration(seconds: 11));
     });
   });
 }

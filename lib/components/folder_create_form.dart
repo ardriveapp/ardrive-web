@@ -92,7 +92,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
   }
 
   Future<void> _submit(BuildContext context, String folderName) async {
-    if (_submitting) return;
+    if (_submitting || !_isFolderNameValid) return;
     setState(() {
       _submitting = true;
       _takenName = null;
@@ -172,8 +172,10 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                               title: l10n.couldNotCreateFolderTitle,
                               message: l10n.actionFailedTryAgain,
                               actionLabel: l10n.tryAgain,
-                              onAction: () =>
-                                  _submit(context, _folderNameController.text),
+                              onAction: _isFolderNameValid && !busy
+                                  ? () => _submit(
+                                      context, _folderNameController.text)
+                                  : null,
                             ),
                     ),
                 ],

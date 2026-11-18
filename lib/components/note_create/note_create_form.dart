@@ -194,7 +194,19 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
     return result ?? false;
   }
 
+  bool _saving = false;
+
   Future<void> _createNote() async {
+    if (_saving) return;
+    _saving = true;
+    try {
+      await _createNoteOnce();
+    } finally {
+      _saving = false;
+    }
+  }
+
+  Future<void> _createNoteOnce() async {
     final cubit = context.read<NoteCreateCubit>();
     logger.d('_createNote called, isEditMode: ${cubit.isEditMode}');
 

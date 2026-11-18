@@ -77,12 +77,24 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
+  /// Set before the cubit is asked, cleared when it answers: the cubit checks
+  /// the wallet and the name before it reports it is busy, so a quick second
+  /// press would otherwise recreate the folder twice.
+  bool _inFlight = false;
+
+  Future<void> _submit(BuildContext context) async {
+    if (_inFlight || !_isFolderNameValid) return;
+    final cubit = context.read<GhostFixerCubit>();
     setState(() {
       _nameTaken = false;
       _failure = null;
+      _inFlight = true;
     });
-    context.read<GhostFixerCubit>().submit(_folderNameController.text);
+    try {
+      await cubit.submit(_folderNameController.text);
+    } finally {
+      if (mounted) setState(() => _inFlight = false);
+    }
   }
 
   @override
@@ -121,7 +133,7 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
 
           final typography = ArDriveTypographyNew.of(context);
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-          final busy = state is GhostFixerRepairInProgress;
+          final busy = _inFlight || state is GhostFixerRepairInProgress;
           final failure = _failure;
 
           return ArDriveStandardModalNew(
@@ -152,7 +164,9 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                             title: l10n.couldNotRecreateFolderTitle,
                             message: l10n.actionFailedTryAgain,
                             actionLabel: l10n.tryAgain,
-                            onAction: () => _submit(context),
+                            onAction: _isFolderNameValid && !busy
+                                ? () => _submit(context)
+                                : null,
                           ),
                   ),
                 ArDriveTextFieldNew(

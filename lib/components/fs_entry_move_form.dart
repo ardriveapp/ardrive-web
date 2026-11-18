@@ -64,7 +64,27 @@ class _FsEntryMoveFormState extends State<FsEntryMoveForm> {
   /// Making a folder in the folder in view, in place of the list.
   bool _creatingFolder = false;
 
+  /// Set when a move is asked for, cleared when the bloc answers with a
+  /// failure or a conflict: the bloc checks the wallet and the names before it
+  /// reports it is busy, so a quick second press would otherwise move twice.
+  bool _inFlight = false;
+
+  /// A move that is turned back before anything is reported (Wander could not
+  /// be reached and the person chose Cancel) emits no state at all, so the
+  /// flag is released after a while unless the bloc has gone busy.
+  void _releaseIfStuck(BuildContext context) {
+    final bloc = context.read<FsEntryMoveBloc>();
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && bloc.state is! FsEntryMoveLoadInProgress) {
+        setState(() => _inFlight = false);
+      }
+    });
+  }
+
   void _moveHere(BuildContext context, FsEntryMoveLoadSuccess state) {
+    if (_inFlight) return;
+    setState(() => _inFlight = true);
+    _releaseIfStuck(context);
     context.read<FsEntryMoveBloc>().add(
           FsEntryMoveSubmit(
             folderInView: state.viewingFolder.folder,
@@ -76,6 +96,9 @@ class _FsEntryMoveFormState extends State<FsEntryMoveForm> {
   }
 
   void _skipConflicts(BuildContext context, FsEntryMoveNameConflict state) {
+    if (_inFlight) return;
+    setState(() => _inFlight = true);
+    _releaseIfStuck(context);
     context.read<FsEntryMoveBloc>().add(
           FsEntryMoveSkipConflicts(
             folderInView: state.folderInView,
@@ -102,7 +125,13 @@ class _FsEntryMoveFormState extends State<FsEntryMoveForm> {
           _step = state;
         }
         final step = _step;
-        final busy = state is FsEntryMoveLoadInProgress && step != null;
+        if (state is FsEntryMoveFailure ||
+            state is FsEntryMoveNameConflict ||
+            state is FsEntryMoveWalletMismatch) {
+          _inFlight = false;
+        }
+        final busy =
+            step != null && (_inFlight || state is FsEntryMoveLoadInProgress);
         final failure = state is FsEntryMoveFailure ? state : null;
         final l10n = appLocalizationsOf(context);
 

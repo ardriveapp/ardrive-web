@@ -48,12 +48,22 @@ Future<void> promptToToggleHideState(
   }
   hideBloc.add(event);
 
+  // A quick second Try again must not start a second hide.
+  var retrying = false;
+
   await showArDriveDialog(
     context,
     barrierDismissible: false,
     content: HideDialog(
       driveDetailCubit: driveDetailCubit,
-      onRetry: () => hideBloc.add(event),
+      onRetry: () {
+        if (retrying) return;
+        retrying = true;
+        hideBloc.add(event);
+        hideBloc.stream
+            .firstWhere((s) => s is! FailureHideState)
+            .then((_) => retrying = false);
+      },
     ),
   );
 

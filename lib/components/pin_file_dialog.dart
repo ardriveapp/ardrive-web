@@ -119,6 +119,16 @@ class _PinFileDialogState extends State<PinFileDialog> {
   /// as they were and the notice carries the retry.
   PinFileError? _createFailure;
 
+  /// Set when Create pin is pressed, cleared when the bloc reports an error:
+  /// a second press before the bloc is busy would otherwise pin twice.
+  bool _submitted = false;
+
+  void _submit() {
+    if (_submitted) return;
+    setState(() => _submitted = true);
+    context.read<PinFileBloc>().add(const PinFileSubmit());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -148,7 +158,10 @@ class _PinFileDialogState extends State<PinFileDialog> {
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {
-          setState(() => _createFailure = state);
+          setState(() {
+            _createFailure = state;
+            _submitted = false;
+          });
         } else if (state is PinFileCreating) {
           setState(() => _createFailure = null);
         }
@@ -157,7 +170,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
         _lookupRunning = state is PinFileNetworkCheckRunning;
         final idValidationError = _getIdValidationError(context, state);
         final nameValidationError = _getNameValidationError(context, state);
-        final creating = state is PinFileCreating;
+        final creating = _submitted || state is PinFileCreating;
         final failure = _createFailure;
 
         return ArDriveStandardModalNew(
@@ -239,8 +252,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
                             message:
                                 appLocalizationsOf(context).failedToCreatePin,
                             actionLabel: appLocalizationsOf(context).tryAgain,
-                            onAction: () =>
-                                pinFileBloc.add(const PinFileSubmit()),
+                            onAction: creating ? null : _submit,
                           ),
                   ),
               ],
@@ -253,7 +265,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
               isEnable: !creating,
             ),
             ModalAction(
-              action: () => pinFileBloc.add(const PinFileSubmit()),
+              action: _submit,
               title: appLocalizationsOf(context).createPin,
               isLoading: creating,
               isEnable: creating ||

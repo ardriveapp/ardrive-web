@@ -87,13 +87,26 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
   /// press cannot send it twice.
   bool _confirmingExtension = false;
 
-  void _submit({bool? updateExtension}) {
+  /// Set before the cubit is asked, cleared when it answers: the cubit checks
+  /// the name and the wallet before it reports it is busy, so a quick second
+  /// press would otherwise start a second rename.
+  bool _inFlight = false;
+
+  Future<void> _submit({bool? updateExtension}) async {
+    if (_inFlight || !_validForm) return;
     if (updateExtension != null) _updateExtension = updateExtension;
-    setState(() => _takenName = null);
-    context.read<FsEntryRenameCubit>().submit(
-          newName: _nameController.text,
-          updateExtension: _updateExtension,
-        );
+    setState(() {
+      _takenName = null;
+      _inFlight = true;
+    });
+    try {
+      await context.read<FsEntryRenameCubit>().submit(
+            newName: _nameController.text,
+            updateExtension: _updateExtension,
+          );
+    } finally {
+      if (mounted) setState(() => _inFlight = false);
+    }
   }
 
   @override
@@ -119,7 +132,8 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
             return _extensionStep(context, state);
           }
 
-          final busy = state is FolderEntryRenameInProgress ||
+          final busy = _inFlight ||
+              state is FolderEntryRenameInProgress ||
               state is FileEntryRenameInProgress;
           final failure = state is FolderEntryRenameFailure ||
               state is FileEntryRenameFailure;
@@ -187,7 +201,8 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                                     title: l10n.couldNotRenameTitle,
                                     message: l10n.actionFailedTryAgain,
                                     actionLabel: l10n.tryAgain,
-                                    onAction: _submit,
+                                    onAction:
+                                        _validForm && !busy ? _submit : null,
                                   ),
                           ),
                       ],
