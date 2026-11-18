@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -29,6 +30,8 @@ void main() {
         child: MultiRepositoryProvider(
           providers: [
             RepositoryProvider<DriveDao>.value(value: driveDao),
+            RepositoryProvider<FileKeys>.value(
+                value: FileKeys(driveDao: driveDao)),
             RepositoryProvider<ConfigService>.value(value: MockConfigService()),
             RepositoryProvider<ArweaveService>.value(
                 value: MockArweaveService()),
