@@ -404,7 +404,7 @@ A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` 
   "cipher": "AES256-GCM", "iv": "…", "wrapped": "…" }
 ```
 
-1. Normalise the password to Unicode NFC and encode it as UTF-8. Any password is allowed, including an empty one; the writer warns about weak ones.
+1. Normalise the password to Unicode NFC and encode it as UTF-8. A password is at least one character after normalising; otherwise any password is allowed, and the writer warns about weak ones. A writer refuses an empty password and a reader never tries one.
 2. Run Argon2id (RFC 9106, version 0x13) over it with the slot's `salt` (at least 16 random bytes), memory `m` in KiB, `t` passes and `p` lanes, with no secret and no associated data, for 32 bytes.
 3. Those 32 bytes are the key that wraps: `wrapped` is the AES-256-GCM encryption of the publication key under it, with the slot's `iv` and the associated data `ArDrive publication slot v1|<publicationId>` in UTF-8.
 

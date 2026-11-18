@@ -571,7 +571,11 @@ owner's transactions with `Entity-Type: publication`, grouped by
 
 Private file pages are built (see File pages). Private drive and folder pages
 are publication.json version 3; the format is in `docs/ArweaveFS.md`,
-"Private publications". Decided on 2026-11-17:
+"Private publications". The reference is `tool/publication/seal.mjs`, the
+Dart port is `lib/publication/domain/sealed/`, and both are held to
+`test/publication/fixtures/sealed/vectors.json`, in the VM and in a browser.
+Argon2id is hash-wasm in the browser (`web/js/hash-wasm`, loaded on first
+use) and Dart elsewhere. Decided on 2026-11-17:
 
 - **A key of its own.** Each page has a publication key. The drive key never
   leaves the owner's device, so a folder page opens only that folder. The page
