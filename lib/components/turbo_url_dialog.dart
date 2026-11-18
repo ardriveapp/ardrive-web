@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 class TurboUrlDialog extends StatefulWidget {
   final String initialUploadUrl;
   final String initialPaymentUrl;
-  final void Function(String uploadUrl, String paymentUrl) onSave;
+  final FutureOr<void> Function(String uploadUrl, String paymentUrl) onSave;
 
   const TurboUrlDialog({
     super.key,
@@ -23,8 +26,30 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
   late final TextEditingController _paymentController;
   bool _isValid = true;
 
-  /// Set before the save runs: a second press must not save (and close) twice.
+  /// True from the press until the save has finished: a second press must not
+  /// save twice, and nothing here changes while it runs.
   bool _saving = false;
+  bool _saveFailed = false;
+
+  Future<void> _save(FutureOr<void> Function() save) async {
+    if (_saving) return;
+    setState(() {
+      _saving = true;
+      _saveFailed = false;
+    });
+    try {
+      await save();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      logger.e('Failed to save the setting', e);
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveFailed = true;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -72,49 +97,57 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
 
-    return ArDriveStandardModalNew(
-      width: 500,
-      title: strings.turboServicesTitle,
-      content: SizedBox(
-        width: 500,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ArDriveTextFieldNew(
-              controller: _uploadController,
-              hintText: 'https://upload.ardrive.io',
-              label: strings.turboUploadUrlLabel,
-              validator: _validateUrl,
+    return PopScope(
+        canPop: !_saving,
+        child: ArDriveStandardModalNew(
+          width: 500,
+          title: strings.turboServicesTitle,
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ArDriveTextFieldNew(
+                  controller: _uploadController,
+                  isEnabled: !_saving,
+                  hintText: 'https://upload.ardrive.io',
+                  label: strings.turboUploadUrlLabel,
+                  validator: _validateUrl,
+                ),
+                const SizedBox(height: ArDriveSpacing.md),
+                ArDriveTextFieldNew(
+                  controller: _paymentController,
+                  isEnabled: !_saving,
+                  hintText: 'https://payment.ardrive.io',
+                  label: strings.turboPaymentUrlLabel,
+                  validator: _validateUrl,
+                ),
+                if (_saveFailed) ...[
+                  const SizedBox(height: ArDriveSpacing.md),
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.error,
+                    message: strings.settingsSaveFailed,
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: ArDriveSpacing.md),
-            ArDriveTextFieldNew(
-              controller: _paymentController,
-              hintText: 'https://payment.ardrive.io',
-              label: strings.turboPaymentUrlLabel,
-              validator: _validateUrl,
+          ),
+          actions: [
+            ModalAction.close(
+              title: strings.cancel,
+              isEnable: !_saving,
+              action: () => Navigator.of(context).pop(),
+            ),
+            ModalAction(
+              title: strings.save,
+              isLoading: _saving,
+              isEnable: _isValid && !_saving,
+              action: () => _save(() => widget.onSave(
+                    _uploadController.text.trim(),
+                    _paymentController.text.trim(),
+                  )),
             ),
           ],
-        ),
-      ),
-      actions: [
-        ModalAction.close(
-          title: strings.cancel,
-          action: () => Navigator.of(context).pop(),
-        ),
-        ModalAction(
-          title: strings.save,
-          isEnable: _isValid && !_saving,
-          action: () {
-            if (_saving) return;
-            _saving = true;
-            widget.onSave(
-              _uploadController.text.trim(),
-              _paymentController.text.trim(),
-            );
-            Navigator.of(context).pop();
-          },
-        ),
-      ],
-    );
+        ));
   }
 }

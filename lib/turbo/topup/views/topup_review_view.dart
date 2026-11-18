@@ -57,9 +57,11 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
     return BlocListener<PaymentReviewBloc, PaymentReviewState>(
       listener: (context, state) {
-        // The payment has answered, or at least started: the bloc's own busy
-        // state holds Pay from here.
-        if (_payRequested && state is! PaymentReviewLoading) {
+        // Held until the payment has answered. Not on a quote refresh while
+        // it is pending: that would let a second press start a second one.
+        if (_payRequested &&
+            (state is PaymentReviewPaymentSuccess ||
+                state is PaymentReviewPaymentError)) {
           setState(() => _payRequested = false);
         }
         if (state is PaymentReviewPaymentSuccess) {

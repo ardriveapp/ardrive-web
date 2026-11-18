@@ -8142,7 +8142,7 @@
   "@licensingInfoUdl": {"description": "Licensing info dialog: what the Universal Data License is for."},
   "licensingInfoCreativeCommons": "Seis tipos de licencia, de permisivas a restrictivas",
   "@licensingInfoCreativeCommons": {"description": "Licensing info dialog: what Creative Commons offers."},
-  "licensingInfoNotice": "Aplicar licencias es gratis y se ven en los detalles del archivo. Selecciona un archivo tras subirlo para añadir una licencia.",
+  "licensingInfoNotice": "Las licencias se ven en los detalles del archivo. Aplicar una puede cubrirse con tu cuota de subida gratuita; si no, cuesta un poco en créditos de Turbo. Selecciona un archivo tras subirlo para añadir una licencia.",
   "@licensingInfoNotice": {"description": "Licensing info dialog: notice."},
   "keyfileInfoTitle": "Archivos de clave y frases semilla",
   "@keyfileInfoTitle": {"description": "Title of the keyfile and seed phrase info dialog."},
@@ -8351,5 +8351,11 @@
   "turboSwitching": "Cambiando",
   "@turboSwitching": {"description": "Top-up: switching."},
   "turboDetected": "Detectado",
-  "@turboDetected": {"description": "Top-up: badge on an installed wallet."}
+  "@turboDetected": {"description": "Top-up: badge on an installed wallet."},
+  "settingsSaveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+  "@settingsSaveFailed": {"description": "Notice in a settings dialog when saving failed."},
+  "logsExportFailedNotice": "No se pudieron exportar los registros. Inténtalo de nuevo.",
+  "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
+  "logsExportedWebNotice": "Registros exportados. Se guardaron en tus descargas.",
+  "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."}
 }

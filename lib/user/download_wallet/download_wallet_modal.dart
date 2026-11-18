@@ -65,54 +65,58 @@ class _DownloadWalletModalState extends State<DownloadWalletModal> {
         }
       },
       builder: (context, state) {
-        return ArDriveStandardModalNew(
-          title: appLocalizationsOf(context).downloadWalletKeyfile,
-          content: Column(
-            children: [
-              ArDriveTextFieldNew(
-                autofocus: true,
-                controller: _passwordController,
-                label: appLocalizationsOf(context).password,
-                errorMessage: state is DownloadWalletWrongPassword
-                    ? appLocalizationsOf(context).validationPasswordIncorrect
-                    : null,
-                isEnabled: !_busy(state),
-                obscureText: true,
-                showObfuscationToggle: true,
-                onFieldSubmitted: (_) => _download(state),
+        // The system Back button waits while the download runs.
+        return PopScope(
+            canPop: !_busy(state),
+            child: ArDriveStandardModalNew(
+              title: appLocalizationsOf(context).downloadWalletKeyfile,
+              content: Column(
+                children: [
+                  ArDriveTextFieldNew(
+                    autofocus: true,
+                    controller: _passwordController,
+                    label: appLocalizationsOf(context).password,
+                    errorMessage: state is DownloadWalletWrongPassword
+                        ? appLocalizationsOf(context)
+                            .validationPasswordIncorrect
+                        : null,
+                    isEnabled: !_busy(state),
+                    obscureText: true,
+                    showObfuscationToggle: true,
+                    onFieldSubmitted: (_) => _download(state),
+                  ),
+                  if (state is DownloadWalletFailure) ...[
+                    const SizedBox(height: ArDriveSpacing.md),
+                    ArDriveNotice(
+                      type: ArDriveNoticeType.error,
+                      message: appLocalizationsOf(context)
+                          .anErrorOccuredWhileDownloadingYourKeyfile,
+                    ),
+                  ],
+                  const SizedBox(height: ArDriveSpacing.md),
+                  ArDriveLink(
+                    text: appLocalizationsOf(context).whatIsAKeyFile,
+                    onTap: () => showKeyfileInfoModal(context: context),
+                  )
+                ],
               ),
-              if (state is DownloadWalletFailure) ...[
-                const SizedBox(height: ArDriveSpacing.md),
-                ArDriveNotice(
-                  type: ArDriveNoticeType.error,
-                  message: appLocalizationsOf(context)
-                      .anErrorOccuredWhileDownloadingYourKeyfile,
+              actions: [
+                ModalAction.close(
+                  title: appLocalizationsOf(context).cancel,
+                  isEnable: !_busy(state),
+                  action: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ModalAction(
+                  title: state is DownloadWalletFailure
+                      ? appLocalizationsOf(context).tryAgain
+                      : appLocalizationsOf(context).download,
+                  isLoading: _busy(state),
+                  action: () => _download(state),
                 ),
               ],
-              const SizedBox(height: ArDriveSpacing.md),
-              ArDriveLink(
-                text: appLocalizationsOf(context).whatIsAKeyFile,
-                onTap: () => showKeyfileInfoModal(context: context),
-              )
-            ],
-          ),
-          actions: [
-            ModalAction.close(
-              title: appLocalizationsOf(context).cancel,
-              isEnable: !_busy(state),
-              action: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ModalAction(
-              title: state is DownloadWalletFailure
-                  ? appLocalizationsOf(context).tryAgain
-                  : appLocalizationsOf(context).download,
-              isLoading: _busy(state),
-              action: () => _download(state),
-            ),
-          ],
-        );
+            ));
       },
     );
   }

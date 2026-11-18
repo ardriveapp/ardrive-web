@@ -8142,7 +8142,7 @@
   "@licensingInfoUdl": {"description": "Licensing info dialog: what the Universal Data License is for."},
   "licensingInfoCreativeCommons": "उदार से प्रतिबंधात्मक तक छह प्रकार के लाइसेंस",
   "@licensingInfoCreativeCommons": {"description": "Licensing info dialog: what Creative Commons offers."},
-  "licensingInfoNotice": "लाइसेंस लागू करना मुफ़्त है और फ़ाइल विवरण में दिखता है। लाइसेंस जोड़ने के लिए अपलोड के बाद फ़ाइल चुनें।",
+  "licensingInfoNotice": "लाइसेंस फ़ाइल विवरण में दिखते हैं। इसे लागू करना आपकी निःशुल्क अपलोड सीमा से कवर हो सकता है, अन्यथा Turbo क्रेडिट में थोड़ा खर्च आता है। लाइसेंस जोड़ने के लिए अपलोड के बाद फ़ाइल चुनें।",
   "@licensingInfoNotice": {"description": "Licensing info dialog: notice."},
   "keyfileInfoTitle": "कीफ़ाइल और सीड फ़्रेज़",
   "@keyfileInfoTitle": {"description": "Title of the keyfile and seed phrase info dialog."},
@@ -8351,5 +8351,11 @@
   "turboSwitching": "बदला जा रहा है",
   "@turboSwitching": {"description": "Top-up: switching."},
   "turboDetected": "मिला",
-  "@turboDetected": {"description": "Top-up: badge on an installed wallet."}
+  "@turboDetected": {"description": "Top-up: badge on an installed wallet."},
+  "settingsSaveFailed": "सहेजा नहीं जा सका। दोबारा कोशिश करें।",
+  "@settingsSaveFailed": {"description": "Notice in a settings dialog when saving failed."},
+  "logsExportFailedNotice": "लॉग निर्यात नहीं हो सके। दोबारा कोशिश करें।",
+  "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
+  "logsExportedWebNotice": "लॉग निर्यात हो गए। वे आपके डाउनलोड में सहेजे गए।",
+  "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."}
 }

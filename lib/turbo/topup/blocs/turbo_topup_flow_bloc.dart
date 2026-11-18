@@ -12,6 +12,10 @@ part 'turbo_topup_flow_state.dart';
 class TurboTopupFlowBloc
     extends Bloc<TurboTopupFlowEvent, TurboTopupFlowState> {
   int _currentStep = 1;
+
+  /// Once the payment went through, the session running out changes nothing:
+  /// it must not replace the result with an error and a retry.
+  bool _paid = false;
   final Turbo turbo;
 
   TurboTopupFlowBloc(
@@ -20,6 +24,9 @@ class TurboTopupFlowBloc
     listenToSessionExpiration();
     on<TurboTopupFlowEvent>(
       (event, emit) async {
+        
+        if (event is TurboTopUpShowSessionExpiredView && _paid) return;
+        if (event is TurboTopUpShowSuccessView) _paid = true;
         if (event is TurboTopUpShowEstimationView) {
           emit(
             TurboTopupFlowShowingEstimationView(

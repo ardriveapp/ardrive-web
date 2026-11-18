@@ -8142,7 +8142,7 @@
   "@licensingInfoUdl": {"description": "Licensing info dialog: what the Universal Data License is for."},
   "licensingInfoCreativeCommons": "從寬鬆到嚴格的六種授權類型",
   "@licensingInfoCreativeCommons": {"description": "Licensing info dialog: what Creative Commons offers."},
-  "licensingInfoNotice": "套用授權是免費的，並會顯示在檔案詳情中。上傳後選擇檔案即可新增授權。",
+  "licensingInfoNotice": "授權會顯示在檔案詳情中。套用授權可由免費上傳額度承擔，否則會花費少量 Turbo 點數。上傳後選擇檔案即可新增授權。",
   "@licensingInfoNotice": {"description": "Licensing info dialog: notice."},
   "keyfileInfoTitle": "金鑰檔案和助記詞",
   "@keyfileInfoTitle": {"description": "Title of the keyfile and seed phrase info dialog."},
@@ -8351,5 +8351,11 @@
   "turboSwitching": "正在切換",
   "@turboSwitching": {"description": "Top-up: switching."},
   "turboDetected": "已偵測到",
-  "@turboDetected": {"description": "Top-up: badge on an installed wallet."}
+  "@turboDetected": {"description": "Top-up: badge on an installed wallet."},
+  "settingsSaveFailed": "無法儲存。請重試。",
+  "@settingsSaveFailed": {"description": "Notice in a settings dialog when saving failed."},
+  "logsExportFailedNotice": "無法匯出記錄。請重試。",
+  "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
+  "logsExportedWebNotice": "記錄已匯出。已儲存到您的下載項目。",
+  "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."}
 }

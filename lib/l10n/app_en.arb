@@ -6158,7 +6158,7 @@
   "@licensingInfoUdl": {"description": "Licensing info dialog: what the Universal Data License is for."},
   "licensingInfoCreativeCommons": "Six license types from permissive to restrictive",
   "@licensingInfoCreativeCommons": {"description": "Licensing info dialog: what Creative Commons offers."},
-  "licensingInfoNotice": "Licenses are free to apply and visible in file details. Select a file after upload to add a license.",
+  "licensingInfoNotice": "Licenses show in file details. Applying one can be covered by your free upload allowance, otherwise it costs a little in Turbo Credits. Select a file after upload to add a license.",
   "@licensingInfoNotice": {"description": "Licensing info dialog: notice."},
   "keyfileInfoTitle": "Keyfiles and seed phrases",
   "@keyfileInfoTitle": {"description": "Title of the keyfile and seed phrase info dialog."},
@@ -6367,5 +6367,11 @@
   "turboSwitching": "Switching",
   "@turboSwitching": {"description": "Top-up: switching."},
   "turboDetected": "Detected",
-  "@turboDetected": {"description": "Top-up: badge on an installed wallet."}
+  "@turboDetected": {"description": "Top-up: badge on an installed wallet."},
+  "settingsSaveFailed": "Couldn't save. Try again.",
+  "@settingsSaveFailed": {"description": "Notice in a settings dialog when saving failed."},
+  "logsExportFailedNotice": "Couldn't export the logs. Try again.",
+  "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
+  "logsExportedWebNotice": "Logs exported. They were saved to your downloads.",
+  "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."}
 }

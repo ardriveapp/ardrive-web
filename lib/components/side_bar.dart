@@ -753,13 +753,17 @@ Future<void> showSupportModal({
   // The export's result shows in this dialog, not in a second one on top.
   var exporting = false;
   var exported = false;
+  var exportFailed = false;
 
   showArDriveDialog(
     context,
     // Exporting the logs is work in this dialog: not closed by a tap outside.
     barrierDismissible: false,
     content: StatefulBuilder(
-        builder: (dialogContext, setDialogState) => ArDriveStandardModalNew(
+        builder: (dialogContext, setDialogState) => PopScope(
+            // The system Back button waits while the export runs.
+            canPop: !exporting,
+            child: ArDriveStandardModalNew(
               title: appLocalizationsOf(context).help,
               // Taller than the screen on a phone at a large text scale. Bounded and
               // scrolling rather than clipped: the Download button at the bottom is
@@ -955,7 +959,18 @@ Future<void> showSupportModal({
                       const SizedBox(height: ArDriveSpacing.md),
                       ArDriveNotice(
                         type: ArDriveNoticeType.success,
-                        message: appLocalizationsOf(context).logsExportedNotice,
+                        // On the web the file goes to the browser's downloads.
+                        message: kIsWeb
+                            ? appLocalizationsOf(context).logsExportedWebNotice
+                            : appLocalizationsOf(context).logsExportedNotice,
+                      ),
+                    ],
+                    if (exportFailed) ...[
+                      const SizedBox(height: ArDriveSpacing.md),
+                      ArDriveNotice(
+                        type: ArDriveNoticeType.error,
+                        message:
+                            appLocalizationsOf(context).logsExportFailedNotice,
                       ),
                     ],
                   ],
@@ -974,6 +989,7 @@ Future<void> showSupportModal({
                     setDialogState(() {
                       exporting = true;
                       exported = false;
+                      exportFailed = false;
                     });
                     try {
                       // The logs say which version wrote them: support asks first.
@@ -983,6 +999,9 @@ Future<void> showSupportModal({
                           'ArDrive ${appVersionText(info)} (${flavor.name})');
                       await logger.exportLogs(info: logExportInfo);
                       exported = true;
+                    } catch (e) {
+                      logger.e('Failed to export the logs', e);
+                      exportFailed = true;
                     } finally {
                       if (dialogContext.mounted) {
                         setDialogState(() => exporting = false);
@@ -992,7 +1011,7 @@ Future<void> showSupportModal({
                   title: appLocalizationsOf(context).downloadLogs,
                 ),
               ],
-            )),
+            ))),
   );
 }
 

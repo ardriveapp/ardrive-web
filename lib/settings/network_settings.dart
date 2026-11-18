@@ -48,6 +48,8 @@ Future<void> showGraphQLServerDialog(BuildContext context) async {
   final arweave = context.read<ArweaveService>();
   await showArDriveDialogWithBuilder(
     context,
+    // Saving is work in this dialog: not closed by a tap outside meanwhile.
+    barrierDismissible: false,
     builder: (context) => GraphQLEndpointDialog(
       initialEndpoint: graphQLServerOf(configService.config),
       onSave: (newEndpoint) => _useGraphQLServer(
@@ -89,6 +91,7 @@ Future<void> showTurboServicesDialog(BuildContext context) async {
   final config = configService.config;
   await showArDriveDialogWithBuilder(
     context,
+    barrierDismissible: false,
     builder: (context) => TurboUrlDialog(
       initialUploadUrl: config.defaultTurboUploadUrl ?? '',
       initialPaymentUrl: config.defaultTurboPaymentUrl ?? '',

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
@@ -36,6 +38,45 @@ void main() {
     expect(event.userAcceptedToReceiveEmails, isFalse);
   });
 
+  testWidgets(
+      'a quote refresh while a payment is pending does not allow a '
+      'second payment', (tester) async {
+    final states = StreamController<PaymentReviewState>();
+    addTearDown(states.close);
+    final review = await _pumpReview(tester, states: states.stream);
+
+    final pay = find.widgetWithText(ArDriveButtonNew, 'Pay');
+    await tester.tap(pay);
+    await tester.pump();
+
+    // The bloc answers with its busy state, then a quote refresh runs
+    // meanwhile; neither is the payment's answer.
+    PaymentReviewLoadingQuote loadingQuote() => PaymentReviewLoadingQuote(
+          quoteExpirationDate: DateTime.now().add(const Duration(minutes: 20)),
+          total: '25.00',
+          subTotal: null,
+          credits: '4.6037',
+          promoDiscount: null,
+        );
+    states.add(loadingQuote());
+    await tester.pump();
+    states.add(PaymentReviewQuoteLoaded(
+      quoteExpirationDate: DateTime.now().add(const Duration(minutes: 20)),
+      total: '25.00',
+      subTotal: null,
+      credits: '4.6037',
+      promoDiscount: null,
+    ));
+    await tester.pump();
+
+    // Pay is busy or disabled, so look for the primary by position.
+    await tester.tap(find.byType(ArDriveButtonNew).last, warnIfMissed: false);
+    await tester.pump();
+
+    verify(() => review.add(any(that: isA<PaymentReviewFinishPayment>())))
+        .called(1);
+  });
+
   testWidgets('two fast presses of Pay start one payment', (tester) async {
     final review = await _pumpReview(tester);
 
@@ -50,12 +91,15 @@ void main() {
   });
 }
 
-Future<_MockReviewBloc> _pumpReview(WidgetTester tester) async {
+Future<_MockReviewBloc> _pumpReview(
+  WidgetTester tester, {
+  Stream<PaymentReviewState> states = const Stream<PaymentReviewState>.empty(),
+}) async {
   final review = _MockReviewBloc();
   final flow = _MockFlowBloc();
   whenListen(
     review,
-    const Stream<PaymentReviewState>.empty(),
+    states,
     initialState: PaymentReviewPaymentModelLoaded(
       total: '25.00',
       subTotal: null,

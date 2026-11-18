@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
@@ -541,6 +542,39 @@ void main() {
   });
 
   group('and Help points at it rather than carrying it', () {
+    testWidgets('a log export that fails says so in Help', (tester) async {
+      historyIs(const []);
+      await tester.pumpWidget(host(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showSupportModal(context: context),
+            child: const Text('open'),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // No platform to export to in a test: the export throws.
+      PackageInfo.setMockInitialValues(
+        appName: 'app',
+        packageName: 'package',
+        version: '1.0.0',
+        buildNumber: '1',
+        buildSignature: '',
+      );
+      await tester.tap(find.text('Download logs'));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(
+          find.text('Couldn\'t export the logs. Try again.'), findsOneWidget);
+      expect(find.byType(PopScope), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('the Troubleshooting section offers it as a link',
         (tester) async {
       historyIs([run(itemsFound: 12)]);

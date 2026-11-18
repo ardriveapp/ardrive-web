@@ -8142,7 +8142,7 @@
   "@licensingInfoUdl": {"description": "Licensing info dialog: what the Universal Data License is for."},
   "licensingInfoCreativeCommons": "寛容なものから制限的なものまで6種類のライセンス",
   "@licensingInfoCreativeCommons": {"description": "Licensing info dialog: what Creative Commons offers."},
-  "licensingInfoNotice": "ライセンスの適用は無料で、ファイルの詳細に表示されます。アップロード後にファイルを選択してライセンスを追加してください。",
+  "licensingInfoNotice": "ライセンスはファイルの詳細に表示されます。適用は無料アップロード枠で賄える場合があり、そうでなければ Turbo クレジットが少しかかります。アップロード後にファイルを選択してライセンスを追加してください。",
   "@licensingInfoNotice": {"description": "Licensing info dialog: notice."},
   "keyfileInfoTitle": "キーファイルとシードフレーズ",
   "@keyfileInfoTitle": {"description": "Title of the keyfile and seed phrase info dialog."},
@@ -8351,5 +8351,11 @@
   "turboSwitching": "切り替え中",
   "@turboSwitching": {"description": "Top-up: switching."},
   "turboDetected": "検出済み",
-  "@turboDetected": {"description": "Top-up: badge on an installed wallet."}
+  "@turboDetected": {"description": "Top-up: badge on an installed wallet."},
+  "settingsSaveFailed": "保存できませんでした。もう一度お試しください。",
+  "@settingsSaveFailed": {"description": "Notice in a settings dialog when saving failed."},
+  "logsExportFailedNotice": "ログをエクスポートできませんでした。もう一度お試しください。",
+  "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
+  "logsExportedWebNotice": "ログをエクスポートしました。ダウンロードに保存されました。",
+  "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."}
 }
