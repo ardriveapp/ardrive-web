@@ -206,6 +206,10 @@ class BillingCubit extends Cubit<BillingState> {
 
   String get _address => user.walletAddress;
 
+  /// Counts balance loads, so a storage estimate from an earlier one is
+  /// dropped instead of overwriting a newer load's.
+  int _balanceLoad = 0;
+
   Future<void> load() async {
     await Future.wait([
       loadBalance(),
@@ -234,6 +238,7 @@ class BillingCubit extends Cubit<BillingState> {
   }
 
   Future<void> loadBalance() async {
+    final load = ++_balanceLoad;
     _safeEmit(state.copyWith(
       storageSettled: false,
       balance: BalanceView(
@@ -269,27 +274,32 @@ class BillingCubit extends Cubit<BillingState> {
     }
     _safeEmit(state.copyWith(balance: view));
 
-    await Future.wait([_loadStorage(view.effective), _loadFreeAllowance()]);
+    await Future.wait(
+        [_loadStorage(view.effective, load), _loadFreeAllowance()]);
   }
 
-  Future<void> _loadStorage(BigInt credits) async {
+  Future<void> _loadStorage(BigInt credits, int load) async {
+    void settle(BillingState next) {
+      if (load == _balanceLoad) _safeEmit(next);
+    }
+
     if (credits <= BigInt.zero) {
-      _safeEmit(state.copyWith(clearStorage: true, storageSettled: true));
+      settle(state.copyWith(clearStorage: true, storageSettled: true));
       return;
     }
     try {
       final perGiB = await paymentService.getPriceForBytes(byteSize: _gib);
       if (perGiB <= BigInt.zero) {
-        _safeEmit(state.copyWith(storageSettled: true));
+        settle(state.copyWith(storageSettled: true));
         return;
       }
       // Credits and the price are both in winston: scaled so BigInt keeps the
       // fraction of a GiB.
       final gib = (credits * BigInt.from(1000000) ~/ perGiB).toInt() / 1000000;
-      _safeEmit(state.copyWith(storageGiB: gib, storageSettled: true));
+      settle(state.copyWith(storageGiB: gib, storageSettled: true));
     } catch (e) {
       logger.d('Billing: no storage estimate: $e');
-      _safeEmit(state.copyWith(clearStorage: true, storageSettled: true));
+      settle(state.copyWith(clearStorage: true, storageSettled: true));
     }
   }
 

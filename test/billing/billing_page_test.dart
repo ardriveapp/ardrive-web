@@ -360,6 +360,38 @@ void main() {
       expect(tester.getTopLeft(addCredits).dy, lessThan(held - 10));
     });
 
+    test('a storage estimate from an earlier balance load is dropped',
+        () async {
+      final prices = [Completer<BigInt>(), Completer<BigInt>()];
+      var call = 0;
+      when(() => payments.getPriceForBytes(byteSize: any(named: 'byteSize')))
+          .thenAnswer((_) => prices[call++].future);
+      final cubit = BillingCubit(
+        user: _user(),
+        paymentService: payments,
+        cache: cache,
+        saveCsv: (_, __) async {},
+        readArBalance: (_) async => BigInt.zero,
+      );
+      addTearDown(cubit.close);
+
+      final first = cubit.loadBalance();
+      await pumpEventQueue();
+      final second = cubit.loadBalance();
+      await pumpEventQueue();
+      expect(call, 2);
+
+      // The earlier lookup fails after the newer load started: ignored.
+      prices[0].completeError(Exception('no price'));
+      await first;
+      expect(cubit.state.storageSettled, isFalse);
+
+      prices[1].complete(_credit * BigInt.from(5));
+      await second;
+      expect(cubit.state.storageSettled, isTrue);
+      expect(cubit.state.storageGiB, 2);
+    });
+
     testWidgets('an account Turbo has never seen has 0 credits, not an error',
         (tester) async {
       when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))
