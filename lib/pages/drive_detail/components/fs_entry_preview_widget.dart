@@ -1908,7 +1908,11 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
       builder: (context, imagePreview, _) {
         if (imagePreview == null) {
-          return const SizedBox.shrink();
+          // Inline, hold the pane's full height, as the spinner after it does,
+          // so the controls below do not move when the file arrives.
+          return widget.isFullScreen
+              ? const SizedBox.shrink()
+              : const SizedBox.expand();
         }
 
         final isLoading = imagePreview.isLoading;
@@ -1943,12 +1947,23 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       if (imageBytes == null) {
         content = const UnpreviewableContent();
       } else {
-        content = ArDriveImage(
-          fit: BoxFit.contain,
-          height: double.maxFinite,
-          width: double.maxFinite,
-          image: MemoryImage(
-            imageBytes,
+        // Fades in rather than popping in over the spinner it replaces.
+        content = TweenAnimationBuilder<double>(
+          key: ValueKey(imageBytes),
+          tween: Tween(begin: 0, end: 1),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          builder: (context, opacity, child) =>
+              Opacity(opacity: opacity, child: child),
+          child: ArDriveImage(
+            fit: BoxFit.contain,
+            height: double.maxFinite,
+            width: double.maxFinite,
+            image: MemoryImage(
+              imageBytes,
+            ),
           ),
         );
       }
@@ -2141,16 +2156,26 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         child: ValueListenableBuilder(
           valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
           builder: (context, imagePreview, _) {
+            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+            final typography = ArDriveTypographyNew.of(context);
             if (imagePreview == null) {
-              return const SizedBox.shrink();
+              // The caption's two lines, held while it loads, so the
+              // controls beside it do not jump when it arrives.
+              return ExcludeSemantics(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Text('\u00A0', style: typography.paragraphLarge()),
+                    Text('\u00A0', style: typography.paragraphLarge()),
+                  ],
+                ),
+              );
             }
 
             final filename = imagePreview.filename;
             final contentType = imagePreview.contentType;
             final fileNameWithoutExtension =
                 getBasenameWithoutExtension(filePath: filename);
-            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-            final typography = ArDriveTypographyNew.of(context);
             return Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: isFileExplorer

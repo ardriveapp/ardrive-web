@@ -51,6 +51,7 @@ class FileShareDialogState extends State<FileShareDialog> {
     return BlocBuilder<FileShareCubit, FileShareState>(
       builder: (context, state) => ArDriveStandardModalNew(
         width: kLargeDialogWidth,
+        hasCloseButton: true,
         scrollableContent: true,
         title: appLocalizationsOf(context).shareFileWithOthers,
         content: Column(

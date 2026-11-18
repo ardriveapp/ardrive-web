@@ -177,6 +177,8 @@ void main() {
     bool saveThrows = false,
     BigInt? ar,
     bool arFails = false,
+    Future<BigInt>? arFuture,
+    bool settle = true,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -216,6 +218,7 @@ void main() {
                     metaMask: metaMask,
                     readArBalance: (address) async {
                       if (arFails) throw Exception('gateway down');
+                      if (arFuture != null) return arFuture;
                       return ar ?? BigInt.zero;
                     },
                     creditSharing: sharing ?? _FakeSharing(),
@@ -231,7 +234,11 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
 
   int historyCalls() => verify(() => payments.getPaymentHistoryPage(
@@ -241,6 +248,38 @@ void main() {
       )).callCount;
 
   group('balance card', () {
+    testWidgets('holds its size while it loads, so nothing moves as it arrives',
+        (tester) async {
+      final balance = Completer<TurboBalanceDetails>();
+      final arBalance = Completer<BigInt>();
+      when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))
+          .thenAnswer((_) => balance.future);
+      await pumpPage(
+        tester,
+        user: _user(),
+        arFuture: arBalance.future,
+        settle: false,
+      );
+
+      expect(find.byKey(const Key('billingBalanceLoading')), findsOneWidget);
+      expect(find.byKey(const Key('billingArRow')), findsOneWidget);
+      final addCredits = find.byKey(const Key('billingAddCredits'));
+      final arRow = find.byKey(const Key('billingArRow'));
+      final loadingAddY = tester.getTopLeft(addCredits).dy;
+      final loadingArY = tester.getTopLeft(arRow).dy;
+      final loadingArHeight = tester.getSize(arRow).height;
+
+      balance.complete(_details(own: 10, effective: 10));
+      arBalance.complete(BigInt.from(840000000000));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0.8400 AR'), findsOneWidget);
+      expect(find.byKey(const Key('billingStorage')), findsOneWidget);
+      expect(tester.getTopLeft(addCredits).dy, closeTo(loadingAddY, 0.5));
+      expect(tester.getTopLeft(arRow).dy, closeTo(loadingArY, 0.5));
+      expect(tester.getSize(arRow).height, closeTo(loadingArHeight, 0.5));
+    });
+
     testWidgets('shows credits, storage, the split and the free line',
         (tester) async {
       when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))
@@ -301,6 +340,56 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('3.0000'), findsOneWidget);
       expect(find.text("Couldn't load your balance"), findsNothing);
+    });
+
+    testWidgets('the held storage line goes when there is no estimate',
+        (tester) async {
+      final balance = Completer<TurboBalanceDetails>();
+      when(() => payments.getBalanceDetails(wallet: any(named: 'wallet')))
+          .thenAnswer((_) => balance.future);
+      when(() => payments.getPriceForBytes(byteSize: any(named: 'byteSize')))
+          .thenThrow(Exception('no price'));
+      await pumpPage(tester, user: _user(), settle: false);
+      final addCredits = find.byKey(const Key('billingAddCredits'));
+      final held = tester.getTopLeft(addCredits).dy;
+
+      balance.complete(_details(own: 10, effective: 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('billingStorage')), findsNothing);
+      expect(tester.getTopLeft(addCredits).dy, lessThan(held - 10));
+    });
+
+    test('a storage estimate from an earlier balance load is dropped',
+        () async {
+      final prices = [Completer<BigInt>(), Completer<BigInt>()];
+      var call = 0;
+      when(() => payments.getPriceForBytes(byteSize: any(named: 'byteSize')))
+          .thenAnswer((_) => prices[call++].future);
+      final cubit = BillingCubit(
+        user: _user(),
+        paymentService: payments,
+        cache: cache,
+        saveCsv: (_, __) async {},
+        readArBalance: (_) async => BigInt.zero,
+      );
+      addTearDown(cubit.close);
+
+      final first = cubit.loadBalance();
+      await pumpEventQueue();
+      final second = cubit.loadBalance();
+      await pumpEventQueue();
+      expect(call, 2);
+
+      // The earlier lookup fails after the newer load started: ignored.
+      prices[0].completeError(Exception('no price'));
+      await first;
+      expect(cubit.state.storageSettled, isFalse);
+
+      prices[1].complete(_credit * BigInt.from(5));
+      await second;
+      expect(cubit.state.storageSettled, isTrue);
+      expect(cubit.state.storageGiB, 2);
     });
 
     testWidgets('an account Turbo has never seen has 0 credits, not an error',
@@ -1081,7 +1170,7 @@ void main() {
         ]);
 
     testWidgets(
-        'the balance card stops at 880 px, the purchases table runs full width',
+        'the balance card and the purchases table stop at the same 880 px',
         (tester) async {
       twoPurchases();
       await pumpPage(tester, user: _user(), size: const Size(1400, 1600));
@@ -1092,7 +1181,8 @@ void main() {
       // The page body pads 16 a side.
       expect(tester.getSize(balance).width, 880);
       expect(tester.getTopLeft(balance).dx, 16);
-      expect(tester.getSize(purchases).width, 1400 - 32);
+      expect(tester.getSize(purchases).width, 880);
+      expect(tester.getTopLeft(purchases).dx, 16);
 
       final header = find.byKey(const Key('billingPurchasesHeader'));
       expect(header, findsOneWidget);

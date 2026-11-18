@@ -621,8 +621,12 @@ class _DrivesListLoadedView extends StatelessWidget {
           context,
           ArDriveTypographyNew.of(context).paragraphSmall().fontSize ?? 14,
         );
+        // The width once a details panel has finished sliding in, so the
+        // columns do not drop part-way through or at the end of the slide.
+        final listWidth =
+            ListTargetWidth.narrowed(context, constraints.maxWidth);
         final showsAllColumns = driveListShowsColumns(
-          constraints.maxWidth,
+          listWidth,
           textScale: textScale,
         );
         // Three columns wherever five do not fit and three do, not only
@@ -634,7 +638,7 @@ class _DrivesListLoadedView extends StatelessWidget {
         // details.
         final showsColumns = showsAllColumns ||
             driveListShowsCompactColumns(
-              constraints.maxWidth,
+              listWidth,
               textScale: textScale,
             );
 

@@ -412,7 +412,7 @@ class ForgetWalletDialog extends StatelessWidget {
       title: appLocalizationsOf(context).forgetWalletDialogTitle,
       description: appLocalizationsOf(context).forgetWalletDialogDescription,
       actions: [
-        ModalAction(
+        ModalAction.close(
           title: appLocalizationsOf(context).cancel,
           action: () {
             Navigator.of(context).pop();

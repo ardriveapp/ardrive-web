@@ -96,7 +96,7 @@ class _UploadReadyDialogState extends State<UploadReadyDialog> {
         ),
       ),
       actions: [
-        ModalAction(action: _close, title: l10n.cancel),
+        ModalAction.close(action: _close, title: l10n.cancel),
         if (openHere)
           ModalAction(
             action: () {

@@ -75,7 +75,7 @@ class _ThumbnailCreationModal extends StatelessWidget {
         },
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
             action: () {
               Navigator.of(context).pop();
             },

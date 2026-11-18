@@ -159,7 +159,7 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
           title: 'Cancel',
           action: () => Navigator.of(context).pop(),
         ),
