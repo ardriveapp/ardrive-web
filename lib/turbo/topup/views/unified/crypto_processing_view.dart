@@ -16,23 +16,21 @@ class CryptoProcessingView extends StatelessWidget {
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
-        String message = 'Processing your payment...';
+        String message = appLocalizationsOf(context).turboProcessingPayment;
         String? submessage;
 
         if (state is CryptoTopupProcessing) {
           if (state.isSubmitting) {
             // One SDK call sends the payment and waits for the network, so
             // this covers both: the wallet's prompt and the confirmation.
-            message = 'Approve the payment in your wallet';
-            submessage =
-                'Once you approve it, it can take a minute to confirm.\n'
-                'To cancel, reject the request in your wallet.';
+            message = appLocalizationsOf(context).turboApproveInWallet;
+            submessage = appLocalizationsOf(context).turboApproveInWalletHint;
           } else if (state.txId != null) {
-            message = 'Confirming transaction...';
-            submessage = 'Waiting for network confirmation';
+            message = appLocalizationsOf(context).turboConfirmingTransaction;
+            submessage = appLocalizationsOf(context).turboWaitingForNetwork;
           } else {
-            message = 'Submitting transaction...';
-            submessage = 'This may take a moment';
+            message = appLocalizationsOf(context).turboSubmittingTransaction;
+            submessage = appLocalizationsOf(context).turboMayTakeAMoment;
           }
         }
 

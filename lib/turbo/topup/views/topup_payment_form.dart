@@ -77,7 +77,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           const SizedBox(height: 8),
           _credits(context),
           const SizedBox(height: 24),
-          _loadError(),
+          const PaymentFormLoadError(),
           _formDesktop(context, theme),
         ],
       ),
@@ -156,31 +156,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 const SizedBox(height: 8),
                 _credits(context),
                 const SizedBox(height: 24),
-                _loadError(),
+                const PaymentFormLoadError(),
                 _formDesktop(context, theme),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// The countries failed to load: said in the form, with a retry, not in a
-  /// second dialog on top of this one.
-  Widget _loadError() {
-    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
-      builder: (context, state) {
-        if (state is! PaymentFormError) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
-          child: ArDriveNotice(
-            type: ArDriveNoticeType.error,
-            message: appLocalizationsOf(context).turboErrorMessageNetwork,
-            actionLabel: appLocalizationsOf(context).tryAgain,
-            onAction: () => context
-                .read<PaymentFormBloc>()
-                .add(PaymentFormLoadSupportedCountries()),
           ),
         );
       },
@@ -478,7 +457,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             });
           },
           child: ArDriveTooltip(
-            message: 'Remove promo code', // TODO: localize
+            message: appLocalizationsOf(context).turboPromoRemove,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: ArDriveIcons.closeCircle(
@@ -614,4 +593,30 @@ class CountryItem {
   final String label;
 
   const CountryItem(this.label);
+}
+
+/// The countries failed to load: said in the form, with a retry, not in a
+/// second dialog on top of the top-up.
+class PaymentFormLoadError extends StatelessWidget {
+  const PaymentFormLoadError({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
+      builder: (context, state) {
+        if (state is! PaymentFormError) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+          child: ArDriveNotice(
+            type: ArDriveNoticeType.error,
+            message: appLocalizationsOf(context).turboErrorMessageNetwork,
+            actionLabel: appLocalizationsOf(context).tryAgain,
+            onAction: () => context
+                .read<PaymentFormBloc>()
+                .add(PaymentFormLoadSupportedCountries()),
+          ),
+        );
+      },
+    );
+  }
 }

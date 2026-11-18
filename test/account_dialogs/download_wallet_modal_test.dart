@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 class _MockBloc extends MockBloc<DownloadWalletEvent, DownloadWalletState>
     implements DownloadWalletBloc {}
@@ -13,8 +14,10 @@ class _MockBloc extends MockBloc<DownloadWalletEvent, DownloadWalletState>
 /// The keyfile download says what went wrong in its own dialog: a wrong
 /// password under the field, a failure as a notice, never a second dialog.
 void main() {
+  late _MockBloc bloc;
+  setUpAll(() => registerFallbackValue(const DownloadWallet('')));
   Future<void> pump(WidgetTester tester, DownloadWalletState state) async {
-    final bloc = _MockBloc();
+    bloc = _MockBloc();
     whenListen(bloc, const Stream<DownloadWalletState>.empty(),
         initialState: state);
     tester.view.physicalSize = const Size(1200, 1000);
@@ -27,7 +30,7 @@ void main() {
         home: Scaffold(
           body: BlocProvider<DownloadWalletBloc>.value(
             value: bloc,
-            child: DownloadWalletModal(),
+            child: const DownloadWalletModal(),
           ),
         ),
       ),
@@ -60,5 +63,19 @@ void main() {
     // One dialog: no second one titled Error on top.
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
     expect(find.text('Error'), findsNothing);
+  });
+
+  testWidgets('two fast presses of Download ask for one download',
+      (tester) async {
+    await pump(tester, DownloadWalletInitial());
+    await tester.enterText(find.byType(TextField), 'a password');
+
+    final download = find.widgetWithText(ArDriveButtonNew, 'Download');
+    await tester.tap(download);
+    // The bloc has not shown its busy state yet.
+    await tester.tap(download, warnIfMissed: false);
+    await tester.pump();
+
+    verify(() => bloc.add(any(that: isA<DownloadWallet>()))).called(1);
   });
 }

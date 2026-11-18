@@ -141,12 +141,8 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
         ? (widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana')
         : null;
 
-    if (!isReturning && chainName == null) {
-      return appLocalizationsOf(context).newPasswordBody;
-    }
-    if (isReturning) {
-      return appLocalizationsOf(context).signInFoundDrivesBody;
-    } else if (chainName != null) {
+    if (isReturning) return appLocalizationsOf(context).signInFoundDrivesBody;
+    if (chainName != null) {
       return appLocalizationsOf(context).signInLinkedWalletBody(chainName);
     }
     return appLocalizationsOf(context).newPasswordBody;
@@ -424,6 +420,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   }
 
   Future<void> _onSubmit() async {
+    if (_isProcessing) return;
     final isValid = _formKey.currentState!.validateSync();
 
     // A mismatch shows on the confirm field itself, not in a dialog on top.

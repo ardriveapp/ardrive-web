@@ -123,7 +123,6 @@ void showVideoPreview(
 
 /// Said when the browser could not set up an attachment's player.
 void _showPreviewFailed(BuildContext context) {
-
   showArDriveToast(
     ScaffoldMessenger.of(context),
     text: appLocalizationsOf(context).emailAttachmentPreviewFailed,

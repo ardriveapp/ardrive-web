@@ -29,7 +29,8 @@ void main() {
   DownloadPolicy policy() => DownloadPolicy(deviceInfo: deviceInfo);
 
   group('single file ceilings', () {
-    test('Safari is the one browser with a single-file ceiling, and it is the '
+    test(
+        'Safari is the one browser with a single-file ceiling, and it is the '
         'declared 1 GiB', () async {
       browser('Safari');
 
@@ -43,10 +44,12 @@ void main() {
       // The comparison the call sites make: exactly on the limit is fine.
       expect(publicLimit.allows(publicDownloadSafariSizeLimit), isTrue);
       expect(publicLimit.isExceededBy(publicDownloadSafariSizeLimit), isFalse);
-      expect(publicLimit.isExceededBy(publicDownloadSafariSizeLimit + 1), isTrue);
+      expect(
+          publicLimit.isExceededBy(publicDownloadSafariSizeLimit + 1), isTrue);
     });
 
-    test('other browsers have no single-file ceiling, which is reported as '
+    test(
+        'other browsers have no single-file ceiling, which is reported as '
         'none rather than invented', () async {
       for (final userAgent in ['Chrome', 'Firefox', 'Edg']) {
         browser(userAgent);
@@ -62,7 +65,8 @@ void main() {
       }
     });
 
-    test('mobile gates private single files at the mobile limit and leaves '
+    test(
+        'mobile gates private single files at the mobile limit and leaves '
         'public ones to the platform downloader', () async {
       for (final platform in [SystemPlatform.Android, SystemPlatform.iOS]) {
         AppPlatform.setMockPlatform(platform: platform);
@@ -80,7 +84,8 @@ void main() {
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
 
       expect((await policy().singleFileLimit(isPublic: true)).maxBytes, isNull);
-      expect((await policy().singleFileLimit(isPublic: false)).maxBytes, isNull);
+      expect(
+          (await policy().singleFileLimit(isPublic: false)).maxBytes, isNull);
     });
   });
 
@@ -107,7 +112,8 @@ void main() {
           DownloadSizeLimitSource.firefox);
     });
 
-    test('Safari keeps the plain web ceiling - consolidating the gates must '
+    test(
+        'Safari keeps the plain web ceiling - consolidating the gates must '
         'not raise it to the 1 GiB single-file number', () async {
       browser('Safari');
 
@@ -140,7 +146,8 @@ void main() {
 
         expect((await policy().bundleLimit(isPublic: true)).maxBytes, isNotNull,
             reason: platform.name);
-        expect((await policy().bundleLimit(isPublic: false)).maxBytes, isNotNull,
+        expect(
+            (await policy().bundleLimit(isPublic: false)).maxBytes, isNotNull,
             reason: platform.name);
       }
     });

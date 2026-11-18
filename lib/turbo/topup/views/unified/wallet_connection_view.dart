@@ -5,6 +5,7 @@ import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
 import 'package:ardrive/turbo/services/solana_wallet_service.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,14 +77,17 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
         return TurboTopupScaffold(
-          title: 'Connect wallet',
-          description:
-              'Connect your ${widget.token.walletType.displayName} to complete the purchase.',
+          title: appLocalizationsOf(context).turboConnectWalletTitle,
+          description: appLocalizationsOf(context)
+              .turboConnectWalletBody(widget.token.walletType.displayName),
           canClose: widget.onCancel != null,
           onClose: widget.onCancel,
           actions: onBack == null
               ? null
-              : [ModalAction.dismiss(title: 'Back', action: onBack)],
+              : [
+                  ModalAction.dismiss(
+                      title: appLocalizationsOf(context).back, action: onBack)
+                ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -104,7 +108,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Paying with ${widget.token.displayName}',
+                            appLocalizationsOf(context)
+                                .turboPayingWith(widget.token.displayName),
                             style: typography.paragraphNormal(
                               fontWeight: ArFontWeight.semiBold,
                               color: colors.textHigh,
@@ -154,7 +159,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             variant: ButtonVariant.primary,
             size: ArDriveButtonSize.large,
             maxWidth: double.infinity,
-            text: 'Install ${_getWalletAppName()}',
+            text: appLocalizationsOf(context)
+                .turboInstallNamed(_getWalletAppName()),
             onPressed: () => _openInstallUrl(widget.token.walletType),
           ),
         ],
@@ -176,7 +182,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Please sign the message in your Ethereum wallet to continue.',
+                appLocalizationsOf(context).turboSignMessageWait,
                 style: typography.paragraphNormal(
                   color: colors.textHigh,
                 ),
@@ -194,8 +200,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         children: [
           ArDriveNotice(
             type: ArDriveNoticeType.info,
-            message:
-                'Please switch to ${widget.token.networkDisplayName} in your wallet.',
+            message: appLocalizationsOf(context)
+                .turboSwitchNetworkNotice(widget.token.networkDisplayName),
           ),
           const SizedBox(height: 16),
           ArDriveButtonNew(
@@ -203,7 +209,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             variant: ButtonVariant.primary,
             size: ArDriveButtonSize.large,
             maxWidth: double.infinity,
-            text: 'Switch network',
+            text: appLocalizationsOf(context).turboSwitchNetwork,
             onPressed: () {
               final chainId =
                   bloc.networkConfig.getChainIdForToken(widget.token);
@@ -231,7 +237,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Connecting to ${widget.token.walletType.displayName}...',
+                appLocalizationsOf(context)
+                    .turboConnecting(widget.token.walletType.displayName),
                 style: typography.paragraphNormal(
                   color: colors.textHigh,
                 ),
@@ -260,7 +267,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select wallet',
+            appLocalizationsOf(context).turboSelectWallet,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.textHigh,
@@ -339,7 +346,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select wallet',
+            appLocalizationsOf(context).turboSelectWallet,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.textHigh,
@@ -387,7 +394,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select wallet',
+            appLocalizationsOf(context).turboSelectWallet,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.textHigh,
@@ -405,7 +412,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
       variant: ButtonVariant.primary,
       size: ArDriveButtonSize.large,
       maxWidth: double.infinity,
-      text: 'Connect ${_getWalletAppName()}',
+      text: appLocalizationsOf(context).turboConnectNamed(_getWalletAppName()),
       onPressed: () => bloc.add(const CryptoTopupConnectWallet()),
     );
   }
@@ -421,8 +428,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
       children: [
         ArDriveNotice(
           type: ArDriveNoticeType.warning,
-          title: 'No wallets detected',
-          message: _getInstallInstructions(),
+          title: appLocalizationsOf(context).turboNoWalletsDetected,
+          message: _getInstallInstructions(context),
         ),
         const SizedBox(height: 16),
         ArDriveButtonNew(
@@ -430,19 +437,20 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
           variant: ButtonVariant.primary,
           size: ArDriveButtonSize.large,
           maxWidth: double.infinity,
-          text: 'Install ${_getWalletAppName()}',
+          text: appLocalizationsOf(context)
+              .turboInstallNamed(_getWalletAppName()),
           onPressed: () => _openInstallUrl(widget.token.walletType),
         ),
       ],
     );
   }
 
-  String _getInstallInstructions() {
+  String _getInstallInstructions(BuildContext context) {
+    final strings = appLocalizationsOf(context);
     return switch (widget.token.walletType) {
-      WalletType.ethereum =>
-        'Please install a wallet extension like MetaMask or Coinbase Wallet to continue.',
-      WalletType.solana => 'Please install Phantom or Solflare to continue.',
-      WalletType.arweave => 'Please install ArConnect to continue.',
+      WalletType.ethereum => strings.turboInstallEthereum,
+      WalletType.solana => strings.turboInstallSolana,
+      WalletType.arweave => strings.turboInstallArweave,
     };
   }
 

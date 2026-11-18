@@ -65,7 +65,11 @@ void main() {
         ..path()
         ..path(),
     );
-    expect(avatarPainter(tester), isNot(paints..rect()..rect()));
+    expect(
+        avatarPainter(tester),
+        isNot(paints
+          ..rect()
+          ..rect()));
   });
 
   testWidgets('under reduced motion it holds still', (tester) async {

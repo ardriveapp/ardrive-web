@@ -31,6 +31,10 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _gatewayController;
   bool _isLoading = false;
+  bool _picking = false;
+
+  /// Set before the save runs: a second press must not save (and close) twice.
+  bool _saving = false;
   GatewayValidationResult? _validationResult;
   Timer? _debounce;
   String _lastValidatedText = '';
@@ -111,23 +115,24 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
     });
   }
 
-  Future<void> _selectFromArIOGateways() async {
-    final selectedGateway = await showArIOGatewaySelectorModal(context);
-    if (selectedGateway != null) {
-      final gatewayUrl = 'https://${selectedGateway.settings.fqdn}';
+  /// Shows the ar.io gateway list in this dialog, in place of the form.
+  void _selectFromArIOGateways() => setState(() => _picking = true);
 
-      // Update the controller using value to ensure the text field updates
-      _gatewayController.value = _gatewayController.value.copyWith(
-        text: gatewayUrl,
-        selection: TextSelection.collapsed(offset: gatewayUrl.length),
-      );
+  void _onGatewayPicked(Gateway selectedGateway) {
+    setState(() => _picking = false);
+    final gatewayUrl = 'https://${selectedGateway.settings.fqdn}';
 
-      // Reset the last validated text to ensure validation runs
-      _lastValidatedText = '';
+    // Update the controller using value to ensure the text field updates
+    _gatewayController.value = _gatewayController.value.copyWith(
+      text: gatewayUrl,
+      selection: TextSelection.collapsed(offset: gatewayUrl.length),
+    );
 
-      // Manually trigger the text change handler
-      _onTextChanged();
-    }
+    // Reset the last validated text to ensure validation runs
+    _lastValidatedText = '';
+
+    // Manually trigger the text change handler
+    _onTextChanged();
   }
 
   @override
@@ -136,6 +141,20 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
     final typography = ArDriveTypographyNew.of(context);
     final strings = appLocalizationsOf(context);
     final canSave = !_isLoading && _validationResult?.canBeUsed == true;
+
+    if (_picking) {
+      return ArDriveStandardModalNew(
+        width: 500,
+        title: strings.gatewayChooseArio,
+        content: ArIOGatewayPicker(onSelected: _onGatewayPicked),
+        actions: [
+          ModalAction.dismiss(
+            action: () => setState(() => _picking = false),
+            title: strings.back,
+          ),
+        ],
+      );
+    }
 
     return ArDriveStandardModalNew(
       width: 500,
@@ -196,9 +215,12 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
         // Only once the gateway has been checked and can be used. It looked
         // ready before that and did nothing when pressed.
         ModalAction(
-          isEnable: canSave,
+          isEnable: canSave && !_saving,
           action: () {
-            if (!canSave || !_formKey.currentState!.validate()) return;
+            if (_saving || !canSave || !_formKey.currentState!.validate()) {
+              return;
+            }
+            _saving = true;
             widget.onSave(GatewayValidator.cleanUrl(_gatewayController.text));
             Navigator.of(context).pop();
           },

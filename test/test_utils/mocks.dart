@@ -84,8 +84,7 @@ class MockArConnectService extends Mock implements ArConnectService {}
 class MockEthereumProviderService extends Mock
     implements EthereumProviderService {}
 
-class MockSolanaProviderService extends Mock
-    implements SolanaProviderService {}
+class MockSolanaProviderService extends Mock implements SolanaProviderService {}
 
 class MockTurboUploadService extends Mock implements TurboUploadService {}
 

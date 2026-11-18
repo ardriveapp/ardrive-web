@@ -98,9 +98,8 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
 
       // Trim the note name and create IOFile with .md extension
       final trimmedName = currentState.noteName.trim();
-      final fileName = trimmedName.endsWith('.md')
-          ? trimmedName
-          : '$trimmedName.md';
+      final fileName =
+          trimmedName.endsWith('.md') ? trimmedName : '$trimmedName.md';
 
       final ioFile = await IOFile.fromData(
         Uint8List.fromList(bytes),

@@ -393,7 +393,7 @@ void showEnterYourPasswordDialog(
       ));
 }
 
-class ForgetWalletDialog extends StatelessWidget {
+class ForgetWalletDialog extends StatefulWidget {
   const ForgetWalletDialog({
     super.key,
     required this.loginBloc,
@@ -405,6 +405,15 @@ class ForgetWalletDialog extends StatelessWidget {
   /// Whether Confirm also closes the dialog this one opened over. False when
   /// it opened over the sign-in panel itself.
   final bool closesDialogBelow;
+
+  @override
+  State<ForgetWalletDialog> createState() => _ForgetWalletDialogState();
+}
+
+class _ForgetWalletDialogState extends State<ForgetWalletDialog> {
+  /// Set on the first press: a second one would pop the dialog below too and
+  /// send the event twice.
+  bool _forgotten = false;
 
   @override
   Widget build(BuildContext context) {
@@ -421,9 +430,11 @@ class ForgetWalletDialog extends StatelessWidget {
         ModalAction(
           title: appLocalizationsOf(context).forgetWalletDialogAction,
           action: () {
+            if (_forgotten) return;
+            _forgotten = true;
             Navigator.of(context).pop();
-            if (closesDialogBelow) Navigator.of(context).pop();
-            loginBloc.add(const ForgetWallet());
+            if (widget.closesDialogBelow) Navigator.of(context).pop();
+            widget.loginBloc.add(const ForgetWallet());
             context.read<ProfileNameBloc>().add(const CleanProfileName());
             PlausibleEventTracker.trackClickForgetWalletTextButton();
           },

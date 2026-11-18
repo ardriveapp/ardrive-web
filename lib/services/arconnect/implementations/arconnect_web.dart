@@ -74,14 +74,16 @@ Future<Uint8List> getSignature(Uint8List message) async {
 Future<Uint8List> signDataItem(DataItem dataItem) async {
   // Convert Dart Tag objects to JS-compatible plain objects
   // This is necessary because Dart objects don't expose properties to JS in release mode
-  final tagsList = dataItem.tags.map((tag) => <String, String>{
-    'name': tag.name,
-    'value': tag.value,
-  }).toList();
+  final tagsList = dataItem.tags
+      .map((tag) => <String, String>{
+            'name': tag.name,
+            'value': tag.value,
+          })
+      .toList();
   final jsTags = jsify(tagsList);
 
-  return await promiseToFuture<Uint8List>(_signDataItem(dataItem.data,
-      jsTags, dataItem.owner, dataItem.target, dataItem.nonce));
+  return await promiseToFuture<Uint8List>(_signDataItem(
+      dataItem.data, jsTags, dataItem.owner, dataItem.target, dataItem.nonce));
 }
 
 bool isBatchSignSupported() => _isBatchSignSupported();

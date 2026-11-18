@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
@@ -11,6 +12,7 @@ import 'package:ardrive/device_unlock/domain/device_key.dart';
 import 'package:ardrive/device_unlock/domain/device_secret_source.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -1963,6 +1965,44 @@ void main() {
       ],
     );
 
+    final ethForSeed = _MockEthereumWallet();
+
+    blocTest<LoginBloc, LoginState>(
+      'a MetaMask password whose seed phrase cannot make a wallet closes the '
+      'loader and says so, so the loader is not left open',
+      build: () => LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => throw Exception('no key'),
+      ),
+      setUp: () {
+        when(() => ethForSeed.deriveArdriveSeedphrase(any(), any()))
+            .thenAnswer((_) async => ('words', Uint8List(32)));
+      },
+      act: (bloc) => bloc.add(LoginWithPassword(
+        password: 'a password',
+        wallet: ethForSeed,
+        derivedEthWallet: _MockEthereumProviderWallet(),
+        showWalletCreated: false,
+      )),
+      expect: () => [
+        isA<LoginCheckingPassword>(),
+        isA<LoginShowBlockingDialog>(),
+        isA<LoginCloseBlockingDialog>(),
+        isA<LoginShowLoader>(),
+        isA<LoginCloseBlockingDialog>(),
+        isA<LoginFailure>(),
+      ],
+    );
+
     blocTest<LoginBloc, LoginState>(
       'Cancel with nothing asked does nothing',
       build: logInBloc,
@@ -2378,6 +2418,9 @@ void main() {
 class _MockFirstDrive extends Mock implements FirstDrive {}
 
 class _MockEthereumWallet extends Mock implements EthereumWallet {}
+
+class _MockEthereumProviderWallet extends Mock
+    implements EthereumProviderWallet {}
 
 /// A keyfile the browser can't read: its read fails, or never finishes.
 class _UnreadableFile extends Fake implements IOFile {

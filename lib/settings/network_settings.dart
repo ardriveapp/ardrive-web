@@ -5,9 +5,9 @@ import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,7 +46,7 @@ Future<void> resetGateway(BuildContext context, AppConfig defaults) =>
 Future<void> showGraphQLServerDialog(BuildContext context) async {
   final configService = context.read<ConfigService>();
   final arweave = context.read<ArweaveService>();
-  await showAnimatedDialogWithBuilder(
+  await showArDriveDialogWithBuilder(
     context,
     builder: (context) => GraphQLEndpointDialog(
       initialEndpoint: graphQLServerOf(configService.config),
@@ -87,7 +87,7 @@ Future<void> _useGraphQLServer(
 Future<void> showTurboServicesDialog(BuildContext context) async {
   final configService = context.read<ConfigService>();
   final config = configService.config;
-  await showAnimatedDialogWithBuilder(
+  await showArDriveDialogWithBuilder(
     context,
     builder: (context) => TurboUrlDialog(
       initialUploadUrl: config.defaultTurboUploadUrl ?? '',

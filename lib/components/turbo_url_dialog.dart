@@ -23,6 +23,9 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
   late final TextEditingController _paymentController;
   bool _isValid = true;
 
+  /// Set before the save runs: a second press must not save (and close) twice.
+  bool _saving = false;
+
   @override
   void initState() {
     super.initState();
@@ -100,8 +103,10 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
         ),
         ModalAction(
           title: strings.save,
-          isEnable: _isValid,
+          isEnable: _isValid && !_saving,
           action: () {
+            if (_saving) return;
+            _saving = true;
             widget.onSave(
               _uploadController.text.trim(),
               _paymentController.text.trim(),

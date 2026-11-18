@@ -276,7 +276,6 @@ void main() {
         verifyNever(() => preferences.saveFoldedNavSections(any()));
       });
     }
-
   });
 
   // Phil: opening Web pages leaves only Web pages open; Names likewise.

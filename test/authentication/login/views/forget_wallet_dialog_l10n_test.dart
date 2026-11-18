@@ -37,15 +37,16 @@ void main() {
     expect(find.text('Use a different account?'), findsNothing);
   });
 
-  testWidgets('shows the dialog in English, its primary named for the action', (tester) async {
+  testWidgets('shows the dialog in English, its primary named for the action',
+      (tester) async {
     await pump(tester, const Locale('en'));
     await tester.pumpAndSettle();
 
     expect(find.text('Use a different account?'), findsOneWidget);
     // The primary is named for what it does, not Confirm.
     expect(find.text('Forget wallet'), findsOneWidget);
-    expect(find.text('This removes the wallet from this device.'),
-        findsOneWidget);
+    expect(
+        find.text('This removes the wallet from this device.'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Confirm'), findsNothing);
   });

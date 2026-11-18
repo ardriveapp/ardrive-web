@@ -31,7 +31,8 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Your wallet switched accounts'), findsOneWidget);
+    expect(
+        find.textContaining('Your wallet switched accounts'), findsOneWidget);
 
     await tester.tap(find.text('Start again'));
     expect(started, 1);

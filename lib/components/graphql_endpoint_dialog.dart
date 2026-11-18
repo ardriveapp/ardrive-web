@@ -25,6 +25,9 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
   late final TextEditingController _endpointController;
   bool _isLoading = false;
   bool? _isValid;
+
+  /// Set before the save runs: a second press must not save (and close) twice.
+  bool _saving = false;
   Timer? _debounce;
   String _lastValidatedText = '';
 
@@ -150,9 +153,11 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
         ),
         ModalAction(
           title: strings.save,
-          isEnable: _isValid == true && !_isLoading,
+          isEnable: _isValid == true && !_isLoading && !_saving,
           action: () {
+            if (_saving) return;
             if (_formKey.currentState!.validate()) {
+              _saving = true;
               widget.onSave(_endpointController.text.trim());
               Navigator.of(context).pop();
             }

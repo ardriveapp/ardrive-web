@@ -6,6 +6,7 @@ import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,7 +38,7 @@ class CryptoConfirmationView extends StatelessWidget {
       builder: (context, state) {
         if (state is! CryptoTopupConfirmation) {
           return TurboTopupScaffold(
-            title: 'Confirm payment',
+            title: appLocalizationsOf(context).turboConfirmPayment,
             onClose: onClose,
             canClose: onClose != null,
             child: const SizedBox(
@@ -52,14 +53,15 @@ class CryptoConfirmationView extends StatelessWidget {
         final bloc = context.read<CryptoTopupBloc>();
 
         return TurboTopupScaffold(
-          title: 'Confirm payment',
+          title: appLocalizationsOf(context).turboConfirmPayment,
           onClose: onClose,
           canClose: onClose != null,
           actions: [
             if (onBack != null)
-              ModalAction.dismiss(title: 'Back', action: onBack),
+              ModalAction.dismiss(
+                  title: appLocalizationsOf(context).back, action: onBack),
             ModalAction(
-              title: _getButtonText(state),
+              title: _getButtonText(context, state),
               isEnable: state.canConfirm &&
                   !state.quote.isExpired &&
                   state.networkState != NetworkState.checking &&
@@ -133,9 +135,10 @@ class CryptoConfirmationView extends StatelessWidget {
                 TextSpan(
                   style: typography.paragraphSmall(color: colors.textMid),
                   children: [
-                    const TextSpan(text: 'By continuing, you agree to the '),
+                    TextSpan(
+                        text: appLocalizationsOf(context).turboTermsPrefix),
                     ArDriveLink.span(
-                      text: 'Terms of Service',
+                      text: appLocalizationsOf(context).turboTermsLink,
                       style: typography.paragraphSmall(),
                       color: colors.textMid,
                       external: true,
@@ -152,23 +155,24 @@ class CryptoConfirmationView extends StatelessWidget {
     );
   }
 
-  String _getButtonText(CryptoTopupConfirmation state) {
+  String _getButtonText(BuildContext context, CryptoTopupConfirmation state) {
+    final strings = appLocalizationsOf(context);
     if (state.quote.isExpired) {
-      return 'Quote expired';
+      return strings.turboQuoteExpired;
     }
     if (state.networkState == NetworkState.checking) {
-      return 'Checking Network...';
+      return strings.turboCheckingNetwork;
     }
     if (state.networkState == NetworkState.switching) {
-      return 'Switching Network...';
+      return strings.turboSwitchingNetwork;
     }
     if (state.networkState == NetworkState.needsSwitch) {
-      return 'Switch network first';
+      return strings.turboSwitchNetworkFirst;
     }
     if (state.hasInsufficientBalance) {
-      return 'Not enough ${state.token.symbol}';
+      return strings.turboNotEnoughToken(state.token.symbol);
     }
-    return 'Confirm & Pay';
+    return strings.pay;
   }
 }
 
@@ -214,7 +218,7 @@ class _PayingWithSection extends StatelessWidget {
         children: [
           // Section label
           Text(
-            'PAYING WITH',
+            appLocalizationsOf(context).turboPayingWithLabel,
             style: typography.paragraphSmall(
               fontWeight: ArFontWeight.semiBold,
               color: colors.textMid,
@@ -315,7 +319,7 @@ class _PayingWithSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Wallet balance',
+                  appLocalizationsOf(context).turboWalletBalance,
                   style: typography.paragraphSmall(
                     color: colors.textMid,
                   ),
@@ -407,7 +411,7 @@ class _YoullReceiveSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "YOU'LL RECEIVE",
+                  appLocalizationsOf(context).turboYoullReceive,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: colors.textMid,
@@ -458,7 +462,7 @@ class _YoullReceiveSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'NEW BALANCE',
+                  appLocalizationsOf(context).turboNewBalance,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: colors.textMid,
@@ -593,7 +597,7 @@ class _NetworkStatusBanner extends StatelessWidget {
           ArDriveSpinner(color: colors.textMid),
           const SizedBox(width: 6),
           Text(
-            'Checking network...',
+            appLocalizationsOf(context).turboCheckingNetwork,
             style: typography.paragraphSmall(
               color: colors.textMid,
             ),
@@ -608,7 +612,8 @@ class _NetworkStatusBanner extends StatelessWidget {
           ArDriveSpinner(color: colors.textMid),
           const SizedBox(width: 6),
           Text(
-            'Switching to ${token.networkDisplayName}...',
+            appLocalizationsOf(context)
+                .turboSwitchingTo(token.networkDisplayName),
             style: typography.paragraphSmall(
               color: colors.textMid,
             ),
@@ -620,8 +625,9 @@ class _NetworkStatusBanner extends StatelessWidget {
     // Needs switch - show warning banner
     return ArDriveNotice(
       type: ArDriveNoticeType.warning,
-      message: 'Switch to ${token.networkDisplayName}',
-      actionLabel: 'Switch',
+      message: appLocalizationsOf(context)
+          .turboSwitchToNetwork(token.networkDisplayName),
+      actionLabel: appLocalizationsOf(context).turboSwitch,
       onAction: onSwitchNetwork,
     );
   }

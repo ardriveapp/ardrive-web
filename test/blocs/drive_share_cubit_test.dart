@@ -32,9 +32,8 @@ void main() {
               name: 'My Drive',
               ownerAddress: ownerAddress,
               rootFolderId: rootFolderId,
-              privacy: isPrivate
-                  ? DrivePrivacyTag.private
-                  : DrivePrivacyTag.public,
+              privacy:
+                  isPrivate ? DrivePrivacyTag.private : DrivePrivacyTag.public,
               lastBlockHeight: const Value(1),
             ),
           );
@@ -199,8 +198,8 @@ void main() {
     test('a public drive has no key artifact to offer', () async {
       await insertDrive(isPrivate: false);
 
-      final success = await settled(cubit(await drive()))
-          as DriveShareLoadSuccess;
+      final success =
+          await settled(cubit(await drive())) as DriveShareLoadSuccess;
 
       expect(success.driveKeyBase64, isNull);
       expect(success.hasSeparateKeyArtifact, isFalse);
@@ -211,9 +210,8 @@ void main() {
 
       await insertDrive(isPrivate: false);
 
-      final success =
-          await settled(cubit(await drive(), folderId: folderId))
-              as DriveShareLoadSuccess;
+      final success = await settled(cubit(await drive(), folderId: folderId))
+          as DriveShareLoadSuccess;
 
       expect(
         success.driveShareLink.toString(),
@@ -245,8 +243,7 @@ void main() {
     });
 
     test('toggling the key rebuilds the link without a loading state',
-        (
-    ) async {
+        () async {
       // The dialog renders a centred spinner for DriveShareLoadInProgress, so
       // re-announcing it here would blank the dialog and take the checkbox the
       // sharer just clicked off the screen. The file share dialog rebuilds its

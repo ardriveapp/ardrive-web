@@ -756,6 +756,8 @@ Future<void> showSupportModal({
 
   showArDriveDialog(
     context,
+    // Exporting the logs is work in this dialog: not closed by a tap outside.
+    barrierDismissible: false,
     content: StatefulBuilder(
         builder: (dialogContext, setDialogState) => ArDriveStandardModalNew(
               title: appLocalizationsOf(context).help,
@@ -968,6 +970,7 @@ Future<void> showSupportModal({
                 ModalAction(
                   isLoading: exporting,
                   action: () async {
+                    if (exporting) return;
                     setDialogState(() {
                       exporting = true;
                       exported = false;

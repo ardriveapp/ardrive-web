@@ -290,10 +290,9 @@ class _CurrencyAmountSection extends StatelessWidget {
 class _SelectTokenMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const ArDriveNotice(
+    return ArDriveNotice(
       type: ArDriveNoticeType.info,
-      message:
-          'Select a cryptocurrency from the dropdown above to see amounts.',
+      message: appLocalizationsOf(context).turboSelectCryptoHint,
     );
   }
 }
@@ -329,8 +328,9 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
     if (widget.state.promoCode != null) {
       return ArDriveNotice(
         type: ArDriveNoticeType.success,
-        message: 'Promo code applied: ${widget.state.promoCode}',
-        dismissLabel: 'Remove promo code',
+        message: appLocalizationsOf(context)
+            .turboPromoApplied(widget.state.promoCode!),
+        dismissLabel: appLocalizationsOf(context).turboPromoRemove,
         onDismiss: () => widget.bloc.add(const UnifiedTopupPromoCodeRemoved()),
       );
     }
@@ -348,7 +348,7 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ArDriveLink(
-          text: 'Have a promo code?',
+          text: appLocalizationsOf(context).turboPromoHave,
           isAction: true,
           style: typography.paragraphSmall(fontWeight: ArFontWeight.semiBold),
           onTap: () => setState(() => _isExpanded = !_isExpanded),
@@ -361,7 +361,7 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
               Expanded(
                 child: ArDriveTextFieldNew(
                   controller: _controller,
-                  hintText: 'Enter promo code',
+                  hintText: appLocalizationsOf(context).turboPromoEnter,
                   // The rejection sits under the field it is about, not
                   // below the summary where it can be off screen.
                   errorMessage: widget.state.promoCodeError,
@@ -372,7 +372,7 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
               ArDriveButtonNew(
                 typography: ArDriveTypographyNew.of(context),
                 variant: ButtonVariant.secondary,
-                text: 'Apply',
+                text: appLocalizationsOf(context).turboPromoApply,
                 onPressed: submit,
               ),
             ],
@@ -400,7 +400,7 @@ class _EmptySummaryPlaceholder extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          'Select an amount to see purchase summary',
+          appLocalizationsOf(context).turboSelectAmountHint,
           style: typography.paragraphNormal(
             color: colors.textMid,
           ),
