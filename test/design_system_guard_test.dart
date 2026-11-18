@@ -83,6 +83,14 @@ void main() {
     expect(lines[4], 'g();');
   });
 
+  test('nested block comments are left out whole', () {
+    const source = 'a(); /* outer /* inner */ showProgressDialog(x); */ b();';
+    final out = _withoutComments(source);
+    expect(out, isNot(contains('showProgressDialog')));
+    expect(out, contains('a();'));
+    expect(out, contains('b();'));
+  });
+
   test('every exception still needs to be one', () {
     final stale = <String>[
       for (final path in _spinnerExceptions.keys)
@@ -235,12 +243,21 @@ String _withoutComments(String source) {
         i++;
       }
     } else if (c == '/' && next == '*') {
+      // Dart's block comments nest: /* a /* b */ c */ is one comment.
       i += 2;
-      while (i < source.length && !source.startsWith('*/', i)) {
-        if (source[i] == '\n') out.write('\n');
-        i++;
+      var depth = 1;
+      while (i < source.length && depth > 0) {
+        if (source.startsWith('/*', i)) {
+          depth++;
+          i += 2;
+        } else if (source.startsWith('*/', i)) {
+          depth--;
+          i += 2;
+        } else {
+          if (source[i] == '\n') out.write('\n');
+          i++;
+        }
       }
-      i += 2;
     } else if (c == "'" || c == '"') {
       // r'...' takes no escapes: a backslash in it is just a backslash.
       raw = i > 0 &&

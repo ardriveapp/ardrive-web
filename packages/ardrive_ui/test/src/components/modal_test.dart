@@ -464,6 +464,18 @@ void main() {
       expect(cancel.isDisabled, isTrue);
     });
 
+    testWidgets('the X is named after the Cancel it runs, in its language',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, [
+        ModalAction.close(action: () {}, title: 'Cancelar'),
+        ModalAction(action: () {}, title: 'Guardar'),
+      ]);
+      expect(find.bySemanticsLabel('Cancelar'), findsWidgets);
+      expect(find.bySemanticsLabel('Close'), findsNothing);
+      handle.dispose();
+    });
+
     testWidgets('a Cancel that is not held still closes from the X',
         (tester) async {
       var cancelled = 0;
