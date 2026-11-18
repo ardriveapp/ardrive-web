@@ -646,7 +646,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "Download finished!",
+  "downloadFinished": "Download finished",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -658,7 +658,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "Downloading file...",
+  "downloadingFile": "Downloading file",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -6129,5 +6129,53 @@
   "profileArioBalanceError": "Error fetching ARIO balance",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Using gateway: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "changeExtensionTitle": "Change the file extension?",
+  "@changeExtensionTitle": {"description": "Rename dialog: title of the step that confirms a new file extension."},
+  "changeExtensionBody": "The extension will change from {previous} to {next}.",
+  "@changeExtensionBody": {"description": "Rename dialog: what the extension change is.", "placeholders": {"previous": {"type": "String"}, "next": {"type": "String"}}},
+  "couldNotRenameTitle": "Could not rename",
+  "@couldNotRenameTitle": {"description": "Rename dialog: failure notice title."},
+  "couldNotCreateFolderTitle": "Could not create the folder",
+  "@couldNotCreateFolderTitle": {"description": "Create folder dialog: failure notice title."},
+  "nameAlreadyExistsHere": "A file or folder named {name} is already here. Choose another name.",
+  "@nameAlreadyExistsHere": {"description": "Shown in a rename or create folder dialog when the name is taken in that folder.", "placeholders": {"name": {"type": "String"}}},
+  "couldNotRecreateFolderTitle": "Could not recreate the folder",
+  "@couldNotRecreateFolderTitle": {"description": "Recreate folder dialog: failure notice title."},
+  "skipAndMoveRest": "Skip and move the rest",
+  "@skipAndMoveRest": {"description": "Move dialog name conflict: the action that moves the items without a conflict."},
+  "couldNotMoveTitle": "Could not move",
+  "@couldNotMoveTitle": {"description": "Move dialog: failure notice title."},
+  "failedToHideDrive": "Failed to hide drive",
+  "@failedToHideDrive": {"description": "Hide drive dialog: failure title."},
+  "failedToUnhideDrive": "Failed to unhide drive",
+  "@failedToUnhideDrive": {"description": "Unhide drive dialog: failure title."},
+  "hidingDrive": "Hiding drive",
+  "@hidingDrive": {"description": "Hide drive dialog: title while it runs."},
+  "unhidingDrive": "Unhiding drive",
+  "@unhidingDrive": {"description": "Unhide drive dialog: title while it runs."},
+  "downloadLargeFileTitle": "Download a large file",
+  "@downloadLargeFileTitle": {"description": "Download dialog: title of the warning before a large file is downloaded."},
+  "downloadFileTooLargeTitle": "This file is too large to download here",
+  "@downloadFileTooLargeTitle": {"description": "Download dialog: title when a file is above what this download can handle."},
+  "exportCsvFailedTitle": "Export failed",
+  "@exportCsvFailedTitle": {"description": "CSV export dialog: failure title."},
+  "exportingCsvTitle": "Exporting CSV",
+  "@exportingCsvTitle": {"description": "CSV export dialog: title while it runs."},
+  "createThumbnail": "Create thumbnail",
+  "@createThumbnail": {"description": "Thumbnail dialog: title and the action that makes the thumbnail."},
+  "createThumbnailDescription": "A thumbnail is a small image that represents your file. It shows in the file explorer and in the file details.",
+  "@createThumbnailDescription": {"description": "Thumbnail dialog: what a thumbnail is."},
+  "couldNotCreateThumbnailTitle": "Could not create the thumbnail",
+  "@couldNotCreateThumbnailTitle": {"description": "Thumbnail dialog: failure notice title."},
+  "preparingYourFiles": "Preparing your files",
+  "@preparingYourFiles": {"description": "File picker on a phone: shown while the chosen files are read."},
+  "saveNote": "Save note",
+  "@saveNote": {"description": "Note editor: the action that saves the note (the upload review follows)."},
+  "keepEditing": "Keep editing",
+  "@keepEditing": {"description": "Note editor: the choice that stays in the editor instead of discarding changes."},
+  "openingNote": "Opening note",
+  "@openingNote": {"description": "Title of the wait while a note is fetched to be edited."},
+  "couldNotOpenNote": "Could not open the note",
+  "@couldNotOpenNote": {"description": "Title of the failure when a note could not be fetched to be edited."}
 }

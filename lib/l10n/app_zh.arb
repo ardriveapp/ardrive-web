@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "下载完成！",
+  "downloadFinished": "下载完成",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "下载文件中...",
+  "downloadingFile": "正在下载文件",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -8113,5 +8113,29 @@
   "profileArioBalanceError": "获取 ARIO 余额时出错",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "正在使用网关：{url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "changeExtensionTitle": "要更改文件扩展名吗?",
+  "changeExtensionBody": "扩展名将从 {previous} 变为 {next}。",
+  "couldNotRenameTitle": "无法重命名",
+  "couldNotCreateFolderTitle": "无法创建文件夹",
+  "nameAlreadyExistsHere": "这里已有名为 {name} 的文件或文件夹。请换一个名称。",
+  "couldNotRecreateFolderTitle": "无法重新创建文件夹",
+  "skipAndMoveRest": "跳过并移动其余项目",
+  "couldNotMoveTitle": "无法移动",
+  "failedToHideDrive": "隐藏云盘失败",
+  "failedToUnhideDrive": "取消隐藏云盘失败",
+  "hidingDrive": "正在隐藏云盘",
+  "unhidingDrive": "正在取消隐藏云盘",
+  "downloadLargeFileTitle": "下载大文件",
+  "downloadFileTooLargeTitle": "此文件太大，无法在此下载",
+  "exportCsvFailedTitle": "导出失败",
+  "exportingCsvTitle": "正在导出 CSV",
+  "createThumbnail": "创建缩略图",
+  "createThumbnailDescription": "缩略图是代表您文件的小图片，会显示在文件浏览器和文件详情中。",
+  "couldNotCreateThumbnailTitle": "无法创建缩略图",
+  "preparingYourFiles": "正在准备您的文件",
+  "saveNote": "保存笔记",
+  "keepEditing": "继续编辑",
+  "openingNote": "正在打开笔记",
+  "couldNotOpenNote": "无法打开笔记"
 }

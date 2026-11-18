@@ -19,10 +19,10 @@ class MockFileDownloadCubit extends MockCubit<FileDownloadState>
 /// Phase 2 and told nobody. These are the assertions that a verdict is on
 /// screen at all - and, just as importantly, that the two harmless ones do not
 /// read like the harmful one.
-/// The warning triangle, which only the outcomes that really are a problem are
-/// allowed to wear.
-final Finder _alertIcon = find.byWidgetPredicate(
-  (widget) => widget is ArDriveIcon && widget.icon == ArDriveIconsData.triangle,
+/// The error notice, which only the outcomes that really are a problem are
+/// allowed to carry.
+final Finder _errorNotice = find.byWidgetPredicate(
+  (widget) => widget is ArDriveNotice && widget.type == ArDriveNoticeType.error,
 );
 
 void main() {
@@ -116,7 +116,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Download finished!'), findsOneWidget,
+        expect(find.text('Download finished'), findsOneWidget,
             reason: 'for $verdict');
         expect(find.text('holiday.mp4'), findsOneWidget,
             reason: 'for $verdict');
@@ -142,17 +142,16 @@ void main() {
 
       expect(find.text('This file doesn’t match the original'), findsOneWidget);
       // Not a footnote under a congratulation.
-      expect(find.text('Download finished!'), findsNothing);
+      expect(find.text('Download finished'), findsNothing);
       expect(find.textContaining('holiday.mp4'), findsOneWidget);
       expect(find.textContaining('Delete it'), findsOneWidget);
-      expect(find.text('OK'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
     });
 
     testWidgets('a failed verdict does not look like the success it replaces',
         (tester) async {
-      // Every ArDrive modal wears the same red strip, so the words were the
-      // only thing telling this outcome apart from "Download finished!". The
-      // alert icon beside the title is what carries it at a glance.
+      // The words say what happened; the error notice is what carries it at a
+      // glance.
       await pumpState(
         tester,
         const FileDownloadFinishedWithSuccess(
@@ -161,10 +160,10 @@ void main() {
         ),
       );
 
-      expect(_alertIcon, findsOneWidget);
+      expect(_errorNotice, findsOneWidget);
     });
 
-    testWidgets('neither harmless verdict borrows the alert icon',
+    testWidgets('neither harmless verdict borrows the error notice',
         (tester) async {
       for (final verdict in [
         DataItemIntegrityVerdict.verified,
@@ -178,7 +177,7 @@ void main() {
           ),
         );
 
-        expect(_alertIcon, findsNothing, reason: '$verdict');
+        expect(_errorNotice, findsNothing, reason: '$verdict');
       }
     });
 
@@ -192,7 +191,7 @@ void main() {
         const FileDownloadFinishedWithSuccess(fileName: 'holiday.mp4'),
       );
 
-      expect(find.text('Download finished!'), findsOneWidget);
+      expect(find.text('Download finished'), findsOneWidget);
       expect(find.text('holiday.mp4'), findsOneWidget);
       expect(find.textContaining('originally uploaded'), findsNothing);
       expect(find.textContaining('couldn’t check'), findsNothing);
@@ -280,6 +279,80 @@ void main() {
       final readingLeft = tester.getTopLeft(find.text('62%')).dx;
 
       expect(readingLeft - barRight, greaterThanOrEqualTo(8));
+    });
+  });
+
+  group('the large-file warning', () {
+    testWidgets('has Cancel first and Download last, as the primary',
+        (tester) async {
+      await pumpState(tester, const FileDownloadWarning());
+
+      expect(find.text('Download a large file'), findsOneWidget);
+      expect(find.text('Warning'), findsNothing);
+      expect(find.byType(ArDriveNotice), findsOneWidget);
+
+      final buttons = tester
+          .widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+          .toList();
+      expect(buttons.map((b) => b.text), ['Cancel', 'Download']);
+      expect(buttons.first.variant, ButtonVariant.secondary);
+      expect(buttons.last.variant, ButtonVariant.primary);
+    });
+  });
+
+  group('failures that only close', () {
+    testWidgets(
+        'a file that is too large is named by what happened, with Close',
+        (tester) async {
+      await pumpState(
+        tester,
+        const FileDownloadFailure(FileDownloadFailureReason.fileAboveLimit),
+      );
+
+      expect(
+          find.text('This file is too large to download here'), findsOneWidget);
+      expect(find.text('Warning'), findsNothing);
+      expect(find.text('OK'), findsNothing);
+      expect(
+        tester
+            .widget<ArDriveButtonNew>(
+                find.widgetWithText(ArDriveButtonNew, 'Close'))
+            .variant,
+        ButtonVariant.secondary,
+      );
+    });
+  });
+
+  group('the states share one width', () {
+    testWidgets(
+        'the wait, the progress and the check are as wide as each other',
+        (tester) async {
+      await pumpState(
+        tester,
+        const FileDownloadInProgress(
+            fileName: 'holiday.mp4', totalByteCount: 5),
+      );
+      final inProgress = tester.getSize(find.byType(ArDriveStandardModalNew));
+
+      await pumpState(
+        tester,
+        const FileDownloadWithProgress(
+          fileName: 'holiday.mp4',
+          progress: 62,
+          fileSize: 5000000,
+          contentType: 'video/mp4',
+        ),
+      );
+      final progress = tester.getSize(find.byType(ArDriveStandardModalNew));
+
+      await pumpState(
+        tester,
+        const FileDownloadVerifying(fileName: 'holiday.mp4'),
+      );
+      final verifying = tester.getSize(find.byType(ArDriveStandardModalNew));
+
+      expect(progress.width, inProgress.width);
+      expect(verifying.width, inProgress.width);
     });
   });
 }

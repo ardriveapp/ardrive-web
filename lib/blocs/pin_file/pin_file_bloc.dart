@@ -392,6 +392,9 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         idValidation: state.idValidation,
         isPaymentError: isTurboPaymentError(err),
       ));
+      // Back to the valid fields, so the dialog stays as it was and a retry
+      // submits them again.
+      emit(stateAsPinFileFieldsValid);
     });
   }
 

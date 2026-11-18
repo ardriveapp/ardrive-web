@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/note_create/note_create_cubit.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
 import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -62,9 +63,9 @@ Future<void> promptToEditNote(
       title: appLocalizationsOf(context).error,
       description: appLocalizationsOf(context).noteFileTooLarge(fileSizeMB),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(),
-          title: appLocalizationsOf(context).okEmphasized,
+          title: appLocalizationsOf(context).close,
         ),
       ],
     );
@@ -81,7 +82,7 @@ Future<void> promptToEditNote(
         description: appLocalizationsOf(context)
             .noteLargeFileWarningDescription(fileSizeMB),
         actions: [
-          ModalAction(
+          ModalAction.close(
             action: () => Navigator.of(context).pop(false),
             title: appLocalizationsOf(context).cancelEmphasized,
           ),
@@ -146,6 +147,10 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   final _nameController = TextEditingController();
   bool _hasUnsavedChanges = false;
 
+  /// Why the note could not be made, until the next try or an edit. The
+  /// editor stays as it was, so nothing typed is lost.
+  NoteCreateErrorKey? _createError;
+
   @override
   void initState() {
     super.initState();
@@ -174,9 +179,9 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         title: appLocalizationsOf(context).discardChanges,
         description: appLocalizationsOf(context).discardChangesDescription,
         actions: [
-          ModalAction(
+          ModalAction.close(
             action: () => Navigator.of(context).pop(false),
-            title: appLocalizationsOf(context).cancelEmphasized,
+            title: appLocalizationsOf(context).keepEditing,
           ),
           ModalAction(
             action: () => Navigator.of(context).pop(true),
@@ -193,6 +198,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
     final cubit = context.read<NoteCreateCubit>();
     logger.d('_createNote called, isEditMode: ${cubit.isEditMode}');
 
+    setState(() => _createError = null);
     final ioFile = await cubit.createNoteFile();
 
     if (ioFile == null) {
@@ -207,19 +213,19 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
     Navigator.of(context).pop(ioFile);
   }
 
+  /// The design system's phone width: below it the editor takes the whole
+  /// page.
+  static const _phoneBreakpoint = 834;
+
   bool _isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < 600;
+    return MediaQuery.of(context).size.width < _phoneBreakpoint;
   }
 
   double _getResponsiveWidth(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Mobile: Use most of screen width with padding
-    if (screenWidth < 600) {
-      return screenWidth - 32; // 16px padding on each side
-    }
-    // Tablet: Use a reasonable width
-    else if (screenWidth < 1024) {
+    // Narrow: Use a reasonable width
+    if (screenWidth < 1024) {
       return 700;
     }
     // Desktop: Use wider width for comfortable split view
@@ -246,17 +252,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
     return BlocConsumer<NoteCreateCubit, NoteCreateState>(
       listener: (context, state) async {
         if (state is NoteCreateError) {
-          await showStandardDialog(
-            context,
-            title: appLocalizationsOf(context).error,
-            description: _getCreateErrorMessage(context, state.errorKey),
-            actions: [
-              ModalAction(
-                action: () => Navigator.of(context).pop(),
-                title: appLocalizationsOf(context).okEmphasized,
-              ),
-            ],
-          );
+          setState(() => _createError = state.errorKey);
         }
       },
       builder: (context, state) {
@@ -298,8 +294,9 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
       appBar: AppBar(
         backgroundColor: colorTokens.containerL0,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: colorTokens.iconHigh),
+        leading: ArDriveIconButton(
+          icon: ArDriveIcons.x(size: 24, color: colorTokens.iconHigh),
+          size: 24,
           tooltip: appLocalizationsOf(context).close,
           onPressed: () async {
             final navigator = Navigator.of(context);
@@ -311,8 +308,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         title: Text(
           isEditMode
               ? appLocalizationsOf(context).editNote
-              : appLocalizationsOf(context).createNewNote,
-          style: typography.heading5(
+              : appLocalizationsOf(context).newNote,
+          style: typography.heading3(
             color: colorTokens.textHigh,
             fontWeight: ArFontWeight.bold,
           ),
@@ -320,7 +317,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         actions: [
           Center(
             child: ArDriveButtonNew(
-              text: appLocalizationsOf(context).nextEmphasized,
+              text: appLocalizationsOf(context).saveNote,
               typography: typography,
               variant: ButtonVariant.primary,
               size: ArDriveButtonSize.compact,
@@ -345,10 +342,10 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
       width: modalWidth,
       title: isEditMode
           ? appLocalizationsOf(context).editNote
-          : appLocalizationsOf(context).createNewNote,
+          : appLocalizationsOf(context).newNote,
       content: _buildContent(context, state, modalWidth),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () async {
             final navigator = Navigator.of(context);
             if (await _confirmDiscard()) {
@@ -359,7 +356,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         ),
         ModalAction(
           action: _createNote,
-          title: appLocalizationsOf(context).nextEmphasized,
+          title: appLocalizationsOf(context).saveNote,
           isEnable: state.isValidName,
         ),
       ],
@@ -375,6 +372,10 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         children: [
           _buildNameField(context, state),
           const SizedBox(height: ArDriveSpacing.md),
+          if (_createError != null) ...[
+            _buildCreateError(context),
+            const SizedBox(height: ArDriveSpacing.md),
+          ],
 
           // Markdown editor - takes remaining space
           Expanded(
@@ -407,6 +408,10 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         children: [
           _buildNameField(context, state),
           const SizedBox(height: ArDriveSpacing.md),
+          if (_createError != null) ...[
+            _buildCreateError(context),
+            const SizedBox(height: ArDriveSpacing.md),
+          ],
 
           // Markdown editor
           SizedBox(
@@ -426,6 +431,13 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
       ),
     );
   }
+
+  Widget _buildCreateError(BuildContext context) => ArDriveNotice(
+        type: ArDriveNoticeType.error,
+        message: _getCreateErrorMessage(context, _createError!),
+        actionLabel: appLocalizationsOf(context).tryAgain,
+        onAction: _createNote,
+      );
 
   /// The name, labelled the way [ArDriveTextFieldNew] labels a field. The
   /// label and error sit outside the field so that ".md" lines up with the
@@ -475,12 +487,9 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         if (state.nameError != null)
           Padding(
             padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
-            child: Text(
-              _getErrorMessage(context, state.nameError!),
-              style: typography.paragraphNormal(
-                color: colorTokens.statusErrorFg,
-                fontWeight: ArFontWeight.semiBold,
-              ),
+            child: ArDriveStatusText(
+              type: ArDriveStatusType.error,
+              text: _getErrorMessage(context, state.nameError!),
             ),
           ),
       ],
