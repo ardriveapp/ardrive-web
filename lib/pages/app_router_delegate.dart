@@ -2045,6 +2045,9 @@ class _ShellFadeState extends State<ShellFade>
       }
     });
 
+  late final CurvedAnimation _curved =
+      CurvedAnimation(parent: _fade, curve: Curves.easeOut);
+
   /// The sign-in page, kept under the app while it fades in.
   Widget? _outgoing;
 
@@ -2069,6 +2072,7 @@ class _ShellFadeState extends State<ShellFade>
 
   @override
   void dispose() {
+    _curved.dispose();
     _fade.dispose();
     super.dispose();
   }
@@ -2089,7 +2093,7 @@ class _ShellFadeState extends State<ShellFade>
         FadeTransition(
           key: ValueKey(
               widget.signedOutShell ? 'signedOut$_generation' : 'signedIn'),
-          opacity: CurvedAnimation(parent: _fade, curve: Curves.easeOut),
+          opacity: _curved,
           child: widget.child,
         ),
       ],

@@ -759,7 +759,7 @@ class LoginPanelFade extends StatelessWidget {
       // One after the other, so two steps' text is never drawn on top of each
       // other: the old one out in the first half, the new one in the second.
       switchInCurve: const Interval(0.5, 1, curve: Curves.easeOut),
-      switchOutCurve: const Interval(0, 0.5, curve: Curves.easeOut),
+      switchOutCurve: const Interval(0.5, 1, curve: Curves.easeOut),
       // The step on its way out takes no focus and no taps, so the step
       // arriving can take its autofocus. Every entry is wrapped the same way
       // (and keyed like its child), so none is remounted when it becomes the

@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 double _opacity(WidgetTester tester) => tester
-    .widget<AnimatedOpacity>(find.descendant(
-        of: find.byType(DelayedReveal), matching: find.byType(AnimatedOpacity)))
-    .opacity;
+    .widget<FadeTransition>(find.descendant(
+        of: find.byType(DelayedReveal), matching: find.byType(FadeTransition)))
+    .opacity
+    .value;
 
 void main() {
   group('DelayedReveal', () {
@@ -26,8 +27,9 @@ void main() {
         home: DelayedReveal(immediate: false, child: Text('Opening')),
       ));
       await tester.pump(const Duration(milliseconds: 350));
-      expect(_opacity(tester), 1);
+      expect(_opacity(tester), lessThan(1));
       await tester.pump(const Duration(milliseconds: 200));
+      expect(_opacity(tester), 1);
       expect(find.text('Opening'), findsOneWidget);
     });
 
@@ -36,6 +38,24 @@ void main() {
         home: DelayedReveal(immediate: true, child: Text('Syncing')),
       ));
       expect(_opacity(tester), 1);
+    });
+
+    testWidgets('a sync starting mid-fade jumps to full without remounting',
+        (tester) async {
+      var created = 0;
+      Widget build(bool immediate) => MaterialApp(
+            home: DelayedReveal(
+              immediate: immediate,
+              child: _Mount(onCreate: () => created++),
+            ),
+          );
+      await tester.pumpWidget(build(false));
+      await tester.pump(const Duration(milliseconds: 320));
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(_opacity(tester), allOf(greaterThan(0), lessThan(1)));
+      await tester.pumpWidget(build(true));
+      expect(_opacity(tester), 1);
+      expect(created, 1, reason: 'not remounted');
     });
 
     testWidgets('a wait that turns into a sync shows at once', (tester) async {
@@ -143,4 +163,23 @@ class _ProbeState extends State<_Probe> {
 
   @override
   Widget build(BuildContext context) => const Text('login');
+}
+
+class _Mount extends StatefulWidget {
+  const _Mount({required this.onCreate});
+  final VoidCallback onCreate;
+
+  @override
+  State<_Mount> createState() => _MountState();
+}
+
+class _MountState extends State<_Mount> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onCreate();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }

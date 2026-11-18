@@ -525,53 +525,66 @@ class DelayedReveal extends StatefulWidget {
   State<DelayedReveal> createState() => _DelayedRevealState();
 }
 
-class _DelayedRevealState extends State<DelayedReveal> {
+class _DelayedRevealState extends State<DelayedReveal>
+    with SingleTickerProviderStateMixin {
   Timer? _timer;
   bool _revealed = false;
+
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: _revealFade,
+  );
+  late final CurvedAnimation _curved =
+      CurvedAnimation(parent: _fade, curve: Curves.easeOut);
 
   @override
   void initState() {
     super.initState();
     if (widget.immediate) {
       _revealed = true;
+      _fade.value = 1;
     } else {
-      _timer = Timer(widget.delay, () {
-        if (mounted) setState(() => _revealed = true);
-      });
+      _timer = Timer(widget.delay, _reveal);
+    }
+  }
+
+  void _reveal() {
+    if (!mounted) return;
+    setState(() => _revealed = true);
+    if (MediaQuery.of(context).disableAnimations) {
+      _fade.value = 1;
+    } else {
+      _fade.forward();
     }
   }
 
   @override
   void didUpdateWidget(DelayedReveal oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.immediate && !_revealed) {
+    // A sync shows at once, even half way through a fade: jump to full, the
+    // child stays mounted.
+    if (widget.immediate) {
       _timer?.cancel();
       _revealed = true;
+      _fade.value = 1;
     }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _curved.dispose();
+    _fade.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final reduced = MediaQuery.of(context).disableAnimations;
-    // Syncing shows at once, with no fade: it is already the right answer.
-    final fade = widget.immediate || reduced ? Duration.zero : _revealFade;
-
     return IgnorePointer(
       ignoring: !_revealed,
       child: ExcludeSemantics(
         excluding: !_revealed,
-        child: AnimatedOpacity(
-          opacity: _revealed ? 1 : 0,
-          duration: fade,
-          curve: Curves.easeOut,
-          child: widget.child,
-        ),
+        child: FadeTransition(opacity: _curved, child: widget.child),
       ),
     );
   }

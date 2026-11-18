@@ -267,6 +267,41 @@ void main() {
       expect(find.byKey(const Key('y')), findsOneWidget);
     });
 
+    testWidgets('the old step is gone before the new one starts to show',
+        (tester) async {
+      Widget panel(String key) => MaterialApp(
+            home: LoginPanelFade(child: SizedBox(key: Key(key))),
+          );
+      double opacityOf(String key) {
+        final fade = find
+            .ancestor(
+                of: find.byKey(Key(key)), matching: find.byType(FadeTransition))
+            .first;
+        return tester.widget<FadeTransition>(fade).opacity.value;
+      }
+
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      final seenBoth = <int>[];
+      var elapsed = 0;
+      for (final at in [50, 100, 150, 200]) {
+        await tester.pump(Duration(milliseconds: at - elapsed));
+        elapsed = at;
+        final out = find.byKey(const Key('a')).evaluate().isEmpty
+            ? 0.0
+            : opacityOf('a');
+        final inn = opacityOf('b');
+        if (out > 0 && inn > 0) seenBoth.add(at);
+      }
+      expect(seenBoth, isEmpty, reason: 'the two steps are never both drawn');
+      // And the old one is already fading at 50 ms, not held until 100.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(opacityOf('a'), lessThan(1));
+    });
+
     testWidgets('the step arriving takes its autofocus; the one leaving none',
         (tester) async {
       final aFocus = FocusNode();
