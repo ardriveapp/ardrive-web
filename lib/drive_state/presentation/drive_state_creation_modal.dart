@@ -18,7 +18,9 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -29,13 +31,10 @@ import 'package:pst/pst.dart';
 
 /// The user-facing half of drive state creation.
 ///
-/// Every string written here is hardcoded English, matching the
-/// `statusMessage` strings this surface already carries in
-/// `sync_repository.dart`. Adding `.arb` keys would put five locales' worth of
-/// translation in front of a feature that is not yet published to chain; when
-/// it ships, these move across in one pass. The shared components this modal
-/// reuses — [PaymentMethodSelector], [TurboFreeStatusMessage] — carry their
-/// own localisation, and are left as they are rather than forked to match.
+/// The strings are in the `.arb` files, except the sentences the cubit and the
+/// service compose themselves (a refusal's reason, a failure's message). The
+/// shared components this modal reuses, [PaymentMethodSelector] and
+/// [TurboFreeStatusMessage], carry their own localisation.
 ///
 /// The modal's job is to make the confirm button an informed click. It shows
 /// what would be published — the drive, how many entities, how large, and the
@@ -156,8 +155,6 @@ class DriveStateCreationModal extends StatelessWidget {
   }
 }
 
-const _title = 'Create snapshot';
-
 // Every state below passes `scrollableContent: true`, and none of them is free
 // to stop.
 //
@@ -176,26 +173,26 @@ const _title = 'Create snapshot';
 Widget _preparingModal(BuildContext context, String driveName) {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: _title,
+    title: l10n.snapshotPreparing,
     scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Preparing a snapshot of $driveName. Nothing has been uploaded '
-          'yet.',
+          l10n.snapshotPreparingBody(driveName),
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: ArDriveSpacing.md),
         const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
       ],
     ),
     actions: [
       ModalAction.dismiss(
-        title: 'Cancel',
+        title: l10n.cancelEmphasized,
         action: () => Navigator.of(context).pop(),
       ),
     ],
@@ -209,52 +206,31 @@ Widget _preparingModal(BuildContext context, String driveName) {
 /// permanent, so the modal spends its words on what to do next rather than on
 /// offering a way past.
 Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: _title,
+    title: l10n.createSnapshot,
     scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (state.isSyncGap)
-          Container(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: colorTokens.containerL1,
-              borderRadius: BorderRadius.circular(ArDriveRadius.control),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ArDriveIcons.triangle(
-                  size: 16,
-                  color: colorTokens.strokeRed,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'A snapshot is permanent. Creating one from an incomplete '
-                    'drive would record the gap forever.',
-                    style:
-                        typography.paragraphSmall(color: colorTokens.textMid),
-                  ),
-                ),
-              ],
-            ),
+        if (state.isSyncGap) ...[
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message: l10n.snapshotGapNotice,
           ),
-        Text(
-          state.reason,
-          style: typography.paragraphNormal(color: colorTokens.textHigh),
+          const SizedBox(height: ArDriveSpacing.md),
+        ],
+        ArDriveNotice(
+          type: ArDriveNoticeType.error,
+          message: state.reason,
         ),
       ],
     ),
     actions: [
-      ModalAction.dismiss(
-        title: 'Close',
+      ModalAction.close(
+        title: l10n.close,
         action: () => Navigator.of(context).pop(),
       ),
     ],
@@ -270,61 +246,65 @@ Widget _confirmModal(
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final cubit = context.read<DriveStateCreationCubit>();
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: _title,
+    title: l10n.createSnapshot,
     scrollableContent: true,
-    content: ConstrainedBox(
-      // Inside the content, so the modal's own responsive cap still applies.
-      constraints: const BoxConstraints(maxWidth: 420),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _whatThisDoes(state.artifact.isEncrypted),
-            style: typography.paragraphNormal(color: colorTokens.textMid),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          state.artifact.isEncrypted
+              ? l10n.snapshotWhatItDoesEncrypted
+              : l10n.snapshotWhatItDoes,
+          style: typography.paragraphNormal(color: colorTokens.textMid),
+        ),
+        const SizedBox(height: ArDriveSpacing.md),
+        _summary(context, state),
+        const SizedBox(height: ArDriveSpacing.md),
+        TurboFreeStatusMessage(
+          status: state.cost.freeStatus,
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
+        ),
+        // Free means Turbo bills nothing, so there is no method to choose
+        // and no balance that could be short. The same rule the snapshot
+        // dialog applies.
+        if (!state.cost.isFree)
+          PaymentMethodSelector(
+            uploadMethodInfo: _paymentMethodInfo(state),
+            onTurboTopupSucess: cubit.refreshTurboBalance,
+            onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),
+            onTurboSelect: () => cubit.setUploadMethod(UploadMethod.turbo),
           ),
-          const SizedBox(height: 16),
-          _summary(context, state),
-          const SizedBox(height: 16),
-          TurboFreeStatusMessage(
-            status: state.cost.freeStatus,
-            padding: const EdgeInsets.only(bottom: 12),
-          ),
-          // Free means Turbo bills nothing, so there is no method to choose
-          // and no balance that could be short. The same rule the snapshot
-          // dialog applies.
-          if (!state.cost.isFree)
-            PaymentMethodSelector(
-              uploadMethodInfo: _paymentMethodInfo(state),
-              onTurboTopupSucess: cubit.refreshTurboBalance,
-              onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),
-              onTurboSelect: () => cubit.setUploadMethod(UploadMethod.turbo),
+        if (state.cost.isUnaffordable) ...[
+          const SizedBox(height: ArDriveSpacing.sm),
+          ArDriveNotice(
+            type: ArDriveNoticeType.error,
+            message: l10n.snapshotUnaffordable,
+            // The way on: Turbo Credits pay for a snapshot.
+            actionLabel: l10n.buyCredits,
+            onAction: () => showTurboTopupModal(
+              context,
+              onSuccess: cubit.refreshTurboBalance,
             ),
-          if (state.cost.isUnaffordable) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Neither your AR balance nor your Turbo Credits cover this '
-              'snapshot, so it cannot be created yet.',
-              style: typography.paragraphSmall(color: colorTokens.textRed),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Text(
-            'Nothing has been uploaded yet.',
-            style: typography.paragraphSmall(color: colorTokens.textLow),
           ),
         ],
-      ),
+        const SizedBox(height: ArDriveSpacing.md),
+        Text(
+          l10n.snapshotNothingUploaded,
+          style: typography.paragraphSmall(color: colorTokens.textLow),
+        ),
+      ],
     ),
     actions: [
       ModalAction.close(
-        title: 'Cancel',
+        title: l10n.cancelEmphasized,
         action: () => Navigator.of(context).pop(),
       ),
       ModalAction(
-        title: 'Create',
+        title: l10n.createSnapshot,
         // The one place in the app that spends money on an artifact, and it
         // is off unless the chosen method can actually pay for it. The cubit
         // refuses independently; this is the half the user can see.
@@ -334,27 +314,6 @@ Widget _confirmModal(
     ],
   );
 }
-
-/// The opening sentence, which differs between the two privacies by one
-/// clause and nothing else.
-///
-/// A public drive's artifact is not encrypted, so the encryption clause is
-/// dropped rather than reworded. **Nothing takes its place.** A public drive is
-/// public because its owner chose that, and telling them at confirmation time
-/// that public things are readable is telling them what they decided; the
-/// "it is all in one blob now" refinement is a distinction a user cannot act
-/// on, and snapshots have published exactly the same enumeration for public
-/// drives for years without saying anything. Adding a line here would imply a
-/// difference that does not exist.
-///
-/// What the modal shows is therefore identical for both: the drive, the entity
-/// count, the size, the block range and the price.
-String _whatThisDoes(bool isEncrypted) => isEncrypted
-    ? 'This saves a snapshot of this drive to Arweave, encrypted with your '
-        'drive key, so it loads much faster wherever you sign in. It is '
-        'permanent and cannot be removed.'
-    : 'This saves a snapshot of this drive to Arweave, so it loads much '
-        'faster wherever you sign in. It is permanent and cannot be removed.';
 
 /// Feeds the shared [PaymentMethodSelector] rather than restating its layout.
 ///
@@ -379,24 +338,30 @@ UploadPaymentMethodInfo _paymentMethodInfo(DriveStateCreationReady state) =>
 Widget _summary(BuildContext context, DriveStateCreationReady state) {
   final artifact = state.artifact;
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return Container(
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(ArDriveSpacing.sm),
     decoration: BoxDecoration(
       color: colorTokens.containerL1,
-      borderRadius: BorderRadius.circular(ArDriveRadius.control),
+      borderRadius: BorderRadius.circular(ArDriveRadius.md),
     ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _summaryRow(context, 'Drive', artifact.driveName),
-        _summaryRow(context, 'Items', '${artifact.entityCount}'),
-        _summaryRow(context, 'Size', filesize(artifact.sizeInBytes)),
+        _summaryRow(context, l10n.snapshotSummaryDrive, artifact.driveName),
+        _summaryRow(
+            context, l10n.snapshotSummaryItems, '${artifact.entityCount}'),
         _summaryRow(
           context,
-          'Blocks',
-          '${artifact.blockStart} to ${artifact.blockEnd}',
+          l10n.snapshotSummarySize,
+          filesize(artifact.sizeInBytes),
+        ),
+        _summaryRow(
+          context,
+          l10n.snapshotSummaryBlocks,
+          l10n.snapshotBlocksRange(artifact.blockStart, artifact.blockEnd),
         ),
       ],
     ),
@@ -408,7 +373,7 @@ Widget _summaryRow(BuildContext context, String label, String value) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
+    padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xxs),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -433,25 +398,31 @@ Widget _summaryRow(BuildContext context, String label, String value) {
   );
 }
 
+/// The upload runs: the primary is busy and Cancel is held, as the dialog
+/// that started it was. Closing now would hide the result of a payment.
 Widget _publishingModal(BuildContext context) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: _title,
+    title: l10n.createSnapshot,
     scrollableContent: true,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Creating snapshot...',
-          style: typography.paragraphNormal(color: colorTokens.textMid),
-        ),
-        const SizedBox(height: 16),
-        const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
-      ],
+    content: ArDriveNotice(
+      type: ArDriveNoticeType.info,
+      message: l10n.snapshotCreating,
+      leading: const ArDriveSpinner(),
     ),
+    actions: [
+      ModalAction.close(
+        title: l10n.cancelEmphasized,
+        isEnable: false,
+        action: () {},
+      ),
+      ModalAction(
+        title: l10n.createSnapshot,
+        isLoading: true,
+        action: () {},
+      ),
+    ],
   );
 }
 
@@ -459,57 +430,44 @@ Widget _publishedModal(
   BuildContext context,
   DriveStateCreationPublished state,
 ) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   // No transaction id: the Snapshots tab lists the new snapshot straight
   // away, with its id to copy and its confirmation status, which is where a
   // user who wants either looks.
   return ArDriveStandardModalNew(
-    title: 'Snapshot created',
+    title: l10n.snapshotSuceeded,
     scrollableContent: true,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your snapshot of ${state.artifact.driveName} is on its way to '
-          'Arweave. ArDrive starts using it to load this drive faster once '
-          "it's confirmed. You can follow it in the drive's Snapshots tab.",
-          style: typography.paragraphNormal(color: colorTokens.textMid),
-        ),
-      ],
-    ),
+    description: l10n.snapshotPublishedBody(state.artifact.driveName),
     actions: [
-      ModalAction(
-        title: 'OK',
+      ModalAction.close(
+        title: l10n.close,
         action: () => Navigator.of(context).pop(),
       ),
     ],
   );
 }
 
+/// The failure stays in the dialog, in a notice, with Try again: it prepares
+/// the snapshot anew, and nothing is uploaded before the confirm button.
 Widget _failureModal(BuildContext context, String message) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: _title,
+    title: l10n.snapshotFailed,
     scrollableContent: true,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          message,
-          style: typography.paragraphNormal(color: colorTokens.textHigh),
-        ),
-      ],
+    content: ArDriveNotice(
+      type: ArDriveNoticeType.error,
+      message: message,
     ),
     actions: [
-      ModalAction.dismiss(
-        title: 'Close',
+      ModalAction.close(
+        title: l10n.close,
         action: () => Navigator.of(context).pop(),
+      ),
+      ModalAction(
+        title: l10n.tryAgainEmphasized,
+        action: () => context.read<DriveStateCreationCubit>().prepare(),
       ),
     ],
   );

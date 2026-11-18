@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../test_utils/fake_user.dart';
 import '../test_utils/mocks.dart';
 
 class MockFolderRepository extends Mock implements FolderRepository {}
@@ -14,6 +18,8 @@ class MockFolderRepository extends Mock implements FolderRepository {}
 class MockManifestRepository extends Mock implements ManifestRepository {}
 
 class MockArDriveAuth extends Mock implements ArDriveAuth {}
+
+class _FakeUploadParams extends Fake implements ManifestUploadParams {}
 
 /// Which folder the manifest's folder picker opens in.
 void main() {
@@ -66,7 +72,11 @@ void main() {
   late MockFolderRepository folderRepository;
   late MockManifestRepository manifestRepository;
 
-  setUpAll(() => registerFallbackValue(tree));
+  setUpAll(() {
+    registerFallbackValue(tree);
+    registerFallbackValue(tree.folder);
+    registerFallbackValue(_FakeUploadParams());
+  });
 
   setUp(() {
     folderRepository = MockFolderRepository();
@@ -179,6 +189,88 @@ void main() {
 
       expect(cubit.state, before);
       verifyZeroInteractions(manifestRepository);
+      await cubit.close();
+    });
+  });
+
+  group('after a failed upload', () {
+    test('Try again sends the same deployment again from its review', () async {
+      final profile = MockProfileCubit();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      final auth = MockArDriveAuth();
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      final file = await IOFile.fromData(
+        Uint8List(10),
+        name: 'site',
+        lastModifiedDate: DateTime(2024),
+      );
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: driveId,
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async => (false, null));
+      when(
+        () => manifestRepository.getManifestFile(
+          parentFolder: any(named: 'parentFolder'),
+          manifestName: any(named: 'manifestName'),
+          rootFolderNode: any(named: 'rootFolderNode'),
+          driveId: driveId,
+          fallbackTxId: any(named: 'fallbackTxId'),
+        ),
+      ).thenAnswer((_) async => file);
+      var uploads = 0;
+      when(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async {
+        uploads++;
+        if (uploads == 1) throw Exception('offline');
+        return 'data-tx';
+      });
+
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth,
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      await cubit.checkForConflicts('site');
+      expect(cubit.state, isA<CreateManifestUploadReview>());
+
+      await cubit.uploadManifest();
+      expect(cubit.state, isA<CreateManifestFailure>());
+
+      await cubit.retryUpload();
+
+      expect(uploads, 2);
+      expect(cubit.state, isA<CreateManifestSuccess>());
+      expect((cubit.state as CreateManifestSuccess).dataTxId, 'data-tx');
+      await cubit.close();
+    });
+
+    test('Try again does nothing when nothing has failed', () async {
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: MockProfileCubit(),
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: MockArDriveAuth(),
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      final before = cubit.state;
+
+      await cubit.retryUpload();
+
+      expect(cubit.state, before);
       await cubit.close();
     });
   });

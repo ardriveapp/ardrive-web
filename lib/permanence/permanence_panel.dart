@@ -11,6 +11,8 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -259,20 +261,15 @@ void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
     context,
     content: _NoScrollbar(
       child: ArDriveStandardModalNew(
-        width: 460,
+        width: kLargeDialogWidth,
         hasCloseButton: true,
+        closeLabel: appLocalizationsOf(context).close,
         scrollableContent: true,
-        titleWidget: Text(
-          'Your permanence',
-          style: ArDriveTypographyNew.of(context).heading3(
-            fontWeight: ArFontWeight.bold,
-          ),
-        ),
+        title: appLocalizationsOf(context).permanenceTitle,
         content: PermanencePanel(summary: summary),
         actions: [
           ModalAction(
-            title: 'Share my permanence',
-            customWidth: 240,
+            title: appLocalizationsOf(context).share,
             action: () {
               navigator.pop();
               showPermanenceShare(navigator.context, summary);
@@ -318,7 +315,7 @@ class PermanencePanel extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: ArDriveSpacing.xs),
         Text(
           [
             permanenceCount(summary.fileCount, 'file'),
@@ -331,7 +328,7 @@ class PermanencePanel extends StatelessWidget {
           ),
         ),
         if (summary.bytesByYear.isNotEmpty) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: ArDriveSpacing.lg),
           Semantics(
             // The chart is painted, so it says in words what it draws.
             label: 'Uploaded by year: ${[
@@ -357,7 +354,7 @@ class PermanencePanel extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: ArDriveSpacing.lg),
         LayoutBuilder(builder: (context, box) {
           final spendTile = _SpendTile(
             spend: summary.spend,
@@ -373,7 +370,11 @@ class PermanencePanel extends StatelessWidget {
           if (box.maxWidth < 280) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [spendTile, const SizedBox(height: 12), costTile],
+              children: [
+                spendTile,
+                const SizedBox(height: ArDriveSpacing.sm),
+                costTile,
+              ],
             );
           }
 
@@ -382,13 +383,13 @@ class PermanencePanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: spendTile),
-                const SizedBox(width: 12),
+                const SizedBox(width: ArDriveSpacing.sm),
                 Expanded(child: costTile),
               ],
             ),
           );
         }),
-        const SizedBox(height: 12),
+        const SizedBox(height: ArDriveSpacing.sm),
         _FinePrint(signInChain: summary.signInChain),
       ],
     );
@@ -422,11 +423,14 @@ class _Tile extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.md,
+        vertical: ArDriveSpacing.sm,
+      ),
       decoration: BoxDecoration(
         // A step off the modal's own ground (containerL3), in either theme.
         color: colors.containerL1,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +444,7 @@ class _Tile extends StatelessWidget {
                 )
                 .copyWith(letterSpacing: 0.6),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: ArDriveSpacing.xs),
           Text(
             value,
             style: typography.heading2(
@@ -448,7 +452,7 @@ class _Tile extends StatelessWidget {
               fontWeight: ArFontWeight.light,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: ArDriveSpacing.xxs),
           Text(
             note,
             style: typography.caption(
@@ -457,7 +461,7 @@ class _Tile extends StatelessWidget {
             ),
           ),
           if (action != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: ArDriveSpacing.xs),
             ArDriveClickArea(
               child: GestureDetector(
                 onTap: onAction,
@@ -475,7 +479,7 @@ class _Tile extends StatelessWidget {
             ),
           ],
           if (extra != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: ArDriveSpacing.xs),
             Text(
               extra!,
               style: typography.caption(
@@ -838,7 +842,10 @@ class _FinePrintState extends State<_FinePrint> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 5, right: 10),
+                padding: const EdgeInsets.only(
+                  top: ArDriveSpacing.xxs,
+                  right: ArDriveSpacing.xs,
+                ),
                 child: Container(
                   width: 4,
                   height: 4,
@@ -1075,23 +1082,23 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
 
+    final l10n = appLocalizationsOf(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return ArDriveStandardModalNew(
-      width: 600,
+      width: kLargeDialogWidth,
       hasCloseButton: true,
+      closeLabel: l10n.close,
       scrollableContent: true,
-      titleWidget: Text(
-        'Share your permanence',
-        style: typography.heading3(fontWeight: ArFontWeight.bold),
-      ),
+      title: l10n.permanenceShareTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 16),
           // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
           // social sites expect for a link card.
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(ArDriveRadius.md),
             child: FittedBox(
               child: RepaintBoundary(
                 key: _cardKey,
@@ -1099,30 +1106,36 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: ArDriveSpacing.md),
           Text(
             permanenceShareText(widget.summary),
             style: typography.paragraphSmall(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+              color: colorTokens.textMid,
               fontWeight: ArFontWeight.book,
             ),
           ),
+          // Each says when it is done, here, so its button keeps its name.
+          if (_copied || _saved) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArDriveNotice(
+              type: ArDriveNoticeType.success,
+              message: _saved
+                  ? l10n.permanenceImageSaved
+                  : l10n.permanenceTextCopied,
+            ),
+          ],
         ],
       ),
       actions: [
         ModalAction(
-          title: _copied ? 'Copied' : 'Copy text',
-          customWidth: 120,
+          title: l10n.permanenceCopyText,
+          variant: ButtonVariant.secondary,
+          isEnable: !_saving,
           action: _copy,
         ),
         ModalAction(
-          title: _saving
-              ? 'Saving...'
-              : _saved
-                  ? 'Saved'
-                  : 'Download image',
-          customWidth: 160,
-          isEnable: !_saving,
+          title: l10n.permanenceDownloadImage,
+          isLoading: _saving,
           action: _save,
         ),
       ],

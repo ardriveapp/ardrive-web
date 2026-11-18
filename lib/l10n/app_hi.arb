@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "डिप्लॉयमेंट किसी फ़ोल्डर को एक ही Arweave पते पर पब्लिश करता है, जिसमें हर फ़ाइल का अपना आसान पाथ होता है। इसे Arweave मैनिफ़ेस्ट के रूप में सेव किया जाता है।",
+  "aManifestIsASpecialKindOfFile": "डिप्लॉयमेंट किसी फ़ोल्डर को एक ही Arweave पते पर पब्लिश करता है, जिसमें हर फ़ाइल का पाथ आसानी से पढ़ा जा सकता है।",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "नया स्नैपशॉट ",
+  "createSnapshot": "स्नैपशॉट बनाएं",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "स्नैपशॉट ड्राइव को लोड होने में लगने वाले समय को कम कर देता है। क्या आप अपने ड्राइव {driveName} का एक स्नैपशॉट बनाना चाहते हैं?",
+  "createSnapshotExplanation": "स्नैपशॉट से {driveName} तेज़ लोड होता है।",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -885,7 +885,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "इस फ़ोल्डर की कुछ फ़ाइलें अभी पेंडिंग हैं। हम पेंडिंग फ़ाइलों के साथ डिप्लॉयमेंट बनाने की सलाह नहीं देते। क्या आप जारी रखना चाहते हैं?",
+  "filesPendingManifestExplanation": "इस फ़ोल्डर की कुछ फ़ाइलें अभी पेंडिंग हैं। हम उनके कन्फ़र्म होने तक डिप्लॉयमेंट बनाने की सलाह नहीं देते।",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1116,7 +1116,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "अपलोड करने के लिए AR काफ़ी नहीं है।",
+  "insufficientARForUpload": "AR पर्याप्त नहीं है",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1138,7 +1138,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "मुहैया किए गए {walletBalance} AR का वॉलेट बैलेंस {totalCost} AR की लागत वाले इस स्नैपशॉट ट्रांज़ैक्शन के लिए काफ़ी नहीं है...",
+  "insufficientBalanceForSnapshot": "आपके वॉलेट में {walletBalance} AR है। इस स्नैपशॉट की लागत {totalCost} AR है।",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -2041,7 +2041,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "आपने {driveName} का एक स्नैपशॉट सफलतापूर्वक बना लिया है!",
+  "snapshotCreationSucceeded": "{driveName} का आपका स्नैपशॉट Arweave पर भेजा जा रहा है।",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2075,7 +2075,7 @@
       }
     }
   },
-  "snapshotSuceeded": "सफल रहा",
+  "snapshotSuceeded": "स्नैपशॉट बन गया",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2676,7 +2676,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "मुझसे दोबारा न पूछें।",
+  "dontAskMeAgain": "दोबारा न पूछें",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -8113,5 +8113,71 @@
   "profileArioBalanceError": "ARIO बैलेंस प्राप्त करने में त्रुटि",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "गेटवे का उपयोग हो रहा है: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "deploymentFolder": "फ़ोल्डर",
+  "deploymentFallbackLabel": "फ़ॉलबैक पेज (वैकल्पिक)",
+  "deploymentFallbackHelp": "डिप्लॉयमेंट का कोई पाथ मौजूद न होने पर दिखाया जाता है, जैसे 404 पेज। उसकी फ़ाइल का ट्रांज़ैक्शन ID डालें।",
+  "deploymentInvalidTxId": "अमान्य ट्रांज़ैक्शन ID",
+  "deploymentHiddenNotice": "छिपी हुई फ़ाइलें और फ़ोल्डर डिप्लॉयमेंट में नहीं जोड़े जाते।",
+  "loadingFolders": "फ़ोल्डर लोड हो रहे हैं",
+  "deploymentPreparing": "डिप्लॉयमेंट तैयार हो रहा है",
+  "deploymentUploading": "डिप्लॉयमेंट अपलोड हो रहा है",
+  "deploymentCreating": "डिप्लॉयमेंट बन रहा है",
+  "deploymentNameConflictTitle": "नाम पहले से उपयोग में है",
+  "deploymentNameConflictBody": "इस फ़ोल्डर में “{name}” नाम की फ़ाइल या फ़ोल्डर पहले से है। कोई दूसरा नाम चुनें।",
+  "deploymentUseName": "नाम इस्तेमाल करें",
+  "deploymentExistsTitle": "डिप्लॉयमेंट पहले से मौजूद है",
+  "deploymentExistsBody": "“{name}” इस फ़ोल्डर में पहले से एक डिप्लॉयमेंट है। इसे बनाने पर उसका नया संस्करण जुड़ेगा।",
+  "deploymentCreateNewVersion": "नया संस्करण बनाएं",
+  "deploymentCreatedTitle": "डिप्लॉयमेंट बन गया",
+  "deploymentFailedTitle": "डिप्लॉयमेंट नहीं बन सका",
+  "deploymentFailedBody": "डिप्लॉयमेंट Arweave पर अपलोड नहीं हो सका।",
+  "deploymentWalletChanged": "डिप्लॉयमेंट बनाते समय आपका वॉलेट बदल गया। कुछ भी अपलोड नहीं हुआ।",
+  "importFromDeployment": "डिप्लॉयमेंट से इंपोर्ट करें",
+  "importDeploymentIdLabel": "डिप्लॉयमेंट ID",
+  "importEnterId": "जिस डिप्लॉयमेंट से फ़ाइलें इंपोर्ट करनी हैं उसका ID डालें।",
+  "importIdRequired": "डिप्लॉयमेंट ID डालें",
+  "importIdInvalid": "अमान्य डिप्लॉयमेंट ID",
+  "importLoading": "डिप्लॉयमेंट लोड हो रहा है",
+  "importResolving": "फ़ाइल पाथ तय किए जा रहे हैं",
+  "importProgress": "{total} में से {processed}",
+  "importCreatingFolder": "फ़ोल्डर {path} बन रहा है",
+  "importingFile": "{name} इंपोर्ट हो रहा है",
+  "importFilesFailed": "{count, plural, =1{1 फ़ाइल असफल रही} other{{count} फ़ाइलें असफल रहीं}}",
+  "importConflictsTitle": "फ़ाइलें पहले से मौजूद हैं",
+  "importConflictsBody": "ये फ़ाइलें इस फ़ोल्डर में पहले से मौजूद हैं:",
+  "importConflictsQuestion": "क्या इन्हें बदलना है?",
+  "importReplace": "फ़ाइलें बदलें",
+  "importReviewTitle": "फ़ाइलें रिव्यू करें",
+  "importReviewSummary": "{count, plural, =1{1 फ़ाइल इंपोर्ट होगी} other{{count} फ़ाइलें इंपोर्ट होंगी}}",
+  "importAction": "इंपोर्ट करें",
+  "importCancelledTitle": "इंपोर्ट रद्द किया गया",
+  "importCancelledBody": "{count, plural, =1{रुकने से पहले 1 फ़ाइल इंपोर्ट हुई।} other{रुकने से पहले {count} फ़ाइलें इंपोर्ट हुईं।}}",
+  "importSuccessTitle": "इंपोर्ट पूरा हुआ",
+  "importSuccessBody": "{count, plural, =1{1 फ़ाइल इंपोर्ट हुई} other{{count} फ़ाइलें इंपोर्ट हुईं}}",
+  "snapshotPreparing": "स्नैपशॉट तैयार हो रहा है",
+  "snapshotFinishing": "स्नैपशॉट पूरा हो रहा है",
+  "snapshotMayTakeAWhile": "इसमें कुछ समय लग सकता है",
+  "snapshotNotNow": "अभी नहीं",
+  "snapshotPromptDriveStateTitle": "इस ड्राइव को तेज़ लोड करें",
+  "snapshotPromptDriveStateBody": "इस ड्राइव को सिंक होने में समय लगता है क्योंकि इसका इतिहास एक-एक बदलाव करके पढ़ा जाता है। स्नैपशॉट पूरी ड्राइव को Arweave पर एक फ़ाइल के रूप में सहेजता है, इसलिए आप जहां भी साइन इन करें यह बहुत तेज़ लोड होती है। कुछ भी अपलोड होने से पहले आपको साइज़ और लागत दिखती है।",
+  "snapshotPreparingBody": "{driveName} का स्नैपशॉट तैयार हो रहा है। अभी कुछ भी अपलोड नहीं हुआ है।",
+  "snapshotGapNotice": "स्नैपशॉट स्थायी होता है। अधूरी ड्राइव से इसे बनाने पर यह कमी हमेशा के लिए दर्ज हो जाएगी।",
+  "snapshotWhatItDoesEncrypted": "यह इस ड्राइव का स्नैपशॉट आपकी ड्राइव कुंजी से एन्क्रिप्ट करके Arweave पर सहेजता है, ताकि आप जहां भी साइन इन करें यह बहुत तेज़ लोड हो। यह स्थायी है और हटाया नहीं जा सकता।",
+  "snapshotWhatItDoes": "यह इस ड्राइव का स्नैपशॉट Arweave पर सहेजता है, ताकि आप जहां भी साइन इन करें यह बहुत तेज़ लोड हो। यह स्थायी है और हटाया नहीं जा सकता।",
+  "snapshotSummaryDrive": "ड्राइव",
+  "snapshotSummaryItems": "आइटम",
+  "snapshotSummarySize": "साइज़",
+  "snapshotSummaryBlocks": "ब्लॉक",
+  "snapshotBlocksRange": "{start} से {end}",
+  "snapshotUnaffordable": "न आपका AR बैलेंस और न आपके Turbo Credits इस स्नैपशॉट का खर्च उठा सकते हैं, इसलिए इसे अभी नहीं बनाया जा सकता।",
+  "snapshotNothingUploaded": "अभी कुछ भी अपलोड नहीं हुआ है।",
+  "snapshotCreating": "स्नैपशॉट बन रहा है",
+  "snapshotPublishedBody": "{driveName} का आपका स्नैपशॉट Arweave पर भेजा जा रहा है। कन्फ़र्म होते ही ArDrive इसे इस ड्राइव को तेज़ लोड करने के लिए इस्तेमाल करने लगता है। आप इसे ड्राइव के स्नैपशॉट टैब में देख सकते हैं।",
+  "permanenceTitle": "आपकी स्थायिता",
+  "permanenceShareTitle": "अपनी स्थायिता साझा करें",
+  "permanenceCopyText": "टेक्स्ट कॉपी करें",
+  "permanenceDownloadImage": "इमेज डाउनलोड करें",
+  "permanenceTextCopied": "टेक्स्ट कॉपी हो गया",
+  "permanenceImageSaved": "इमेज सेव हो गई"
 }

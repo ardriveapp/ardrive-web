@@ -120,7 +120,7 @@ void main() {
 
   ArDriveButtonNew publishButton(WidgetTester tester) =>
       tester.widget<ArDriveButtonNew>(
-        find.widgetWithText(ArDriveButtonNew, 'Create'),
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
       );
 
   testWidgets('the confirmation shows what would be published', (tester) async {
@@ -162,7 +162,8 @@ void main() {
     expect(find.textContaining('permanent'), findsOneWidget);
     expect(
         find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
-    expect(find.text('Create'), findsOneWidget);
+    expect(find.text('Create snapshot'), findsNWidgets(2),
+        reason: 'the title and the action');
 
     // And not the one thing that would be untrue.
     expect(find.textContaining('encrypted with your drive key'), findsNothing);
@@ -220,7 +221,7 @@ void main() {
 
     expect(publishButton(tester).isDisabled, isTrue);
     expect(
-      find.textContaining('cannot be created yet'),
+      find.textContaining("can't be created yet"),
       findsOneWidget,
     );
   });
@@ -236,7 +237,7 @@ void main() {
     expect(publishButton(tester).isDisabled, isTrue);
     // AR would still work, so the modal must not claim the artifact is
     // unpublishable — only that this method is.
-    expect(find.textContaining('cannot be created yet'), findsNothing);
+    expect(find.textContaining("can't be created yet"), findsNothing);
   });
 
   testWidgets('nothing is published until the user asks for it',
@@ -267,7 +268,8 @@ void main() {
 
     expect(find.textContaining('could not read 3 items'), findsOneWidget);
     expect(find.textContaining('would record the gap forever'), findsOneWidget);
-    expect(find.text('Create'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
     verifyNever(() => cubit.publish());
   });
 
@@ -282,7 +284,12 @@ void main() {
       find.textContaining('Turbo declined the payment'),
       findsOneWidget,
     );
-    expect(find.text('Create'), findsNothing);
+    // In a notice, with the way on, not plain text and a lone OK.
+    expect(find.byType(ArDriveNotice), findsOneWidget);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Close'), findsOneWidget);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Try again'), findsOneWidget);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
   });
 
   testWidgets('a price that could not be established is not a confirm button',
@@ -293,7 +300,8 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
     verifyNever(() => cubit.publish());
   });
 
@@ -433,13 +441,16 @@ void main() {
 
         // Both actions exist...
         expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Create'), findsOneWidget);
+        expect(find.text('Create snapshot'), findsNWidgets(2),
+            reason: 'the title and the action');
 
         // ...and the one that spends money can actually be reached and hit.
         // `tap` hit-tests, so a button pushed under another widget or off
         // the bottom of a short viewport fails here.
-        await tester.ensureVisible(find.text('Create'));
-        await tester.tap(find.text('Create'));
+        await tester.ensureVisible(
+            find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
+        await tester
+            .tap(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
         await tester.pump();
 
         verify(() => cubit.publish()).called(1);
@@ -473,8 +484,10 @@ void main() {
       expect(find.text('1234567890'), findsOneWidget);
       expect(find.text('0 to 1814228999'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tester.ensureVisible(
+          find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
+      await tester
+          .tap(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
       await tester.pump();
 
       verify(() => cubit.publish()).called(1);
@@ -504,7 +517,8 @@ void main() {
       expectFitsOnScreen(tester, smallPhone);
 
       expect(find.textContaining('could not read 37 items'), findsOneWidget);
-      expect(find.text('Create'), findsNothing);
+      expect(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
+          findsNothing);
 
       await tester.ensureVisible(find.text('Close'));
       await tester.tap(find.text('Close'));
@@ -568,8 +582,9 @@ void main() {
       // not repeat it as text nobody can copy.
       expect(find.textContaining(txId), findsNothing);
 
-      await tester.ensureVisible(find.text('OK'));
-      await tester.tap(find.text('OK'));
+      await tester
+          .ensureVisible(find.widgetWithText(ArDriveButtonNew, 'Close'));
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Close'));
       await tester.pumpAndSettle();
 
       expect(find.byType(DriveStateCreationModal), findsNothing);
@@ -591,8 +606,9 @@ void main() {
 
       expectFitsOnScreen(tester, smallPhone);
 
-      await tester.ensureVisible(find.textContaining('cannot be created'));
-      await tester.ensureVisible(find.text('Create'));
+      await tester.ensureVisible(find.textContaining("can't be created"));
+      await tester.ensureVisible(
+          find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
       expect(publishButton(tester).isDisabled, isTrue);
       expect(tester.takeException(), isNull);
     });

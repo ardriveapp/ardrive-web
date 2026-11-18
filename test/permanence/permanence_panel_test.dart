@@ -7,6 +7,7 @@ import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -497,6 +498,8 @@ void main() {
       child: ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Material(
             child: _Opener(
               onOpen: (context) => showPermanencePanel(context, summary()),
@@ -510,7 +513,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Open'), findsNothing);
 
-    await tester.tap(find.text('Share my permanence'));
+    await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
 
     // The card is drawn at a fixed size and the test font is wider than the
@@ -605,6 +608,8 @@ void main() {
       child: ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Material(
             child: Builder(
               builder: (context) => TextButton(
@@ -626,12 +631,15 @@ void main() {
     await tester.pump();
 
     expect(copied, permanenceShareText(summary()));
-    expect(find.text('Copied'), findsOneWidget, reason: 'says it is done');
+    expect(find.text('Text copied'), findsOneWidget, reason: 'says it is done');
+    expect(find.text('Copy text'), findsOneWidget,
+        reason: 'the button keeps its name');
     expect(find.text('Share your permanence'), findsOneWidget,
         reason: 'still open, for the image too');
 
     await tester.pump(const Duration(seconds: 3));
     expect(find.text('Copy text'), findsOneWidget);
+    expect(find.text('Text copied'), findsNothing);
     tester.takeException();
   });
 

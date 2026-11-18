@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "A deployment publishes a folder at one Arweave address, with each file at a friendly path. It's stored as an Arweave manifest.",
+  "aManifestIsASpecialKindOfFile": "A deployment publishes a folder at one Arweave address, with each file at a friendly path.",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -436,7 +436,7 @@
   "@createSnapshot": {
     "description": "The action of creating a snapshot"
   },
-  "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive {driveName}?",
+  "createSnapshotExplanation": "A snapshot makes {driveName} load faster.",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -622,7 +622,7 @@
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "dontAskMeAgain": "Don’t ask me again.",
+  "dontAskMeAgain": "Don't ask again",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -1489,7 +1489,7 @@
   "@filesPending": {
     "description": "E.g. \"there are some files pending\""
   },
-  "filesPendingManifestExplanation": "Some of the files in this folder are still pending. We do not recommend creating a deployment with pending files. Would you like to proceed?",
+  "filesPendingManifestExplanation": "Some files in this folder are still pending. We don't recommend creating a deployment until they're confirmed.",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1768,7 +1768,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "Insufficient AR for upload.",
+  "insufficientARForUpload": "Not enough AR",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1790,7 +1790,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "Provided wallet balance of {walletBalance} AR is not enough for this snapshot transaction costing {totalCost} AR...",
+  "insufficientBalanceForSnapshot": "Your wallet has {walletBalance} AR. This snapshot costs {totalCost} AR.",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -3410,7 +3410,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "You created a snapshot of {driveName}.",
+  "snapshotCreationSucceeded": "Your snapshot of {driveName} is on its way to Arweave.",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was successfully created",
     "placeholders": {
@@ -3460,7 +3460,7 @@
       }
     }
   },
-  "snapshotSuceeded": "Success",
+  "snapshotSuceeded": "Snapshot created",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -6129,5 +6129,137 @@
   "profileArioBalanceError": "Error fetching ARIO balance",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Using gateway: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "deploymentFolder": "Folder",
+  "@deploymentFolder": {"description": "Label above the folder list in the new deployment dialog"},
+  "deploymentFallbackLabel": "Fallback page (optional)",
+  "@deploymentFallbackLabel": {"description": "Label of the fallback page field"},
+  "deploymentFallbackHelp": "Shown when a path in the deployment doesn't exist, such as a 404 page. Enter the transaction ID of its file.",
+  "@deploymentFallbackHelp": {"description": "Help under the fallback page field"},
+  "deploymentInvalidTxId": "Invalid transaction ID",
+  "@deploymentInvalidTxId": {"description": "Error under the fallback page field"},
+  "deploymentHiddenNotice": "Hidden files and folders are not added to the deployment.",
+  "@deploymentHiddenNotice": {"description": "Notice in the new deployment dialog"},
+  "loadingFolders": "Loading folders",
+  "@loadingFolders": {"description": "Title while the folders load"},
+  "deploymentPreparing": "Preparing deployment",
+  "@deploymentPreparing": {"description": "Title while a deployment is prepared"},
+  "deploymentUploading": "Uploading deployment",
+  "@deploymentUploading": {"description": "Progress line while a deployment uploads"},
+  "deploymentCreating": "Creating deployment",
+  "@deploymentCreating": {"description": "Title while a deployment is created"},
+  "deploymentNameConflictTitle": "Name already in use",
+  "@deploymentNameConflictTitle": {"description": "Title when a file or folder already has the deployment's name"},
+  "deploymentNameConflictBody": "A file or folder named “{name}” is already in this folder. Choose another name.",
+  "@deploymentNameConflictBody": {"description": "Notice when a file or folder already has the deployment's name", "placeholders": {"name": {"type": "String"}}},
+  "deploymentUseName": "Use name",
+  "@deploymentUseName": {"description": "Action on the name conflict screen"},
+  "deploymentExistsTitle": "Deployment already exists",
+  "@deploymentExistsTitle": {"description": "Title when a deployment of that name is already in the folder"},
+  "deploymentExistsBody": "“{name}” is already a deployment in this folder. Creating this one adds a new version of it.",
+  "@deploymentExistsBody": {"description": "Body when a deployment of that name is already in the folder", "placeholders": {"name": {"type": "String"}}},
+  "deploymentCreateNewVersion": "Create new version",
+  "@deploymentCreateNewVersion": {"description": "Action that adds a new version of an existing deployment"},
+  "deploymentCreatedTitle": "Deployment created",
+  "@deploymentCreatedTitle": {"description": "Title after a deployment is created"},
+  "deploymentFailedTitle": "Couldn't create deployment",
+  "@deploymentFailedTitle": {"description": "Title when creating a deployment failed"},
+  "deploymentFailedBody": "The deployment couldn't be uploaded to Arweave.",
+  "@deploymentFailedBody": {"description": "Notice when a deployment upload failed"},
+  "deploymentWalletChanged": "Your wallet changed while the deployment was being created. Nothing was uploaded.",
+  "@deploymentWalletChanged": {"description": "Notice when the wallet changed during deployment creation"},
+  "importFromDeployment": "Import from deployment",
+  "@importFromDeployment": {"description": "Title of the import dialog and the New menu item"},
+  "importDeploymentIdLabel": "Deployment ID",
+  "@importDeploymentIdLabel": {"description": "Label of the deployment ID field in the import dialog"},
+  "importEnterId": "Enter the ID of the deployment to import files from.",
+  "@importEnterId": {"description": "Intro of the import dialog"},
+  "importIdRequired": "Enter a deployment ID",
+  "@importIdRequired": {"description": "Error when the deployment ID is empty"},
+  "importIdInvalid": "Invalid deployment ID",
+  "@importIdInvalid": {"description": "Error when the deployment ID is not valid"},
+  "importLoading": "Loading deployment",
+  "@importLoading": {"description": "Progress line while the deployment's files are read"},
+  "importResolving": "Resolving file paths",
+  "@importResolving": {"description": "Progress line while paths are resolved"},
+  "importProgress": "{processed} of {total}",
+  "@importProgress": {"description": "Progress count of an import", "placeholders": {"processed": {"type": "int"}, "total": {"type": "int"}}},
+  "importCreatingFolder": "Creating folder {path}",
+  "@importCreatingFolder": {"description": "Progress line while folders are created", "placeholders": {"path": {"type": "String"}}},
+  "importingFile": "Importing {name}",
+  "@importingFile": {"description": "Progress line while a file is imported", "placeholders": {"name": {"type": "String"}}},
+  "importFilesFailed": "{count, plural, =1{1 file failed} other{{count} files failed}}",
+  "@importFilesFailed": {"description": "How many files of an import failed", "placeholders": {"count": {"type": "int"}}},
+  "importConflictsTitle": "Files already exist",
+  "@importConflictsTitle": {"description": "Title when imported files already exist in the folder"},
+  "importConflictsBody": "These files already exist in this folder:",
+  "@importConflictsBody": {"description": "Intro of the list of existing files"},
+  "importConflictsQuestion": "Replace them?",
+  "@importConflictsQuestion": {"description": "Question about existing files"},
+  "importReplace": "Replace files",
+  "@importReplace": {"description": "Action that replaces existing files"},
+  "importReviewTitle": "Review files",
+  "@importReviewTitle": {"description": "Title of the list of files to import"},
+  "importReviewSummary": "{count, plural, =1{1 file will be imported} other{{count} files will be imported}}",
+  "@importReviewSummary": {"description": "How many files will be imported", "placeholders": {"count": {"type": "int"}}},
+  "importAction": "Import",
+  "@importAction": {"description": "Action that starts or confirms an import"},
+  "importCancelledTitle": "Import cancelled",
+  "@importCancelledTitle": {"description": "Title after an import was cancelled"},
+  "importCancelledBody": "{count, plural, =1{1 file was imported before it stopped.} other{{count} files were imported before it stopped.}}",
+  "@importCancelledBody": {"description": "What an import did before it was cancelled", "placeholders": {"count": {"type": "int"}}},
+  "importSuccessTitle": "Import complete",
+  "@importSuccessTitle": {"description": "Title after an import finished"},
+  "importSuccessBody": "{count, plural, =1{1 file imported} other{{count} files imported}}",
+  "@importSuccessBody": {"description": "How many files an import brought in", "placeholders": {"count": {"type": "int"}}},
+  "snapshotPreparing": "Preparing snapshot",
+  "@snapshotPreparing": {"description": "Title while a snapshot is prepared"},
+  "snapshotFinishing": "Finishing snapshot",
+  "@snapshotFinishing": {"description": "Title while a snapshot is signed"},
+  "snapshotMayTakeAWhile": "This may take a while",
+  "@snapshotMayTakeAWhile": {"description": "Line under a snapshot's progress title"},
+  "snapshotNotNow": "Not now",
+  "@snapshotNotNow": {"description": "Action that closes the snapshot suggestion"},
+  "snapshotPromptDriveStateTitle": "Make this drive load faster",
+  "@snapshotPromptDriveStateTitle": {"description": "Title of the snapshot suggestion"},
+  "snapshotPromptDriveStateBody": "This drive takes a while to sync because its history is read one change at a time. A snapshot saves the whole drive as one file on Arweave, so it loads much faster wherever you sign in. You see the size and the cost before anything is uploaded.",
+  "@snapshotPromptDriveStateBody": {"description": "Body of the snapshot suggestion"},
+  "snapshotPreparingBody": "Preparing a snapshot of {driveName}. Nothing has been uploaded yet.",
+  "@snapshotPreparingBody": {"description": "Body while a snapshot is prepared", "placeholders": {"driveName": {"type": "String", "example": "Curious Cat"}}},
+  "snapshotGapNotice": "A snapshot is permanent. Creating one from an incomplete drive would record the gap forever.",
+  "@snapshotGapNotice": {"description": "Warning when the drive has not synced fully"},
+  "snapshotWhatItDoesEncrypted": "This saves a snapshot of this drive to Arweave, encrypted with your drive key, so it loads much faster wherever you sign in. It is permanent and cannot be removed.",
+  "@snapshotWhatItDoesEncrypted": {"description": "Explains a snapshot of a private drive"},
+  "snapshotWhatItDoes": "This saves a snapshot of this drive to Arweave, so it loads much faster wherever you sign in. It is permanent and cannot be removed.",
+  "@snapshotWhatItDoes": {"description": "Explains a snapshot of a public drive"},
+  "snapshotSummaryDrive": "Drive",
+  "@snapshotSummaryDrive": {"description": "Label in the snapshot summary"},
+  "snapshotSummaryItems": "Items",
+  "@snapshotSummaryItems": {"description": "Label in the snapshot summary"},
+  "snapshotSummarySize": "Size",
+  "@snapshotSummarySize": {"description": "Label in the snapshot summary"},
+  "snapshotSummaryBlocks": "Blocks",
+  "@snapshotSummaryBlocks": {"description": "Label in the snapshot summary"},
+  "snapshotBlocksRange": "{start} to {end}",
+  "@snapshotBlocksRange": {"description": "The block range a snapshot covers", "placeholders": {"start": {"type": "int"}, "end": {"type": "int"}}},
+  "snapshotUnaffordable": "Neither your AR balance nor your Turbo Credits cover this snapshot, so it can't be created yet.",
+  "@snapshotUnaffordable": {"description": "Notice when no payment method can pay for a snapshot"},
+  "snapshotNothingUploaded": "Nothing has been uploaded yet.",
+  "@snapshotNothingUploaded": {"description": "Reassurance in the snapshot dialog"},
+  "snapshotCreating": "Creating snapshot",
+  "@snapshotCreating": {"description": "Title while a snapshot is uploaded"},
+  "snapshotPublishedBody": "Your snapshot of {driveName} is on its way to Arweave. ArDrive starts using it to load this drive faster once it's confirmed. You can follow it in the drive's Snapshots tab.",
+  "@snapshotPublishedBody": {"description": "Body after a drive's snapshot is created", "placeholders": {"driveName": {"type": "String", "example": "Curious Cat"}}},
+  "permanenceTitle": "Your permanence",
+  "@permanenceTitle": {"description": "Title of the permanence panel"},
+  "permanenceShareTitle": "Share your permanence",
+  "@permanenceShareTitle": {"description": "Title of the permanence share dialog"},
+  "permanenceCopyText": "Copy text",
+  "@permanenceCopyText": {"description": "Action that copies the permanence share text"},
+  "permanenceDownloadImage": "Download image",
+  "@permanenceDownloadImage": {"description": "Action that saves the permanence share card"},
+  "permanenceTextCopied": "Text copied",
+  "@permanenceTextCopied": {"description": "Shown after the share text is copied"},
+  "permanenceImageSaved": "Image saved",
+  "@permanenceImageSaved": {"description": "Shown after the share card is saved"}
 }

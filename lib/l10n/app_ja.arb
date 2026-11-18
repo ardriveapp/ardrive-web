@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "デプロイは、フォルダーを1つのArweaveアドレスで公開し、各ファイルにわかりやすいパスを割り当てます。Arweaveマニフェストとして保存されます。",
+  "aManifestIsASpecialKindOfFile": "デプロイは、フォルダーを1つのArweaveアドレスで公開し、各ファイルにわかりやすいパスを割り当てます。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "新規スナップショット",
+  "createSnapshot": "スナップショットを作成",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "スナップショットにより、ドライブの読み込み時間が短縮されます。お使いの{driveName}ドライブのスナップショットを作成しますか？",
+  "createSnapshotExplanation": "スナップショットにより {driveName} の読み込みが速くなります。",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -885,7 +885,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "このフォルダー内の一部のファイルはまだ保留中です。保留中のファイルを含むデプロイの作成はおすすめしません。続行しますか？",
+  "filesPendingManifestExplanation": "このフォルダー内の一部のファイルはまだ保留中です。確認されるまでデプロイの作成はおすすめしません。",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1116,7 +1116,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "ARが不足しているためアップロードできません。",
+  "insufficientARForUpload": "ARが足りません",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1138,7 +1138,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "ウォレット残高が{walletBalance}ARでは、このスナップショットのトランザクションコストである{totalCost}ARに不足しています...",
+  "insufficientBalanceForSnapshot": "ウォレットの残高は{walletBalance} ARです。このスナップショットには{totalCost} ARかかります。",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -2041,7 +2041,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "{driveName}のスナップショットの作成に成功しました。",
+  "snapshotCreationSucceeded": "{driveName} のスナップショットをArweaveに送信中です。",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2075,7 +2075,7 @@
       }
     }
   },
-  "snapshotSuceeded": "成功",
+  "snapshotSuceeded": "スナップショットを作成しました",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2676,7 +2676,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "今後は確認しない。",
+  "dontAskMeAgain": "今後は確認しない",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -8113,5 +8113,71 @@
   "profileArioBalanceError": "ARIO残高の取得中にエラーが発生しました",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "ゲートウェイを使用中: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "deploymentFolder": "フォルダー",
+  "deploymentFallbackLabel": "フォールバックページ（任意）",
+  "deploymentFallbackHelp": "デプロイ内のパスが存在しないときに表示されるページです（404ページなど）。そのファイルのトランザクションIDを入力してください。",
+  "deploymentInvalidTxId": "無効なトランザクションID",
+  "deploymentHiddenNotice": "非表示のファイルとフォルダーはデプロイに追加されません。",
+  "loadingFolders": "フォルダーを読み込み中",
+  "deploymentPreparing": "デプロイを準備中",
+  "deploymentUploading": "デプロイをアップロード中",
+  "deploymentCreating": "デプロイを作成中",
+  "deploymentNameConflictTitle": "名前はすでに使われています",
+  "deploymentNameConflictBody": "このフォルダーには「{name}」という名前のファイルまたはフォルダーがすでにあります。別の名前を選んでください。",
+  "deploymentUseName": "この名前を使う",
+  "deploymentExistsTitle": "デプロイはすでに存在します",
+  "deploymentExistsBody": "「{name}」はこのフォルダーにすでにあるデプロイです。作成すると、その新しいバージョンが追加されます。",
+  "deploymentCreateNewVersion": "新しいバージョンを作成",
+  "deploymentCreatedTitle": "デプロイを作成しました",
+  "deploymentFailedTitle": "デプロイを作成できませんでした",
+  "deploymentFailedBody": "デプロイをArweaveにアップロードできませんでした。",
+  "deploymentWalletChanged": "デプロイの作成中にウォレットが変わりました。何もアップロードされていません。",
+  "importFromDeployment": "デプロイからインポート",
+  "importDeploymentIdLabel": "デプロイID",
+  "importEnterId": "ファイルをインポートするデプロイのIDを入力してください。",
+  "importIdRequired": "デプロイIDを入力してください",
+  "importIdInvalid": "無効なデプロイID",
+  "importLoading": "デプロイを読み込み中",
+  "importResolving": "ファイルパスを解決中",
+  "importProgress": "{total}件中{processed}件",
+  "importCreatingFolder": "フォルダー {path} を作成中",
+  "importingFile": "{name} をインポート中",
+  "importFilesFailed": "{count, plural, other{{count}件のファイルが失敗しました}}",
+  "importConflictsTitle": "ファイルはすでに存在します",
+  "importConflictsBody": "次のファイルはこのフォルダーにすでにあります:",
+  "importConflictsQuestion": "置き換えますか？",
+  "importReplace": "ファイルを置き換える",
+  "importReviewTitle": "ファイルを確認",
+  "importReviewSummary": "{count, plural, other{{count}件のファイルをインポートします}}",
+  "importAction": "インポート",
+  "importCancelledTitle": "インポートをキャンセルしました",
+  "importCancelledBody": "{count, plural, other{停止するまでに{count}件のファイルをインポートしました。}}",
+  "importSuccessTitle": "インポートが完了しました",
+  "importSuccessBody": "{count, plural, other{{count}件のファイルをインポートしました}}",
+  "snapshotPreparing": "スナップショットを準備中",
+  "snapshotFinishing": "スナップショットを仕上げ中",
+  "snapshotMayTakeAWhile": "時間がかかる場合があります",
+  "snapshotNotNow": "今はしない",
+  "snapshotPromptDriveStateTitle": "このドライブの読み込みを速くする",
+  "snapshotPromptDriveStateBody": "このドライブは、履歴を1件ずつ読み込むため同期に時間がかかります。スナップショットはドライブ全体を1つのファイルとしてArweaveに保存するので、どこでサインインしても読み込みがずっと速くなります。アップロードの前にサイズと費用を確認できます。",
+  "snapshotPreparingBody": "{driveName} のスナップショットを準備中です。まだ何もアップロードされていません。",
+  "snapshotGapNotice": "スナップショットは永久に残ります。不完全なドライブから作成すると、その欠落が永久に記録されます。",
+  "snapshotWhatItDoesEncrypted": "この操作は、このドライブのスナップショットをドライブキーで暗号化してArweaveに保存し、どこでサインインしても読み込みを速くします。永久に残り、削除できません。",
+  "snapshotWhatItDoes": "この操作は、このドライブのスナップショットをArweaveに保存し、どこでサインインしても読み込みを速くします。永久に残り、削除できません。",
+  "snapshotSummaryDrive": "ドライブ",
+  "snapshotSummaryItems": "項目",
+  "snapshotSummarySize": "サイズ",
+  "snapshotSummaryBlocks": "ブロック",
+  "snapshotBlocksRange": "{start}〜{end}",
+  "snapshotUnaffordable": "ARの残高もTurboクレジットもこのスナップショットの費用に足りないため、まだ作成できません。",
+  "snapshotNothingUploaded": "まだ何もアップロードされていません。",
+  "snapshotCreating": "スナップショットを作成中",
+  "snapshotPublishedBody": "{driveName} のスナップショットをArweaveに送信中です。確認されると、ArDriveはこのドライブの読み込みを速くするために使い始めます。ドライブのスナップショットタブで状況を確認できます。",
+  "permanenceTitle": "あなたの永続性",
+  "permanenceShareTitle": "永続性を共有",
+  "permanenceCopyText": "テキストをコピー",
+  "permanenceDownloadImage": "画像をダウンロード",
+  "permanenceTextCopied": "テキストをコピーしました",
+  "permanenceImageSaved": "画像を保存しました"
 }

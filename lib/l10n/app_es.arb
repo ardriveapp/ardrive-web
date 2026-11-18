@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "Un despliegue publica una carpeta en una sola dirección de Arweave, con cada archivo en una ruta legible. Se guarda como un manifiesto de Arweave.",
+  "aManifestIsASpecialKindOfFile": "Un despliegue publica una carpeta en una sola dirección de Arweave, con cada archivo en una ruta legible.",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Nueva instantánea",
+  "createSnapshot": "Crear instantánea",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "Las instantáneas reducen el tiempo que tarda en cargarse la unidad. ¿Deseas crear una instantánea de la unidad {driveName}?",
+  "createSnapshotExplanation": "Una instantánea hace que {driveName} cargue más rápido.",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -885,7 +885,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "Algunos archivos de esta carpeta siguen pendientes. No recomendamos crear un despliegue con archivos pendientes. ¿Quieres continuar?",
+  "filesPendingManifestExplanation": "Algunos archivos de esta carpeta siguen pendientes. No recomendamos crear un despliegue hasta que estén confirmados.",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1116,7 +1116,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "AR insufficiente para la carga.",
+  "insufficientARForUpload": "AR insuficiente",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1138,7 +1138,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "El saldo de la cartera proporcionada de {walletBalance} AR no es suficiente para esta transacción, cuyo coste es de {totalCost} AR.",
+  "insufficientBalanceForSnapshot": "Tu monedero tiene {walletBalance} AR. Esta instantánea cuesta {totalCost} AR.",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -2041,7 +2041,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "Se ha creado correctamente una instantánea de {driveName}.",
+  "snapshotCreationSucceeded": "Tu instantánea de {driveName} va de camino a Arweave.",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2075,7 +2075,7 @@
       }
     }
   },
-  "snapshotSuceeded": "Operación realizada con éxito",
+  "snapshotSuceeded": "Instantánea creada",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2676,7 +2676,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "No volver a preguntar.",
+  "dontAskMeAgain": "No volver a preguntar",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -8113,5 +8113,71 @@
   "profileArioBalanceError": "Error al obtener el saldo de ARIO",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Usando la pasarela: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "deploymentFolder": "Carpeta",
+  "deploymentFallbackLabel": "Página de respaldo (opcional)",
+  "deploymentFallbackHelp": "Se muestra cuando una ruta del despliegue no existe, como una página 404. Introduce el ID de transacción de su archivo.",
+  "deploymentInvalidTxId": "ID de transacción no válido",
+  "deploymentHiddenNotice": "Los archivos y carpetas ocultos no se añaden al despliegue.",
+  "loadingFolders": "Cargando carpetas",
+  "deploymentPreparing": "Preparando el despliegue",
+  "deploymentUploading": "Subiendo el despliegue",
+  "deploymentCreating": "Creando el despliegue",
+  "deploymentNameConflictTitle": "Nombre ya en uso",
+  "deploymentNameConflictBody": "Ya hay un archivo o una carpeta llamado «{name}» en esta carpeta. Elige otro nombre.",
+  "deploymentUseName": "Usar nombre",
+  "deploymentExistsTitle": "El despliegue ya existe",
+  "deploymentExistsBody": "«{name}» ya es un despliegue en esta carpeta. Crear este añade una nueva versión.",
+  "deploymentCreateNewVersion": "Crear nueva versión",
+  "deploymentCreatedTitle": "Despliegue creado",
+  "deploymentFailedTitle": "No se pudo crear el despliegue",
+  "deploymentFailedBody": "No se pudo subir el despliegue a Arweave.",
+  "deploymentWalletChanged": "Tu monedero cambió mientras se creaba el despliegue. No se subió nada.",
+  "importFromDeployment": "Importar desde un despliegue",
+  "importDeploymentIdLabel": "ID del despliegue",
+  "importEnterId": "Introduce el ID del despliegue del que importar archivos.",
+  "importIdRequired": "Introduce un ID de despliegue",
+  "importIdInvalid": "ID de despliegue no válido",
+  "importLoading": "Cargando el despliegue",
+  "importResolving": "Resolviendo las rutas de los archivos",
+  "importProgress": "{processed} de {total}",
+  "importCreatingFolder": "Creando la carpeta {path}",
+  "importingFile": "Importando {name}",
+  "importFilesFailed": "{count, plural, =1{Falló 1 archivo} other{Fallaron {count} archivos}}",
+  "importConflictsTitle": "Los archivos ya existen",
+  "importConflictsBody": "Estos archivos ya existen en esta carpeta:",
+  "importConflictsQuestion": "¿Reemplazarlos?",
+  "importReplace": "Reemplazar archivos",
+  "importReviewTitle": "Revisar archivos",
+  "importReviewSummary": "{count, plural, =1{Se importará 1 archivo} other{Se importarán {count} archivos}}",
+  "importAction": "Importar",
+  "importCancelledTitle": "Importación cancelada",
+  "importCancelledBody": "{count, plural, =1{Se importó 1 archivo antes de detenerse.} other{Se importaron {count} archivos antes de detenerse.}}",
+  "importSuccessTitle": "Importación completada",
+  "importSuccessBody": "{count, plural, =1{1 archivo importado} other{{count} archivos importados}}",
+  "snapshotPreparing": "Preparando la instantánea",
+  "snapshotFinishing": "Terminando la instantánea",
+  "snapshotMayTakeAWhile": "Esto puede tardar un poco",
+  "snapshotNotNow": "Ahora no",
+  "snapshotPromptDriveStateTitle": "Haz que esta unidad cargue más rápido",
+  "snapshotPromptDriveStateBody": "Esta unidad tarda en sincronizarse porque su historial se lee cambio a cambio. Una instantánea guarda toda la unidad como un solo archivo en Arweave, así que carga mucho más rápido desde donde inicies sesión. Ves el tamaño y el coste antes de subir nada.",
+  "snapshotPreparingBody": "Preparando una instantánea de {driveName}. Aún no se ha subido nada.",
+  "snapshotGapNotice": "Una instantánea es permanente. Crearla desde una unidad incompleta dejaría constancia del hueco para siempre.",
+  "snapshotWhatItDoesEncrypted": "Esto guarda en Arweave una instantánea de esta unidad, cifrada con tu clave de unidad, para que cargue mucho más rápido desde donde inicies sesión. Es permanente y no se puede eliminar.",
+  "snapshotWhatItDoes": "Esto guarda en Arweave una instantánea de esta unidad para que cargue mucho más rápido desde donde inicies sesión. Es permanente y no se puede eliminar.",
+  "snapshotSummaryDrive": "Unidad",
+  "snapshotSummaryItems": "Elementos",
+  "snapshotSummarySize": "Tamaño",
+  "snapshotSummaryBlocks": "Bloques",
+  "snapshotBlocksRange": "{start} a {end}",
+  "snapshotUnaffordable": "Ni tu saldo de AR ni tus Turbo Credits cubren esta instantánea, así que aún no se puede crear.",
+  "snapshotNothingUploaded": "Aún no se ha subido nada.",
+  "snapshotCreating": "Creando la instantánea",
+  "snapshotPublishedBody": "Tu instantánea de {driveName} va de camino a Arweave. ArDrive empieza a usarla para cargar esta unidad más rápido cuando se confirma. Puedes seguirla en la pestaña Instantáneas de la unidad.",
+  "permanenceTitle": "Tu permanencia",
+  "permanenceShareTitle": "Comparte tu permanencia",
+  "permanenceCopyText": "Copiar texto",
+  "permanenceDownloadImage": "Descargar imagen",
+  "permanenceTextCopied": "Texto copiado",
+  "permanenceImageSaved": "Imagen guardada"
 }

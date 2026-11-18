@@ -83,7 +83,7 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
-    final create = find.text('Create deployment');
+    final create = find.widgetWithText(ArDriveButtonNew, 'Create deployment');
     expect(create, findsOneWidget);
     expect(tester.getBottomRight(create).dy, lessThanOrEqualTo(520));
   });

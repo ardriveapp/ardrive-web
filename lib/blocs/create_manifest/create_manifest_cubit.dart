@@ -99,28 +99,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     );
   }
 
-  /// User has selected a folder and is ready to proceed to name input
-  void promptForManifestName() {
-    logger.i('Prompting for manifest name');
-    final state = this.state as CreateManifestFolderLoadSuccess;
-    emit(CreateManifestNameInput(
-      parentFolder: state.viewingFolder.folder,
-      fallbackTxId: state.fallbackTxId,
-    ));
-  }
-
-  /// Process manifest name and check for conflicts
-  Future<void> processManifestName(String name) async {
-    logger.i('Processing manifest name: $name');
-    if (state is CreateManifestNameInput) {
-      final nameInputState = state as CreateManifestNameInput;
-      final parentFolder = nameInputState.parentFolder;
-
-      emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
-      await checkNameConflicts(name);
-    }
-  }
-
   void selectUploadMethod(
       UploadMethod method, UploadPaymentMethodInfo info, bool canUpload) {
     logger.d(
@@ -322,6 +300,22 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
+  /// The review the last upload started from, for [retryUpload].
+  CreateManifestUploadReview? _reviewToRetry;
+
+  /// After a failed upload: the same deployment again, from the review it
+  /// was started from. Nothing else changes, so what was chosen there, the
+  /// payment method included, is what is sent.
+  Future<void> retryUpload() async {
+    final review = _reviewToRetry;
+    if (review == null || state is! CreateManifestFailure) {
+      return;
+    }
+
+    emit(review);
+    await uploadManifest();
+  }
+
   Future<void> uploadManifest({UploadMethod? method}) async {
     logger.i('Starting manifest upload process');
     try {
@@ -340,6 +334,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (state is CreateManifestUploadReview) {
       try {
         final createManifestUploadReview = state as CreateManifestUploadReview;
+        _reviewToRetry = createManifestUploadReview;
         final uploadType =
             (method ?? createManifestUploadReview.uploadMethod) ==
                     UploadMethod.ar
