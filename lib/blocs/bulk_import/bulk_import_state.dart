@@ -114,17 +114,51 @@ class BulkImportSuccess extends BulkImportState {
       ];
 }
 
+/// Why an import failed, for the UI to say in the user's language. The
+/// bloc names the outcome and the dialog words it.
+enum BulkImportErrorReason {
+  /// The deployment couldn't be found.
+  notFound,
+
+  /// The deployment couldn't be reached.
+  network,
+
+  /// The deployment's data couldn't be read.
+  unreadable,
+
+  /// Replace was asked for with nothing pending.
+  noFilesToReplace,
+
+  /// Replacing the files failed.
+  replaceFailed,
+
+  /// The import couldn't start or finish.
+  importFailed,
+
+  /// Every file failed.
+  nothingImported,
+
+  /// Anything else.
+  unexpected,
+}
+
 /// State when bulk import encounters an error
 class BulkImportError extends BulkImportState {
+  /// English, for the log and for tests. The dialog words [reason].
   final String message;
   final Object? error;
   final bool isPaymentError;
+  final BulkImportErrorReason reason;
 
-  const BulkImportError(this.message,
-      [this.error, this.isPaymentError = false]);
+  const BulkImportError(
+    this.message, [
+    this.error,
+    this.isPaymentError = false,
+    this.reason = BulkImportErrorReason.unexpected,
+  ]);
 
   @override
-  List<Object?> get props => [message, error, isPaymentError];
+  List<Object?> get props => [message, error, isPaymentError, reason];
 }
 
 class BulkImportResolvingPaths extends BulkImportState {

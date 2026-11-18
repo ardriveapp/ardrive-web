@@ -21,6 +21,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -146,10 +147,7 @@ class DriveStateCreationModal extends StatelessWidget {
           return _publishedModal(context, state);
         }
 
-        return _failureModal(
-          context,
-          (state as DriveStateCreationFailure).message,
-        );
+        return _failureModal(context, state as DriveStateCreationFailure);
       },
     );
   }
@@ -224,7 +222,7 @@ Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
         ],
         ArDriveNotice(
           type: ArDriveNoticeType.error,
-          message: state.reason,
+          message: _refusalText(l10n, state.refusal),
         ),
       ],
     ),
@@ -448,9 +446,10 @@ Widget _publishedModal(
   );
 }
 
-/// The failure stays in the dialog, in a notice, with Try again: it prepares
-/// the snapshot anew, and nothing is uploaded before the confirm button.
-Widget _failureModal(BuildContext context, String message) {
+/// The failure stays in the dialog, in a notice. Try again prepares the
+/// snapshot anew, and is offered only where nothing was posted: after an
+/// upload that may have been paid for, a second attempt would pay twice.
+Widget _failureModal(BuildContext context, DriveStateCreationFailure state) {
   final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
@@ -458,17 +457,64 @@ Widget _failureModal(BuildContext context, String message) {
     scrollableContent: true,
     content: ArDriveNotice(
       type: ArDriveNoticeType.error,
-      message: message,
+      message: _failureText(l10n, state),
     ),
     actions: [
       ModalAction.close(
         title: l10n.close,
         action: () => Navigator.of(context).pop(),
       ),
-      ModalAction(
-        title: l10n.tryAgainEmphasized,
-        action: () => context.read<DriveStateCreationCubit>().prepare(),
-      ),
+      if (state.canTryAgain)
+        ModalAction(
+          title: l10n.tryAgainEmphasized,
+          action: () => context.read<DriveStateCreationCubit>().prepare(),
+        ),
     ],
   );
 }
+
+/// What a refusal says, in the user's language. The service's own sentence is
+/// English, for the log.
+String _refusalText(AppLocalizations l10n, DriveStateCreationRefusal refusal) =>
+    switch (refusal) {
+      DriveStateCreationRefusal.syncSkippedEntities =>
+        l10n.snapshotRefusedSyncSkipped,
+      DriveStateCreationRefusal.skipStateUnknown =>
+        l10n.snapshotRefusedSyncUnknown,
+      DriveStateCreationRefusal.driveNotFound => l10n.snapshotRefusedNotFound,
+      DriveStateCreationRefusal.protectionUnavailable =>
+        l10n.snapshotRefusedProtection,
+      DriveStateCreationRefusal.notDriveOwner => l10n.snapshotRefusedNotOwner,
+      DriveStateCreationRefusal.noWatermark => l10n.snapshotRefusedNoWatermark,
+      DriveStateCreationRefusal.payloadTooLarge => l10n.snapshotRefusedTooLarge,
+      DriveStateCreationRefusal.unconfirmedChanges =>
+        l10n.snapshotRefusedUnconfirmed,
+      DriveStateCreationRefusal.sealFailed ||
+      DriveStateCreationRefusal.cancelled =>
+        l10n.snapshotRefusedSealFailed,
+    };
+
+String _failureText(AppLocalizations l10n, DriveStateCreationFailure state) =>
+    switch (state.kind) {
+      DriveStateCreationFailureKind.costTimeout =>
+        l10n.snapshotFailureCostTimeout,
+      DriveStateCreationFailureKind.costUnknown =>
+        l10n.snapshotFailureCostUnknown,
+      DriveStateCreationFailureKind.prepareFailed =>
+        l10n.snapshotFailurePrepare,
+      DriveStateCreationFailureKind.notEnabled =>
+        l10n.snapshotFailureNotEnabled,
+      DriveStateCreationFailureKind.notLoggedIn =>
+        l10n.snapshotFailureNotLoggedIn,
+      DriveStateCreationFailureKind.walletChanged =>
+        l10n.snapshotFailureWalletChanged,
+      DriveStateCreationFailureKind.walletUnavailable =>
+        l10n.snapshotFailureWalletUnavailable,
+      DriveStateCreationFailureKind.paymentDeclined =>
+        l10n.snapshotFailurePaymentDeclined,
+      DriveStateCreationFailureKind.publishFailed =>
+        l10n.snapshotFailurePublish,
+      DriveStateCreationFailureKind.publishUncertain =>
+        l10n.snapshotFailureUncertain(state.txId ?? ''),
+      DriveStateCreationFailureKind.publishThrew => l10n.snapshotFailureThrew,
+    };

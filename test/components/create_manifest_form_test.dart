@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -117,6 +119,23 @@ void main() {
       verify(() => cubit.checkForConflicts('my-site')).called(1);
     });
 
+    testWidgets('two fast presses of Review make one check', (tester) async {
+      final gate = Completer<void>();
+      when(() => cubit.checkForConflicts(any())).thenAnswer((_) => gate.future);
+      await pumpForm(tester, picker());
+      await tester.enterText(find.byType(TextField).first, 'my-site');
+      await tester.pump();
+
+      final review = find.widgetWithText(ArDriveButtonNew, 'Review');
+      tester.widget<ArDriveButtonNew>(review).onPressed!();
+      tester.widget<ArDriveButtonNew>(review).onPressed!();
+      await tester.pump();
+
+      verify(() => cubit.checkForConflicts('my-site')).called(1);
+      gate.complete();
+      await tester.pump();
+    });
+
     testWidgets('never say manifest', (tester) async {
       await pumpForm(tester, picker());
 
@@ -209,6 +228,21 @@ void main() {
       verify(() => cubit.retryUpload()).called(1);
       // Still on screen: nothing popped the dialog.
       expect(find.byType(CreateManifestForm), findsOneWidget);
+    });
+
+    testWidgets('two fast presses of Try again make one retry', (tester) async {
+      final gate = Completer<void>();
+      when(() => cubit.retryUpload()).thenAnswer((_) => gate.future);
+      await pumpForm(tester, CreateManifestFailure());
+
+      final retry = find.widgetWithText(ArDriveButtonNew, 'Try again');
+      tester.widget<ArDriveButtonNew>(retry).onPressed!();
+      tester.widget<ArDriveButtonNew>(retry).onPressed!();
+      await tester.pump();
+
+      verify(() => cubit.retryUpload()).called(1);
+      gate.complete();
+      await tester.pump();
     });
 
     testWidgets('of a Turbo payment offers credits, in the dialog',

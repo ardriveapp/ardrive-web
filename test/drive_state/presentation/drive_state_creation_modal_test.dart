@@ -266,17 +266,18 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('could not read 3 items'), findsOneWidget);
+    expect(find.textContaining("couldn't read some items"), findsOneWidget);
     expect(find.textContaining('would record the gap forever'), findsOneWidget);
     expect(
         find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
     verifyNever(() => cubit.publish());
   });
 
-  testWidgets('a failed publish shows the uploader\'s own sentence',
+  testWidgets('a failed publish is worded by the modal, in a notice',
       (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationFailure(
       'Turbo declined the payment for this snapshot.',
+      kind: DriveStateCreationFailureKind.paymentDeclined,
     )));
     await tester.pumpAndSettle();
 
@@ -287,14 +288,45 @@ void main() {
     // In a notice, with the way on, not plain text and a lone OK.
     expect(find.byType(ArDriveNotice), findsOneWidget);
     expect(find.widgetWithText(ArDriveButtonNew, 'Close'), findsOneWidget);
-    expect(find.widgetWithText(ArDriveButtonNew, 'Try again'), findsOneWidget);
+    // Not after an upload: a second attempt there could pay twice.
+    expect(find.widgetWithText(ArDriveButtonNew, 'Try again'), findsNothing);
     expect(
         find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+  });
+
+  testWidgets('an upload that was paid for says so and never offers Try again',
+      (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationFailure(
+      'english',
+      kind: DriveStateCreationFailureKind.publishUncertain,
+      txId: 'tx-123',
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('(tx-123)'), findsOneWidget);
+    expect(find.textContaining('pays for it a second time'), findsOneWidget);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Try again'), findsNothing);
+  });
+
+  testWidgets('a failure before anything was posted offers Try again',
+      (tester) async {
+    when(() => cubit.prepare()).thenAnswer((_) async {});
+    await tester.pumpWidget(wrap(DriveStateCreationFailure(
+      'english',
+      kind: DriveStateCreationFailureKind.costUnknown,
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Try again'));
+    await tester.pump();
+
+    verify(() => cubit.prepare()).called(1);
   });
 
   testWidgets('a price that could not be established is not a confirm button',
       (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationFailure(
+      kind: DriveStateCreationFailureKind.costUnknown,
       'The cost of this snapshot could not be determined, so nothing is being '
       'offered for confirmation.',
     )));
@@ -516,7 +548,7 @@ void main() {
 
       expectFitsOnScreen(tester, smallPhone);
 
-      expect(find.textContaining('could not read 37 items'), findsOneWidget);
+      expect(find.textContaining("couldn't read some items"), findsOneWidget);
       expect(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
           findsNothing);
 
@@ -534,6 +566,7 @@ void main() {
       await openModal(
         tester,
         DriveStateCreationFailure(
+          kind: DriveStateCreationFailureKind.publishFailed,
           'The upload was rejected by every route it was offered to: Turbo '
           'returned an error for the bundled data item, and the direct '
           'gateway upload did not complete either. Nothing was published and '
@@ -544,7 +577,8 @@ void main() {
 
       expectFitsOnScreen(tester, smallPhone);
 
-      expect(find.textContaining('Nothing was published'), findsOneWidget);
+      expect(find.textContaining('If nothing was posted, nothing was spent'),
+          findsOneWidget);
 
       await tester.ensureVisible(find.text('Close'));
       await tester.tap(find.text('Close'));

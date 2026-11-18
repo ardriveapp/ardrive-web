@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -271,6 +272,96 @@ void main() {
       await cubit.retryUpload();
 
       expect(cubit.state, before);
+      await cubit.close();
+    });
+  });
+
+  group('a step that writes or pays', () {
+    test('two fast presses of Create send one upload', () async {
+      final profile = MockProfileCubit();
+      final gate = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => gate.future);
+      final auth = MockArDriveAuth();
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      final file = await IOFile.fromData(
+        Uint8List(10),
+        name: 'site',
+        lastModifiedDate: DateTime(2024),
+      );
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: driveId,
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async => (false, null));
+      when(
+        () => manifestRepository.getManifestFile(
+          parentFolder: any(named: 'parentFolder'),
+          manifestName: any(named: 'manifestName'),
+          rootFolderNode: any(named: 'rootFolderNode'),
+          driveId: driveId,
+          fallbackTxId: any(named: 'fallbackTxId'),
+        ),
+      ).thenAnswer((_) async => file);
+      when(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async => 'data-tx');
+
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth,
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      await cubit.checkForConflicts('site');
+
+      // The wallet check is still open when the second press lands: the
+      // cubit has not emitted its busy state yet.
+      final first = cubit.uploadManifest();
+      final second = cubit.uploadManifest();
+      gate.complete(false);
+      await Future.wait([first, second]);
+
+      verify(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+      await cubit.close();
+    });
+
+    test('an empty name is never checked', () async {
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: MockProfileCubit(),
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: MockArDriveAuth(),
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      final before = cubit.state;
+
+      await cubit.checkForConflicts('   ');
+      await cubit.checkForConflicts('');
+
+      expect(cubit.state, before);
+      verifyNever(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: any(named: 'driveId'),
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      );
       await cubit.close();
     });
   });

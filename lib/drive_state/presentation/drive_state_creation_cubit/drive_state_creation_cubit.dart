@@ -181,6 +181,9 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
               : 'The cost of this snapshot could not be determined, so nothing '
                   'is being offered for confirmation. Nothing was uploaded and '
                   'nothing was spent.',
+          kind: e is TimeoutException
+              ? DriveStateCreationFailureKind.costTimeout
+              : DriveStateCreationFailureKind.costUnknown,
         ));
         return;
       }
@@ -199,6 +202,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       logger.e('[drive-state] preparing an artifact failed', e, stackTrace);
       emit(DriveStateCreationFailure(
         'The snapshot could not be prepared. Try again.',
+        kind: DriveStateCreationFailureKind.prepareFailed,
       ));
     }
   }
@@ -315,7 +319,26 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
           txId: result.txId!,
         ));
       } else {
-        emit(DriveStateCreationFailure(result.reason!));
+        emit(DriveStateCreationFailure(
+          result.reason!,
+          kind: result.isUncertain
+              ? DriveStateCreationFailureKind.publishUncertain
+              : switch (result.failure) {
+                  DriveStateUploadFailure.notEnabled =>
+                    DriveStateCreationFailureKind.notEnabled,
+                  DriveStateUploadFailure.notLoggedIn =>
+                    DriveStateCreationFailureKind.notLoggedIn,
+                  DriveStateUploadFailure.walletChanged =>
+                    DriveStateCreationFailureKind.walletChanged,
+                  DriveStateUploadFailure.walletUnavailable =>
+                    DriveStateCreationFailureKind.walletUnavailable,
+                  DriveStateUploadFailure.paymentDeclined =>
+                    DriveStateCreationFailureKind.paymentDeclined,
+                  DriveStateUploadFailure.other =>
+                    DriveStateCreationFailureKind.publishFailed,
+                },
+          txId: result.txId,
+        ));
       }
     } catch (e, stackTrace) {
       logger.e('[drive-state] publishing an artifact failed', e, stackTrace);
@@ -323,6 +346,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
       emit(DriveStateCreationFailure(
         'The snapshot could not be created. Nothing was spent.',
+        kind: DriveStateCreationFailureKind.publishThrew,
       ));
     }
   }

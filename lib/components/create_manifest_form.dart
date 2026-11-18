@@ -137,12 +137,28 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
 
   bool _isFormValid = false;
 
+  /// Whether a step that writes or pays has been asked for and has not come
+  /// back. Set before the call: the cubit emits its busy state only after
+  /// awaiting its checks, so a fast second press would start a second step.
+  bool _submitting = false;
+
+  Future<void> _submit(Future<void> Function() step) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await step();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   /// The deployment's name, on the folder screen and again on the name
   /// conflict screen, where it is asked for anew.
   ArDriveTextFieldNew manifestNameForm({
     required void Function(String name) onSubmit,
   }) {
     return ArDriveTextFieldNew(
+      isEnabled: !_submitting,
       label: appLocalizationsOf(context).manifestName,
       controller: _manifestNameController,
       validator: (value) {
@@ -156,7 +172,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       },
       autofocus: true,
       onFieldSubmitted: (name) {
-        if (_isFormValid) onSubmit(name);
+        if (_isFormValid && !_submitting) onSubmit(name);
       },
     );
   }
@@ -247,6 +263,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       ),
       actions: [
         ModalAction.close(
+          isEnable: !_submitting,
           action: () => Navigator.pop(context),
           title: l10n.close,
         ),
@@ -260,7 +277,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           )
         else if (!isWalletMismatch)
           ModalAction(
-            action: () => context.read<CreateManifestCubit>().retryUpload(),
+            isLoading: _submitting,
+            action: () => _submit(
+              () => context.read<CreateManifestCubit>().retryUpload(),
+            ),
             title: l10n.tryAgain,
           ),
       ],
@@ -346,19 +366,23 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           const SizedBox(height: ArDriveSpacing.md),
           manifestNameForm(
             onSubmit: (name) {
-              if (canRetry) cubit.reCheckConflicts(name);
+              if (canRetry) _submit(() => cubit.reCheckConflicts(name));
             },
           ),
         ],
       ),
       actions: [
         ModalAction.close(
+          isEnable: !_submitting,
           action: () => Navigator.of(context).pop(false),
           title: l10n.cancelEmphasized,
         ),
         ModalAction(
           isEnable: canRetry,
-          action: () => cubit.reCheckConflicts(_manifestNameController.text),
+          isLoading: _submitting,
+          action: () => _submit(
+            () => cubit.reCheckConflicts(_manifestNameController.text),
+          ),
           title: l10n.deploymentUseName,
         ),
       ],
@@ -376,11 +400,15 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       description: l10n.deploymentExistsBody(_manifestNameController.text),
       actions: [
         ModalAction.close(
+          isEnable: !_submitting,
           action: () => Navigator.of(context).pop(false),
           title: l10n.cancelEmphasized,
         ),
         ModalAction(
-          action: () => cubit.confirmRevision(_manifestNameController.text),
+          isLoading: _submitting,
+          action: () => _submit(
+            () => cubit.confirmRevision(_manifestNameController.text),
+          ),
           title: l10n.deploymentCreateNewVersion,
         ),
       ],
@@ -490,12 +518,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       ),
       actions: [
         ModalAction.close(
+          isEnable: !_submitting,
           action: () => Navigator.of(context).pop(false),
           title: l10n.cancelEmphasized,
         ),
         ModalAction(
           isEnable: state.canUpload && (names?.ready ?? true),
-          action: () => readCubitContext.uploadManifest(),
+          isLoading: _submitting,
+          action: () => _submit(() => readCubitContext.uploadManifest()),
           title: l10n.createManifestEmphasized,
         ),
       ],
@@ -720,7 +750,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           manifestNameForm(
             onSubmit: (name) {
               if (state.enableManifestCreationButton) {
-                cubit.checkForConflicts(name);
+                _submit(() => cubit.checkForConflicts(name));
               }
             },
           ),
@@ -799,6 +829,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           ArDriveTextFieldNew(
             label: l10n.deploymentFallbackLabel,
             textStyle: typography.code(),
+            isEnabled: !_submitting,
             onChanged: (value) {
               cubit.setFallbackTxId(value);
             },
@@ -826,12 +857,16 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       ),
       actions: [
         ModalAction.close(
+          isEnable: !_submitting,
           action: () => Navigator.pop(context),
           title: l10n.cancelEmphasized,
         ),
         ModalAction(
           isEnable: canContinue,
-          action: () => cubit.checkForConflicts(_manifestNameController.text),
+          isLoading: _submitting,
+          action: () => _submit(
+            () => cubit.checkForConflicts(_manifestNameController.text),
+          ),
           title: l10n.review,
         ),
       ],

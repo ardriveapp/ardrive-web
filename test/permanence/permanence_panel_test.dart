@@ -41,6 +41,8 @@ void main() {
     await tester.pumpWidget(ArDriveTheme(
       themeData: lightTheme(),
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Material(
           child: SingleChildScrollView(
             child: PermanencePanel(summary: summary),

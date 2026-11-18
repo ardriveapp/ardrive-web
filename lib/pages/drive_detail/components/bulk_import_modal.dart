@@ -10,6 +10,7 @@ import 'package:ardrive/utils/validate_arweave_id.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// Modal for importing files from a manifest.
 class BulkImportModal extends StatelessWidget {
@@ -221,7 +222,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                 if (state is BulkImportError) ...[
                   ArDriveNotice(
                     type: ArDriveNoticeType.error,
-                    message: state.message,
+                    message: _errorText(l10n, state),
                     actionLabel: state.isPaymentError ? l10n.buyCredits : null,
                     onAction: state.isPaymentError
                         ? () {
@@ -333,6 +334,22 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
       },
     );
   }
+}
+
+/// What an import failure says, in the user's language. The bloc's own
+/// sentence is English, for the log.
+String _errorText(AppLocalizations l10n, BulkImportError state) {
+  if (state.isPaymentError) return l10n.freeAllowanceUsedUpDescription;
+  return switch (state.reason) {
+    BulkImportErrorReason.notFound => l10n.importErrorNotFound,
+    BulkImportErrorReason.network => l10n.importErrorNetwork,
+    BulkImportErrorReason.unreadable => l10n.importErrorUnreadable,
+    BulkImportErrorReason.noFilesToReplace => l10n.importErrorNoFilesToReplace,
+    BulkImportErrorReason.replaceFailed => l10n.importErrorReplaceFailed,
+    BulkImportErrorReason.importFailed => l10n.importErrorImportFailed,
+    BulkImportErrorReason.nothingImported => l10n.importErrorNothingImported,
+    BulkImportErrorReason.unexpected => l10n.importErrorUnexpected,
+  };
 }
 
 /// What the import is doing: a spinner or a bar, what it is on, and how far.

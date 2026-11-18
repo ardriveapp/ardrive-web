@@ -111,10 +111,49 @@ class DriveStateCreationPublished extends DriveStateCreationState {
 /// Something went wrong that is not a refusal: a bug, a database that went
 /// away, a price that could not be established, an upload that failed.
 class DriveStateCreationFailure extends DriveStateCreationState {
+  /// English, for the log and for tests. The modal words [kind].
   final String message;
+  final DriveStateCreationFailureKind kind;
 
-  DriveStateCreationFailure(this.message);
+  /// For [DriveStateCreationFailureKind.publishUncertain]: the transaction
+  /// that was posted.
+  final String? txId;
+
+  DriveStateCreationFailure(
+    this.message, {
+    this.kind = DriveStateCreationFailureKind.publishFailed,
+    this.txId,
+  });
+
+  /// Whether preparing again is safe: nothing was posted, so nothing can be
+  /// paid for twice. After a publish that may have posted, it is not.
+  bool get canTryAgain =>
+      kind == DriveStateCreationFailureKind.costTimeout ||
+      kind == DriveStateCreationFailureKind.costUnknown ||
+      kind == DriveStateCreationFailureKind.prepareFailed ||
+      kind == DriveStateCreationFailureKind.walletUnavailable;
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, kind, txId];
+}
+
+/// What went wrong, for the modal to word in the user's language.
+enum DriveStateCreationFailureKind {
+  costTimeout,
+  costUnknown,
+  prepareFailed,
+  notEnabled,
+  notLoggedIn,
+  walletChanged,
+  walletUnavailable,
+  paymentDeclined,
+
+  /// Nothing may have been posted; check before trying again.
+  publishFailed,
+
+  /// A transaction was posted and paid for; its data may be incomplete.
+  publishUncertain,
+
+  /// The upload threw; nothing is known to have been posted.
+  publishThrew,
 }

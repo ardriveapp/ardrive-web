@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
+import 'package:ardrive/manifests/domain/models/manifest_result.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/core/arfs/use_cases/check_folder_conflicts.dart';
@@ -44,6 +45,24 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     StartManifestBulkImport event,
     Emitter<BulkImportState> emit,
   ) async {
+    // Events run at once: a second press in the same frame as the first
+    // would start a second import.
+    if (_starting) return;
+    _starting = true;
+    try {
+      await _startManifestBulkImport(event, emit);
+    } finally {
+      _starting = false;
+    }
+  }
+
+  bool _starting = false;
+  bool _importingFiles = false;
+
+  Future<void> _startManifestBulkImport(
+    StartManifestBulkImport event,
+    Emitter<BulkImportState> emit,
+  ) async {
     try {
       emit(BulkImportLoadingManifest(event.manifestTxId));
 
@@ -55,7 +74,17 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       if (manifestResult.failure != null) {
         // The failure's message is written for the user; the error itself
         // is in the log.
-        emit(BulkImportError(manifestResult.failure!.message));
+        final failure = manifestResult.failure!;
+        emit(BulkImportError(
+          failure.message,
+          null,
+          false,
+          failure is NotFoundFailure
+              ? BulkImportErrorReason.notFound
+              : failure is NetworkFailure
+                  ? BulkImportErrorReason.network
+                  : BulkImportErrorReason.unreadable,
+        ));
         return;
       }
 
@@ -138,6 +167,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
                 'Please try again.',
         e,
         paymentError,
+        BulkImportErrorReason.unexpected,
       ));
     }
   }
@@ -146,13 +176,20 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     ConfirmManifestBulkImport event,
     Emitter<BulkImportState> emit,
   ) async {
-    await _importFiles(
-      files: event.files,
-      driveId: event.driveId,
-      parentFolderId: event.parentFolderId,
-      manifestTxId: event.manifestTxId,
-      emit: emit,
-    );
+    // The same as the start: one import at a time.
+    if (_importingFiles) return;
+    _importingFiles = true;
+    try {
+      await _importFiles(
+        files: event.files,
+        driveId: event.driveId,
+        parentFolderId: event.parentFolderId,
+        manifestTxId: event.manifestTxId,
+        emit: emit,
+      );
+    } finally {
+      _importingFiles = false;
+    }
   }
 
   Future<void> _onReplaceConflictingFiles(
@@ -163,6 +200,9 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       if (_pendingFiles == null) {
         emit(const BulkImportError(
           'No files to replace. Please start the import process again.',
+          null,
+          false,
+          BulkImportErrorReason.noFilesToReplace,
         ));
         return;
       }
@@ -176,6 +216,8 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       emit(BulkImportError(
         'An unexpected error occurred while replacing files. Please try again.',
         e,
+        false,
+        BulkImportErrorReason.replaceFailed,
       ));
     }
   }
@@ -209,6 +251,9 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       if (_manifestOriginalOwnerAddress == null) {
         emit(const BulkImportError(
           'Failed to import files. Please try again.',
+          null,
+          false,
+          BulkImportErrorReason.importFailed,
         ));
         return;
       }
@@ -287,6 +332,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
                 'try again.',
         lastImportError,
         paymentError,
+        BulkImportErrorReason.nothingImported,
       ));
     } else {
       emit(BulkImportSuccess(

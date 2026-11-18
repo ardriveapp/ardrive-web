@@ -134,11 +134,21 @@ void main() {
 
   testWidgets('a failure is a notice in the dialog, which can be retried',
       (tester) async {
-    await open(tester, const BulkImportError('The deployment was not found.'));
+    await open(
+      tester,
+      const BulkImportError(
+        'The deployment was not found.',
+        null,
+        false,
+        BulkImportErrorReason.notFound,
+      ),
+    );
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
     expect(find.byType(ArDriveNotice), findsOneWidget);
-    expect(find.text('The deployment was not found.'), findsOneWidget);
+    expect(find.text("That deployment couldn't be found."), findsOneWidget,
+        reason: 'worded by the dialog, not the bloc');
+    expect(find.text('The deployment was not found.'), findsNothing);
     expect(find.text('Import from deployment'), findsOneWidget);
     expect(buttons(tester), ['Cancel', 'Import']);
     expect(find.text('OK'), findsNothing);
@@ -150,6 +160,8 @@ void main() {
       tester,
       const BulkImportError('Add credits to continue.', null, true),
     );
+    expect(find.textContaining('free upload allowance has been used up'),
+        findsOneWidget);
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
     expect(find.text('Buy credits'), findsOneWidget);

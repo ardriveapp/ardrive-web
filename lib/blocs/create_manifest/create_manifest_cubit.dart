@@ -131,8 +131,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   /// User has confirmed that they would like to submit a manifest revision transaction
   Future<void> confirmRevision(
     String name,
-  ) async {
+  ) =>
+      _once(() => _confirmRevision(name));
+
+  Future<void> _confirmRevision(String name) async {
     logger.i('Confirming manifest revision for name: $name');
+    // A deployment is never named nothing.
+    if (name.trim().isEmpty || state is! CreateManifestRevisionConfirm) return;
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
     final parentFolder = revisionConfirmationState.parentFolder;
     final existingManifestFileId =
@@ -178,7 +183,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
-  Future<void> reCheckConflicts(String name) async {
+  Future<void> reCheckConflicts(String name) =>
+      _once(() => _reCheckConflicts(name));
+
+  Future<void> _reCheckConflicts(String name) async {
+    if (name.trim().isEmpty || state is! CreateManifestNameConflict) return;
     final conflictState = (state as CreateManifestNameConflict);
     final parentFolder = conflictState.parentFolder;
     final conflictingName = conflictState.conflictingName;
@@ -191,8 +200,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     await checkNameConflicts(name);
   }
 
-  Future<void> checkForConflicts(String name) async {
+  Future<void> checkForConflicts(String name) =>
+      _once(() => _checkForConflicts(name));
+
+  Future<void> _checkForConflicts(String name) async {
     logger.i('Checking for manifest name conflicts: $name');
+    if (name.trim().isEmpty) return;
 
     /// Prevent multiple checks from being triggered
     if (state is! CreateManifestFolderLoadSuccess) {
@@ -300,6 +313,21 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
+  /// Whether a step that writes or pays is running. Set before the first
+  /// await: the dialog's button stays enabled until the cubit emits its busy
+  /// state, and a fast second press would otherwise start a second step.
+  bool _inFlight = false;
+
+  Future<void> _once(Future<void> Function() step) async {
+    if (_inFlight) return;
+    _inFlight = true;
+    try {
+      await step();
+    } finally {
+      _inFlight = false;
+    }
+  }
+
   /// The review the last upload started from, for [retryUpload].
   CreateManifestUploadReview? _reviewToRetry;
 
@@ -307,16 +335,21 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   /// was started from. Nothing else changes, so what was chosen there, the
   /// payment method included, is what is sent.
   Future<void> retryUpload() async {
-    final review = _reviewToRetry;
-    if (review == null || state is! CreateManifestFailure) {
-      return;
-    }
+    await _once(() async {
+      final review = _reviewToRetry;
+      if (review == null || state is! CreateManifestFailure) {
+        return;
+      }
 
-    emit(review);
-    await uploadManifest();
+      emit(review);
+      await _uploadManifest();
+    });
   }
 
-  Future<void> uploadManifest({UploadMethod? method}) async {
+  Future<void> uploadManifest({UploadMethod? method}) =>
+      _once(() => _uploadManifest(method: method));
+
+  Future<void> _uploadManifest({UploadMethod? method}) async {
     logger.i('Starting manifest upload process');
     try {
       if (await _profileCubit.logoutIfWalletMismatch()) {

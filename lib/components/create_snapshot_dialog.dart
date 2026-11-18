@@ -158,6 +158,21 @@ class CreateSnapshotDialog extends StatefulWidget {
 class _CreateSnapshotDialogState extends State<CreateSnapshotDialog> {
   Drive get drive => widget.drive;
 
+  /// Whether Create snapshot or Try again has been pressed and has not come
+  /// back. Set before the call: the cubit's busy state arrives only after it
+  /// has checked the wallet, and a fast second press would pay twice.
+  bool _submitting = false;
+
+  Future<void> _run(Future<void> Function() step) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await step();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -196,17 +211,19 @@ class _CreateSnapshotDialogState extends State<CreateSnapshotDialog> {
           return _failureDialog(
             context,
             drive.id,
+            busy: _submitting,
+            run: _run,
             isPaymentError:
                 state is SnapshotUploadFailure && state.isPaymentError,
           );
-        } else if (state is CreateSnapshotInsufficientBalance) {
-          return _insufficientBalanceDialog(context, state);
         } else if (state is ConfirmingSnapshotCreation) {
           return _confirmDialog(
             context,
             drive,
             createSnapshotCubit,
             state,
+            busy: _submitting,
+            run: _run,
           );
         }
 
@@ -313,6 +330,8 @@ Widget _successDialog(BuildContext context, String driveName) {
 Widget _failureDialog(
   BuildContext context,
   DriveID driveId, {
+  required bool busy,
+  required Future<void> Function(Future<void> Function()) run,
   bool isPaymentError = false,
 }) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
@@ -329,6 +348,7 @@ Widget _failureDialog(
     actions: [
       ModalAction.close(
         title: l10n.close,
+        isEnable: !busy,
         action: () {
           Navigator.of(context).pop();
         },
@@ -343,45 +363,12 @@ Widget _failureDialog(
         )
       else
         ModalAction(
-          action: () {
-            createSnapshotCubit.confirmDriveAndHeighRange(driveId);
-          },
+          isLoading: busy,
+          action: () => run(
+            () => createSnapshotCubit.confirmDriveAndHeighRange(driveId),
+          ),
           title: l10n.tryAgainEmphasized,
         ),
-    ],
-  );
-}
-
-Widget _insufficientBalanceDialog(
-  BuildContext context,
-  CreateSnapshotInsufficientBalance state,
-) {
-  final l10n = appLocalizationsOf(context);
-
-  return ArDriveStandardModalNew(
-    title: l10n.insufficientARForUpload,
-    content: ArDriveNotice(
-      type: ArDriveNoticeType.error,
-      message: l10n.insufficientBalanceForSnapshot(
-        state.walletBalance,
-        state.arCost,
-      ),
-    ),
-    actions: [
-      ModalAction.close(
-        title: l10n.close,
-        action: () {
-          Navigator.of(context).pop();
-        },
-      ),
-      // The way on: Turbo Credits pay for a snapshot too.
-      ModalAction(
-        title: l10n.buyCredits,
-        action: () {
-          Navigator.of(context).pop();
-          showTurboTopupModal(context);
-        },
-      ),
     ],
   );
 }
@@ -392,8 +379,10 @@ Widget _confirmDialog(
   BuildContext context,
   Drive drive,
   CreateSnapshotCubit createSnapshotCubit,
-  ConfirmingSnapshotCreation state,
-) {
+  ConfirmingSnapshotCreation state, {
+  required bool busy,
+  required Future<void> Function(Future<void> Function()) run,
+}) {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final l10n = appLocalizationsOf(context);
@@ -476,17 +465,19 @@ Widget _confirmDialog(
     actions: [
       ModalAction.close(
         title: l10n.cancelEmphasized,
+        isEnable: !busy,
         action: () {
           logger.i('Canceling snapshot creation');
           Navigator.of(context).pop();
         },
       ),
       ModalAction(
-        action: () async => {
-          logger.i('Confirming snapshot creation'),
-          await createSnapshotCubit.confirmSnapshotCreation(),
-        },
+        action: () => run(() async {
+          logger.i('Confirming snapshot creation');
+          await createSnapshotCubit.confirmSnapshotCreation();
+        }),
         title: l10n.createSnapshot,
+        isLoading: busy,
         isEnable: state.isButtonToUploadEnabled,
       ),
     ],

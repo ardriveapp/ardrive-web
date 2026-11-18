@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
@@ -162,20 +164,6 @@ void main() {
     verify(() => cubit.confirmDriveAndHeighRange('drive-id')).called(1);
   });
 
-  testWidgets('a short balance says so and offers the way forward',
-      (tester) async {
-    await pumpDialog(
-      tester,
-      CreateSnapshotInsufficientBalance(walletBalance: '0.1', arCost: '0.5'),
-    );
-
-    expect(find.text('Not enough AR'), findsOneWidget);
-    expect(find.text('Your wallet has 0.1 AR. This snapshot costs 0.5 AR.'),
-        findsOneWidget);
-    expect(buttons(tester), ['Close', 'Buy credits']);
-    expect(find.textContaining('...'), findsNothing);
-  });
-
   testWidgets('a payment the Turbo account cannot make stays in the dialog',
       (tester) async {
     await pumpDialog(tester, SnapshotUploadFailure(isPaymentError: true));
@@ -224,5 +212,38 @@ void main() {
     await tester.pump();
 
     verify(() => bloc.add(any(that: isA<DriveSnapshotted>()))).called(1);
+  });
+
+  testWidgets('two fast presses of Create snapshot make one call',
+      (tester) async {
+    final gate = Completer<void>();
+    when(() => cubit.confirmSnapshotCreation()).thenAnswer((_) => gate.future);
+    await pumpDialog(tester, confirming());
+
+    final create = find.widgetWithText(ArDriveButtonNew, 'Create snapshot');
+    tester.widget<ArDriveButtonNew>(create).onPressed!();
+    tester.widget<ArDriveButtonNew>(create).onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.confirmSnapshotCreation()).called(1);
+    gate.complete();
+    await tester.pump();
+  });
+
+  testWidgets('two fast presses of Try again make one call', (tester) async {
+    final gate = Completer<void>();
+    when(() =>
+            cubit.confirmDriveAndHeighRange(any(), range: any(named: 'range')))
+        .thenAnswer((_) => gate.future);
+    await pumpDialog(tester, SnapshotUploadFailure());
+
+    final retry = find.widgetWithText(ArDriveButtonNew, 'Try again');
+    tester.widget<ArDriveButtonNew>(retry).onPressed!();
+    tester.widget<ArDriveButtonNew>(retry).onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.confirmDriveAndHeighRange('drive-id')).called(1);
+    gate.complete();
+    await tester.pump();
   });
 }
