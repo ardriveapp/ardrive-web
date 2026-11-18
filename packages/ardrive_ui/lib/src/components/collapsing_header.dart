@@ -171,6 +171,12 @@ class RenderSliverCollapsingHeader extends RenderSliver
 
   double _scrolled = 0;
 
+  /// How far the bar itself is in, 0 to 1. It starts only once the header's
+  /// anchor row has finished fading out ([_anchorGoneBy]), so the title and
+  /// buttons of the two are never drawn together.
+  double _barProgress = 0;
+  double get barProgress => _barProgress;
+
   /// How much of the bar's coming in the header's anchor row is gone by:
   /// it fades out in the first of it, so the title and the actions are never
   /// on screen twice.
@@ -186,7 +192,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
   /// so it is wholly off the top at rest.
   double get _barSlide => _barHeight;
 
-  Offset _barOffset() => Offset(0, -(1 - _progress) * _barSlide);
+  Offset _barOffset() => Offset(0, -(1 - _barProgress) * _barSlide);
 
   /// The anchor row's fade pushes a layer inside a clip: the clip has to be
   /// a layer too, or it is lost on the way.
@@ -230,13 +236,15 @@ class RenderSliverCollapsingHeader extends RenderSliver
       math.max(height - _barHeight, start + 1),
     );
     final progress = ((offset - start) / (end - start)).clamp(0.0, 1.0);
-    final wasInteractive = _progress >= _interactiveFrom;
+    final wasInteractive = _barProgress >= _interactiveFrom;
     _progress = progress;
-    if (wasInteractive != (_progress >= _interactiveFrom)) {
+    _barProgress =
+        ((progress - _anchorGoneBy) / (1 - _anchorGoneBy)).clamp(0.0, 1.0);
+    if (wasInteractive != (_barProgress >= _interactiveFrom)) {
       markNeedsSemanticsUpdate();
     }
     _publish(
-      interactive: _progress >= _interactiveFrom,
+      interactive: _barProgress >= _interactiveFrom,
       headerOnScreen: offset < height,
       anchorInteractive: _progress < _anchorGoneBy,
     );
@@ -306,7 +314,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
     }
     // Opaque all the way: a bar fading over the header's lines would show
     // them through it. It slides down over them instead.
-    if (_progress <= 0) return;
+    if (_barProgress <= 0) return;
     context.paintChild(_bar, offset + _barOffset());
   }
 
@@ -358,7 +366,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
     required double mainAxisPosition,
     required double crossAxisPosition,
   }) {
-    if (_progress >= _interactiveFrom) {
+    if (_barProgress >= _interactiveFrom) {
       final barTop = _barOffset().dy;
       if (mainAxisPosition >= barTop &&
           mainAxisPosition < barTop + _barHeight) {
@@ -373,7 +381,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
       }
     }
     // The header is under the bar while the bar is shown.
-    if (_progress < 1 || mainAxisPosition >= _barHeight) {
+    if (_barProgress < 1 || mainAxisPosition >= _barHeight) {
       return hitTestBoxChild(
         BoxHitTestResult.wrap(result),
         _header,
@@ -387,7 +395,7 @@ class RenderSliverCollapsingHeader extends RenderSliver
   @override
   void visitChildrenForSemantics(RenderObjectVisitor visitor) {
     if (_scrolled < _header.size.height) visitor(_header);
-    if (_progress >= _interactiveFrom) visitor(_bar);
+    if (_barProgress >= _interactiveFrom) visitor(_bar);
   }
 }
 
