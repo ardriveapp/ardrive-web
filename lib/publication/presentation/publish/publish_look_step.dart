@@ -566,9 +566,16 @@ class _ImageField extends StatelessWidget {
 /// publish dialog in place of the look, so no second dialog opens over it.
 /// Picking one returns to the look with the picture used.
 class ImageFromDriveChooser extends StatelessWidget {
-  const ImageFromDriveChooser({super.key, required this.slot});
+  const ImageFromDriveChooser({
+    super.key,
+    required this.slot,
+    @visibleForTesting this.loadImages,
+  });
 
   final PublicationImageSlot slot;
+
+  /// Stands in for the drive's images in a test.
+  final Future<List<FileEntry>> Function()? loadImages;
 
   Future<List<FileEntry>> _images(DriveDao driveDao, String driveId) async {
     final db = driveDao.attachedDatabase;
@@ -595,6 +602,8 @@ class ImageFromDriveChooser extends StatelessWidget {
   Future<void> _pick(BuildContext context, FileEntry file) async {
     final cubit = context.read<PublishCubit>();
     final repository = context.read<PublicationRepository>();
+    // A second press before the chooser has gone must not pick again.
+    if (cubit.state.choosingSlot == null) return;
     cubit.closeImageChooser();
     try {
       final bytes = await repository.readData(file.dataTxId);
@@ -613,7 +622,8 @@ class ImageFromDriveChooser extends StatelessWidget {
     return SizedBox(
       height: _chooserHeight,
       child: FutureBuilder<List<FileEntry>>(
-        future: _images(context.read<DriveDao>(), driveId),
+        future:
+            loadImages?.call() ?? _images(context.read<DriveDao>(), driveId),
         builder: (context, snapshot) {
           final files = snapshot.data;
           if (files == null) {

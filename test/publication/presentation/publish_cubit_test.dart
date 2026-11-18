@@ -467,11 +467,23 @@ void main() {
     expect(c.state.stage, PublishStage.look);
   });
 
-  test('the look of a folder has no step before it', () async {
+  test(
+      'the look of a folder is its first step: Back goes nowhere (the dialog '
+      'shows Cancel there)', () async {
     final c = cubit();
     await c.load();
     c.back();
     expect(c.state.stage, PublishStage.look);
+  });
+
+  test('a second Next while pricing does not price again', () async {
+    final c = cubit();
+    await c.load();
+    c.next();
+    final stage = c.state.stage;
+    c.next();
+    expect(stage, PublishStage.pricing);
+    expect(c.state.stage, PublishStage.pricing);
   });
 
   test('the dialog opens on the look, titled with the name', () async {

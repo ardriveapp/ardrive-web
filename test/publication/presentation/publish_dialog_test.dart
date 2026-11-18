@@ -2,6 +2,9 @@ import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
     show DriveStateSyncSkipStatus;
@@ -192,6 +195,12 @@ void main() {
       dateCreated: DateTime.utc(2026),
       lastUpdated: DateTime.utc(2026),
     ));
+    // The look stays mounted under the chooser.
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder);
+    final mark =
+        await tester.runAsync(() => recorder.endRecording().toImage(4, 4));
+    when(() => cubit.mark()).thenAnswer((_) async => mark!);
     when(() => cubit.state).thenReturn(const PublishState(
       stage: PublishStage.look,
       title: 'A',
@@ -619,6 +628,94 @@ void main() {
 
       expect(find.text('Saving a snapshot of the drive'), findsNothing);
       expect(find.text("Signing the page's files"), findsOneWidget);
+    });
+  });
+
+  group('the look', () {
+    Drive aDrive() => Drive(
+          id: 'drive',
+          rootFolderId: 'root',
+          ownerAddress: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
+          name: 'Drive',
+          privacy: 'public',
+          isHidden: false,
+          dateCreated: DateTime.utc(2026),
+          lastUpdated: DateTime.utc(2026),
+        );
+
+    Future<void> stubLook(WidgetTester tester) async {
+      when(() => cubit.drive).thenReturn(aDrive());
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder);
+      final mark =
+          await tester.runAsync(() => recorder.endRecording().toImage(4, 4));
+      when(() => cubit.mark()).thenAnswer((_) async => mark!);
+    }
+
+    testWidgets('the first step of a folder has Cancel, not a dead Back',
+        (tester) async {
+      await stubLook(tester);
+      await open(
+        tester,
+        const PublishState(stage: PublishStage.look, title: 'A'),
+      );
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Back'), findsNothing);
+    });
+
+    testWidgets('a file keeps Back on its look', (tester) async {
+      await stubLook(tester);
+      when(() => cubit.isFile).thenReturn(true);
+      await open(
+        tester,
+        const PublishState(stage: PublishStage.look, title: 'A'),
+      );
+      expect(find.text('Back'), findsOneWidget);
+    });
+
+    testWidgets('a keyword being typed survives choosing an image',
+        (tester) async {
+      await stubLook(tester);
+      const look = PublishState(stage: PublishStage.look, title: 'A');
+      const choosing = PublishState(
+        stage: PublishStage.look,
+        title: 'A',
+        choosingSlot: PublicationImageSlot.cover,
+      );
+      final states = StreamController<PublishState>.broadcast();
+      addTearDown(states.close);
+      whenListen(cubit, states.stream, initialState: look);
+      when(() => cubit.state).thenReturn(look);
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(app(RepositoryProvider<DriveDao>.value(
+        value: MockDriveDao(),
+        child: BlocProvider<PublishCubit>.value(
+          value: cubit,
+          child: const Material(
+            type: MaterialType.transparency,
+            child: SingleChildScrollView(child: PublishDialog()),
+          ),
+        ),
+      )));
+      await tester.pump();
+
+      await tester.tap(find.text('More options'));
+      await tester.pump();
+      await tester.enterText(find.byType(EditableText).last, 'draft');
+      await tester.pump();
+
+      when(() => cubit.state).thenReturn(choosing);
+      states.add(choosing);
+      await tester.pump();
+      expect(find.text('Choose an image'), findsOneWidget);
+
+      when(() => cubit.state).thenReturn(look);
+      states.add(look);
+      await tester.pump();
+
+      expect(find.text('Choose an image'), findsNothing);
+      expect(find.text('draft'), findsOneWidget);
     });
   });
 }

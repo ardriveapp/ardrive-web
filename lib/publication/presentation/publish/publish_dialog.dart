@@ -333,33 +333,48 @@ class PublishDialog extends StatelessWidget {
             );
           case PublishStage.look:
             // A picture from the drive is chosen in place of the look, and
-            // Back returns to it.
+            // Back returns to it. The look stays mounted under it, hidden,
+            // so a keyword being typed, the scroll and the opened options
+            // are still there on return.
             final choosing = state.choosingSlot;
-            if (choosing != null) {
-              return _modal(
-                context,
-                title: strings.publishChooseImageTitle,
-                content: ImageFromDriveChooser(slot: choosing),
-                actions: [
-                  ModalAction.dismiss(
-                      title: strings.back, action: cubit.closeImageChooser),
-                ],
-              );
-            }
             return _modal(
               context,
-              title: title,
+              title: choosing != null ? strings.publishChooseImageTitle : title,
               step: strings.publishStepOf(cubit.isFile ? 2 : 1, total),
               wide: true,
-              content: const PublishLookStep(),
-              actions: [
-                ModalAction.dismiss(title: strings.back, action: cubit.back),
-                ModalAction(
-                  title: strings.next,
-                  isEnable: state.titleIsValid,
-                  action: cubit.next,
-                ),
-              ],
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Offstage(
+                    offstage: choosing != null,
+                    child: ExcludeFocus(
+                      excluding: choosing != null,
+                      child: const PublishLookStep(),
+                    ),
+                  ),
+                  if (choosing != null) ImageFromDriveChooser(slot: choosing),
+                ],
+              ),
+              actions: choosing != null
+                  ? [
+                      ModalAction.dismiss(
+                          title: strings.back, action: cubit.closeImageChooser),
+                    ]
+                  : [
+                      // The first step of a drive or folder has nothing to go
+                      // back to.
+                      if (cubit.isFile)
+                        ModalAction.dismiss(
+                            title: strings.back, action: cubit.back)
+                      else
+                        ModalAction.close(title: strings.cancel, action: close),
+                      ModalAction(
+                        title: strings.next,
+                        isEnable: state.titleIsValid,
+                        action: cubit.next,
+                      ),
+                    ],
             );
           case PublishStage.review:
             final names = cubit.names;
