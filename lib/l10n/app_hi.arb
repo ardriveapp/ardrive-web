@@ -8114,5 +8114,14 @@
   "profileArioBalanceError": "ARIO बैलेंस प्राप्त करने में त्रुटि",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "गेटवे का उपयोग हो रहा है: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "licenseAddedTitle": "लाइसेंस जोड़ा गया",
+  "licenseAddedMessage": "{license} अब {count, plural, =1{1 फ़ाइल} other{{count} फ़ाइलों}} पर है।",
+  "noFileToLicenseTitle": "लाइसेंस के लिए कोई फ़ाइल नहीं",
+  "noFileToLicenseMessage": "कोई फ़ाइल, या फ़ाइलों वाला फ़ोल्डर चुनें।",
+  "licenseChooseTypeForCost": "लागत देखने के लिए लाइसेंस का प्रकार चुनें",
+  "licenseTypeLabel": "प्रकार",
+  "licenseFeeLabel": "लाइसेंस शुल्क",
+  "commercialUseLabel": "व्यावसायिक उपयोग",
+  "derivationsLabel": "व्युत्पन्न कार्य"
 }

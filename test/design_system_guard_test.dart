@@ -99,8 +99,6 @@ const _progressOverFormExceptions = {
       'Moves into the dialog in its area PR',
   'lib/components/folder_create_form.dart':
       'Moves into the dialog in its area PR',
-  'lib/components/fs_entry_license_form.dart':
-      'Moves into the dialog in its area PR',
   'lib/components/fs_entry_move_form.dart':
       'Moves into the dialog in its area PR',
   'lib/components/fs_entry_rename_form.dart':

@@ -118,20 +118,12 @@ class FsEntryLicenseBloc
   ) async {
     if (event is FsEntryLicenseInitial) {
       await _handleInitial(event, emit);
-    } else if (event is FsEntryLicenseSelect) {
-      await _handleSelect(event, emit);
-    } else if (event is FsEntryLicenseConfigurationSubmit) {
-      await _handleConfigurationSubmit(event, emit);
+    } else if (event is FsEntryLicenseSettingsChanged) {
+      await _handleSettingsChanged(emit);
     } else if (event is FsEntryLicenseReviewConfirm) {
       // Handled on its own; see the constructor.
-    } else if (event is FsEntryLicenseReviewBack) {
-      _handleReviewBack(event, emit);
-    } else if (event is FsEntryLicenseConfigurationBack) {
-      _handleConfigurationBack(event, emit);
     } else if (event is FsEntryLicenseSuccessClose) {
       _handleSuccessClose(event, emit);
-    } else if (event is FsEntryLicenseFailureTryAgain) {
-      await _readCost(emit);
     } else if (event is FsEntryLicenseCostRefresh) {
       await _readCost(emit);
     } else {
@@ -147,50 +139,61 @@ class FsEntryLicenseBloc
     if (filesToLicense!.isEmpty) {
       emit(const FsEntryLicenseNoFiles());
     } else {
-      emit(const FsEntryLicenseSelecting());
+      await _handleSettingsChanged(emit);
     }
   }
 
-  Future<void> _handleSelect(
-    FsEntryLicenseSelect event,
+  /// The license and its settings sit on one screen with the cost: each
+  /// change prices the write again.
+  Future<void> _handleSettingsChanged(
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    emit(const FsEntryLicenseConfiguring());
+    if (_writing) return;
+    // A new license is a new write. Whatever of an earlier one reached Turbo
+    // is saved already.
+    _write = null;
+    _cost = null;
+    if (!_applySettings()) {
+      emit(const FsEntryLicenseReviewing(incomplete: true));
+      return;
+    }
+    await _readCost(emit);
   }
 
-  Future<void> _handleConfigurationSubmit(
-    FsEntryLicenseConfigurationSubmit event,
-    Emitter<FsEntryLicenseState> emit,
-  ) async {
+  /// Takes the license from the settings on screen: false while they are not
+  /// complete. No Creative Commons type is preselected, since a license is
+  /// recorded with the files for good.
+  bool _applySettings() {
     switch (selectedLicenseCategory) {
       case LicenseCategory.udl:
+        if (!udlParamsForm.valid) return false;
         _selectedLicenseMeta = udlLicenseDefault;
         licenseParams = udlFormToLicenseParams(udlParamsForm);
-        break;
+        return true;
       case LicenseCategory.cc:
         final LicenseMeta? ccLicenseMeta =
             ccTypeForm.control('ccTypeField').value;
-        // No type is preselected, and Next stays disabled until one is
-        // picked. If this is reached anyway, stay on this step.
-        if (ccLicenseMeta == null) return;
+        if (ccLicenseMeta == null) return false;
         _selectedLicenseMeta = ccLicenseMeta;
         licenseParams = null;
-        break;
+        return true;
       default:
         addError('Unsupported license category: $selectedLicenseCategory');
+        return false;
     }
-
-    await _readCost(emit);
   }
 
   /// Shows the review, and reads what writing the license costs: the size of
   /// the items it writes, priced the way an upload is.
   ///
   /// After part of a write reached Turbo, it prices what is left of it.
-  Future<void> _readCost(Emitter<FsEntryLicenseState> emit) async {
+  Future<void> _readCost(
+    Emitter<FsEntryLicenseState> emit, {
+    bool failed = false,
+  }) async {
     if (_writing) return;
     _cost = null;
-    emit(const FsEntryLicenseReviewing());
+    emit(FsEntryLicenseReviewing(failed: failed));
     MetadataWriteCost cost;
     var pricingFailed = false;
     try {
@@ -213,6 +216,7 @@ class FsEntryLicenseBloc
     emit(FsEntryLicenseReviewing(
       summary: cost.summary,
       pricingFailed: pricingFailed,
+      failed: failed,
     ));
   }
 
@@ -228,7 +232,8 @@ class FsEntryLicenseBloc
     _writing = true;
     _cost = null;
 
-    emit(const FsEntryLicenseLoadInProgress());
+    // In the dialog: its primary busy, its Cancel held.
+    emit(FsEntryLicenseReviewing(summary: cost.summary, busy: true));
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
       await _licenseEntities(profile: profile, cost: cost);
@@ -244,28 +249,9 @@ class FsEntryLicenseBloc
         return;
       }
       addError('Error licensing entities', trace);
-      emit(const FsEntryLicenseFailure());
+      // Back on the review, which says so: Add license tries again.
+      await _readCost(emit, failed: true);
     }
-  }
-
-  void _handleReviewBack(
-    FsEntryLicenseReviewBack event,
-    Emitter<FsEntryLicenseState> emit,
-  ) {
-    // Every LicenseCategory has its own configure step
-    licenseParams = null;
-    _cost = null;
-    // A new license is a new write. Whatever of this one reached Turbo is
-    // saved already.
-    _write = null;
-    emit(const FsEntryLicenseConfiguring());
-  }
-
-  void _handleConfigurationBack(
-    FsEntryLicenseConfigurationBack event,
-    Emitter<FsEntryLicenseState> emit,
-  ) {
-    emit(const FsEntryLicenseSelecting());
   }
 
   void _handleSuccessClose(

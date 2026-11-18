@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/turbo_credits_funding.dart';
@@ -5,7 +7,6 @@ import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
-import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
@@ -17,6 +18,8 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -72,31 +75,52 @@ class FsEntryLicenseForm extends StatefulWidget {
   State<FsEntryLicenseForm> createState() => _FsEntryLicenseFormState();
 }
 
+/// Add license, on one screen: the files, the license and its own settings,
+/// and what writing it costs. It was four: pick a category, configure it,
+/// review it, then a progress dialog on top.
 class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
-  /// The progress dialog is up over the form.
-  var _progressShown = false;
+  final _subscriptions = <StreamSubscription<Object?>>[];
+  Timer? _settle;
+
+  @override
+  void initState() {
+    super.initState();
+    final bloc = context.read<FsEntryLicenseBloc>();
+    // A change to the license or its settings prices the write again, once
+    // typing in the fee settles.
+    void changed(Object? _) {
+      _settle?.cancel();
+      _settle = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) bloc.add(const FsEntryLicenseSettingsChanged());
+      });
+      if (mounted) setState(() {});
+    }
+
+    for (final form in [
+      bloc.categoryForm,
+      bloc.udlParamsForm,
+      bloc.ccTypeForm
+    ]) {
+      _subscriptions.add(form.valueChanges.listen(changed));
+    }
+  }
+
+  @override
+  void dispose() {
+    _settle?.cancel();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<FsEntryLicenseBloc, FsEntryLicenseState>(
       listener: (context, state) {
-        if (state is FsEntryLicenseLoadInProgress) {
-          _progressShown = true;
-          showProgressDialog(
-            context,
-            title: appLocalizationsOf(context).addingLicense,
-          );
-          return;
-        }
-        if (_progressShown) {
-          // Done, failed, or refused as not paid for and back on the review.
-          _progressShown = false;
+        if (state is FsEntryLicenseSuccess) {
           context.read<DriveDetailCubit>().refreshDriveDataTable();
-          Navigator.pop(context);
-        }
-        if (state is FsEntryLicenseComplete) {
-          // close LicenseForm
-
+        } else if (state is FsEntryLicenseComplete) {
           context.read<DriveDetailCubit>().refreshDriveDataTable();
           Navigator.pop(context);
         } else if (state is FsEntryLicenseWalletMismatch) {
@@ -104,223 +128,128 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
         }
       },
       builder: (context, state) {
-        return Builder(builder: (context) {
-          final licenseMeta =
-              context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
-          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-          final divider = Divider(color: colorTokens.strokeLow, height: 32);
+        final l10n = appLocalizationsOf(context);
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+        final bloc = context.read<FsEntryLicenseBloc>();
 
-          if (state is FsEntryLicenseNoFiles) {
-            return _LicenseResult(
-              icon: ArDriveIcons.closeCircle(
-                size: 24,
-                color: colorTokens.statusErrorFg,
+        if (state is FsEntryLicenseNoFiles) {
+          return _LicenseResult(
+            icon: ArDriveIcons.closeCircle(
+              size: 24,
+              color: colorTokens.statusErrorFg,
+            ),
+            title: l10n.noFileToLicenseTitle,
+            message: l10n.noFileToLicenseMessage,
+            actions: [
+              ModalAction.close(
+                action: () => Navigator.of(context).pop(),
+                title: l10n.close,
               ),
-              // TODO: Localize
-              title: 'No valid file to license.',
-              // TODO: Localize
-              message: 'Please try again with another file.',
-              actions: [
-                ModalAction.dismiss(
-                  action: () => Navigator.of(context).pop(),
-                  title: appLocalizationsOf(context).close,
-                ),
-              ],
-            );
-          } else if (state is FsEntryLicenseSelecting) {
-            final filesToLicense =
-                context.read<FsEntryLicenseBloc>().filesToLicense;
-            return ArDriveStandardModalNew(
-              title:
-                  "Add license to ${filesToLicense!.length} file${filesToLicense.length > 1 ? 's' : ''}",
-              width: kMediumDialogWidth,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  LicenseFileList(fileList: filesToLicense),
-                  divider,
-                  ReactiveForm(
-                    formGroup: context.watch<FsEntryLicenseBloc>().categoryForm,
-                    child: ReactiveArDriveSelectField<LicenseCategory>(
-                      formControlName: 'licenseCategory',
-                      // TODO: Localize
-                      // appLocalizationsOf(context).licenseType,
-                      label: 'License',
-                      showErrors: (control) => control.dirty && control.invalid,
-                      validationMessages:
-                          kValidationMessages(appLocalizationsOf(context)),
-                      choices: [
-                        for (final value in LicenseCategory.values)
-                          ArDriveChoice(
-                            value: value,
-                            label: '${licenseCategoryNames[value]}',
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+            ],
+          );
+        } else if (state is FsEntryLicenseReviewing) {
+          return _review(context, state);
+        } else if (state is FsEntryLicenseSuccess) {
+          return _LicenseResult(
+            icon: ArDriveIcons.checkCirle(
+              size: 24,
+              color: colorTokens.statusSuccessFg,
+            ),
+            title: l10n.licenseAddedTitle,
+            message: l10n.licenseAddedMessage(
+              bloc.selectedLicenseMeta.shortName,
+              bloc.filesToLicense?.length ?? 0,
+            ),
+            actions: [
+              ModalAction.close(
+                action: () => Navigator.of(context).pop(),
+                title: l10n.close,
               ),
-              actions: [
-                ModalAction(
-                  action: () => Navigator.of(context).pop(),
-                  title: appLocalizationsOf(context).cancelEmphasized,
-                ),
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseSelect()),
-                  title: appLocalizationsOf(context).nextEmphasized,
-                ),
-              ],
-            );
-          } else if (state is FsEntryLicenseConfiguring) {
-            final licenseCategory =
-                context.read<FsEntryLicenseBloc>().selectedLicenseCategory;
-            final modalTitle = licenseCategory == LicenseCategory.udl
-                ? 'Configure Universal Data License'
-                : licenseCategory == LicenseCategory.cc
-                    ? 'Configure Creative Commons license'
-                    : 'Unsupported license type';
-            final licenseBloc = context.watch<FsEntryLicenseBloc>();
-            final FormGroup activeForm = licenseCategory == LicenseCategory.cc
-                ? licenseBloc.ccTypeForm
-                : licenseBloc.udlParamsForm;
-            // Rebuilt as the form on screen changes, so Next follows it.
-            return ReactiveForm(
-              formGroup: activeForm,
-              child: ReactiveFormConsumer(
-                builder: (context, _, __) => ArDriveStandardModalNew(
-                  title: modalTitle,
-                  width: kLargeDialogWidth,
-                  // The UDL form is long: it scrolls under the title and the
-                  // actions stay in view.
-                  scrollableContent: true,
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LicenseFileList(
-                          fileList: context
-                              .read<FsEntryLicenseBloc>()
-                              .filesToLicense!),
-                      divider,
-                      licenseCategory == LicenseCategory.udl
-                          ? UdlParamsForm(
-                              onChangeLicenseFee: () {
-                                setState(() {});
-                              },
-                              formGroup: context
-                                  .watch<FsEntryLicenseBloc>()
-                                  .udlParamsForm,
-                            )
-                          : licenseCategory == LicenseCategory.cc
-                              ? CcTypeForm(
-                                  formGroup: context
-                                      .watch<FsEntryLicenseBloc>()
-                                      .ccTypeForm,
-                                )
-                              : const Text('Unsupported license type'),
-                    ],
-                  ),
-                  actions: [
-                    ModalAction(
-                      action: () => context
-                          .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseConfigurationBack()),
-                      title: appLocalizationsOf(context).backEmphasized,
-                    ),
-                    ModalAction(
-                      // The form on screen, not always the UDL one: with no
-                      // Creative Commons type preselected, gating on the UDL
-                      // form let a CC license go on with none chosen.
-                      isEnable: activeForm.valid,
-                      action: () => context
-                          .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseConfigurationSubmit()),
-                      title: appLocalizationsOf(context).nextEmphasized,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          } else if (state is FsEntryLicenseReviewing) {
-            final bloc = context.read<FsEntryLicenseBloc>();
-            final files = bloc.filesToLicense!;
-            final l10n = appLocalizationsOf(context);
-            // The upload review, with the license in place of the files:
-            // the same cost, the same notices, the same Add credits.
-            return UploadReviewDialog(
-              title: l10n.licenseReviewTitle,
-              destination: l10n.licenseReviewFiles(files.length),
-              files: const [],
-              leading: [
-                LicenseFileList(fileList: files),
-                divider,
-                LicenseSummary(
-                  licenseState: LicenseState(
-                    meta: licenseMeta,
-                    params: bloc.licenseParams,
-                  ),
-                ),
-              ],
-              summary: state.summary,
-              primaryLabel: l10n.confirm,
-              subject: ReviewCostSubject.change,
-              priceUnavailableMessage:
-                  state.pricingFailed ? l10n.priceUnavailableTryAgain : null,
-              onUpload: (_) => bloc.add(const FsEntryLicenseReviewConfirm()),
-              onBack: () => bloc.add(const FsEntryLicenseReviewBack()),
-              onCancel: () => Navigator.of(context).pop(),
-              funding: TurboCreditsFunding(
-                context,
-                onRefresh: () => bloc.add(const FsEntryLicenseCostRefresh()),
-              ),
-            );
-          } else if (state is FsEntryLicenseSuccess) {
-            return _LicenseResult(
-              icon: ArDriveIcons.checkCirle(
-                size: 24,
-                color: colorTokens.statusSuccessFg,
-              ),
-              // TODO: Localize
-              title: 'You little licenser, you.',
-              // TODO: Localize
-              message:
-                  'Your files have successfully been licensed. You can go ahead and do your thing now.',
-              actions: [
-                ModalAction.dismiss(
-                  action: () => Navigator.of(context).pop(),
-                  title: appLocalizationsOf(context).close,
-                ),
-              ],
-            );
-          } else if (state is FsEntryLicenseFailure) {
-            return _LicenseResult(
-              icon: ArDriveIcons.closeCircle(
-                size: 24,
-                color: colorTokens.statusErrorFg,
-              ),
-              title: appLocalizationsOf(context).licenseFailedTitle,
-              message: appLocalizationsOf(context).licenseFailedMessage,
-              actions: [
-                ModalAction.dismiss(
-                  action: () => Navigator.of(context).pop(),
-                  title: appLocalizationsOf(context).close,
-                ),
-                ModalAction(
-                  action: () => context
-                      .read<FsEntryLicenseBloc>()
-                      .add(const FsEntryLicenseFailureTryAgain()),
-                  title: appLocalizationsOf(context).tryAgain,
-                ),
-              ],
-            );
-          } else {
-            return const SizedBox();
-          }
-        });
+            ],
+          );
+        } else if (state is FsEntryLicenseLoadInProgress) {
+          // Finding the files to license: the dialog itself waits.
+          return ProgressDialog(title: l10n.addLicense);
+        } else {
+          return const SizedBox();
+        }
       },
+    );
+  }
+
+  Widget _review(BuildContext context, FsEntryLicenseReviewing state) {
+    final l10n = appLocalizationsOf(context);
+    final bloc = context.read<FsEntryLicenseBloc>();
+    final files = bloc.filesToLicense ?? const <FileEntry>[];
+    final category = bloc.selectedLicenseCategory;
+
+    final settings = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ReactiveForm(
+          formGroup: bloc.categoryForm,
+          child: ReactiveArDriveSelectField<LicenseCategory>(
+            formControlName: 'licenseCategory',
+            label: l10n.licenseHeading,
+            showErrors: (control) => control.dirty && control.invalid,
+            validationMessages: kValidationMessages(l10n),
+            choices: [
+              for (final value in LicenseCategory.values)
+                ArDriveChoice(
+                  value: value,
+                  label: '${licenseCategoryNames[value]}',
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ArDriveSpacing.md),
+        // The chosen license's own settings, where its choice is.
+        if (category == LicenseCategory.udl)
+          UdlParamsForm(
+            formGroup: bloc.udlParamsForm,
+            onChangeLicenseFee: () {},
+          )
+        else if (category == LicenseCategory.cc)
+          CcTypeForm(formGroup: bloc.ccTypeForm),
+      ],
+    );
+
+    return UploadReviewDialog(
+      title: l10n.addLicense,
+      destination: l10n.licenseReviewFiles(files.length),
+      files: const [],
+      leading: [
+        LicenseFileList(fileList: files),
+        const SizedBox(height: ArDriveSpacing.lg),
+        // Read-only while the license is written.
+        IgnorePointer(ignoring: state.busy, child: settings),
+      ],
+      extras: [
+        if (state.failed)
+          SizedBox(
+            width: double.infinity,
+            child: ArDriveNotice(
+              type: ArDriveNoticeType.error,
+              title: l10n.licenseFailedTitle,
+              message: l10n.licenseFailedMessage,
+            ),
+          ),
+      ],
+      summary: state.summary,
+      costPendingReason:
+          state.incomplete ? l10n.licenseChooseTypeForCost : null,
+      primaryLabel: l10n.addLicense,
+      primaryBusy: state.busy,
+      subject: ReviewCostSubject.change,
+      priceUnavailableMessage:
+          state.pricingFailed ? l10n.priceUnavailableTryAgain : null,
+      onUpload: (_) => bloc.add(const FsEntryLicenseReviewConfirm()),
+      onCancel: () => Navigator.of(context).pop(),
+      funding: TurboCreditsFunding(
+        context,
+        onRefresh: () => bloc.add(const FsEntryLicenseCostRefresh()),
+      ),
     );
   }
 }
@@ -376,29 +305,55 @@ class LicenseFileList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxHeight: 100,
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    // The files the license goes on, in a card like an upload's, readable:
+    // they were drawn in the disabled colour, the faintest text on screen.
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 44 * 4.5),
+      decoration: BoxDecoration(
+        color: colorTokens.containerRaised,
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
       ),
-      child: ListView.builder(
+      child: ListView.separated(
         shrinkWrap: true,
         padding: EdgeInsets.zero,
         itemCount: fileList.length,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 4,
-          ),
-          child: Text(
-            fileList[index].name,
-            style: ArDriveTypographyNew.of(context).paragraphLarge(
-              color: _colorDisabled(context),
+        separatorBuilder: (_, __) => Divider(
+          height: 1,
+          thickness: 1,
+          indent: ArDriveSpacing.sm,
+          endIndent: ArDriveSpacing.sm,
+          color: colorTokens.strokeLow,
+        ),
+        itemBuilder: (context, index) => SizedBox(
+          height: 44,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: ArDriveSpacing.sm),
+            child: Row(
+              children: [
+                getIconForContentType(
+                  fileList[index].dataContentType ?? '',
+                  size: 18,
+                  color: colorTokens.iconMid,
+                ),
+                const SizedBox(width: ArDriveSpacing.sm),
+                Expanded(
+                  child: Text(
+                    fileList[index].name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-
-  Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colorTokens.textXLow;
 }

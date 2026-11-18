@@ -1,6 +1,8 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -10,6 +12,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import '../test_utils/mocks.dart';
 
@@ -17,20 +20,34 @@ class _MockLicenseBloc
     extends MockBloc<FsEntryLicenseEvent, FsEntryLicenseState>
     implements FsEntryLicenseBloc {}
 
-/// The ends of the licensing flow. They were hand-made cards with a close
-/// cross and an inverted button; now they are standard dialogs.
+/// Add license, on one screen: the files, the license and its settings,
+/// and the cost. It was four screens with a progress dialog on top.
 void main() {
   late _MockLicenseBloc bloc;
 
-  setUpAll(() => registerFallbackValue(const FsEntryLicenseFailureTryAgain()));
+  setUpAll(() => registerFallbackValue(const FsEntryLicenseCostRefresh()));
 
   setUp(() {
     bloc = _MockLicenseBloc();
     when(() => bloc.selectedLicenseMeta).thenReturn(udlLicenseMeta);
+    when(() => bloc.selectedLicenseCategory).thenReturn(LicenseCategory.udl);
+    when(() => bloc.categoryForm).thenReturn(FormGroup({
+      'licenseCategory': FormControl<LicenseCategory>(
+        validators: [Validators.required],
+        value: LicenseCategory.udl,
+      ),
+    }));
+    when(() => bloc.udlParamsForm).thenReturn(createUdlParamsForm());
+    when(() => bloc.ccTypeForm).thenReturn(createCcTypeForm());
+    when(() => bloc.filesToLicense).thenReturn([]);
+    when(() => bloc.licenseParams).thenReturn(null);
   });
 
   Future<void> pump(WidgetTester tester, FsEntryLicenseState state) async {
     when(() => bloc.state).thenReturn(state);
+    // One screen now holds the license's settings too: room for all of it.
+    await tester.binding.setSurfaceSize(const Size(1200, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       ArDriveTheme(
         themeData: lightTheme(),
@@ -66,7 +83,7 @@ void main() {
     await pump(tester, const FsEntryLicenseNoFiles());
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
-    expect(find.text('No valid file to license.'), findsOneWidget);
+    expect(find.text('No file to license'), findsOneWidget);
     expect(actions(tester), [('Close', ButtonVariant.secondary)]);
   });
 
@@ -74,29 +91,12 @@ void main() {
     await pump(tester, const FsEntryLicenseSuccess());
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
-    expect(find.text('You little licenser, you.'), findsOneWidget);
+    expect(find.text('License added'), findsOneWidget);
+    expect(find.text('UDL is now on 0 files.'), findsOneWidget);
     expect(actions(tester), [('Close', ButtonVariant.secondary)]);
   });
 
-  testWidgets('a failure offers to try again as the main action',
-      (tester) async {
-    await pump(tester, const FsEntryLicenseFailure());
-
-    expect(actions(tester), [
-      ('Close', ButtonVariant.secondary),
-      ('Try again', ButtonVariant.primary),
-    ]);
-
-    await tester.tap(find.text('Try again'));
-    verify(() => bloc.add(const FsEntryLicenseFailureTryAgain())).called(1);
-  });
-
   group('the review states the cost of the license', () {
-    setUp(() {
-      when(() => bloc.filesToLicense).thenReturn([]);
-      when(() => bloc.licenseParams).thenReturn(null);
-    });
-
     UploadReviewSummary summary({
       bool isFree = false,
       bool isCovered = false,
@@ -124,7 +124,7 @@ void main() {
       expect(find.textContaining('0 AR'), findsNothing);
       expect(find.textContaining('Free for now'), findsNothing);
       final confirm = tester.widget<ArDriveButtonNew>(
-          find.widgetWithText(ArDriveButtonNew, 'Confirm'));
+          find.widgetWithText(ArDriveButtonNew, 'Add license'));
       expect(confirm.isDisabled, isTrue);
     });
 
@@ -137,9 +137,9 @@ void main() {
       expect(find.text('Free'), findsOneWidget);
       expect(
           find.text('Covered by your free upload allowance'), findsOneWidget);
-      expect(actions(tester).last, ('Confirm', ButtonVariant.primary));
+      expect(actions(tester).last, ('Add license', ButtonVariant.primary));
 
-      await tester.tap(find.text('Confirm'));
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Add license'));
       verify(() => bloc.add(const FsEntryLicenseReviewConfirm())).called(1);
     });
 
@@ -150,7 +150,7 @@ void main() {
 
       expect(find.textContaining('< \$0.01'), findsOneWidget);
       expect(find.text('Paid with Turbo Credits'), findsOneWidget);
-      expect(actions(tester).last, ('Confirm', ButtonVariant.primary));
+      expect(actions(tester).last, ('Add license', ButtonVariant.primary));
     });
 
     testWidgets('not covered: says so, and offers Add credits, not Confirm',
@@ -163,7 +163,8 @@ void main() {
           findsOneWidget);
       expect(
           find.textContaining('Add Turbo Credits to save it.'), findsOneWidget);
-      expect(find.text('Confirm'), findsNothing);
+      expect(
+          find.widgetWithText(ArDriveButtonNew, 'Add license'), findsNothing);
       expect(actions(tester).last, ('Add credits', ButtonVariant.primary));
 
       await tester.tap(find.text('Add credits'));
@@ -180,8 +181,11 @@ void main() {
           find.text(
               "Couldn't get a price. Check your connection and try again."),
           findsOneWidget);
-      expect(find.text('Confirm'), findsNothing);
+      expect(
+          find.widgetWithText(ArDriveButtonNew, 'Add license'), findsNothing);
 
+      await tester.ensureVisible(find.text('Try again'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Try again'));
       verify(() => bloc.add(const FsEntryLicenseCostRefresh())).called(1);
     });
@@ -197,7 +201,8 @@ void main() {
 
       expect(find.text("Couldn't get a price. Try again."), findsOneWidget);
       expect(find.textContaining('connection'), findsNothing);
-      expect(find.text('Confirm'), findsNothing);
+      expect(
+          find.widgetWithText(ArDriveButtonNew, 'Add license'), findsNothing);
     });
 
     testWidgets('paid from a wallet that is short: says so', (tester) async {
@@ -223,18 +228,67 @@ void main() {
       expect(find.text("Your wallet doesn't have enough AR for this change."),
           findsOneWidget);
       final confirm = tester.widget<ArDriveButtonNew>(
-          find.widgetWithText(ArDriveButtonNew, 'Confirm'));
+          find.widgetWithText(ArDriveButtonNew, 'Add license'));
       expect(confirm.isDisabled, isTrue);
     });
 
-    testWidgets('Back goes to the step before', (tester) async {
+    testWidgets(
+        'one screen: the license and its settings, the cost, Cancel and '
+        'Add license', (tester) async {
       await pump(
           tester,
           FsEntryLicenseReviewing(
               summary: summary(isFree: true, isCovered: true)));
 
-      await tester.tap(find.text('Back'));
-      verify(() => bloc.add(const FsEntryLicenseReviewBack())).called(1);
+      expect(find.text('License'), findsOneWidget);
+      expect(find.text('License fee'), findsOneWidget);
+      expect(find.text('Commercial use'), findsOneWidget);
+      expect(find.text('Next'), findsNothing);
+      expect(find.text('Back'), findsNothing);
+      expect(actions(tester), [
+        ('Cancel', ButtonVariant.secondary),
+        ('Add license', ButtonVariant.primary),
+      ]);
+    });
+
+    testWidgets('a Creative Commons license with no type: no cost, no Add',
+        (tester) async {
+      when(() => bloc.selectedLicenseCategory).thenReturn(LicenseCategory.cc);
+      await pump(tester, const FsEntryLicenseReviewing(incomplete: true));
+
+      expect(
+          find.text('Choose a license type to see the cost'), findsOneWidget);
+      expect(find.byType(ArDriveSpinner), findsNothing);
+      final add = tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Add license'));
+      expect(add.isDisabled, isTrue);
+    });
+
+    testWidgets('while it writes: Add license busy, Cancel held, in place',
+        (tester) async {
+      await pump(
+          tester,
+          FsEntryLicenseReviewing(
+              summary: summary(isFree: true, isCovered: true), busy: true));
+
+      expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
+      final cancel = tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+      expect(cancel.isDisabled, isTrue);
+      expect(find.byType(ArDriveSpinner), findsOneWidget);
+    });
+
+    testWidgets('a failure says so in the dialog, and Add license tries again',
+        (tester) async {
+      await pump(
+          tester,
+          FsEntryLicenseReviewing(
+              summary: summary(isFree: true, isCovered: true), failed: true));
+
+      expect(find.text("Couldn't add the license"), findsOneWidget);
+      expect(find.byType(ArDriveNotice), findsOneWidget);
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Add license'));
+      verify(() => bloc.add(const FsEntryLicenseReviewConfirm())).called(1);
     });
   });
 }

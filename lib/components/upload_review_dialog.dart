@@ -94,6 +94,8 @@ class UploadReviewDialog extends StatefulWidget {
     required this.onCancel,
     required this.funding,
     this.primaryEnabled = true,
+    this.primaryBusy = false,
+    this.costPendingReason,
     this.paymentChoice,
     this.sourceWalletNotice,
     this.canShareInApp = false,
@@ -123,6 +125,15 @@ class UploadReviewDialog extends StatefulWidget {
 
   /// Other things that hold Upload back, such as a name being priced.
   final bool primaryEnabled;
+
+  /// The work it started is running: the primary shows a spinner, and
+  /// Cancel, Back and the close button wait (the design system: a dialog's
+  /// work stays in it).
+  final bool primaryBusy;
+
+  /// In place of the cost when there is nothing to price yet, such as a
+  /// license with no type picked: says what is needed, with no spinner.
+  final String? costPendingReason;
 
   /// Starts the upload, paid the way the summary says. The method is passed
   /// on so the upload uses exactly what the review showed.
@@ -299,11 +310,20 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
     final summary = _adding ? null : widget.summary;
     final shareFirst = summary != null && _shareFirst(summary);
 
+    final busy = widget.primaryBusy;
     final List<ModalAction> actions = [
-      ModalAction.dismiss(
-        action: widget.onBack ?? widget.onCancel,
-        title: widget.onBack != null ? l10n.back : l10n.cancel,
-      ),
+      if (widget.onBack != null)
+        ModalAction.dismiss(
+          action: widget.onBack!,
+          title: l10n.back,
+          isEnable: !busy,
+        )
+      else
+        ModalAction.close(
+          action: widget.onCancel,
+          title: l10n.cancel,
+          isEnable: !busy,
+        ),
       if (summary == null)
         ModalAction(
           action: () {},
@@ -323,14 +343,17 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
           action: () => widget.onUpload(summary.method),
           title: widget.primaryLabel,
           isEnable: summary.isCovered && widget.primaryEnabled,
+          isLoading: busy,
         ),
     ];
 
     return ArDriveStandardModalNew(
       width: dialogWidth,
       scrollableContent: true,
-      hasCloseButton: true,
-      close: widget.onCancel,
+      // With Back, the X still cancels; with Cancel, it is Cancel's. Either
+      // way it waits while the work runs.
+      hasCloseButton: widget.onBack == null || !busy,
+      close: widget.onBack != null ? widget.onCancel : null,
       closeLabel: l10n.cancel,
       titleWidget: _Heading(
         title: widget.title,
@@ -350,6 +373,8 @@ class _UploadReviewDialogState extends State<UploadReviewDialog> {
               actionLabel: _slow ? l10n.checkAgain : null,
               onAction: _checkAgain,
             )
+          else if (summary == null && widget.costPendingReason != null)
+            _CostPending(reason: widget.costPendingReason!)
           else if (summary == null)
             const _Waiting()
           else ...[
@@ -640,6 +665,30 @@ class _Heading extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// In place of the cost, on the same rule, when there is nothing to price.
+class _CostPending extends StatelessWidget {
+  const _CostPending({required this.reason});
+
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: ArDriveSpacing.md),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colorTokens.strokeLow)),
+      ),
+      child: Text(
+        reason,
+        style: typography.paragraphNormal(color: colorTokens.textMid),
+      ),
     );
   }
 }

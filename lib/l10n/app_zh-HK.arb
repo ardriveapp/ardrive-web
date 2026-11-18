@@ -8114,5 +8114,14 @@
   "profileArioBalanceError": "取得 ARIO 結餘時出錯",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "正在使用閘道：{url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "licenseAddedTitle": "已加入授權",
+  "licenseAddedMessage": "{license} 已加入 {count, plural, =1{1 個檔案} other{{count} 個檔案}}。",
+  "noFileToLicenseTitle": "沒有可加入授權的檔案",
+  "noFileToLicenseMessage": "請選擇檔案，或包含檔案的資料夾。",
+  "licenseChooseTypeForCost": "選擇授權類型以查看費用",
+  "licenseTypeLabel": "類型",
+  "licenseFeeLabel": "授權費",
+  "commercialUseLabel": "商業用途",
+  "derivationsLabel": "衍生作品"
 }

@@ -8114,5 +8114,14 @@
   "profileArioBalanceError": "Error al obtener el saldo de ARIO",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Usando la pasarela: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "licenseAddedTitle": "Licencia añadida",
+  "licenseAddedMessage": "{license} ya está en {count, plural, =1{1 archivo} other{{count} archivos}}.",
+  "noFileToLicenseTitle": "No hay archivos para licenciar",
+  "noFileToLicenseMessage": "Elige un archivo o una carpeta que tenga archivos.",
+  "licenseChooseTypeForCost": "Elige un tipo de licencia para ver el costo",
+  "licenseTypeLabel": "Tipo",
+  "licenseFeeLabel": "Tarifa de licencia",
+  "commercialUseLabel": "Uso comercial",
+  "derivationsLabel": "Obras derivadas"
 }
