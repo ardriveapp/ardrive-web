@@ -87,6 +87,41 @@ part 'components/fs_entry_preview_widget.dart';
 /// the table does.
 const double explorerHeadingGap = ArDriveSpacing.xl;
 
+/// The explorer's own header card for [drive]'s root, while the root is being
+/// waited for: the card, the crumb and the height the loaded root has, and no
+/// other crumb. A drive's root has an empty trail below the drive, so this
+/// draws the drive's name once, as the loaded header does.
+class ExplorerWaitingHeader extends StatelessWidget {
+  const ExplorerWaitingHeader({super.key, required this.drive});
+
+  final Drive drive;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: ArDriveCard(
+        backgroundColor:
+            ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        content: ConstrainedBox(
+          constraints:
+              const BoxConstraints(minHeight: _explorerHeaderContentHeight),
+          child: Row(
+            children: [
+              DriveDetailBreadcrumbRow(
+                rootFolderId: drive.rootFolderId,
+                path: const [],
+                driveName: drive.name,
+                isPrivate: drive.isPrivate,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The height of the explorer's header card's content: its tallest part, the
 /// menu's icon. The wait's header keeps it, so the card does not change size
 /// when the folder arrives.
@@ -274,12 +309,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     child: MobileFolderNavigation(
                                       driveName: waiting.name,
                                       isPrivate: waiting.isPrivate,
-                                      path: [
-                                        BreadCrumbRowInfo(
-                                          text: waiting.name,
-                                          targetId: waiting.rootFolderId,
-                                        ),
-                                      ],
+                                      // A drive's root has no trail below
+                                      // the drive, as when it is loaded.
+                                      path: const [],
                                       isShowingHiddenFiles: false,
                                     ),
                                   ),
@@ -306,7 +338,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 child: Column(
                                   children: [
                                     if (waiting != null) ...[
-                                      _waitingHeader(waiting),
+                                      ExplorerWaitingHeader(drive: waiting),
                                       const SizedBox(
                                           height: explorerHeadingGap),
                                     ],
@@ -669,38 +701,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       return atRoot ? drive : null;
     }
     return null;
-  }
-
-  /// The explorer's own header card for [drive]'s root, while the folder is
-  /// being waited for: the same card, the same crumb, the same height, so the
-  /// table lands under it without anything moving.
-  Widget _waitingHeader(Drive drive) {
-    return IgnorePointer(
-      child: ArDriveCard(
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        content: ConstrainedBox(
-          constraints:
-              const BoxConstraints(minHeight: _explorerHeaderContentHeight),
-          child: Row(
-            children: [
-              DriveDetailBreadcrumbRow(
-                rootFolderId: drive.rootFolderId,
-                path: [
-                  BreadCrumbRowInfo(
-                    text: drive.name,
-                    targetId: drive.rootFolderId,
-                  ),
-                ],
-                driveName: drive.name,
-                isPrivate: drive.isPrivate,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   /// Whether [state] is at a publication's root, where [PublicationHeader] takes the
