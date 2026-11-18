@@ -3,6 +3,7 @@ import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,6 +69,40 @@ void main() {
       expect(copy.variant, ButtonVariant.primary);
       expect(find.text('Close'), findsOneWidget);
     });
+  });
+
+  testWidgets('a refused copy says so, and Copy logs can be pressed again',
+      (tester) async {
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        throw PlatformException(code: 'denied');
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    await tester.pumpWidget(app((context) => TextButton(
+          onPressed: () => showErrorDialog(
+            context: context,
+            message: 'Something went wrong.',
+            showShareLogsButton: true,
+          ),
+          child: const Text('open'),
+        )));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Copy logs'));
+      await Future.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pump();
+
+    expect(find.text("Couldn't copy"), findsOneWidget);
+    final copy = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, "Couldn't copy"));
+    expect(copy.isDisabled, isFalse);
   });
 
   testWidgets('the wait is the design system spinner, not an animation file',
