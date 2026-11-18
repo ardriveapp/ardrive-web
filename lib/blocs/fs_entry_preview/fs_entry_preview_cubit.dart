@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart'
@@ -33,6 +34,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final ArweaveService _arweave;
   final ProfileCubit _profileCubit;
   final ArDriveCrypto _crypto;
+  final FileKeys _fileKeys;
 
   /// What the data transaction is encrypted with, when the caller already
   /// knows.
@@ -371,6 +373,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
     required ArDriveCrypto crypto,
+    required FileKeys fileKeys,
     SecretKey? fileKey,
     bool isSharedFile = false,
     PreviewObjectUrls? objectUrls,
@@ -382,6 +385,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         _profileCubit = profileCubit,
         _arweave = arweave,
         _crypto = crypto,
+        _fileKeys = fileKeys,
         _fileKey = fileKey,
         _cipher = cipher,
         _cipherIv = cipherIv,
@@ -1160,23 +1164,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     final profile = _profileCubit.state;
-    late DriveKey? driveKey;
-
-    if (profile is ProfileLoggedIn) {
-      driveKey = await _driveDao.getDriveKey(
-        driveId,
-        profile.user.cipherKey,
-      );
-    } else {
-      driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
-    }
-
-    if (driveKey == null) {
-      return null;
-    }
-
-    final fileKey = await _driveDao.getFileKey(fileId, driveKey.key);
-    return fileKey;
+    return _fileKeys.keyFor(
+      driveId: driveId,
+      fileId: fileId,
+      cipherKey: profile is ProfileLoggedIn ? profile.user.cipherKey : null,
+    );
   }
 
   Future<void> _previewAudio(

@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -36,6 +37,7 @@ Future<void> promptToDownloadProfileFile({
       profileState is ProfileLoggedIn ? profileState.user.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
     crypto: ArDriveCrypto(),
+    fileKeys: context.read<FileKeys>(),
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
@@ -47,7 +49,6 @@ Future<void> promptToDownloadProfileFile({
     ),
     downloader: ArDriveMobileDownloader(),
     file: arfsFile,
-    driveDao: context.read<DriveDao>(),
     arweave: arweave,
   )..verifyUploadLimitationsAndDownload(cipherKey);
   return showArDriveDialog(
@@ -74,6 +75,7 @@ Future<void> promptToDownloadFileRevision({
       profileState is ProfileLoggedIn ? profileState.user.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
     crypto: ArDriveCrypto(),
+    fileKeys: context.read<FileKeys>(),
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
@@ -85,7 +87,6 @@ Future<void> promptToDownloadFileRevision({
     ),
     downloader: ArDriveMobileDownloader(),
     file: arfsFile,
-    driveDao: context.read<DriveDao>(),
     arweave: arweave,
   )..verifyUploadLimitationsAndDownload(cipherKey);
 

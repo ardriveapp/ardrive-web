@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -19,7 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
-import '../../test_utils/mocks.dart';
+import '../../test_utils/utils.dart';
 
 class MockDataGatewayFallback extends Mock implements DataGatewayFallback {}
 
@@ -255,6 +256,7 @@ void main() {
       driveId: driveId,
       maybeSelectedItem: item,
       driveDao: mockDriveDao,
+      fileKeys: FileKeys(driveDao: mockDriveDao),
       configService: mockConfigService,
       arweave: mockArweaveService,
       profileCubit: mockProfileCubit,
@@ -368,6 +370,7 @@ void main() {
           driveId: driveId,
           maybeSelectedItem: createImageItem(size: overLimitFileSize),
           driveDao: mockDriveDao,
+          fileKeys: FileKeys(driveDao: mockDriveDao),
           configService: mockConfigService,
           arweave: mockArweaveService,
           profileCubit: mockProfileCubit,
@@ -602,6 +605,7 @@ void main() {
           driveId: driveId,
           maybeSelectedItem: createVideoItem(size: underLimitFileSize),
           driveDao: mockDriveDao,
+          fileKeys: FileKeys(driveDao: mockDriveDao),
           configService: mockConfigService,
           arweave: mockArweaveService,
           profileCubit: mockProfileCubit,
@@ -1028,6 +1032,7 @@ void main() {
           driveId: driveId,
           maybeSelectedItem: createPdfItem(size: underLimitFileSize),
           driveDao: mockDriveDao,
+          fileKeys: FileKeys(driveDao: mockDriveDao),
           configService: mockConfigService,
           arweave: mockArweaveService,
           profileCubit: mockProfileCubit,
@@ -1206,6 +1211,7 @@ void main() {
         driveId: driveId,
         maybeSelectedItem: item,
         driveDao: mockDriveDao,
+        fileKeys: FileKeys(driveDao: mockDriveDao),
         configService: mockConfigService,
         arweave: mockArweaveService,
         profileCubit: mockProfileCubit,
@@ -1293,6 +1299,34 @@ void main() {
       expect(FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes,
           [5, 6, 7, 8]);
 
+      await cubit.close();
+    });
+
+    test(
+        'a signed-in owner decrypts with the key FileKeys gets from their '
+        'stored drive key', () async {
+      stubPrivateFetchAndDecrypt();
+      final user = getTestUser();
+      when(() => mockProfileCubit.state)
+          .thenReturn(ProfileLoggedIn(user: user, useTurbo: false));
+      final driveKey = DriveKey(SecretKey([9]), false);
+      final fileKey = SecretKey([4, 4, 4]);
+      when(() => mockDriveDao.getDriveKey(driveId, user.cipherKey))
+          .thenAnswer((_) async => driveKey);
+      when(() => mockDriveDao.getFileKey(fileId, driveKey.key))
+          .thenAnswer((_) async => fileKey);
+      final cubit = explorerCubit(
+        createImageItem(size: underLimitFileSize),
+        lookUpKey: true,
+      );
+
+      await settle();
+      rows.add(row(name: 'photo.png', contentType: 'image/png'));
+      await settle();
+
+      verify(() => mockCrypto.decryptDataFromTransaction(any(), any(), fileKey))
+          .called(greaterThan(0));
+      verifyNever(() => mockDriveDao.getDriveKeyFromMemory(any()));
       await cubit.close();
     });
 
@@ -1953,6 +1987,7 @@ void main() {
         driveId: driveId,
         maybeSelectedItem: createVideoItem(size: underLimitFileSize),
         driveDao: mockDriveDao,
+        fileKeys: FileKeys(driveDao: mockDriveDao),
         configService: mockConfigService,
         arweave: mockArweaveService,
         profileCubit: mockProfileCubit,
@@ -2356,6 +2391,7 @@ void main() {
         driveId: driveId,
         maybeSelectedItem: createVideoItem(size: large),
         driveDao: mockDriveDao,
+        fileKeys: FileKeys(driveDao: mockDriveDao),
         configService: mockConfigService,
         arweave: mockArweaveService,
         profileCubit: mockProfileCubit,
