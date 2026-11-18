@@ -358,6 +358,8 @@
   "@copyTooltip": {
     "description": "Tooltip for copy button"
   },
+  "copyLogs": "Copy logs",
+  "@copyLogs": {"description": "Button on an error that copies the app logs, for sending to support"},
   "copied": "Copied!",
   "@copied": {
     "description": "Shown beside a copy button once the text is on the clipboard"

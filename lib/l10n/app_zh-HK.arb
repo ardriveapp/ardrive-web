@@ -2584,6 +2584,7 @@
   "@congestionWarningShort": {
     "description": "Concise message shown inline when network is congested"
   },
+  "copyLogs": "複製日誌",
   "copied": "已複製",
   "@copied": {
     "description": "Shown beside a copy button once the text is on the clipboard"
