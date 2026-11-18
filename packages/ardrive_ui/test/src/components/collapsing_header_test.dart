@@ -132,7 +132,7 @@ void main() {
                         ),
                       ),
                       bar: ColoredBox(
-                        color: Colors.white,
+                        color: const Color(0xFFCCE0FF),
                         child: Row(
                           children: [
                             const Expanded(child: Text('Bar title')),
@@ -452,7 +452,15 @@ void main() {
         // A column through the title row, under the bar's bottom edge and
         // away from the text.
         final y = (top + 8).round();
-        if (y < 56 * progress + 2 || y >= 900) continue;
+        // Strictly one after the other: while any of the header's row is
+        // showing, nothing of the bar is drawn.
+        final inBarZone = await pixel(tester, 300, 20);
+        if (progress < 0.4) {
+          expect(inBarZone.red, 255,
+              reason: 'the bar is drawn at progress $progress');
+          expect(sliver(tester).barProgress, 0);
+        }
+        if (y < 56 * sliver(tester).barProgress + 2 || y >= 900) continue;
         final c = await pixel(tester, 700, y);
         if (progress >= 0.4) {
           expect(c.green, greaterThan(200),
