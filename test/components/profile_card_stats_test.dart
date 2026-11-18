@@ -245,6 +245,15 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
   }
 
+  /// Lets the card's watches deliver what they read as it opened, and any
+  /// recount that sets off, so that what follows is a change made later.
+  Future<void> settleWatches(WidgetTester tester) async {
+    for (var i = 0; i < 15; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await tester.pump();
+    }
+  }
+
   Future<void> openCard(WidgetTester tester) async {
     await tester.tap(find.byType(ProfileCardHeader));
     await tester.pump();
@@ -358,6 +367,58 @@ void main() {
 
       expect(find.textContaining('0 files'), findsNothing);
       expect(find.textContaining('KiB'), findsNothing);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets(
+      'shows the totals once the last drive is synced, without being reopened',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('synced');
+      await addDrive('empty', synced: false);
+
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('2 drives'));
+      await settleWatches(tester);
+      expect(find.textContaining('0 files'), findsNothing);
+
+      // An empty drive's first sync writes no file and no transaction.
+      await (db.update(db.drives)..where((d) => d.id.equals('empty')))
+          .write(const DrivesCompanion(lastBlockHeight: Value(1)));
+      await waitFor(tester, find.textContaining('0 files'));
+
+      expect(find.textContaining('0 files'), findsOneWidget);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets('counts a locked drive found while the card is open',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('a');
+      final session = DriveUnlockSession();
+
+      await pumpCard(tester, session: session);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('1 drive'));
+      await settleWatches(tester);
+      expect(find.textContaining('2 drives'), findsNothing);
+
+      session.setLockedDrives(walletAddress, [
+        LockedDrive(
+          driveId: 'locked',
+          ownerAddress: walletAddress,
+          signatureType: DriveSignatureType.v2,
+          lastUpdated: DateTime(2024),
+        ),
+      ]);
+      await waitFor(tester, find.textContaining('2 drives'));
+
+      expect(find.textContaining('2 drives'), findsOneWidget);
 
       await takeDown(tester);
     });

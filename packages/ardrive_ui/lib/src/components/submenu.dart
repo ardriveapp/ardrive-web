@@ -341,6 +341,10 @@ class _SubmenuItemState extends State<_SubmenuItem> {
     return ArDriveOverlay(
       animate: true,
       visible: _open,
+      // Closed with the menu it opens from.
+      onVisibleChange: (visible) {
+        if (!visible && _open) setState(() => _open = false);
+      },
       // The menu it opens from has the click-outside and Escape handling.
       closeOnBarrierTap: false,
       anchor: const _MenuPlacement(

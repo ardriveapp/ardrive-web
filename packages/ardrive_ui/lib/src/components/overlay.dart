@@ -584,6 +584,13 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
     final route = ModalRoute.of(context);
     _covered = route != null && !route.isCurrent;
     _sync();
+    // A menu opened from a menu that is closing goes with it. It is in its
+    // own overlay entry, which the closing menu's IgnorePointer can't reach.
+    if (_OverlayClosingScope.closingOf(context) && _visible) {
+      _afterFrame(() {
+        if (_visible) _close();
+      });
+    }
   }
 
   @override
@@ -703,12 +710,15 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   Widget _buildEntry(BuildContext overlayContext) {
     // Offstage while another route covers the page: not drawn, not clicked,
     // not read by a screen reader, and back as it was when the page returns.
-    return Offstage(
-      offstage: _covered,
-      // A closing menu is already closed to the page: it takes no clicks.
-      child: ExcludeFocus(
-        excluding: _closing,
-        child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
+    return _OverlayClosingScope(
+      closing: _closing,
+      child: Offstage(
+        offstage: _covered,
+        // A closing menu is already closed to the page: it takes no clicks.
+        child: ExcludeFocus(
+          excluding: _closing,
+          child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
+        ),
       ),
     );
   }
@@ -969,4 +979,21 @@ class _DropdownDivider extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Tells the overlays opened from an overlay's content that it is closing.
+class _OverlayClosingScope extends InheritedWidget {
+  const _OverlayClosingScope({required this.closing, required super.child});
+
+  final bool closing;
+
+  static bool closingOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<_OverlayClosingScope>()
+          ?.closing ??
+      false;
+
+  @override
+  bool updateShouldNotify(_OverlayClosingScope oldWidget) =>
+      closing != oldWidget.closing;
 }

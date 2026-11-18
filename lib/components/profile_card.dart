@@ -77,9 +77,15 @@ class _ProfileCardState extends State<ProfileCard> {
   /// "0 files" until it was closed and opened again.
   StreamSubscription<String>? _permanentDataChanges;
 
+  /// What the totals wait on besides the data itself: which drives are
+  /// synced here, and which are locked. Either can change with no write the
+  /// permanent-data watch sees, such as an empty drive's first sync.
+  StreamSubscription<Object>? _coverageChanges;
+
   @override
   void dispose() {
     _permanentDataChanges?.cancel();
+    _coverageChanges?.cancel();
     super.dispose();
   }
 
@@ -102,10 +108,36 @@ class _ProfileCardState extends State<ProfileCard> {
     if (!follow) {
       _permanentDataChanges?.cancel();
       _permanentDataChanges = null;
+      _coverageChanges?.cancel();
+      _coverageChanges = null;
       return;
     }
 
     if (_permanentDataChanges != null) return;
+
+    DriveUnlockSession? session;
+    try {
+      session = context.read<DriveUnlockSession>();
+    } catch (_) {
+      // No session provided: no drive is known to be locked.
+    }
+    // Each stream's first value is what the card is counting from as it
+    // opens; only a change after that recounts.
+    _coverageChanges = Rx.merge<Object>([
+      context
+          .read<DriveDao>()
+          .watchDriveIdsSyncedHere()
+          .map((ids) => (ids.toList()..sort()).join('|'))
+          .distinct()
+          .skip(1),
+      if (session != null) session.lockedDrives.skip(1),
+    ])
+        .throttleTime(
+          const Duration(seconds: 1),
+          leading: true,
+          trailing: true,
+        )
+        .listen((_) => _recount());
 
     var isFirst = true;
     _permanentDataChanges = context
@@ -125,14 +157,19 @@ class _ProfileCardState extends State<ProfileCard> {
       // that change.
       final isOpeningValue = isFirst && version == _countedVersion;
       isFirst = false;
-      if (isOpeningValue || !mounted) return;
+      if (isOpeningValue) return;
+      _recount();
+    });
+  }
 
-      setState(() {
-        _statsGeneration++;
-        _countedStats = null;
-        _countedStatsKey = null;
-        _accountStatsFuture = null;
-      });
+  /// Drops the counted statistics, so the open card counts them again.
+  void _recount() {
+    if (!mounted) return;
+    setState(() {
+      _statsGeneration++;
+      _countedStats = null;
+      _countedStatsKey = null;
+      _accountStatsFuture = null;
     });
   }
 
