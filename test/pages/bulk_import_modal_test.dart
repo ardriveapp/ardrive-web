@@ -234,4 +234,25 @@ void main() {
     expect(importButton, findsOneWidget);
     expect(tester.getBottomRight(importButton).dy, lessThanOrEqualTo(400));
   });
+
+  testWidgets('pressing Import holds the field and a second press adds nothing',
+      (tester) async {
+    await open(tester, const BulkImportInitial());
+    await tester.enterText(
+      find.byType(TextField).first,
+      'PmwoP4jL1ZQVAKGSCP2NmFCiwYbnUpKMPZmKGpKQwvE',
+    );
+
+    final importButton = find.widgetWithText(ArDriveButtonNew, 'Import');
+    tester.widget<ArDriveButtonNew>(importButton).onPressed!();
+    await tester.pump();
+
+    // The bloc has not answered yet: the field is held, the button busy.
+    expect(tester.widget<TextField>(find.byType(TextField).first).enabled,
+        isFalse);
+    final last =
+        tester.widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew)).last;
+    expect(last.isDisabled, isTrue);
+    verify(() => bloc.add(any())).called(1);
+  });
 }

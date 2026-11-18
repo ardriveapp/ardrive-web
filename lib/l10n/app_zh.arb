@@ -8240,5 +8240,6 @@
   "snapshotFailurePaymentDeclined": "Turbo 拒绝了此快照的付款。请充值积分或使用 AR 支付，然后重试。",
   "snapshotFailurePublish": "无法创建快照。如果没有发布任何内容，则未花费任何费用。重试之前请检查您的云盘。",
   "snapshotFailureUncertain": "此快照的交易（{txId}）在上传失败前已到达网络，因此已付费，但其数据可能不完整。重试前请先在网关上查询。再次尝试会创建第二笔交易并再次付费。",
-  "snapshotFailureThrew": "无法创建快照。未花费任何费用。"
+  "snapshotFailureThrew": "无法创建快照。未花费任何费用。",
+  "deploymentPostedBody": "部署已发布到 Arweave（交易 {txId}），但无法在此保存，因此已付费。请不要重复创建；同步云盘即可看到它。"
 }

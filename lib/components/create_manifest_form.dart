@@ -196,7 +196,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           _namesApplied ??= names.applyTo(dataTxId);
           return FutureBuilder<ArNSFlowOutcome>(
             future: _namesApplied,
-            builder: (context, outcome) => outcome.hasData
+            // An error here still ends in the success screen: the deployment
+            // exists, and a wait with nothing to press is a trap.
+            builder: (context, outcome) => outcome.hasData || outcome.hasError
                 ? _createManifestSuccess(context, state, names: outcome.data)
                 : ProgressDialog(
                     title: l10n.arnsSettingTheName,
@@ -247,6 +249,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     final isPaymentError =
         state is CreateManifestFailure && state.isPaymentError;
     final isWalletMismatch = state is CreateManifestWalletMismatch;
+    final postedTxId = state is CreateManifestFailure ? state.postedTxId : null;
+    final canRetry = state is CreateManifestFailure && state.canRetry;
 
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
@@ -255,11 +259,13 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           : l10n.deploymentFailedTitle,
       content: ArDriveNotice(
         type: ArDriveNoticeType.error,
-        message: isPaymentError
-            ? l10n.freeAllowanceUsedUpDescription
-            : isWalletMismatch
-                ? l10n.deploymentWalletChanged
-                : l10n.deploymentFailedBody,
+        message: postedTxId != null
+            ? l10n.deploymentPostedBody(postedTxId)
+            : isPaymentError
+                ? l10n.freeAllowanceUsedUpDescription
+                : isWalletMismatch
+                    ? l10n.deploymentWalletChanged
+                    : l10n.deploymentFailedBody,
       ),
       actions: [
         ModalAction.close(
@@ -275,7 +281,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             },
             title: l10n.buyCredits,
           )
-        else if (!isWalletMismatch)
+        else if (!isWalletMismatch && canRetry)
           ModalAction(
             isLoading: _submitting,
             action: () => _submit(

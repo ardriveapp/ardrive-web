@@ -8240,5 +8240,6 @@
   "snapshotFailurePaymentDeclined": "Turbo rechazó el pago de esta instantánea. Añade créditos o paga con AR e inténtalo de nuevo.",
   "snapshotFailurePublish": "No se pudo crear la instantánea. Si no se publicó nada, no se gastó nada. Revisa tu unidad antes de intentarlo de nuevo.",
   "snapshotFailureUncertain": "La transacción de esta instantánea ({txId}) llegó a la red antes de que fallara la subida, así que está pagada, pero sus datos pueden estar incompletos. Búscala en una pasarela antes de intentarlo de nuevo. Un segundo intento crea otra transacción y la paga por segunda vez.",
-  "snapshotFailureThrew": "No se pudo crear la instantánea. No se gastó nada."
+  "snapshotFailureThrew": "No se pudo crear la instantánea. No se gastó nada.",
+  "deploymentPostedBody": "El despliegue se publicó en Arweave (transacción {txId}) pero no se pudo guardar aquí, así que está pagado. No lo vuelvas a crear; sincroniza la unidad para verlo."
 }

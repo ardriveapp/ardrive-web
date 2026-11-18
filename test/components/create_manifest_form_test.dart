@@ -245,6 +245,18 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('after a post says so, with the transaction, and no Try again',
+        (tester) async {
+      await pumpForm(
+        tester,
+        CreateManifestFailure(postedTxId: 'posted-tx', canRetry: false),
+      );
+
+      expect(find.textContaining('posted-tx'), findsOneWidget);
+      expect(find.textContaining("Don't create it again"), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+    });
+
     testWidgets('of a Turbo payment offers credits, in the dialog',
         (tester) async {
       await pumpForm(tester, CreateManifestFailure(isPaymentError: true));

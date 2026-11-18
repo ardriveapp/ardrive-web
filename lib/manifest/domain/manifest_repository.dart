@@ -137,17 +137,31 @@ class ManifestRepositoryImpl implements ManifestRepository {
       controller.onDone((tasks) async {
         PermanenceCache.shared.spendChanged();
 
-        final task = tasks.first;
-        final manifestMetadata = task.content!.first as ARFSFileUploadMetadata;
+        String? postedTxId;
+        try {
+          final task = tasks.first;
+          final manifestMetadata =
+              task.content!.first as ARFSFileUploadMetadata;
+          postedTxId = manifestMetadata.dataTxId;
 
-        await saveManifestOnDatabase(
-          manifest: manifestMetadata,
-          existingManifestFileId: params.existingManifestFileId,
-        );
+          await saveManifestOnDatabase(
+            manifest: manifestMetadata,
+            existingManifestFileId: params.existingManifestFileId,
+          );
 
-        onProgress?.call(CreateManifestUploadProgress.completed);
+          onProgress?.call(CreateManifestUploadProgress.completed);
 
-        completer.complete(manifestMetadata.dataTxId);
+          completer.complete(manifestMetadata.dataTxId);
+        } catch (e) {
+          // A throw in here would leave the completer open for ever, with
+          // the dialog waiting on an upload that is already paid for. Once
+          // the transaction is known it was posted: say so.
+          completer.completeError(
+            postedTxId == null
+                ? e
+                : ManifestPostedException(postedTxId, error: e),
+          );
+        }
       });
 
       controller.onError((tasks) {
@@ -164,6 +178,8 @@ class ManifestRepositoryImpl implements ManifestRepository {
       final result = await completer.future;
 
       return result;
+    } on ManifestPostedException {
+      rethrow;
     } catch (e) {
       throw ManifestCreationException(
         'Failed to upload manifest.',

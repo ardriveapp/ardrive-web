@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
+import 'package:ardrive/manifest/domain/exceptions.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
@@ -362,6 +363,118 @@ void main() {
           name: any(named: 'name'),
         ),
       );
+      await cubit.close();
+    });
+  });
+
+  group('a failure never leaves the dialog without a way out', () {
+    Future<CreateManifestCubit> loaded({MockArDriveAuth? auth}) async {
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: MockProfileCubit(),
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth ?? MockArDriveAuth(),
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      return cubit;
+    }
+
+    test('a name check that throws ends in a failure, not in Preparing',
+        () async {
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: any(named: 'driveId'),
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenThrow(ManifestCreationException('lookup failed'));
+      final cubit = await loaded();
+
+      await cubit.checkForConflicts('site');
+
+      expect(cubit.state, isA<CreateManifestFailure>());
+      expect((cubit.state as CreateManifestFailure).canRetry, isFalse,
+          reason: 'there is no review to send again');
+      await cubit.close();
+    });
+
+    test('folders that cannot be read end in a failure, not in Loading',
+        () async {
+      when(() => folderRepository.getFolderNode(driveId, rootId))
+          .thenThrow(Exception('offline'));
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: MockProfileCubit(),
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: MockArDriveAuth(),
+      );
+
+      await cubit.stream.firstWhere((state) => state is CreateManifestFailure);
+      await cubit.close();
+    });
+
+    test(
+        'a deployment posted and then not saved says so, and Try again '
+        'posts nothing twice', () async {
+      final profile = MockProfileCubit();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      final auth = MockArDriveAuth();
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      final file = await IOFile.fromData(
+        Uint8List(10),
+        name: 'site',
+        lastModifiedDate: DateTime(2024),
+      );
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: driveId,
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async => (false, null));
+      when(
+        () => manifestRepository.getManifestFile(
+          parentFolder: any(named: 'parentFolder'),
+          manifestName: any(named: 'manifestName'),
+          rootFolderNode: any(named: 'rootFolderNode'),
+          driveId: driveId,
+          fallbackTxId: any(named: 'fallbackTxId'),
+        ),
+      ).thenAnswer((_) async => file);
+      var posts = 0;
+      when(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async {
+        posts++;
+        throw ManifestPostedException('posted-tx', error: Exception('db'));
+      });
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth,
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      await cubit.checkForConflicts('site');
+      await cubit.uploadManifest();
+
+      final failure = cubit.state as CreateManifestFailure;
+      expect(failure.postedTxId, 'posted-tx');
+      expect(failure.canRetry, isFalse);
+
+      await cubit.retryUpload();
+
+      expect(posts, 1, reason: 'a second upload would pay twice');
+      expect(cubit.state, failure);
       await cubit.close();
     });
   });

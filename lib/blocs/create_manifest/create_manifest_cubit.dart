@@ -69,6 +69,15 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   /// Initialize folder selection on creation
   Future<void> _initFolderSelection() async {
+    try {
+      await _loadInitialFolder();
+    } catch (e) {
+      // Or the dialog waits on "Loading folders" with nothing to press.
+      addError(e);
+    }
+  }
+
+  Future<void> _loadInitialFolder() async {
     logger.i('Initializing folder selection for drive: ${_drive.id}');
     rootFolderNode =
         await _folderRepository.getFolderNode(_drive.id, _drive.rootFolderId);
@@ -179,6 +188,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
               enableManifestCreationButton: _getEnableManifestCreationButton(),
             ),
           ),
+          onError: (Object e, StackTrace s) => addError(e, s),
         );
   }
 
@@ -206,6 +216,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> _checkForConflicts(String name) async {
     logger.i('Checking for manifest name conflicts: $name');
     if (name.trim().isEmpty) return;
+    _reviewToRetry = null;
 
     /// Prevent multiple checks from being triggered
     if (state is! CreateManifestFolderLoadSuccess) {
@@ -228,12 +239,20 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     await _selectedFolderSubscription?.cancel();
 
-    final conflictTuple =
-        await _manifestRepository.checkNameConflictAndReturnExistingFileId(
-      driveId: _drive.id,
-      parentFolderId: parentFolder.id,
-      name: name,
-    );
+    final (bool, String?) conflictTuple;
+    try {
+      conflictTuple =
+          await _manifestRepository.checkNameConflictAndReturnExistingFileId(
+        driveId: _drive.id,
+        parentFolderId: parentFolder.id,
+        name: name,
+      );
+    } catch (e) {
+      // The dialog shows "Preparing" with nothing to press until a state
+      // replaces it.
+      addError(e);
+      return;
+    }
 
     final hasConflictNames = conflictTuple.$1;
     final existingManifestFileId = conflictTuple.$2;
@@ -337,7 +356,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> retryUpload() async {
     await _once(() async {
       final review = _reviewToRetry;
-      if (review == null || state is! CreateManifestFailure) {
+      final failure = state;
+      // Only where nothing was posted: after a post, a second upload pays
+      // twice.
+      if (review == null ||
+          failure is! CreateManifestFailure ||
+          !failure.canRetry) {
         return;
       }
 
@@ -457,7 +481,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     final wrapped = error is ManifestCreationException ? error.error : error;
     // Emitting after close throws, and that throw comes back here.
     if (!isClosed) {
-      emit(CreateManifestFailure(isPaymentError: isTurboPaymentError(wrapped)));
+      emit(CreateManifestFailure(
+        isPaymentError: isTurboPaymentError(wrapped),
+        postedTxId: error is ManifestPostedException ? error.dataTxId : null,
+        canRetry: _reviewToRetry != null && error is! ManifestPostedException,
+      ));
     }
     super.onError(error, stackTrace);
   }

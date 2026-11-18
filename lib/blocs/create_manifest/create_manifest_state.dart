@@ -197,10 +197,22 @@ class CreateManifestWalletMismatch extends CreateManifestState {}
 /// Manifest transaction upload has failed
 class CreateManifestFailure extends CreateManifestState {
   final bool isPaymentError;
-  CreateManifestFailure({this.isPaymentError = false});
+
+  /// The deployment's transaction, when it was posted before this failed: it
+  /// is paid for, so there is nothing to retry.
+  final String? postedTxId;
+
+  /// Whether sending the same deployment again is safe and possible.
+  final bool canRetry;
+
+  CreateManifestFailure({
+    this.isPaymentError = false,
+    this.postedTxId,
+    this.canRetry = true,
+  });
 
   @override
-  List<Object?> get props => [isPaymentError];
+  List<Object?> get props => [isPaymentError, postedTxId, canRetry];
 }
 
 /// Manifest transaction has been successfully uploaded

@@ -50,6 +50,10 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
   final _formKey = GlobalKey<FormState>();
   final _manifestTxIdController = TextEditingController();
 
+  /// Import was pressed and the bloc has not answered with a state yet: the
+  /// field is held and a second press does nothing.
+  bool _pressed = false;
+
   @override
   void dispose() {
     _manifestTxIdController.dispose();
@@ -77,7 +81,10 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
     // Every outcome is a state of this one dialog, never a dialog over it:
     // the conflicts, the failure and the cancelled import used to open on
     // top, and the conflicts' Cancel closed both.
-    return BlocBuilder<BulkImportBloc, BulkImportState>(
+    return BlocConsumer<BulkImportBloc, BulkImportState>(
+      listener: (context, state) {
+        if (_pressed) setState(() => _pressed = false);
+      },
       builder: (context, state) {
         if (state is BulkImportSuccess) {
           return ArDriveStandardModalNew(
@@ -205,7 +212,8 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
         // The work runs here: the primary is busy, the fields are gone for
         // the progress, and Cancel is held unless it can stop the work.
         final isImporting = state is BulkImportInProgress;
-        final isBusy = isImporting ||
+        final isBusy = _pressed ||
+            isImporting ||
             state is BulkImportLoadingManifest ||
             state is BulkImportResolvingPaths ||
             state is BulkImportCreatingFolders;
@@ -289,6 +297,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                       const SizedBox(height: ArDriveSpacing.md),
                       ArDriveTextFieldNew(
                         controller: _manifestTxIdController,
+                        isEnabled: !isBusy,
                         validator: _validateManifestTxId,
                         label: l10n.importDeploymentIdLabel,
                         textStyle: ArDriveTypographyNew.of(context).code(),
@@ -317,7 +326,9 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
             ModalAction(
               isLoading: isBusy,
               action: () {
+                if (_pressed) return;
                 if (_formKey.currentState!.validate()) {
+                  setState(() => _pressed = true);
                   context.read<BulkImportBloc>().add(
                         StartManifestBulkImport(
                           manifestTxId: _manifestTxIdController.text,

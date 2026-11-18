@@ -6383,5 +6383,7 @@
   "snapshotFailureUncertain": "The transaction for this snapshot ({txId}) reached the network before the upload failed, so it has been paid for, but its data may be incomplete. Look it up on a gateway before trying again. A second attempt creates a second transaction and pays for it a second time.",
   "@snapshotFailureUncertain": {"description": "Snapshot failure: paid, data may be incomplete", "placeholders": {"txId": {"type": "String"}}},
   "snapshotFailureThrew": "The snapshot couldn't be created. Nothing was spent.",
-  "@snapshotFailureThrew": {"description": "Snapshot failure: the upload threw"}
+  "@snapshotFailureThrew": {"description": "Snapshot failure: the upload threw"},
+  "deploymentPostedBody": "The deployment was posted to Arweave (transaction {txId}) but couldn't be saved here, so it is paid for. Don't create it again; sync the drive to see it.",
+  "@deploymentPostedBody": {"description": "Notice when the deployment was posted but not saved", "placeholders": {"txId": {"type": "String"}}}
 }
