@@ -121,20 +121,27 @@ void main() {
       final controller = await pump(tester, lightTheme(), count: count);
       final top = tester.getTopLeft(find.byKey(coverKey)).dy;
 
+      // One finger, kept down: it has to cross the touch slop before the
+      // list takes the drag, so the first moves scroll nothing. Then every
+      // step moves the header with it.
       var previous = top;
-      for (var i = 0; i < 20; i++) {
-        final gesture = await tester.startGesture(const Offset(200, 500));
-        await gesture.moveBy(const Offset(0, -12));
-        await tester.pump();
+      var moved = 0;
+      final gesture = await tester.startGesture(const Offset(200, 500));
+      for (var i = 0; i < 40; i++) {
+        await gesture.moveBy(const Offset(0, -6));
+        await tester.pump(const Duration(milliseconds: 16));
         final offset = controller.offset;
         final now = tester.getTopLeft(find.byKey(coverKey)).dy;
-        await gesture.up();
-        // Held still: nothing coasts on after a slow release.
-        await tester.pump(const Duration(milliseconds: 16));
         expect(now, moreOrLessEquals(top - offset, epsilon: 0.5));
         expect(now, lessThanOrEqualTo(previous));
+        if (offset > 0) moved++;
         previous = now;
       }
+      // It did scroll: the checks above are about a header that moved.
+      expect(controller.offset, greaterThan(100));
+      expect(moved, greaterThan(20));
+      expect(previous, lessThan(top - 100));
+      await gesture.up();
       await tester.pumpAndSettle();
       // The short list scrolls exactly as far as the header collapses.
       if (count == 9) {

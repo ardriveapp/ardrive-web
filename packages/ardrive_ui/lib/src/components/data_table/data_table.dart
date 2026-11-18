@@ -6,7 +6,6 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
@@ -1543,25 +1542,6 @@ class _ArDriveDataTableState<T extends IndexedItem>
     _afterBuild(() => widget.onChangePage?.call(target));
   }
 
-  /// A row brought to the top of the window sits under what is pinned there:
-  /// the leading slivers' bar and the column headings. Moves it just below.
-  void _clearPinnedHeaders(BuildContext rowContext) {
-    if (widget.leadingSlivers == null) return;
-    final box = rowContext.findRenderObject();
-    if (box is! RenderBox || !box.attached) return;
-    final viewport = RenderAbstractViewport.maybeOf(box);
-    if (viewport == null) return;
-    final covered = widget.pinnedInset + _headingsExtent;
-    final atTop = viewport.getOffsetToReveal(box, 0).offset;
-    final position = _scrollController.position;
-    // Where the row's top is, in the window.
-    if (atTop - position.pixels < covered) {
-      position.jumpTo(
-        (atTop - covered).clamp(0.0, position.maxScrollExtent),
-      );
-    }
-  }
-
   /// Brings [_scrollToRow] on screen, moving as little as it can.
   ///
   /// The list only builds the rows it shows, so a row further down has no
@@ -1584,28 +1564,42 @@ class _ArDriveDataTableState<T extends IndexedItem>
         rowContext,
         alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
       );
-      _clearPinnedHeaders(rowContext);
       return;
     }
 
     final index = _currentPage.indexOf(row);
-    if (index < 0 || attempt >= 3) {
+    if (index < 0 || attempt >= (widget.leadingExtent == null ? 3 : 40)) {
       _scrollToRow = null;
       return;
     }
 
     final position = _scrollController.position;
     final leading = widget.leadingExtent;
-    _scrollController.jumpTo(
-      leading == null
-          ? position.maxScrollExtent * index / max(1, _currentPage.length - 1)
-          // The rows start after the header and the headings; the row's top
-          // goes just under the bar and the pinned headings.
-          : (leading.value -
-                  widget.pinnedInset +
-                  index * ArDriveDataTable.rowHeight)
-              .clamp(0.0, position.maxScrollExtent),
-    );
+    final double target;
+    if (leading == null) {
+      target =
+          position.maxScrollExtent * index / max(1, _currentPage.length - 1);
+    } else {
+      // The rows start after the header and the headings; the row's top goes
+      // just under the bar and the pinned headings. A row is at least
+      // [ArDriveDataTable.rowHeight] tall, and the list's own estimate of its
+      // length (the rows it has built, averaged) takes over from the first
+      // guess as it learns how tall they are.
+      final start = leading.value - widget.pinnedInset;
+      var guess = start + index * ArDriveDataTable.rowHeight;
+      if (attempt > 0) {
+        final rows = position.maxScrollExtent +
+            position.viewportDimension -
+            leading.value -
+            _headingsExtent;
+        guess = max(guess, start + rows * index / max(1, _currentPage.length));
+      }
+      // Each try goes on from the last: a row not built yet is further down.
+      target = attempt == 0
+          ? guess
+          : max(guess, position.pixels + position.viewportDimension * 0.9);
+    }
+    _scrollController.jumpTo(target.clamp(0.0, position.maxScrollExtent));
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _scrollRevealedRowIntoView(attempt + 1),
     );
