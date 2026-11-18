@@ -269,6 +269,33 @@ void main() {
       ],
     );
 
+    // The dialog showed "not found" for the ID, then the attach failed: going
+    // back to not found would paint over the failure and its Try again.
+    blocTest<DriveAttachCubit, DriveAttachState>(
+      'a failed attach does not go back to a not-found state',
+      build: () => driveAttachCubit,
+      seed: () => DriveAttachDriveNotFound(),
+      setUp: () {
+        when(() => driveDao.writeDriveEntity(
+              name: any(named: 'name'),
+              entity: any(named: 'entity'),
+              driveKey: any(named: 'driveKey'),
+              profileKey: any(named: 'profileKey'),
+            )).thenThrow(Exception('disk full'));
+      },
+      act: (bloc) {
+        bloc.driveIdController.text = validDriveId;
+        bloc.driveNameController.text = validDriveName;
+        bloc.submit();
+      },
+      wait: const Duration(milliseconds: 500),
+      expect: () => [
+        DriveAttachInProgress(),
+        DriveAttachFailure(),
+        DriveAttachInitial(),
+      ],
+    );
+
     blocTest<DriveAttachCubit, DriveAttachState>(
       'does nothing when submitted without valid form',
       build: () => driveAttachCubit,

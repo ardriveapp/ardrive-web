@@ -31,6 +31,7 @@ Future<void> attachDrive({
     context,
     () => showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
           initialDriveId: driveId,

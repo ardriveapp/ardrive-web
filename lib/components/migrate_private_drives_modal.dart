@@ -92,7 +92,7 @@ class _PrivateDriveMigrationDialogState
                     ],
                   ),
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: ArDriveSpacing.md),
               Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
@@ -101,7 +101,7 @@ class _PrivateDriveMigrationDialogState
                       controller: _scrollController,
                       alwaysVisible: true,
                       child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 0),
+                        padding: EdgeInsets.zero,
                         controller: _scrollController,
                         shrinkWrap: true,
                         itemCount: drivesToMigrate.length,
@@ -145,13 +145,13 @@ class _PrivateDriveMigrationDialogState
               // A drive whose key the sign-in password doesn't make: its
               // own password, or skip it.
               if (state is PrivateDriveMigrationNeedsPassword) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 Text(
                   appLocalizationsOf(context)
                       .migrationDrivePasswordPrompt(state.drive.name),
                   style: typography.paragraphNormal(color: colorTokens.textMid),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ArDriveSpacing.xs),
                 ArDriveTextFieldNew(
                   key: const Key('migrationDrivePassword'),
                   controller: _password,
@@ -169,7 +169,7 @@ class _PrivateDriveMigrationDialogState
                 ),
               ],
               if (errorMessage != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 ArDriveNotice(
                   type: ArDriveNoticeType.error,
                   // The bloc's own text is English and for the log.
@@ -222,6 +222,7 @@ class _PrivateDriveMigrationDialogState
 void showMigratePrivateDrivesModal(BuildContext context) {
   showArDriveDialog(
     context,
+    barrierDismissible: false,
     content: const PrivateDriveMigrationDialog(),
   );
 }

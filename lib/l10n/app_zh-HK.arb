@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "卸離磁碟",
+  "detachDrive": "卸離檔案盤",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "'{driveName}' 將從你的磁碟中移除。",
+  "detachDriveQuestion": "'{driveName}' 將從你的檔案盤中移除。",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_rename/drive_rename_cubit.dart';
 import 'package:ardrive/components/drive_create_form.dart';
@@ -145,6 +147,38 @@ void main() {
 
       expect(find.byType(ArDriveNotice), findsOneWidget);
       expect(find.text('Try again'), findsNothing);
+    });
+
+    // submit returns without emitting when Wander can't be reached and the
+    // person cancels: the failure said before must not come back.
+    testWidgets(
+        'Try again that ends without a new failure leaves no old notice',
+        (tester) async {
+      final states = StreamController<DriveCreateState>();
+      addTearDown(states.close);
+      await pumpCreate(tester, states.stream);
+      states.add(const DriveCreateFailure(privacy: DrivePrivacy.public));
+      await tester.pumpAndSettle();
+      expect(find.byType(ArDriveNotice), findsOneWidget);
+
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ArDriveNotice), findsNothing);
+    });
+
+    testWidgets('while it works the inputs take no keyboard input',
+        (tester) async {
+      await pumpCreate(
+        tester,
+        Stream.value(const DriveCreateInProgress(privacy: DrivePrivacy.public)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final field =
+          tester.widget<EditableText>(find.byType(EditableText).first);
+      expect(field.readOnly, isTrue);
     });
 
     testWidgets('the name field has its label and Cancel closes',

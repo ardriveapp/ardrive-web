@@ -245,6 +245,34 @@ void main() {
     );
   });
 
+  group('renaming a drive, a name clash after a failure', () {
+    // The dialog shows the clash as a warning; going back to the failure it
+    // had would show that error beside it again.
+    blocTest<DriveRenameCubit, DriveRenameState>(
+      'goes back to the start, not to the earlier failure',
+      setUp: wanderUnavailable,
+      build: () => DriveRenameCubit(
+        driveId: driveId,
+        arweave: arweave,
+        turboUploadService: DontUseUploadService(),
+        driveDao: db.driveDao,
+        profileCubit: profile,
+        syncCubit: MockSyncBloc(),
+      ),
+      act: (cubit) async {
+        await cubit.submit(newName: 'renamed');
+        when(() => profile.logoutIfWalletMismatch())
+            .thenAnswer((_) async => false);
+        await cubit.submit(newName: 'fake-drive-name');
+      },
+      expect: () => [
+        isA<DriveRenameFailure>(),
+        isA<DriveNameAlreadyExists>(),
+        isA<DriveRenameInitial>(),
+      ],
+    );
+  });
+
   group('renaming a folder', () {
     FsEntryRenameCubit build() => FsEntryRenameCubit(
           driveId: driveId,

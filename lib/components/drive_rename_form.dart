@@ -19,6 +19,7 @@ Future<void> promptToRenameDrive(
 }) =>
     showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: MultiBlocProvider(
         providers: [
           BlocProvider(
@@ -110,7 +111,10 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
               setState(() => _failed = true);
             }
           } else if (state is DriveNameAlreadyExists) {
-            setState(() => _conflictingName = state.driveName);
+            setState(() {
+              _conflictingName = state.driveName;
+              _failed = false;
+            });
           }
         },
         builder: (context, state) {

@@ -135,7 +135,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     // What the form was before the attempt, so a failure or a drive that
     // wasn't found leaves it as it was (a private drive keeps its key field).
-    final previousState = state;
+    // Only a state the form can rest in comes back: restoring a not-found or
+    // a failure would say it again right after the dialog said what is new.
+    final previousState =
+        state is DriveAttachPrivate ? state : DriveAttachInitial();
 
     try {
       final DrivePrivacy drivePrivacy;

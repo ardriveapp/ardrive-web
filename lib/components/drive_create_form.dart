@@ -25,6 +25,7 @@ Future<void> promptToCreateDrive(
 }) =>
     showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider(
         create: (_) => DriveCreateCubit(
           privacy: privacy ?? DrivePrivacy.private,
@@ -67,7 +68,10 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
     if (_checking) return;
     setState(() {
       _checking = true;
-      _failureDismissed = false;
+      // The last failure is out of date once a new try starts; a new failure
+      // brings the notice back (see the listener), and a try that ends
+      // without one (Cancel at a wallet prompt) leaves it gone.
+      _failureDismissed = true;
     });
     try {
       await _createChecked(cubit);

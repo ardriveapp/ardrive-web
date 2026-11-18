@@ -49,7 +49,12 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
       }
 
       if (await _fileWithSameNameExistis(newName) && !proceedIfHasConflicts) {
-        final previousState = state;
+        // Not a failure or a clash said before: the dialog would say it
+        // again beside the clash it is showing now.
+        final previousState =
+            state is DriveRenameFailure || state is DriveNameAlreadyExists
+                ? DriveRenameInitial()
+                : state;
         emit(DriveNameAlreadyExists(newName));
         emit(previousState);
         return;
