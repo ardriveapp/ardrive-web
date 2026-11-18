@@ -102,36 +102,45 @@ void main() {
       expect(search.left, row.left);
     });
 
-    // The explorer's bar gives the row a bounded height; the search box
-    // must still start where a list page's does (32), not be centred in it
-    // or pushed down by a child that fills what it is given.
-    testWidgets('in the explorer\'s bar the search starts 32 px down',
-        (tester) async {
-      tester.view.physicalSize = const Size(1280, 300);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(host(const Align(
-        alignment: Alignment.topCenter,
-        child: SizedBox(
-          width: 1000,
-          height: 110,
-          child: TopBarFrame(
-            child: TopBarControls(
-              search: SizedBox(
-                key: Key('search'),
-                width: double.infinity,
-                height: 52,
+    // The explorer's bar: the search starts 32 px down as on a list page,
+    // the bar is 110 px, and at a large text size it grows to hold the field
+    // rather than let it hang out of the bar.
+    for (final (scale, barHeight) in [(1.0, 110.0), (3.0, null)]) {
+      testWidgets('the explorer\'s bar at text scale $scale', (tester) async {
+        tester.view.physicalSize = const Size(1280, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(host(MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+          child: const Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 1000,
+              child: Column(
+                children: [
+                  TopBarFrame(
+                    child: TopBarControls(
+                      search: _ScaledField(key: Key('search')),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-      )));
+        )));
 
-      final search = tester.getRect(find.byKey(const Key('search')));
-      final bar = tester.getRect(find.byType(TopBarFrame));
-      expect(search.height, 52);
-      expect(search.top - bar.top, 32);
-    });
+        final search = tester.getRect(find.byKey(const Key('search')));
+        final bar = tester.getRect(find.byType(TopBarFrame));
+        expect(search.top - bar.top, 32);
+        if (barHeight != null) {
+          expect(bar.height, barHeight);
+          expect(search.height, 52);
+        } else {
+          expect(search.height, greaterThan(78));
+          expect(search.bottom, lessThanOrEqualTo(bar.bottom));
+        }
+      });
+    }
 
     // B4: Phil moved showing hidden items to the explorer's columns menu.
     testWidgets('has no hidden-items eye', (tester) async {
@@ -166,4 +175,15 @@ void main() {
     expect(text, isNot(contains('-')));
     expect(text, contains('0'));
   });
+}
+
+/// A 52 px field at text scale 1, growing with the text as the real one does.
+class _ScaledField extends StatelessWidget {
+  const _ScaledField({super.key});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        height: MediaQuery.textScalerOf(context).scale(52),
+      );
 }

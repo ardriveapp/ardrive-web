@@ -28,12 +28,14 @@ const double _topBarRowHeight = 110;
 /// Where the controls start, the same 32 px a list page's bar starts at.
 const double _topBarTopInset = 32;
 
-/// The controls in the explorer's 110 px bar, 32 px from the top as a list
-/// page's are, and as tall as they are, as they are there.
+/// The controls in the explorer's bar: 32 px from the top as a list page's
+/// are, as tall as they are, and a bar of at least 110 px that grows to
+/// contain them.
 ///
-/// Centred in the bar, they sat 3 px higher than on Your drives, Account and
-/// Billing; and given the bar's bounded height, a child that fills its
-/// height made the row fill the rest of the bar and push the search down.
+/// Centred in a fixed 110 px, they sat 3 px higher than on Your drives,
+/// Account and Billing; given the bar's bounded height, a child that fills
+/// its height pushed the search down; and at a large text size the search
+/// field outgrew the bar.
 class TopBarFrame extends StatelessWidget {
   const TopBarFrame({super.key, required this.child});
 
@@ -41,13 +43,15 @@ class TopBarFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: _topBarTopInset),
-      child: OverflowBox(
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: _topBarRowHeight),
+      // Loose for the controls, so they take their own height.
+      child: Align(
         alignment: Alignment.topCenter,
-        minHeight: 0,
-        maxHeight: double.infinity,
-        child: child,
+        child: Padding(
+          padding: const EdgeInsets.only(top: _topBarTopInset),
+          child: child,
+        ),
       ),
     );
   }
@@ -58,38 +62,41 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bar = Padding(
+      padding: const EdgeInsets.only(right: ArDriveSpacing.md),
+      child: PublicationMode.isOn
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // A publication has no sidebar, so its icon leads the bar.
+                PublicationIcon(
+                  config: publicationConfigOf(context),
+                  size: 40,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: const SearchBox(),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                const Spacer(),
+                // A publication has no hidden items to show, nothing to
+                // sync and no account (docs/PUBLICATIONS.md, "The
+                // publication frame").
+                const PublicationTopBarActions(),
+              ],
+            )
+          : const TopBarFrame(child: TopBarControls(search: SearchBox())),
+    );
+    // A publication's bar is a fixed 110 px; the others grow with their
+    // controls.
     return SizedBox(
-      height: _topBarRowHeight,
       width: double.maxFinite,
-      child: Padding(
-        padding: const EdgeInsets.only(right: ArDriveSpacing.md),
-        child: PublicationMode.isOn
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // A publication has no sidebar, so its icon leads the bar.
-                  PublicationIcon(
-                    config: publicationConfigOf(context),
-                    size: 40,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: const SearchBox(),
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  const Spacer(),
-                  // A publication has no hidden items to show, nothing to
-                  // sync and no account (docs/PUBLICATIONS.md, "The
-                  // publication frame").
-                  const PublicationTopBarActions(),
-                ],
-              )
-            : const TopBarFrame(child: TopBarControls(search: SearchBox())),
-      ),
+      height: PublicationMode.isOn ? _topBarRowHeight : null,
+      child: bar,
     );
   }
 }
