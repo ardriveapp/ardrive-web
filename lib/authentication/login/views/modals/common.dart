@@ -55,6 +55,8 @@ class _ErrorDialogState extends State<_ErrorDialog> {
     return ArDriveStandardModalNew(
       title: widget.title,
       description: widget.message,
+      // A long message scrolls, and Close stays in reach.
+      scrollableContent: true,
       // The X is read in the dialog's language, like its Close.
       closeLabel: l10n.close,
       actions: [
