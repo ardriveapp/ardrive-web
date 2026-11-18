@@ -401,7 +401,12 @@ class DriveListRow extends StatelessWidget {
     return ListNameCell(
       // Every drive alike, as Google Drive draws them. Only a private one is
       // marked, by the lock after its name: the kind that needs a key.
-      icon: ArDriveIcons.drive(size: _iconSize, color: colorTokens.textMid),
+      // The archive glyph is drawn in the top of its box, which left it 3 px
+      // above the name's middle; this puts its middle on the name's.
+      icon: Transform.translate(
+        offset: const Offset(0, 3),
+        child: ArDriveIcons.drive(size: _iconSize, color: colorTokens.textMid),
+      ),
       title: drive.name,
       marks: [
         if (drive.isPrivate) const PrivateDriveLock(size: 16),

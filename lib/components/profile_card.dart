@@ -9,6 +9,8 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/wallet_gradient_avatar.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
@@ -75,9 +77,15 @@ class _ProfileCardState extends State<ProfileCard> {
   /// "0 files" until it was closed and opened again.
   StreamSubscription<String>? _permanentDataChanges;
 
+  /// What the totals wait on besides the data itself: which drives are
+  /// synced here, and which are locked. Either can change with no write the
+  /// permanent-data watch sees, such as an empty drive's first sync.
+  StreamSubscription<Object>? _coverageChanges;
+
   @override
   void dispose() {
     _permanentDataChanges?.cancel();
+    _coverageChanges?.cancel();
     super.dispose();
   }
 
@@ -100,10 +108,36 @@ class _ProfileCardState extends State<ProfileCard> {
     if (!follow) {
       _permanentDataChanges?.cancel();
       _permanentDataChanges = null;
+      _coverageChanges?.cancel();
+      _coverageChanges = null;
       return;
     }
 
     if (_permanentDataChanges != null) return;
+
+    DriveUnlockSession? session;
+    try {
+      session = context.read<DriveUnlockSession>();
+    } catch (_) {
+      // No session provided: no drive is known to be locked.
+    }
+    // Each stream's first value is what the card is counting from as it
+    // opens; only a change after that recounts.
+    _coverageChanges = Rx.merge<Object>([
+      context
+          .read<DriveDao>()
+          .watchDriveIdsSyncedHere()
+          .map((ids) => (ids.toList()..sort()).join('|'))
+          .distinct()
+          .skip(1),
+      if (session != null) session.lockedDrives.skip(1),
+    ])
+        .throttleTime(
+          const Duration(seconds: 1),
+          leading: true,
+          trailing: true,
+        )
+        .listen((_) => _recount());
 
     var isFirst = true;
     _permanentDataChanges = context
@@ -123,14 +157,19 @@ class _ProfileCardState extends State<ProfileCard> {
       // that change.
       final isOpeningValue = isFirst && version == _countedVersion;
       isFirst = false;
-      if (isOpeningValue || !mounted) return;
+      if (isOpeningValue) return;
+      _recount();
+    });
+  }
 
-      setState(() {
-        _statsGeneration++;
-        _countedStats = null;
-        _countedStatsKey = null;
-        _accountStatsFuture = null;
-      });
+  /// Drops the counted statistics, so the open card counts them again.
+  void _recount() {
+    if (!mounted) return;
+    setState(() {
+      _statsGeneration++;
+      _countedStats = null;
+      _countedStatsKey = null;
+      _accountStatsFuture = null;
     });
   }
 
@@ -181,6 +220,7 @@ class _ProfileCardState extends State<ProfileCard> {
     final walletAddress = state.user.displayAddress;
 
     return ArDriveOverlay(
+      animate: true,
       onVisibleChange: (visible) {
         if (!visible) {
           setState(() {
@@ -368,7 +408,13 @@ class _ProfileCardState extends State<ProfileCard> {
     if (_accountStatsFuture == null ||
         _accountStatsForWallet != walletAddress) {
       _accountStatsForWallet = walletAddress;
-      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
+      DriveUnlockSession? session;
+      try {
+        session = context.read<DriveUnlockSession>();
+      } catch (_) {
+        // No session provided: no drive is known to be locked.
+      }
+      _accountStatsFuture = _getAccountStats(driveDao, walletAddress, session);
     }
 
     return FutureBuilder<_AccountStats>(
@@ -397,17 +443,19 @@ class _ProfileCardState extends State<ProfileCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  [
+                _StatsLine(
+                  parts: [
                     permanenceCount(stats.driveCount, 'drive'),
-                    // "0 files" while every file is still waiting to be
-                    // confirmed reads as a statement about the account, so
-                    // the line waits for a figure that means something.
-                    if (!stats.isStillLanding) ...[
+                    // This line counts what this device has walked and had
+                    // confirmed. With a drive not synced here (or files still
+                    // landing) the true totals are not known, and it read
+                    // "42 files" or "0 files, 0 KiB" depending on what had
+                    // been synced this session. It waits for all of them.
+                    if (!stats.isStillLanding && stats.allSynced) ...[
                       permanenceCount(stats.fileCount, 'file'),
                       formatPermanenceSize(stats.permanentBytes),
                     ],
-                  ].join(permanenceSeparator),
+                  ],
                   style: typography.caption(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.book,
@@ -594,6 +642,7 @@ class _ProfileCardState extends State<ProfileCard> {
   Future<_AccountStats> _getAccountStats(
     DriveDao driveDao,
     String walletAddress,
+    DriveUnlockSession? session,
   ) async {
     final generation = _statsGeneration;
 
@@ -620,7 +669,27 @@ class _ProfileCardState extends State<ProfileCard> {
 
     final driveIds = [for (final drive in drives) drive.id];
     final version = await driveDao.permanentDataVersion();
-    final key = [walletAddress, ...driveIds, version].join('|');
+    final syncedHere = await driveDao.driveIdsSyncedHere();
+    // A private drive whose key this device does not have (see
+    // [DriveUnlockSession]) can never be synced here, so it must not hold the
+    // totals back for good. They then cover the other drives, while the drive
+    // count still counts every drive, locked ones included.
+    final lockedIds = {
+      for (final locked
+          in session?.currentLockedDrives ?? const <LockedDrive>[])
+        if (locked.ownerAddress == walletAddress) locked.driveId,
+    };
+    final lockedWithoutRow = lockedIds.difference(driveIds.toSet()).length;
+    final allSynced = driveIds
+        .where((id) => !lockedIds.contains(id))
+        .every(syncedHere.contains);
+    final key = [
+      walletAddress,
+      ...driveIds,
+      version,
+      allSynced,
+      lockedWithoutRow
+    ].join('|');
 
     if (key == _countedStatsKey && _countedStats != null) {
       return _countedStats!;
@@ -630,11 +699,12 @@ class _ProfileCardState extends State<ProfileCard> {
     final fileCount = await driveDao.permanentFileCount(driveIds);
 
     final stats = _AccountStats(
-      driveCount: drives.length,
+      driveCount: drives.length + lockedWithoutRow,
       fileCount: fileCount,
       permanentByYear: permanentByYear,
       driveIds: driveIds,
       isStillLanding: fileCount == 0 && await driveDao.hasPendingData(driveIds),
+      allSynced: allSynced,
     );
     if (generation == _statsGeneration) {
       _countedStats = stats;
@@ -1299,6 +1369,10 @@ class _AccountStats {
   /// confirmed. See [DriveDao.hasPendingData].
   final bool isStillLanding;
 
+  /// Every counted drive has been synced on this device. Otherwise its files
+  /// are not in the totals and they are not the account's.
+  final bool allSynced;
+
   int get permanentBytes =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
 
@@ -1308,7 +1382,46 @@ class _AccountStats {
     this.permanentByYear = const {},
     this.driveIds = const [],
     this.isStillLanding = false,
+    this.allSynced = true,
   });
+}
+
+/// Figures separated by a drawn middot. The face sets its "·" glyph on the
+/// baseline, where it reads as a full stop between the figures.
+class _StatsLine extends StatelessWidget {
+  const _StatsLine({required this.parts, required this.style});
+
+  final List<String> parts;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = style.color ?? Colors.transparent;
+    return Text.rich(
+      TextSpan(
+        children: [
+          for (var i = 0; i < parts.length; i++) ...[
+            if (i > 0)
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Container(
+                    width: 3,
+                    height: 3,
+                    decoration:
+                        BoxDecoration(color: color, shape: BoxShape.circle),
+                  ),
+                ),
+              ),
+            TextSpan(text: parts[i]),
+          ],
+        ],
+      ),
+      style: style,
+      textAlign: TextAlign.center,
+    );
+  }
 }
 
 /// "Forget all on this device" once the confirmation is in: only

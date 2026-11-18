@@ -334,6 +334,35 @@ void main() {
       verify(() => walletCubit.unlink()).called(1);
     });
 
+    testWidgets(
+        'a lone copy icon lines up with the buttons and takes taps across '
+        'all of its target', (tester) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String;
+          }
+          return null;
+        },
+      );
+      addTearDown(() => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+
+      await pumpPage(tester, user: _user());
+      final copy = tester.getRect(find.byType(AddressCopyButton).first);
+      final link = tester.getRect(find.byKey(const Key('accountNamesLink')));
+      expect(copy.size, const Size.square(AddressCopyButton.targetSize));
+      // The glyph's drawn right edge: half the icon, less its 2 px inset.
+      expect(copy.center.dx + AddressCopyButton.iconSize / 2 - 2, link.right);
+
+      await tester.tapAt(copy.centerRight - const Offset(1, 0));
+      await tester.pump();
+      expect(copied, _arweave);
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+    });
+
     testWidgets('names off: no names row', (tester) async {
       await pumpPage(tester, user: _user(), namesOn: false);
       expect(find.text('Solana, for names'), findsNothing);

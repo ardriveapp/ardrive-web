@@ -4,7 +4,10 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
@@ -89,15 +92,17 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> addDrive(String id) => db.into(db.drives).insert(
-        DrivesCompanion.insert(
-          id: id,
-          rootFolderId: '$id-root',
-          ownerAddress: walletAddress,
-          name: id,
-          privacy: DrivePrivacyTag.public,
-        ),
-      );
+  Future<void> addDrive(String id, {bool synced = true}) =>
+      db.into(db.drives).insert(
+            DrivesCompanion.insert(
+              id: id,
+              rootFolderId: '$id-root',
+              ownerAddress: walletAddress,
+              name: id,
+              privacy: DrivePrivacyTag.public,
+              lastBlockHeight: Value(synced ? 1 : null),
+            ),
+          );
 
   /// A file as a first sync writes it: its data marked pending.
   Future<void> addSyncedFile(String fileId, {required String driveId}) async {
@@ -130,7 +135,11 @@ void main() {
         ),
       );
 
-  Future<void> pumpCard(WidgetTester tester, {PermanenceCache? cache}) async {
+  Future<void> pumpCard(
+    WidgetTester tester, {
+    PermanenceCache? cache,
+    DriveUnlockSession? session,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -180,6 +189,8 @@ void main() {
           RepositoryProvider<PermanenceCache>.value(
             value: cache ?? PermanenceCache(),
           ),
+          if (session != null)
+            RepositoryProvider<DriveUnlockSession>.value(value: session),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -234,6 +245,15 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
   }
 
+  /// Lets the card's watches deliver what they read as it opened, and any
+  /// recount that sets off, so that what follows is a change made later.
+  Future<void> settleWatches(WidgetTester tester) async {
+    for (var i = 0; i < 15; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await tester.pump();
+    }
+  }
+
   Future<void> openCard(WidgetTester tester) async {
     await tester.tap(find.byType(ProfileCardHeader));
     await tester.pump();
@@ -261,7 +281,8 @@ void main() {
       await confirmAll();
       await waitFor(tester, find.textContaining('2 files'));
 
-      expect(find.textContaining('2 drives  ·  2 files'), findsOneWidget);
+      expect(find.textContaining('2 drives'), findsOneWidget);
+      expect(find.textContaining('2 files'), findsOneWidget);
       expect(find.text('Your permanence'), findsOneWidget);
 
       await takeDown(tester);
@@ -327,7 +348,107 @@ void main() {
       await openCard(tester);
       await waitFor(tester, find.textContaining('1 drive'));
 
-      expect(find.textContaining('1 drive  ·  0 files'), findsOneWidget);
+      expect(find.textContaining('1 drive'), findsOneWidget);
+      expect(find.textContaining('0 files'), findsOneWidget);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets('says no files or size while a drive is not synced here',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('synced');
+      await addDrive('unsynced', synced: false);
+
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('2 drives'));
+
+      expect(find.textContaining('0 files'), findsNothing);
+      expect(find.textContaining('KiB'), findsNothing);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets(
+      'shows the totals once the last drive is synced, without being reopened',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('synced');
+      await addDrive('empty', synced: false);
+
+      await pumpCard(tester);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('2 drives'));
+      await settleWatches(tester);
+      expect(find.textContaining('0 files'), findsNothing);
+
+      // An empty drive's first sync writes no file and no transaction.
+      await (db.update(db.drives)..where((d) => d.id.equals('empty')))
+          .write(const DrivesCompanion(lastBlockHeight: Value(1)));
+      await waitFor(tester, find.textContaining('0 files'));
+
+      expect(find.textContaining('0 files'), findsOneWidget);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets('counts a locked drive found while the card is open',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('a');
+      final session = DriveUnlockSession();
+
+      await pumpCard(tester, session: session);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('1 drive'));
+      await settleWatches(tester);
+      expect(find.textContaining('2 drives'), findsNothing);
+
+      session.setLockedDrives(walletAddress, [
+        LockedDrive(
+          driveId: 'locked',
+          ownerAddress: walletAddress,
+          signatureType: DriveSignatureType.v2,
+          lastUpdated: DateTime(2024),
+        ),
+      ]);
+      await waitFor(tester, find.textContaining('2 drives'));
+
+      expect(find.textContaining('2 drives'), findsOneWidget);
+
+      await takeDown(tester);
+    });
+  });
+
+  testWidgets(
+      'a locked drive does not hold the totals back, and still counts as a drive',
+      (tester) async {
+    await tester.runAsync(() async {
+      await addDrive('a');
+      await addSyncedFile('one', driveId: 'a');
+      await confirmAll();
+
+      final session = DriveUnlockSession()
+        ..setLockedDrives(walletAddress, [
+          LockedDrive(
+            driveId: 'locked',
+            ownerAddress: walletAddress,
+            signatureType: DriveSignatureType.v2,
+            lastUpdated: DateTime(2024),
+          ),
+        ]);
+
+      await pumpCard(tester, session: session);
+      await openCard(tester);
+      await waitFor(tester, find.textContaining('2 drives'));
+      await waitFor(tester, find.textContaining('1 file'));
+
+      expect(find.textContaining('2 drives'), findsOneWidget);
+      expect(find.textContaining('1 file'), findsOneWidget);
 
       await takeDown(tester);
     });

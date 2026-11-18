@@ -1436,19 +1436,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// explorer agree on whether a drive is synced.
   Future<Set<String>> driveIdsSyncedHere() async {
     final rows = await customSelect(
-      '''
+      _driveIdsSyncedHereSql,
+      readsFrom: {drives, folderRevisions},
+    ).get();
+
+    return {for (final row in rows) row.read<String>('id')};
+  }
+
+  /// [driveIdsSyncedHere] as it changes, for figures that wait on every
+  /// drive having been synced here.
+  Stream<Set<String>> watchDriveIdsSyncedHere() => customSelect(
+        _driveIdsSyncedHereSql,
+        readsFrom: {drives, folderRevisions},
+      ).watch().map((rows) => {for (final row in rows) row.read<String>('id')});
+
+  static const _driveIdsSyncedHereSql = '''
       SELECT d.id AS id FROM drives d
       WHERE COALESCE(d.lastBlockHeight, 0) > 0
         OR EXISTS (
           SELECT 1 FROM folder_revisions r
           WHERE r.driveId = d.id AND r.folderId = d.rootFolderId
         )
-      ''',
-      readsFrom: {drives, folderRevisions},
-    ).get();
-
-    return {for (final row in rows) row.read<String>('id')};
-  }
+      ''';
 
   /// What [driveIds] hold permanently, by the year it was uploaded, oldest
   /// first.

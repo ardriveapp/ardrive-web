@@ -8071,7 +8071,7 @@
   "@enterPasswordUnlockDrives": {"description": "On the sign-in password dialog, under the Welcome back title."},
   "enterPasswordHint": "パスワードを入力",
   "@enterPasswordHint": {"description": "Placeholder of the password field on the sign-in password dialog."},
-  "forgetWalletDialogTitle": "ウォレットを忘れる",
+  "forgetWalletDialogTitle": "別のアカウントを使いますか？",
   "@forgetWalletDialogTitle": {"description": "Title of the dialog that confirms forgetting the wallet on this device."},
   "forgetWalletDialogDescription": "このウォレットを本当に忘れますか？",
   "@forgetWalletDialogDescription": {"description": "Question in the dialog that confirms forgetting the wallet on this device."},

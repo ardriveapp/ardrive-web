@@ -1,4 +1,5 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -313,16 +314,18 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
       },
       visible: visible,
       anchor: _anchor,
+      animate: true,
       content: _ArDriveDropdownContent(
         height: _fittedHeight ?? dropdownHeight,
         fitContent: widget.fitContent,
         child: ArDriveCard(
           border: widget.hasBorder
+              // An edge, not the menu's own colour: in dark the fill is one
+              // step off the rows behind it, and the same-coloured border
+              // gave the menu no outline at all.
               ? Border.all(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .dropdownTheme
-                      .backgroundColor,
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.strokeMid,
                   width: 1,
                 )
               : null,
@@ -352,10 +355,12 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                         final item = widget.items[index];
                         void pick() {
                           item.onClick?.call();
+                          // Closes, never toggles: a second press while the
+                          // menu fades out must not open it again.
                           setState(() {
-                            visible = !visible;
+                            visible = false;
                           });
-                          if (!visible) _closed();
+                          _closed();
                         }
 
                         return Semantics(
@@ -433,10 +438,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
   }
 }
 
-class _ArDriveDropdownContent extends StatefulWidget {
-  @override
-  _ArDriveDropdownContentState createState() => _ArDriveDropdownContentState();
-
+class _ArDriveDropdownContent extends StatelessWidget {
   const _ArDriveDropdownContent({
     required this.child,
     this.height = 200,
@@ -448,41 +450,11 @@ class _ArDriveDropdownContent extends StatefulWidget {
 
   /// See [ArDriveDropdown.fitContent]: [height] is then a cap.
   final bool fitContent;
-}
 
-class _ArDriveDropdownContentState extends State<_ArDriveDropdownContent>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-    _animation = Tween<double>(begin: 0, end: widget.height)
-        .animate(_animationController);
-    _animationController.forward();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ArDriveDropdownContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Fitted again to a resized window: the open menu takes the new height.
-    if (widget.height != oldWidget.height) {
-      _animation = Tween<double>(begin: 0, end: widget.height)
-          .animate(_animationController);
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
+  // The menu appears by fading and settling in (see ArDriveOverlay.animate),
+  // at its full size. It used to grow from nothing in height, which the page
+  // behind it cut off before it read as motion, and which made a menu that
+  // was resized while open take a tween's worth of frames to catch up.
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -490,23 +462,17 @@ class _ArDriveDropdownContentState extends State<_ArDriveDropdownContent>
         return ArDriveScrollBar(
           isVisible: false,
           child: SingleChildScrollView(
-            child: AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                double maxHeight = constraints.maxHeight;
-                double currentHeight = _animation.value.clamp(0.0, maxHeight);
-                if (widget.fitContent) {
+            child: Builder(
+              builder: (context) {
+                final currentHeight = height.clamp(0.0, constraints.maxHeight);
+                if (fitContent) {
                   return ConstrainedBox(
                     constraints: BoxConstraints(maxHeight: currentHeight),
                     child: child,
                   );
                 }
-                return SizedBox(
-                  height: currentHeight,
-                  child: child,
-                );
+                return SizedBox(height: currentHeight, child: child);
               },
-              child: widget.child,
             ),
           ),
         );
@@ -539,10 +505,20 @@ class ArDriveOverlay extends StatefulWidget {
     this.closeOnBarrierTap = true,
     this.closeOnEscape,
     this.barrierColor,
+    this.animate = false,
   });
 
   final Widget child;
   final Widget content;
+
+  /// Whether the content fades and settles in on opening, and out on closing,
+  /// as a menu does: [menuOpenDuration] and [menuCloseDuration], ease-out.
+  /// Closing keeps the content in the overlay until it has gone. Skipped when
+  /// the system asks for reduced motion.
+  final bool animate;
+
+  static const menuOpenDuration = Duration(milliseconds: 150);
+  static const menuCloseDuration = Duration(milliseconds: 110);
   final EdgeInsets contentPadding;
   final Anchor anchor;
   final bool? visible;
@@ -565,10 +541,37 @@ class ArDriveOverlay extends StatefulWidget {
   State<ArDriveOverlay> createState() => _ArDriveOverlayState();
 }
 
-class _ArDriveOverlayState extends State<ArDriveOverlay> {
+class _ArDriveOverlayState extends State<ArDriveOverlay>
+    with SingleTickerProviderStateMixin {
   final _link = LayerLink();
   OverlayEntry? _entry;
   late bool _visible;
+
+  /// 0 while the content is not shown, 1 when it is; an animated overlay's
+  /// entry stays in the overlay while this runs back to 0.
+  late final AnimationController _motion;
+  late final CurvedAnimation _curved;
+  AnimationController _makeMotion() => AnimationController(
+        vsync: this,
+        duration: ArDriveOverlay.menuOpenDuration,
+        reverseDuration: ArDriveOverlay.menuCloseDuration,
+      );
+  bool _closing = false;
+
+  /// [_closing], for the overlays opened from this one's content.
+  final _closingNotifier = ValueNotifier<bool>(false);
+
+  void _setClosing(bool closing) {
+    _closing = closing;
+    _closingNotifier.value = closing;
+  }
+
+  /// The overlay this one was opened from, when it was opened from one's
+  /// content: it closes, fades and stops taking input along with it.
+  _OverlayParentScope? _parent;
+
+  bool get _reducedMotion =>
+      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
   /// Whether another route, such as a dialog, is open over this one's page.
   /// The entry belongs to no route, so the navigator would leave it above
@@ -580,6 +583,12 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   void initState() {
     super.initState();
     _visible = widget.visible ?? false;
+    _motion = _makeMotion();
+    _curved = CurvedAnimation(
+      parent: _motion,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeOut,
+    );
   }
 
   @override
@@ -588,6 +597,18 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
     final route = ModalRoute.of(context);
     _covered = route != null && !route.isCurrent;
     _sync();
+    // A menu opened from a menu goes when that one starts to go. It is in its
+    // own overlay entry, which the closing menu's IgnorePointer can't reach.
+    final parent = _OverlayParentScope.maybeOf(context);
+    if (parent?.closing != _parent?.closing) {
+      _parent?.closing.removeListener(_parentClosingChanged);
+      parent?.closing.addListener(_parentClosingChanged);
+    }
+    _parent = parent;
+  }
+
+  void _parentClosingChanged() {
+    if (mounted && _parent?.closing.value == true && _visible) _close();
   }
 
   @override
@@ -610,7 +631,12 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
 
   @override
   void dispose() {
-    _hide();
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    _parent?.closing.removeListener(_parentClosingChanged);
+    _remove();
+    _closingNotifier.dispose();
+    _curved.dispose();
+    _motion.dispose();
     super.dispose();
   }
 
@@ -623,6 +649,14 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   void _show() {
     final entry = _entry;
     if (entry != null) {
+      if (_closing) {
+        // Opened again while it was going.
+        _setClosing(false);
+        _motion.forward();
+        if (widget.closeOnEscape ?? widget.closeOnBarrierTap) {
+          HardwareKeyboard.instance.addHandler(_onKey);
+        }
+      }
       entry.markNeedsBuild();
       return;
     }
@@ -632,10 +666,30 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
     final newEntry = OverlayEntry(builder: _buildEntry);
     _entry = newEntry;
     Overlay.of(context).insert(newEntry);
+    if (widget.animate && !_reducedMotion) {
+      _motion.forward(from: 0);
+    } else {
+      _motion.value = 1;
+    }
   }
 
-  void _hide() {
+  /// Takes the content out: after it has faded out, for an animated one.
+  void _hide({bool immediately = false}) {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    if (_entry == null || _closing) return;
+    if (!immediately && widget.animate && !_reducedMotion) {
+      _setClosing(true);
+      _motion.reverse().whenComplete(() {
+        if (_closing) _remove();
+      });
+      _entry?.markNeedsBuild();
+      return;
+    }
+    _remove();
+  }
+
+  void _remove() {
+    _setClosing(false);
     _entry?.remove();
     _entry?.dispose();
     _entry = null;
@@ -676,9 +730,17 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   Widget _buildEntry(BuildContext overlayContext) {
     // Offstage while another route covers the page: not drawn, not clicked,
     // not read by a screen reader, and back as it was when the page returns.
-    return Offstage(
-      offstage: _covered,
-      child: _buildLayers(),
+    // A closing menu is already closed to the page: it takes no clicks. One
+    // opened from it starts closing in the same frame (see
+    // [_parentClosingChanged]), so neither does that.
+    final layers = ExcludeFocus(
+      excluding: _closing,
+      child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
+    );
+    return _OverlayParentScope(
+      motion: _curved,
+      closing: _closingNotifier,
+      child: Offstage(offstage: _covered, child: layers),
     );
   }
 
@@ -714,17 +776,51 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
             // icon theme and Material it had under its button: the themes
             // between the button and the overlay come with it, over a
             // transparent Material for ink and expansion tiles.
-            child: Material(
-              type: MaterialType.transparency,
-              child: InheritedTheme.captureAll(
-                context,
-                widget.content,
-                to: Overlay.of(context).context,
+            child: _wrapParentFade(_wrapMotion(
+              Material(
+                type: MaterialType.transparency,
+                child: InheritedTheme.captureAll(
+                  context,
+                  widget.content,
+                  to: Overlay.of(context).context,
+                ),
               ),
-            ),
+            )),
           ),
         ),
       ],
+    );
+  }
+
+  /// Faded with the overlay this one was opened from, so the two go
+  /// together. That one is fully shown while this one is open.
+  Widget _wrapParentFade(Widget content) {
+    final parent = _parent;
+    if (parent == null) return content;
+    return FadeTransition(
+      opacity: parent.motion,
+      alwaysIncludeSemantics: true,
+      child: content,
+    );
+  }
+
+  /// The fade, and a settle from 96% of its size at the corner that meets the
+  /// button. The barrier stays out of it: it is not part of the menu.
+  Widget _wrapMotion(Widget content) {
+    if (!widget.animate) return content;
+    final curved = _curved;
+    final anchor = widget.anchor;
+    final origin = anchor is Aligned ? anchor.follower : Alignment.topLeft;
+    return FadeTransition(
+      opacity: curved,
+      // Read by a screen reader from the first frame: it should not have to
+      // wait for the fade to start.
+      alwaysIncludeSemantics: true,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+        alignment: origin,
+        child: content,
+      ),
     );
   }
 
@@ -916,4 +1012,24 @@ class _DropdownDivider extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What the overlays opened from an overlay's content follow: its motion,
+/// to fade with it, and whether it is closing, to close with it.
+class _OverlayParentScope extends InheritedWidget {
+  const _OverlayParentScope({
+    required this.motion,
+    required this.closing,
+    required super.child,
+  });
+
+  final Animation<double> motion;
+  final ValueListenable<bool> closing;
+
+  static _OverlayParentScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_OverlayParentScope>();
+
+  @override
+  bool updateShouldNotify(_OverlayParentScope oldWidget) =>
+      motion != oldWidget.motion || closing != oldWidget.closing;
 }

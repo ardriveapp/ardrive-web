@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// ArDriveSubmenu used to be Material's MenuAnchor. It moved to the
@@ -172,6 +173,67 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.getRect(find.text('Create manifest')), before);
+  });
+
+  testWidgets('a nested menu closes with its menu and takes no clicks',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    var created = 0;
+    await tester.pumpWidget(app(
+      buttonAt: const Offset(56, 112),
+      menu: ArDriveSubmenu(
+        alignmentOffset: const Offset(140, -40),
+        menuChildren: [
+          ArDriveSubmenuItem(widget: row('Upload file(s)'), onClick: () {}),
+          ArDriveSubmenuItem(
+            widget: row('Advanced'),
+            children: [
+              ArDriveSubmenuItem(
+                widget: row('Create manifest'),
+                onClick: () => created++,
+              ),
+            ],
+          ),
+        ],
+        child: newButton(),
+      ),
+    ));
+    await tester.tap(find.text('New'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Advanced'));
+    await tester.pumpAndSettle();
+    final nested = tester.getCenter(find.text('Create manifest'));
+
+    double shown(String text) {
+      var opacity = 1.0;
+      for (final fade in tester.widgetList<FadeTransition>(
+        find.ancestor(
+            of: find.text(text), matching: find.byType(FadeTransition)),
+      )) {
+        opacity *= fade.opacity.value;
+      }
+      return opacity;
+    }
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    // From the first frame on: closing, so it takes no clicks.
+    await tester.tapAt(nested);
+    await tester.pump();
+    expect(created, 0, reason: 'closing, so it takes no clicks');
+
+    // Half way through, the nested menu is no more there than its menu.
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(shown('Upload file(s)'), lessThan(1));
+    expect(
+        shown('Create manifest'), lessThanOrEqualTo(shown('Upload file(s)')));
+
+    await tester.pumpAndSettle();
+    expect(find.text('Create manifest'), findsNothing);
+    expect(find.text('Upload file(s)'), findsNothing);
   });
 
   group('ArDriveMenuAnchor, as the media players use it', () {
