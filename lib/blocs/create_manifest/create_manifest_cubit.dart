@@ -426,6 +426,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         emit(CreateManifestSuccess(
           parentFolder: createManifestUploadReview.parentFolder,
           dataTxId: dataTxId,
+          name: createManifestUploadReview.manifestName,
         ));
       } catch (e) {
         logger.e('An error occured uploading the manifest.', e);

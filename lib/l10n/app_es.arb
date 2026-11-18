@@ -8242,5 +8242,6 @@
   "snapshotFailureUncertain": "La transacción de esta instantánea ({txId}) llegó a la red antes de que fallara la subida, así que está pagada, pero sus datos pueden estar incompletos. Búscala en una pasarela antes de intentarlo de nuevo. Un segundo intento crea otra transacción y la paga por segunda vez.",
   "snapshotFailureThrew": "No se pudo crear la instantánea. No se gastó nada.",
   "deploymentPostedBody": "El despliegue se publicó en Arweave (transacción {txId}) pero no se pudo guardar aquí, así que está pagado. No lo vuelvas a crear; sincroniza la unidad para verlo.",
-  "deploymentNameNotSet": "El despliegue se creó, pero no se pudo asignar el nombre. Puedes asignarlo desde Nombres."
+  "deploymentNameNotSet": "El despliegue se creó, pero no se pudo asignar el nombre. Puedes asignarlo desde Nombres.",
+  "deploymentAddress": "Dirección"
 }

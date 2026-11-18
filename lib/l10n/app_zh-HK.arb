@@ -8242,5 +8242,6 @@
   "snapshotFailureUncertain": "此快照的交易（{txId}）在上載失敗前已到達網絡，因此已付費，但其資料可能不完整。再試前請先在閘道上查詢。再次嘗試會建立第二筆交易並再次付費。",
   "snapshotFailureThrew": "無法建立快照。沒有花費任何費用。",
   "deploymentPostedBody": "部署已發佈到 Arweave（交易 {txId}），但無法在此儲存，因此已付費。請不要重複建立；同步雲端硬碟即可看到它。",
-  "deploymentNameNotSet": "部署已建立，但無法設定名稱。您可以在「名稱」中設定。"
+  "deploymentNameNotSet": "部署已建立，但無法設定名稱。您可以在「名稱」中設定。",
+  "deploymentAddress": "地址"
 }

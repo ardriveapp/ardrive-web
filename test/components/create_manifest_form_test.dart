@@ -4,10 +4,13 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dar
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +19,8 @@ import 'package:provider/provider.dart';
 
 class _MockNames extends MockCubit<ArNSNameDialogState>
     implements ArNSFlowNameCubit {}
+
+class _MockConfigService extends Mock implements ConfigService {}
 
 class _MockCreateManifestCubit extends MockCubit<CreateManifestState>
     implements CreateManifestCubit {}
@@ -63,9 +68,17 @@ void main() {
       initialState: state,
     );
 
+    final config = _MockConfigService();
+    when(() => config.config).thenReturn(
+      AppConfig(stripePublishableKey: '', allowedDataItemSizeForTurbo: 100),
+    );
+
     await tester.pumpWidget(
-      ChangeNotifierProvider(
-        create: (_) => ActivityTracker(),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ActivityTracker()),
+          Provider<ConfigService>.value(value: config),
+        ],
         child: ArDriveApp(
           builder: (context) => MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -301,5 +314,42 @@ void main() {
     expect(find.byType(ArDriveNotice), findsOneWidget);
     expect(find.textContaining("name couldn't be set"), findsOneWidget);
     expect(find.textContaining('from Names'), findsOneWidget);
+  });
+
+  testWidgets('success shows the deployment, its address, and copies it',
+      (tester) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String;
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    await pumpForm(
+      tester,
+      CreateManifestSuccess(
+        parentFolder: folder('root'),
+        dataTxId: 'data-tx-1',
+        name: 'my-site',
+      ),
+    );
+
+    expect(find.text('Deployment created'), findsOneWidget);
+    expect(find.text('my-site'), findsOneWidget);
+    expect(find.textContaining('/data-tx-1'), findsOneWidget,
+        reason: 'the address of its data transaction');
+    expect(find.byType(ArDriveLink), findsNWidgets(2),
+        reason: 'Copy link and Open');
+
+    await tester.tap(find.text('Copy link'));
+    await tester.pump();
+
+    expect(copied, endsWith('/data-tx-1'));
+    // The field's "Copied" message clears on a timer.
+    await tester.pump(const Duration(seconds: 5));
   });
 }

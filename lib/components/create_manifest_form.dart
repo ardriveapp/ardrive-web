@@ -2,6 +2,7 @@ import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
+import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -321,6 +322,12 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     bool nameFailed = false,
   }) {
     final l10n = appLocalizationsOf(context);
+    final dataTxId = state.dataTxId;
+    // The deployment's address: its data transaction on the gateway the app
+    // reads data from, as a file's data link is built.
+    final address = dataTxId == null
+        ? null
+        : '${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}/$dataTxId';
     void finish() {
       context
           .read<DriveDetailCubit>()
@@ -332,14 +339,44 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
       title: l10n.deploymentCreatedTitle,
-      content: nameFailed
-          ? ArDriveNotice(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (address != null) ...[
+            if (state.name != null)
+              Text(
+                state.name!,
+                style: ArDriveTypographyNew.of(context).paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+            const SizedBox(height: ArDriveSpacing.xs),
+            CopyableShareArtifact(
+              label: l10n.deploymentAddress,
+              text: address,
+              copyLabel: l10n.copyLink,
+              revealLabel: l10n.copyLink,
+            ),
+            const SizedBox(height: ArDriveSpacing.xs),
+            ArDriveLink(
+              text: l10n.open,
+              external: true,
+              onTap: () => openUrl(url: address),
+            ),
+          ],
+          if (nameFailed) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArDriveNotice(
               type: ArDriveNoticeType.warning,
               message: l10n.deploymentNameNotSet,
-            )
-          : names != null && !names.isEmpty
-              ? ArNSFlowNameResult(outcome: names)
-              : null,
+            ),
+          ] else if (names != null && !names.isEmpty) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArNSFlowNameResult(outcome: names),
+          ],
+        ],
+      ),
       actions: [
         ModalAction.close(
           action: finish,

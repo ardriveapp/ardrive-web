@@ -222,9 +222,13 @@ class CreateManifestSuccess extends CreateManifestState {
   /// The deployment's data transaction, for a name to point at.
   final String? dataTxId;
 
+  /// The deployment's name, for the success screen.
+  final String? name;
+
   CreateManifestSuccess({
     required this.parentFolder,
     this.dataTxId,
+    this.name,
   });
 }
 

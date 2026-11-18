@@ -6387,5 +6387,7 @@
   "deploymentPostedBody": "The deployment was posted to Arweave (transaction {txId}) but couldn't be saved here, so it is paid for. Don't create it again; sync the drive to see it.",
   "@deploymentPostedBody": {"description": "Notice when the deployment was posted but not saved", "placeholders": {"txId": {"type": "String"}}},
   "deploymentNameNotSet": "The deployment was created, but the name couldn't be set. You can set it from Names.",
-  "@deploymentNameNotSet": {"description": "Warning on the deployment success screen when the chosen ArNS name could not be set"}
+  "@deploymentNameNotSet": {"description": "Warning on the deployment success screen when the chosen ArNS name could not be set"},
+  "deploymentAddress": "Address",
+  "@deploymentAddress": {"description": "Label of the deployment's address on the success screen"}
 }
