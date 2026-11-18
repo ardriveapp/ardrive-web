@@ -207,12 +207,29 @@ void main() {
     await tester.pumpAndSettle();
     final nested = tester.getCenter(find.text('Create manifest'));
 
+    double shown(String text) {
+      var opacity = 1.0;
+      for (final fade in tester.widgetList<FadeTransition>(
+        find.ancestor(
+            of: find.text(text), matching: find.byType(FadeTransition)),
+      )) {
+        opacity *= fade.opacity.value;
+      }
+      return opacity;
+    }
+
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 20));
+    // From the first frame on: closing, so it takes no clicks.
     await tester.tapAt(nested);
     await tester.pump();
     expect(created, 0, reason: 'closing, so it takes no clicks');
+
+    // Half way through, the nested menu is no more there than its menu.
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(shown('Upload file(s)'), lessThan(1));
+    expect(
+        shown('Create manifest'), lessThanOrEqualTo(shown('Upload file(s)')));
 
     await tester.pumpAndSettle();
     expect(find.text('Create manifest'), findsNothing);

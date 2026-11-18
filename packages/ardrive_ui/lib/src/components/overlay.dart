@@ -1,4 +1,5 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -557,6 +558,18 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
       );
   bool _closing = false;
 
+  /// [_closing], for the overlays opened from this one's content.
+  final _closingNotifier = ValueNotifier<bool>(false);
+
+  void _setClosing(bool closing) {
+    _closing = closing;
+    _closingNotifier.value = closing;
+  }
+
+  /// The overlay this one was opened from, when it was opened from one's
+  /// content: it closes, fades and stops taking input along with it.
+  _OverlayParentScope? _parent;
+
   bool get _reducedMotion =>
       MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
@@ -584,13 +597,18 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
     final route = ModalRoute.of(context);
     _covered = route != null && !route.isCurrent;
     _sync();
-    // A menu opened from a menu that is closing goes with it. It is in its
+    // A menu opened from a menu goes when that one starts to go. It is in its
     // own overlay entry, which the closing menu's IgnorePointer can't reach.
-    if (_OverlayClosingScope.closingOf(context) && _visible) {
-      _afterFrame(() {
-        if (_visible) _close();
-      });
+    final parent = _OverlayParentScope.maybeOf(context);
+    if (parent?.closing != _parent?.closing) {
+      _parent?.closing.removeListener(_parentClosingChanged);
+      parent?.closing.addListener(_parentClosingChanged);
     }
+    _parent = parent;
+  }
+
+  void _parentClosingChanged() {
+    if (mounted && _parent?.closing.value == true && _visible) _close();
   }
 
   @override
@@ -614,7 +632,9 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    _parent?.closing.removeListener(_parentClosingChanged);
     _remove();
+    _closingNotifier.dispose();
     _curved.dispose();
     _motion.dispose();
     super.dispose();
@@ -631,7 +651,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
     if (entry != null) {
       if (_closing) {
         // Opened again while it was going.
-        _closing = false;
+        _setClosing(false);
         _motion.forward();
         if (widget.closeOnEscape ?? widget.closeOnBarrierTap) {
           HardwareKeyboard.instance.addHandler(_onKey);
@@ -658,7 +678,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
     HardwareKeyboard.instance.removeHandler(_onKey);
     if (_entry == null || _closing) return;
     if (!immediately && widget.animate && !_reducedMotion) {
-      _closing = true;
+      _setClosing(true);
       _motion.reverse().whenComplete(() {
         if (_closing) _remove();
       });
@@ -669,7 +689,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   }
 
   void _remove() {
-    _closing = false;
+    _setClosing(false);
     _entry?.remove();
     _entry?.dispose();
     _entry = null;
@@ -710,16 +730,17 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
   Widget _buildEntry(BuildContext overlayContext) {
     // Offstage while another route covers the page: not drawn, not clicked,
     // not read by a screen reader, and back as it was when the page returns.
-    return _OverlayClosingScope(
-      closing: _closing,
-      child: Offstage(
-        offstage: _covered,
-        // A closing menu is already closed to the page: it takes no clicks.
-        child: ExcludeFocus(
-          excluding: _closing,
-          child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
-        ),
-      ),
+    // A closing menu is already closed to the page: it takes no clicks. One
+    // opened from it starts closing in the same frame (see
+    // [_parentClosingChanged]), so neither does that.
+    final layers = ExcludeFocus(
+      excluding: _closing,
+      child: IgnorePointer(ignoring: _closing, child: _buildLayers()),
+    );
+    return _OverlayParentScope(
+      motion: _curved,
+      closing: _closingNotifier,
+      child: Offstage(offstage: _covered, child: layers),
     );
   }
 
@@ -755,7 +776,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
             // icon theme and Material it had under its button: the themes
             // between the button and the overlay come with it, over a
             // transparent Material for ink and expansion tiles.
-            child: _wrapMotion(
+            child: _wrapParentFade(_wrapMotion(
               Material(
                 type: MaterialType.transparency,
                 child: InheritedTheme.captureAll(
@@ -764,10 +785,22 @@ class _ArDriveOverlayState extends State<ArDriveOverlay>
                   to: Overlay.of(context).context,
                 ),
               ),
-            ),
+            )),
           ),
         ),
       ],
+    );
+  }
+
+  /// Faded with the overlay this one was opened from, so the two go
+  /// together. That one is fully shown while this one is open.
+  Widget _wrapParentFade(Widget content) {
+    final parent = _parent;
+    if (parent == null) return content;
+    return FadeTransition(
+      opacity: parent.motion,
+      alwaysIncludeSemantics: true,
+      child: content,
     );
   }
 
@@ -981,19 +1014,22 @@ class _DropdownDivider extends StatelessWidget {
   }
 }
 
-/// Tells the overlays opened from an overlay's content that it is closing.
-class _OverlayClosingScope extends InheritedWidget {
-  const _OverlayClosingScope({required this.closing, required super.child});
+/// What the overlays opened from an overlay's content follow: its motion,
+/// to fade with it, and whether it is closing, to close with it.
+class _OverlayParentScope extends InheritedWidget {
+  const _OverlayParentScope({
+    required this.motion,
+    required this.closing,
+    required super.child,
+  });
 
-  final bool closing;
+  final Animation<double> motion;
+  final ValueListenable<bool> closing;
 
-  static bool closingOf(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<_OverlayClosingScope>()
-          ?.closing ??
-      false;
+  static _OverlayParentScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_OverlayParentScope>();
 
   @override
-  bool updateShouldNotify(_OverlayClosingScope oldWidget) =>
-      closing != oldWidget.closing;
+  bool updateShouldNotify(_OverlayParentScope oldWidget) =>
+      motion != oldWidget.motion || closing != oldWidget.closing;
 }
