@@ -44,7 +44,10 @@ class _ErrorDialog extends StatefulWidget {
 }
 
 class _ErrorDialogState extends State<_ErrorDialog> {
-  bool _copied = false;
+  /// The last Copy logs: null before one, true when it copied, false when
+  /// the browser refused the clipboard. The button says which, and stays
+  /// there to try again.
+  bool? _copied;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +55,8 @@ class _ErrorDialogState extends State<_ErrorDialog> {
     return ArDriveStandardModalNew(
       title: widget.title,
       description: widget.message,
+      // The X is read in the dialog's language, like its Close.
+      closeLabel: l10n.close,
       actions: [
         ModalAction.close(
           action: () => Navigator.pop(context),
@@ -59,11 +64,19 @@ class _ErrorDialogState extends State<_ErrorDialog> {
         ),
         if (widget.showShareLogsButton)
           ModalAction(
-            title: _copied ? l10n.copied : l10n.copyLogs,
+            title: switch (_copied) {
+              true => l10n.copied,
+              false => l10n.couldNotCopy,
+              null => l10n.copyLogs,
+            },
             action: () async {
-              final logs = await logger.getLogs();
-              await Clipboard.setData(ClipboardData(text: logs));
-              if (mounted) setState(() => _copied = true);
+              try {
+                final logs = await logger.getLogs();
+                await Clipboard.setData(ClipboardData(text: logs));
+                if (mounted) setState(() => _copied = true);
+              } catch (_) {
+                if (mounted) setState(() => _copied = false);
+              }
             },
           ),
       ],
