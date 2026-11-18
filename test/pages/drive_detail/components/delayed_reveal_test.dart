@@ -58,6 +58,27 @@ void main() {
       expect(created, 1, reason: 'not remounted');
     });
 
+    testWidgets('reduced motion turned on mid-fade jumps to full',
+        (tester) async {
+      var created = 0;
+      Widget build(bool reduce) => MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(disableAnimations: reduce),
+              child: DelayedReveal(
+                immediate: false,
+                child: _Mount(onCreate: () => created++),
+              ),
+            ),
+          );
+      await tester.pumpWidget(build(false));
+      await tester.pump(const Duration(milliseconds: 320));
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(_opacity(tester), allOf(greaterThan(0), lessThan(1)));
+      await tester.pumpWidget(build(true));
+      expect(_opacity(tester), 1);
+      expect(created, 1, reason: 'not remounted');
+    });
+
     testWidgets('a wait that turns into a sync shows at once', (tester) async {
       Widget build(bool immediate) => MaterialApp(
             home: DelayedReveal(

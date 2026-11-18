@@ -559,6 +559,15 @@ class _DelayedRevealState extends State<DelayedReveal>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion turned on half way through a fade: jump to full.
+    if (_fade.isAnimating && MediaQuery.disableAnimationsOf(context)) {
+      _fade.value = 1;
+    }
+  }
+
+  @override
   void didUpdateWidget(DelayedReveal oldWidget) {
     super.didUpdateWidget(oldWidget);
     // A sync shows at once, even half way through a fade: jump to full, the
