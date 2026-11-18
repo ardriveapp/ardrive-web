@@ -94,7 +94,10 @@ Future<void> promptToCreateManifest(
 }
 
 class CreateManifestForm extends StatefulWidget {
-  const CreateManifestForm({super.key});
+  const CreateManifestForm({super.key, @visibleForTesting this.names});
+
+  /// A name step to use instead of the one built from the app's providers.
+  final ArNSFlowNameCubit? names;
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -126,6 +129,16 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       });
     }
     return names;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final given = widget.names;
+    if (given != null) {
+      _names = given;
+      _namesStarted = true;
+    }
   }
 
   @override
@@ -199,7 +212,15 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             // An error here still ends in the success screen: the deployment
             // exists, and a wait with nothing to press is a trap.
             builder: (context, outcome) => outcome.hasData || outcome.hasError
-                ? _createManifestSuccess(context, state, names: outcome.data)
+                ? _createManifestSuccess(
+                    context,
+                    state,
+                    names: outcome.data,
+                    // The deployment exists, so this is the success screen;
+                    // the name the person chose is not set, and they are
+                    // told.
+                    nameFailed: outcome.hasError,
+                  )
                 : ProgressDialog(
                     title: l10n.arnsSettingTheName,
                   ),
@@ -297,6 +318,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     BuildContext context,
     CreateManifestSuccess state, {
     ArNSFlowOutcome? names,
+    bool nameFailed = false,
   }) {
     final l10n = appLocalizationsOf(context);
     void finish() {
@@ -310,9 +332,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
       title: l10n.deploymentCreatedTitle,
-      content: names != null && !names.isEmpty
-          ? ArNSFlowNameResult(outcome: names)
-          : null,
+      content: nameFailed
+          ? ArDriveNotice(
+              type: ArDriveNoticeType.warning,
+              message: l10n.deploymentNameNotSet,
+            )
+          : names != null && !names.isEmpty
+              ? ArNSFlowNameResult(outcome: names)
+              : null,
       actions: [
         ModalAction.close(
           action: finish,

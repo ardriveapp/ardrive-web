@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -12,6 +13,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
+
+class _MockNames extends MockCubit<ArNSNameDialogState>
+    implements ArNSFlowNameCubit {}
 
 class _MockCreateManifestCubit extends MockCubit<CreateManifestState>
     implements CreateManifestCubit {}
@@ -47,6 +51,7 @@ void main() {
     WidgetTester tester,
     CreateManifestState state, {
     Size size = const Size(1200, 900),
+    ArNSFlowNameCubit? names,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -69,7 +74,7 @@ void main() {
               body: Center(
                 child: BlocProvider<CreateManifestCubit>.value(
                   value: cubit,
-                  child: const CreateManifestForm(),
+                  child: CreateManifestForm(names: names),
                 ),
               ),
             ),
@@ -274,5 +279,27 @@ void main() {
       expect(find.text('Try again'), findsNothing);
       expect(find.byType(CreateManifestForm), findsOneWidget);
     });
+  });
+
+  testWidgets(
+      'a name that could not be set ends on the success screen with a warning',
+      (tester) async {
+    final names = _MockNames();
+    when(() => names.hasWork).thenReturn(true);
+    when(() => names.applyTo(any())).thenAnswer((_) async => throw Exception());
+    when(() => names.close()).thenAnswer((_) async {});
+
+    await pumpForm(
+      tester,
+      CreateManifestSuccess(parentFolder: folder('root'), dataTxId: 'tx-1'),
+      names: names,
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Deployment created'), findsOneWidget);
+    expect(find.byType(ArDriveNotice), findsOneWidget);
+    expect(find.textContaining("name couldn't be set"), findsOneWidget);
+    expect(find.textContaining('from Names'), findsOneWidget);
   });
 }
