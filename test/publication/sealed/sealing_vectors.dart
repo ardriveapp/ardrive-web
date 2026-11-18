@@ -44,6 +44,17 @@ class SpyArgon2id implements Argon2idKdf {
   }
 }
 
+/// An Argon2id that can't run, as when the module doesn't load.
+class FailingArgon2id implements Argon2idKdf {
+  @override
+  Future<Uint8List> derive({
+    required List<int> password,
+    required List<int> salt,
+    required Argon2Settings settings,
+  }) =>
+      Future.error(StateError('Argon2id did not load'));
+}
+
 Matcher sealError(SealErrorCode code) =>
     isA<SealError>().having((e) => e.code, 'code', code);
 
@@ -286,6 +297,48 @@ void sealingVectorTests() {
       );
       expect(opened.via, OpenedVia.password, reason: linkKey);
     }
+  });
+
+  test('a sealed scope nested deep is refused, not a crash', () async {
+    final v = listOf('pages')
+        .firstWhere((p) => p['password'] == 'correct horse battery staple');
+    final config = jsonDecode(v['publicationJson'] as String) as Map;
+    final deep = '${'[' * 100000}${']' * 100000}';
+    final text = (v['sealedPlaintext'] as String)
+        .replaceFirst(RegExp(r'"folderId":"[^"]+"'), '"folderId":$deep');
+    final sealed = await sealing.sealPlaintext(
+      bytes(v['linkKey'] as String),
+      bytes((config['sealed'] as Map)['iv'] as String),
+      utf8.encode(text),
+      config,
+    );
+    await expectLater(
+      sealing.openPage(
+          config: config, sealedBytes: sealed, linkKey: v['linkKey'] as String),
+      throwsA(sealError(SealErrorCode.invalid)),
+    );
+  });
+
+  test('when Argon2id fails, the owner slot still opens the page', () async {
+    final v = listOf('pages')
+        .firstWhere((p) => p['password'] == 'correct horse battery staple');
+    final broken = Sealing(argon2id: FailingArgon2id());
+    final config = jsonDecode(v['publicationJson'] as String);
+    final sealed = bytes(v['sealed'] as String);
+    final opened = await broken.openPage(
+      config: config,
+      sealedBytes: sealed,
+      input: v['password'] as String,
+      driveKey: bytes(v['driveKey'] as String),
+    );
+    expect(opened.via, OpenedVia.owner);
+    // With nothing else to try, the failure itself is thrown: the password
+    // may have been right, so this is not "that didn't open it".
+    await expectLater(
+      broken.openPage(
+          config: config, sealedBytes: sealed, input: v['password'] as String),
+      throwsA(isA<StateError>()),
+    );
   });
 
   test('size caps', () async {

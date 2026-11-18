@@ -10,6 +10,8 @@ import 'sealing.dart';
 /// Off the web (tests, mobile): Argon2id in Dart, and unorm's NFC.
 Argon2idKdf argon2id() => _DartArgon2id();
 
+/// unorm differs from the browser and Node in one known place: it reads
+/// U+D7A4, unassigned, as a Hangul syllable. No real password holds it.
 String nfc(String text) => unorm.nfc(text);
 
 class _DartArgon2id implements Argon2idKdf {

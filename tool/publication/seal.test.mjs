@@ -15,6 +15,7 @@ import {
   ownerKek,
   passwordBytes,
   passwordKek,
+  sealPlaintext,
   sealedAad,
   unwrapKey,
 } from './seal.mjs';
@@ -164,6 +165,16 @@ test('a broken link key still lets a password open the page', () => {
     const opened = openPage({ config, sealedBytes: bytes(v.sealed), linkKey, input: v.password });
     assert.equal(opened.via, 'password', linkKey);
   }
+});
+
+test('a sealed scope nested deep is refused, not a crash', () => {
+  const v = vectors.pages.find((p) => p.name.startsWith('folder page with a password'));
+  const config = JSON.parse(v.publicationJson);
+  const deep = `${'['.repeat(100000)}${']'.repeat(100000)}`;
+  const text = v.sealedPlaintext.replace(/"folderId":"[^"]+"/, `"folderId":${deep}`);
+  const sealedBytes = sealPlaintext(bytes(v.linkKey), bytes(config.sealed.iv), Buffer.from(text, 'utf8'), config);
+  assert.throws(() => openPage({ config, sealedBytes, linkKey: v.linkKey }),
+    (e) => e instanceof SealError && e.code === 'invalid');
 });
 
 test('size caps', () => {

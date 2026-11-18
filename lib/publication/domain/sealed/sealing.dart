@@ -197,13 +197,25 @@ class Sealing {
         sealedAad(config),
       );
 
+  /// Any [plaintext] sealed as a page's sealed part. Writers use
+  /// [sealBlock]; tests use this for hostile blocks.
+  Future<Uint8List> sealPlaintext(
+    List<int> publicationKey,
+    List<int> iv,
+    List<int> plaintext,
+    Map config,
+  ) =>
+      _encrypt(publicationKey, iv, plaintext, sealedAad(config));
+
   /// Opens a page. [linkKey] is the `k` in the link; [input] is what a
   /// visitor typed (a pasted key or a password); [driveKey] is the owner's.
   /// Tried in that order: link key, typed key, password slot, owner slot.
   ///
   /// Throws [SealError] with [SealErrorCode.noMatch] when nothing opens it,
   /// and [SealErrorCode.invalid] when the page is malformed or a key opens a
-  /// block that breaks the rules.
+  /// block that breaks the rules. When Argon2id itself failed and nothing
+  /// else opened the page, throws that failure instead: the password may
+  /// have been right.
   Future<OpenedPage> openPage({
     required Object? config,
     required Uint8List sealedBytes,
@@ -226,18 +238,37 @@ class Sealing {
         if (e.code == SealErrorCode.noMatch) return null;
         rethrow;
       }
-      final Object? block;
+      // Dart's UTF-8 decoder drops a leading byte order mark, which
+      // JavaScript keeps and JSON.parse refuses. Refused here too, so a
+      // block has one spelling.
+      if (plain.length >= 3 &&
+          plain[0] == 0xef &&
+          plain[1] == 0xbb &&
+          plain[2] == 0xbf) {
+        throw const SealError(
+            SealErrorCode.invalid, 'the sealed block is not JSON');
+      }
+      final Object? json;
       try {
-        block = jsonDecode(utf8.decode(plain, allowMalformed: true));
+        json = jsonDecode(utf8.decode(plain, allowMalformed: true));
       } on FormatException {
         throw const SealError(
             SealErrorCode.invalid, 'the sealed block is not JSON');
       }
-      return OpenedPage(
-        publicationKey: key,
-        block: readSealedBlock(block, page.config),
-        via: via,
-      );
+      final SealedBlock block;
+      try {
+        block = readSealedBlock(json, page.config);
+      } on SealError {
+        rethrow;
+      } catch (_) {
+        // On the web, jsonDecode builds nested lists when a value is first
+        // read, recursively: a block nested deep enough overflows the stack
+        // inside the checks. The key holder wrote it, so it is refused like
+        // any other broken block.
+        throw const SealError(
+            SealErrorCode.invalid, 'the sealed block could not be read');
+      }
+      return OpenedPage(publicationKey: key, block: block, via: via);
     }
 
     Future<Uint8List?> unwrapped(
@@ -250,6 +281,7 @@ class Sealing {
       }
     }
 
+    (Object, StackTrace)? kdfFailure;
     final fromLink = keyFrom(linkKey);
     if (fromLink != null) {
       final opened = await attempt(fromLink, OpenedVia.link);
@@ -263,9 +295,20 @@ class Sealing {
       }
       final slot = page.passwordSlot;
       if (slot != null && input.isNotEmpty) {
-        final kek =
-            await passwordKek(input, salt: slot.salt, settings: slot.settings);
-        final key = await unwrapped(kek, slot.iv, slot.wrapped);
+        // Argon2id can fail without the password being wrong (no memory,
+        // the module didn't load). The owner slot is still tried, and the
+        // failure is what is thrown if nothing opens the page.
+        Uint8List? kek;
+        try {
+          kek = await passwordKek(input,
+              salt: slot.salt, settings: slot.settings);
+        } on SealError {
+          rethrow;
+        } catch (e, trace) {
+          kdfFailure = (e, trace);
+        }
+        final key =
+            kek == null ? null : await unwrapped(kek, slot.iv, slot.wrapped);
         final opened =
             key == null ? null : await attempt(key, OpenedVia.password);
         if (opened != null) return opened;
@@ -277,6 +320,9 @@ class Sealing {
       final key = await unwrapped(kek, owner.iv, owner.wrapped);
       final opened = key == null ? null : await attempt(key, OpenedVia.owner);
       if (opened != null) return opened;
+    }
+    if (kdfFailure != null) {
+      Error.throwWithStackTrace(kdfFailure.$1, kdfFailure.$2);
     }
     throw const SealError(
         SealErrorCode.noMatch, 'nothing given opens this page');

@@ -24,6 +24,7 @@ import {
   passwordSlot,
   passwordBytes,
   sealBlock,
+  sealPlaintext,
   sealedAad,
   wrapKey,
 } from './seal.mjs';
@@ -247,6 +248,16 @@ function refusals(good) {
   // must not open a block that describes something else.
   const otherScope = JSON.parse(good.sealedPlaintext);
   otherScope.scope.folderId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  // Blocks only the key holder can write, so a hostile page can carry them.
+  const sealedText = (text) => b64u(sealPlaintext(
+    Buffer.from(good.linkKey, 'base64url'),
+    Buffer.from(config().sealed.iv, 'base64url'),
+    Buffer.from(text, 'utf8'),
+    config(),
+  ));
+  const fractionScope = good.sealedPlaintext.replace(/"folderId":"[^"]+"/, '"folderId":1.5');
+  if (fractionScope === good.sealedPlaintext) throw new Error('no folderId to replace');
+
   const resealed = sealBlock(
     Buffer.from(good.linkKey, 'base64url'),
     Buffer.from(config().sealed.iv, 'base64url'),
@@ -298,6 +309,10 @@ function refusals(good) {
       publicationJson: edit((c) => { c.description = 'Tax records'; }) },
     { name: 'sealed block describes another folder', publicationJson: good.publicationJson, sealed: b64u(resealed),
       linkKey: good.linkKey, error: 'invalid' },
+    { name: 'sealed block scope with a fraction for folderId', publicationJson: good.publicationJson,
+      sealed: sealedText(fractionScope), linkKey: good.linkKey, error: 'invalid' },
+    { name: 'sealed block starting with a byte order mark', publicationJson: good.publicationJson,
+      sealed: sealedText(`\ufeff${good.sealedPlaintext}`), linkKey: good.linkKey, error: 'invalid' },
     { name: 'version 3 cannot be public', sealed: good.sealed,
       publicationJson: edit((c) => { c.privacy = 'public'; }), linkKey: good.linkKey, error: 'invalid' },
     { name: 'version 3 has no snapshot', sealed: good.sealed,

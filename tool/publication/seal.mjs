@@ -263,7 +263,11 @@ export function sealedAad(config) {
 
 /** The sealed part's bytes: the block's canonical JSON, bound to its page. */
 export const sealBlock = (publicationKey, iv, block, config) =>
-  gcmEncrypt(publicationKey, iv, Buffer.from(canonicalJson(block), 'utf8'), sealedAad(config));
+  sealPlaintext(publicationKey, iv, Buffer.from(canonicalJson(block), 'utf8'), config);
+
+/** Any plaintext sealed as a page's sealed part. Writers use sealBlock; tests use this for hostile blocks. */
+export const sealPlaintext = (publicationKey, iv, plaintext, config) =>
+  gcmEncrypt(publicationKey, iv, plaintext, sealedAad(config));
 
 const PASSWORD_SLOT = (slot) => slot.type === 'password';
 const OWNER_SLOT = (slot) => slot.type === 'owner';
@@ -345,12 +349,22 @@ export function readPrivatePublication(config) {
 /** The ciphers whose IV a reader checks; any other is ignored and looked up as usual. */
 export const KNOWN_DATA_CIPHERS = Object.freeze(['AES256-GCM', 'AES256-CTR']);
 
+/**
+ * Whether two scopes name the same thing. Compared field by field, never by
+ * serialising: a hostile block's folderId may be any JSON, nested deep
+ * enough to overflow a recursive writer.
+ */
+const sameScope = (a, b) => {
+  const x = scopeOf(a);
+  const y = scopeOf(b);
+  return x.type === y.type && (x.type !== 'folder' || (isUuid(x.folderId) && x.folderId === y.folderId));
+};
+
 /** The checks on the decrypted sealed block. It must describe the page it came with. */
 export function readSealedBlock(block, config) {
   need(isObject(block), 'the sealed block must be an object');
   need(block.v === SEALED_VERSION, 'sealed v must be 1');
-  need(isObject(block.scope) && canonicalJson(scopeOf(block.scope)) === canonicalJson(scopeOf(config.scope)),
-    "the sealed scope must be the page's scope");
+  need(isObject(block.scope) && sameScope(block.scope, config.scope), "the sealed scope must be the page's scope");
   need(isUuid(block.rootFolderId), 'rootFolderId must be a lowercase UUID');
 
   const c = block.catalog;
@@ -429,6 +443,7 @@ export function openPage({ config, sealedBytes, linkKey, input, driveKey }) {
     }
   };
 
+  let kdfFailure = null;
   const fromLink = keyFrom(linkKey);
   if (fromLink) {
     const opened = attempt(fromLink);
@@ -441,7 +456,17 @@ export function openPage({ config, sealedBytes, linkKey, input, driveKey }) {
       if (opened) return { ...opened, via: 'key' };
     }
     if (passwordSlot && input.length > 0) {
-      const key = unwrapped(passwordKek(input, passwordSlot), passwordSlot);
+      // Argon2id can fail without the password being wrong (no memory, no
+      // module). The owner slot is still tried, and the failure is what is
+      // thrown if nothing opens the page.
+      let kek = null;
+      try {
+        kek = passwordKek(input, passwordSlot);
+      } catch (e) {
+        if (e instanceof SealError) throw e;
+        kdfFailure = e;
+      }
+      const key = kek && unwrapped(kek, passwordSlot);
       const opened = key && attempt(key);
       if (opened) return { ...opened, via: 'password' };
     }
@@ -451,5 +476,6 @@ export function openPage({ config, sealedBytes, linkKey, input, driveKey }) {
     const opened = key && attempt(key);
     if (opened) return { ...opened, via: 'owner' };
   }
+  if (kdfFailure) throw kdfFailure;
   throw new SealError('no-match', 'nothing given opens this page');
 }

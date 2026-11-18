@@ -435,6 +435,17 @@ class SealedBlock {
   final Map<String, SealedCipher> ciphers;
 }
 
+/// Whether two scopes name the same thing. Compared field by field, never
+/// by serialising: a hostile block's folderId may be any JSON, a fraction
+/// [canonicalJson] refuses or nesting deep enough to overflow it.
+bool _sameScope(Map a, Map b) {
+  final x = _scopeOf(a);
+  final y = _scopeOf(b);
+  return x['type'] == y['type'] &&
+      (x['type'] != 'folder' ||
+          (_isUuid(x['folderId']) && x['folderId'] == y['folderId']));
+}
+
 /// The checks on the decrypted sealed block. It must describe the page it
 /// came with.
 SealedBlock readSealedBlock(Object? block, Map config) {
@@ -443,9 +454,7 @@ SealedBlock readSealedBlock(Object? block, Map config) {
   _need(block['v'] == sealedVersion, 'sealed v must be 1');
   final scope = block['scope'];
   _need(
-    scope is Map &&
-        canonicalJson(_scopeOf(scope)) ==
-            canonicalJson(_scopeOf(config['scope'] as Map)),
+    scope is Map && _sameScope(scope, config['scope'] as Map),
     "the sealed scope must be the page's scope",
   );
   _need(
