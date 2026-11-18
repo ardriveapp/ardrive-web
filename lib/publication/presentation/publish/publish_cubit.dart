@@ -104,8 +104,8 @@ class PublishDependencies {
   })? syncDrive;
 }
 
-/// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
-/// included, the look, review and publish, done.
+/// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): the
+/// look, review and publish, done.
 class PublishCubit extends Cubit<PublishState> {
   PublishCubit({
     required this.drive,
@@ -200,7 +200,7 @@ class PublishCubit extends Cubit<PublishState> {
       final summary = _contents!.summarize();
 
       var next = PublishState(
-        stage: PublishStage.included,
+        stage: PublishStage.look,
         summary: summary,
         title: _clip(scopeName, publicationTitleMax),
         ownerName: await _rememberedOwnerName() ?? '',
@@ -208,11 +208,10 @@ class PublishCubit extends Cubit<PublishState> {
       );
       if (previous != null) next = await _prefillFrom(previous!, next);
       if (isClosed) return;
+      // The look, whose Next is the review. An update opens on it too, filled
+      // in from the published page: Next keeps it, and anything to change is
+      // changed on the way.
       emit(next);
-
-      // An update opens on the look, filled in from the published page: Next
-      // keeps it, and anything to change is changed on the way.
-      if (previous != null) emit(state.copyWith(stage: PublishStage.look));
     } on PublicationReadException catch (e) {
       logger.e('[publication] preparing failed', e);
       if (isClosed) return;
@@ -647,10 +646,8 @@ class PublishCubit extends Cubit<PublishState> {
               ? PublishStage.look
               : PublishStage.itself,
         ));
-      case PublishStage.included:
-        emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
-        if (state.titleIsValid) review();
+        if (state.titleIsValid && state.choosingSlot == null) review();
       default:
     }
   }
@@ -660,8 +657,11 @@ class PublishCubit extends Cubit<PublishState> {
       case PublishStage.itself:
         emit(state.copyWith(stage: PublishStage.how));
       case PublishStage.look:
-        emit(state.copyWith(
-            stage: isFile ? PublishStage.how : PublishStage.included));
+        if (state.choosingSlot != null) {
+          closeImageChooser();
+          return;
+        }
+        if (isFile) emit(state.copyWith(stage: PublishStage.how));
       case PublishStage.review:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.failed:
@@ -700,6 +700,15 @@ class PublishCubit extends Cubit<PublishState> {
 
   void setLicence(PublicationLicence? licence) =>
       emit(state.copyWith(licence: () => licence));
+
+  /// Shows the drive's images in place of the look, for [slot].
+  void openImageChooser(PublicationImageSlot slot) {
+    if (state.stage != PublishStage.look) return;
+    emit(state.copyWith(choosingSlot: () => slot));
+  }
+
+  /// Back to the look from the image chooser.
+  void closeImageChooser() => emit(state.copyWith(choosingSlot: () => null));
 
   /// Uses [bytes] for [slot]: decoded by the browser and cropped to the
   /// slot's size. A picture that is not one, or too big, is refused with

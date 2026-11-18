@@ -20,6 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../test_utils/mocks.dart' show MockDriveDao;
 import 'package:mocktail/mocktail.dart';
 
 class _MockPublishCubit extends MockCubit<PublishState>
@@ -137,17 +138,82 @@ void main() {
     expect(find.textContaining('permanent'), findsNothing);
   });
 
-  testWidgets('the first step says what comes next', (tester) async {
+  testWidgets('a folder has no read-only included step: the review carries it',
+      (tester) async {
     await open(
       tester,
-      const PublishState(stage: PublishStage.included, summary: _summary),
+      PublishState(
+        stage: PublishStage.review,
+        summary: const PublicationSummary(
+          fileCount: 3,
+          folderCount: 1,
+          totalSize: 1024,
+          hiddenItems: 2,
+          inHiddenFolders: 0,
+          inGhostFolders: 0,
+          pendingFiles: 0,
+          failedFiles: 0,
+        ),
+        title: 'Archive',
+        cost: _freeCost,
+      ),
     );
 
+    expect(find.text("What's included"), findsNothing);
+    expect(find.text('Left out'), findsOneWidget);
+    expect(find.text('Hidden items in a public drive can still be found.'),
+        findsOneWidget);
     expect(
-      find.text('Next: a title. Images, a description and a name are '
-          'optional, and you can add them later.'),
+      find.text('Anyone can find this page, and search engines can list its '
+          'files.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a failure and an unaffordable cost are error notices',
+      (tester) async {
+    await open(
+      tester,
+      const PublishState(stage: PublishStage.failed, failure: 'It broke.'),
+    );
+    expect(find.byType(ArDriveNotice), findsOneWidget);
+    expect(find.text('It broke.'), findsOneWidget);
+  });
+
+  testWidgets('choosing an image replaces the look, with Back to return',
+      (tester) async {
+    when(() => cubit.drive).thenReturn(Drive(
+      id: 'drive',
+      rootFolderId: 'root',
+      ownerAddress: 'addr',
+      name: 'Drive',
+      privacy: 'public',
+      isHidden: false,
+      dateCreated: DateTime.utc(2026),
+      lastUpdated: DateTime.utc(2026),
+    ));
+    when(() => cubit.state).thenReturn(const PublishState(
+      stage: PublishStage.look,
+      title: 'A',
+      choosingSlot: PublicationImageSlot.cover,
+    ));
+    await tester.pumpWidget(app(RepositoryProvider<DriveDao>.value(
+      // Reading the images fails: the chooser's title and Back are the test.
+      value: MockDriveDao(),
+      child: BlocProvider<PublishCubit>.value(
+        value: cubit,
+        child: const Material(
+          type: MaterialType.transparency,
+          child: SingleChildScrollView(child: PublishDialog()),
+        ),
+      ),
+    )));
+    await tester.pump();
+
+    expect(find.text('Choose an image'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Next'), findsNothing);
+    expect(find.text('How it looks'), findsNothing);
   });
 
   group('the review of an update', () {
@@ -233,17 +299,22 @@ void main() {
     });
   });
 
-  testWidgets('what is included counts files and folders, not their size',
+  testWidgets('the review counts files and folders, not their size',
       (tester) async {
     // The files are stored already: a size here read as uploading them
     // again.
     await open(
       tester,
-      const PublishState(stage: PublishStage.included, summary: _summary),
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        cost: _freeCost,
+      ),
     );
 
-    expect(find.text('Files'), findsOneWidget);
     expect(find.text('Folders'), findsOneWidget);
+    expect(find.textContaining('3 files'), findsOneWidget);
     expect(find.text('Size'), findsNothing);
     expect(find.text('1 KB'), findsNothing);
   });

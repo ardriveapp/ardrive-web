@@ -28,6 +28,8 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
+import 'package:ardrive/publication/domain/publication_scope.dart'
+    show PublicationSummary;
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_look_step.dart';
@@ -278,6 +280,9 @@ class PublishDialog extends StatelessWidget {
         final title =
             state.isUpdate ? strings.publishUpdateTitle : strings.publishToWeb;
         void close() => Navigator.of(context).pop();
+        // A file starts with how it is published; a drive or folder starts
+        // on the look.
+        final total = cubit.isFile ? 3 : 2;
 
         switch (state.stage) {
           case PublishStage.loading:
@@ -322,33 +327,33 @@ class PublishDialog extends StatelessWidget {
               title: title,
               content: _Itself(link: cubit.fileLink, file: cubit.file!),
               actions: [
-                ModalAction(title: strings.back, action: cubit.back),
+                ModalAction.dismiss(title: strings.back, action: cubit.back),
                 ModalAction(title: strings.doneEmphasized, action: close),
               ],
             );
-          case PublishStage.included:
-            return _modal(
-              context,
-              title: title,
-              step: strings.publishStepOf(1, 3),
-              content: _Included(
-                  state: state,
-                  scopeName: cubit.scopeName,
-                  isFolder: cubit.folder != null),
-              actions: [
-                ModalAction.close(title: strings.cancel, action: close),
-                ModalAction(title: strings.next, action: cubit.next),
-              ],
-            );
           case PublishStage.look:
+            // A picture from the drive is chosen in place of the look, and
+            // Back returns to it.
+            final choosing = state.choosingSlot;
+            if (choosing != null) {
+              return _modal(
+                context,
+                title: strings.publishChooseImageTitle,
+                content: ImageFromDriveChooser(slot: choosing),
+                actions: [
+                  ModalAction.dismiss(
+                      title: strings.back, action: cubit.closeImageChooser),
+                ],
+              );
+            }
             return _modal(
               context,
               title: title,
-              step: strings.publishStepOf(2, 3),
+              step: strings.publishStepOf(cubit.isFile ? 2 : 1, total),
               wide: true,
               content: const PublishLookStep(),
               actions: [
-                ModalAction(title: strings.back, action: cubit.back),
+                ModalAction.dismiss(title: strings.back, action: cubit.back),
                 ModalAction(
                   title: strings.next,
                   isEnable: state.titleIsValid,
@@ -361,7 +366,7 @@ class PublishDialog extends StatelessWidget {
             Widget review(BuildContext context) => _modal(
                   context,
                   title: title,
-                  step: strings.publishStepOf(3, 3),
+                  step: strings.publishStepOf(total, total),
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
@@ -377,7 +382,8 @@ class PublishDialog extends StatelessWidget {
                     ],
                   ),
                   actions: [
-                    ModalAction(title: strings.back, action: cubit.back),
+                    ModalAction.dismiss(
+                        title: strings.back, action: cubit.back),
                     ModalAction(
                       title: strings.publishButton,
                       isEnable: state.canPublish && (names?.ready ?? true),
@@ -406,9 +412,7 @@ class PublishDialog extends StatelessWidget {
                 names: cubit.names,
                 hasSnapshot: !cubit.isFile,
               ),
-              actions: [
-                ModalAction.close(title: strings.close, action: close)
-              ],
+              actions: [ModalAction.close(title: strings.close, action: close)],
             );
           case PublishStage.failed:
             return _modal(
@@ -417,7 +421,7 @@ class PublishDialog extends StatelessWidget {
               content: _Failed(state: state),
               actions: [
                 ModalAction.close(title: strings.close, action: close),
-                ModalAction(
+                ModalAction.dismiss(
                     title: strings.publishBackToReview, action: cubit.back),
                 if (state.canRetry)
                   ModalAction(
@@ -474,17 +478,14 @@ class PublishDialog extends StatelessWidget {
     return _modal(
       context,
       title: title,
-      content: Row(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox.square(
-            dimension: 20,
-            child: Center(child: ArDriveSpinner()),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(text,
-                style: typography.paragraphNormal(color: colors.textMid)),
-          ),
+          const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+          const SizedBox(height: ArDriveSpacing.sm),
+          Text(text,
+              textAlign: TextAlign.center,
+              style: typography.paragraphNormal(color: colors.textMid)),
         ],
       ),
       actions: [
@@ -494,6 +495,9 @@ class PublishDialog extends StatelessWidget {
     );
   }
 }
+
+/// The look's width: the form beside the live previews.
+const _lookWidth = 860.0;
 
 Widget _modal(
   BuildContext context, {
@@ -507,7 +511,7 @@ Widget _modal(
   final colors = ArDriveTheme.of(context).themeData.colorTokens;
   return ArDriveStandardModalNew(
     title: title,
-    width: wide ? 860 : kLargeDialogWidth,
+    width: wide ? _lookWidth : kLargeDialogWidth,
     scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
@@ -564,7 +568,7 @@ class SummaryRow extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xxs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -594,88 +598,16 @@ class _Card extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(ArDriveSpacing.sm),
       decoration: BoxDecoration(
         color: colors.containerL1,
-        borderRadius: BorderRadius.circular(ArDriveRadius.control),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,
       ),
-    );
-  }
-}
-
-class _Included extends StatelessWidget {
-  const _Included({
-    required this.state,
-    required this.scopeName,
-    required this.isFolder,
-  });
-
-  final PublishState state;
-  final String scopeName;
-  final bool isFolder;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final summary = state.summary!;
-    final leftOut = [
-      if (summary.hiddenItems > 0)
-        strings.publishLeftOutHidden(summary.hiddenItems),
-      if (summary.inHiddenFolders > 0)
-        strings.publishLeftOutInHidden(summary.inHiddenFolders),
-      if (summary.inGhostFolders > 0)
-        strings.publishLeftOutGhost(summary.inGhostFolders),
-      if (summary.failedFiles > 0)
-        strings.publishLeftOutFailed(summary.failedFiles),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(strings.publishWhatsIncluded,
-            style: typography.heading5(fontWeight: ArFontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(
-          '${isFolder ? strings.publishScopeFolder : strings.publishScopeDrive} $arDriveSeparator $scopeName',
-          style: typography.paragraphNormal(color: colors.textMid),
-        ),
-        const SizedBox(height: 16),
-        _Card(children: [
-          SummaryRow(strings.publishFiles, '${summary.fileCount}'),
-          SummaryRow(strings.publishFolders, '${summary.folderCount}'),
-        ]),
-        if (leftOut.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text(strings.publishLeftOut,
-              style: typography.paragraphNormal(
-                  color: colors.textHigh, fontWeight: ArFontWeight.semiBold)),
-          const SizedBox(height: 4),
-          for (final line in leftOut)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text('• $line',
-                  style: typography.paragraphNormal(color: colors.textMid)),
-            ),
-          // Hiding is not privacy: a public drive's data stays readable.
-          if (summary.hiddenItems > 0 || summary.inHiddenFolders > 0) ...[
-            const SizedBox(height: 8),
-            Text(strings.publishHiddenFindable,
-                style: typography.paragraphSmall(color: colors.textMid)),
-          ],
-        ],
-        const SizedBox(height: 16),
-        Text(strings.publishIncludedNote,
-            style: typography.paragraphSmall(color: colors.textLow)),
-        const SizedBox(height: 8),
-        Text(strings.publishNextTitleNote,
-            style: typography.paragraphSmall(color: colors.textLow)),
-      ],
     );
   }
 }
@@ -699,6 +631,51 @@ class _Review extends StatelessWidget {
     return strings.publishReviewUpdateLinkNames(moving.length);
   }
 
+  /// What the page will not show, and that anyone can find it: read here,
+  /// with the cost, before anything is published.
+  List<Widget> _leftOut(
+    BuildContext context,
+    AppLocalizations strings,
+    PublicationSummary summary,
+  ) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final leftOut = [
+      if (summary.hiddenItems > 0)
+        strings.publishLeftOutHidden(summary.hiddenItems),
+      if (summary.inHiddenFolders > 0)
+        strings.publishLeftOutInHidden(summary.inHiddenFolders),
+      if (summary.inGhostFolders > 0)
+        strings.publishLeftOutGhost(summary.inGhostFolders),
+      if (summary.failedFiles > 0)
+        strings.publishLeftOutFailed(summary.failedFiles),
+    ];
+    return [
+      if (leftOut.isNotEmpty) ...[
+        const SizedBox(height: ArDriveSpacing.md),
+        Text(strings.publishLeftOut,
+            style: typography.paragraphNormal(
+                color: colors.textHigh, fontWeight: ArFontWeight.semiBold)),
+        const SizedBox(height: ArDriveSpacing.xxs),
+        for (final line in leftOut)
+          Padding(
+            padding: const EdgeInsets.only(top: ArDriveSpacing.xxs),
+            child: Text('• $line',
+                style: typography.paragraphNormal(color: colors.textMid)),
+          ),
+        // Hiding is not privacy: a public drive's data stays readable.
+        if (summary.hiddenItems > 0 || summary.inHiddenFolders > 0) ...[
+          const SizedBox(height: ArDriveSpacing.xs),
+          Text(strings.publishHiddenFindable,
+              style: typography.paragraphSmall(color: colors.textMid)),
+        ],
+      ],
+      const SizedBox(height: ArDriveSpacing.md),
+      Text(strings.publishIncludedNote,
+          style: typography.paragraphSmall(color: colors.textLow)),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
@@ -718,6 +695,8 @@ class _Review extends StatelessWidget {
               cubit.isFile
                   ? scopeName
                   : '$scopeName $arDriveSeparator ${strings.publishFileCount(state.summary!.fileCount)}'),
+          if (!cubit.isFile)
+            SummaryRow(strings.publishFolders, '${state.summary!.folderCount}'),
           SummaryRow(strings.publishTitleLabel, state.title.trim()),
           SummaryRow(
             strings.publishReviewLink,
@@ -726,6 +705,7 @@ class _Review extends StatelessWidget {
                 : strings.publishReviewNewLink,
           ),
         ]),
+        if (!cubit.isFile) ..._leftOut(context, strings, state.summary!),
         if (cubit.isPrivateFile) ...[
           const SizedBox(height: 12),
           Text(strings.publishReviewPrivateFile,
@@ -762,8 +742,10 @@ class _Review extends StatelessWidget {
         ],
         if (cost.isUnaffordable) ...[
           const SizedBox(height: 8),
-          Text(strings.publishUnaffordable,
-              style: typography.paragraphSmall(color: colors.textRed)),
+          ArDriveNotice(
+            type: ArDriveNoticeType.error,
+            message: strings.publishUnaffordable,
+          ),
         ],
       ],
     );
@@ -810,7 +792,7 @@ class _Progress extends StatelessWidget {
             ? 0
             : steps.indexWhere((s) => s.$1 == current);
     Widget row(int i, String label) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
           child: Row(
             children: [
               SizedBox(
@@ -852,7 +834,8 @@ class _Progress extends StatelessWidget {
               };
               if (prompt == null) return const SizedBox.shrink();
               return Padding(
-                padding: const EdgeInsets.only(left: 32, bottom: 6),
+                padding: const EdgeInsets.only(
+                    left: ArDriveSpacing.xl, bottom: ArDriveSpacing.xs),
                 child: Text(prompt,
                     style: typography.paragraphNormal(
                         color: colors.textHigh,
@@ -881,8 +864,10 @@ class _Failed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(state.failure,
-            style: typography.paragraphNormal(color: colors.textHigh)),
+        ArDriveNotice(
+          type: ArDriveNoticeType.error,
+          message: state.failure,
+        ),
         if (state.paidTxId != null) ...[
           const SizedBox(height: 12),
           Text.rich(TextSpan(
@@ -1051,7 +1036,8 @@ class _HowOption extends StatelessWidget {
           child: Opacity(
             opacity: enabled ? 1 : 0.5,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: ArDriveSpacing.md, vertical: ArDriveSpacing.sm),
               child: Row(
                 children: [
                   Container(
@@ -1129,7 +1115,7 @@ class _Itself extends StatelessWidget {
         const SizedBox(height: 16),
         PublishedLink(link: link, note: strings.publishItselfNote),
         if (names) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: ArDriveSpacing.lg),
           Text(strings.publishItselfNameNote,
               style: typography.paragraphSmall(color: colors.textMid)),
           const SizedBox(height: 8),

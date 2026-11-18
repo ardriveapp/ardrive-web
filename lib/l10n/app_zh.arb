@@ -5010,10 +5010,6 @@
   "@publishBlockedEmpty": {
     "description": "Why a drive or folder can't be published."
   },
-  "publishWhatsIncluded": "包含的内容",
-  "@publishWhatsIncluded": {
-    "description": "First step of the publish dialog."
-  },
   "publishScopeDrive": "整个网盘",
   "@publishScopeDrive": {
     "description": "What a drive's web page shows."
@@ -5041,10 +5037,6 @@
   "publishIncludedNote": "任何人都可以找到此页面，搜索引擎也可能收录其中的文件。",
   "@publishIncludedNote": {
     "description": "Under the counts in the first step of the publish dialog."
-  },
-  "publishNextTitleNote": "下一步：标题。图片、描述和名称为可选项，之后也可以添加。",
-  "@publishNextTitleNote": {
-    "description": "Muted line under the first step of the publish dialog: what the next step asks for."
   },
   "publishMoreOptions": "更多选项",
   "@publishMoreOptions": {

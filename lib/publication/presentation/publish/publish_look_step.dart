@@ -126,14 +126,14 @@ class _Form extends StatelessWidget {
           hint: strings.publishCoverHint,
           aspect: 4,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: ArDriveSpacing.lg),
         _ImageField(
           slot: PublicationImageSlot.icon,
           label: strings.publishIconLabel,
           hint: strings.publishIconHint,
           aspect: 1,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: ArDriveSpacing.lg),
         _MoreOptions(
           initiallyOpen: state.ownerName.trim().isNotEmpty ||
               state.keywords.isNotEmpty ||
@@ -327,17 +327,21 @@ class _KeywordsState extends State<_Keywords> {
         if (keywords.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: ArDriveSpacing.xs,
+            runSpacing: ArDriveSpacing.xs,
             children: [
               for (final keyword in keywords)
                 Container(
-                  padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+                  padding: const EdgeInsets.fromLTRB(
+                      ArDriveSpacing.xs,
+                      ArDriveSpacing.xxs,
+                      ArDriveSpacing.xxs,
+                      ArDriveSpacing.xxs),
                   // Outlined, as input chips are: on the light dialog the
                   // fill alone matched the background.
                   decoration: BoxDecoration(
                     color: colors.containerL2,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(ArDriveRadius.lg),
                     border: Border.all(color: colors.strokeMid),
                   ),
                   child: Row(
@@ -347,7 +351,7 @@ class _KeywordsState extends State<_Keywords> {
                           style: typography.paragraphSmall(
                               color: colors.textHigh,
                               fontWeight: ArFontWeight.semiBold)),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: ArDriveSpacing.xxs),
                       ArDriveIconButton(
                         icon: ArDriveIcons.x(size: 14, color: colors.iconMid),
                         tooltip: strings.publishRemove,
@@ -459,7 +463,6 @@ class _ImageField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final cubit = context.read<PublishCubit>();
     final picked = context.select((PublishCubit c) => _picked(c.state));
@@ -479,7 +482,7 @@ class _ImageField extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: colors.containerL2,
-                borderRadius: BorderRadius.circular(ArDriveRadius.control),
+                borderRadius: BorderRadius.circular(ArDriveRadius.md),
                 border: Border.all(color: colors.strokeLow),
               ),
               child: picked != null
@@ -509,27 +512,17 @@ class _ImageField extends StatelessWidget {
                         publishButton(
                           context,
                           strings.publishFromDrive,
-                          onPressed: () => _fromDrive(context, cubit),
+                          onPressed: () => _fromDrive(cubit),
                         ),
                     ],
                   ),
                   // A link under the buttons rather than a third button,
                   // which wrapped onto a line of its own beside a cover.
                   if (picked != null) ...[
-                    const SizedBox(height: 6),
-                    ArDriveClickArea(
-                      child: GestureDetector(
-                        onTap: () => cubit.removeImage(slot),
-                        child: Text(
-                          strings.publishRemove,
-                          style: typography
-                              .paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold,
-                                color: colors.textMid,
-                              )
-                              .copyWith(decoration: TextDecoration.underline),
-                        ),
-                      ),
+                    const SizedBox(height: ArDriveSpacing.xs),
+                    ArDriveLink(
+                      text: strings.publishRemove,
+                      onTap: () => cubit.removeImage(slot),
                     ),
                   ],
                 ],
@@ -566,35 +559,18 @@ class _ImageField extends StatelessWidget {
     }
   }
 
-  Future<void> _fromDrive(BuildContext context, PublishCubit cubit) async {
-    final repository = context.read<PublicationRepository>();
-    final file = await showDialog<FileEntry>(
-      context: context,
-      // The standard scrim, not Material's black54.
-      barrierColor: ArDriveTheme.of(context).themeData.colorTokens.scrim,
-      builder: (_) => _ChooseImage(
-        driveId: cubit.drive.id,
-        driveDao: context.read<DriveDao>(),
-      ),
-    );
-    if (file == null) return;
-    try {
-      final bytes = await repository.readData(file.dataTxId);
-      await cubit.pickImage(slot, bytes);
-    } catch (_) {
-      await cubit.pickImage(slot, Uint8List(0));
-    }
-  }
+  void _fromDrive(PublishCubit cubit) => cubit.openImageChooser(slot);
 }
 
-/// The drive's images, newest first, to choose one from.
-class _ChooseImage extends StatelessWidget {
-  const _ChooseImage({required this.driveId, required this.driveDao});
+/// The drive's images, newest first, to choose one for [slot]: shown in the
+/// publish dialog in place of the look, so no second dialog opens over it.
+/// Picking one returns to the look with the picture used.
+class ImageFromDriveChooser extends StatelessWidget {
+  const ImageFromDriveChooser({super.key, required this.slot});
 
-  final String driveId;
-  final DriveDao driveDao;
+  final PublicationImageSlot slot;
 
-  Future<List<FileEntry>> _images() {
+  Future<List<FileEntry>> _images(DriveDao driveDao, String driveId) async {
     final db = driveDao.attachedDatabase;
     return (db.select(db.fileEntries)
           ..where((f) {
@@ -616,65 +592,66 @@ class _ChooseImage extends StatelessWidget {
         .get();
   }
 
+  Future<void> _pick(BuildContext context, FileEntry file) async {
+    final cubit = context.read<PublishCubit>();
+    final repository = context.read<PublicationRepository>();
+    cubit.closeImageChooser();
+    try {
+      final bytes = await repository.readData(file.dataTxId);
+      await cubit.pickImage(slot, bytes);
+    } catch (_) {
+      await cubit.pickImage(slot, Uint8List(0));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      child: ArDriveStandardModalNew(
-        title: strings.publishChooseImageTitle,
-        width: 440,
-        content: SizedBox(
-          height: 320,
-          child: FutureBuilder<List<FileEntry>>(
-            future: _images(),
-            builder: (context, snapshot) {
-              final files = snapshot.data;
-              if (files == null) {
-                return const Center(
-                  child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
-                );
-              }
-              if (files.isEmpty) {
-                return Text(strings.publishNoImagesInDrive,
-                    style: typography.paragraphNormal(color: colors.textMid));
-              }
-              return ListView.builder(
-                itemCount: files.length,
-                itemBuilder: (context, i) {
-                  final file = files[i];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: ArDriveIcons.image(color: colors.iconMid),
-                    title: Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: typography.paragraphNormal(color: colors.textHigh),
-                    ),
-                    subtitle: Text(filesize(file.size),
-                        style:
-                            typography.paragraphSmall(color: colors.textLow)),
-                    onTap: () => Navigator.of(context).pop(file),
-                  );
-                },
+    final driveId = context.read<PublishCubit>().drive.id;
+    return SizedBox(
+      height: _chooserHeight,
+      child: FutureBuilder<List<FileEntry>>(
+        future: _images(context.read<DriveDao>(), driveId),
+        builder: (context, snapshot) {
+          final files = snapshot.data;
+          if (files == null) {
+            return const Center(
+              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            );
+          }
+          if (files.isEmpty) {
+            return Text(strings.publishNoImagesInDrive,
+                style: typography.paragraphNormal(color: colors.textMid));
+          }
+          return ListView.builder(
+            itemCount: files.length,
+            itemBuilder: (context, i) {
+              final file = files[i];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: ArDriveIcons.image(color: colors.iconMid),
+                title: Text(
+                  file.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.paragraphNormal(color: colors.textHigh),
+                ),
+                subtitle: Text(filesize(file.size),
+                    style: typography.paragraphSmall(color: colors.textLow)),
+                onTap: () => _pick(context, file),
               );
             },
-          ),
-        ),
-        actions: [
-          ModalAction.dismiss(
-            title: strings.cancel,
-            action: () => Navigator.of(context).pop(),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
+
+/// The chooser's list height, so the dialog does not jump while it loads.
+const _chooserHeight = 320.0;
 
 /// The page's header and its link preview, as the owner types.
 class _Previews extends StatelessWidget {
@@ -688,7 +665,7 @@ class _Previews extends StatelessWidget {
       children: [
         _Label(strings.publishPagePreview),
         const _HeaderPreview(),
-        const SizedBox(height: 20),
+        const SizedBox(height: ArDriveSpacing.lg),
         _Label(strings.publishLinkPreview),
         const _CardPreview(),
       ],
@@ -727,7 +704,7 @@ class _HeaderPreview extends StatelessWidget {
           style: typography.paragraphLarge(
               color: colors.textHigh, fontWeight: ArFontWeight.bold),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: ArDriveSpacing.xxs),
         // A name in the body face and the address beside it in monospace
         // after a wallet icon, as on the published page.
         Text.rich(
@@ -781,7 +758,7 @@ class _HeaderPreview extends StatelessWidget {
               width: 40,
               height: 40,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(ArDriveRadius.control),
+                borderRadius: BorderRadius.circular(ArDriveRadius.md),
                 child: RawImage(image: icon.preview, fit: BoxFit.cover),
               ),
             ),
@@ -809,7 +786,7 @@ class _HeaderPreview extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.containerL0,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
         border: Border.all(color: colors.strokeLow),
       ),
       child: Column(
@@ -846,10 +823,11 @@ class _FilePreview extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: ArDriveSpacing.sm, vertical: ArDriveSpacing.xs),
       decoration: BoxDecoration(
         color: colors.containerL1,
-        borderRadius: BorderRadius.circular(ArDriveRadius.control),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
         border: Border.all(color: colors.strokeLow),
       ),
       child: Row(
@@ -868,10 +846,11 @@ class _FilePreview extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(
+                horizontal: ArDriveSpacing.xs, vertical: ArDriveSpacing.xxs),
             decoration: BoxDecoration(
               color: colors.buttonPrimaryDefault,
-              borderRadius: BorderRadius.circular(ArDriveRadius.control),
+              borderRadius: BorderRadius.circular(ArDriveRadius.md),
             ),
             child: Text(
               appLocalizationsOf(context).download,
@@ -898,7 +877,7 @@ class _CardPreview extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
         border: Border.all(color: colors.strokeLow),
       ),
       child: AspectRatio(

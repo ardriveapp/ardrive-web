@@ -289,7 +289,7 @@ void main() {
 
       expect(synced, [(_drive, false)]);
       expect(stages.first, PublishStage.syncing);
-      expect(c.state.stage, PublishStage.included);
+      expect(c.state.stage, PublishStage.look);
     });
 
     test('stays blocked, and can sync again, when the sync fails', () async {
@@ -453,14 +453,33 @@ void main() {
     expect(c.state.pendingChanges, 0);
   });
 
-  test('the dialog opens on what is included, titled with the name', () async {
+  test('choosing an image from the drive swaps the look, and Back returns',
+      () async {
     final c = cubit();
     await c.load();
-    expect(c.state.stage, PublishStage.included);
+    c.openImageChooser(PublicationImageSlot.cover);
+    expect(c.state.choosingSlot, PublicationImageSlot.cover);
+    c.next();
+    expect(c.state.stage, PublishStage.look, reason: 'Next waits for Back');
+    expect(c.state.choosingSlot, PublicationImageSlot.cover);
+    c.back();
+    expect(c.state.choosingSlot, isNull);
+    expect(c.state.stage, PublishStage.look);
+  });
+
+  test('the look of a folder has no step before it', () async {
+    final c = cubit();
+    await c.load();
+    c.back();
+    expect(c.state.stage, PublishStage.look);
+  });
+
+  test('the dialog opens on the look, titled with the name', () async {
+    final c = cubit();
+    await c.load();
+    expect(c.state.stage, PublishStage.look);
     expect(c.state.summary!.fileCount, 2);
     expect(c.state.title, 'My drive');
-    c.next();
-    expect(c.state.stage, PublishStage.look);
     c.setTitle('   ');
     c.next();
     expect(c.state.stage, PublishStage.look, reason: 'a title is required');

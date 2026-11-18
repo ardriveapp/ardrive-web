@@ -5010,10 +5010,6 @@
   "@publishBlockedEmpty": {
     "description": "Why a drive or folder can't be published."
   },
-  "publishWhatsIncluded": "क्या शामिल है",
-  "@publishWhatsIncluded": {
-    "description": "First step of the publish dialog."
-  },
   "publishScopeDrive": "पूरी ड्राइव",
   "@publishScopeDrive": {
     "description": "What a drive's web page shows."
@@ -5041,10 +5037,6 @@
   "publishIncludedNote": "इस पेज को कोई भी ढूंढ सकता है, और सर्च इंजन इसकी फ़ाइलें लिस्ट कर सकते हैं।",
   "@publishIncludedNote": {
     "description": "Under the counts in the first step of the publish dialog."
-  },
-  "publishNextTitleNote": "आगे: एक टाइटल। इमेज, विवरण और नाम वैकल्पिक हैं, और आप उन्हें बाद में जोड़ सकते हैं।",
-  "@publishNextTitleNote": {
-    "description": "Muted line under the first step of the publish dialog: what the next step asks for."
   },
   "publishMoreOptions": "और विकल्प",
   "@publishMoreOptions": {
