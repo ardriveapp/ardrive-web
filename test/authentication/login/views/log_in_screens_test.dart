@@ -9,6 +9,7 @@ import 'package:ardrive/authentication/login/views/landing_view.dart';
 import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/authentication/components/max_device_sizes_constrained_box.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/used_metamask_before_view.dart';
@@ -35,6 +36,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
+import '../../../test_utils/fake_user.dart';
 import '../../../test_utils/utils.dart';
 import 'package:ardrive/utils/secret_blur.dart';
 
@@ -233,6 +235,147 @@ void main() {
       ]) {
         expect(loginPanelRebuildsOn(state), isFalse, reason: '$state');
       }
+    });
+
+    testWidgets('a step change crossfades, and is instant when motion is off',
+        (tester) async {
+      Widget panel(String key, {bool reduced = false}) => MaterialApp(
+            home: Builder(
+              builder: (context) => MediaQuery(
+                data:
+                    MediaQuery.of(context).copyWith(disableAnimations: reduced),
+                child: LoginPanelFade(child: Text(key, key: Key(key))),
+              ),
+            ),
+          );
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('a')), findsOneWidget);
+      expect(find.byKey(const Key('b')), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byKey(const Key('a')), findsNothing);
+
+      // Instant with motion off (a fresh tree: the switcher's durations are
+      // fixed when a step arrives).
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(panel('x', reduced: true));
+      await tester.pumpWidget(panel('y', reduced: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(find.byKey(const Key('x')), findsNothing);
+      expect(find.byKey(const Key('y')), findsOneWidget);
+    });
+
+    testWidgets('the old step is gone before the new one starts to show',
+        (tester) async {
+      Widget panel(String key) => MaterialApp(
+            home: LoginPanelFade(child: SizedBox(key: Key(key))),
+          );
+      double opacityOf(String key) {
+        final fade = find
+            .ancestor(
+                of: find.byKey(Key(key)), matching: find.byType(FadeTransition))
+            .first;
+        return tester.widget<FadeTransition>(fade).opacity.value;
+      }
+
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      final seenBoth = <int>[];
+      var elapsed = 0;
+      for (final at in [50, 100, 150, 200]) {
+        await tester.pump(Duration(milliseconds: at - elapsed));
+        elapsed = at;
+        final out = find.byKey(const Key('a')).evaluate().isEmpty
+            ? 0.0
+            : opacityOf('a');
+        final inn = opacityOf('b');
+        if (out > 0 && inn > 0) seenBoth.add(at);
+      }
+      expect(seenBoth, isEmpty, reason: 'the two steps are never both drawn');
+      // And the old one is already fading at 50 ms, not held until 100.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(opacityOf('a'), lessThan(1));
+    });
+
+    testWidgets('the step arriving takes its autofocus; the one leaving none',
+        (tester) async {
+      final aFocus = FocusNode();
+      final bFocus = FocusNode();
+      addTearDown(aFocus.dispose);
+      addTearDown(bFocus.dispose);
+      Widget panel(Key key, FocusNode node) => MaterialApp(
+            home: Material(
+              child: LoginPanelFade(
+                child: SizedBox(
+                  key: key,
+                  width: 200,
+                  child: TextField(focusNode: node, autofocus: true),
+                ),
+              ),
+            ),
+          );
+      await tester.pumpWidget(panel(const Key('a'), aFocus));
+      await tester.pump();
+      expect(aFocus.hasFocus, isTrue);
+      await tester.pumpWidget(panel(const Key('b'), bFocus));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('a')), findsOneWidget, reason: 'mid-fade');
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      expect(bFocus.hasFocus, isTrue);
+      expect(aFocus.hasFocus, isFalse);
+    });
+
+    testWidgets('the recovery phrase step has focus in its field once settled',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: ArDriveApp(
+            builder: (_) => const LoginPanelFade(
+              child: SizedBox(
+                key: Key('landing'),
+                child: TextField(autofocus: false),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: ArDriveApp(
+            builder: (_) => const LoginPanelFade(
+              child: SizedBox(
+                key: Key('enterRecoveryPhraseView'),
+                width: 400,
+                child: EnterRecoveryPhraseView(),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      final field = find.descendant(
+          of: find.byType(EnterRecoveryPhraseView),
+          matching: find.byType(EditableText));
+      expect(tester.widget<EditableText>(field).focusNode.hasFocus, isTrue);
+    });
+
+    test('a finished sign-in swaps the panel to its waiting card', () {
+      final user = fakeUserJson;
+      expect(loginPanelRebuildsOn(LoginSuccess(user)), isTrue);
+      expect(loginPanelFor(LoginSuccess(user), loginBloc),
+          isA<MaxDeviceSizesConstrainedBox>());
     });
 
     test('each step has its panel', () {
