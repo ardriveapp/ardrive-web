@@ -175,7 +175,9 @@ class NewButton extends StatelessWidget {
                             showMouseCursor: !item.isDisabled,
                             child: ArDriveDropdownItemTile(
                               iconAlignment: item.iconAlignment,
-                              icon: item.icon.copyWith(size: 24),
+                              // Scaled, so a smaller glyph keeps its share
+                              // of the larger box.
+                              icon: item.icon.scaledTo(24),
                               name: item.name,
                               isDisabled: item.isDisabled,
                               fontStyle: ArDriveTypographyNew.of(context)

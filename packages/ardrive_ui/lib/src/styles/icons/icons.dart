@@ -31,6 +31,19 @@ class ArDriveIcon extends StatelessWidget {
     return SizedBox.square(dimension: box, child: Center(child: drawn));
   }
 
+  /// The same icon in a [newSize] box, its glyph scaled with it, so a
+  /// [glyphSize] keeps its share of the box.
+  ArDriveIcon scaledTo(double newSize) {
+    final glyph = glyphSize;
+    final box = size;
+    return ArDriveIcon(
+      icon: icon,
+      color: color,
+      size: newSize,
+      glyphSize: glyph == null || box == null ? null : glyph * newSize / box,
+    );
+  }
+
   ArDriveIcon copyWith({
     double? size,
     Color? color,
