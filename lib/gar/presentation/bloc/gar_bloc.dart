@@ -77,10 +77,9 @@ class GarBloc extends Bloc<GarEvent, GarState> {
 
     on<ValidateCustomGateway>((event, emit) async {
       emit(ValidatingCustomGateway(event.gatewayUrl));
-
+      
       try {
-        final validationResult =
-            await garRepository.validateCustomGateway(event.gatewayUrl);
+        final validationResult = await garRepository.validateCustomGateway(event.gatewayUrl);
         emit(CustomGatewayValidated(
           gatewayUrl: event.gatewayUrl,
           validationResult: validationResult,
@@ -100,11 +99,10 @@ class GarBloc extends Bloc<GarEvent, GarState> {
 
     on<SelectCustomGateway>((event, emit) async {
       emit(VerifyingGateway());
-
+      
       try {
-        final validationResult =
-            await garRepository.validateCustomGateway(event.gatewayUrl);
-
+        final validationResult = await garRepository.validateCustomGateway(event.gatewayUrl);
+        
         if (validationResult.canBeUsed) {
           emit(CustomGatewaySelected(event.gatewayUrl));
         } else {
@@ -117,7 +115,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
 
     on<ClearCustomGatewayValidation>((event, emit) {
       final currentState = state;
-
+      
       if (currentState is GatewaysLoaded) {
         emit(
           GatewaysLoaded(
@@ -132,7 +130,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
     on<ConfirmCustomGatewayChange>((event, emit) async {
       try {
         await garRepository.updateCustomGateway(event.gatewayUrl);
-
+        
         // Create a custom gateway object for the success state
         final customGateway = Gateway(
           operatorStake: 0,
@@ -142,8 +140,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
             port: 443,
             protocol: 'https',
             allowDelegatedStaking: false,
-            fqdn:
-                Uri.parse(garRepository.cleanGatewayUrl(event.gatewayUrl)).host,
+            fqdn: Uri.parse(garRepository.cleanGatewayUrl(event.gatewayUrl)).host,
             delegateRewardShareRatio: 0,
             properties: 'custom',
             note: 'Custom gateway',
@@ -164,7 +161,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
           ),
           status: 'custom',
         );
-
+        
         emit(GatewayChanged(customGateway));
       } catch (e) {
         emit(const GatewaysError());

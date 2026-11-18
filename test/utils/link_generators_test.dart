@@ -157,8 +157,7 @@ void main() {
         );
       });
 
-      test(
-          'a private file link puts the key in the fragment under path '
+      test('a private file link puts the key in the fragment under path '
           'routing', () async {
         // `?fileKey=` is safe on the hash route and only there: on a path
         // route the query is sent to the server.

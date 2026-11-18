@@ -41,8 +41,8 @@ void main() {
     });
 
     test('produces a label that is legal in DNS', () {
-      final subdomain = arweaveSandboxSubdomain(
-          'j48SFG4GgnFej4tCqKU2iUgI4alFArg_8o8pVLiGujI')!;
+      final subdomain =
+          arweaveSandboxSubdomain('j48SFG4GgnFej4tCqKU2iUgI4alFArg_8o8pVLiGujI')!;
 
       expect(subdomain.length, 52);
       expect(RegExp(r'^[a-z2-7]+$').hasMatch(subdomain), isTrue);

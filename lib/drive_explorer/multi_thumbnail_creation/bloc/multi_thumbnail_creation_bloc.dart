@@ -205,7 +205,8 @@ class MultiThumbnailCreationBloc
       }
       logger.e('Error creating thumbnails: $e');
 
-      emit(MultiThumbnailCreationError(isPaymentError: isTurboPaymentError(e)));
+      emit(MultiThumbnailCreationError(
+          isPaymentError: isTurboPaymentError(e)));
     }
 
     _skippedDrives.clear();

@@ -135,8 +135,7 @@ void main() {
       );
     }
 
-    test(
-        'the picker opens before a byte is fetched, and the bytes that '
+    test('the picker opens before a byte is fetched, and the bytes that '
         'follow are still verified', () async {
       final harness = buildWeb(ciphertextWithMac);
 
@@ -152,8 +151,7 @@ void main() {
       expect((await harness.downloader.integrity).isVerified, isTrue);
     });
 
-    test(
-        'a tampered file leaves an empty file where the user chose to save, '
+    test('a tampered file leaves an empty file where the user chose to save, '
         'never plaintext', () async {
       final tampered = Uint8List.fromList(ciphertextWithMac);
       tampered[1234] ^= 0x01;
@@ -213,8 +211,7 @@ void main() {
     });
   });
 
-  test(
-      'tampered AES-GCM ciphertext fails authentication and nothing is '
+  test('tampered AES-GCM ciphertext fails authentication and nothing is '
       'written', () async {
     final tampered = Uint8List.fromList(ciphertextWithMac);
     // One flipped bit anywhere in the ciphertext invalidates the tag.
@@ -258,8 +255,7 @@ void main() {
     expect(harness.io.savedBytes, isEmpty);
   });
 
-  test(
-      'downloadToMemory authenticates AES-GCM too, so thumbnails and previews '
+  test('downloadToMemory authenticates AES-GCM too, so thumbnails and previews '
       'are covered', () async {
     final harness = build(ciphertextWithMac);
 
@@ -313,8 +309,7 @@ void main() {
       );
     });
 
-    test(
-        'a GCM download still succeeds with the kill switch off, which it '
+    test('a GCM download still succeeds with the kill switch off, which it '
         'could not do if it went through AesGcmStream', () async {
       final harness = build(ciphertextWithMac);
 
@@ -325,6 +320,7 @@ void main() {
       expect(errors, isEmpty);
       expect(harness.io.savedBytes, plaintext);
     });
+
   });
 
   // A file larger than DownloadPolicy.maxBufferedCiphertextBytes cannot have
@@ -401,8 +397,8 @@ void main() {
 
       final errors = await drainProgress(progress);
 
-      expect(
-          errors.whereType<DownloadTooLargeToAuthenticateException>(), isEmpty);
+      expect(errors.whereType<DownloadTooLargeToAuthenticateException>(),
+          isEmpty);
       expect(errors, isEmpty);
       expect(harness.io.savedBytes, positionalXorPlaintext(body));
       expect(harness.io.saveFileStreamCalls, 1);
@@ -459,7 +455,8 @@ void main() {
         arweave: MockArweaveService(),
         source: FakeDownloadSource(ciphertextWithMac),
         decryptStream: (a, b, c, d, e,
-                {int startOffsetBytes = 0, bool gcmTooLargeToBuffer = false}) =>
+                {int startOffsetBytes = 0,
+                bool gcmTooLargeToBuffer = false}) =>
             throw StateError('a GCM file under the cap must be MAC-verified'),
       );
 
@@ -480,4 +477,5 @@ void main() {
       expect((await downloader.integrity).isVerified, isTrue);
     });
   });
+
 }

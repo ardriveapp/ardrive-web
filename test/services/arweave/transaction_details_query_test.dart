@@ -46,8 +46,7 @@ void main() {
         };
 
     test('carries the deep hash inputs of a bundled data item', () {
-      final tx = TransactionDetailsWithSignature$Query.fromJson(queryJson())
-          .transaction!;
+      final tx = TransactionDetailsWithSignature$Query.fromJson(queryJson()).transaction!;
 
       expect(tx.bundledIn?.id, bundleId);
       expect(tx.signature, dataItemSignature);
@@ -57,8 +56,7 @@ void main() {
     });
 
     test('keeps everything TransactionCommon already provided', () {
-      final tx = TransactionDetailsWithSignature$Query.fromJson(queryJson())
-          .transaction!;
+      final tx = TransactionDetailsWithSignature$Query.fromJson(queryJson()).transaction!;
 
       expect(tx.id, txId);
       expect(tx.owner.address, ownerAddress);

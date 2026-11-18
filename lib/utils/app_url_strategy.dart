@@ -35,9 +35,10 @@ enum AppUrlStrategy {
   /// is client-side wherever it goes and the URL's one fragment is spent. On a
   /// path route the query is sent to the server, so the fragment is the only
   /// position a key may ever occupy (§1.2, §4.2).
-  SharedFileLinkKeyPlacement get fileKeyPlacement => this == AppUrlStrategy.path
-      ? SharedFileLinkKeyPlacement.fragment
-      : SharedFileLinkKeyPlacement.hashQuery;
+  SharedFileLinkKeyPlacement get fileKeyPlacement =>
+      this == AppUrlStrategy.path
+          ? SharedFileLinkKeyPlacement.fragment
+          : SharedFileLinkKeyPlacement.hashQuery;
 
   /// What a route location is prefixed with to become a link on an origin.
   String get linkPrefix => this == AppUrlStrategy.path ? '' : '/#';

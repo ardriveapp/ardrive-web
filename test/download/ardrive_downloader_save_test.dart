@@ -86,8 +86,7 @@ void main() {
       expect(io.deleted, isFalse);
     });
 
-    test(
-        'a buffered AES-GCM download completes too — the plaintext is already '
+    test('a buffered AES-GCM download completes too — the plaintext is already '
         'in memory, but it still goes out through the streaming saver',
         () async {
       final plaintext = pseudoRandomBytes(4096, seed: 5);
@@ -186,8 +185,7 @@ void main() {
   });
 
   group('a download the gateway ended is not reported as a cancellation', () {
-    test(
-        'a 404 on every gateway throws out of downloadFile, before the user '
+    test('a 404 on every gateway throws out of downloadFile, before the user '
         'is asked where to save anything', () async {
       final io = MobileShapedArDriveIO();
       final downloader = build(
@@ -223,8 +221,7 @@ void main() {
       );
     });
 
-    test(
-        'a mid-stream failure the resumes cannot recover from surfaces as the '
+    test('a mid-stream failure the resumes cannot recover from surfaces as the '
         'network error it is, not as DownloadCancelledException', () async {
       final io = MobileShapedArDriveIO();
       final downloader = build(
@@ -246,8 +243,7 @@ void main() {
           reason: 'the download never finished, whatever the saver reported');
     });
 
-    test(
-        'the integrity verdict is settled, not left pending, when a gateway '
+    test('the integrity verdict is settled, not left pending, when a gateway '
         'never answers', () async {
       final downloader = build(
         FakeDownloadSource(
@@ -325,8 +321,7 @@ void main() {
         verifierFactory: (id) async => verifier,
       );
 
-      await drainProgress(
-              await downloadPrivateCtr(downloader, verifyIntegrity: true))
+      await drainProgress(await downloadPrivateCtr(downloader, verifyIntegrity: true))
           .timeout(const Duration(seconds: 10));
       await downloader.integrity.timeout(const Duration(seconds: 10));
 

@@ -147,8 +147,7 @@ void main() {
         (tester) async {
       await pump(
         tester,
-        ready(
-            bytes: ascii('%PDF-1.7\n'), claimedContentType: 'application/pdf'),
+        ready(bytes: ascii('%PDF-1.7\n'), claimedContentType: 'application/pdf'),
       );
 
       expect(find.byType(PdfPreviewWidget), findsOneWidget);
@@ -205,8 +204,7 @@ void main() {
   });
 
   group('script-capable types', () {
-    testWidgets(
-        'HTML shows its source and offers the sandbox, and renders '
+    testWidgets('HTML shows its source and offers the sandbox, and renders '
         'nothing of itself', (tester) async {
       await pump(
         tester,
@@ -241,8 +239,7 @@ void main() {
       await pump(
         tester,
         ready(
-          bytes:
-              ascii('<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>'),
+          bytes: ascii('<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>'),
           claimedContentType: 'image/svg+xml',
         ),
       );

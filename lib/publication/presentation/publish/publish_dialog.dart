@@ -406,7 +406,9 @@ class PublishDialog extends StatelessWidget {
                 names: cubit.names,
                 hasSnapshot: !cubit.isFile,
               ),
-              actions: [ModalAction.close(title: strings.close, action: close)],
+              actions: [
+                ModalAction.close(title: strings.close, action: close)
+              ],
             );
           case PublishStage.failed:
             return _modal(

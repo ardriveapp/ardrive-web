@@ -77,7 +77,8 @@ void main() {
     expect(find.byType(CsvExportDialog), findsNothing);
   });
 
-  testWidgets('offers no Cancel while the file is being saved', (tester) async {
+  testWidgets('offers no Cancel while the file is being saved',
+      (tester) async {
     await open(
       tester,
       DataExportSuccess(
