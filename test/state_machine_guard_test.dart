@@ -366,10 +366,6 @@ const _legacyPropsGaps = <String, Set<String>>{
   },
   'lib/gar/presentation/bloc/gar_state.dart GatewayActive': {'gateway'},
   'lib/gar/presentation/bloc/gar_state.dart GatewayChanged': {'gateway'},
-  'lib/sharing/folder_selector/folder_selector_state.dart FolderSelectedState':
-      {'driveId', 'folder'},
-  'lib/sharing/folder_selector/folder_selector_state.dart SelectingFolderState':
-      {'isRootFolder', 'parentFolder'},
   'lib/sync/domain/cubit/sync_state.dart SyncFailure': {
     'deep',
     'driveIds',
