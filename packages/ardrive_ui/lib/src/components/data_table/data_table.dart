@@ -154,6 +154,21 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   /// table - which put the list back in the order it was handed over in.
   final void Function(int column, TableSort order)? onSortChanged;
 
+  /// Slivers placed above the table, in the table's own scroll, so that what
+  /// they hold moves with the rows. With these the table is one scroll view:
+  /// they come first, then the column headings, pinned, under whatever
+  /// [pinnedInset] the leading slivers keep at the top, then the rows and the
+  /// page indicator, in the same card.
+  ///
+  /// The first of them must be a [SliverCollapsingHeader] given
+  /// [leadingExtent], which lets a list shorter than the window still scroll
+  /// far enough to collapse it.
+  final List<Widget>? leadingSlivers;
+  final CollapsingHeaderExtent? leadingExtent;
+
+  /// What the leading slivers pin over the top of the window.
+  final double pinnedInset;
+
   const ArDriveDataTable({
     super.key,
     required this.columns,
@@ -193,7 +208,10 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.initialSortColumn,
     this.initialSortOrder,
     this.onSortChanged,
-  });
+    this.leadingSlivers,
+    this.leadingExtent,
+    this.pinnedInset = 0,
+  }) : assert(leadingSlivers == null || leadingExtent != null);
 
   @override
   State<ArDriveDataTable> createState() => _ArDriveDataTableState<T>();
@@ -842,6 +860,102 @@ class _ArDriveDataTableState<T extends IndexedItem>
       return EdgeInsets.only(left: leftPadding, right: rightPadding);
     }
 
+    final headerRow = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: _tablePadding,
+      ),
+      child: Row(
+        children: [
+          _masterMultiselectCheckBox(),
+          Flexible(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 300),
+              padding: getPadding(),
+              child: Row(
+                children: [
+                  ...columns,
+                  // 10 less than the trailing slot, as the 90 was
+                  // beside its 100.
+                  SizedBox(
+                    width: trailingSlot - 10,
+                  ),
+                  ArDriveSubmenu(
+                    alignmentOffset: const Offset(-150, 10),
+                    menuChildren: [
+                      for (int i = 0; i < _columns.length; i++)
+                        ArDriveSubmenuItem(
+                            widget: Padding(
+                          padding: EdgeInsets.only(
+                              top: (i == 0) ? 16 : 8,
+                              left: 16,
+                              right: 16,
+                              bottom: (i == _columns.length - 1) ? 16 : 8),
+                          child: ArDriveCheckBox(
+                            isDisabled: !_columns[i].canHide,
+                            title: _columns[i].title,
+                            checked: _columns[i].isVisible,
+                            titleStyle:
+                                ArDriveTypographyNew.of(context).paragraphLarge(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                            onChange: (value) {
+                              _toggleColumnVisibility(i);
+                            },
+                          ),
+                        )),
+                      for (final option in widget.viewOptions)
+                        ArDriveSubmenuItem(
+                          widget: Container(
+                            // A line above, as between a menu's
+                            // groups: these are not columns.
+                            decoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colorTokens
+                                      .strokeLow,
+                                ),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: ArDriveCheckBox(
+                              key: option.key,
+                              title: option.label,
+                              checked: option.checked,
+                              titleStyle: ArDriveTypographyNew.of(context)
+                                  .paragraphLarge(
+                                fontWeight: ArFontWeight.bold,
+                              ),
+                              onChange: option.onChanged,
+                            ),
+                          ),
+                        ),
+                    ],
+                    // A columns glyph, named: a bare plus with no
+                    // tooltip read as "add an item".
+                    child: Semantics(
+                      button: true,
+                      label: widget.columnsText,
+                      excludeSemantics: true,
+                      child: ArDriveTooltip(
+                        message: widget.columnsText,
+                        child: ArDriveIcons.columns(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.leadingSlivers != null) {
+      return _buildCollapsing(headerRow, trailingSlot);
+    }
+
     // Focus lives on the whole table, not a row: a click on any row brings
     // Enter here, and the row it opens is whichever one is selected.
     return Focus(
@@ -867,101 +981,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
               const SizedBox(
                 height: 14,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: _tablePadding,
-                ),
-                child: Row(
-                  children: [
-                    _masterMultiselectCheckBox(),
-                    Flexible(
-                      child: AnimatedPadding(
-                        duration: const Duration(milliseconds: 300),
-                        padding: getPadding(),
-                        child: Row(
-                          children: [
-                            ...columns,
-                            // 10 less than the trailing slot, as the 90 was
-                            // beside its 100.
-                            SizedBox(
-                              width: trailingSlot - 10,
-                            ),
-                            ArDriveSubmenu(
-                              alignmentOffset: const Offset(-150, 10),
-                              menuChildren: [
-                                for (int i = 0; i < _columns.length; i++)
-                                  ArDriveSubmenuItem(
-                                      widget: Padding(
-                                    padding: EdgeInsets.only(
-                                        top: (i == 0) ? 16 : 8,
-                                        left: 16,
-                                        right: 16,
-                                        bottom: (i == _columns.length - 1)
-                                            ? 16
-                                            : 8),
-                                    child: ArDriveCheckBox(
-                                      isDisabled: !_columns[i].canHide,
-                                      title: _columns[i].title,
-                                      checked: _columns[i].isVisible,
-                                      titleStyle:
-                                          ArDriveTypographyNew.of(context)
-                                              .paragraphLarge(
-                                        fontWeight: ArFontWeight.bold,
-                                      ),
-                                      onChange: (value) {
-                                        _toggleColumnVisibility(i);
-                                      },
-                                    ),
-                                  )),
-                                for (final option in widget.viewOptions)
-                                  ArDriveSubmenuItem(
-                                    widget: Container(
-                                      // A line above, as between a menu's
-                                      // groups: these are not columns.
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          top: BorderSide(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colorTokens
-                                                .strokeLow,
-                                          ),
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.all(16),
-                                      child: ArDriveCheckBox(
-                                        key: option.key,
-                                        title: option.label,
-                                        checked: option.checked,
-                                        titleStyle:
-                                            ArDriveTypographyNew.of(context)
-                                                .paragraphLarge(
-                                          fontWeight: ArFontWeight.bold,
-                                        ),
-                                        onChange: option.onChanged,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                              // A columns glyph, named: a bare plus with no
-                              // tooltip read as "add an item".
-                              child: Semantics(
-                                button: true,
-                                label: widget.columnsText,
-                                excludeSemantics: true,
-                                child: ArDriveTooltip(
-                                  message: widget.columnsText,
-                                  child: ArDriveIcons.columns(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              headerRow,
               // And the same 6 beneath them before the first row, where the
               // gap was 25: four times the drives list, and the half of it a
               // reader actually notices.
@@ -985,23 +1005,8 @@ class _ArDriveDataTableState<T extends IndexedItem>
                     child: ListView.builder(
                       controller: _scrollController,
                       itemCount: _currentPage.length,
-                      itemBuilder: (context, index) {
-                        return ArDriveClickArea(
-                          key: ValueKey(_currentPage[index]),
-                          child: _HoverableRow(
-                            key: _currentPage[index] == _scrollToRow
-                                ? _scrollToRowKey
-                                : null,
-                            child: _buildRowSpacing(
-                              _columns,
-                              widget.buildRow(_currentPage[index]).row,
-                              _currentPage[index],
-                              index,
-                              trailingSlot,
-                            ),
-                          ),
-                        );
-                      },
+                      itemBuilder: (context, index) =>
+                          _buildRowItem(index, trailingSlot),
                     ),
                   ),
                 ),
@@ -1015,6 +1020,144 @@ class _ArDriveDataTableState<T extends IndexedItem>
             ],
           ),
         ));
+  }
+
+  /// A row of the current page, as the list draws it.
+  Widget _buildRowItem(int index, double trailingSlot) {
+    return ArDriveClickArea(
+      key: ValueKey(_currentPage[index]),
+      child: _HoverableRow(
+        key: _currentPage[index] == _scrollToRow ? _scrollToRowKey : null,
+        child: _buildRowSpacing(
+          _columns,
+          widget.buildRow(_currentPage[index]).row,
+          _currentPage[index],
+          index,
+          trailingSlot,
+        ),
+      ),
+    );
+  }
+
+  /// The column headings' height in the collapsing layout: the air above
+  /// them, the row, the air below and the hairline, which the card has.
+  double get _headingsExtent => 14 + _headingsRowHeight + 6 + 1;
+
+  /// The headings' row: a column's title at the reader's text size, and no
+  /// less than the checkbox or the sort arrow that can sit in it.
+  double get _headingsRowHeight {
+    final scaler = MediaQuery.textScalerOf(context);
+    var text = 0.0;
+    for (final column in _columns) {
+      if (!column.isVisible) continue;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: column.title,
+          style: column.textStyle ??
+              ArDriveTypographyNew.of(context)
+                  .paragraphNormal(fontWeight: ArFontWeight.bold),
+        ),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      text = max(text, painter.height);
+      painter.dispose();
+    }
+    return max(24, text + 4);
+  }
+
+  /// The table as one scroll view, with [ArDriveDataTable.leadingSlivers]
+  /// first. The card is a decoration behind its slivers, so its corners are
+  /// where the card really begins and ends however far it is scrolled, and
+  /// the headings are pinned inside it, under what the leading slivers pin.
+  Widget _buildCollapsing(Widget headerRow, double trailingSlot) {
+    final tableTheme = ArDriveTheme.of(context).themeData.tableTheme;
+    final cardColor = tableTheme.backgroundColor;
+    final radius = BorderRadius.circular(cardDefaultBorderRadius);
+    final stroke = ArDriveTheme.of(context).themeData.colorTokens.strokeLow;
+
+    final headingsExtent = _headingsExtent;
+    final headings = Column(
+      children: [
+        const SizedBox(height: 14),
+        SizedBox(height: _headingsRowHeight, child: headerRow),
+        const SizedBox(height: 6),
+        if (widget.headerDivider)
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: _tablePadding),
+            color: stroke,
+          )
+        else
+          const SizedBox(height: 1),
+      ],
+    );
+
+    return Focus(
+      focusNode: _focusNode,
+      onKeyEvent: _onKey,
+      onFocusChange: (_) => setState(() {}),
+      child: ArDriveScrollBar(
+        controller: _scrollController,
+        child: CustomScrollView(
+          controller: _scrollController,
+          // The scroll range is the header's and the rows', never more: no
+          // bounce past either end, where a short list would otherwise
+          // rubber-band by itself.
+          physics: const ClampingScrollPhysics(),
+          slivers: [
+            ...widget.leadingSlivers!,
+            // The headings are a pinned sliver of their own: inside a group
+            // they did not stay under the bar.
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedHeadingsDelegate(
+                extent: headingsExtent,
+                color: cardColor,
+                radius: cardDefaultBorderRadius,
+                child: headings,
+              ),
+            ),
+            DecoratedSliver(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.vertical(bottom: radius.bottomLeft),
+              ),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverList.builder(
+                    itemCount: _currentPage.length,
+                    itemBuilder: (context, index) =>
+                        _buildRowItem(index, trailingSlot),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: _tablePadding),
+                      // However little the indicator has to say, the card
+                      // ends a corner's radius under the last row, so a
+                      // highlighted row never meets the rounded corners.
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: cardDefaultBorderRadius,
+                        ),
+                        child: _pageIndicator(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SliverCollapseTail(
+              extent: widget.leadingExtent!,
+              pinnedInset: widget.pinnedInset,
+              minHeight: 16,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSingleColumn({required TableColumn column, required int index}) {
@@ -1385,9 +1528,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
     // a click asked for it, so no frame shows the new rows at the old offset;
     // after the frame when the rows changed during a build.
     _afterBuild(() {
-      if (_scrollController.hasClients) {
+      if (!_scrollController.hasClients) return;
+      final leading = widget.leadingExtent;
+      if (leading == null) {
         _scrollController.jumpTo(0);
+        return;
       }
+      // With a header above the rows, the new page starts at its top, under
+      // the bar: no further than the header collapsed.
+      final top = max(0.0, leading.value - widget.pinnedInset);
+      if (_scrollController.offset > top) _scrollController.jumpTo(top);
     });
     _afterBuild(() => widget.onChangePage?.call(target));
   }
@@ -1418,15 +1568,38 @@ class _ArDriveDataTableState<T extends IndexedItem>
     }
 
     final index = _currentPage.indexOf(row);
-    if (index < 0 || attempt >= 3) {
+    if (index < 0 || attempt >= (widget.leadingExtent == null ? 3 : 40)) {
       _scrollToRow = null;
       return;
     }
 
     final position = _scrollController.position;
-    _scrollController.jumpTo(
-      position.maxScrollExtent * index / max(1, _currentPage.length - 1),
-    );
+    final leading = widget.leadingExtent;
+    final double target;
+    if (leading == null) {
+      target =
+          position.maxScrollExtent * index / max(1, _currentPage.length - 1);
+    } else {
+      // The rows start after the header and the headings; the row's top goes
+      // just under the bar and the pinned headings. A row is at least
+      // [ArDriveDataTable.rowHeight] tall, and the list's own estimate of its
+      // length (the rows it has built, averaged) takes over from the first
+      // guess as it learns how tall they are.
+      final start = leading.value - widget.pinnedInset;
+      var guess = start + index * ArDriveDataTable.rowHeight;
+      if (attempt > 0) {
+        final rows = position.maxScrollExtent +
+            position.viewportDimension -
+            leading.value -
+            _headingsExtent;
+        guess = max(guess, start + rows * index / max(1, _currentPage.length));
+      }
+      // Each try goes on from the last: a row not built yet is further down.
+      target = attempt == 0
+          ? guess
+          : max(guess, position.pixels + position.viewportDimension * 0.9);
+    }
+    _scrollController.jumpTo(target.clamp(0.0, position.maxScrollExtent));
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _scrollRevealedRowIntoView(attempt + 1),
     );
@@ -2142,4 +2315,67 @@ class ArDriveDoubleClick<T> {
   }
 
   void dispose() => reset();
+}
+
+/// The column headings, pinned: the card's top, [extent] tall, with its
+/// rounded corners while it is where the card begins and square once it is
+/// over rows scrolling under it.
+class _PinnedHeadingsDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedHeadingsDelegate({
+    required this.extent,
+    required this.color,
+    required this.radius,
+    required this.child,
+  });
+
+  final double extent;
+  final Color color;
+  final double radius;
+  final Widget child;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: overlapsContent
+                  ? BorderRadius.zero
+                  : BorderRadius.vertical(top: Radius.circular(radius)),
+            ),
+          ),
+        ),
+        // A pixel under, over the rows' first: where two edges meet at a
+        // fraction of a pixel there is no seam.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: -1,
+          height: 1,
+          child: ColoredBox(color: color),
+        ),
+        Positioned.fill(child: child),
+      ],
+    );
+  }
+
+  @override
+  bool shouldRebuild(_PinnedHeadingsDelegate old) =>
+      old.extent != extent ||
+      old.color != color ||
+      old.radius != radius ||
+      old.child != child;
 }

@@ -65,7 +65,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,7 +74,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:ardrive/publication/presentation/publication_header_fold.dart';
 
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
@@ -116,10 +114,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   final _mobileScrollOffsets = <String, double>{};
   String? _mobileFolderId;
 
-  /// A publication root's header folds away while the list beneath it is
-  /// scrolled, so the list has the window, and unfolds at its top.
-  final _publicationHeaderFold = PublicationHeaderFold();
-  String? _publicationHeaderFolderId;
+  /// A publication root's header is the first thing in its list's scroll.
+  /// The extent is how tall it is, for the room the list keeps below; the
+  /// key is its title, which the pinned bar follows.
+  final _publicationHeaderExtent = CollapsingHeaderExtent();
+  final _publicationTitleKey = GlobalKey(debugLabel: 'publication title');
 
   void _onMobileFolderShown(String folderId) {
     if (_mobileFolderId == folderId) {
@@ -616,68 +615,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       publicationConfigOf(context)?.scopeRootFolderId ==
       state.folderInView.folder.id;
 
-  /// Rebuilds when [changed]: a [PublicationHeaderFold] call that changed
-  /// the fold.
-  void _foldPublicationHeader(bool changed) {
-    if (changed) setState(() {});
-  }
-
-  /// [child] with the scrolling that folds a publication root's header: the list
-  /// moving off its top, or the wheel turned over the header itself.
-  Widget _foldsPublicationHeader(String folderId, Widget child) {
-    if (!PublicationMode.isOn) return child;
-    _publicationFolderShown(folderId);
-    return _turnsPublicationHeader(
-      NotificationListener<Notification>(
-        onNotification: (notification) {
-          final metrics = switch (notification) {
-            ScrollNotification(:final metrics) => metrics,
-            ScrollMetricsNotification(:final metrics) => metrics,
-            _ => null,
-          };
-          if (metrics == null || metrics.axis != Axis.vertical) return false;
-          // Only a scroll that moved the list folds or unfolds: the list
-          // growing as the header folds reports new metrics too.
-          _foldPublicationHeader(_publicationHeaderFold.onScroll(
-            pixels: metrics.pixels,
-            maxScrollExtent: metrics.maxScrollExtent,
-            moved: notification is ScrollUpdateNotification &&
-                (notification.scrollDelta ?? 0) != 0,
-          ));
-          return false;
-        },
-        child: child,
-      ),
-    );
-  }
-
-  /// A folder newly shown starts with its header unfolded. Called by
-  /// whatever reads the fold first in a build, the header itself included.
-  void _publicationFolderShown(String folderId) {
-    if (_publicationHeaderFolderId == folderId) return;
-    _publicationHeaderFolderId = folderId;
-    _publicationHeaderFold.reset();
-  }
-
-  /// [child] where the wheel, or a swipe on a touch screen, folds a publication
-  /// root's header down when the list has more to show and unfolds it up
-  /// from the list's top. A swipe is the only way back on a phone whose list
-  /// fits once the header has folded, and so never scrolls again.
-  Widget _turnsPublicationHeader(Widget child) => Listener(
-        onPointerSignal: (event) {
-          if (event is! PointerScrollEvent) return;
-          _foldPublicationHeader(
-              _publicationHeaderFold.onWheel(event.scrollDelta.dy));
-        },
-        child: GestureDetector(
-          onVerticalDragEnd: (details) {
-            _foldPublicationHeader(
-                _publicationHeaderFold.onSwipe(details.primaryVelocity ?? 0));
-          },
-          child: child,
-        ),
-      );
-
   /// A publication root's Download: the rows selected, or the whole publication.
   void _downloadFromPublicationHeader(DriveDetailLoadSuccess state) {
     final publication = publicationConfigOf(context)!;
@@ -702,21 +639,97 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
+  /// Whether the publication root's header scrolls with a list: at the root,
+  /// with something in it to list.
+  bool _collapsesPublicationHeader(
+    DriveDetailLoadSuccess state,
+    bool hasContents,
+  ) =>
+      hasContents && _atPublicationRoot(state);
+
+  /// The desktop table's share of a collapsing header.
+  _CollapsingHeader _collapsingPublicationHeader(
+          DriveDetailLoadSuccess state) =>
+      _CollapsingHeader(
+        slivers: [
+          _publicationHeaderSliver(
+            state,
+            compact: false,
+            // The gap to the table is part of what scrolls away.
+            padding: const EdgeInsets.only(bottom: 24),
+          ),
+        ],
+        extent: _publicationHeaderExtent,
+        pinnedInset: PublicationBar.height,
+        staticHeader: Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: _publicationHeader(state, compact: false),
+        ),
+      );
+
+  /// A publication root's header on its own, above an empty folder: there is
+  /// no list to scroll it with.
   Widget _publicationHeader(
     DriveDetailLoadSuccess state, {
     required bool compact,
   }) {
-    _publicationFolderShown(state.folderInView.folder.id);
-    return _turnsPublicationHeader(PublicationHeader(
+    return PublicationHeader(
       coverHeight: compact ? 120 : 200,
-      collapsed: _publicationHeaderFold.folded,
       compact: compact,
       downloadsSelection: state.multiselect &&
           context.read<DriveDetailCubit>().selectedItems.isNotEmpty,
       onDownload: () => _downloadFromPublicationHeader(state),
       onCopyLink: () =>
           copyPublicationLink(context, folderId: state.folderInView.folder.id),
-    ));
+    );
+  }
+
+  /// A publication root's header as the first sliver of its list's scroll:
+  /// it moves up with the rows, and [PublicationBar] takes its place at the
+  /// top as its title leaves. [below] is whatever else scrolls with it.
+  Widget _publicationHeaderSliver(
+    DriveDetailLoadSuccess state, {
+    required bool compact,
+    required EdgeInsets padding,
+    Widget? below,
+  }) {
+    final selecting = state.multiselect &&
+        context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
+    void download() => _downloadFromPublicationHeader(state);
+    void copyLink() =>
+        copyPublicationLink(context, folderId: state.folderInView.folder.id);
+    return SliverCollapsingHeader(
+      barHeight: PublicationBar.height,
+      anchorKey: _publicationTitleKey,
+      extent: _publicationHeaderExtent,
+      header: Padding(
+        padding: padding,
+        child: Column(
+          children: [
+            PublicationHeader(
+              titleKey: _publicationTitleKey,
+              anchorExtent: _publicationHeaderExtent,
+              coverHeight: compact ? 120 : 200,
+              compact: compact,
+              downloadsSelection: selecting,
+              onDownload: download,
+              onCopyLink: copyLink,
+            ),
+            if (below != null) below,
+          ],
+        ),
+      ),
+      bar: Padding(
+        padding: EdgeInsets.symmetric(horizontal: padding.horizontal / 2),
+        child: PublicationBar(
+          compact: compact,
+          divider: compact,
+          downloadsSelection: selecting,
+          onDownload: download,
+          onCopyLink: copyLink,
+        ),
+      ),
+    );
   }
 
   Widget _desktopView({
@@ -742,7 +755,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_atPublicationRoot(driveDetailState)) ...[
+                          if (_collapsesPublicationHeader(
+                              driveDetailState, hasFiles || hasSubfolders))
+                            ...const <Widget>[]
+                          else if (_atPublicationRoot(driveDetailState)) ...[
                             _publicationHeader(driveDetailState,
                                 compact: false),
                             const SizedBox(height: 24),
@@ -913,39 +929,41 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
-                                    child: _foldsPublicationHeader(
-                                      driveDetailState.folderInView.folder.id,
-                                      _buildDataList(
-                                        context,
-                                        driveDetailState,
-                                        Column(
-                                          children: [
-                                            Expanded(
-                                              child: DriveDetailFolderEmptyCard(
-                                                driveId: driveDetailState
-                                                    .currentDrive.id,
-                                                parentFolderId: driveDetailState
-                                                    .folderInView.folder.id,
-                                                folderName: driveDetailState
-                                                    .folderInView.folder.name,
-                                                contentsStillArriving:
-                                                    driveDetailState
-                                                        .contentsStillArriving,
-                                                promptToAddFiles:
-                                                    driveDetailState
-                                                        .hasWritePermissions,
-                                                isPrivate: driveDetailState
-                                                    .currentDrive.isPrivate,
-                                                isRootFolder: driveDetailState
-                                                        .folderInView
-                                                        .folder
-                                                        .parentFolderId ==
-                                                    null,
-                                              ),
+                                    child: _buildDataList(
+                                      context,
+                                      driveDetailState,
+                                      Column(
+                                        children: [
+                                          Expanded(
+                                            child: DriveDetailFolderEmptyCard(
+                                              driveId: driveDetailState
+                                                  .currentDrive.id,
+                                              parentFolderId: driveDetailState
+                                                  .folderInView.folder.id,
+                                              folderName: driveDetailState
+                                                  .folderInView.folder.name,
+                                              contentsStillArriving:
+                                                  driveDetailState
+                                                      .contentsStillArriving,
+                                              promptToAddFiles: driveDetailState
+                                                  .hasWritePermissions,
+                                              isPrivate: driveDetailState
+                                                  .currentDrive.isPrivate,
+                                              isRootFolder: driveDetailState
+                                                      .folderInView
+                                                      .folder
+                                                      .parentFolderId ==
+                                                  null,
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
+                                      collapsingHeader:
+                                          _collapsesPublicationHeader(
+                                                  driveDetailState, true)
+                                              ? _collapsingPublicationHeader(
+                                                  driveDetailState)
+                                              : null,
                                     ),
                                   ),
                                 ],
@@ -974,7 +992,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           // Room under the table, so a publication ends
                           // where its card visibly does, not at the window's
                           // edge.
-                          if (PublicationMode.isOn) const SizedBox(height: 16),
+                          if (PublicationMode.isOn &&
+                              !_collapsesPublicationHeader(
+                                  driveDetailState, hasFiles || hasSubfolders))
+                            const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -1150,9 +1171,31 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       filteredItems = items.where((item) => item.isHidden == false).toList();
     }
 
+    // A publication's root has its header in place of the folder bar, as
+    // the first thing in the list's scroll.
+    if (_collapsesPublicationHeader(state, hasSubfolders || hasFiles) &&
+        filteredItems.isNotEmpty) {
+      return ArDriveItemList(
+        controller: _scrollController,
+        drive: state.currentDrive,
+        items: filteredItems,
+        selectedItem: state.selectedItem,
+        leadingSlivers: [
+          _publicationHeaderSliver(
+            state,
+            compact: true,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            // The same warning the wide table carries, as below.
+            below: SyncingDriveNotice(driveId: state.currentDrive.id),
+          ),
+        ],
+        leadingExtent: _publicationHeaderExtent,
+        pinnedInset: PublicationBar.height,
+      );
+    }
+
     return Column(
       children: [
-        // A publication's root has its header in place of the folder bar.
         if (_atPublicationRoot(state))
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -1192,14 +1235,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: (hasSubfolders || hasFiles)
               ? filteredItems.isEmpty
                   ? _allItemsHidden(context)
-                  : _foldsPublicationHeader(
-                      state.folderInView.folder.id,
-                      ArDriveItemList(
-                        controller: _scrollController,
-                        drive: state.currentDrive,
-                        items: filteredItems,
-                        selectedItem: state.selectedItem,
-                      ))
+                  : ArDriveItemList(
+                      controller: _scrollController,
+                      drive: state.currentDrive,
+                      items: filteredItems,
+                      selectedItem: state.selectedItem,
+                    )
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
                   isPrivate: state.currentDrive.isPrivate,
@@ -1227,7 +1268,10 @@ class ArDriveItemList extends StatelessWidget {
     required this.drive,
     this.selectedItem,
     this.controller,
-  });
+    this.leadingSlivers,
+    this.leadingExtent,
+    this.pinnedInset = 0,
+  }) : assert(leadingSlivers == null || leadingExtent != null);
 
   final List<ArDriveDataTableItem> items;
   final Drive drive;
@@ -1236,21 +1280,54 @@ class ArDriveItemList extends StatelessWidget {
   final ArDriveDataTableItem? selectedItem;
   final ScrollController? controller;
 
+  /// Slivers before the rows, in the list's own scroll: a header that moves
+  /// up with the rows. The first is a [SliverCollapsingHeader] given
+  /// [leadingExtent]; [pinnedInset] is what it keeps pinned at the top.
+  final List<Widget>? leadingSlivers;
+  final CollapsingHeaderExtent? leadingExtent;
+  final double pinnedInset;
+
+  Widget _row(BuildContext context, int index) {
+    final item = items[index];
+    return ArDriveItemListTile(
+      key: ObjectKey([item]),
+      drive: drive,
+      item: item,
+      selected: item.id == selectedItem?.id,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final leading = leadingSlivers;
+    if (leading != null) {
+      return CustomScrollView(
+        controller: controller,
+        // No bounce past either end: the range is the header's and the
+        // rows', and a short list must not rubber-band by itself.
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          ...leading,
+          SliverPadding(
+            padding: const EdgeInsets.only(top: 8),
+            sliver: SliverList.builder(
+              itemCount: items.length,
+              itemBuilder: _row,
+            ),
+          ),
+          SliverCollapseTail(
+            extent: leadingExtent!,
+            pinnedInset: pinnedInset,
+            minHeight: 8,
+          ),
+        ],
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       controller: controller,
       itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return ArDriveItemListTile(
-          key: ObjectKey([item]),
-          drive: drive,
-          item: item,
-          selected: item.id == selectedItem?.id,
-        );
-      },
+      itemBuilder: _row,
     );
   }
 }

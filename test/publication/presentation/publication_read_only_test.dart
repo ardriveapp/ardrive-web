@@ -157,7 +157,6 @@ void main() {
     Future<void> header(
       WidgetTester tester, {
       PublicationConfig config = _config,
-      bool collapsed = false,
       bool downloadsSelection = false,
       bool ownerVerified = true,
     }) {
@@ -179,7 +178,6 @@ void main() {
             width: 1000,
             child: PublicationHeader(
               coverHeight: 200,
-              collapsed: collapsed,
               compact: false,
               downloadsSelection: downloadsSelection,
               onDownload: () {},
@@ -245,15 +243,6 @@ void main() {
       expect(address.style.fontFamily, ArDriveMonospace.family);
       expect(find.textContaining('79 files'), findsOneWidget);
       expect(find.text('A description.'), findsOneWidget);
-    });
-
-    testWidgets('folds to its title and actions', (tester) async {
-      await header(tester, config: withOwnerName(null), collapsed: true);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Publication'), findsOneWidget);
-      expect(find.text('A description.'), findsNothing);
-      expect(find.text('Download'), findsOneWidget);
     });
 
     testWidgets('counts its files even without a publish date', (tester) async {

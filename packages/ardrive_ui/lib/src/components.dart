@@ -6,6 +6,7 @@ export 'components/button.dart';
 export 'components/card.dart';
 export 'components/check_box.dart';
 export 'components/click_area.dart';
+export 'components/collapsing_header.dart';
 export 'components/copy_field.dart';
 export 'components/id_text.dart';
 export 'components/keep_last_words_together.dart';
