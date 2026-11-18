@@ -13,10 +13,12 @@ import {
   openPage,
   parsePublicationText,
   ownerKek,
+  passwordBytes,
   passwordKek,
+  sealedAad,
   unwrapKey,
 } from './seal.mjs';
-import { VECTORS_PATH, buildVectors } from './vectors.mjs';
+import { DART_VECTORS_PATH, VECTORS_PATH, buildVectors, dartVectors } from './vectors.mjs';
 
 const vectors = JSON.parse(fs.readFileSync(VECTORS_PATH, 'utf8'));
 const bytes = (text) => Buffer.from(text, 'base64url');
@@ -24,6 +26,23 @@ const bytes = (text) => Buffer.from(text, 'base64url');
 test('the vectors file is current', () => {
   assert.deepEqual(vectors, JSON.parse(JSON.stringify(buildVectors())),
     'run node tool/publication/vectors.mjs');
+});
+
+test('the Dart copy of the vectors is current', () => {
+  assert.equal(fs.readFileSync(DART_VECTORS_PATH, 'utf8'), dartVectors(fs.readFileSync(VECTORS_PATH, 'utf8')),
+    'run node tool/publication/vectors.mjs');
+});
+
+test('nfc vectors', () => {
+  for (const v of vectors.nfc) {
+    assert.equal(passwordBytes(Buffer.from(v.inputUtf8Hex, 'hex').toString('utf8')).toString('hex'), v.nfcUtf8Hex, v.name);
+  }
+});
+
+test('sealed associated data vectors', () => {
+  for (const v of vectors.sealedAad) {
+    assert.equal(Buffer.from(sealedAad(JSON.parse(v.publicationJson)), 'utf8').toString('hex'), v.aadUtf8Hex, v.name);
+  }
 });
 
 test("node's Argon2id matches RFC 9106", () => {
@@ -96,6 +115,11 @@ test('each page opens by link, typed key, password and owner, to the same block'
     }
     assert.equal(canonicalJson(expected), v.sealedPlaintext);
   }
+});
+
+test('an empty password is refused by the writer', () => {
+  assert.throws(() => passwordKek('', { salt: Buffer.alloc(16), m: 8192, t: 1, p: 1 }),
+    (e) => e instanceof SealError && e.code === 'invalid');
 });
 
 test('a page with no password slot is not opened by a password', () => {

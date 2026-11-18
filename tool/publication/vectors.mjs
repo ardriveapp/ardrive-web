@@ -22,7 +22,9 @@ import {
   ownerSlot,
   passwordKek,
   passwordSlot,
+  passwordBytes,
   sealBlock,
+  sealedAad,
   wrapKey,
 } from './seal.mjs';
 
@@ -30,6 +32,19 @@ export const VECTORS_PATH = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../test/publication/fixtures/sealed/vectors.json',
 );
+
+/**
+ * The same JSON as a Dart constant, for the browser tests, which can't read
+ * files. Written next to vectors.json.
+ */
+export const DART_VECTORS_PATH = VECTORS_PATH.replace(/\.json$/, '.dart');
+
+export function dartVectors(json) {
+  if (json.includes("'''")) throw new Error("the vectors can't hold ''' in a Dart raw string");
+  return `// Written by tool/publication/vectors.mjs: vectors.json as a constant, for\n` +
+    `// tests that run in a browser. Don't edit; run the script.\n\n` +
+    `const sealedVectorsJson = r'''\n${json}''';\n`;
+}
 
 /** n bytes (at most 32) named by a label: SHA-256 of "ardrive-vector|<label>". */
 const fixed = (label, n = 32) =>
@@ -57,7 +72,6 @@ function argon2Vectors() {
     // The same password typed composed and decomposed: NFC makes them one.
     { name: 'NFC, composed', password: 'Crème brûlée', ...FAST },
     { name: 'NFC, decomposed', password: 'Crème brûlée', ...FAST },
-    { name: 'empty password', password: '', ...FAST },
   ];
   return cases.map(({ name, password, m, t, p }) => {
     const salt = fixed(`salt|${name}`, 16);
@@ -72,6 +86,26 @@ function argon2Vectors() {
       kek: hex(passwordKek(password, { salt, m, t, p })),
     };
   });
+}
+
+/**
+ * NFC cases beyond a single accent: a singleton (the angstrom sign), mark
+ * reordering, Hangul composition, a composition exclusion and text that is
+ * already normal. A password is normalised before Argon2id runs.
+ */
+function nfcVectors() {
+  return [
+    ['angstrom sign', '\u212b'],
+    ['marks reorder by class', 'q\u0307\u0323'],
+    ['hangul jamo compose', '\u1100\u1161\u11a8'],
+    ['composition exclusion stays decomposed', '\u0958'],
+    ['already NFC', 'plain ascii 123'],
+    ['mixed', 'Ame\u0301lie \u212b \u1100\u1161 \ud83d\ude00'],
+  ].map(([name, text]) => ({
+    name,
+    inputUtf8Hex: hex(Buffer.from(text, 'utf8')),
+    nfcUtf8Hex: hex(passwordBytes(text)),
+  }));
 }
 
 /** RFC 9106 section 5.3, so an implementation can be checked apart from this scheme. */
@@ -119,7 +153,7 @@ function sealedBlockFor({ folderId, label }) {
   };
 }
 
-function page({ label, folderId, password, title = '' }) {
+function page({ label, folderId, password, title = '', description }) {
   const publicationId = folderId ? '3f1e2d4c-5b6a-4798-8a9b-0c1d2e3f4a5b' : '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d';
   const publicationKey = fixed(`${label}|publication key`);
   const driveKey = fixed(`${label}|drive key`);
@@ -131,6 +165,7 @@ function page({ label, folderId, password, title = '' }) {
     owner: OWNER,
     scope: folderId ? { type: 'folder', folderId } : { type: 'drive' },
     title,
+    ...(description != null ? { description } : {}),
   };
   const sealedBytes = sealBlock(publicationKey, sealedIv, block, header);
   const slots = [];
@@ -155,6 +190,7 @@ function page({ label, folderId, password, title = '' }) {
     sealed: { txId: txId(`${label}|sealed`), iv: b64u(sealedIv) },
     slots,
     title,
+    description,
     publishedAt: '2026-11-17T12:00:00.000Z',
     viewer: { release: 'v3.1.0', manifest: txId('viewer') },
   });
@@ -221,6 +257,8 @@ function refusals(good) {
   return [
     { name: 'wrong password', publicationJson: good.publicationJson, sealed: good.sealed,
       input: 'correct horse battery stapler', error: 'no-match' },
+    { name: 'an empty password is never tried', publicationJson: good.publicationJson, sealed: good.sealed,
+      input: '', error: 'no-match' },
     { name: 'wrong link key', publicationJson: good.publicationJson, sealed: good.sealed,
       linkKey: b64u(fixed('not the key')), error: 'no-match' },
     { name: 'owner slot with another drive key', publicationJson: good.publicationJson, sealed: good.sealed,
@@ -265,6 +303,8 @@ function refusals(good) {
     { name: 'version 3 has no snapshot', sealed: good.sealed,
       publicationJson: edit((c) => { c.snapshot = { path: 'snapshot', txId: txId('snapshot'), tags: {} }; }),
       linkKey: good.linkKey, error: 'invalid' },
+    { name: 'scope.folderId is not a string', sealed: good.sealed, linkKey: good.linkKey, error: 'invalid',
+      publicationJson: edit((c) => { c.scope.folderId = [c.scope.folderId]; }) },
     { name: 'sealed iv is not 12 bytes', sealed: good.sealed,
       publicationJson: edit((c) => { c.sealed.iv = b64u(fixed('long iv', 16)); }), linkKey: good.linkKey, error: 'invalid' },
   ];
@@ -280,6 +320,15 @@ export function buildVectors() {
     if ((b64u(Buffer.from(password, 'base64url')) === password) !== canonical) throw new Error(`canonical must be ${canonical}`);
     return page({ label: `drive page with a key-shaped password, ${canonical ? 'canonical' : 'not canonical'}`, password });
   };
+  // Text that every JSON writer must escape the same way, since the title and
+  // description are part of what the sealed part is bound to: quotes, a
+  // backslash, control characters, U+2028, an emoji and a lone surrogate.
+  const awkwardPage = page({
+    label: 'folder page with awkward text',
+    folderId: FOLDER_ID,
+    title: 'Q3 "final" \\ draft\t\u0001\u001f\u007f\u2028 é 😀 \ud800 </script>',
+    description: 'Line one\nLine two\r\n\b\f',
+  });
   const keyShapedPages = [
     keyShaped('correct-horse-battery-staple-and-two-more-R', false),
     keyShaped('correct-horse-battery-staple-and-two-more-Q', true),
@@ -313,13 +362,20 @@ export function buildVectors() {
       aad: `ArDrive publication slot v1|${wrapCase.publicationId}`,
       wrapped: b64u(wrapKey(wrapCase.kek, wrapCase.iv, wrapCase.publicationKey, wrapCase.publicationId)),
     }],
-    pages: [folderPage, drivePage, ...keyShapedPages],
+    nfc: nfcVectors(),
+    sealedAad: [folderPage, awkwardPage].map((p) => {
+      const c = JSON.parse(p.publicationJson);
+      return { name: p.name, publicationJson: p.publicationJson, aadUtf8Hex: hex(Buffer.from(sealedAad(c), 'utf8')) };
+    }),
+    pages: [folderPage, drivePage, awkwardPage, ...keyShapedPages],
     refusals: refusals(folderPage),
   };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   fs.mkdirSync(path.dirname(VECTORS_PATH), { recursive: true });
-  fs.writeFileSync(VECTORS_PATH, `${JSON.stringify(buildVectors(), null, 2)}\n`);
-  console.log(`wrote ${path.relative(process.cwd(), VECTORS_PATH)}`);
+  const json = `${JSON.stringify(buildVectors(), null, 2)}\n`;
+  fs.writeFileSync(VECTORS_PATH, json);
+  fs.writeFileSync(DART_VECTORS_PATH, dartVectors(json));
+  console.log(`wrote ${path.relative(process.cwd(), VECTORS_PATH)} and its .dart`);
 }

@@ -106,6 +106,9 @@ export function checkArgon2Params({ m, t, p }) {
 /** Argon2id (RFC 9106, version 0x13), 32-byte output, no secret, no associated data. */
 export function passwordKek(password, { salt, m, t, p }) {
   checkArgon2Params({ m, t, p });
+  // Not every Argon2id takes an empty message (hash-wasm, which the app
+  // uses, doesn't), and an empty password protects nothing.
+  if (passwordBytes(password).length === 0) throw new SealError('invalid', 'a password is at least one character');
   return crypto.argon2Sync('argon2id', {
     message: passwordBytes(password),
     nonce: salt,
@@ -165,6 +168,8 @@ export function ownerSlot({ driveKey, iv, publicationKey, publicationId }) {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TX_ID = /^[A-Za-z0-9_-]{43}$/;
+// A string test first: RegExp.test turns an array or number into text.
+const isUuid = (v) => typeof v === 'string' && UUID.test(v);
 // Letters, digits, '.', '_', '-' and '/'; no leading '/', no empty, '.' or '..' segment.
 const isPlainPath = (path) =>
   typeof path === 'string' &&
@@ -273,11 +278,11 @@ export function readPrivatePublication(config) {
   need(isObject(config), 'publication.json must be an object');
   need(config.version === PRIVATE_PUBLICATION_VERSION, 'version must be 3');
   need(config.privacy === 'private', 'a version 3 page is private');
-  need(typeof config.publicationId === 'string' && UUID.test(config.publicationId), 'publicationId must be a lowercase UUID');
-  need(typeof config.driveId === 'string' && UUID.test(config.driveId), 'driveId must be a lowercase UUID');
+  need(isUuid(config.publicationId), 'publicationId must be a lowercase UUID');
+  need(isUuid(config.driveId), 'driveId must be a lowercase UUID');
   need(isObject(config.scope), 'scope must be an object');
   if (config.scope.type === 'folder') {
-    need(UUID.test(config.scope.folderId ?? ''), 'scope.folderId must be a lowercase UUID');
+    need(isUuid(config.scope.folderId), 'scope.folderId must be a lowercase UUID');
   } else {
     need(config.scope.type === 'drive', 'scope.type must be drive or folder');
   }
@@ -346,7 +351,7 @@ export function readSealedBlock(block, config) {
   need(block.v === SEALED_VERSION, 'sealed v must be 1');
   need(isObject(block.scope) && canonicalJson(scopeOf(block.scope)) === canonicalJson(scopeOf(config.scope)),
     "the sealed scope must be the page's scope");
-  need(UUID.test(block.rootFolderId ?? ''), 'rootFolderId must be a lowercase UUID');
+  need(isUuid(block.rootFolderId), 'rootFolderId must be a lowercase UUID');
 
   const c = block.catalog;
   need(isObject(c), 'catalog must be an object');
@@ -435,7 +440,7 @@ export function openPage({ config, sealedBytes, linkKey, input, driveKey }) {
       const opened = attempt(typed);
       if (opened) return { ...opened, via: 'key' };
     }
-    if (passwordSlot) {
+    if (passwordSlot && input.length > 0) {
       const key = unwrapped(passwordKek(input, passwordSlot), passwordSlot);
       const opened = key && attempt(key);
       if (opened) return { ...opened, via: 'password' };

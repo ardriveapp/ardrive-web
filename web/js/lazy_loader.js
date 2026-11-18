@@ -170,6 +170,15 @@
     }
   }
 
+  /**
+   * Load Argon2id (hash-wasm 4.12.0, 29 KB) — only to open or publish a
+   * private page with a password. Sets window.hashwasm.
+   */
+  async function loadArgon2() {
+    if (window.hashwasm && window.hashwasm.argon2id) return;
+    await loadGlobalScript('./js/hash-wasm/argon2.umd.min.js');
+  }
+
   window.LazyLoader = {
     loadScript,
     loadGlobalScript,
@@ -179,5 +188,6 @@
     loadEmlParser,
     loadPst,
     loadArweaveWallet,
+    loadArgon2,
   };
 })();
