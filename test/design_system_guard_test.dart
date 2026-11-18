@@ -67,6 +67,22 @@ void main() {
     );
   });
 
+  test('comments are left out, strings and line numbers kept', () {
+    const source = 'a(); // b()\n'
+        '/* c()\n'
+        'd() */ e();\n'
+        "f('//not a comment', r'\\', \"/* nor this */\");\n"
+        'g();';
+    final lines = _withoutComments(source).split('\n');
+    expect(lines, hasLength(5));
+    expect(lines[0].trim(), 'a();');
+    expect(lines[1].trim(), isEmpty);
+    expect(lines[2].trim(), 'e();');
+    expect(lines[3], contains("'//not a comment'"));
+    expect(lines[3], contains('"/* nor this */"'));
+    expect(lines[4], 'g();');
+  });
+
   test('every exception still needs to be one', () {
     final stale = <String>[
       for (final path in _spinnerExceptions.keys)
@@ -190,13 +206,63 @@ Map<String, List<String>> _sources() {
           path.startsWith('lib/services/arweave/graphql/')) {
         continue;
       }
-      files[path] = entity
-          .readAsLinesSync()
-          .map((line) => line.replaceFirst(RegExp(r'//.*$'), ''))
-          .toList();
+      files[path] = _withoutComments(entity.readAsStringSync()).split('\n');
     }
   }
   return files;
+}
+
+/// [source] with its comments blanked: `//` to the end of the line and
+/// `/* ... */` (line breaks kept, so line numbers stay true), never inside a
+/// string literal, so a commented-out call counts neither as a violation nor
+/// as keeping an exception alive.
+String _withoutComments(String source) {
+  final out = StringBuffer();
+  var i = 0;
+  String? quote;
+  var raw = false;
+  while (i < source.length) {
+    final c = source[i];
+    final next = i + 1 < source.length ? source[i + 1] : '';
+    if (quote != null) {
+      out.write(c);
+      if (!raw && c == r'\' && i + 1 < source.length) {
+        out.write(next);
+        i += 2;
+        continue;
+      }
+      if (source.startsWith(quote, i)) {
+        out.write(source.substring(i + 1, i + quote.length));
+        i += quote.length;
+        quote = null;
+        continue;
+      }
+      i++;
+    } else if (c == '/' && next == '/') {
+      while (i < source.length && source[i] != '\n') {
+        i++;
+      }
+    } else if (c == '/' && next == '*') {
+      i += 2;
+      while (i < source.length && !source.startsWith('*/', i)) {
+        if (source[i] == '\n') out.write('\n');
+        i++;
+      }
+      i += 2;
+    } else if (c == "'" || c == '"') {
+      // r'...' takes no escapes: a backslash in it is just a backslash.
+      raw = i > 0 &&
+          source[i - 1] == 'r' &&
+          (i < 2 || !RegExp(r'[A-Za-z0-9_$]').hasMatch(source[i - 2]));
+      quote = source.startsWith(c * 3, i) ? c * 3 : c;
+      out.write(quote);
+      i += quote.length;
+    } else {
+      out.write(c);
+      i++;
+    }
+  }
+  return out.toString();
 }
 
 bool _matches(List<String>? lines, RegExp rule) =>
