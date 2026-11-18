@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "ドライブを切り離しますか？",
+  "detachDrive": "ドライブを切り離す",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "'{driveName}'を切り離しますか？",
+  "detachDriveQuestion": "'{driveName}'はドライブ一覧から削除されます。",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "この名前のドライブはすでにあります。",
+  "renameAnyway": "そのまま名前を変更",
   "renameEmphasized": "名前を変更する",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "プライベートドライブを更新",
+  "privateDrivesNeedUpdate": "これらのプライベートドライブは、引き続き使うために更新が必要です。",
+  "privateDrivesUpdated": "プライベートドライブを更新しました。",
+  "privateDrivesUpdateFailed": "ドライブを更新できませんでした。もう一度お試しください。",
+  "updateAction": "更新",
   "skip": "スキップする",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "このキーではこのドライブを開けません。",
+  "attachDriveOwner": "所有者: {owner}",
   "attachDrivePrivateFound": "これはプライベートドライブです。続行するにはアクセスキーを入力してください。",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"

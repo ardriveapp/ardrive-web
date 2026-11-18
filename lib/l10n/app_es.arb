@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "¿Desvincular unidad?",
+  "detachDrive": "Desvincular unidad",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "¿Confirmas que quieres desvincular '{driveName}'?",
+  "detachDriveQuestion": "'{driveName}' se quitará de tus unidades.",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "Ya existe una unidad con este nombre.",
+  "renameAnyway": "Cambiar el nombre de todos modos",
   "renameEmphasized": "Renombrar",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "Actualizar unidades privadas",
+  "privateDrivesNeedUpdate": "Estas unidades privadas necesitan una actualización para seguir funcionando.",
+  "privateDrivesUpdated": "Tus unidades privadas están actualizadas.",
+  "privateDrivesUpdateFailed": "No se pudo actualizar una unidad. Inténtalo de nuevo.",
+  "updateAction": "Actualizar",
   "skip": "Omitir",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "Esa clave no abre esta unidad.",
+  "attachDriveOwner": "Propietario: {owner}",
   "attachDrivePrivateFound": "Esta es una unidad privada. Introduce su clave de acceso para continuar.",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"

@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/drive_rename/drive_rename_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -12,8 +11,6 @@ import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'components.dart';
 
 Future<void> promptToRenameDrive(
   BuildContext context, {
@@ -60,104 +57,130 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
   bool _isFolderNameValid = false;
   final controller = TextEditingController();
 
+  // The name another drive already has, said in the dialog with the choice to
+  // rename anyway. Typing a different name clears it.
+  String? _conflictingName;
+
+  // The rename failed; the dialog stays open to try again.
+  bool _failed = false;
+
   @override
   void initState() {
     super.initState();
     controller.text = widget.driveName;
+    controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (_conflictingName != null && controller.text != _conflictingName) {
+      setState(() => _conflictingName = null);
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _submit(BuildContext context, {bool proceedIfHasConflicts = false}) {
+    setState(() => _failed = false);
+    context.read<DriveRenameCubit>().submit(
+          newName: controller.text,
+          proceedIfHasConflicts: proceedIfHasConflicts,
+        );
   }
 
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
         listener: (context, state) {
-          if (state is DriveRenameInProgress) {
-            showProgressDialog(
-              context,
-              title: appLocalizationsOf(context).renamingDriveEmphasized,
-            );
-          } else if (state is DriveRenameSuccess) {
+          if (state is DriveRenameSuccess) {
             context.read<DriveDetailCubit>().refreshDriveDataTable();
-            Navigator.pop(context);
             Navigator.pop(context);
           } else if (state is DriveRenameWalletMismatch) {
             Navigator.pop(context);
           } else if (state is DriveRenameFailure) {
-            Navigator.pop(context);
             if (state.isPaymentError) {
+              // Turbo wants Credits: the offer to buy them replaces this
+              // dialog, the same as every other payment refusal.
+              Navigator.pop(context);
               showTurboPaymentRequiredDialog(context);
             } else {
-              showArDriveDialog(
-                context,
-                content: ArDriveStandardModalNew(
-                  title: appLocalizationsOf(context).error,
-                  description: appLocalizationsOf(context).actionFailedTryAgain,
-                ),
-              );
+              setState(() => _failed = true);
             }
           } else if (state is DriveNameAlreadyExists) {
-            showStandardDialog(
-              context,
-              title: 'Warning',
-              description:
-                  'A drive with this name already exists. Do you want to proceed?',
-              actions: [
-                ModalAction.close(
-                  action: () => Navigator.of(context).pop(),
-                  title: 'Cancel',
-                ),
-                ModalAction(
-                  action: () {
-                    Navigator.of(context).pop();
-                    return context.read<DriveRenameCubit>().submit(
-                          newName: controller.text,
-                          proceedIfHasConflicts: true,
-                        );
-                  },
-                  title: 'Proceed',
-                ),
-              ],
-            );
+            setState(() => _conflictingName = state.driveName);
           }
         },
-        builder: (context, state) => ArDriveStandardModalNew(
-          title: appLocalizationsOf(context).renameDriveEmphasized,
-          content: state is! FsEntryRenameInitializing
-              ? SizedBox(
-                  width: kMediumDialogWidth,
-                  child: ArDriveTextFieldNew(
-                    controller: controller,
-                    autofocus: true,
-                    validator: (value) {
-                      if (value == widget.driveName) {
-                        return appLocalizationsOf(context)
-                            .validationNameUnchanged;
-                      }
+        builder: (context, state) {
+          final busy = state is DriveRenameInProgress;
+          final conflict = _conflictingName != null;
+          final l10n = appLocalizationsOf(context);
 
-                      final validation = validateEntityName(value, context);
+          return ArDriveStandardModalNew(
+            title: l10n.renameDriveEmphasized,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ArDriveTextFieldNew(
+                  controller: controller,
+                  autofocus: true,
+                  label: l10n.driveName,
+                  isFieldRequired: true,
+                  isEnabled: !busy,
+                  validator: (value) {
+                    if (value == widget.driveName) {
+                      return l10n.validationNameUnchanged;
+                    }
 
-                      if (validation == null) {
-                        setState(() => _isFolderNameValid = true);
-                      } else {
-                        setState(() => _isFolderNameValid = false);
-                      }
+                    final validation = validateEntityName(value, context);
 
-                      return validation;
-                    },
+                    if (validation == null) {
+                      setState(() => _isFolderNameValid = true);
+                    } else {
+                      setState(() => _isFolderNameValid = false);
+                    }
+
+                    return validation;
+                  },
+                ),
+                if (conflict) ...[
+                  const SizedBox(height: ArDriveSpacing.md),
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.warning,
+                    message: l10n.driveNameAlreadyExists,
                   ),
-                )
-              : Container(),
-          actions: [
-            ModalAction(
-                action: () => Navigator.of(context).pop(),
-                title: appLocalizationsOf(context).cancelEmphasized),
-            ModalAction(
-              isEnable: _isFolderNameValid,
-              action: () => context.read<DriveRenameCubit>().submit(
-                    newName: controller.text,
+                ],
+                if (_failed && !busy) ...[
+                  const SizedBox(height: ArDriveSpacing.md),
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.error,
+                    message: l10n.actionFailedTryAgain,
+                    actionLabel: l10n.tryAgain,
+                    onAction: () =>
+                        _submit(context, proceedIfHasConflicts: conflict),
+                    onDismiss: () => setState(() => _failed = false),
+                    dismissLabel: l10n.close,
                   ),
-              title: appLocalizationsOf(context).renameEmphasized,
+                ],
+              ],
             ),
-          ],
-        ),
+            actions: [
+              ModalAction.close(
+                action: () => Navigator.of(context).pop(),
+                title: l10n.cancelEmphasized,
+                isEnable: !busy,
+              ),
+              ModalAction(
+                isEnable: _isFolderNameValid,
+                isLoading: busy,
+                action: () => _submit(context, proceedIfHasConflicts: conflict),
+                title: conflict ? l10n.renameAnyway : l10n.renameEmphasized,
+              ),
+            ],
+          );
+        },
       );
 }

@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "要卸離磁碟？",
+  "detachDrive": "卸離磁碟",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "確定要卸離 '{driveName}' 嗎？",
+  "detachDriveQuestion": "'{driveName}' 將從你的磁碟中移除。",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "已有同名的檔案盤。",
+  "renameAnyway": "仍然重新命名",
   "renameEmphasized": "重新命名",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "更新私人檔案盤",
+  "privateDrivesNeedUpdate": "這些私人檔案盤需要更新才能繼續使用。",
+  "privateDrivesUpdated": "你的私人檔案盤已更新。",
+  "privateDrivesUpdateFailed": "有一個檔案盤無法更新。請再試一次。",
+  "updateAction": "更新",
   "skip": "跳過",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "該密鑰無法開啟此檔案盤。",
+  "attachDriveOwner": "擁有者：{owner}",
   "attachDrivePrivateFound": "這是私人檔案盤。請輸入其存取密鑰以繼續。",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"

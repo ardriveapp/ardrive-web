@@ -1,6 +1,5 @@
 import 'package:ardrive/components/password_autofill.dart';
 import 'package:ardrive/components/reactive_select_field.dart';
-import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/locked_drives/presentation/set_drive_password_dialog.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
@@ -9,7 +8,6 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -20,8 +18,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-
-import 'components.dart';
 
 Future<void> promptToCreateDrive(
   BuildContext context, {
@@ -64,9 +60,15 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
   // Typing again clears what the last check said.
   bool _rejectionSeen = false;
 
+  // The failure notice was closed, or the form was changed after it.
+  bool _failureDismissed = false;
+
   Future<void> _create(DriveCreateCubit cubit) async {
     if (_checking) return;
-    setState(() => _checking = true);
+    setState(() {
+      _checking = true;
+      _failureDismissed = false;
+    });
     try {
       await _createChecked(cubit);
     } finally {
@@ -157,15 +159,9 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
               _drivePassword.selection = TextSelection(
                   baseOffset: 0, extentOffset: _drivePassword.text.length);
             });
-          } else if (state is DriveCreateInProgress) {
-            showProgressDialog(
-              context,
-              title: appLocalizationsOf(context).creatingDriveEmphasized,
-            );
           } else if (state is DriveCreateSuccess) {
             // The drive password worked: the browser may save it.
             if (_drivePassword.text.isNotEmpty) PasswordAutofillGroup.save();
-            Navigator.pop(context);
             Navigator.pop(context);
             PlausibleEventTracker.trackDriveCreation(
               drivePrivacy: state.privacy,
@@ -173,23 +169,14 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
           } else if (state is DriveCreateWalletMismatch) {
             Navigator.pop(context);
           } else if (state is DriveCreateFailure) {
-            Navigator.pop(context);
             if (state.isPaymentError) {
+              // Turbo wants Credits: the offer to buy them replaces this
+              // dialog, the same as every other payment refusal.
+              Navigator.pop(context);
               showTurboPaymentRequiredDialog(context);
-            } else if (state.walletCantMakeDriveKeys) {
-              showErrorDialog(
-                context: context,
-                title: appLocalizationsOf(context).error,
-                message:
-                    appLocalizationsOf(context).walletCantCreatePrivateDrives,
-              );
             } else {
-              showErrorDialog(
-                context: context,
-                title: appLocalizationsOf(context).error,
-                message:
-                    'There was a problem creating this drive.\nPlease try again later.',
-              );
+              // Said in the dialog, which stays open to try again.
+              setState(() => _failureDismissed = false);
             }
           }
         },
@@ -204,7 +191,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
               description:
                   appLocalizationsOf(context).insufficientARToCreateDrive,
               actions: [
-                ModalAction(
+                ModalAction.close(
                   action: () => Navigator.of(context).pop(),
                   title: appLocalizationsOf(context).cancelEmphasized,
                 ),
@@ -221,6 +208,12 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             final privacy = state.privacy;
             final typography = ArDriveTypographyNew.of(context);
             final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+            final busy = _checking || state is DriveCreateInProgress;
+            final failure = state is DriveCreateFailure &&
+                    !state.isPaymentError &&
+                    !_failureDismissed
+                ? state
+                : null;
             final cubit = context.read<DriveCreateCubit>();
             // Only an existing drive password is typed here; setting one
             // has its own dialog (see [_create]).
@@ -229,124 +222,136 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
 
             return ArDriveStandardModalNew(
               title: appLocalizationsOf(context).createDriveEmphasized,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: ReactiveForm(
-                  formGroup: context.watch<DriveCreateCubit>().form,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ArDriveTextFieldNew(
-                        controller: _driveNameController,
-                        autofocus: true,
-                        onFieldSubmitted: (value) {
-                          // The same path as the button, and its guard.
-                          if (_isDriveNameValid &&
-                              (!needsPassword ||
-                                  _drivePassword.text.isNotEmpty)) {
-                            _create(cubit);
-                          }
-                        },
-                        hintText: appLocalizationsOf(context).driveName,
-                        validator: (value) {
-                          final validation = validateEntityName(value, context);
+              content: ReactiveForm(
+                formGroup: context.watch<DriveCreateCubit>().form,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ArDriveTextFieldNew(
+                      controller: _driveNameController,
+                      autofocus: true,
+                      label: appLocalizationsOf(context).driveName,
+                      isFieldRequired: true,
+                      isEnabled: !busy,
+                      onFieldSubmitted: (value) {
+                        // The same path as the button, and its guard.
+                        if (_isDriveNameValid &&
+                            (!needsPassword ||
+                                _drivePassword.text.isNotEmpty)) {
+                          _create(cubit);
+                        }
+                      },
+                      validator: (value) {
+                        final validation = validateEntityName(value, context);
 
-                          if (validation == null) {
-                            setState(() => _isDriveNameValid = true);
-                          } else {
-                            setState(() => _isDriveNameValid = false);
-                          }
+                        if (validation == null) {
+                          setState(() => _isDriveNameValid = true);
+                        } else {
+                          setState(() => _isDriveNameValid = false);
+                        }
 
-                          return validation;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      ReactiveArDriveSelectField<String>(
-                        formControlName: 'privacy',
-                        label: appLocalizationsOf(context).privacy,
-                        showErrors: (control) =>
-                            control.dirty && control.invalid,
-                        validationMessages:
-                            kValidationMessages(appLocalizationsOf(context)),
-                        choices: [
-                          ArDriveChoice(
-                            value: DrivePrivacy.public.name,
-                            label: appLocalizationsOf(context).public,
-                          ),
-                          ArDriveChoice(
-                            value: DrivePrivacy.private.name,
-                            label: appLocalizationsOf(context).private,
-                          ),
-                        ],
-                        onChanged: (_) {
-                          context.read<DriveCreateCubit>().onPrivacyChanged();
-                        },
-                      ),
-                      if (needsPassword) ...[
-                        const SizedBox(height: 16),
-                        _withAutofill(
-                          context,
-                          ArDriveTextFieldNew(
-                            key: const Key('drivePassword'),
-                            controller: _drivePassword,
-                            focusNode: _drivePasswordFocus,
-                            label: appLocalizationsOf(context)
-                                .enterYourDrivePassword,
-                            obscureText: true,
-                            showObfuscationToggle: true,
-                            autocorrect: false,
-                            enableSuggestions: false,
-                            autofillHints: const [AutofillHints.password],
-                            isEnabled: !_checking,
-                            errorMessage: _drivePasswordError(context, state),
-                            showErrorMessage:
-                                _drivePasswordError(context, state) != null,
-                            onChanged: (_) => setState(() {
-                              _rejectionSeen = true;
-                            }),
-                          ),
+                        return validation;
+                      },
+                    ),
+                    const SizedBox(height: ArDriveSpacing.md),
+                    ExcludeFocus(
+                      excluding: busy,
+                      child: IgnorePointer(
+                        ignoring: busy,
+                        child: ReactiveArDriveSelectField<String>(
+                          formControlName: 'privacy',
+                          label: appLocalizationsOf(context).privacy,
+                          showErrors: (control) =>
+                              control.dirty && control.invalid,
+                          validationMessages:
+                              kValidationMessages(appLocalizationsOf(context)),
+                          choices: [
+                            ArDriveChoice(
+                              value: DrivePrivacy.public.name,
+                              label: appLocalizationsOf(context).public,
+                            ),
+                            ArDriveChoice(
+                              value: DrivePrivacy.private.name,
+                              label: appLocalizationsOf(context).private,
+                            ),
+                          ],
+                          onChanged: (_) {
+                            // A failure said about the other kind of drive.
+                            setState(() => _failureDismissed = true);
+                            context.read<DriveCreateCubit>().onPrivacyChanged();
+                          },
                         ),
-                      ],
-                      const SizedBox(height: 32),
-                      Row(
-                        children: [
-                          if (privacy == DrivePrivacy.private)
-                            Flexible(
-                              child: Text(
-                                appLocalizationsOf(context)
-                                    .drivePrivacyDescriptionPrivate,
-                                style: typography.paragraphNormal(
-                                  color: colorTokens.textLow,
-                                  fontWeight: ArFontWeight.semiBold,
-                                ),
-                              ),
-                            )
-                          else
-                            Flexible(
-                              child: Text(
-                                appLocalizationsOf(context)
-                                    .drivePrivacyDescriptionPublic,
-                                style: typography.paragraphNormal(
-                                  color: colorTokens.textLow,
-                                  fontWeight: ArFontWeight.semiBold,
-                                ),
-                              ),
-                            )
-                        ],
+                      ),
+                    ),
+                    const SizedBox(height: ArDriveSpacing.xs),
+                    Text(
+                      privacy == DrivePrivacy.private
+                          ? appLocalizationsOf(context)
+                              .drivePrivacyDescriptionPrivate
+                          : appLocalizationsOf(context)
+                              .drivePrivacyDescriptionPublic,
+                      style: typography.paragraphSmall(
+                        color: colorTokens.textMid,
+                      ),
+                    ),
+                    if (needsPassword) ...[
+                      const SizedBox(height: ArDriveSpacing.md),
+                      _withAutofill(
+                        context,
+                        ArDriveTextFieldNew(
+                          key: const Key('drivePassword'),
+                          controller: _drivePassword,
+                          focusNode: _drivePasswordFocus,
+                          label: appLocalizationsOf(context)
+                              .enterYourDrivePassword,
+                          obscureText: true,
+                          showObfuscationToggle: true,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          autofillHints: const [AutofillHints.password],
+                          isEnabled: !busy,
+                          errorMessage: _drivePasswordError(context, state),
+                          showErrorMessage:
+                              _drivePasswordError(context, state) != null,
+                          onChanged: (_) => setState(() {
+                            _rejectionSeen = true;
+                          }),
+                        ),
                       ),
                     ],
-                  ),
+                    if (failure != null) ...[
+                      const SizedBox(height: ArDriveSpacing.md),
+                      ArDriveNotice(
+                        type: ArDriveNoticeType.error,
+                        message: failure.walletCantMakeDriveKeys
+                            ? appLocalizationsOf(context)
+                                .walletCantCreatePrivateDrives
+                            : appLocalizationsOf(context).actionFailedTryAgain,
+                        actionLabel: failure.walletCantMakeDriveKeys
+                            ? null
+                            : appLocalizationsOf(context).tryAgain,
+                        onAction: failure.walletCantMakeDriveKeys
+                            ? null
+                            : () => _create(cubit),
+                        onDismiss: () =>
+                            setState(() => _failureDismissed = true),
+                        dismissLabel: appLocalizationsOf(context).close,
+                      ),
+                    ],
+                  ],
                 ),
               ),
               actions: [
-                ModalAction(
+                ModalAction.close(
                   action: () => Navigator.of(context).pop(),
                   title: appLocalizationsOf(context).cancelEmphasized,
+                  isEnable: !busy,
                 ),
                 ModalAction(
                   isEnable: _isDriveNameValid &&
                       (!needsPassword || _drivePassword.text.isNotEmpty),
-                  isLoading: _checking,
+                  isLoading: busy,
                   action: () => _create(cubit),
                   title: appLocalizationsOf(context).createDriveEmphasized,
                 ),

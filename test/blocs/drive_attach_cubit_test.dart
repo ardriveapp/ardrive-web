@@ -241,6 +241,34 @@ void main() {
       );
     });
 
+    // The dialog says it failed and stays open to try again, with the key
+    // field it had: it must go back to the private state, not to a public one.
+    blocTest<DriveAttachCubit, DriveAttachState>(
+      'a failed attach is reported and the form goes back to what it was',
+      build: () => driveAttachCubit,
+      setUp: () {
+        when(() => driveDao.writeDriveEntity(
+              name: any(named: 'name'),
+              entity: any(named: 'entity'),
+              driveKey: any(named: 'driveKey'),
+              profileKey: any(named: 'profileKey'),
+            )).thenThrow(Exception('disk full'));
+      },
+      act: (bloc) async {
+        bloc.driveIdController.text = validPrivateDriveId;
+        await bloc.drivePrivacyLoader();
+        bloc.driveKeyController.text = validPrivateDriveKeyBase64;
+        bloc.submit();
+      },
+      wait: const Duration(milliseconds: 1200),
+      expect: () => [
+        DriveAttachPrivate(),
+        DriveAttachInProgress(),
+        DriveAttachFailure(),
+        DriveAttachPrivate(),
+      ],
+    );
+
     blocTest<DriveAttachCubit, DriveAttachState>(
       'does nothing when submitted without valid form',
       build: () => driveAttachCubit,

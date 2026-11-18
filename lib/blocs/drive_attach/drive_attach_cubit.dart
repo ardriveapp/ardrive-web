@@ -133,8 +133,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     // says once the loaders have run.
     final typedDriveName = driveNameController.text;
 
+    // What the form was before the attempt, so a failure or a drive that
+    // wasn't found leaves it as it was (a private drive keeps its key field).
+    final previousState = state;
+
     try {
-      final previousState = state;
       final DrivePrivacy drivePrivacy;
 
       if (state is DriveAttachPrivate) {
@@ -177,7 +180,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       if (driveEntity == null) {
         emit(DriveAttachDriveNotFound());
-        emit(DriveAttachInitial());
+        emit(previousState);
         return;
       }
 
@@ -240,7 +243,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         drivePrivacy: drivePrivacy,
       );
     } catch (err, stacktrace) {
-      _handleError(err, stacktrace);
+      _handleError(err, stacktrace, previousState);
     }
   }
 
@@ -378,10 +381,19 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     return null;
   }
 
-  void _handleError(Object error, StackTrace stackTrace) {
+  void _handleError(
+    Object error,
+    StackTrace stackTrace,
+    DriveAttachState previousState,
+  ) {
     logger.e('Failed to attach drive. Emitting error', error, stackTrace);
 
+    if (isClosed) return;
+
+    // The dialog says so and stays open to try again, so the form it goes
+    // back to is the one it had.
     emit(DriveAttachFailure());
+    emit(previousState);
   }
 
   /// Parks until nothing uninterruptible is running.

@@ -7,7 +7,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -18,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../utils/show_general_dialog.dart';
-import 'components.dart';
 
 Future<void> attachDrive({
   required BuildContext context,
@@ -47,8 +45,8 @@ Future<void> attachDrive({
         ),
         child: BlocListener<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
-            if (state is DriveAttachFailure || state is DriveAttachSuccess) {
-              // Close the progress dialog if the drive attachment fails or succeeds.
+            // A failure is said in the dialog, which stays open to try again.
+            if (state is DriveAttachSuccess) {
               Navigator.pop(context);
             }
           },
@@ -67,19 +65,37 @@ class DriveAttachForm extends StatefulWidget {
   State<DriveAttachForm> createState() => _DriveAttachFormState();
 }
 
+/// What the last attempt or lookup found, said in the dialog.
+enum _AttachProblem { none, notFound, invalidKey, failed }
+
 class _DriveAttachFormState extends State<DriveAttachForm> {
   bool _isFormValid = false;
+  _AttachProblem _problem = _AttachProblem.none;
+
+  // The drive is private: its key field stays while the attach runs, though
+  // the state is then in progress.
+  bool _isPrivate = false;
+
+  late final DriveAttachCubit _cubit = context.read<DriveAttachCubit>();
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<DriveAttachCubit>()
-          .driveNameController
-          .addListener(_onDriveNameChange);
+      if (!mounted) return;
+      _cubit.driveNameController.addListener(_onDriveNameChange);
+      _cubit.driveIdController.addListener(_onDriveIdOrKeyChange);
+      _cubit.driveKeyController.addListener(_onDriveIdOrKeyChange);
     });
+  }
+
+  @override
+  void dispose() {
+    _cubit.driveNameController.removeListener(_onDriveNameChange);
+    _cubit.driveIdController.removeListener(_onDriveIdOrKeyChange);
+    _cubit.driveKeyController.removeListener(_onDriveIdOrKeyChange);
+    super.dispose();
   }
 
   void _onDriveNameChange() {
@@ -88,170 +104,176 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
     }
 
     setState(() {
-      _isFormValid =
-          context.read<DriveAttachCubit>().driveNameController.text.isNotEmpty;
+      _isFormValid = _cubit.driveNameController.text.isNotEmpty;
     });
+  }
+
+  // Typing a different ID or key clears what was said about the last one.
+  void _onDriveIdOrKeyChange() {
+    if (!mounted || _problem == _AttachProblem.none) return;
+    if (_problem == _AttachProblem.failed) return;
+    setState(() => _problem = _AttachProblem.none);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+
     return BlocConsumer<DriveAttachCubit, DriveAttachState>(
       listener: (context, state) {
-        if (state is DriveAttachInvalidDriveKey) {
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModalNew(
-              title: appLocalizationsOf(context).error,
-              description: appLocalizationsOf(context).invalidKeyFile,
-            ),
-          );
+        if (state is DriveAttachPrivate) {
+          _isPrivate = true;
+        } else if (state is DriveAttachInvalidDriveKey) {
+          setState(() => _problem = _AttachProblem.invalidKey);
         } else if (state is DriveAttachDriveNotFound) {
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModalNew(
-              title: appLocalizationsOf(context).error,
-              description: appLocalizationsOf(context)
-                  .validationAttachDriveCouldNotBeFound,
-            ),
-          );
+          setState(() => _problem = _AttachProblem.notFound);
+        } else if (state is DriveAttachFailure) {
+          setState(() => _problem = _AttachProblem.failed);
+        } else if (state is DriveAttachInProgress) {
+          setState(() => _problem = _AttachProblem.none);
         }
       },
-      buildWhen: (previous, current) => current is! DriveAttachInvalidDriveKey,
       builder: (context, state) {
-        if (state is DriveAttachInProgress) {
-          return ProgressDialog(
-            title: appLocalizationsOf(context).attachingDriveEmphasized,
-          );
-        }
+        final busy = state is DriveAttachInProgress;
+        final showKey = state is DriveAttachPrivate || (busy && _isPrivate);
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+        final typography = ArDriveTypographyNew.of(context);
 
         return ArDriveStandardModalNew(
-          title: appLocalizationsOf(context).attachDriveEmphasized,
-          content: SizedBox(
-            width: kMediumDialogWidth,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ArDriveTextFieldNew(
-                  controller:
-                      context.read<DriveAttachCubit>().driveIdController,
-                  autofocus: true,
-                  // An ID, so monospace, at a size where all 36 characters
-                  // of a drive ID fit the field: a step smaller, it scrolled
-                  // its start out of sight.
-                  textStyle:
-                      ArDriveTypographyNew.of(context).code(fontSize: 12),
-                  onChanged: (s) async {
-                    // Only look up when drive ID looks complete (UUID = 36 chars)
-                    if (s.length >= 36) {
-                      debounce(() {
-                        if (!mounted) return;
-                        context.read<DriveAttachCubit>().drivePrivacyLoader();
-                      });
-                    }
-                  },
-                  hintText: appLocalizationsOf(context).driveID,
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable:
-                      context.read<DriveAttachCubit>().lookupNotifier,
-                  builder: (context, isLoading, _) {
-                    if (!isLoading) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Column(
-                        children: [
-                          const ArDriveLinearProgress(),
-                          const SizedBox(height: 4),
-                          Text(
-                            appLocalizationsOf(context).attachDriveLookingUp,
-                            style:
-                                ArDriveTypographyNew.of(context).paragraphSmall(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colorTokens
-                                  .textLow,
-                            ),
+          title: l10n.attachDriveEmphasized,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ArDriveTextFieldNew(
+                controller: _cubit.driveIdController,
+                autofocus: true,
+                label: l10n.driveID,
+                isEnabled: !busy,
+                // An ID, so monospace, at a size where all 36 characters
+                // of a drive ID fit the field: a step smaller, it scrolled
+                // its start out of sight.
+                textStyle: typography.code(fontSize: 12),
+                onChanged: (s) async {
+                  // Only look up when drive ID looks complete (UUID = 36 chars)
+                  if (s.length >= 36) {
+                    debounce(() {
+                      if (!mounted) return;
+                      _cubit.drivePrivacyLoader();
+                    });
+                  }
+                },
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: _cubit.lookupNotifier,
+                builder: (context, isLoading, _) {
+                  if (!isLoading) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
+                    child: Column(
+                      children: [
+                        const ArDriveLinearProgress(),
+                        const SizedBox(height: ArDriveSpacing.xxs),
+                        Text(
+                          l10n.attachDriveLookingUp,
+                          style: typography.paragraphSmall(
+                            color: colorTokens.textLow,
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                if (state is DriveAttachPrivate) ...[
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      appLocalizationsOf(context).attachDrivePrivateFound,
-                      style: ArDriveTypographyNew.of(context).paragraphSmall(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colorTokens
-                            .textLow,
-                      ),
+                        ),
+                      ],
                     ),
+                  );
+                },
+              ),
+              if (showKey) ...[
+                const SizedBox(height: ArDriveSpacing.xs),
+                Text(
+                  l10n.attachDrivePrivateFound,
+                  style: typography.paragraphSmall(
+                    color: colorTokens.textLow,
                   ),
-                ],
-                const SizedBox(height: 16),
-                if (state is DriveAttachPrivate)
-                  ArDriveTextFieldNew(
-                    controller:
-                        context.read<DriveAttachCubit>().driveKeyController,
-                    autofocus: true,
-                    obscureText: true,
-                    // A key, so monospace.
-                    textStyle: ArDriveTypographyNew.of(context).code(),
-                    onChanged: (s) async {},
-                    asyncValidator: (s) async {
-                      final cubit = context.read<DriveAttachCubit>();
-
-                      final validation = await cubit.driveKeyValidator();
-
-                      if (!mounted) {
-                        logger.i(
-                            'Drive attach form closed. Not validating drive key.');
-                        return null;
-                      }
-
-                      return validation;
-                    },
-                    hintText: appLocalizationsOf(context).driveKey,
-                  ),
-                const SizedBox(height: 16),
+                ),
+              ],
+              const SizedBox(height: ArDriveSpacing.md),
+              if (showKey) ...[
                 ArDriveTextFieldNew(
-                  controller:
-                      context.read<DriveAttachCubit>().driveNameController,
-                  hintText: appLocalizationsOf(context).driveName,
+                  controller: _cubit.driveKeyController,
+                  autofocus: true,
+                  label: l10n.driveKey,
+                  isEnabled: !busy,
+                  obscureText: true,
+                  // A key, so monospace.
+                  textStyle: typography.code(),
                   onChanged: (s) async {},
                   asyncValidator: (s) async {
-                    final nameValidation = validateEntityName(s, context);
+                    final validation = await _cubit.driveKeyValidator();
 
-                    setState(() {
-                      _isFormValid = nameValidation == null;
-                    });
+                    if (!mounted) {
+                      logger.i(
+                          'Drive attach form closed. Not validating drive key.');
+                      return null;
+                    }
 
-                    return nameValidation;
+                    return validation;
                   },
                 ),
-                if (context.read<DriveAttachCubit>().cachedDriveEntity !=
-                    null) ...[
-                  const SizedBox(height: 12),
-                  _DriveInfoRow(
-                    entity: context.read<DriveAttachCubit>().cachedDriveEntity!,
-                  ),
-                ],
+                const SizedBox(height: ArDriveSpacing.md),
               ],
-            ),
+              ArDriveTextFieldNew(
+                controller: _cubit.driveNameController,
+                label: l10n.driveName,
+                isEnabled: !busy,
+                onChanged: (s) async {},
+                asyncValidator: (s) async {
+                  final nameValidation = validateEntityName(s, context);
+
+                  setState(() {
+                    _isFormValid = nameValidation == null;
+                  });
+
+                  return nameValidation;
+                },
+              ),
+              if (_cubit.cachedDriveEntity != null) ...[
+                const SizedBox(height: ArDriveSpacing.sm),
+                _DriveInfoRow(entity: _cubit.cachedDriveEntity!),
+              ],
+              if (_problem != _AttachProblem.none && !busy) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                ArDriveNotice(
+                  type: ArDriveNoticeType.error,
+                  message: switch (_problem) {
+                    _AttachProblem.notFound =>
+                      l10n.validationAttachDriveCouldNotBeFound,
+                    _AttachProblem.invalidKey => l10n.attachDriveInvalidKey,
+                    _ => l10n.actionFailedTryAgain,
+                  },
+                  actionLabel:
+                      _problem == _AttachProblem.failed ? l10n.tryAgain : null,
+                  onAction: _problem == _AttachProblem.failed
+                      ? () {
+                          setState(() => _problem = _AttachProblem.none);
+                          _cubit.submit();
+                        }
+                      : null,
+                  onDismiss: () =>
+                      setState(() => _problem = _AttachProblem.none),
+                  dismissLabel: l10n.close,
+                ),
+              ],
+            ],
           ),
           actions: [
-            ModalAction(
+            ModalAction.close(
               action: () => Navigator.of(context).pop(null),
-              title: appLocalizationsOf(context).cancelEmphasized,
+              title: l10n.cancelEmphasized,
+              isEnable: !busy,
             ),
             ModalAction(
               isEnable: _isFormValid,
-              action: () => context.read<DriveAttachCubit>().submit(),
-              title: appLocalizationsOf(context).attachEmphasized,
+              isLoading: busy,
+              action: () => _cubit.submit(),
+              title: l10n.attachEmphasized,
             ),
           ],
         );
@@ -272,12 +294,12 @@ class _DriveInfoRow extends StatelessWidget {
     final owner = entity.ownerAddress;
     final truncatedOwner = shortenId(owner);
     final dateStr = formatDate(entity.createdAt);
-    final privacy = entity.privacy == 'private' ? 'Private' : 'Public';
+    final l10n = appLocalizationsOf(context);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(ArDriveSpacing.sm),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(ArDriveRadius.control),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
         color: colorTokens.containerL1,
       ),
       child: Row(
@@ -287,13 +309,13 @@ class _DriveInfoRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$privacy drive',
+                  l10n.searchDriveResult(entity.privacy ?? 'public'),
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: colorTokens.textMid,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: ArDriveSpacing.xxs),
                 // The address in monospace, the label around it in the body
                 // face. The whole address is in the tooltip, which a screen
                 // reader announces too: at a large text size on a phone the
@@ -306,7 +328,7 @@ class _DriveInfoRow extends StatelessWidget {
                         color: colorTokens.textLow,
                       ),
                       children: ArDriveIdText.spansIn(
-                        'Owner: $truncatedOwner',
+                        l10n.attachDriveOwner(truncatedOwner),
                         truncatedOwner,
                         idStyle: typography.code(
                           color: colorTokens.textLow,
