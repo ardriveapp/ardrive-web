@@ -8113,5 +8113,7 @@
   "profileArioBalanceError": "取得 ARIO 結餘時出錯",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "正在使用閘道：{url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "shareUploadTitle": "上載{count, plural, =1{1 個共享檔案} other{{count} 個共享檔案}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}}
 }

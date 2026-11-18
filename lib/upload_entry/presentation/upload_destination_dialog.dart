@@ -1,4 +1,5 @@
-import 'package:ardrive/components/private_drive_marks.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart'
+    show DrivePickerRow;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -62,6 +63,9 @@ class UploadDestinationDialog extends StatelessWidget {
   }
 }
 
+/// One drive, as the drive picker draws a drive: its row, with the word
+/// public or private at the end, and under it a note when nothing on this
+/// device has read the drive.
 class _DestinationRow extends StatelessWidget {
   const _DestinationRow({
     required this.drive,
@@ -76,82 +80,39 @@ class _DestinationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final theme = ArDriveTheme.of(context).themeData;
-    final colorTokens = theme.colorTokens;
-    final isPrivate = drive.privacy == DrivePrivacyTag.private;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final l10n = appLocalizationsOf(context);
+    final icon = ArDriveIcons.drive();
 
-    final highlight = theme.dropdownTheme.hoverColor;
+    // The word as well as the icon: public or private is the choice being
+    // made here, and it cannot be taken back.
+    final row = DrivePickerRow(
+      icon: icon,
+      title: drive.name,
+      trailing:
+          drive.privacy == DrivePrivacyTag.private ? l10n.private : l10n.public,
+      onTap: onTap,
+    );
 
-    // A button in every sense, not only to a pointer: reachable with Tab,
-    // chosen with Enter or Space, and announced as a button with its drive's
-    // name. A bare gesture detector did none of that, so choosing a drive,
-    // and with it finishing an upload, needed a mouse.
-    return Semantics(
-      button: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          hoverColor: highlight,
-          focusColor: highlight,
-          highlightColor: highlight,
-          splashFactory: NoSplash.splashFactory,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            child: Row(
-              children: [
-                ArDriveIcons.drive(size: 18, color: colorTokens.textMid),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              drive.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: typography.paragraphLarge(
-                                color: colorTokens.textHigh,
-                                fontWeight: ArFontWeight.semiBold,
-                              ),
-                            ),
-                          ),
-                          // Private marked after the name, as in the list.
-                          if (isPrivate) ...[
-                            const SizedBox(width: 6),
-                            const PrivateDriveLock(size: 16),
-                          ],
-                        ],
-                      ),
-                      if (isUnsynced)
-                        Text(
-                          l10n.driveNeverSynced,
-                          style: typography.paragraphSmall(
-                            color: colorTokens.textLow,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // The word as well as the icon: public or private is the
-                // choice being made here, and it cannot be taken back.
-                Text(
-                  isPrivate ? l10n.private : l10n.public,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
+    if (!isUnsynced) return row;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        row,
+        Padding(
+          // Under the name: the row's inset and its icon and gap.
+          padding: EdgeInsetsDirectional.only(
+            start: ArDriveSpacing.xs + (icon.size ?? 24) + ArDriveSpacing.sm,
+            bottom: ArDriveSpacing.xxs,
+          ),
+          child: Text(
+            l10n.driveNeverSynced,
+            style: typography.paragraphSmall(color: colorTokens.textLow),
           ),
         ),
-      ),
+      ],
     );
   }
 }
