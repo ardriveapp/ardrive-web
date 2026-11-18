@@ -8119,6 +8119,7 @@
   "licenseAddedMessage": "{license} अब {count, plural, =1{1 फ़ाइल} other{{count} फ़ाइलों}} पर है।",
   "noFileToLicenseTitle": "लाइसेंस के लिए कोई फ़ाइल नहीं",
   "noFileToLicenseMessage": "कोई फ़ाइल, या फ़ाइलों वाला फ़ोल्डर चुनें।",
+  "licenseFixSettingsForCost": "लागत देखने के लिए लाइसेंस की सेटिंग जाँचें",
   "licenseChooseTypeForCost": "लागत देखने के लिए लाइसेंस का प्रकार चुनें",
   "licenseTypeLabel": "प्रकार",
   "licenseFeeLabel": "लाइसेंस शुल्क",

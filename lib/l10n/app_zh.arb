@@ -8119,6 +8119,7 @@
   "licenseAddedMessage": "{license} 已添加到 {count, plural, =1{1 个文件} other{{count} 个文件}}。",
   "noFileToLicenseTitle": "没有可添加许可的文件",
   "noFileToLicenseMessage": "请选择文件，或包含文件的文件夹。",
+  "licenseFixSettingsForCost": "请检查许可设置以查看费用",
   "licenseChooseTypeForCost": "选择许可类型以查看费用",
   "licenseTypeLabel": "类型",
   "licenseFeeLabel": "许可费",

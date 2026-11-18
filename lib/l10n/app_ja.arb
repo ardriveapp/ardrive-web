@@ -8119,6 +8119,7 @@
   "licenseAddedMessage": "{license}を{count, plural, =1{1件のファイル} other{{count}件のファイル}}に設定しました。",
   "noFileToLicenseTitle": "ライセンスを付けるファイルがありません",
   "noFileToLicenseMessage": "ファイル、またはファイルが入ったフォルダを選んでください。",
+  "licenseFixSettingsForCost": "料金を見るにはライセンスの設定を確認してください",
   "licenseChooseTypeForCost": "料金を見るにはライセンスの種類を選んでください",
   "licenseTypeLabel": "種類",
   "licenseFeeLabel": "ライセンス料",

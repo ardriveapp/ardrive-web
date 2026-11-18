@@ -6140,6 +6140,8 @@
   "@noFileToLicenseTitle": {"description": "Title when the chosen items hold no file a license can go on"},
   "noFileToLicenseMessage": "Pick a file, or a folder with files in it.",
   "@noFileToLicenseMessage": {"description": "What to do when there is no file to license"},
+  "licenseFixSettingsForCost": "Check the license settings to see the cost",
+  "@licenseFixSettingsForCost": {"description": "In place of the cost while a license setting, such as the fee, is not valid"},
   "licenseChooseTypeForCost": "Choose a license type to see the cost",
   "@licenseChooseTypeForCost": {"description": "In place of the cost while a Creative Commons license has no type yet"},
   "licenseTypeLabel": "Type",

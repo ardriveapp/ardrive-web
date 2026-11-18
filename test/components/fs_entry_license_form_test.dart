@@ -278,6 +278,51 @@ void main() {
       expect(find.byType(ArDriveSpinner), findsOneWidget);
     });
 
+    testWidgets(
+        'a change on screen holds Add license until it is applied, so it '
+        'never writes the license from before', (tester) async {
+      final category = bloc.categoryForm;
+      await pump(
+          tester,
+          FsEntryLicenseReviewing(
+              summary: summary(isFree: true, isCovered: true)));
+      ArDriveButtonNew add() => tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Add license'));
+      expect(add().isDisabled, isFalse);
+
+      category.control('licenseCategory').value = LicenseCategory.cc;
+      await tester.pump();
+      expect(add().isDisabled, isTrue);
+      verifyNever(() => bloc.add(const FsEntryLicenseSettingsChanged()));
+
+      await tester.pump(const Duration(milliseconds: 350));
+      verify(() => bloc.add(const FsEntryLicenseSettingsChanged())).called(1);
+    });
+
+    testWidgets('while it writes, the settings take no input, keys included',
+        (tester) async {
+      await pump(
+          tester,
+          FsEntryLicenseReviewing(
+              summary: summary(isFree: true, isCovered: true), busy: true));
+
+      final field = find.text('License fee');
+      expect(
+          tester
+              .widget<ExcludeFocus>(find
+                  .ancestor(of: field, matching: find.byType(ExcludeFocus))
+                  .first)
+              .excluding,
+          isTrue);
+      expect(
+          tester
+              .widget<AbsorbPointer>(find
+                  .ancestor(of: field, matching: find.byType(AbsorbPointer))
+                  .first)
+              .absorbing,
+          isTrue);
+    });
+
     testWidgets('a failure says so in the dialog, and Add license tries again',
         (tester) async {
       await pump(

@@ -90,6 +90,10 @@ class FsEntryLicenseBloc
   /// A write is under way. Nothing else starts one, or reads the cost.
   var _writing = false;
 
+  /// Which cost read is the latest: a read that finishes after a newer one
+  /// started, for settings since changed, is dropped.
+  var _costRead = 0;
+
   /// Turbo refused a write as not paid for, so it is not free again whatever
   /// the allowance says.
   var _refusedByTurbo = false;
@@ -153,6 +157,8 @@ class FsEntryLicenseBloc
     // is saved already.
     _write = null;
     _cost = null;
+    // Any read under way is for the settings before this change.
+    _costRead++;
     if (!_applySettings()) {
       emit(const FsEntryLicenseReviewing(incomplete: true));
       return;
@@ -192,6 +198,7 @@ class FsEntryLicenseBloc
     bool failed = false,
   }) async {
     if (_writing) return;
+    final read = ++_costRead;
     _cost = null;
     emit(FsEntryLicenseReviewing(failed: failed));
     MetadataWriteCost cost;
@@ -212,6 +219,8 @@ class FsEntryLicenseBloc
       cost = MetadataWriteCost(MetadataWriteCostReader.unavailable());
       pricingFailed = true;
     }
+    // Settings changed while it read: the newer read gives the cost.
+    if (read != _costRead) return;
     _cost = cost;
     emit(FsEntryLicenseReviewing(
       summary: cost.summary,

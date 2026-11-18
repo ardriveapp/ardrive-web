@@ -8119,6 +8119,7 @@
   "licenseAddedMessage": "{license} 已加入 {count, plural, =1{1 個檔案} other{{count} 個檔案}}。",
   "noFileToLicenseTitle": "沒有可加入授權的檔案",
   "noFileToLicenseMessage": "請選擇檔案，或包含檔案的資料夾。",
+  "licenseFixSettingsForCost": "請檢查授權設定以查看費用",
   "licenseChooseTypeForCost": "選擇授權類型以查看費用",
   "licenseTypeLabel": "類型",
   "licenseFeeLabel": "授權費",

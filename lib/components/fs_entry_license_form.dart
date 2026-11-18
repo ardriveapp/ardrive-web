@@ -33,6 +33,9 @@ Future<void> promptToLicense(
 }) {
   return showArDriveDialog(
     context,
+    // Only Cancel or the X close it, and both wait while the license is
+    // written: a click outside would leave the write running unseen.
+    barrierDismissible: false,
     content: MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -82,6 +85,10 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
   final _subscriptions = <StreamSubscription<Object?>>[];
   Timer? _settle;
 
+  /// A change on screen the bloc has not applied yet: Add license waits for
+  /// it, so it never writes the license from before the change.
+  var _pending = false;
+
   @override
   void initState() {
     super.initState();
@@ -91,9 +98,11 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
     void changed(Object? _) {
       _settle?.cancel();
       _settle = Timer(const Duration(milliseconds: 300), () {
-        if (mounted) bloc.add(const FsEntryLicenseSettingsChanged());
+        if (!mounted) return;
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        setState(() => _pending = false);
       });
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _pending = true);
     }
 
     for (final form in [
@@ -222,8 +231,11 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
       leading: [
         LicenseFileList(fileList: files),
         const SizedBox(height: ArDriveSpacing.lg),
-        // Read-only while the license is written.
-        IgnorePointer(ignoring: state.busy, child: settings),
+        // Read-only while the license is written, to the keyboard too.
+        AbsorbPointer(
+          absorbing: state.busy,
+          child: ExcludeFocus(excluding: state.busy, child: settings),
+        ),
       ],
       extras: [
         if (state.failed)
@@ -237,9 +249,13 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
           ),
       ],
       summary: state.summary,
-      costPendingReason:
-          state.incomplete ? l10n.licenseChooseTypeForCost : null,
+      costPendingReason: !state.incomplete
+          ? null
+          : category == LicenseCategory.cc
+              ? l10n.licenseChooseTypeForCost
+              : l10n.licenseFixSettingsForCost,
       primaryLabel: l10n.addLicense,
+      primaryEnabled: !_pending,
       primaryBusy: state.busy,
       subject: ReviewCostSubject.change,
       priceUnavailableMessage:

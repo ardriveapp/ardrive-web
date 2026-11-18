@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
@@ -735,6 +737,46 @@ void main() {
             (s) => s is FsEntryLicenseReviewing && s.summary != null);
         expect(bloc.selectedLicenseMeta, ccByLicenseMetaV2);
         expect(bloc.licenseParams, equals(null));
+        await bloc.close();
+      });
+
+      test('a cost read for settings since changed is dropped', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final bloc = await reviewing();
+
+        // The read for the first change is slow; the second is not.
+        final slow = Completer<MetadataWriteCost>();
+        var calls = 0;
+        when(() => costReader.read(
+              itemSizes: any(named: 'itemSizes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+              refusedByTurbo: any(named: 'refusedByTurbo'),
+            )).thenAnswer((_) {
+          calls++;
+          return calls == 1
+              ? slow.future
+              : Future.value(
+                  MetadataWriteCost(_summary(isFree: false, isCovered: true)));
+        });
+        bloc.udlParamsForm.control('licenseFeeAmount').value = '1';
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        await Future.delayed(const Duration(milliseconds: 20));
+        bloc.udlParamsForm.control('licenseFeeAmount').value = '2';
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        final latest = await bloc.stream.firstWhere(
+                (s) => s is FsEntryLicenseReviewing && s.summary != null)
+            as FsEntryLicenseReviewing;
+        expect(latest.summary!.isFree, isFalse);
+
+        // The stale read lands last, and changes nothing.
+        final seen = <FsEntryLicenseState>[];
+        final sub = bloc.stream.listen(seen.add);
+        slow.complete(
+            MetadataWriteCost(_summary(isFree: true, isCovered: true)));
+        await Future.delayed(const Duration(milliseconds: 50));
+        await sub.cancel();
+        expect(seen, isEmpty);
         await bloc.close();
       });
 

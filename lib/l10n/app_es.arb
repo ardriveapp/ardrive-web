@@ -8119,6 +8119,7 @@
   "licenseAddedMessage": "{license} ya está en {count, plural, =1{1 archivo} other{{count} archivos}}.",
   "noFileToLicenseTitle": "No hay archivos para licenciar",
   "noFileToLicenseMessage": "Elige un archivo o una carpeta que tenga archivos.",
+  "licenseFixSettingsForCost": "Revisa los ajustes de la licencia para ver el costo",
   "licenseChooseTypeForCost": "Elige un tipo de licencia para ver el costo",
   "licenseTypeLabel": "Tipo",
   "licenseFeeLabel": "Tarifa de licencia",
