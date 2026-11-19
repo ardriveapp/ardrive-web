@@ -138,8 +138,7 @@ void main() {
     expect(find.text('6.66 MiB'), findsOneWidget);
     expect(find.text('0 to 1814228'), findsOneWidget);
     expect(find.textContaining('permanent'), findsOneWidget);
-    expect(
-        find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
+    expect(find.textContaining('uploaded yet'), findsNothing);
   });
 
   /// A public drive's confirmation is the private one minus one clause.
@@ -166,8 +165,6 @@ void main() {
     expect(find.text('6.66 MiB'), findsOneWidget);
     expect(find.text('0 to 1814228'), findsOneWidget);
     expect(find.textContaining('permanent'), findsOneWidget);
-    expect(
-        find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
     expect(find.text('Create snapshot'), findsNWidgets(2),
         reason: 'the title and the action');
 
@@ -338,6 +335,45 @@ void main() {
     }
   });
 
+  testWidgets('a refusal a sync can clear offers the sync', (tester) async {
+    when(() => cubit.syncThenPrepare()).thenAnswer((_) async {});
+    await tester.pumpWidget(wrap(DriveStateCreationRefused(
+      refusal: DriveStateCreationRefusal.skipStateUnknown,
+      reason: 'No sync yet.',
+      canSync: true,
+    )));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Sync this drive first, so the snapshot includes '
+            'everything in it.'),
+        findsOneWidget);
+    await tester.tap(find.text('Sync drive'));
+    verify(() => cubit.syncThenPrepare()).called(1);
+    verifyNever(() => cubit.publish());
+  });
+
+  testWidgets('a sync that could not start says so', (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationRefused(
+      refusal: DriveStateCreationRefusal.skipStateUnknown,
+      reason: 'No sync yet.',
+      canSync: true,
+      syncDidNotStart: true,
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("A sync couldn't start"), findsOneWidget);
+    expect(find.text('Sync drive'), findsOneWidget);
+  });
+
+  testWidgets('syncing says what it is doing', (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationSyncing()));
+    await tester.pump();
+
+    expect(find.text('Syncing this drive...'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
   testWidgets('a refusal explains itself and offers no way past it',
       (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationRefused(
@@ -347,7 +383,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining("couldn't read some items"), findsOneWidget);
-    expect(find.textContaining('would record the gap forever'), findsOneWidget);
+    expect(find.text('Sync drive'), findsNothing,
+        reason: 'only a cubit that can sync offers it');
     expect(
         find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
     verifyNever(() => cubit.publish());

@@ -39,6 +39,12 @@ part 'drive_state_creation_state.dart';
 /// alternative is what this replaced: no answer, no error, no log.
 const kCostEstimateTimeout = Duration(seconds: 45);
 
+/// Syncs the drive, deeply when [deep], and says whether a sync started.
+typedef DriveStateSyncDrive = Future<bool> Function({
+  required bool deep,
+  required bool Function() isCancelled,
+});
+
 class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   final String driveId;
 
@@ -60,6 +66,9 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   /// it, and whether or not the modal is still open.
   final void Function()? onPublished;
 
+  /// Syncs this drive, for a refusal a sync can clear. Null offers no sync.
+  final DriveStateSyncDrive? syncDrive;
+
   DriveStateCreationCubit({
     required this.driveId,
     required DriveStateCreationService service,
@@ -69,6 +78,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
     required DriveDao driveDao,
     this.turboBalanceRefreshDelay = const Duration(seconds: 2),
     this.onPublished,
+    this.syncDrive,
 
     /// Overridable so the deadline can be tested without waiting for it. The
     /// production value is [costEstimateTimeout]; nothing but a test passes
@@ -81,6 +91,43 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DriveStateCreationInitial());
+
+  /// Syncs the drive a refusal named, then prepares again. Deep when the last
+  /// sync skipped items: an ordinary sync starts after them and would not
+  /// read them again.
+  Future<void> syncThenPrepare() async {
+    final refused = state;
+    final sync = syncDrive;
+    if (sync == null || refused is! DriveStateCreationRefused) return;
+    if (!refused.canSync) return;
+
+    emit(DriveStateCreationSyncing());
+    var started = true;
+    try {
+      started = await sync(
+        deep: refused.refusal == DriveStateCreationRefusal.syncSkippedEntities,
+        isCancelled: () => isClosed,
+      );
+    } catch (e, stackTrace) {
+      // The check that follows says what the sync left.
+      logger.e('[drive-state] syncing the drive failed', e, stackTrace);
+    }
+    if (isClosed) return;
+
+    await prepare();
+    final after = state;
+    if (!started &&
+        !isClosed &&
+        after is DriveStateCreationRefused &&
+        after.canSync) {
+      emit(DriveStateCreationRefused(
+        refusal: after.refusal,
+        reason: after.reason,
+        canSync: true,
+        syncDidNotStart: true,
+      ));
+    }
+  }
 
   /// Builds the artifact, prices it, and stops. Emits
   /// [DriveStateCreationReady] with something that has not been sent anywhere.
@@ -135,9 +182,14 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
           '${result.refusal!.name}',
         );
 
-        emit(DriveStateCreationRefused(
+        final refused = DriveStateCreationRefused(
           refusal: result.refusal!,
           reason: result.reason,
+        );
+        emit(DriveStateCreationRefused(
+          refusal: refused.refusal,
+          reason: refused.reason,
+          canSync: syncDrive != null && refused.isClearedBySync,
         ));
         return;
       }

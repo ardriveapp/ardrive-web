@@ -79,6 +79,23 @@ Future<void> promptToCreateDriveState(
         // snapshot dialog's DriveSnapshotted does. The count is reset here,
         // synchronously, because the Snapshots tab re-reads it as soon as
         // the new snapshot is announced, before the bloc handles an event.
+        // As the publish dialog does: a running sync may cover the drive
+        // already, so wait for it, and sync only if the drive still can't be
+        // confirmed complete. Skipped items need the deep sync asked for.
+        syncDrive: ({required deep, required isCancelled}) async {
+          await syncCubit.waitCurrentSync();
+          if (syncCubit.state is SyncLoadingDrives) {
+            await syncCubit.waitForDriveListRefresh();
+          }
+          if (isCancelled()) return false;
+          if (!deep &&
+              SyncCubitDriveStateSkipSource(syncCubit)
+                  .statusFor(drive.id)
+                  .isClean) {
+            return true;
+          }
+          return syncCubit.startSyncForDrive(driveId: drive.id, deepSync: deep);
+        },
         onPublished: () {
           CountOfTxsSyncedWithGql.resetForDrive(drive.id);
           promptToSnapshotBloc.add(DriveSnapshotted(driveId: drive.id));
@@ -124,6 +141,10 @@ class DriveStateCreationModal extends StatelessWidget {
         if (state is DriveStateCreationPreparing ||
             state is DriveStateCreationInitial) {
           return _preparingModal(context, driveName);
+        }
+
+        if (state is DriveStateCreationSyncing) {
+          return _syncingModal(context);
         }
 
         if (state is DriveStateCreationRefused) {
@@ -196,9 +217,40 @@ Widget _preparingModal(BuildContext context, String driveName) {
 ///
 /// It has no confirm button, and there is no override. A refusal here is the
 /// difference between a drive that syncs slowly and a drive whose gap is
-/// permanent, so the modal spends its words on what to do next rather than on
-/// offering a way past.
+/// permanent, so the modal offers what to do next, a sync where one can
+/// clear it, rather than a way past.
 Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
+  final l10n = appLocalizationsOf(context);
+
+  return ArDriveStandardModalNew(
+    title: l10n.createSnapshot,
+    scrollableContent: true,
+    content: ArDriveNotice(
+      type: state.canSync ? ArDriveNoticeType.warning : ArDriveNoticeType.error,
+      message: state.syncDidNotStart
+          ? l10n.snapshotSyncCouldNotStart
+          : _refusalText(l10n, state.refusal),
+    ),
+    actions: [
+      ModalAction.close(
+        title: l10n.close,
+        action: () => Navigator.of(context).pop(),
+      ),
+      if (state.canSync)
+        ModalAction(
+          title: l10n.publishSyncDrive,
+          action: () =>
+              context.read<DriveStateCreationCubit>().syncThenPrepare(),
+        ),
+    ],
+  );
+}
+
+/// Syncing before preparing again. Cancel closes the dialog; the sync goes
+/// on, as any sync does.
+Widget _syncingModal(BuildContext context) {
+  final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
@@ -208,22 +260,17 @@ Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (state.isSyncGap) ...[
-          ArDriveNotice(
-            type: ArDriveNoticeType.warning,
-            message: l10n.snapshotGapNotice,
-          ),
-          const SizedBox(height: ArDriveSpacing.md),
-        ],
-        ArDriveNotice(
-          type: ArDriveNoticeType.error,
-          message: _refusalText(l10n, state.refusal),
+        Text(
+          l10n.publishSyncingDrive,
+          style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
+        const SizedBox(height: ArDriveSpacing.md),
+        const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
       ],
     ),
     actions: [
-      ModalAction.close(
-        title: l10n.close,
+      ModalAction.dismiss(
+        title: l10n.cancelEmphasized,
         action: () => Navigator.of(context).pop(),
       ),
     ],
@@ -257,12 +304,6 @@ Widget _confirmModal(
       ),
       const SizedBox(height: ArDriveSpacing.md),
       _summary(context, state),
-    ],
-    extras: [
-      Text(
-        l10n.snapshotNothingUploaded,
-        style: typography.paragraphSmall(color: colorTokens.textLow),
-      ),
     ],
     files: [
       (

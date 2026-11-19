@@ -139,13 +139,16 @@ void main() {
   DriveStateCreationCubit cubitWith({
     DriveStateSyncSkipStatus skipStatus =
         const DriveStateSyncSkipStatus.clean(),
+    DriveStateSyncSkipSource? skipSource,
     void Function()? onPublished,
+    DriveStateSyncDrive? syncDrive,
   }) =>
       DriveStateCreationCubit(
         driveId: driveId,
+        syncDrive: syncDrive,
         service: DriveStateCreationService(
           driveDao: driveDao,
-          skipSource: _FixedSkipSource(skipStatus),
+          skipSource: skipSource ?? _FixedSkipSource(skipStatus),
           appVersion: () async => '9.9.9',
         ),
         uploader: uploader,
@@ -182,6 +185,82 @@ void main() {
             reason: 'the user must be told no money moved');
       },
     );
+  });
+
+  group('syncing from a refusal', () {
+    const unknown = DriveStateSyncSkipStatus.unknown('No sync yet.');
+    const skipped = DriveStateSyncSkipStatus.skipped(
+      skippedEntityCount: 2,
+      reason: 'The last sync of this drive could not read 2 items.',
+    );
+
+    test('offers a sync only where one can clear the refusal', () async {
+      final withSync = cubitWith(
+        skipStatus: unknown,
+        syncDrive: ({required deep, required isCancelled}) async => true,
+      );
+      await withSync.prepare();
+      expect((withSync.state as DriveStateCreationRefused).canSync, isTrue);
+      await withSync.close();
+
+      final withoutSync = cubitWith(skipStatus: unknown);
+      await withoutSync.prepare();
+      expect((withoutSync.state as DriveStateCreationRefused).canSync, isFalse);
+      await withoutSync.close();
+    });
+
+    test('syncs, then prepares the snapshot', () async {
+      final source = _MutableSkipSource(unknown);
+      bool? deepAsked;
+      final cubit = cubitWith(
+        skipSource: source,
+        syncDrive: ({required deep, required isCancelled}) async {
+          deepAsked = deep;
+          source.status = const DriveStateSyncSkipStatus.clean();
+          return true;
+        },
+      );
+      await cubit.prepare();
+      final states = <DriveStateCreationState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await cubit.syncThenPrepare();
+      await sub.cancel();
+
+      expect(deepAsked, isFalse);
+      expect(states.first, isA<DriveStateCreationSyncing>());
+      expect(cubit.state, isA<DriveStateCreationReady>());
+      verifyNever(() => uploader.publish(any(), method: any(named: 'method')));
+      await cubit.close();
+    });
+
+    test('asks for a deep sync when items were skipped', () async {
+      bool? deepAsked;
+      final cubit = cubitWith(
+        skipStatus: skipped,
+        syncDrive: ({required deep, required isCancelled}) async {
+          deepAsked = deep;
+          return true;
+        },
+      );
+      await cubit.prepare();
+      await cubit.syncThenPrepare();
+      expect(deepAsked, isTrue);
+      await cubit.close();
+    });
+
+    test('says so when the sync could not start', () async {
+      final cubit = cubitWith(
+        skipStatus: unknown,
+        syncDrive: ({required deep, required isCancelled}) async => false,
+      );
+      await cubit.prepare();
+      await cubit.syncThenPrepare();
+      final state = cubit.state as DriveStateCreationRefused;
+      expect(state.syncDidNotStart, isTrue);
+      expect(state.canSync, isTrue);
+      await cubit.close();
+    });
   });
 
   group('prepare', () {
@@ -884,6 +963,15 @@ DriveStatePublishCost _cost({
       sufficientTurboBalance: sufficientTurboBalance,
       freeStatus: freeStatus,
     );
+
+class _MutableSkipSource implements DriveStateSyncSkipSource {
+  DriveStateSyncSkipStatus status;
+
+  _MutableSkipSource(this.status);
+
+  @override
+  DriveStateSyncSkipStatus statusFor(String driveId) => status;
+}
 
 class _FixedSkipSource implements DriveStateSyncSkipSource {
   final DriveStateSyncSkipStatus _status;

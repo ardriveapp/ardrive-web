@@ -19,10 +19,25 @@ class DriveStateCreationRefused extends DriveStateCreationState {
   final DriveStateCreationRefusal refusal;
   final String reason;
 
+  /// Whether the dialog offers to sync the drive and check it again. Set by
+  /// the cubit, which knows whether it can sync, for a refusal a sync can
+  /// clear.
+  final bool canSync;
+
+  /// Whether the sync asked for here couldn't start, so the dialog says so
+  /// rather than looking as if the button did nothing.
+  final bool syncDidNotStart;
+
   DriveStateCreationRefused({
     required this.refusal,
     required this.reason,
+    this.canSync = false,
+    this.syncDidNotStart = false,
   });
+
+  /// Whether a sync of the drive can clear this refusal.
+  bool get isClearedBySync =>
+      isSyncGap || refusal == DriveStateCreationRefusal.noWatermark;
 
   /// Whether this refusal is the D3 safety rail — the drive has a known gap,
   /// or one that cannot be ruled out. The modal says more about these than it
@@ -32,8 +47,11 @@ class DriveStateCreationRefused extends DriveStateCreationState {
       refusal == DriveStateCreationRefusal.skipStateUnknown;
 
   @override
-  List<Object?> get props => [refusal, reason];
+  List<Object?> get props => [refusal, reason, canSync, syncDidNotStart];
 }
+
+/// Syncing the drive a refusal named, before preparing again.
+class DriveStateCreationSyncing extends DriveStateCreationState {}
 
 /// Built, sealed, priced, **unsent**. The confirmation modal renders this, and
 /// only a user's click moves it on.
