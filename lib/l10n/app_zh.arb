@@ -8097,6 +8097,8 @@
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "正在使用网关：{url}",
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "shareUploadTitle": "上传{count, plural, =1{1 个共享文件} other{{count} 个共享文件}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "已添加许可",
   "licenseAddedMessage": "{license} 已添加到 {count, plural, =1{1 个文件} other{{count} 个文件}}。",
   "noFileToLicenseTitle": "没有可添加许可的文件",

@@ -6120,6 +6120,8 @@
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Using gateway: {url}",
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "shareUploadTitle": "Upload {count, plural, =1{1 shared file} other{{count} shared files}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "License added",
   "@licenseAddedTitle": {"description": "Title when a license was saved on files"},
   "licenseAddedMessage": "{license} is now on {count, plural, =1{1 file} other{{count} files}}.",

@@ -8097,6 +8097,8 @@
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "ゲートウェイを使用中: {url}",
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "shareUploadTitle": "共有された{count, plural, =1{1 件のファイル} other{{count} 件のファイル}}をアップロード",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "ライセンスを追加しました",
   "licenseAddedMessage": "{license}を{count, plural, =1{1件のファイル} other{{count}件のファイル}}に設定しました。",
   "noFileToLicenseTitle": "ライセンスを付けるファイルがありません",
