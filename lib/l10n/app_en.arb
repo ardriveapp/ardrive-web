@@ -555,17 +555,17 @@
   "@syncMenuFullResyncDescription": {
     "description": "Second line under the Full resync item in the sync menu"
   },
-  "detachDrive": "Detach drive?",
+  "detachDrive": "Detach drive",
   "detachDriveAction": "Detach drive",
   "@detachDriveAction": {
-    "description": "Menu command that opens the detach confirmation. The dialog's own title keeps its question mark; a list of commands should not read as a list of questions"
+    "description": "Menu command that opens the detach confirmation. Same words as the dialog's title"
   },
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
+  "detachDriveQuestion": "'{driveName}' will be removed from your drives.",
   "@detachDriveQuestion": {
-    "description": "Ask for user confirmation to detach drive",
+    "description": "First line of the detach drive dialog: what happens to the drive",
     "placeholders": {
       "driveName": {
         "type": "String",
@@ -2888,6 +2888,10 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "A drive with this name already exists.",
+  "@driveNameAlreadyExists": {"description": "Notice in the rename drive dialog when another drive already has the name typed"},
+  "renameAnyway": "Rename anyway",
+  "@renameAnyway": {"description": "Primary button of the rename drive dialog once another drive has the same name"},
   "renameEmphasized": "Rename",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -3283,6 +3287,10 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "That key does not open this drive.",
+  "@attachDriveInvalidKey": {"description": "Notice in the attach drive dialog when the key typed does not open the drive"},
+  "attachDriveOwner": "Owner: {owner}",
+  "@attachDriveOwner": {"description": "Line in the attach drive dialog's drive info: who owns the drive, a shortened wallet address", "placeholders": {"owner": {"type": "String", "example": "abc123...xyz9"}}},
   "attachDrivePrivateFound": "This is a private drive. Enter its access key to continue.",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
@@ -3398,6 +3406,16 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "Update private drives",
+  "@updatePrivateDrives": {"description": "Title of the dialog that updates old private drives to the current drive format"},
+  "privateDrivesNeedUpdate": "These private drives need an update to keep working.",
+  "@privateDrivesNeedUpdate": {"description": "First line of the update private drives dialog, before the Learn more link"},
+  "privateDrivesUpdated": "Your private drives are updated.",
+  "@privateDrivesUpdated": {"description": "Shown in the update private drives dialog when every drive is updated"},
+  "privateDrivesUpdateFailed": "A drive could not be updated. Try again.",
+  "@privateDrivesUpdateFailed": {"description": "Error notice in the update private drives dialog when a drive could not be updated"},
+  "updateAction": "Update",
+  "@updateAction": {"description": "Primary button of the update private drives dialog"},
   "skip": "Skip",
   "@skip": {
     "description": "Skip"

@@ -266,5 +266,33 @@ void main() {
       );
       expect(find.text('Try again'), findsOneWidget);
     });
+
+    testWidgets('a failure is an error notice', (tester) async {
+      await pumpState(tester, const DriveShareLoadFail());
+
+      expect(
+        find.descendant(
+          of: find.byType(ArDriveNotice),
+          matching: find.textContaining('access key could not be read'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    for (final state in <DriveShareState>[
+      DriveShareLoadInProgress(),
+      const DriveShareLoadFail(),
+    ]) {
+      testWidgets('has a close button while ${state.runtimeType}',
+          (tester) async {
+        await pumpState(tester, state);
+
+        // The corner close button; its label is the dialog's own Cancel/Close.
+        expect(
+            find.byWidgetPredicate(
+                (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+            findsOneWidget);
+      });
+    }
   });
 }
