@@ -20,6 +20,10 @@ import 'package:flutter/material.dart';
 /// 2. A key that was tried and failed leaves the recipient exactly where they
 ///    were - same page, same text in the field, an error underneath it. Never
 ///    a modal, never "the file does not exist".
+///
+/// A private drive or folder page uses the same gate ([gate]): its frame
+/// already shows the page's icon and title, and a page with a password takes
+/// the password in the same field, so rule 1 applies only to a key.
 class SharedFileLockedView extends StatefulWidget {
   const SharedFileLockedView({
     super.key,
@@ -30,7 +34,11 @@ class SharedFileLockedView extends StatefulWidget {
     this.rememberKey = false,
     this.onRememberChanged,
     this.isBusy = false,
+    this.gate = SharedFileGate.file,
   });
+
+  /// What is behind the gate.
+  final SharedFileGate gate;
 
   /// Owned by the page, not by this widget: the gate is torn down and rebuilt
   /// while a key is being checked, and the recipient's typing has to survive
@@ -100,32 +108,41 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
 
   Widget _buildGate(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
     final payload = widget.payload;
     final detailsAreHidden = payload?.detailsAreHidden ?? false;
     final showEmbeddedDetails = payload != null && !detailsAreHidden;
+    final isPage = widget.gate != SharedFileGate.file;
+    final takesPassword = widget.gate == SharedFileGate.pageWithPassword;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SharedFileIdentity(
-          name: showEmbeddedDetails ? payload.name : null,
-          size: showEmbeddedDetails ? payload.size : null,
-          contentType: showEmbeddedDetails ? payload.contentType : null,
-          isPrivate: true,
-        ),
-        if (detailsAreHidden) ...[
-          const SizedBox(height: 12),
-          Text(
-            appLocalizationsOf(context).sharedFileDetailsHiddenBySender,
-            style: ArDriveTypographyNew.of(context).paragraphNormal(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-            ),
+        // A page's frame shows its own icon and title above the gate.
+        if (!isPage) ...[
+          SharedFileIdentity(
+            name: showEmbeddedDetails ? payload.name : null,
+            size: showEmbeddedDetails ? payload.size : null,
+            contentType: showEmbeddedDetails ? payload.contentType : null,
+            isPrivate: true,
           ),
+          if (detailsAreHidden) ...[
+            const SizedBox(height: 12),
+            Text(
+              strings.sharedFileDetailsHiddenBySender,
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
         ],
-        const SizedBox(height: 24),
         Text(
-          appLocalizationsOf(context).sharedFileProtectedWithAccessKey,
+          isPage
+              ? strings.publicationPrivateHeading
+              : strings.sharedFileProtectedWithAccessKey,
+          textAlign: isPage ? TextAlign.center : TextAlign.start,
           style: ArDriveTypographyNew.of(context).paragraphXLarge(
             fontWeight: ArFontWeight.semiBold,
             color: colors.textHigh,
@@ -133,11 +150,17 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
         ),
         const SizedBox(height: 6),
         Text(
-          // A published file page was not sent to anyone: its key comes in
-          // the link the owner gives out.
-          publicationConfigOf(context) != null
-              ? appLocalizationsOf(context).publicationFileLocked
-              : appLocalizationsOf(context).sharedFileAccessKeySentSeparately,
+          switch (widget.gate) {
+            SharedFileGate.pageWithPassword =>
+              strings.publicationPrivateKeyOrPasswordSentSeparately,
+            SharedFileGate.page => strings.publicationPrivateKeySentSeparately,
+            // A published file page was not sent to anyone: its key comes in
+            // the link the owner gives out.
+            SharedFileGate.file => publicationConfigOf(context) != null
+                ? strings.publicationFileLocked
+                : strings.sharedFileAccessKeySentSeparately,
+          },
+          textAlign: isPage ? TextAlign.center : TextAlign.start,
           style: ArDriveTypographyNew.of(context).paragraphNormal(
             color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
           ),
@@ -153,7 +176,9 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           obscureText: true,
           showObfuscationToggle: true,
           isEnabled: !widget.isBusy,
-          hintText: appLocalizationsOf(context).sharedFilePasteAccessKey,
+          hintText: takesPassword
+              ? strings.publicationAccessKeyOrPassword
+              : strings.sharedFilePasteAccessKey,
           errorMessage: _shapeError ?? widget.errorMessage,
           onChanged: _onChanged,
           onFieldSubmitted: (_) => _submit(),
@@ -171,7 +196,9 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           maxWidth: double.infinity,
           isDisabled: widget.isBusy || widget.controller.text.trim().isEmpty,
           onPressed: _submit,
-          text: appLocalizationsOf(context).sharedFileUnlockFile,
+          text: isPage
+              ? strings.publicationOpenPage
+              : strings.sharedFileUnlockFile,
         ),
         if (widget.isBusy) ...[
           const SizedBox(height: 8),
@@ -179,7 +206,9 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
         ],
         const SizedBox(height: 12),
         Text(
-          appLocalizationsOf(context).sharedFileAccessKeyStaysOnThisDevice,
+          takesPassword
+              ? strings.publicationKeyOrPasswordStaysOnThisDevice
+              : strings.sharedFileAccessKeyStaysOnThisDevice,
           textAlign: TextAlign.center,
           style: ArDriveTypographyNew.of(context).paragraphNormal(
             color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
@@ -221,7 +250,9 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
 
     // The shape check is the whole point of this branch: a mistyped or
     // truncated key fails here, in microseconds, with the field untouched.
-    if (!SharedFileLinkKey.isWellFormed(rawKey)) {
+    // A password can be anything, so a page that takes one skips it.
+    if (widget.gate != SharedFileGate.pageWithPassword &&
+        !SharedFileLinkKey.isWellFormed(rawKey)) {
       setState(() {
         _shapeError = appLocalizationsOf(context).sharedFileAccessKeyMalformed;
       });
@@ -233,8 +264,25 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
       _shapeError = null;
     });
 
-    widget.onSubmit(rawKey);
+    // A password is exactly what was typed: spaces at either end are part
+    // of it. Whoever takes it trims a pasted key itself.
+    widget.onSubmit(widget.gate == SharedFileGate.pageWithPassword
+        ? widget.controller.text
+        : rawKey);
   }
+}
+
+/// What a [SharedFileLockedView] opens.
+enum SharedFileGate {
+  /// A shared file, or a private file page: its access key.
+  file,
+
+  /// A private drive or folder page: its access key.
+  page,
+
+  /// A private drive or folder page with a password: its access key or the
+  /// password.
+  pageWithPassword,
 }
 
 /// "Remember this key for this tab".

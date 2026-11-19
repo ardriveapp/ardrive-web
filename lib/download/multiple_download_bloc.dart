@@ -94,7 +94,8 @@ class MultipleDownloadBloc
   Future<void> _startDownload(
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
     _files = await convertSelectionToMultiDownloadFileList(
-        _driveDao, _arfsRepository, event.selectedItems);
+        _driveDao, _arfsRepository, event.selectedItems,
+        untitledRootName: event.zipName);
 
     _skippedFiles.clear();
 

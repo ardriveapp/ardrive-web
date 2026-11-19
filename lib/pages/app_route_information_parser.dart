@@ -378,21 +378,24 @@ AppRoutePath parsePublicationRoute(Uri uri) {
 @visibleForTesting
 RouteInformation restorePublicationRoute(AppRoutePath configuration) {
   final folderId = configuration.publicationFolderId;
-  // A file page keeps the key its link carried, so a reload still opens it.
-  // Only a key from the link is ever here: one typed into the page stays in
-  // the page.
+  // A file page keeps the key its link carried, so a reload still opens it,
+  // and so does a private drive or folder page, in any folder. Only a key
+  // from the link is ever here: one typed into the page stays in the page.
   final rawKey = configuration.sharedRawFileKey;
-  if (folderId == null && rawKey != null && rawKey.isNotEmpty) {
+  final key = rawKey != null && rawKey.isNotEmpty
+      ? {SharedFileLinkParams.key: rawKey}
+      : const <String, String>{};
+  if (folderId == null) {
     return RouteInformation(
-      uri: Uri(path: '/', queryParameters: {SharedFileLinkParams.key: rawKey}),
+      uri: key.isEmpty ? Uri.parse('/') : Uri(path: '/', queryParameters: key),
     );
   }
-  if (folderId == null) return RouteInformation(uri: Uri.parse('/'));
   final fileId = configuration.publicationFileId;
+  final query = {if (fileId != null) 'file': fileId, ...key};
   return RouteInformation(
     uri: Uri(
       path: '/folders/$folderId',
-      queryParameters: fileId == null ? null : {'file': fileId},
+      queryParameters: query.isEmpty ? null : query,
     ),
   );
 }

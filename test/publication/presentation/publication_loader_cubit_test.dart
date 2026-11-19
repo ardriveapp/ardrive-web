@@ -258,7 +258,7 @@ void main() {
 
     blocTest<PublicationLoaderCubit, PublicationLoaderState>(
       'a newer publication.json needs a newer viewer',
-      build: () => loader({'publication.json': '{"version": 3}'}),
+      build: () => loader({'publication.json': '{"version": 4}'}),
       act: (cubit) => cubit.load(),
       expect: () => [
         const PublicationLoadingSettings(),
@@ -267,7 +267,8 @@ void main() {
     );
 
     blocTest<PublicationLoaderCubit, PublicationLoaderState>(
-      'a private publication waits for its key and fetches nothing more',
+      'a private snapshot page (reserved, never written) is refused and '
+      'fetches nothing more',
       build: () {
         final private = fixture.publicationJson()
           ..['privacy'] = 'private'
@@ -285,7 +286,7 @@ void main() {
       act: (cubit) => cubit.load(),
       expect: () => [
         const PublicationLoadingSettings(),
-        isA<PublicationNeedsKey>(),
+        const PublicationFailed(PublicationFailure.settingsUnreadable),
       ],
       verify: (_) async => expect(await db.driveDao.allDrives().get(), isEmpty),
     );

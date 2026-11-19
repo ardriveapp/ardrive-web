@@ -4,9 +4,10 @@ import 'dart:typed_data';
 import 'package:ardrive/publication/data/snapshot_download.dart';
 import 'package:http/http.dart' as http;
 
-/// Reads a publication's own files: `publication.json` and the snapshot, from
-/// the page's manifest, relative to the page (docs/PUBLICATIONS.md, "How a
-/// page opens"). The only requests a publication makes before its explorer opens.
+/// Reads a publication's own files from the page's manifest, relative to the
+/// page (docs/PUBLICATIONS.md, "How a page opens"): `publication.json`, then
+/// the snapshot, or a private page's sealed block and catalog. The only
+/// requests a publication makes before its explorer opens.
 class PublicationSource {
   /// In a browser with no [client], the snapshot downloads through the
   /// browser's own progress events (see `snapshot_download.dart`).
@@ -75,6 +76,41 @@ class PublicationSource {
     return bytes.takeBytes();
   }
 
+  /// A small part of the page (a private page's sealed block), refused
+  /// when it is larger than [maxBytes].
+  ///
+  /// Throws [PublicationSourceException].
+  Future<Uint8List> readPart(String path, {required int maxBytes}) async {
+    final uri = _resolve(path);
+    final http.StreamedResponse response;
+    try {
+      response = await _client.send(http.Request('GET', uri));
+    } catch (e) {
+      throw PublicationSourceException(uri, 'request failed: $e');
+    }
+    if (response.statusCode != 200) {
+      throw PublicationSourceException(uri, 'status ${response.statusCode}');
+    }
+    final declared = response.contentLength;
+    if (declared != null && declared > maxBytes) {
+      throw PublicationPartTooLarge(uri, maxBytes);
+    }
+    final bytes = BytesBuilder(copy: false);
+    try {
+      await for (final chunk in response.stream) {
+        bytes.add(chunk);
+        if (bytes.length > maxBytes) {
+          throw PublicationPartTooLarge(uri, maxBytes);
+        }
+      }
+    } on PublicationSourceException {
+      rethrow;
+    } catch (e) {
+      throw PublicationSourceException(uri, 'body broke off: $e');
+    }
+    return bytes.takeBytes();
+  }
+
   Future<http.Response> _get(String path) async {
     final uri = _resolve(path);
     final http.Response response;
@@ -93,6 +129,13 @@ class PublicationSource {
   /// path drops the page's query and fragment, where the app's routes live
   /// (hash routing).
   Uri _resolve(String path) => _pageUri.resolve(path);
+}
+
+/// A part of the page larger than any page may have: the page is broken,
+/// and reading it again won't help.
+class PublicationPartTooLarge extends PublicationSourceException {
+  PublicationPartTooLarge(Uri uri, int maxBytes)
+      : super(uri, 'larger than $maxBytes bytes');
 }
 
 class PublicationSourceException implements Exception {

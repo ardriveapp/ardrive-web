@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../sealed/sealing_vectors.dart' show listOf;
+
 const _driveId = 'c863be1f-a725-4554-9a9e-18268ed8a035';
 const _rootFolderId = '41520b33-28c1-4892-886b-b845a5709085';
 const _folderId = 'e9b05236-0000-4000-8000-000000000001';
@@ -161,7 +163,7 @@ void main() {
 
     test('a newer version is reported as needing a newer viewer', () {
       expect(
-        () => PublicationConfig.fromJson(const {'version': 3}),
+        () => PublicationConfig.fromJson(const {'version': 4}),
         _throwsConfig(PublicationConfigError.unsupportedVersion),
       );
     });
@@ -279,6 +281,78 @@ void main() {
         () => PublicationConfig.parse('[1, 2]'),
         _throwsConfig(PublicationConfigError.invalid),
       );
+    });
+  });
+
+  group('a private drive or folder page (version 3)', () {
+    Map<String, dynamic> page(String name) => jsonDecode(listOf('pages')
+        .firstWhere((p) => p['name'] == name)['publicationJson'] as String);
+
+    test('every page in the vectors parses', () {
+      for (final vector in listOf('pages')) {
+        final config =
+            PublicationConfig.parse(vector['publicationJson'] as String);
+        expect(config.isSealed, isTrue, reason: vector['name'] as String);
+        expect(config.isPrivate, isTrue);
+        expect(config.snapshot, isNull);
+        expect(config.rootFolderId, isEmpty);
+      }
+    });
+
+    test('a folder page names its folder; the title may be empty', () {
+      final drive = PublicationConfig.fromJson(page('drive page, link only'));
+      expect(drive.scope, const PublicationDriveScope());
+      expect(drive.title, isEmpty);
+      final folder =
+          PublicationConfig.fromJson(page('folder page with a password'));
+      expect(folder.scope, isA<PublicationFolderScope>());
+    });
+
+    test('an empty title is still refused on a public page', () {
+      expect(
+        () => PublicationConfig.fromJson(_publicJson()..['title'] = ''),
+        _throwsConfig(PublicationConfigError.invalid),
+      );
+    });
+
+    for (final key in ['rootFolderId', 'snapshot', 'file', 'fileCount']) {
+      test('one with $key is refused', () {
+        expect(
+          () => PublicationConfig.fromJson(
+              page('drive page, link only')..[key] = 'x'),
+          _throwsConfig(PublicationConfigError.invalid),
+        );
+      });
+    }
+
+    test('one that is public, or a file page, is refused', () {
+      expect(
+        () => PublicationConfig.fromJson(
+            page('drive page, link only')..['privacy'] = 'public'),
+        _throwsConfig(PublicationConfigError.invalid),
+      );
+      expect(
+        () => PublicationConfig.fromJson(page('drive page, link only')
+          ..['scope'] = {'type': 'file', 'fileId': _folderId}),
+        _throwsConfig(PublicationConfigError.invalid),
+      );
+    });
+
+    test('one over 64 KiB is refused', () {
+      final big = page('drive page, link only')
+        ..['description'] = 'x' * (64 * 1024);
+      expect(
+        () => PublicationConfig.parse(jsonEncode(big)),
+        _throwsConfig(PublicationConfigError.invalid),
+      );
+    });
+
+    test('opened, it names its root folder', () {
+      final config = PublicationConfig.fromJson(page('drive page, link only'))
+          .opened(rootFolderId: _rootFolderId);
+      expect(config.rootFolderId, _rootFolderId);
+      expect(config.scopeRootFolderId, _rootFolderId);
+      expect(config.isSealed, isTrue);
     });
   });
 }

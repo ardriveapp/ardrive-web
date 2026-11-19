@@ -15,9 +15,17 @@ import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart' show triggerHTMLPageReload;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+/// What a page shows as its title: the owner's, or "Private page" for a private
+/// page whose owner left it empty (the only pages that may).
+String publicationTitle(BuildContext context, PublicationConfig config) =>
+    config.title.isEmpty
+        ? appLocalizationsOf(context).publicationPrivatePage
+        : config.title;
 
 /// The open publication's settings, or null before it is open and on every page
 /// that is not a publication.
@@ -93,11 +101,50 @@ class PublicationTopBarActions extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const PublicationLockButton(),
           const IconThemeSwitcher(),
           SizedBox(width: compact ? 4 : 12),
           MadeWithArDrive(compact: compact),
         ],
       );
+}
+
+/// Lock, on a private page this tab remembers the key of: forgets the key
+/// and reloads, which locks the page. Nothing else is kept: the page's
+/// files and keys live in memory only. Absent everywhere else, and on a
+/// private page opened by its link, which a reload opens again.
+class PublicationLockButton extends StatelessWidget {
+  const PublicationLockButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final PublicationLoaderCubit cubit;
+    try {
+      cubit = context.read<PublicationLoaderCubit>();
+    } on ProviderNotFoundException {
+      return const SizedBox.shrink();
+    }
+    return BlocBuilder<PublicationLoaderCubit, PublicationLoaderState>(
+      bloc: cubit,
+      builder: (context, state) {
+        if (state is! PublicationReady || !state.keyRemembered) {
+          return const SizedBox.shrink();
+        }
+        final strings = appLocalizationsOf(context);
+        return Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: ArDriveIconButton(
+            tooltip: strings.publicationLockTooltip,
+            icon: ArDriveIcons.lock(),
+            onPressed: () async {
+              await cubit.forgetKey();
+              triggerHTMLPageReload();
+            },
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// The one place a publication names ArDrive: a quiet button in the top
@@ -235,7 +282,7 @@ class PublicationHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                config.title,
+                publicationTitle(context, config),
                 maxLines: collapsed ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: (collapsed ? typography.heading5 : typography.heading4)(
@@ -343,7 +390,7 @@ class PublicationFileHead extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          config.title,
+          publicationTitle(context, config),
           style: typography.heading4(
               color: colors.textHigh, fontWeight: ArFontWeight.bold),
         ),

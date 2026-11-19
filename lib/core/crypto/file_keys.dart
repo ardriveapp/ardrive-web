@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:cryptography/cryptography.dart';
@@ -6,10 +8,12 @@ import 'package:cryptography/cryptography.dart';
 /// (and its thumbnails): preview, download, zip, thumbnails, sharing and
 /// file pages all ask here.
 ///
-/// Today every key comes from the file's drive key, which this device holds
-/// for the signed-in profile or, for a visitor, in memory. A private page
-/// (publication.json version 3) carries file keys without a drive key; it
-/// will add them here, so no reader has to change again.
+/// A key comes from one of two places:
+///
+/// - the file's drive key, which this device holds for the signed-in profile
+///   or, for a visitor, in memory;
+/// - a private page (publication.json version 3), which carries its files'
+///   keys and never the drive key ([usePageKeys]).
 ///
 /// Writes that encrypt new metadata (upload, rename, move, hide, license,
 /// pin) still derive keys themselves: they need the drive key anyway. The
@@ -20,9 +24,23 @@ class FileKeys {
 
   final DriveDao _driveDao;
 
+  /// The keys a private page opened with, by drive. Held in memory only, for
+  /// as long as the page is open.
+  final _pageKeys = <String, _PageKeyRing>{};
+
+  /// Gives the files of [driveId] the keys a private page carries, File ID to
+  /// file key. A page names only the files in its scope: any other file of
+  /// the drive has no key here.
+  void usePageKeys(String driveId, Map<String, Uint8List> files) {
+    _pageKeys[driveId] = _PageKeyRing(Map.unmodifiable(files));
+  }
+
   /// The keys of [driveId]'s files, or null when this device can't open the
   /// drive. [cipherKey] is the signed-in profile's key; a visitor has none,
   /// and their drive key is looked up in memory.
+  ///
+  /// A private page's keys, when it gave some, come first: a page's visitor
+  /// has no drive key.
   ///
   /// Asks for the drive key once; for many files of one drive (a zip), get
   /// the ring once and ask it for each file.
@@ -30,6 +48,8 @@ class FileKeys {
     String driveId, {
     required SecretKey? cipherKey,
   }) async {
+    final page = _pageKeys[driveId];
+    if (page != null) return page;
     final driveKey = cipherKey != null
         ? await _driveDao.getDriveKey(driveId, cipherKey)
         : await _driveDao.getDriveKeyFromMemory(driveId);
@@ -63,4 +83,16 @@ class _DriveKeyRing implements FileKeyRing {
   @override
   Future<SecretKey?> keyFor(String fileId) =>
       _driveDao.getFileKey(fileId, _driveKey.key);
+}
+
+class _PageKeyRing implements FileKeyRing {
+  _PageKeyRing(this._files);
+
+  final Map<String, Uint8List> _files;
+
+  @override
+  Future<SecretKey?> keyFor(String fileId) async {
+    final key = _files[fileId];
+    return key == null ? null : SecretKey(key);
+  }
 }
