@@ -701,7 +701,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     emit(LoginShowLoader());
-    wallet = await _walletFromMnemonic(mnemonic);
+    try {
+      wallet = await _walletFromMnemonic(mnemonic);
+    } catch (e) {
+      // The loader has no close button: closing it is this handler's job.
+      logger.e('Failed to build the wallet from the derived seed phrase', e);
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
+      return;
+    }
     emit(LoginCloseBlockingDialog());
 
     if (_ethNoRecord) {

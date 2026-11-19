@@ -518,14 +518,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
       context,
       barrierDismissible: false,
       content: ProgressDialog(
-        title: 'Loading wallet details...',
-        progressDescription: Text(
-          'This may take a moment.',
-          style: ArDriveTypographyNew.of(context).paragraphNormal(
-            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-        ),
+        title: appLocalizationsOf(context).loginLoadingWallet,
       ),
     );
 
@@ -614,8 +607,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
       showErrorDialog(
         context: context,
         title: appLocalizationsOf(context).loginFailed,
-        message:
-            'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
+        message: appLocalizationsOf(context).loginWalletExtensionOutdated,
       );
       return;
     }
@@ -638,8 +630,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
       context: context,
       title: appLocalizationsOf(context).loginFailed,
       showShareLogsButton: true,
-      message:
-          'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
+      message: appLocalizationsOf(context).loginUnknownFailure,
     );
   } else if (loginState is LoginSuccess) {
     final profileType = loginState.user.profileType;
@@ -653,8 +644,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
     showErrorDialog(
       context: context,
       title: appLocalizationsOf(context).loginFailed,
-      message:
-          'Unable to connect to the server. Please check your connection and try again.',
+      message: appLocalizationsOf(context).loginGatewayFailure,
     );
   } else if (loginState is LoginPasswordOpensNoDrives) {
     showPasswordOpensNoDrivesDialog(
@@ -665,8 +655,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
     showErrorDialog(
       context: context,
       title: appLocalizationsOf(context).loginFailed,
-      message:
-          'Your drive is still being confirmed. Please wait a few minutes and try again.',
+      message: appLocalizationsOf(context).loginDriveStillConfirming,
     );
   }
 }

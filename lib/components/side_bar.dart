@@ -750,250 +750,268 @@ Future<void> showSupportModal({
     emailSupport: Resources.emailSupport,
   );
 
+  // The export's result shows in this dialog, not in a second one on top.
+  var exporting = false;
+  var exported = false;
+  var exportFailed = false;
+
   showArDriveDialog(
     context,
-    content: ArDriveStandardModalNew(
-      hasCloseButton: true,
-      title: appLocalizationsOf(context).help,
-      // Taller than the screen on a phone at a large text scale. Bounded and
-      // scrolling rather than clipped: the Download button at the bottom is
-      // the reason a user opened this, and it must stay reachable.
-      scrollableContent: true,
-      content: SizedBox(
-        width: 384,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              appLocalizationsOf(context).needHelpReachOut,
-              style: typography.paragraphLarge(
-                fontWeight: ArFontWeight.semiBold,
-                color: colorTokens.textHigh,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              appLocalizationsOf(context).email,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-                color: colorTokens.textHigh,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    Resources.emailSupport,
-                    style: typography.paragraphNormal(
-                      color: colorTokens.textMid,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const CopyButton(
-                  text: Resources.emailSupport,
-                  showCopyText: false,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              appLocalizationsOf(context).resources,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-                color: colorTokens.textHigh,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  openUrl(url: Resources.helpCenterLink);
-                },
-                child: Row(
+    // Exporting the logs is work in this dialog: not closed by a tap outside.
+    barrierDismissible: false,
+    content: StatefulBuilder(
+        builder: (dialogContext, setDialogState) => PopScope(
+            // The system Back button waits while the export runs.
+            canPop: !exporting,
+            child: ArDriveStandardModalNew(
+              title: appLocalizationsOf(context).help,
+              // Taller than the screen on a phone at a large text scale. Bounded and
+              // scrolling rather than clipped: the Download button at the bottom is
+              // the reason a user opened this, and it must stay reachable.
+              scrollableContent: true,
+              content: SizedBox(
+                width: 384,
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Flexible: at 320px and text scale 2.0 these labels are
-                    // wider than the modal that holds them, and a Row with
-                    // nothing that can give overflows by the difference.
-                    Flexible(
-                      child: Text(
-                        appLocalizationsOf(context).helpCenter,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textLink,
-                          fontWeight: ArFontWeight.semiBold,
+                    Text(
+                      appLocalizationsOf(context).needHelpReachOut,
+                      style: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      appLocalizationsOf(context).email,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            Resources.emailSupport,
+                            style: typography.paragraphNormal(
+                              color: colorTokens.textMid,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const CopyButton(
+                          text: Resources.emailSupport,
+                          showCopyText: false,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      appLocalizationsOf(context).resources,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () {
+                          openUrl(url: Resources.helpCenterLink);
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Flexible: at 320px and text scale 2.0 these labels are
+                            // wider than the modal that holds them, and a Row with
+                            // nothing that can give overflows by the difference.
+                            Flexible(
+                              child: Text(
+                                appLocalizationsOf(context).helpCenter,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLink,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            ArDriveIcons.arrowRightOutline(
+                              size: 14,
+                              color: colorTokens.textLink,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    ArDriveIcons.arrowRightOutline(
-                      size: 14,
-                      color: colorTokens.textLink,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  openUrl(url: Resources.discordLink);
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Flexible: at 320px and text scale 2.0 these labels are
-                    // wider than the modal that holds them, and a Row with
-                    // nothing that can give overflows by the difference.
-                    Flexible(
-                      child: Text(
-                        appLocalizationsOf(context).discord,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textLink,
-                          fontWeight: ArFontWeight.semiBold,
+                    const SizedBox(height: 8),
+                    ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () {
+                          openUrl(url: Resources.discordLink);
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Flexible: at 320px and text scale 2.0 these labels are
+                            // wider than the modal that holds them, and a Row with
+                            // nothing that can give overflows by the difference.
+                            Flexible(
+                              child: Text(
+                                appLocalizationsOf(context).discord,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLink,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            ArDriveIcons.arrowRightOutline(
+                              size: 14,
+                              color: colorTokens.textLink,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    ArDriveIcons.arrowRightOutline(
-                      size: 14,
-                      color: colorTokens.textLink,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  openUrl(url: Resources.docsLink);
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Flexible: at 320px and text scale 2.0 these labels are
-                    // wider than the modal that holds them, and a Row with
-                    // nothing that can give overflows by the difference.
-                    Flexible(
-                      child: Text(
-                        appLocalizationsOf(context).developerDocs,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textLink,
-                          fontWeight: ArFontWeight.semiBold,
+                    const SizedBox(height: 8),
+                    ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () {
+                          openUrl(url: Resources.docsLink);
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Flexible: at 320px and text scale 2.0 these labels are
+                            // wider than the modal that holds them, and a Row with
+                            // nothing that can give overflows by the difference.
+                            Flexible(
+                              child: Text(
+                                appLocalizationsOf(context).developerDocs,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLink,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            ArDriveIcons.arrowRightOutline(
+                              size: 14,
+                              color: colorTokens.textLink,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    ArDriveIcons.arrowRightOutline(
-                      size: 14,
-                      color: colorTokens.textLink,
+                    const SizedBox(height: 24),
+                    Text(
+                      appLocalizationsOf(context).troubleshooting,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
+                        color: colorTokens.textHigh,
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              appLocalizationsOf(context).troubleshooting,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-                color: colorTokens.textHigh,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              appLocalizationsOf(context).troubleshootingDescription,
-              style: typography.paragraphSmall(
-                color: colorTokens.textMid,
-              ),
-            ),
-            // A door to the sync record rather than the record itself: it
-            // has its own modal now. Embedded here it was the sixth section
-            // of a page about support email, Help Center, Discord and Docs,
-            // and a reader had to scroll past all of them to reach it.
-            const SizedBox(height: 12),
-            ArDriveClickArea(
-              child: GestureDetector(
-                // Opened over Help rather than in place of it: popping and
-                // pushing in one frame loses the push, and a reader who came
-                // for the logs gets Help back when they close the record.
-                onTap: () => showSyncHistoryModal(context),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        appLocalizationsOf(context).syncHistory,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textLink,
-                          fontWeight: ArFontWeight.semiBold,
+                    const SizedBox(height: 8),
+                    Text(
+                      appLocalizationsOf(context).troubleshootingDescription,
+                      style: typography.paragraphSmall(
+                        color: colorTokens.textMid,
+                      ),
+                    ),
+                    // A door to the sync record rather than the record itself: it
+                    // has its own modal now. Embedded here it was the sixth section
+                    // of a page about support email, Help Center, Discord and Docs,
+                    // and a reader had to scroll past all of them to reach it.
+                    const SizedBox(height: 12),
+                    ArDriveClickArea(
+                      child: GestureDetector(
+                        // Opened over Help rather than in place of it: popping and
+                        // pushing in one frame loses the push, and a reader who came
+                        // for the logs gets Help back when they close the record.
+                        onTap: () => showSyncHistoryModal(context),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                appLocalizationsOf(context).syncHistory,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLink,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            ArDriveIcons.arrowRightOutline(
+                              size: 14,
+                              color: colorTokens.textLink,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    ArDriveIcons.arrowRightOutline(
-                      size: 14,
-                      color: colorTokens.textLink,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const AppVersionHelpLine(),
-          ],
-        ),
-      ),
-      actions: [
-        ModalAction(
-          action: () async {
-            // The logs say which version wrote them: support asks first.
-            final flavor = appFlavorOf(context);
-            final info = await PackageInfo.fromPlatform();
-            logger.i('ArDrive ${appVersionText(info)} (${flavor.name})');
-            await logger.exportLogs(info: logExportInfo);
-            if (context.mounted) {
-              showArDriveDialog(
-                context,
-                content: ArDriveStandardModalNew(
-                  hasCloseButton: true,
-                  title: 'Logs exported',
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Logs exported successfully',
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Logs can be found in your application directory',
-                        style: typography.paragraphNormal(),
+                    const SizedBox(height: 24),
+                    const AppVersionHelpLine(),
+                    if (exported) ...[
+                      const SizedBox(height: ArDriveSpacing.md),
+                      ArDriveNotice(
+                        type: ArDriveNoticeType.success,
+                        // On the web the file goes to the browser's downloads.
+                        message: kIsWeb
+                            ? appLocalizationsOf(context).logsExportedWebNotice
+                            : appLocalizationsOf(context).logsExportedNotice,
                       ),
                     ],
-                  ),
-                  actions: [
-                    ModalAction(
-                      action: () {
-                        Navigator.pop(context);
-                      },
-                      title: 'OK',
-                    ),
+                    if (exportFailed) ...[
+                      const SizedBox(height: ArDriveSpacing.md),
+                      ArDriveNotice(
+                        type: ArDriveNoticeType.error,
+                        message:
+                            appLocalizationsOf(context).logsExportFailedNotice,
+                      ),
+                    ],
                   ],
                 ),
-              );
-            }
-          },
-          title: appLocalizationsOf(context).download,
-        ),
-      ],
-    ),
+              ),
+              actions: [
+                ModalAction.close(
+                  title: appLocalizationsOf(context).close,
+                  isEnable: !exporting,
+                  action: () => Navigator.of(dialogContext).pop(),
+                ),
+                ModalAction(
+                  isLoading: exporting,
+                  action: () async {
+                    if (exporting) return;
+                    setDialogState(() {
+                      exporting = true;
+                      exported = false;
+                      exportFailed = false;
+                    });
+                    try {
+                      // The logs say which version wrote them: support asks first.
+                      final flavor = appFlavorOf(context);
+                      final info = await PackageInfo.fromPlatform();
+                      logger.i(
+                          'ArDrive ${appVersionText(info)} (${flavor.name})');
+                      await logger.exportLogs(info: logExportInfo);
+                      exported = true;
+                    } catch (e) {
+                      logger.e('Failed to export the logs', e);
+                      exportFailed = true;
+                    } finally {
+                      if (dialogContext.mounted) {
+                        setDialogState(() => exporting = false);
+                      }
+                    }
+                  },
+                  title: appLocalizationsOf(context).downloadLogs,
+                ),
+              ],
+            ))),
   );
 }
 

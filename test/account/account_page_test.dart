@@ -179,7 +179,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DownloadWalletModal), findsOneWidget);
-      expect(find.text('Please enter your password'), findsOneWidget);
+      expect(
+        find.descendant(
+            of: find.byType(DownloadWalletModal),
+            matching: find.text('Password')),
+        findsOneWidget,
+      );
       verifyNever(() => auth.unlockUser(password: any(named: 'password')));
       verifyZeroInteractions(ioUtils);
     });

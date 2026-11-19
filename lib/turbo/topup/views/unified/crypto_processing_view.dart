@@ -1,5 +1,6 @@
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,30 +16,28 @@ class CryptoProcessingView extends StatelessWidget {
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
-        String message = 'Processing your payment...';
+        String message = appLocalizationsOf(context).turboProcessingPayment;
         String? submessage;
 
         if (state is CryptoTopupProcessing) {
           if (state.isSubmitting) {
             // One SDK call sends the payment and waits for the network, so
             // this covers both: the wallet's prompt and the confirmation.
-            message = 'Approve the payment in your wallet';
-            submessage =
-                'Once you approve it, it can take a minute to confirm.\n'
-                'To cancel, reject the request in your wallet.';
+            message = appLocalizationsOf(context).turboApproveInWallet;
+            submessage = appLocalizationsOf(context).turboApproveInWalletHint;
           } else if (state.txId != null) {
-            message = 'Confirming transaction...';
-            submessage = 'Waiting for network confirmation';
+            message = appLocalizationsOf(context).turboConfirmingTransaction;
+            submessage = appLocalizationsOf(context).turboWaitingForNetwork;
           } else {
-            message = 'Submitting transaction...';
-            submessage = 'This may take a moment';
+            message = appLocalizationsOf(context).turboSubmittingTransaction;
+            submessage = appLocalizationsOf(context).turboMayTakeAMoment;
           }
         }
 
         // No close button: the payment is under way.
         return TurboTopupScaffold(
           // A heading for the dialog, which screen readers announce on open.
-          title: 'Payment in progress',
+          title: appLocalizationsOf(context).turboCryptoInProgress,
           canClose: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
@@ -85,9 +84,9 @@ class CryptoProcessingView extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Don't close warning
-                const ArDriveNotice(
+                ArDriveNotice(
                   type: ArDriveNoticeType.info,
-                  message: "Please don't close this window",
+                  message: appLocalizationsOf(context).turboKeepWindowOpen,
                 ),
               ],
             ),

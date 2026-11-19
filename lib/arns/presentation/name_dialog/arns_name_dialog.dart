@@ -275,6 +275,7 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
             _choosingWallet = true;
             _changingWallet = true;
           }),
+          onChooseWallet: () => setState(() => _choosingWallet = true),
           onLinked: () => setState(() {
             _choosingWallet = false;
             _changingWallet = false;
@@ -334,49 +335,20 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     );
   }
 
-  /// The commit button is the wallet's next step until the wallet is ready
-  /// (docs/NAMES.md, "Asked for at commit").
+  /// The commit button always names the change (Save, Remove). It waits for
+  /// the wallet: linking or reconnecting it is a notice's action in the
+  /// dialog (docs/NAMES.md, "Asked for at commit").
   ModalAction _commitAction(
     BuildContext context,
     ArNSNameDialogState state,
     ArNSWalletState wallet,
     ArNSNameDialogCubit cubit,
   ) {
-    final strings = appLocalizationsOf(context);
-    final ready = state.canCommit;
-    switch (wallet.status) {
-      case ArNSWalletStatus.unavailable:
-      case ArNSWalletStatus.notLinked:
-        return ModalAction(
-          title: strings.arnsLinkSolanaWallet,
-          isEnable: !_choosingWallet && !wallet.connecting,
-          action: () => setState(() => _choosingWallet = true),
-        );
-      case ArNSWalletStatus.disconnected:
-      case ArNSWalletStatus.wrongAccount:
-        return ModalAction(
-          title: strings.arnsReconnectSolanaWallet,
-          isEnable: !wallet.connecting,
-          action: () async {
-            final walletCubit = context.read<ArNSWalletCubit>();
-            if (wallet.linked?.walletName == null || wallet.noWalletInstalled) {
-              setState(() => _choosingWallet = true);
-              return;
-            }
-            try {
-              await walletCubit.reconnect();
-            } catch (_) {
-              // Rejected: the button stays.
-            }
-          },
-        );
-      case ArNSWalletStatus.connected:
-        return ModalAction(
-          title: _commitLabel(context, state),
-          isEnable: ready,
-          action: cubit.commit,
-        );
-    }
+    return ModalAction(
+      title: _commitLabel(context, state),
+      isEnable: wallet.status == ArNSWalletStatus.connected && state.canCommit,
+      action: cubit.commit,
+    );
   }
 
   String _commitLabel(BuildContext context, ArNSNameDialogState state) {
@@ -421,6 +393,7 @@ class _ChooseContent extends StatelessWidget {
     required this.choosingWallet,
     required this.changingWallet,
     required this.onChangeWallet,
+    required this.onChooseWallet,
     required this.onLinked,
   });
 
@@ -429,6 +402,7 @@ class _ChooseContent extends StatelessWidget {
   final bool choosingWallet;
   final bool changingWallet;
   final VoidCallback onChangeWallet;
+  final VoidCallback onChooseWallet;
   final VoidCallback onLinked;
 
   @override
@@ -501,6 +475,19 @@ class _ChooseContent extends StatelessWidget {
     );
   }
 
+  Future<void> _reconnect(BuildContext context) async {
+    final walletCubit = context.read<ArNSWalletCubit>();
+    if (wallet.linked?.walletName == null || wallet.noWalletInstalled) {
+      onChooseWallet();
+      return;
+    }
+    try {
+      await walletCubit.reconnect();
+    } catch (_) {
+      // Rejected: the notice's action stays.
+    }
+  }
+
   List<Widget> _walletStep(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final widgets = <Widget>[];
@@ -509,12 +496,23 @@ class _ChooseContent extends StatelessWidget {
       case ArNSWalletStatus.notLinked:
         widgets.addAll([
           const SizedBox(height: ArDriveSpacing.md),
-          ArNSCaption(strings.arnsLinkWalletExplainer),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
+            message: strings.arnsLinkWalletExplainer,
+            actionLabel: strings.arnsLinkSolanaWallet,
+            onAction:
+                choosingWallet || wallet.connecting ? null : onChooseWallet,
+          ),
         ]);
       case ArNSWalletStatus.disconnected:
         widgets.addAll([
           const SizedBox(height: ArDriveSpacing.md),
-          ArNSCaption(strings.arnsReconnectExplainer),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
+            message: strings.arnsReconnectExplainer,
+            actionLabel: strings.arnsReconnectSolanaWallet,
+            onAction: wallet.connecting ? null : () => _reconnect(context),
+          ),
         ]);
       case ArNSWalletStatus.wrongAccount:
         widgets.addAll([
@@ -524,6 +522,16 @@ class _ChooseContent extends StatelessWidget {
             content: ArNSSwitchAccountText(address: wallet.linked!.address),
             actionLabel: strings.arnsChangeArNSWallet,
             onAction: onChangeWallet,
+          ),
+          // After switching accounts in the wallet itself.
+          const SizedBox(height: ArDriveSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ArDriveLink(
+              text: strings.arnsReconnectSolanaWallet,
+              isAction: true,
+              onTap: wallet.connecting ? null : () => _reconnect(context),
+            ),
           ),
         ]);
       case ArNSWalletStatus.connected:
@@ -1347,7 +1355,7 @@ class _Failed extends StatelessWidget {
       final address = context.read<ArNSWalletCubit>().state.linked?.address;
       return ArNSSwitchAccountText(address: address ?? '');
     }
-    return ArNSBodyText(text);
+    return ArDriveNotice(type: ArDriveNoticeType.error, message: text);
   }
 }
 

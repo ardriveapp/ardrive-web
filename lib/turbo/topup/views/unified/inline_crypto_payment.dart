@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/components/network_indicator.dart';
 import 'package:ardrive/turbo/topup/models/detected_wallet.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,13 +40,13 @@ class InlineCryptoPayment extends StatelessWidget {
             showInternalBackButton || onBackToPaymentMethods != null;
 
         return TurboTopupScaffold(
-          title: 'Buy Turbo Credits',
+          title: appLocalizationsOf(context).turboBuyCredits,
           onClose: onCancel,
           canClose: onCancel != null,
           actions: [
             if (showBackButton)
               ModalAction.dismiss(
-                title: 'Back',
+                title: appLocalizationsOf(context).back,
                 action: () {
                   if (showInternalBackButton) {
                     // Go back within crypto flow
@@ -59,7 +60,9 @@ class InlineCryptoPayment extends StatelessWidget {
                 },
               ),
             if (_isReadyToContinue(state) && onContinue != null)
-              ModalAction(title: 'Continue', action: onContinue!),
+              ModalAction(
+                  title: appLocalizationsOf(context).continueEmphasized,
+                  action: onContinue!),
           ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +145,7 @@ class _TokenSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Pay with',
+          appLocalizationsOf(context).turboPayWith,
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colors.textHigh,
@@ -178,7 +181,7 @@ class _TokenSelector extends StatelessWidget {
             ],
             builder: (context, isOpen, toggle) => ArDriveChoiceButton(
               toggle: toggle,
-              semanticLabel: 'Pay with',
+              semanticLabel: appLocalizationsOf(context).turboPayWith,
               semanticValue: selectedToken?.displayName,
               builder: (context, hovered, focused) => Padding(
                 padding:
@@ -195,7 +198,8 @@ class _TokenSelector extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            selectedToken?.displayName ?? 'Select token',
+                            selectedToken?.displayName ??
+                                appLocalizationsOf(context).turboSelectToken,
                             style: typography.paragraphNormal(
                               fontWeight: ArFontWeight.semiBold,
                               color: selectedToken != null
@@ -310,9 +314,9 @@ class _WalletConnectionSection extends StatelessWidget {
     ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
-    return const ArDriveNotice(
+    return ArDriveNotice(
       type: ArDriveNoticeType.info,
-      message: 'Select a token above to see pricing and connect your wallet.',
+      message: appLocalizationsOf(context).turboSelectTokenHint,
     );
   }
 
@@ -339,7 +343,7 @@ class _WalletConnectionSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Connect wallet',
+            appLocalizationsOf(context).turboConnectWalletTitle,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.textHigh,
@@ -347,7 +351,7 @@ class _WalletConnectionSection extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            _getWalletSubtitle(walletType),
+            _getWalletSubtitle(context, walletType),
             style: typography.paragraphSmall(
               color: colors.textMid,
             ),
@@ -362,8 +366,9 @@ class _WalletConnectionSection extends StatelessWidget {
                 children: [
                   ArDriveSpinner(color: colors.statusInfoFg),
                   const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text('Switching network in your wallet...'),
+                  Expanded(
+                    child: Text(
+                        appLocalizationsOf(context).turboSwitchingInWallet),
                   ),
                 ],
               ),
@@ -373,9 +378,9 @@ class _WalletConnectionSection extends StatelessWidget {
 
           // Arweave uses existing ArConnect
           if (walletType == WalletType.arweave) ...[
-            const ArDriveNotice(
+            ArDriveNotice(
               type: ArDriveNoticeType.success,
-              message: 'Using your connected ArConnect wallet',
+              message: appLocalizationsOf(context).turboUsingArConnect,
             ),
             const SizedBox(height: 12),
             ArDriveButtonNew(
@@ -383,7 +388,7 @@ class _WalletConnectionSection extends StatelessWidget {
               variant: ButtonVariant.primary,
               size: ArDriveButtonSize.large,
               maxWidth: double.infinity,
-              text: 'Continue with ArConnect',
+              text: appLocalizationsOf(context).turboContinueArConnect,
               onPressed: () {
                 bloc.add(const CryptoTopupConnectWallet());
               },
@@ -440,14 +445,15 @@ class _WalletConnectionSection extends StatelessWidget {
     return [];
   }
 
-  String _getWalletSubtitle(WalletType walletType) {
+  String _getWalletSubtitle(BuildContext context, WalletType walletType) {
+    final strings = appLocalizationsOf(context);
     switch (walletType) {
       case WalletType.ethereum:
-        return 'Choose your Ethereum wallet';
+        return strings.turboChooseEthereum;
       case WalletType.solana:
-        return 'Choose your Solana wallet';
+        return strings.turboChooseSolana;
       case WalletType.arweave:
-        return 'Connect with ArConnect';
+        return strings.turboConnectArConnect;
     }
   }
 
@@ -475,7 +481,7 @@ class _WalletConnectionSection extends StatelessWidget {
               Icon(Icons.check_circle, color: colors.textMid, size: 16),
               const SizedBox(width: 8),
               Text(
-                'Wallet connected',
+                appLocalizationsOf(context).turboWalletConnected,
                 style: typography.paragraphSmall(
                   color: colors.textHigh,
                   fontWeight: ArFontWeight.semiBold,
@@ -495,14 +501,14 @@ class _WalletConnectionSection extends StatelessWidget {
           // Quote details
           if (quote != null) ...[
             _QuoteRow(
-              label: 'You pay',
+              label: appLocalizationsOf(context).turboYouPay,
               value: quote.formattedTokenAmount,
               colors: colors,
               typography: typography,
             ),
             const SizedBox(height: 8),
             _QuoteRow(
-              label: 'You receive',
+              label: appLocalizationsOf(context).turboYouReceive,
               value: quote.formattedCredits,
               colors: colors,
               typography: typography,
@@ -510,7 +516,7 @@ class _WalletConnectionSection extends StatelessWidget {
             if (amountState.token.requiresGasEstimation) ...[
               const SizedBox(height: 8),
               _QuoteRow(
-                label: 'Est. network fee',
+                label: appLocalizationsOf(context).turboNetworkFee,
                 value:
                     '~\$${amountState.gasEstimateUsd?.toStringAsFixed(2) ?? '0.00'}',
                 colors: colors,
@@ -532,8 +538,8 @@ class _WalletConnectionSection extends StatelessWidget {
             const SizedBox(height: 16),
             ArDriveNotice(
               type: ArDriveNoticeType.warning,
-              message:
-                  'Insufficient balance. You have ${amountState.balance.displayBalance}',
+              message: appLocalizationsOf(context)
+                  .turboInsufficientBalance(amountState.balance.displayBalance),
             ),
           ],
         ],
@@ -555,9 +561,9 @@ class _WalletConnectionSection extends StatelessWidget {
 
     return ArDriveNotice(
       type: ArDriveNoticeType.warning,
-      title: '$walletName not detected',
-      message: 'Please install $walletName browser extension to continue.',
-      actionLabel: 'Install $walletName',
+      title: appLocalizationsOf(context).turboNotDetected(walletName),
+      message: appLocalizationsOf(context).turboInstallExtension(walletName),
+      actionLabel: appLocalizationsOf(context).turboInstallNamed(walletName),
       onAction: () {
         _openInstallUrl(walletState.walletType);
       },
@@ -595,7 +601,7 @@ class _WalletConnectionSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Sign message',
+            appLocalizationsOf(context).turboSignMessage,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.textHigh,
@@ -603,7 +609,7 @@ class _WalletConnectionSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'To use ARIO tokens from your Ethereum wallet, please sign a message to verify your identity.',
+            appLocalizationsOf(context).turboSignMessageBody,
             style: typography.paragraphSmall(color: colors.textMid),
           ),
           const SizedBox(height: 16),
@@ -612,8 +618,9 @@ class _WalletConnectionSection extends StatelessWidget {
             variant: ButtonVariant.primary,
             size: ArDriveButtonSize.large,
             maxWidth: double.infinity,
-            text:
-                signatureState.isSigningMessage ? 'Signing...' : 'Sign message',
+            text: signatureState.isSigningMessage
+                ? appLocalizationsOf(context).turboSigning
+                : appLocalizationsOf(context).turboSignMessage,
             isDisabled: signatureState.isSigningMessage,
             onPressed: () {
               bloc.add(const CryptoTopupAOConnectSignatureRequested());
@@ -624,7 +631,7 @@ class _WalletConnectionSection extends StatelessWidget {
             ArDriveNotice(
               type: ArDriveNoticeType.error,
               message: signatureState.isUserRejected
-                  ? 'Signature rejected. Please try again.'
+                  ? appLocalizationsOf(context).turboSignatureRejected
                   : signatureState.error!,
             ),
           ],
@@ -649,9 +656,9 @@ class _WalletConnectionSection extends StatelessWidget {
       children: [
         ArDriveNotice(
           type: ArDriveNoticeType.warning,
-          title: 'Switch network',
-          message:
-              'Please switch from $currentNetworkName to $requiredNetworkName to continue.',
+          title: appLocalizationsOf(context).turboSwitchNetwork,
+          message: appLocalizationsOf(context)
+              .turboSwitchFromTo(currentNetworkName, requiredNetworkName),
         ),
         const SizedBox(height: 16),
         ArDriveButtonNew(
@@ -660,8 +667,9 @@ class _WalletConnectionSection extends StatelessWidget {
           size: ArDriveButtonSize.large,
           maxWidth: double.infinity,
           text: networkState.isSwitching
-              ? 'Switching...'
-              : 'Switch to $requiredNetworkName',
+              ? appLocalizationsOf(context).turboSwitching
+              : appLocalizationsOf(context)
+                  .turboSwitchToNetwork(requiredNetworkName),
           isDisabled: networkState.isSwitching,
           onPressed: () {
             bloc.add(CryptoTopupNetworkSwitchRequested(
@@ -828,7 +836,7 @@ class _WalletGridItem extends StatelessWidget {
               if (wallet.isInstalled) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'Detected',
+                  appLocalizationsOf(context).turboDetected,
                   style: typography.caption(
                     color: colors.statusSuccessFg,
                   ),

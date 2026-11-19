@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -17,7 +18,7 @@ void showLoaderDialog({required BuildContext context}) {
     useRootNavigator: false,
     content: ArDriveLoginModal(
       width: 380,
-      hasCloseButton: true,
+      hasCloseButton: false,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -29,9 +30,9 @@ void showLoaderDialog({required BuildContext context}) {
             height: 75,
             width: 75,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: ArDriveSpacing.md),
           Text(
-            'Setting up your account.\nThis may take a moment.',
+            appLocalizationsOf(context).loginSettingUpAccount,
             style: ArDriveTypographyNew.of(context).paragraphNormal(
                 color: colorTokens.textLow, fontWeight: ArFontWeight.semiBold),
           ),
@@ -49,7 +50,7 @@ Future<void> showBlockingMessageDialog(
       useRootNavigator: false,
       content: ArDriveLoginModal(
         width: 380,
-        hasCloseButton: true,
+        hasCloseButton: false,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -61,7 +62,7 @@ Future<void> showBlockingMessageDialog(
               height: 75,
               width: 75,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             Text(message,
                 textAlign: TextAlign.center,
                 style: ArDriveTypographyNew.of(context).paragraphNormal(

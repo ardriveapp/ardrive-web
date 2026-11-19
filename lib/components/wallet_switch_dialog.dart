@@ -14,7 +14,7 @@ class WalletSwitchDialog extends StatelessWidget {
       title: l10n.wanderAccountChangedTitle,
       description: l10n.wanderAccountChangedDescription,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(),
           title: l10n.okEmphasized,
         ),

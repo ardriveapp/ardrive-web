@@ -8,11 +8,9 @@ import 'package:ardrive/turbo/topup/components/country_picker.dart';
 import 'package:ardrive/turbo/topup/components/quote_timer.dart';
 import 'package:ardrive/turbo/topup/components/stripe_card_colors.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
-import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -79,6 +77,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           const SizedBox(height: 8),
           _credits(context),
           const SizedBox(height: 24),
+          const PaymentFormLoadError(),
           _formDesktop(context, theme),
         ],
       ),
@@ -119,73 +118,51 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _desktopView(BuildContext context, ArDriveTextFieldTheme theme) {
-    return BlocListener<PaymentFormBloc, PaymentFormState>(
-      listener: (context, state) {
-        if (state is PaymentFormError) {
-          showArDriveDialog(
-            context,
-            barrierDismissible: false,
-            content: TurboErrorView(
-              errorType: TurboErrorType.network,
-              onTryAgain: () {
-                context
-                    .read<PaymentFormBloc>()
-                    .add(PaymentFormLoadSupportedCountries());
-                Navigator.pop(context);
-              },
-              onDismiss: () {
-                Navigator.pop(context);
-              },
+    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
+      builder: (context, state) {
+        if (state is PaymentFormLoading) {
+          return TurboTopupScaffold(
+            title: appLocalizationsOf(context).paymentDetails,
+            child: const SizedBox(
+              height: 400,
+              child: Center(
+                child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+              ),
             ),
           );
         }
-      },
-      child: BlocBuilder<PaymentFormBloc, PaymentFormState>(
-        builder: (context, state) {
-          if (state is PaymentFormLoading) {
-            return TurboTopupScaffold(
-              title: appLocalizationsOf(context).paymentDetails,
-              child: const SizedBox(
-                height: 400,
-                child: Center(
-                  child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
-                ),
-              ),
-            );
-          }
 
-          return ArDriveDevToolsShortcuts(
-            customShortcuts: [
-              Shortcut(
-                modifier: LogicalKeyboardKey.shiftLeft,
-                key: LogicalKeyboardKey.keyT,
-                action: () {
-                  ArDriveDevTools.instance
-                      .showDevTools(optionalContext: context);
-                },
-              ),
-            ],
-            child: _scaffold(
-              context,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // The quote's timer, as on the review.
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _quoteTimer(),
-                  ),
-                  const SizedBox(height: 8),
-                  _credits(context),
-                  const SizedBox(height: 24),
-                  _formDesktop(context, theme),
-                ],
-              ),
+        return ArDriveDevToolsShortcuts(
+          customShortcuts: [
+            Shortcut(
+              modifier: LogicalKeyboardKey.shiftLeft,
+              key: LogicalKeyboardKey.keyT,
+              action: () {
+                ArDriveDevTools.instance.showDevTools(optionalContext: context);
+              },
             ),
-          );
-        },
-      ),
+          ],
+          child: _scaffold(
+            context,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // The quote's timer, as on the review.
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _quoteTimer(),
+                ),
+                const SizedBox(height: 8),
+                _credits(context),
+                const SizedBox(height: 24),
+                const PaymentFormLoadError(),
+                _formDesktop(context, theme),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -206,7 +183,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           errorMessage:
               failed ? appLocalizationsOf(context).unableToUpdateQuote : null,
           onRefresh: () => bloc.add(PaymentFormUpdateQuote()),
-          onExpired: failed ? null : () => bloc.add(PaymentFormUpdateQuote()),
+          onExpired: failed || state is PaymentFormError
+              ? null
+              : () => bloc.add(PaymentFormUpdateQuote()),
         );
       },
     );
@@ -480,7 +459,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             });
           },
           child: ArDriveTooltip(
-            message: 'Remove promo code', // TODO: localize
+            message: appLocalizationsOf(context).turboPromoRemove,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: ArDriveIcons.closeCircle(
@@ -616,4 +595,30 @@ class CountryItem {
   final String label;
 
   const CountryItem(this.label);
+}
+
+/// The countries failed to load: said in the form, with a retry, not in a
+/// second dialog on top of the top-up.
+class PaymentFormLoadError extends StatelessWidget {
+  const PaymentFormLoadError({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PaymentFormBloc, PaymentFormState>(
+      builder: (context, state) {
+        if (state is! PaymentFormError) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+          child: ArDriveNotice(
+            type: ArDriveNoticeType.error,
+            message: appLocalizationsOf(context).turboErrorMessageNetwork,
+            actionLabel: appLocalizationsOf(context).tryAgain,
+            onAction: () => context
+                .read<PaymentFormBloc>()
+                .add(PaymentFormLoadSupportedCountries()),
+          ),
+        );
+      },
+    );
+  }
 }

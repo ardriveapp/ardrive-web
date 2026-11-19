@@ -29,22 +29,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('¿Usar otra cuenta?'), findsOneWidget);
-    expect(find.text('¿Seguro que quieres olvidar este monedero?'),
+    expect(find.text('Esto quita el monedero de este dispositivo.'),
         findsOneWidget);
     expect(find.text('Cancelar'), findsOneWidget);
-    expect(find.text('Confirmar'), findsOneWidget);
+    expect(find.text('Olvidar monedero'), findsOneWidget);
+    expect(find.text('Confirmar'), findsNothing);
     expect(find.text('Use a different account?'), findsNothing);
   });
 
-  testWidgets('shows the same dialog in English, as before', (tester) async {
+  testWidgets('shows the dialog in English, its primary named for the action',
+      (tester) async {
     await pump(tester, const Locale('en'));
     await tester.pumpAndSettle();
 
     expect(find.text('Use a different account?'), findsOneWidget);
-    expect(find.text('Forget wallet'), findsNothing);
-    expect(find.text('Are you sure you want to forget this wallet?'),
-        findsOneWidget);
+    // The primary is named for what it does, not Confirm.
+    expect(find.text('Forget wallet'), findsOneWidget);
+    expect(
+        find.text('This removes the wallet from this device.'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Confirm'), findsOneWidget);
+    expect(find.text('Confirm'), findsNothing);
   });
 }
