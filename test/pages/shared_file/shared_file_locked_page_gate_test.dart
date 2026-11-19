@@ -80,6 +80,20 @@ void main() {
     expect(find.textContaining('43 characters'), findsNothing);
   });
 
+  testWidgets('a password goes as typed; a key is trimmed', (tester) async {
+    await pump(tester, SharedFileGate.pageWithPassword);
+    await typeAndOpen(tester, ' hunter2 ');
+    expect(submitted, [' hunter2 ']);
+
+    await pump(tester, SharedFileGate.page);
+    final key = '${'K' * 42}A';
+    await tester.enterText(find.byType(TextFormField), ' $key ');
+    await tester.pump();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(submitted, contains(key));
+  });
+
   testWidgets('what did not open it is said under the field, which keeps it',
       (tester) async {
     await pump(tester, SharedFileGate.pageWithPassword,

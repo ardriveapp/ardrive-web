@@ -158,16 +158,16 @@ void main() {
     PublicationMode.debugSet('publication.json');
     PublicationContents.open = await PublicationContents.load(
       db.driveDao,
-      PublicationConfig(
+      const PublicationConfig(
         version: 3,
         driveId: _drive,
         rootFolderId: _root,
-        scope: const PublicationDriveScope(),
+        scope: PublicationDriveScope(),
         privacy: 'private',
         owner: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
         title: '',
         description: '',
-        images: const PublicationImages(),
+        images: PublicationImages(),
         publishedAt: null,
         viewer: null,
       ),

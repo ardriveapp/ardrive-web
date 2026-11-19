@@ -149,6 +149,8 @@ class PublicationConfig extends Equatable {
       decoded = json.decode(source);
     } on FormatException catch (e) {
       throw PublicationConfigException.invalid('not JSON: ${e.message}');
+    } catch (e) {
+      throw PublicationConfigException.invalid('unreadable: ${e.runtimeType}');
     }
     if (decoded is! Map<String, dynamic>) {
       throw PublicationConfigException.invalid('not a JSON object');

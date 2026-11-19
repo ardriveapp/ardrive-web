@@ -338,7 +338,9 @@ the opt-in "Remember this key for this tab". A key in the link skips the
 screen; one that doesn't open the page shows the screen with "The key in this
 link doesn't match. Ask for a new link." A page without a password checks a
 key's shape before trying it, as a file page does; a page with one takes any
-text and tries it as a key, then as the password. Anything that doesn't open
+text and tries it as a key, then as the password. A password is taken
+exactly as typed, spaces included; a key pasted with spaces around it is
+trimmed. Anything that doesn't open
 the page shows "That didn't open this page." under the field, which keeps
 its text. If the password couldn't be checked at all (Argon2id ran out of
 memory, or its module didn't load), it says so instead. A change to this

@@ -43,6 +43,7 @@ class _Page {
 
   static Future<_Page> build({
     bool password = true,
+    String passwordText = _password,
     Map<String, Object?>? scope,
   }) async {
     final sidecar = json.decode(
@@ -52,7 +53,8 @@ class _Page {
       sidecar,
       File('$fixturesPath/private-gzip.bin').readAsBytesSync(),
     );
-    await page._seal(password: password, scope: scope);
+    await page._seal(
+        password: password, passwordText: passwordText, scope: scope);
     return page;
   }
 
@@ -74,6 +76,7 @@ class _Page {
 
   Future<void> _seal({
     required bool password,
+    required String passwordText,
     Map<String, Object?>? scope,
   }) async {
     final sealing = Sealing();
@@ -81,7 +84,7 @@ class _Page {
     final slots = <Map<String, Object>>[
       if (password)
         await sealing.passwordSlot(
-          password: _password,
+          password: passwordText,
           salt: _bytes(16, 3),
           iv: _bytes(12, 4),
           settings: _cheap,
@@ -435,15 +438,45 @@ void main() {
     await cubit.close();
   });
 
-  test('a sealed part over the limit is never read whole', () async {
+  test('a sealed part over the limit is refused, and never read whole',
+      () async {
     final page = await _Page.build();
-    final cubit = loader(
-      page,
+    var pulled = 0;
+    final chunk = Uint8List(1024 * 1024);
+    // 64 MiB, its length undeclared, served a MiB at a time.
+    Stream<List<int>> huge() async* {
+      for (var i = 0; i < 64; i++) {
+        pulled++;
+        yield chunk;
+      }
+    }
+
+    final cubit = PublicationLoaderCubit(
+      source: PublicationSource(
+        pageUri: _pageUri,
+        client: MockClient.streaming((request, _) async {
+          final path = request.url.path.replaceFirst('/PageManifest/', '');
+          return path == 'sealed'
+              ? http.StreamedResponse(huge(), 200)
+              : http.StreamedResponse(
+                  Stream.value(utf8.encode(page.publicationJson)), 200);
+        }),
+      ),
+      settingsPath: 'publication.json',
+      driveDao: db.driveDao,
+      importer: DriveStateImporter(db.driveDao),
+      ownerOf: (_) async => page.owner,
+      fileKeys: fileKeys,
+      keySession:
+          SharedFileKeySession.page(store: SessionKeyValueStore.inMemory(tab)),
       linkKey: b64u(_publicationKey),
-      files: {...page.files, 'sealed': Uint8List(maxSealedBytes + 1)},
     );
     await cubit.load();
-    expect(cubit.state, isA<PublicationFailed>());
+    expect(
+      cubit.state,
+      const PublicationFailed(PublicationFailure.snapshotRejected),
+    );
+    expect(pulled, lessThanOrEqualTo(maxSealedBytes ~/ chunk.length + 1));
     await cubit.close();
   });
 
@@ -471,6 +504,78 @@ void main() {
       const PublicationFailed(PublicationFailure.settingsUnreadable),
     );
     await cubit.close();
+  });
+
+  test('a password is tried exactly as typed, spaces and all', () async {
+    final page = await _Page.build(passwordText: ' spaced out ');
+    final cubit = loader(page);
+    await cubit.load();
+    await cubit.unlock('spaced out', remember: false);
+    expect((cubit.state as PublicationNeedsKey).error,
+        PublicationUnlockError.didntOpen);
+    await cubit.unlock(' spaced out ', remember: false);
+    await expectOpened(cubit, page);
+    await cubit.close();
+  });
+
+  test('a key pasted with spaces around it opens it', () async {
+    final page = await _Page.build();
+    final cubit = loader(page);
+    await cubit.load();
+    await cubit.unlock('  ${b64u(_publicationKey)}\n', remember: true);
+    await expectOpened(cubit, page);
+    expect(tab, {'publicationKey.$_publicationId': b64u(_publicationKey)});
+    await cubit.close();
+  });
+
+  test('a second submit while one is checked is ignored', () async {
+    final page = await _Page.build();
+    final cubit = loader(page);
+    await cubit.load();
+    await Future.wait([
+      cubit.unlock(_password, remember: false),
+      cubit.unlock('wrong', remember: false),
+    ]);
+    await expectOpened(cubit, page);
+    await cubit.close();
+  });
+
+  test('unlocking an open page does nothing', () async {
+    final page = await _Page.build();
+    final cubit = loader(page, linkKey: b64u(_publicationKey));
+    await cubit.load();
+    final open = cubit.state;
+    await cubit.unlock('anything', remember: true);
+    expect(cubit.state, same(open));
+    expect(tab, isEmpty);
+    await cubit.close();
+  });
+
+  test('a catalog that fails after a typed unlock retries without asking',
+      () async {
+    final page = await _Page.build();
+    final files = Map.of(page.files)..remove('catalog');
+    final cubit = loader(page, files: files);
+    await cubit.load();
+    await cubit.unlock(_password, remember: false);
+    expect(
+      cubit.state,
+      isA<PublicationFailed>().having(
+          (s) => s.failure, 'failure', PublicationFailure.snapshotUnavailable),
+    );
+    files['catalog'] = page.catalog;
+    await cubit.retry();
+    await expectOpened(cubit, page);
+    await cubit.close();
+  });
+
+  test('a page closed while a password is checked does not throw', () async {
+    final page = await _Page.build();
+    final cubit = loader(page);
+    await cubit.load();
+    final checking = cubit.unlock('wrong', remember: false);
+    await cubit.close();
+    await checking;
   });
 
   group('publicationLinkKey', () {

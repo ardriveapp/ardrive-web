@@ -167,8 +167,10 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   }
 
   /// Tries what the visitor typed on the unlock screen: the publication key,
-  /// or the page's password. With [remember], this tab keeps the key it
-  /// opened with (never the password) until the tab closes.
+  /// or the page's password. [input] is exactly what was typed: a key may
+  /// come pasted with spaces around it, and a password may have them as
+  /// part of it, so both are tried. With [remember], this tab keeps the key
+  /// it opened with (never the password) until the tab closes.
   Future<void> unlock(String input, {required bool remember}) async {
     final config = _config;
     final sealedBytes = _sealedBytes;
@@ -180,12 +182,9 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     emit(state.checking());
     final OpenedPage opened;
     try {
-      opened = await _seal.openPage(
-        config: config.sealed!.settings,
-        sealedBytes: sealedBytes,
-        input: input,
-      );
+      opened = await _openWith(config, sealedBytes, input);
     } on SealError catch (e) {
+      if (isClosed) return;
       if (e.code == SealErrorCode.noMatch) {
         emit(state.failed(PublicationUnlockError.didntOpen));
         return;
@@ -196,12 +195,14 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
       emit(_refused);
       return;
     } catch (e) {
+      if (isClosed) return;
       // Argon2id itself failed (out of memory, the module did not load):
       // the password may have been right.
       logger.w('Publication password not checked: ${e.runtimeType}');
       emit(state.failed(PublicationUnlockError.passwordNotChecked));
       return;
     }
+    if (isClosed) return;
 
     if (remember) {
       await _keySession.remember(
@@ -209,6 +210,31 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
       _remembered = true;
     }
     await _guard(config, () => _openCatalog(config, opened));
+  }
+
+  /// [input] as typed, then, when it differs only by spaces at either end
+  /// from a key, that key. The key is tried first: it costs nothing, and a
+  /// password is never key-shaped with spaces around it by accident.
+  Future<OpenedPage> _openWith(
+      PublicationConfig config, Uint8List sealedBytes, String input) async {
+    final trimmed = input.trim();
+    if (trimmed != input && keyFrom(trimmed) != null) {
+      try {
+        // As a key only: never spends a password check on it.
+        return await _seal.openPage(
+          config: config.sealed!.settings,
+          sealedBytes: sealedBytes,
+          linkKey: trimmed,
+        );
+      } on SealError catch (e) {
+        if (e.code != SealErrorCode.noMatch) rethrow;
+      }
+    }
+    return _seal.openPage(
+      config: config.sealed!.settings,
+      sealedBytes: sealedBytes,
+      input: input,
+    );
   }
 
   /// Stops remembering this page's key for this tab. The page stays open
@@ -257,6 +283,10 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     final Uint8List bytes;
     try {
       bytes = await _source.readPart(sealed.path, maxBytes: maxSealedBytes);
+    } on PublicationPartTooLarge catch (e) {
+      logger.w('Publication refused: $e');
+      emit(_refused);
+      return;
     } on PublicationSourceException catch (e) {
       logger.w('Publication sealed block unavailable: $e');
       emit(PublicationFailed(PublicationFailure.snapshotUnavailable,

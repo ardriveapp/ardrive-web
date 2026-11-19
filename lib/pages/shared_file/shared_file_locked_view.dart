@@ -264,7 +264,11 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
       _shapeError = null;
     });
 
-    widget.onSubmit(rawKey);
+    // A password is exactly what was typed: spaces at either end are part
+    // of it. Whoever takes it trims a pasted key itself.
+    widget.onSubmit(widget.gate == SharedFileGate.pageWithPassword
+        ? widget.controller.text
+        : rawKey);
   }
 }
 

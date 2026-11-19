@@ -93,14 +93,14 @@ class PublicationSource {
     }
     final declared = response.contentLength;
     if (declared != null && declared > maxBytes) {
-      throw PublicationSourceException(uri, 'larger than $maxBytes bytes');
+      throw PublicationPartTooLarge(uri, maxBytes);
     }
     final bytes = BytesBuilder(copy: false);
     try {
       await for (final chunk in response.stream) {
         bytes.add(chunk);
         if (bytes.length > maxBytes) {
-          throw PublicationSourceException(uri, 'larger than $maxBytes bytes');
+          throw PublicationPartTooLarge(uri, maxBytes);
         }
       }
     } on PublicationSourceException {
@@ -129,6 +129,13 @@ class PublicationSource {
   /// path drops the page's query and fragment, where the app's routes live
   /// (hash routing).
   Uri _resolve(String path) => _pageUri.resolve(path);
+}
+
+/// A part of the page larger than any page may have: the page is broken,
+/// and reading it again won't help.
+class PublicationPartTooLarge extends PublicationSourceException {
+  PublicationPartTooLarge(Uri uri, int maxBytes)
+      : super(uri, 'larger than $maxBytes bytes');
 }
 
 class PublicationSourceException implements Exception {
