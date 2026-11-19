@@ -12,6 +12,7 @@ import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
@@ -21,6 +22,8 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -576,18 +579,160 @@ void main() {
         bloc.setUploadMethod(UploadMethod.ar, stubPaymentInfo, false);
         await Future<void>.delayed(const Duration(milliseconds: 10));
         expect(bloc.state, isA<UploadReady>());
-        // The review showed Turbo Credits. With a license it goes on to the
-        // license step, which uploads later with the method set here.
+        // The review showed Turbo Credits. A CC license with no type picked
+        // yet holds the upload back, and keeps the method set here.
         bloc.uploadFromReview(
           method: UploadMethod.turbo,
-          licenseCategory: LicenseCategory.udl,
+          licenseCategory: LicenseCategory.cc,
         );
       },
       verify: (bloc) {
-        expect(bloc.state, isA<UploadConfiguringLicense>());
+        expect(bloc.state, isA<UploadReady>());
         expect(bloc.uploadMethod, UploadMethod.turbo);
       },
     );
+
+    // The license is set in the review's options now, with no step of its
+    // own: Upload must still record exactly the one they say.
+    // The review stays on screen while the wallet is checked: a change
+    // made there in that time is not what was confirmed.
+    test(
+        'Upload pays, with the payer, and updates deployments as they were '
+        'when it was pressed, whatever changes during the wallet check',
+        () async {
+      when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+          .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+      // Preparation checks the wallet too: only the check after the press
+      // is held open.
+      Completer<bool>? walletCheck;
+      when(() => mockProfileCubit!.checkIfWalletMismatch())
+          .thenAnswer((_) => walletCheck?.future ?? Future.value(false));
+      Object? paidWith = #none;
+      Object? paidBy = #none;
+      when(() => mockUploadRepository.uploadFiles(
+            files: any(named: 'files'),
+            targetDrive: any(named: 'targetDrive'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            licenseStateConfigured: any(named: 'licenseStateConfigured'),
+            targetFolder: any(named: 'targetFolder'),
+            uploadMethod: any(named: 'uploadMethod'),
+            uploadThumbnail: any(named: 'uploadThumbnail'),
+            paidBy: any(named: 'paidBy'),
+            compressTextAndCode: any(named: 'compressTextAndCode'),
+          )).thenAnswer((i) async {
+        paidWith = i.namedArguments[#uploadMethod];
+        paidBy = i.namedArguments[#paidBy];
+        return _MockUploadController();
+      });
+      final cubit = getUploadCubitInstanceWith([]);
+      addTearDown(cubit.close);
+      await cubit.startUploadPreparation();
+      await cubit.checkConflictingFiles();
+      final uploadPlan = await UploadPlan.create(
+        useTurbo: false,
+        maxDataItemCount: 10,
+        fileV2UploadHandles: {},
+        fileDataItemUploadHandles: {},
+        folderDataItemUploadHandles: {},
+        turboUploadService: DontUseUploadService(),
+      );
+      final info = stubPaymentInfo
+          .copyWith(uploadPlanForAR: uploadPlan, paidBy: ['confirmed-payer']);
+      cubit.setUploadMethod(UploadMethod.turbo, info, true);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final confirmed = ManifestSelection(manifest: _manifestEntry('site'));
+      cubit.updateManifestSelection([confirmed]);
+
+      walletCheck = Completer<bool>();
+      cubit.uploadFromReview(method: UploadMethod.turbo);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      // During the wallet check: the wallet picked, the deployment unticked
+      // and another ticked.
+      cubit.setUploadMethod(
+          UploadMethod.ar, info.copyWith(paidBy: ['other-payer']), true);
+      cubit.updateManifestSelection(
+          [ManifestSelection(manifest: _manifestEntry('other'))]);
+      walletCheck.complete(false);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(paidWith, UploadMethod.turbo);
+      expect(paidBy, ['confirmed-payer']);
+      expect(cubit.pressedManifests, [confirmed]);
+    });
+
+    test('Upload on the review records the license set in its options',
+        () async {
+      when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+          .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+      when(() => mockProfileCubit!.checkIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      Object? recorded = #none;
+      when(() => mockUploadRepository.uploadFiles(
+            files: any(named: 'files'),
+            targetDrive: any(named: 'targetDrive'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            licenseStateConfigured: any(named: 'licenseStateConfigured'),
+            targetFolder: any(named: 'targetFolder'),
+            uploadMethod: any(named: 'uploadMethod'),
+            uploadThumbnail: any(named: 'uploadThumbnail'),
+            paidBy: any(named: 'paidBy'),
+            compressTextAndCode: any(named: 'compressTextAndCode'),
+          )).thenAnswer((i) async {
+        recorded = i.namedArguments[#licenseStateConfigured];
+        return _MockUploadController();
+      });
+      final cubit = getUploadCubitInstanceWith([]);
+      addTearDown(cubit.close);
+      await cubit.startUploadPreparation();
+      await cubit.checkConflictingFiles();
+      final uploadPlan = await UploadPlan.create(
+        useTurbo: false,
+        maxDataItemCount: 10,
+        fileV2UploadHandles: {},
+        fileDataItemUploadHandles: {},
+        folderDataItemUploadHandles: {},
+        turboUploadService: DontUseUploadService(),
+      );
+      cubit.setUploadMethod(
+        UploadMethod.turbo,
+        stubPaymentInfo.copyWith(uploadPlanForAR: uploadPlan),
+        true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(cubit.state, isA<UploadReady>());
+
+      final type = ccLicensesEnabled[1];
+      cubit.licenseCcTypeForm.control('ccTypeField').value = type;
+      cubit.uploadFromReview(
+        method: UploadMethod.turbo,
+        licenseCategory: LicenseCategory.cc,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(recorded, isA<LicenseState>());
+      expect((recorded as LicenseState).meta, type);
+    });
+
+    /// The license's settings sit in the review's options, and the license
+    /// recorded is the one they say, as the old license step recorded.
+    test('the license comes from the settings in the review', () {
+      final cubit = getUploadCubitInstanceWith([]);
+
+      // No CC type is preselected: it is recorded with the file for good.
+      expect(cubit.configuredLicense(LicenseCategory.cc), isNull);
+      final type = ccLicensesEnabled.first;
+      cubit.licenseCcTypeForm.control('ccTypeField').value = type;
+      expect(cubit.configuredLicense(LicenseCategory.cc)!.meta, type);
+
+      // UDL starts complete, from its defaults.
+      final udl = cubit.configuredLicense(LicenseCategory.udl)!;
+      expect(udl.meta, udlLicenseDefault);
+      expect(udl.params, isNotNull);
+
+      // A fee that is not a number holds it back.
+      cubit.licenseUdlParamsForm.control('licenseFeeAmount').value = 'abc';
+      expect(cubit.configuredLicense(LicenseCategory.udl), isNull);
+    });
 
     blocTest<UploadCubit, UploadState>(
       'does not mark it free when the allowance is used up, so payment '
@@ -1861,3 +2006,18 @@ class _UnreadableFile extends Fake implements IOFile {
 }
 
 class _MockUploadController extends Mock implements UploadController {}
+
+FileEntry _manifestEntry(String name) => FileEntry(
+      id: name,
+      driveId: 'drive',
+      parentFolderId: 'root',
+      name: name,
+      dataTxId: 'tx-$name',
+      size: 100,
+      lastModifiedDate: DateTime(2026),
+      dateCreated: DateTime(2026),
+      lastUpdated: DateTime(2026),
+      dataContentType: 'application/x.arweave-manifest+json',
+      isHidden: false,
+      path: '',
+    );

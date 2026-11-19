@@ -1538,41 +1538,7 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       children.add(const SizedBox(height: ArDriveSpacing.sm));
     }
 
-    children.add(Semantics(
-      button: true,
-      expanded: _open,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
-        onTap: () => setState(() => _open = !_open),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
-          child: Row(
-            children: [
-              Icon(arnsNameIcon, size: 18, color: colors.iconMid),
-              const SizedBox(width: ArDriveSpacing.xs),
-              Text(
-                strings.arnsFlowNameRow,
-                style: typography.paragraphNormal(
-                  color: colors.textHigh,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-              const SizedBox(width: ArDriveSpacing.xs),
-              Expanded(
-                child: ArNSCaption(state.choice?.undername.isNotEmpty == true
-                    ? arnsHostFor(state.choice!.literalName)
-                    : strings.arnsOptional),
-              ),
-              Icon(
-                _open ? Icons.expand_less : Icons.expand_more,
-                size: 20,
-                color: colors.iconMid,
-              ),
-            ],
-          ),
-        ),
-      ),
-    ));
+    final headerAt = children.length;
 
     // Under the chosen name while the step is open, under the step's
     // heading while it is folded: the flow's button waits for the answer.
@@ -1592,47 +1558,69 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       ]);
     }
 
-    if (_open) {
-      children.add(const SizedBox(height: ArDriveSpacing.xs));
-      switch (state.stage) {
-        case ArNSDialogStage.loading:
-          children.add(ArNSWaitingLine(text: strings.arnsReadingNames));
-        case ArNSDialogStage.needsWallet:
-          children.addAll([
-            ArNSCaption(strings.arnsLinkWalletExplainer),
-            const SizedBox(height: ArDriveSpacing.sm),
-            const ArNSWalletChooser(),
-          ]);
-        case ArNSDialogStage.noNames:
-          children.add(Wrap(
-            spacing: ArDriveSpacing.xs,
-            children: [
-              ArNSCaption(strings.arnsNoNamesTitle),
-              ArDriveLink(
+    // What opens under the row. With no names to pick there is nothing to
+    // open: the row offers the console instead.
+    final noNames = state.stage == ArNSDialogStage.noNames;
+    final openContent = <Widget>[];
+    switch (state.stage) {
+      case ArNSDialogStage.noNames:
+        break;
+      case ArNSDialogStage.loading:
+        openContent.add(ArNSWaitingLine(text: strings.arnsReadingNames));
+      case ArNSDialogStage.needsWallet:
+        openContent.addAll([
+          ArNSCaption(strings.arnsLinkWalletExplainer),
+          const SizedBox(height: ArDriveSpacing.sm),
+          const ArNSWalletChooser(),
+        ]);
+      case ArNSDialogStage.loadFailed:
+        openContent.add(ArNSCaption(strings.arnsNamesCouldNotBeRead));
+      default:
+        openContent.addAll([
+          _NamePicker(state: state, belowChoice: repointQuestion),
+          if (state.choice != null) ...[
+            const SizedBox(height: ArDriveSpacing.xs),
+            ArDriveLink(
+              text: strings.arnsNoNameThisTime,
+              isAction: true,
+              onTap: cubit.clearChoice,
+            ),
+          ],
+          const SizedBox(height: ArDriveSpacing.sm),
+          _CacheTimeSection(state: state, folded: true),
+        ]);
+    }
+
+    children.insert(
+      headerAt,
+      ArDriveDisclosure(
+        // Keyed by whether it folds, so names arriving swap the row cleanly.
+        key: ValueKey(noNames),
+        icon: arnsNameIcon,
+        title: strings.arnsFlowNameRow,
+        summary: [
+          state.choice?.undername.isNotEmpty == true
+              ? arnsHostFor(state.choice!.literalName)
+              : strings.arnsOptional,
+        ],
+        initiallyOpen: _open,
+        onOpenChanged: (open) => setState(() => _open = open),
+        trailing: noNames
+            ? ArDriveLink(
                 text: strings.arnsGetANameInConsole,
                 external: true,
                 onTap: () => openUrl(url: arnsGetNameUrl),
+              )
+            : null,
+        child: noNames
+            ? null
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: openContent,
               ),
-            ],
-          ));
-        case ArNSDialogStage.loadFailed:
-          children.add(ArNSCaption(strings.arnsNamesCouldNotBeRead));
-        default:
-          children.addAll([
-            _NamePicker(state: state, belowChoice: repointQuestion),
-            if (state.choice != null) ...[
-              const SizedBox(height: ArDriveSpacing.xs),
-              ArDriveLink(
-                text: strings.arnsNoNameThisTime,
-                isAction: true,
-                onTap: cubit.clearChoice,
-              ),
-            ],
-            const SizedBox(height: ArDriveSpacing.sm),
-            _CacheTimeSection(state: state, folded: true),
-          ]);
-      }
-    }
+      ),
+    );
 
     if (cubit.hasWork) {
       children.addAll([
@@ -1681,17 +1669,10 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(ArDriveSpacing.sm),
-      decoration: BoxDecoration(
-        border: Border.all(color: colors.strokeLow),
-        borderRadius: BorderRadius.circular(ArDriveRadius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: children,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
     );
   }
 }

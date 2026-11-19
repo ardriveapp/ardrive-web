@@ -12,6 +12,7 @@ export 'components/id_text.dart';
 export 'components/keep_last_words_together.dart';
 export 'components/data_table/data_table.dart';
 export 'components/data_table/multi_select.dart';
+export 'components/disclosure.dart';
 export 'components/drop_area.dart';
 export 'components/empty_state.dart';
 export 'components/fab.dart';
