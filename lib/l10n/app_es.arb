@@ -8129,7 +8129,7 @@
   "deploymentExistsTitle": "El despliegue ya existe",
   "deploymentExistsBody": "«{name}» ya es un despliegue en esta carpeta. Crear este añade una nueva versión.",
   "deploymentCreateNewVersion": "Crear nueva versión",
-  "deploymentCreatedTitle": "Despliegue creado",
+  "deploymentCreatedTitle": "Tu despliegue está en línea",
   "deploymentFailedTitle": "No se pudo crear el despliegue",
   "deploymentFailedBody": "No se pudo subir el despliegue a Arweave.",
   "deploymentWalletChanged": "Tu monedero cambió mientras se creaba el despliegue. No se subió nada.",

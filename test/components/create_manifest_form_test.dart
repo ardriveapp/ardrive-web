@@ -310,7 +310,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Deployment created'), findsOneWidget);
+    expect(find.text('Your deployment is live'), findsOneWidget);
     expect(find.byType(ArDriveNotice), findsOneWidget);
     expect(find.textContaining("name couldn't be set"), findsOneWidget);
     expect(find.textContaining('from Names'), findsOneWidget);
@@ -338,7 +338,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Deployment created'), findsOneWidget);
+    expect(find.text('Your deployment is live'), findsOneWidget);
     expect(find.text('my-site'), findsOneWidget);
     expect(find.textContaining('/data-tx-1'), findsOneWidget,
         reason: 'the address of its data transaction');

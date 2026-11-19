@@ -6160,7 +6160,7 @@
   "@deploymentExistsBody": {"description": "Body when a deployment of that name is already in the folder", "placeholders": {"name": {"type": "String"}}},
   "deploymentCreateNewVersion": "Create new version",
   "@deploymentCreateNewVersion": {"description": "Action that adds a new version of an existing deployment"},
-  "deploymentCreatedTitle": "Deployment created",
+  "deploymentCreatedTitle": "Your deployment is live",
   "@deploymentCreatedTitle": {"description": "Title after a deployment is created"},
   "deploymentFailedTitle": "Couldn't create deployment",
   "@deploymentFailedTitle": {"description": "Title when creating a deployment failed"},

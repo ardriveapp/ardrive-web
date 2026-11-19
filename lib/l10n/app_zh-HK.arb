@@ -8129,7 +8129,7 @@
   "deploymentExistsTitle": "部署已存在",
   "deploymentExistsBody": "「{name}」已是此資料夾中的部署。建立後會為其加入新版本。",
   "deploymentCreateNewVersion": "建立新版本",
-  "deploymentCreatedTitle": "部署已建立",
+  "deploymentCreatedTitle": "你的部署已上線",
   "deploymentFailedTitle": "無法建立部署",
   "deploymentFailedBody": "無法將部署上載到 Arweave。",
   "deploymentWalletChanged": "建立部署時您的錢包已變更。沒有上載任何內容。",

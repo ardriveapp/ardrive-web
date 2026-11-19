@@ -8129,7 +8129,7 @@
   "deploymentExistsTitle": "डिप्लॉयमेंट पहले से मौजूद है",
   "deploymentExistsBody": "“{name}” इस फ़ोल्डर में पहले से एक डिप्लॉयमेंट है। इसे बनाने पर उसका नया संस्करण जुड़ेगा।",
   "deploymentCreateNewVersion": "नया संस्करण बनाएं",
-  "deploymentCreatedTitle": "डिप्लॉयमेंट बन गया",
+  "deploymentCreatedTitle": "आपका डिप्लॉयमेंट लाइव है",
   "deploymentFailedTitle": "डिप्लॉयमेंट नहीं बन सका",
   "deploymentFailedBody": "डिप्लॉयमेंट Arweave पर अपलोड नहीं हो सका।",
   "deploymentWalletChanged": "डिप्लॉयमेंट बनाते समय आपका वॉलेट बदल गया। कुछ भी अपलोड नहीं हुआ।",

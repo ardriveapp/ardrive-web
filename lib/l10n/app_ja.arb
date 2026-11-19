@@ -8129,7 +8129,7 @@
   "deploymentExistsTitle": "デプロイはすでに存在します",
   "deploymentExistsBody": "「{name}」はこのフォルダーにすでにあるデプロイです。作成すると、その新しいバージョンが追加されます。",
   "deploymentCreateNewVersion": "新しいバージョンを作成",
-  "deploymentCreatedTitle": "デプロイを作成しました",
+  "deploymentCreatedTitle": "デプロイが公開されました",
   "deploymentFailedTitle": "デプロイを作成できませんでした",
   "deploymentFailedBody": "デプロイをArweaveにアップロードできませんでした。",
   "deploymentWalletChanged": "デプロイの作成中にウォレットが変わりました。何もアップロードされていません。",
