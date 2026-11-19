@@ -13,6 +13,7 @@ import {
   openPage,
   parsePublicationText,
   ownerKek,
+  readSealedBlock,
   passwordBytes,
   passwordKek,
   sealPlaintext,
@@ -204,4 +205,27 @@ test('keys have one spelling', () => {
 
 test('canonical JSON sorts keys at every depth', () => {
   assert.equal(canonicalJson({ b: [{ d: 1, c: 2 }], a: 'x' }), '{"a":"x","b":[{"c":2,"d":1}]}');
+});
+
+test('a sealed scope with no type, or one unknown, is refused', () => {
+  const rule = "the sealed scope must be the page's scope";
+  const folderId = 'b0b0b0b0-0000-4000-8000-000000000002';
+  // The scope rule's message, or null once a block gets past it.
+  const scopeError = (scope, pageScope) => {
+    try {
+      readSealedBlock({ v: 1, scope }, { scope: pageScope });
+    } catch (e) {
+      if (e instanceof SealError && e.message === rule) return e.message;
+    }
+    return null;
+  };
+  const drive = { type: 'drive' };
+  const folder = { type: 'folder', folderId };
+  assert.equal(scopeError({}, drive), rule);
+  assert.equal(scopeError({ type: 'unknown' }, drive), rule);
+  assert.equal(scopeError(folder, drive), rule);
+  assert.equal(scopeError(drive, folder), rule);
+  assert.equal(scopeError({ type: 'folder', folderId: `c${folderId}` }, folder), rule);
+  assert.equal(scopeError({ type: 'drive' }, drive), null);
+  assert.equal(scopeError({ ...folder }, folder), null);
 });

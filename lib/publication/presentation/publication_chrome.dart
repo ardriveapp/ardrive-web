@@ -13,6 +13,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/shared_file_link.dart' show SharedFileLinkParams;
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show triggerHTMLPageReload;
@@ -43,14 +44,25 @@ PublicationConfig? publicationConfigOf(BuildContext context) {
 /// The publication's own link to a folder in it, and to a file in that folder:
 /// `<page link>#/folders/<id>?file=<id>`, or `<page link>#/` for its root.
 /// What "Copy link" copies on a publication, in place of Share.
+///
+/// A private page's link carries the key [page] came with, in the hash
+/// route as `k`, as the app's private file links do: after the `#`, so it
+/// never reaches a server. Only a key from the link: one typed into the
+/// page, or a password, stays in the page.
 String publicationLink({
   required Uri page,
   String? folderId,
   String? fileId,
 }) {
-  final route = folderId == null
-      ? '/'
-      : '/folders/$folderId${fileId == null ? '' : '?file=$fileId'}';
+  final key = publicationLinkKey(page);
+  final query = {
+    if (folderId != null && fileId != null) 'file': fileId,
+    if (key != null) SharedFileLinkParams.key: key,
+  };
+  final route = Uri(
+    path: folderId == null ? '/' : '/folders/$folderId',
+    queryParameters: query.isEmpty ? null : query,
+  ).toString();
   return page.removeFragment().replace(fragment: route).toString();
 }
 
@@ -75,16 +87,27 @@ Future<void> copyPublicationLink(
       fileId: fileId,
     ),
   ));
-  if (context.mounted) _sayCopied(context);
+  if (!context.mounted) return;
+  // A link with the key opens the page for whoever has it: said every
+  // time, as the app's private links are.
+  final strings = appLocalizationsOf(context);
+  final keyNote = publicationLinkKey(Uri.base) == null
+      ? null
+      : config?.scope is PublicationFileScope
+          ? strings.publishFileKeyInLink
+          : strings.publishPageKeyInLink;
+  _sayCopied(context, keyNote: keyNote);
 }
 
-/// The app's own "Copied!" snackbar, as a failed sync shows its message.
-void _sayCopied(BuildContext context) {
+/// The app's own "Copied!" snackbar, as a failed sync shows its message,
+/// with [keyNote] when the link holds a key.
+void _sayCopied(BuildContext context, {String? keyNote}) {
+  final copied = appLocalizationsOf(context).copied;
   showArDriveToast(
     ScaffoldMessenger.of(context),
-    text: appLocalizationsOf(context).copied,
+    text: keyNote == null ? copied : '$copied $keyNote',
     type: ArDriveStatusType.success,
-    duration: const Duration(seconds: 2),
+    duration: Duration(seconds: keyNote == null ? 2 : 6),
   );
 }
 

@@ -437,13 +437,15 @@ class SealedBlock {
 
 /// Whether two scopes name the same thing. Compared field by field, never
 /// by serialising: a hostile block's folderId may be any JSON, a fraction
-/// [canonicalJson] refuses or nesting deep enough to overflow it.
+/// [canonicalJson] refuses or nesting deep enough to overflow it. Each must
+/// say its type: a missing or unknown one is no scope at all.
 bool _sameScope(Map a, Map b) {
-  final x = _scopeOf(a);
-  final y = _scopeOf(b);
-  return x['type'] == y['type'] &&
-      (x['type'] != 'folder' ||
-          (_isUuid(x['folderId']) && x['folderId'] == y['folderId']));
+  final type = a['type'];
+  if ((type != 'drive' && type != 'folder') || type != b['type']) {
+    return false;
+  }
+  return type == 'drive' ||
+      (_isUuid(a['folderId']) && a['folderId'] == b['folderId']);
 }
 
 /// The checks on the decrypted sealed block. It must describe the page it

@@ -7,6 +7,7 @@ library;
 
 import 'package:ardrive/drive_state_sqlite/artifact_attach_lock.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
+import 'package:ardrive/models/enums.dart' show TransactionStatus;
 import 'package:drift/drift.dart';
 
 /// Why an artifact could not be produced.
@@ -121,9 +122,9 @@ const _scopedPredicate = <String, String>{
 /// Fills `temp.page_folders` with [ArtifactScope.rootFolderId] and every
 /// folder under it reached without passing a hidden one or a ghost (a
 /// folder this client never read, which the export leaves out), and
-/// `temp.page_files` with the files in those folders that are not hidden.
-/// The same rule as the owner's summary of what the page shows
-/// (`PublicationContents`).
+/// `temp.page_files` with the files in those folders that are not hidden and
+/// whose latest upload is confirmed. The same rule as the owner's summary of
+/// what the page shows and the explorer's list (`PublicationContents`).
 Future<void> _collectScope(
   GeneratedDatabase db, {
   required String driveId,
@@ -148,10 +149,21 @@ Future<void> _collectScope(
     [scope.rootFolderId, driveId],
   );
   await db.customStatement(
-    'INSERT INTO temp.page_files (id) SELECT id FROM main.file_entries '
-    'WHERE driveId = ?1 AND isHidden = 0 '
-    'AND parentFolderId IN (SELECT id FROM temp.page_folders)',
-    [driveId],
+    'INSERT INTO temp.page_files (id) SELECT e.id FROM main.file_entries e '
+    'WHERE e.driveId = ?1 AND e.isHidden = 0 '
+    'AND e.parentFolderId IN (SELECT id FROM temp.page_folders) '
+    // Its latest upload, metadata and data, confirmed: neither failed nor
+    // still pending (`fileStatusFromTransactions`).
+    'AND EXISTS (SELECT 1 FROM main.network_transactions m, '
+    'main.network_transactions d WHERE '
+    'm.id = (SELECT r.metadataTxId FROM main.file_revisions r '
+    'WHERE r.driveId = ?1 AND r.fileId = e.id '
+    'ORDER BY r.dateCreated DESC LIMIT 1) '
+    'AND d.id = (SELECT r.dataTxId FROM main.file_revisions r '
+    'WHERE r.driveId = ?1 AND r.fileId = e.id '
+    'ORDER BY r.dateCreated DESC LIMIT 1) '
+    'AND m.status NOT IN (?2, ?3) AND d.status NOT IN (?2, ?3))',
+    [driveId, TransactionStatus.pending, TransactionStatus.failed],
   );
 }
 

@@ -2,8 +2,9 @@
 
 > **Status:** publication mode, publishing from the app (drive, folder and
 > file pages) and names phase 1 are built; `enableArNS` is on in every
-> flavour. Private drive and folder publications are not built; only private
-> file pages work. There is no unpublish. Build order, code seams and tests
+> flavour. Private drive and folder pages (publication.json version 3) are
+> built on the `private-pages` branch for 3.1 (see Private publications).
+> There is no unpublish. Build order, code seams and tests
 > are in `docs/publications/IMPLEMENTATION_PLAN.md`. A publication is an
 > ArFS entity (`docs/ArweaveFS.md`, "Publication"), which is the spec for its
 > tags, `publication.json` fields and read rules. This document is the
@@ -407,7 +408,10 @@ folder on Google Drive or Dropbox, nothing said twice.
   click to open. Choosing several to download is the checkboxes' job.
 - **Row and toolbar actions offered:** Download, Download folder (zip), Preview
   in the panel, More info, and **Copy link**, which copies the publication's own
-  link to that folder or file (`<page link>#/folders/<id>?file=<id>`).
+  link to that folder or file (`<page link>#/folders/<id>?file=<id>`). On a
+  private page opened by a link with its key, the copied link carries that
+  key as `k` after the `#`, and the "Copied" notice says the link holds the
+  key. A key typed into the page, or a password, is never put in a link.
   Everything else is hidden: Share (replaced by Copy link), Rename, Move, Hide,
   License add/update, Pin, Create snapshot, Sync, Full resync, Export, Attach,
   Edit note.
@@ -442,8 +446,8 @@ window with an upward arrow; the globe is for public drives), beside Share in: a
 page on desktop and phone, and the drives list), a folder row's menus, and
 the details panel's toolbar for a drive or folder. Offered on the web, in the
 app (never in a publication), to the owner of a public drive, where snapshots
-can be published (`enableDriveStatePublishing`). Not offered on private drives
-(drive and folder publications of a private drive are not built). A file's menu has it too, in place of Add name, for the owner
+can be published (`enableDriveStatePublishing`), and to the owner of a
+private drive (see Private publications). A file's menu has it too, in place of Add name, for the owner
 of a public or a private drive, when the file's data is theirs (not pinned):
 see [File pages](#file-pages).
 
@@ -601,8 +605,13 @@ use) and Dart elsewhere. Decided on 2026-11-17:
   leaves the owner's device, so a folder page opens only that folder. The page
   carries a catalog of its scope (a Drive State artifact under a random key)
   and a sealed list of its file keys, both decrypted in the browser.
-- **The catalog holds the current version only.** Hidden items are left out
-  completely, with no row and no key.
+- **The catalog holds the current version only.** Hidden items, folders this
+  device never read, and files whose latest upload failed or is still pending
+  are left out completely, with no row and no key: what the summary's "Left
+  out" names. A file's key opens every revision of it, though, so anyone who
+  can open the page can decrypt any earlier revision of a file in it whose
+  transaction they find. The catalog names none, so the page doesn't show
+  them.
 - **Ways in.** The link carries the key (`#/?k=…`, in the fragment only), or
   the visitor pastes the key sent separately, or types the page's password if
   it has one. A typed key or password is never written to the address bar.

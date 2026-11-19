@@ -352,12 +352,13 @@ export const KNOWN_DATA_CIPHERS = Object.freeze(['AES256-GCM', 'AES256-CTR']);
 /**
  * Whether two scopes name the same thing. Compared field by field, never by
  * serialising: a hostile block's folderId may be any JSON, nested deep
- * enough to overflow a recursive writer.
+ * enough to overflow a recursive writer. Each must say its type: a missing
+ * or unknown one is no scope at all.
  */
 const sameScope = (a, b) => {
-  const x = scopeOf(a);
-  const y = scopeOf(b);
-  return x.type === y.type && (x.type !== 'folder' || (isUuid(x.folderId) && x.folderId === y.folderId));
+  const type = a.type;
+  if ((type !== 'drive' && type !== 'folder') || type !== b.type) return false;
+  return type === 'drive' || (isUuid(a.folderId) && a.folderId === b.folderId);
 };
 
 /** The checks on the decrypted sealed block. It must describe the page it came with. */

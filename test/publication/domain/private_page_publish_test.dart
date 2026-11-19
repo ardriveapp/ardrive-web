@@ -42,6 +42,8 @@ const _underHidden = 'f0000004-0000-4000-8000-000000000004';
 const _renamed = 'f0000005-0000-4000-8000-000000000005';
 const _ghostFolder = 'e0e0e0e0-0000-4000-8000-000000000005';
 const _underGhost = 'f0000006-0000-4000-8000-000000000006';
+const _failed = 'f0000007-0000-4000-8000-000000000007';
+const _pending = 'f0000008-0000-4000-8000-000000000008';
 
 /// Every name in the drive, which nothing public may carry.
 const _names = [
@@ -54,6 +56,8 @@ const _names = [
   'under-hidden.txt',
   'Old Name.txt',
   'New Name.txt',
+  'failed-upload.txt',
+  'pending-upload.txt',
 ];
 
 const _password = 'tide lantern';
@@ -110,20 +114,25 @@ Map<String, String> _tags(DataItem item) => {
         decodeBase64ToString(t.name): decodeBase64ToString(t.value),
     };
 
-/// A private drive holding a folder, a hidden folder, a hidden file and a
-/// file renamed once.
+/// A private drive holding a folder, a hidden folder, a hidden file, a
+/// file renamed once, and two files whose latest upload failed or is pending.
 Future<void> _seed(Database db, String owner) async {
   const t0 = 1790000000;
   var n = 0;
-  String txId() => base64Url
-      .encode(List.generate(32, (i) => (i * 7 + ++n * 13) % 256))
-      .replaceAll('=', '');
+  // One count per ID: distinct for the first 256.
+  String txId() {
+    final k = ++n;
+    return base64Url
+        .encode(List.generate(32, (i) => (i * 7 + k * 13) % 256))
+        .replaceAll('=', '');
+  }
+
   Future<void> sql(String s, [List<Object?> a = const []]) =>
       db.customStatement(s, a);
-  Future<void> tx(String id, int date) => sql(
+  Future<void> tx(String id, int date, {String status = 'confirmed'}) => sql(
       'INSERT OR IGNORE INTO network_transactions (id, status, dateCreated, '
       'transactionDateCreated) VALUES (?, ?, ?, ?)',
-      [id, 'confirmed', date, date]);
+      [id, status, date, date]);
 
   await sql(
     'INSERT INTO drives (id, rootFolderId, ownerAddress, name, privacy, '
@@ -160,12 +169,14 @@ Future<void> _seed(Database db, String owner) async {
   }
 
   Future<void> file(String id, String parent, List<String> names,
-      {bool hidden = false}) async {
+      {bool hidden = false,
+      String dataStatus = 'confirmed',
+      String metadataStatus = 'confirmed'}) async {
     final data = txId();
-    await tx(data, t0);
+    await tx(data, t0, status: dataStatus);
     for (var i = 0; i < names.length; i++) {
       final rev = txId();
-      await tx(rev, t0 + i);
+      await tx(rev, t0 + i, status: metadataStatus);
       await sql(
         'INSERT INTO file_revisions (fileId, driveId, name, parentFolderId, '
         'size, lastModifiedDate, dataContentType, metadataTxId, dataTxId, '
@@ -202,6 +213,9 @@ Future<void> _seed(Database db, String owner) async {
     [_ghostFolder, _drive, _ghostFolder, _root, t0, t0],
   );
   await file(_underGhost, _ghostFolder, ['in-ghost.txt']);
+  await file(_failed, _root, ['failed-upload.txt'], dataStatus: 'failed');
+  await file(_pending, _docs, ['pending-upload.txt'],
+      metadataStatus: 'pending');
 }
 
 void main() {
@@ -482,8 +496,11 @@ void main() {
 
   test('a drive page leaves hidden items out, with their keys', () async {
     final (posted: _, :plan) = await publish(scopeRoot: _root);
-    // Nor what is under a ghost folder, which the owner's summary leaves out.
+    // Nor what is under a ghost folder, nor a file whose latest upload failed
+    // or is pending: the owner's summary leaves those out.
     expect(plan.fileKeys.keys.toSet(), {_diary, _budget, _renamed});
+    expect(plan.catalog.files.map((f) => f.id).toSet(),
+        {_diary, _budget, _renamed});
   });
 
   test('signing again after the wallet refused never reuses the sealed IV',
@@ -595,6 +612,51 @@ void main() {
     for (var i = 0; i < actual.length; i++) {
       expect((estimated[i] - actual[i]).abs(), lessThan(64));
     }
+  });
+
+  test('a page whose publication.json a viewer would refuse is not priced',
+      () async {
+    final (posted: _, :plan) = await publish(scopeRoot: _root);
+    final publisher = PublicationPublisher(
+      uploader: _Recording(),
+      driveStateUploader: _NoSnapshots(),
+      repository: PublicationRepository(
+        graphQLRetry: MockGraphQLRetry(),
+        gatewayUrl: () => 'https://turbo-gateway.com',
+      ),
+      gatewayUrl: () => 'https://turbo-gateway.com',
+    );
+    PublicationJob job(String description) => PublicationJob(
+          publicationId: '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d',
+          driveId: _drive,
+          rootFolderId: _root,
+          scope: const PublicationDriveScope(),
+          privacy: 'private',
+          owner: owner,
+          ownerName: null,
+          title: '',
+          description: description,
+          keywords: const [],
+          license: null,
+          icon: null,
+          cover: null,
+          social: null,
+          privatePage: plan,
+          snapshot: const NoSnapshot(),
+          release: release,
+          files: const [],
+          fileCount: 0,
+          labels: const PublicationLabels(
+              filesPage: 'a', openPage: 'b', moreFiles: 'c'),
+          method: UploadMethod.turbo,
+        );
+    // One character to a grapheme counter: an 'a' under 33,000 accents.
+    final heavy = 'a${'\u0301' * 33000}';
+    expect(
+        () => publisher.sizeOf(job(heavy)),
+        throwsA(isA<PublicationFailure>()
+            .having((e) => e.canRetry, 'canRetry', false)));
+    expect(publisher.sizeOf(job('a${'\u0301' * 10}')), greaterThan(0));
   });
 }
 

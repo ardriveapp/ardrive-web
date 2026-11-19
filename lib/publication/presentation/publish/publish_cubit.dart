@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
@@ -671,8 +672,14 @@ class PublishCubit extends Cubit<PublishState> {
     if (!_release!.opensPrivatePages) return (PublishBlock.needsRelease, '');
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return (PublishBlock.locked, '');
-    final key =
-        await _deps.driveDao.getDriveKey(drive.id, profile.user.cipherKey);
+    final DriveKey? key;
+    try {
+      key = await _deps.driveDao.getDriveKey(drive.id, profile.user.cipherKey);
+    } catch (e) {
+      // A stored key this profile can't unwrap: the same as no key.
+      logger.w('[publication] the drive key could not be read: $e');
+      return (PublishBlock.locked, '');
+    }
     if (key == null) return (PublishBlock.locked, '');
     _driveKey = await key.key.extractBytes();
     return null;
@@ -1008,6 +1015,7 @@ class PublishCubit extends Cubit<PublishState> {
       emit(state.copyWith(
         stage: PublishStage.failed,
         failure: switch (e) {
+          PublicationFailure(:final message) => message,
           _CipherUnknown() =>
             "ArDrive couldn't read this file's encryption details from the "
                 'gateway. Nothing was uploaded. Try again in a moment.',
@@ -1017,6 +1025,8 @@ class PublishCubit extends Cubit<PublishState> {
           _ => 'The cost of publishing could not be worked out. Nothing '
               'was uploaded. Try again in a moment.',
         },
+        // Too long a page goes back to its look, not round again.
+        canRetry: e is! PublicationFailure || e.canRetry,
         paidTxId: () => null,
       ));
     }

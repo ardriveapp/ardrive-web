@@ -669,15 +669,22 @@ class PublicationPublisher {
           contentType: type,
           tags: part,
         );
+    final settings = _privatePublicationJson(job,
+        sealedTxId: sealedTxId, sealedIv: sealedIv, publishedAt: publishedAt);
+    // A viewer refuses a longer one (docs/ArweaveFS.md), so a page with it
+    // would be paid for and never open. Only text the owner typed can make
+    // it this long: a title or description whose characters are each many
+    // bytes. Thrown when pricing, so nothing is uploaded.
+    if (utf8.encode(settings).length > maxPublicationJsonBytes) {
+      throw const PublicationFailure(
+        PublicationStep.publication,
+        "This page's title, description or keywords are too long. Nothing "
+        'was uploaded. Shorten them and try again.',
+        canRetry: false,
+      );
+    }
     return [
-      text(
-        'publication.json',
-        _privatePublicationJson(job,
-            sealedTxId: sealedTxId,
-            sealedIv: sealedIv,
-            publishedAt: publishedAt),
-        'application/json',
-      ),
+      text('publication.json', settings, 'application/json'),
       text(
         'index.html',
         buildPublicationIndexHtml(

@@ -259,9 +259,19 @@ class _Password extends StatefulWidget {
 }
 
 class _PasswordState extends State<_Password> {
-  late final TextEditingController _controller =
-      TextEditingController(text: context.read<PublishCubit>().state.password);
+  late final TextEditingController _controller;
   String? _suggested;
+
+  /// Counts the owner's edits and asks for a suggestion: a suggestion that
+  /// loads after either is dropped, so it never overwrites what they typed.
+  int _edits = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+        text: context.read<PublishCubit>().state.password);
+  }
 
   @override
   void dispose() {
@@ -270,8 +280,9 @@ class _PasswordState extends State<_Password> {
   }
 
   Future<void> _suggest() async {
+    final asked = ++_edits;
     final words = await loadPassphraseWords(DefaultAssetBundle.of(context));
-    if (!mounted) return;
+    if (!mounted || asked != _edits) return;
     final phrase = suggestPassphrase(words);
     _controller.text = phrase;
     context.read<PublishCubit>().setPassword(phrase);
@@ -306,6 +317,7 @@ class _PasswordState extends State<_Password> {
           showObfuscationToggle: true,
           autocorrect: false,
           onChanged: (value) {
+            _edits++;
             if (_suggested != null && value != _suggested) {
               setState(() => _suggested = null);
             }

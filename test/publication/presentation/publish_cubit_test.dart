@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:ardrive/core/crypto/file_keys.dart';
@@ -1384,7 +1385,9 @@ void main() {
   });
 
   group('a private drive or folder', () {
-    Future<Drive> privateDrive() async {
+    /// With [unopenableKey], the row holds a wrapped key this profile's
+    /// key doesn't unwrap.
+    Future<Drive> privateDrive({bool unopenableKey = false}) async {
       const id = 'dddddddd-0000-4000-8000-00000000000a';
       await db.into(db.drives).insert(DrivesCompanion.insert(
             id: id,
@@ -1392,6 +1395,12 @@ void main() {
             ownerAddress: fakeUserJson.walletAddress,
             name: 'Private',
             privacy: DrivePrivacyTag.private,
+            encryptedKey:
+                unopenableKey ? Value(Uint8List(48)) : const Value.absent(),
+            keyEncryptionIv:
+                unopenableKey ? Value(Uint8List(12)) : const Value.absent(),
+            driveKeyGenerated:
+                unopenableKey ? const Value(true) : const Value.absent(),
           ));
       await db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
             id: 'private-root-2',
@@ -1435,6 +1444,18 @@ void main() {
       expect(c.state.stage, PublishStage.blocked);
       expect(c.state.blocked, PublishBlock.locked);
       verifyNever(() => publisher.sizeOf(any()));
+      await c.close();
+    });
+
+    test('a drive key that does not unwrap blocks, as a locked drive does',
+        () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final c = cubit(onDrive: await privateDrive(unopenableKey: true));
+      await c.load();
+
+      expect(c.state.stage, PublishStage.blocked);
+      expect(c.state.blocked, PublishBlock.locked);
       await c.close();
     });
 

@@ -270,8 +270,7 @@ lease ends, changes are blocked (the chain rejects them) and the page says
   when there is one.
 - A private publication's name opens its unlock screen (Q27). "Copy link"
   gives the name plus the key after the `#`, with the usual private-link
-  warning. Private publications aren't built yet (docs/PUBLICATIONS.md,
-  phase 3: the publisher writes public pages only), so this lands with them.
+  warning.
 - Publications are nameable from the Names page: its picker lists the
   owner's publications (latest version) beside files and deployments.
 - The social image stays on its own transaction, as built today (Q26): no
