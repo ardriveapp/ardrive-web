@@ -351,6 +351,10 @@ void _sortItems(
       // with the empty string.
       result = (driveTableTransactionId(a) ?? '')
           .compareTo(driveTableTransactionId(b) ?? '');
+      // Folders have none: by name, so their order holds between sorts.
+      if (result == 0) {
+        result = compareAlphabeticallyAndNatural(a.name, b.name);
+      }
     } else if (columnIndex == ColumnIndexes.status) {
       result = driveTableStatusRank(a.fileStatusFromTransactions)
           .compareTo(driveTableStatusRank(b.fileStatusFromTransactions));

@@ -8116,7 +8116,7 @@
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
   "tableColumnType": "Tipo",
   "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
-  "tableColumnTransactionId": "ID de transacción",
+  "tableColumnTransactionId": "ID de la transacción",
   "@tableColumnTransactionId": {"description": "Heading of the file table column that shows each file's data transaction ID"},
   "tableColumnStatus": "Estado",
   "@tableColumnStatus": {"description": "Heading of the file table column that shows whether each file is on Arweave yet"},

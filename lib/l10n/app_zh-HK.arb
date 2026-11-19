@@ -8116,7 +8116,7 @@
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
   "tableColumnType": "類型",
   "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
-  "tableColumnTransactionId": "交易 ID",
+  "tableColumnTransactionId": "交易識別碼",
   "@tableColumnTransactionId": {"description": "Heading of the file table column that shows each file's data transaction ID"},
   "tableColumnStatus": "狀態",
   "@tableColumnStatus": {"description": "Heading of the file table column that shows whether each file is on Arweave yet"},

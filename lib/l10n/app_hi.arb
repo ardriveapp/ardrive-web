@@ -8116,7 +8116,7 @@
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
   "tableColumnType": "प्रकार",
   "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
-  "tableColumnTransactionId": "लेनदेन आईडी",
+  "tableColumnTransactionId": "ट्रांज़ैक्शन ID",
   "@tableColumnTransactionId": {"description": "Heading of the file table column that shows each file's data transaction ID"},
   "tableColumnStatus": "स्थिति",
   "@tableColumnStatus": {"description": "Heading of the file table column that shows whether each file is on Arweave yet"},
