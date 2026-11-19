@@ -30,7 +30,9 @@ abstract class GalleryImageFetcher {
   /// [cancelWhen] completes if the loader no longer wants the bytes; a fetcher
   /// that can abort should. One that cannot may ignore it.
   ///
-  /// Throw [GalleryRateLimited] on HTTP 429/503 so the loader pauses.
+  /// Throw [GalleryRateLimited] on HTTP 429/503 so the loader pauses, and
+  /// [GalleryNotFound] when the gateway has no such transaction so the loader
+  /// does not retry.
   Future<Uint8List> fetch(
     GalleryFetchTarget target, {
     required Future<void> cancelWhen,
@@ -48,6 +50,17 @@ class GalleryRateLimited implements Exception {
   String toString() => 'GalleryRateLimited(retryAfter: $retryAfter)';
 }
 
+/// The gateway answered and has no such transaction (an indexing gap). Not
+/// retried by the loader: the tile fails once. The source of the answer
+/// remembers it for a cool-down, after which a tile scrolled back into view
+/// asks again.
+class GalleryNotFound implements Exception {
+  const GalleryNotFound();
+
+  @override
+  String toString() => 'GalleryNotFound()';
+}
+
 class GalleryLoaderConfig {
   const GalleryLoaderConfig({
     this.maxConcurrent = 5,
@@ -61,6 +74,8 @@ class GalleryLoaderConfig {
     this.cancelInFlightAboveBytes = 256 * 1024,
     this.starvationDelay = const Duration(seconds: 1),
     this.starvedConcurrent = 2,
+    this.requestsPerMinute = 240,
+    this.burst = 80,
   });
 
   /// The app's existing data-fetch setting.
@@ -93,6 +108,22 @@ class GalleryLoaderConfig {
   /// blank screen.
   final Duration starvationDelay;
   final int starvedConcurrent;
+
+  /// Request budget: a token bucket that refills at [requestsPerMinute] and
+  /// holds at most [burst]. Every image fetch attempt (retries included) takes
+  /// one token. With the bucket empty, queued tiles stay loading and start as
+  /// tokens refill, nearest on-screen first; nothing is dropped or failed.
+  ///
+  /// Why 240 and 80: a screenful is ~60 tiles at 1440 and up to ~100 at 4K, so
+  /// a burst of 80 loads a normal screen at once (limited only by
+  /// [maxConcurrent]) and the rest within a second or two (4 per second). A
+  /// fling through a huge folder can then never ask the gateway for more than
+  /// 80 + 240 per minute, however many tiles pass by, because scrolling tiles
+  /// are not started and what does start is paced. Tag lookups are not counted
+  /// here: the batcher already sends one query per batch of up to 50.
+  /// [requestsPerMinute] of 0 turns the budget off.
+  final int requestsPerMinute;
+  final int burst;
 }
 
 /// A tile's request: which file, which renditions exist, and how big the tile
@@ -265,6 +296,8 @@ class GalleryImageLoader {
   Timer? _starveTimer;
   final Set<_Entry> _live = {};
   bool _disposed = false;
+  late double _tokens = config.burst.toDouble();
+  DateTime? _tokensAt;
 
   /// Requests currently being fetched. For tests and diagnostics.
   int get inFlightCount => _inFlight;
@@ -472,9 +505,33 @@ class GalleryImageLoader {
         if (best == null || _before(e, best)) best = e;
       }
       if (best == null) break;
+      final tokenWait = _takeToken(now);
+      if (tokenWait != null) {
+        if (wait == null || tokenWait < wait) wait = tokenWait;
+        break;
+      }
       _start(best);
     }
     if (wait != null) _wakeAfter(wait);
+  }
+
+  /// Takes a token and returns null, or returns how long until one is there.
+  Duration? _takeToken(DateTime now) {
+    if (config.requestsPerMinute <= 0) return null;
+    final rate = config.requestsPerMinute / 60000.0; // tokens per ms
+    final last = _tokensAt;
+    if (last != null) {
+      _tokens = math.min(
+        config.burst.toDouble(),
+        _tokens + now.difference(last).inMilliseconds * rate,
+      );
+    }
+    _tokensAt = now;
+    if (_tokens >= 1) {
+      _tokens -= 1;
+      return null;
+    }
+    return Duration(milliseconds: ((1 - _tokens) / rate).ceil());
   }
 
   bool _before(_Entry a, _Entry b) {
@@ -535,6 +592,10 @@ class GalleryImageLoader {
     } else if (error is GalleryRateLimited) {
       _backoff(error, entry);
       entry.queued = onScreen;
+    } else if (error is GalleryNotFound) {
+      // An answer, not a hiccup: fail once, no automatic retry.
+      entry.notifier.value =
+          const GalleryImageState.failed(GalleryFailureReason.fetchFailed);
     } else {
       entry.attempts++;
       if (entry.attempts > config.maxRetries) {
