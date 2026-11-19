@@ -92,9 +92,9 @@ void main() {
     bool shown(int index, double width, [Map<int, bool> saved = const {}]) =>
         showsAddedColumn(index: index, width: width, columnVisibility: saved);
 
-    test('Type is on by default when wide, Transaction ID and Status are off',
-        () {
-      expect(shown(ColumnIndexes.type, 1200), isTrue);
+    // The icon and the name's extension already say what a file is.
+    test('Type, Transaction ID and Status are all off by default', () {
+      expect(shown(ColumnIndexes.type, 1200), isFalse);
       expect(shown(ColumnIndexes.transactionId, 1200), isFalse);
       expect(shown(ColumnIndexes.status, 1200), isFalse);
     });
@@ -120,6 +120,8 @@ void main() {
     });
 
     test('the reader\'s choice wins', () {
+      expect(
+          shown(ColumnIndexes.type, 1200, {ColumnIndexes.type: true}), isTrue);
       expect(shown(ColumnIndexes.type, 1200, {ColumnIndexes.type: false}),
           isFalse);
       expect(
@@ -138,7 +140,7 @@ void main() {
       // What an existing reader's store holds: the five columns, by number.
       const old = {0: true, 1: true, 2: false, 3: true, 4: true};
 
-      expect(shown(ColumnIndexes.type, 1200, old), isTrue);
+      expect(shown(ColumnIndexes.type, 1200, old), isFalse);
       expect(shown(ColumnIndexes.transactionId, 1200, old), isFalse);
       expect(shown(ColumnIndexes.status, 1200, old), isFalse);
     });
