@@ -18,6 +18,29 @@ void main() {
           rateLimitFromError(const DownloadRateLimitException('x')), isNotNull);
     });
 
+    test('a private download that ended on HTTP 429/503 maps', () {
+      expect(
+          rateLimitFromError(const DownloadNetworkException(
+              'tx', 'HTTP 429 from https://g.example')),
+          isNotNull);
+      expect(
+          rateLimitFromError(const DownloadNetworkException(
+              'tx', 'HTTP 503 from https://g.example')),
+          isNotNull);
+    });
+
+    test('other download network failures do not', () {
+      expect(
+          rateLimitFromError(const DownloadNetworkException(
+              'tx', 'HTTP 500 from https://g.example')),
+          isNull);
+      expect(
+          rateLimitFromError(
+              const DownloadNetworkException('tx', 'timeout, tx ab-429-cd')),
+          isNull);
+      expect(rateLimitFromError(const DownloadNetworkException('tx')), isNull);
+    });
+
     test('text that merely mentions 429 is not a rate limit', () {
       expect(
           rateLimitFromError(

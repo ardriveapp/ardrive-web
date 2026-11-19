@@ -62,15 +62,32 @@ class ArweaveGalleryImageFetcher implements GalleryImageFetcher {
   }
 }
 
-/// Maps the typed rate-limit failures of the two fetch paths to the loader's:
-/// [GatewayRateLimited] from the data gateway waterfall (with its Retry-After),
-/// and [DownloadRateLimitException] from the downloader. Null for anything else.
+/// Maps the rate-limit failures of the two fetch paths to the loader's.
+///
+/// - [GatewayRateLimited] from the data gateway waterfall (public files), with
+///   its Retry-After.
+/// - [DownloadNetworkException] from the downloader (private files). The
+///   downloader never throws [DownloadRateLimitException]; when every gateway
+///   answers 429 its `_openRange` ends in
+///   `DownloadNetworkException(txId, lastError)` with `lastError` of the form
+///   'HTTP 429 from <origin>' (ardrive_downloader.dart, `lastError = 'HTTP
+///   ${response.statusCode} from $origin'`). The downloader is left alone as
+///   its exception types feed preview and download retry logic.
+///   [DownloadRateLimitException] is still mapped in case it is ever thrown.
+///
+/// Null for anything else.
 GalleryRateLimited? rateLimitFromError(Object error) {
   if (error is GatewayRateLimited) {
     return GalleryRateLimited(retryAfter: error.retryAfter);
   }
   if (error is DownloadRateLimitException) {
     return const GalleryRateLimited();
+  }
+  if (error is DownloadNetworkException) {
+    final last = error.lastError;
+    if (last != null && RegExp(r'^HTTP (429|503)\b').hasMatch(last)) {
+      return const GalleryRateLimited();
+    }
   }
   return null;
 }

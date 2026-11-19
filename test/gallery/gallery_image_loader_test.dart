@@ -337,16 +337,21 @@ void main() {
       final h = loader.acquire(req('big', size: 1024 * 1024))
         ..updatePosition(onScreen: true);
       async.flushMicrotasks();
-      h.updatePosition(onScreen: false);
-      async.flushMicrotasks();
-      expect(fetcher.call('big').aborted, isTrue);
-      async.elapse(const Duration(seconds: 10));
-      expect(fetcher.calls.length, 1);
+      // More aborts than maxRetries (2): if an abort counted as a failed
+      // attempt the tile would be marked failed by now.
+      for (var i = 0; i < 4; i++) {
+        h.updatePosition(onScreen: false);
+        async.flushMicrotasks();
+        expect(fetcher.calls.length, i + 1);
+        expect(fetcher.call('big').aborted, isTrue);
+        async.elapse(const Duration(seconds: 10));
+        expect(fetcher.calls.length, i + 1, reason: 'not refetched off screen');
+        expect(h.value.status, GalleryImageStatus.loading);
+        h.updatePosition(onScreen: true);
+        async.flushMicrotasks();
+      }
+      expect(fetcher.calls.length, 5);
       expect(h.value.status, GalleryImageStatus.loading);
-
-      h.updatePosition(onScreen: true);
-      async.flushMicrotasks();
-      expect(fetcher.calls.length, 2);
       fetcher.succeed('big');
       async.flushMicrotasks();
       expect(h.value.status, GalleryImageStatus.loaded);
@@ -478,6 +483,46 @@ void main() {
       loader.dispose();
       h.release();
       async.flushMicrotasks();
+    });
+  });
+
+  test('concurrency ramps 1, 2, 3, 4 after a pause and never exceeds 4', () {
+    fakeAsync((async) {
+      fetcher = FakeFetcher();
+      loader = GalleryImageLoader(
+        fetcher: fetcher,
+        config: const GalleryLoaderConfig(
+          maxConcurrent: 4,
+          retryDelay: Duration(milliseconds: 100),
+        ),
+      );
+      for (var i = 0; i < 12; i++) {
+        show('f$i', priority: i.toDouble());
+      }
+      async.flushMicrotasks();
+      expect(fetcher.inFlight, 4);
+      fetcher.fail(
+          'f0', const GalleryRateLimited(retryAfter: Duration(seconds: 1)));
+      async.flushMicrotasks();
+      // The three that started before the pause finish during it.
+      for (final id in ['f1', 'f2', 'f3']) {
+        fetcher.succeed(id);
+        async.flushMicrotasks();
+      }
+      expect(fetcher.inFlight, 0);
+      async.elapse(const Duration(seconds: 2));
+      final steps = <int>[fetcher.inFlight];
+      for (var i = 0; i < 4; i++) {
+        fetcher.calls
+            .firstWhere((c) => !c.completer.isCompleted)
+            .completer
+            .complete(Uint8List(10));
+        async.flushMicrotasks();
+        steps.add(fetcher.inFlight);
+      }
+      expect(steps, [1, 2, 3, 4, 4]);
+      expect(fetcher.maxInFlight, 4);
+      loader.dispose();
     });
   });
 }

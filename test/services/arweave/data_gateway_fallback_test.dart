@@ -1013,14 +1013,28 @@ void main() {
           isA<GatewayRateLimited>()
               .having(
                   (e) => e.retryAfter, 'retryAfter', const Duration(seconds: 7))
-              .having((e) => e.toString(), 'toString',
-                  startsWith('Exception: All gateways failed for tx')),
+              .having(
+                  (e) => e.toString(),
+                  'toString',
+                  allOf(startsWith('Exception: All gateways failed for tx'),
+                      contains('retry after 7s'))),
         ),
       );
     });
 
     test('503 counts too, and a 404 elsewhere does not hide it', () async {
       final f = with_((n) => n == 1 ? status(503) : status(404));
+      await expectLater(
+        f.fetchData(txId, primaryClient),
+        throwsA(isA<GatewayRateLimited>()),
+      );
+    });
+
+    test('a timeout beside a 429 is neutral: still rate limited', () async {
+      final f = with_((n) {
+        if (n == 1) return status(429);
+        throw TimeoutException('slow');
+      });
       await expectLater(
         f.fetchData(txId, primaryClient),
         throwsA(isA<GatewayRateLimited>()),

@@ -400,8 +400,9 @@ class DataGatewayFallback {
             throw FetchCancelled(txId);
           }
 
+          // A timeout or connection error is neutral for the rate-limit
+          // decision: only HTTP answers count.
           all404 = false;
-          sawOtherFailure = true;
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         }
 
@@ -926,7 +927,7 @@ class GatewayRateLimited implements Exception {
 
   @override
   String toString() => 'Exception: All gateways failed for tx $txId '
-      '(rate limited${retryAfter == null ? '' : ', retry after $retryAfter'})';
+      '(rate limited${retryAfter == null ? '' : ', retry after ${retryAfter!.inSeconds}s'})';
 }
 
 /// A Retry-After header given as delta-seconds. Null when absent or not a
