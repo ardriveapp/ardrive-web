@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:cryptography/cryptography.dart';
@@ -92,5 +94,53 @@ void main() {
               realDriveKey.key, '2b7c9e1d-4f3a-4c8b-9e2d-1a0b3c4d5e6f'))
           .extractBytes(),
     );
+  });
+
+  group('a private page', () {
+    final pageKey = Uint8List.fromList(List.filled(32, 4));
+
+    test('its files open with the keys it carries, without a drive key',
+        () async {
+      fileKeys.usePageKeys('drive', {'file': pageKey});
+
+      final key = await fileKeys.keyFor(
+          driveId: 'drive', fileId: 'file', cipherKey: null);
+
+      expect(await key!.extractBytes(), pageKey);
+      verifyNever(() => driveDao.getDriveKeyFromMemory(any()));
+      verifyNever(() => driveDao.getDriveKey(any(), any()));
+    });
+
+    test('a file it does not name has no key', () async {
+      fileKeys.usePageKeys('drive', {'file': pageKey});
+
+      expect(
+          await fileKeys.keyFor(
+              driveId: 'drive', fileId: 'other', cipherKey: null),
+          isNull);
+      verifyNever(() => driveDao.getFileKey(any(), any()));
+    });
+
+    test('other drives still use their drive keys', () async {
+      fileKeys.usePageKeys('page-drive', {'file': pageKey});
+      when(() => driveDao.getDriveKeyFromMemory('drive'))
+          .thenAnswer((_) async => driveKey);
+
+      final key = await fileKeys.keyFor(
+          driveId: 'drive', fileId: 'file', cipherKey: null);
+
+      expect(key, same(fileKey));
+    });
+
+    test('later changes to the map it was given change nothing', () async {
+      final files = {'file': pageKey};
+      fileKeys.usePageKeys('drive', files);
+      files.remove('file');
+
+      expect(
+          await fileKeys.keyFor(
+              driveId: 'drive', fileId: 'file', cipherKey: null),
+          isNotNull);
+    });
   });
 }

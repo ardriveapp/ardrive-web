@@ -14,14 +14,50 @@ class PublicationLoadingSettings extends PublicationLoaderState {
   const PublicationLoadingSettings();
 }
 
-/// A private publication, waiting for its drive key (the unlock screen).
+/// A private drive or folder page, waiting for its key or password (the
+/// unlock screen).
 class PublicationNeedsKey extends PublicationLoaderState {
-  const PublicationNeedsKey(this.config);
+  const PublicationNeedsKey(
+    this.config, {
+    required this.hasPassword,
+    this.error,
+    this.isChecking = false,
+  });
 
   final PublicationConfig config;
 
+  /// Whether the page also opens with a password, which the field then
+  /// takes as well as the key.
+  final bool hasPassword;
+
+  /// Why the last key or password did not open it, if one did not.
+  final PublicationUnlockError? error;
+
+  /// Whether what the visitor typed is being tried. A password takes about
+  /// a second.
+  final bool isChecking;
+
+  PublicationNeedsKey checking() =>
+      PublicationNeedsKey(config, hasPassword: hasPassword, isChecking: true);
+
+  PublicationNeedsKey failed(PublicationUnlockError error) =>
+      PublicationNeedsKey(config, hasPassword: hasPassword, error: error);
+
   @override
-  List<Object?> get props => [config];
+  List<Object?> get props => [config, hasPassword, error, isChecking];
+}
+
+/// What the unlock screen says under its field.
+enum PublicationUnlockError {
+  /// The link carried a key, and it does not open the page.
+  linkKeyDidntOpen,
+
+  /// "That didn't open this page."
+  didntOpen,
+
+  /// The password could not be tried at all (Argon2id failed), so it may
+  /// have been right.
+  passwordNotChecked,
 }
 
 /// Downloading the snapshot. "Loading files…", with how much has arrived and,
@@ -53,7 +89,12 @@ class PublicationImporting extends PublicationLoaderState {
 
 /// The publication is in the database; the explorer opens at its root.
 class PublicationReady extends PublicationLoaderState {
-  const PublicationReady(this.config, {this.stats, this.ownerVerified = false});
+  const PublicationReady(
+    this.config, {
+    this.stats,
+    this.ownerVerified = false,
+    this.keyRemembered = false,
+  });
 
   final PublicationConfig config;
 
@@ -66,8 +107,19 @@ class PublicationReady extends PublicationLoaderState {
   /// byline survives by leaving the counts out.
   final PublicationStats? stats;
 
+  /// Whether this tab remembers the private page's key, which the page's
+  /// Lock forgets.
+  final bool keyRemembered;
+
+  PublicationReady withKeyRemembered(bool remembered) => PublicationReady(
+        config,
+        stats: stats,
+        ownerVerified: ownerVerified,
+        keyRemembered: remembered,
+      );
+
   @override
-  List<Object?> get props => [config, stats, ownerVerified];
+  List<Object?> get props => [config, stats, ownerVerified, keyRemembered];
 }
 
 /// One of the design's four error screens. [config] is set once

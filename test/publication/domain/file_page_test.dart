@@ -183,11 +183,13 @@ void main() {
 
     test('the viewer reads every version a page is written at', () {
       expect(PublicationConfig.supportedVersion,
-          PublicationConfig.fileScopeVersion);
+          PublicationConfig.privatePageVersion);
+      expect(PublicationConfig.supportedVersion,
+          greaterThanOrEqualTo(PublicationConfig.fileScopeVersion));
     });
   });
 
-  test('the release says it opens file pages, in step with the viewer', () {
+  test('the release says which pages it opens, in step with the viewer', () {
     final marker =
         jsonDecode(File('web/$publicationCapabilitiesPath').readAsStringSync())
             as Map<String, dynamic>;

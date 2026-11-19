@@ -1,4 +1,6 @@
+import 'package:ardrive/pages/shared_file/shared_file_locked_view.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -11,8 +13,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// What a publication shows until its publication is open: the loading screen
 /// and the error screens (docs/PUBLICATIONS.md, "Loading screen", "Error
 /// screens"). One frame, centred on the page background: the publication's icon
-/// and title once `publication.json` has been read, then a progress line or a
-/// heading, a sentence and one action.
+/// and title once `publication.json` has been read, then a progress line, a
+/// private page's unlock screen, or a heading, a sentence and one action.
 class PublicationLoaderPage extends StatelessWidget {
   const PublicationLoaderPage({super.key});
 
@@ -88,7 +90,7 @@ class _Frame extends StatelessWidget {
         if (config != null) ...[
           const SizedBox(height: 16),
           Text(
-            config.title,
+            publicationTitle(context, config),
             textAlign: TextAlign.center,
             style: typography.heading4(
               color: colors.textHigh,
@@ -99,10 +101,7 @@ class _Frame extends StatelessWidget {
         const SizedBox(height: 24),
         switch (state) {
           PublicationFailed(:final failure) => _Failure(failure: failure),
-          // Private publications open in phase 3; until then this build cannot
-          // open one, which is exactly what this screen says.
-          PublicationNeedsKey() =>
-            const _Failure(failure: PublicationFailure.needsNewerViewer),
+          final PublicationNeedsKey locked => _Unlock(state: locked),
           _ => _Progress(state: state),
         },
       ],
@@ -118,6 +117,56 @@ class _Frame extends StatelessWidget {
         PublicationFailed(:final config) => config,
         PublicationLoadingSettings() => null,
       };
+}
+
+/// A private drive or folder page's unlock screen: the private file page's
+/// gate (docs/PUBLICATIONS.md, "Unlock screen").
+class _Unlock extends StatefulWidget {
+  const _Unlock({required this.state});
+
+  final PublicationNeedsKey state;
+
+  @override
+  State<_Unlock> createState() => _UnlockState();
+}
+
+class _UnlockState extends State<_Unlock> {
+  /// Here, not in the gate: the gate rebuilds while a password is checked,
+  /// and what the visitor typed stays in the field when it didn't open.
+  final _controller = TextEditingController();
+  bool _remember = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final state = widget.state;
+    return SharedFileLockedView(
+      gate: state.hasPassword
+          ? SharedFileGate.pageWithPassword
+          : SharedFileGate.page,
+      controller: _controller,
+      isBusy: state.isChecking,
+      errorMessage: switch (state.error) {
+        null => null,
+        PublicationUnlockError.didntOpen => strings.publicationDidntOpen,
+        PublicationUnlockError.linkKeyDidntOpen =>
+          strings.publicationLinkKeyDidntMatch,
+        PublicationUnlockError.passwordNotChecked =>
+          strings.publicationPasswordNotChecked,
+      },
+      rememberKey: _remember,
+      onRememberChanged: (value) => setState(() => _remember = value),
+      onSubmit: (input) => context
+          .read<PublicationLoaderCubit>()
+          .unlock(input, remember: _remember),
+    );
+  }
 }
 
 class _Progress extends StatelessWidget {

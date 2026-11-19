@@ -219,7 +219,12 @@ HTML-escaped):
 3. It reads `./publication.json`.
 4. File data comes from the gateway serving the page (the existing
    `/ar-io/info` detection on the page's host).
-5. A private publication shows the unlock screen.
+5. A private drive or folder page (version 3) reads `./sealed`, after
+   checking its signer as in step 6, and opens it with the link's `k`, then
+   with a key this tab remembers; otherwise it shows the unlock screen. The
+   sealed block names the catalog, which steps 6 and 7 then treat as the
+   snapshot, under the catalog's own key, and gives the files' keys to
+   `FileKeys` (`lib/core/crypto/file_keys.dart`).
 6. It asks that gateway, with one GraphQL lookup
    (`transactions(ids: [<snapshot>]) { owner { address } }`), who signed the
    snapshot: anyone can write a `publication.json` naming anyone as `owner`.
@@ -330,9 +335,22 @@ A private drive or folder page uses the private file page's locked view
 own, in the same frame as the loading screen. Its one field takes the access
 key the visitor was sent, or the page's password when it has one. It keeps
 the opt-in "Remember this key for this tab". A key in the link skips the
-screen. Anything that doesn't open the page shows "That didn't open this
-page." under the field, which keeps its text. A change to this screen is made
-in the shared view, so every private page changes with it.
+screen; one that doesn't open the page shows the screen with "The key in this
+link doesn't match. Ask for a new link." A page without a password checks a
+key's shape before trying it, as a file page does; a page with one takes any
+text and tries it as a key, then as the password. Anything that doesn't open
+the page shows "That didn't open this page." under the field, which keeps
+its text. If the password couldn't be checked at all (Argon2id ran out of
+memory, or its module didn't load), it says so instead. A change to this
+screen is made in the shared view, so every private page changes with it.
+
+"Remember this key for this tab" keeps the publication key, never the
+password, in `sessionStorage` under `publicationKey.<publicationId>`. While
+it is kept, the page's top bar shows a lock button, "Forget the key for this
+tab", which forgets it and reloads, locking the page. A key from the link
+stays in the address as the visitor moves between folders (`#/folders/<id>?k=`),
+so a reload anywhere opens the page again. A key or password typed into the
+page never goes into the address. An empty title shows "Private page".
 
 ### Error screens
 

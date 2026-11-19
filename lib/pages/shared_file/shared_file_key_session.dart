@@ -13,15 +13,30 @@ import 'package:ardrive/utils/shared_file_link.dart';
 /// A key that turns out not to work is forgotten immediately: a stale key that
 /// keeps re-submitting itself would strand the recipient behind an error they
 /// cannot clear.
+///
+/// A private drive or folder page keeps its publication key the same way,
+/// under its own [prefix] and by publication ID ([SharedFileKeySession.page]).
 class SharedFileKeySession {
   SharedFileKeySession({KeyValueStore? store})
-      : _store = store ?? SessionKeyValueStore();
+      : _store = store ?? SessionKeyValueStore(),
+        _prefix = filePrefix;
+
+  /// A private page's publication key, for this tab.
+  SharedFileKeySession.page({KeyValueStore? store})
+      : _store = store ?? SessionKeyValueStore(),
+        _prefix = pagePrefix;
+
+  static const filePrefix = 'sharedFileAccessKey';
+  static const pagePrefix = 'publicationKey';
 
   final KeyValueStore _store;
+  final String _prefix;
 
   /// Namespaced by file so that opening a second shared link in the same tab
   /// never offers the first file's key.
-  static String storageKey(String fileId) => 'sharedFileAccessKey.$fileId';
+  static String storageKey(String fileId) => '$filePrefix.$fileId';
+
+  String _keyOf(String id) => '$_prefix.$id';
 
   /// The remembered key for [fileId], or `null` when there is none to use.
   ///
@@ -30,7 +45,7 @@ class SharedFileKeySession {
   /// recipient never typed.
   Future<String?> read(String fileId) async {
     try {
-      final value = await _store.getString(storageKey(fileId));
+      final value = await _store.getString(_keyOf(fileId));
 
       if (value == null || !SharedFileLinkKey.isWellFormed(value)) {
         return null;
@@ -51,7 +66,7 @@ class SharedFileKeySession {
     }
 
     try {
-      await _store.putString(storageKey(fileId), rawKey);
+      await _store.putString(_keyOf(fileId), rawKey);
     } catch (e) {
       // Never surfaced: failing to remember a key is a convenience the
       // recipient loses, not an error they can act on.
@@ -62,7 +77,7 @@ class SharedFileKeySession {
   /// Forgets any key remembered for [fileId].
   Future<void> forget(String fileId) async {
     try {
-      await _store.remove(storageKey(fileId));
+      await _store.remove(_keyOf(fileId));
     } catch (e) {
       logger.w('Failed to forget the remembered access key. Error: $e');
     }

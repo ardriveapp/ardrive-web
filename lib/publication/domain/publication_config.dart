@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart'
+    show SealError, maxPublicationJsonBytes, readPrivatePublication;
 import 'package:ardrive_utils/ardrive_utils.dart'
     show DrivePrivacyTag, EntityTag;
 import 'package:equatable/equatable.dart';
@@ -17,6 +19,11 @@ import 'package:flutter/foundation.dart';
 ///
 /// Text the owner typed (title, description) is kept exactly as written. It
 /// is only ever shown as plain text, so markup in it stays markup.
+///
+/// A private drive or folder page (version 3) names no snapshot and no root
+/// folder: they are in its sealed block, which opens with the page's key.
+/// Its [sealed] is set, [rootFolderId] is empty until [opened] fills it in,
+/// and its [title] may be empty.
 @immutable
 class PublicationConfig extends Equatable {
   const PublicationConfig({
@@ -29,6 +36,7 @@ class PublicationConfig extends Equatable {
     this.ownerName,
     this.snapshot,
     this.file,
+    this.sealed,
     required this.title,
     required this.description,
     this.fileCount,
@@ -41,7 +49,11 @@ class PublicationConfig extends Equatable {
 
   /// The newest `publication.json` version this build reads. A page written for a
   /// newer one shows "This page needs a newer ArDrive".
-  static const supportedVersion = 2;
+  static const supportedVersion = 3;
+
+  /// The version a private drive or folder page is written as
+  /// (`docs/ArweaveFS.md`, "Private publications").
+  static const privatePageVersion = 3;
 
   /// The version a file page is written as. Drive and folder pages stay at 1,
   /// so the viewers already published can still open new ones; a file page
@@ -70,6 +82,12 @@ class PublicationConfig extends Equatable {
 
   /// The one file a file page shows; null for a drive or folder page.
   final PublicationFile? file;
+
+  /// A private drive or folder page's sealed part; null for every other page.
+  final PublicationSealed? sealed;
+
+  /// What the owner chose to show. Never empty, except on a private page,
+  /// which shows "Private page" for an empty one.
   final String title;
   final String description;
 
@@ -88,6 +106,33 @@ class PublicationConfig extends Equatable {
   final List<String> names;
 
   bool get isPrivate => privacy == DrivePrivacyTag.private;
+
+  /// Whether this is a private drive or folder page, which opens with its
+  /// own key (version 3).
+  bool get isSealed => sealed != null;
+
+  /// This private page once its sealed block has opened, which names the
+  /// drive's root folder.
+  PublicationConfig opened({required String rootFolderId}) => PublicationConfig(
+        version: version,
+        driveId: driveId,
+        rootFolderId: rootFolderId,
+        scope: scope,
+        privacy: privacy,
+        owner: owner,
+        ownerName: ownerName,
+        snapshot: snapshot,
+        file: file,
+        sealed: sealed,
+        title: title,
+        description: description,
+        fileCount: fileCount,
+        license: license,
+        images: images,
+        publishedAt: publishedAt,
+        viewer: viewer,
+        names: names,
+      );
 
   /// The folder the publication opens at: the drive's root, or the published
   /// folder.
@@ -108,7 +153,22 @@ class PublicationConfig extends Equatable {
     if (decoded is! Map<String, dynamic>) {
       throw PublicationConfigException.invalid('not a JSON object');
     }
-    return PublicationConfig.fromJson(decoded);
+    if (decoded['version'] == privatePageVersion &&
+        utf8.encode(source).length > maxPublicationJsonBytes) {
+      throw PublicationConfigException.invalid(
+          'a version 3 publication.json is at most 64 KiB');
+    }
+    try {
+      return PublicationConfig.fromJson(decoded);
+    } on PublicationConfigException {
+      rethrow;
+    } catch (e) {
+      // On the web, a JSON array is converted when it is first read, and
+      // recursively: one nested deep enough overflows the stack here. Any
+      // such failure is a page that can't be opened, never a page left
+      // loading.
+      throw PublicationConfigException.invalid('unreadable: ${e.runtimeType}');
+    }
   }
 
   /// Throws [PublicationConfigException].
@@ -130,6 +190,10 @@ class PublicationConfig extends Equatable {
         privacy != DrivePrivacyTag.private) {
       throw PublicationConfigException.invalid(
           'privacy must be "public" or "private"');
+    }
+
+    if (version == privatePageVersion) {
+      return PublicationConfig._privatePage(json);
     }
 
     final scope = PublicationScope._fromJson(_map(json, 'scope'));
@@ -197,6 +261,48 @@ class PublicationConfig extends Equatable {
     );
   }
 
+  /// A private drive or folder page: the spec's checks (`readPrivatePublication`)
+  /// and then the fields every page shares, read as for version 1.
+  factory PublicationConfig._privatePage(Map<String, dynamic> json) {
+    try {
+      readPrivatePublication(json);
+    } on SealError catch (e) {
+      throw PublicationConfigException.invalid(e.message);
+    }
+    final scope = PublicationScope._fromJson(_map(json, 'scope'));
+    if (scope is PublicationFileScope) {
+      throw PublicationConfigException.invalid(
+          'a version 3 page is a drive or folder page');
+    }
+    final sealed = _map(json, 'sealed');
+    return PublicationConfig(
+      version: privatePageVersion,
+      driveId: _id(json, 'driveId'),
+      rootFolderId: '',
+      scope: scope,
+      privacy: DrivePrivacyTag.private,
+      owner: _address(json, 'owner'),
+      ownerName: _nonEmpty(_optionalString(json, 'ownerName')),
+      sealed: PublicationSealed(
+        publicationId: _id(json, 'publicationId'),
+        path: _relativePath(sealed, 'path', where: 'sealed'),
+        txId: _address(sealed, 'txId', where: 'sealed'),
+        settings: json,
+      ),
+      title: _string(json, 'title').trim(),
+      description: _optionalString(json, 'description') ?? '',
+      license: PublicationLicense._fromJson(json['license']),
+      images: PublicationImages._fromJson(json['images']),
+      publishedAt: _optionalDate(json, 'publishedAt'),
+      viewer: PublicationViewer._fromJson(json['viewer']),
+      names: [
+        if (json['names'] is List)
+          for (final name in json['names'] as List)
+            if (name is String && name.isNotEmpty) name,
+      ],
+    );
+  }
+
   @override
   List<Object?> get props => [
         version,
@@ -208,6 +314,7 @@ class PublicationConfig extends Equatable {
         ownerName,
         snapshot,
         file,
+        sealed,
         title,
         description,
         fileCount,
@@ -276,6 +383,33 @@ class PublicationFileScope extends PublicationScope {
 
   @override
   List<Object?> get props => [fileId];
+}
+
+/// A private page's sealed part: where it is, and the settings it is bound
+/// to, which `Sealing.openPage` reads again with the key.
+@immutable
+class PublicationSealed extends Equatable {
+  const PublicationSealed({
+    required this.publicationId,
+    required this.path,
+    required this.txId,
+    required this.settings,
+  });
+
+  /// The `Publication-Id`: the slots and the sealed block are bound to it.
+  final String publicationId;
+
+  /// Where the sealed block is in the page's manifest.
+  final String path;
+
+  /// The sealed block's own transaction, whose signer must be the owner.
+  final String txId;
+
+  /// `publication.json` as it was read.
+  final Map<String, dynamic> settings;
+
+  @override
+  List<Object?> get props => [publicationId, path, txId];
 }
 
 /// The file a file page shows, at the version it was published with.
