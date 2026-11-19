@@ -5,7 +5,9 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dar
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:ardrive/components/upload_review_dialog.dart' show UploadCostBlock;
+import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
+import 'package:ardrive/components/upload_review_dialog.dart'
+    show UploadCostBlock;
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
     show DriveStateSyncSkipStatus;
@@ -145,6 +147,47 @@ void main() {
         reason: 'the old payment block is gone');
     expect(find.text('Back'), findsOneWidget);
     expect(find.text('Publish'), findsWidgets);
+  });
+
+  // Priced short on both, so the cubit's method is the wallet; then credits
+  // arrive. The review shows Turbo Credits, covered: Publish is offered.
+  testWidgets('credits that cover it offer Publish whatever the priced method',
+      (tester) async {
+    await open(
+      tester,
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        method: UploadMethod.ar,
+        cost: DriveStatePublishCost(
+          costEstimateAr: UploadCostEstimate(
+            pstFee: BigInt.zero,
+            totalCost: BigInt.from(4000000000),
+            totalSize: 1024,
+            usdUploadCost: 0.4,
+          ),
+          costEstimateTurbo: UploadCostEstimate(
+            pstFee: BigInt.zero,
+            totalCost: BigInt.from(3000000000),
+            totalSize: 1024,
+            usdUploadCost: 0.3,
+          ),
+          isTurboUploadPossible: true,
+          hasNoTurboBalance: false,
+          arBalance: '0',
+          turboCredits: '5',
+          sufficientArBalance: false,
+          sufficientTurboBalance: true,
+          turboBalanceWinc: BigInt.from(5000000000),
+          freeStatus: FreeUploadStatus.notEligible,
+        ),
+      ),
+    );
+
+    final publish = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, 'Publish'));
+    expect(publish.isDisabled, isFalse);
   });
 
   testWidgets('the review no longer warns that publishing is permanent',

@@ -394,7 +394,10 @@ class PublishDialog extends StatelessWidget {
                 destination: strings.publishStepOf(total, total),
                 primaryLabel: strings.publishButton,
                 busy: false,
-                primaryEnabled: state.canPublish && (names?.ready ?? true),
+                // Whether the cost is covered is the review's to say, by the
+                // method it shows; the cubit checks again with that method.
+                // Here it only waits for the name step.
+                primaryEnabled: names?.ready ?? true,
                 onBack: cubit.back,
                 leading: [
                   const SizedBox(height: ArDriveSpacing.md),
