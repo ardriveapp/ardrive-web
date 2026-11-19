@@ -101,8 +101,30 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   /// Whether this tab remembers the key the private page opened with.
   bool _remembered = false;
 
+  /// Whether the page's settings were signed by the owner they name: null
+  /// when that couldn't be checked.
+  bool? _settingsSigned;
+
+  /// Whether every part read so far is the transaction the settings name,
+  /// as the gateway says. A page whose parts can't all be tied to the
+  /// owner's transactions opens unverified.
+  bool _partsBound = true;
+
+  /// Whether the gateway served [txId] for [path]: true when it said so,
+  /// false when it didn't say. Throws [_NotTheNamedPart] when it served
+  /// another transaction: the page's manifest points its path elsewhere than
+  /// its settings say, and the owner check would prove nothing.
+  bool _bound(String path, String txId) {
+    final served = _source.dataIdOf(path);
+    if (served == null) return false;
+    if (served != txId) throw _NotTheNamedPart(path, txId, served);
+    return true;
+  }
+
   Future<void> load() async {
     emit(const PublicationLoadingSettings());
+    _settingsSigned = null;
+    _partsBound = true;
 
     final PublicationConfig config;
     try {
@@ -122,6 +144,20 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
       return;
     }
     _config = config;
+
+    // The settings name the owner, the title and every part, so they must be
+    // the owner's too: a page built by someone else around the owner's real
+    // parts would otherwise pass as theirs. Bound to the transaction the
+    // gateway says it served; without that, the page opens unverified.
+    final settingsId = _source.dataIdOf(_settingsPath);
+    _settingsSigned =
+        settingsId == null ? null : await _signedBy(config, settingsId);
+    if (_settingsSigned == false) {
+      logger.w('Publication refused: its settings were signed by someone '
+          'else than the owner they name');
+      emit(_refused);
+      return;
+    }
 
     // A file page reads its one file from the network, as its share page
     // does; there is no snapshot to fetch and no drive to open. A private
@@ -283,6 +319,11 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     final Uint8List bytes;
     try {
       bytes = await _source.readPart(sealed.path, maxBytes: maxSealedBytes);
+      _partsBound = _bound(sealed.path, sealed.txId);
+    } on _NotTheNamedPart catch (e) {
+      logger.w('Publication refused: $e');
+      emit(_refused);
+      return;
     } on PublicationPartTooLarge catch (e) {
       logger.w('Publication refused: $e');
       emit(_refused);
@@ -390,7 +431,8 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
       return;
     }
     PublicationContents.open = null;
-    emit(PublicationReady(config, ownerVerified: ownerMatches == true));
+    emit(PublicationReady(config,
+        ownerVerified: _settingsSigned == true && ownerMatches == true));
   }
 
   /// A page refused for what it holds shows nothing it says about itself:
@@ -445,7 +487,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     // Only a confirmed mismatch refuses. No answer (a new snapshot is not
     // indexed until its bundle is mined) opens the page as declared, with
     // the address the byline always shows beside any display name.
-    final ownerVerified = ownerMatches == true;
+    final signed = _settingsSigned == true && ownerMatches == true;
 
     await _driveDao.writePublicationDrive(
       driveId: config.driveId,
@@ -462,10 +504,20 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     try {
       body = await _source.readSnapshot(
         path,
+        maxBytes: maxSnapshotBytes,
         onProgress: (received, total) => emit(
           PublicationLoadingSnapshot(config, received: received, total: total),
         ),
       );
+      if (!_bound(path, txId)) _partsBound = false;
+    } on _NotTheNamedPart catch (e) {
+      logger.w('Publication refused: $e');
+      emit(_refused);
+      return;
+    } on PublicationPartTooLarge catch (e) {
+      logger.w('Publication refused: $e');
+      emit(_refused);
+      return;
     } on PublicationSourceException catch (e) {
       logger.w('Publication snapshot unavailable: $e');
       emit(PublicationFailed(PublicationFailure.snapshotUnavailable,
@@ -519,7 +571,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
       stats: PublicationStats.of(contents),
       // For a private page, the catalog's signer: its sealed block was
       // checked too, and refused only on a confirmed mismatch.
-      ownerVerified: ownerVerified,
+      ownerVerified: signed && _partsBound,
       keyRemembered: _remembered,
     ));
   }
@@ -534,3 +586,21 @@ String? publicationLinkKey(Uri page) {
   final key = route?.queryParameters[SharedFileLinkParams.key];
   return key == null || key.isEmpty ? null : key;
 }
+
+/// A page part the gateway served from another transaction than the page's
+/// settings name.
+class _NotTheNamedPart implements Exception {
+  const _NotTheNamedPart(this.path, this.named, this.served);
+
+  final String path;
+  final String named;
+  final String served;
+
+  @override
+  String toString() => '$path is $served, not $named as the settings name';
+}
+
+/// The largest snapshot or catalog a page may have: what the importer
+/// accepts uncompressed (`DriveStateEnvelope.defaultMaxPlaintextBytes`),
+/// with room for gzip's and the cipher's overhead.
+const maxSnapshotBytes = 104 * 1024 * 1024;

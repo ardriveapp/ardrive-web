@@ -1,9 +1,5 @@
-import 'dart:typed_data';
+import 'snapshot_download_types.dart';
 
-/// See `snapshot_download.dart`.
-typedef SnapshotDownload = Future<Uint8List> Function(
-  Uri uri,
-  void Function(int received, int? total) onProgress,
-);
+export 'snapshot_download_types.dart';
 
 const SnapshotDownload? browserSnapshotDownload = null;

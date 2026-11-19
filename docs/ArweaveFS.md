@@ -457,7 +457,14 @@ The test vectors in `test/publication/fixtures/sealed/vectors.json`, written by 
 
 A publication counts only if the drive's owner published it. Anyone can write a manifest with any `owner` and any `Drive-Id`.
 
-What the ArDrive viewer checks today: it asks the serving gateway who signed the `snapshot` transaction (for a file page, the `file.metadataTxId` transaction), and refuses the page only if that signer is not `publication.json`'s `owner`. If the gateway cannot answer, the page opens as declared. On a version 3 page it checks the signer of `sealed.txId` the same way, and once the page opens, of the catalog's `txId`. For a file page, when the lookup also returns the transaction's tags, the viewer checks too that it is a `file` entity with the page's file ID and drive ID. The viewer does not check who signed the manifest, and does not check that `owner` owns the drive. The list of an owner's own publications is scoped to the signed-in owner's transactions.
+What the ArDrive viewer checks today:
+
+- **The settings.** An AR.IO gateway names the transaction it served for a manifest's path in the `x-ar-io-data-id` response header. The viewer asks the gateway who signed the transaction it served as `publication.json`, and refuses the page if that signer isn't the `owner` it names. Without this, anyone could wrap someone's real parts in a manifest of their own, with their own title.
+- **Each part.** It asks who signed the `snapshot` transaction (for a file page, the `file.metadataTxId` transaction), and on a version 3 page `sealed.txId` and, once the page opens, the catalog's `txId`. It refuses the page if a signer isn't `owner`. Each part is read through its manifest path, and the gateway's `x-ar-io-data-id` for that path must be the transaction ID `publication.json` names. Otherwise the page is refused, since the owner check would be about other bytes.
+- **File pages.** When the lookup also returns the transaction's tags, the viewer checks that it is a `file` entity with the page's file ID and drive ID.
+- **Unanswered checks.** Only a confirmed mismatch refuses. If the gateway can't say who signed a transaction, or doesn't name what it served, the page opens as declared, marked unverified (`ownerVerified`).
+
+The viewer doesn't check who signed the manifest, or that `owner` owns the drive. The list of an owner's own publications is scoped to the signed-in owner's transactions.
 
 A full client should check all of these, and fail closed:
 

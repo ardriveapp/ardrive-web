@@ -229,6 +229,10 @@ HTML-escaped):
 6. It asks that gateway, with one GraphQL lookup
    (`transactions(ids: [<snapshot>]) { owner { address } }`), who signed the
    snapshot: anyone can write a `publication.json` naming anyone as `owner`.
+   It asks the same about the transaction the gateway says it served as
+   `publication.json` (`x-ar-io-data-id`), and each part read by path must be
+   the transaction `publication.json` names (docs/ArweaveFS.md, "Owner"). A
+   snapshot or catalog over 104 MiB is refused without being read whole.
    Only a confirmed different signer refuses the page: "This page can't be
    opened" (the snapshot rejected). No answer (not indexed yet, which a new
    snapshot uploaded through Turbo is for its first 15 to 60 minutes, or

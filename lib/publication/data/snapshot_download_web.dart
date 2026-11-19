@@ -1,47 +1,57 @@
+import 'dart:async';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:typed_data';
 
-/// See `snapshot_download.dart`.
-typedef SnapshotDownload = Future<Uint8List> Function(
-  Uri uri,
-  void Function(int received, int? total) onProgress,
-);
+import 'snapshot_download_types.dart';
+
+export 'snapshot_download_types.dart';
 
 /// The browser's own progress events. `total` is null when the gateway does
 /// not say how large the body is. Fails with the request's status, or with
-/// none when the request never completed.
+/// none when the request never completed. Stops, and throws
+/// [SnapshotTooLarge], once more than `maxBytes` have arrived.
 const SnapshotDownload browserSnapshotDownload = _download;
 
-Future<Uint8List> _download(
+Future<SnapshotDownloaded> _download(
   Uri uri,
-  void Function(int received, int? total) onProgress,
-) async {
-  final html.HttpRequest request;
-  try {
-    request = await html.HttpRequest.request(
-      uri.toString(),
-      responseType: 'arraybuffer',
-      onProgress: (event) => onProgress(
-        event.loaded ?? 0,
-        event.lengthComputable ? event.total : null,
-      ),
-    );
-  } on html.ProgressEvent catch (event) {
-    final status = (event.target as html.HttpRequest?)?.status;
-    throw SnapshotDownloadException(status);
-  }
-  // `request` also completes, without a body, on a 304 and some redirects.
-  if (request.status != 200) throw SnapshotDownloadException(request.status);
-  return (request.response as ByteBuffer).asUint8List();
-}
-
-class SnapshotDownloadException implements Exception {
-  const SnapshotDownloadException(this.status);
-
-  /// The HTTP status, or 0 or null when there was no response.
-  final int? status;
-
-  @override
-  String toString() => 'status $status';
+  void Function(int received, int? total) onProgress, {
+  required int maxBytes,
+  required String header,
+}) {
+  final done = Completer<SnapshotDownloaded>();
+  final request = html.HttpRequest()
+    ..open('GET', uri.toString())
+    ..responseType = 'arraybuffer';
+  var tooLarge = false;
+  request.onProgress.listen((event) {
+    final loaded = event.loaded ?? 0;
+    final total = event.lengthComputable ? event.total : null;
+    if (loaded > maxBytes || (total != null && total > maxBytes)) {
+      tooLarge = true;
+      request.abort();
+      return;
+    }
+    onProgress(loaded, total);
+  });
+  request.onLoadEnd.listen((_) {
+    if (done.isCompleted) return;
+    if (tooLarge) {
+      done.completeError(const SnapshotTooLarge());
+      return;
+    }
+    // A request also ends, without a body, on a 304 and some redirects.
+    if (request.status != 200) {
+      done.completeError(SnapshotDownloadException(request.status));
+      return;
+    }
+    final bytes = (request.response as ByteBuffer).asUint8List();
+    if (bytes.length > maxBytes) {
+      done.completeError(const SnapshotTooLarge());
+      return;
+    }
+    done.complete((bytes: bytes, header: request.getResponseHeader(header)));
+  });
+  request.send();
+  return done.future;
 }

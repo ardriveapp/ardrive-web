@@ -136,15 +136,26 @@ class _Page {
       };
 }
 
-MockClient _gateway(Map<String, Object> files, {List<String>? requests}) =>
+/// The transaction a page's publication.json is, as the gateway says.
+const _settingsTx = 'SETTINGS000000000000000000000000000000000000';
+
+/// Serves [files] by path and, as an AR.IO gateway does, names the
+/// transaction it served for each ([dataIds]; a null sends no name).
+MockClient _gateway(
+  Map<String, Object> files, {
+  List<String>? requests,
+  Map<String, String?> dataIds = const {},
+}) =>
     MockClient((request) async {
       final path = request.url.path.replaceFirst('/PageManifest/', '');
       requests?.add(path);
       final file = files[path];
       if (file == null) return http.Response('not found', 404);
+      final id = dataIds[path];
+      final headers = {if (id != null) PublicationSource.dataIdHeader: id};
       return file is String
-          ? http.Response(file, 200)
-          : http.Response.bytes(file as List<int>, 200);
+          ? http.Response(file, 200, headers: headers)
+          : http.Response.bytes(file as List<int>, 200, headers: headers);
     });
 
 /// An Argon2id that never finishes its work.
@@ -181,11 +192,19 @@ void main() {
     Sealing? sealing,
     List<String>? requests,
     Map<String, Object>? files,
+    Map<String, String?>? dataIds,
   }) =>
       PublicationLoaderCubit(
         source: PublicationSource(
           pageUri: _pageUri,
-          client: _gateway(files ?? page.files, requests: requests),
+          client: _gateway(files ?? page.files,
+              requests: requests,
+              dataIds: dataIds ??
+                  {
+                    'publication.json': _settingsTx,
+                    'sealed': _sealedTxId,
+                    'catalog': page.catalogTxId,
+                  }),
         ),
         settingsPath: 'publication.json',
         driveDao: db.driveDao,
@@ -387,6 +406,54 @@ void main() {
       const PublicationFailed(PublicationFailure.snapshotRejected),
     );
     expect(requests, ['publication.json']);
+    await cubit.close();
+  });
+
+  test('a key in the link opens it verified, its parts the ones named',
+      () async {
+    final page = await _Page.build();
+    final cubit = loader(page, linkKey: b64u(_publicationKey));
+    await cubit.load();
+    expect((cubit.state as PublicationReady).ownerVerified, isTrue);
+    await cubit.close();
+  });
+
+  test('a sealed block served from another transaction is refused', () async {
+    // Someone holding the key wraps the owner's real page in their own
+    // manifest, with a sealed block of their own under the named path.
+    final page = await _Page.build();
+    final cubit = loader(page, linkKey: b64u(_publicationKey), dataIds: {
+      'publication.json': _settingsTx,
+      'sealed': 'FORGED00000000000000000000000000000000000000',
+      'catalog': page.catalogTxId,
+    });
+    await cubit.load();
+    expect(cubit.state,
+        const PublicationFailed(PublicationFailure.snapshotRejected));
+    await cubit.close();
+  });
+
+  test('a catalog served from another transaction is refused', () async {
+    final page = await _Page.build();
+    final cubit = loader(page, linkKey: b64u(_publicationKey), dataIds: {
+      'publication.json': _settingsTx,
+      'sealed': _sealedTxId,
+      'catalog': 'FORGED00000000000000000000000000000000000000',
+    });
+    await cubit.load();
+    expect(cubit.state,
+        const PublicationFailed(PublicationFailure.snapshotRejected));
+    await cubit.close();
+  });
+
+  test('a sealed block the gateway does not name opens unverified', () async {
+    final page = await _Page.build();
+    final cubit = loader(page, linkKey: b64u(_publicationKey), dataIds: {
+      'publication.json': _settingsTx,
+      'catalog': page.catalogTxId,
+    });
+    await cubit.load();
+    expect((cubit.state as PublicationReady).ownerVerified, isFalse);
     await cubit.close();
   });
 

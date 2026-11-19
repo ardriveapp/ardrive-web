@@ -34,4 +34,40 @@ void main() {
       throwsA(isA<PublicationSourceException>()),
     );
   });
+
+  group('what the gateway says it served', () {
+    PublicationSource naming(String? id, {List<int> body = const [1, 2, 3]}) =>
+        PublicationSource(
+          pageUri: page,
+          client: MockClient((_) async => http.Response.bytes(body, 200,
+              headers: {if (id != null) PublicationSource.dataIdHeader: id})),
+        );
+
+    test('is kept for each path read', () async {
+      final source = naming('TX1');
+      expect(source.dataIdOf('snapshot'), isNull);
+      await source.readSnapshot('snapshot', maxBytes: 10);
+      await source.readPart('sealed', maxBytes: 10);
+      await source.readSettings('publication.json');
+      expect(source.dataIdOf('snapshot'), 'TX1');
+      expect(source.dataIdOf('sealed'), 'TX1');
+      expect(source.dataIdOf('publication.json'), 'TX1');
+    });
+
+    test('is null when the gateway does not say', () async {
+      final source = naming(null);
+      await source.readSnapshot('snapshot', maxBytes: 10);
+      expect(source.dataIdOf('snapshot'), isNull);
+    });
+  });
+
+  test('a snapshot over its limit is refused', () {
+    final source = PublicationSource(
+      pageUri: page,
+      client:
+          MockClient((_) async => http.Response.bytes(List.filled(11, 0), 200)),
+    );
+    expect(source.readSnapshot('snapshot', maxBytes: 10),
+        throwsA(isA<PublicationPartTooLarge>()));
+  });
 }
