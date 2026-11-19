@@ -119,8 +119,11 @@ const _scopedPredicate = <String, String>{
 };
 
 /// Fills `temp.page_folders` with [ArtifactScope.rootFolderId] and every
-/// folder under it reached without passing a hidden one, and
+/// folder under it reached without passing a hidden one or a ghost (a
+/// folder this client never read, which the export leaves out), and
 /// `temp.page_files` with the files in those folders that are not hidden.
+/// The same rule as the owner's summary of what the page shows
+/// (`PublicationContents`).
 Future<void> _collectScope(
   GeneratedDatabase db, {
   required String driveId,
@@ -137,9 +140,10 @@ Future<void> _collectScope(
   await db.customStatement(
     'WITH RECURSIVE s(id) AS ('
     'SELECT id FROM main.folder_entries '
-    'WHERE id = ?1 AND driveId = ?2 AND isHidden = 0 '
+    'WHERE id = ?1 AND driveId = ?2 AND isHidden = 0 AND isGhost = 0 '
     'UNION SELECT f.id FROM main.folder_entries f JOIN s '
-    'ON f.parentFolderId = s.id WHERE f.driveId = ?2 AND f.isHidden = 0) '
+    'ON f.parentFolderId = s.id '
+    'WHERE f.driveId = ?2 AND f.isHidden = 0 AND f.isGhost = 0) '
     'INSERT INTO temp.page_folders (id) SELECT id FROM s',
     [scope.rootFolderId, driveId],
   );

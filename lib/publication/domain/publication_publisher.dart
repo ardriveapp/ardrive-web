@@ -152,9 +152,6 @@ class PublicationJob {
   bool _bundleDone = false;
   String? _publishedAt;
 
-  /// A private page's sealed block IV, made once: a retry signs nothing new.
-  Uint8List? _sealedIv;
-
   /// The literal names that will point at this version, written into
   /// `publication.json` (docs/NAMES.md, Q25). Set before publishing.
   List<String> names = const [];
@@ -188,7 +185,6 @@ class PublicationJob {
       labels: labels,
       method: method,
     )
-      .._sealedIv = _sealedIv
       .._snapshotTxId = _snapshotTxId
       .._snapshotTags = _snapshotTags
       .._resumeSnapshot = _resumeSnapshot
@@ -523,7 +519,13 @@ class PublicationPublisher {
 
   Future<List<_Signed>> _signPrivate(PublicationJob job, Wallet wallet) async {
     job._publishedAt ??= publicationTimestamp(_now());
-    job._sealedIv ??= secureRandomBytes(ivBytes);
+    // A new IV every time the sealed block is encrypted, never kept on the
+    // job: signing that stops partway is signed again from the start, the
+    // catalog gets a new ID, and the block is then a new plaintext under the
+    // same publication key. Reusing the IV for it would break AES-GCM.
+    // Signing that finished is kept whole (`PublicationJob._signed`), so a
+    // retry after it encrypts nothing.
+    final sealedIv = secureRandomBytes(ivBytes);
     final plan = job.privatePage!;
     final signed = <_Signed>[];
     final ids = <String, String>{
@@ -545,11 +547,12 @@ class PublicationPublisher {
     final draft = jsonDecode(_privatePublicationJson(
       job,
       sealedTxId: catalogTxId,
+      sealedIv: sealedIv,
       publishedAt: job._publishedAt!,
     )) as Map;
     final sealed = await Sealing().sealBlock(
       plan.publicationKey,
-      job._sealedIv!,
+      sealedIv,
       plan.sealedBlock(scope: _scopeJson(job), catalogTxId: catalogTxId),
       draft,
     );
@@ -557,6 +560,7 @@ class PublicationPublisher {
     for (final item in _privatePageItems(
       job,
       sealedTxId: sealedTxId,
+      sealedIv: sealedIv,
       socialId: ids['social.jpg'],
       publishedAt: job._publishedAt!,
     )) {
@@ -585,6 +589,7 @@ class PublicationPublisher {
     final pages = _privatePageItems(
       job,
       sealedTxId: placeholderId,
+      sealedIv: Uint8List(ivBytes),
       socialId: ids['social.jpg'],
       publishedAt: publicationTimestamp(_now()),
     );
@@ -620,6 +625,7 @@ class PublicationPublisher {
   String _privatePublicationJson(
     PublicationJob job, {
     required String sealedTxId,
+    required Uint8List sealedIv,
     required String publishedAt,
   }) =>
       buildPrivatePublicationJson(
@@ -628,7 +634,7 @@ class PublicationPublisher {
         folderId: job.scope.folderIdOrNull,
         owner: job.owner,
         sealedTxId: sealedTxId,
-        sealedIv: b64u(job._sealedIv ?? Uint8List(ivBytes)),
+        sealedIv: b64u(sealedIv),
         slots: job.privatePage!.slots,
         title: job.title,
         description: job.description,
@@ -651,6 +657,7 @@ class PublicationPublisher {
   List<PublicationItem> _privatePageItems(
     PublicationJob job, {
     required String sealedTxId,
+    required Uint8List sealedIv,
     required String? socialId,
     required String publishedAt,
   }) {
@@ -666,7 +673,9 @@ class PublicationPublisher {
       text(
         'publication.json',
         _privatePublicationJson(job,
-            sealedTxId: sealedTxId, publishedAt: publishedAt),
+            sealedTxId: sealedTxId,
+            sealedIv: sealedIv,
+            publishedAt: publishedAt),
         'application/json',
       ),
       text(

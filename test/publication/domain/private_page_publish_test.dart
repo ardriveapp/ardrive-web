@@ -18,7 +18,8 @@ import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/sealed/seal_codec.dart';
-import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
+import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart'
+    hide PublicationFailure;
 import 'package:ardrive/utils/session_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' show decodeBase64ToString;
@@ -39,6 +40,8 @@ const _budget = 'f0000002-0000-4000-8000-000000000002';
 const _hiddenFile = 'f0000003-0000-4000-8000-000000000003';
 const _underHidden = 'f0000004-0000-4000-8000-000000000004';
 const _renamed = 'f0000005-0000-4000-8000-000000000005';
+const _ghostFolder = 'e0e0e0e0-0000-4000-8000-000000000005';
+const _underGhost = 'f0000006-0000-4000-8000-000000000006';
 
 /// Every name in the drive, which nothing public may carry.
 const _names = [
@@ -77,6 +80,25 @@ class _Recording extends PublicationUploader {
         );
 
   final posted = <DataItem>[];
+
+  /// The sealed IVs of every publication.json asked to be signed.
+  final sealedIvs = <String>[];
+
+  /// The wallet refuses the next publication.json, as it may mid-publish.
+  bool refuseNextSettings = false;
+
+  @override
+  Future<DataItem> sign(PublicationItem item, Wallet wallet) {
+    if (item.name == 'publication.json') {
+      sealedIvs.add((jsonDecode(utf8.decode(item.data))['sealed'] as Map)['iv']
+          as String);
+      if (refuseNextSettings) {
+        refuseNextSettings = false;
+        throw StateError('the wallet said no');
+      }
+    }
+    return super.sign(item, wallet);
+  }
 
   @override
   Future<void> postToTurbo(DataItem item, Wallet wallet) async =>
@@ -172,6 +194,14 @@ Future<void> _seed(Database db, String owner) async {
   await file(_hiddenFile, _root, ['secret-hidden.txt'], hidden: true);
   await file(_underHidden, _hiddenFolder, ['under-hidden.txt']);
   await file(_renamed, _docs, ['Old Name.txt', 'New Name.txt']);
+  // A folder this client never read: no revision, only a placeholder row.
+  await sql(
+    'INSERT INTO folder_entries (id, driveId, name, parentFolderId, path, '
+    "dateCreated, lastUpdated, isGhost, isHidden) VALUES (?, ?, ?, ?, '', "
+    '?, ?, 1, 0)',
+    [_ghostFolder, _drive, _ghostFolder, _root, t0, t0],
+  );
+  await file(_underGhost, _ghostFolder, ['in-ghost.txt']);
 }
 
 void main() {
@@ -224,6 +254,7 @@ void main() {
     required String scopeRoot,
     String? password,
     String title = '',
+    _Recording? recording,
   }) async {
     final catalogKey = secureRandomBytes(32);
     final prepared = await DriveStateCreationService(
@@ -257,7 +288,7 @@ void main() {
       },
       rootFolderId: _root,
     );
-    final uploader = _Recording();
+    final uploader = recording ?? _Recording();
     final publisher = PublicationPublisher(
       uploader: uploader,
       driveStateUploader: _NoSnapshots(),
@@ -269,38 +300,41 @@ void main() {
       client: MockClient((_) async => http.Response('', 200)),
       now: () => DateTime.utc(2026, 11, 18, 12),
     );
-    await publisher.publish(
-      PublicationJob(
-        publicationId: publicationId,
-        driveId: _drive,
-        rootFolderId: _root,
-        scope: scopeRoot == _root
-            ? const PublicationDriveScope()
-            : PublicationFolderScope(scopeRoot),
-        privacy: 'private',
-        owner: owner,
-        ownerName: null,
-        title: title,
-        description: '',
-        keywords: const [],
-        license: null,
-        icon: null,
-        cover: null,
-        social: null,
-        privatePage: plan,
-        snapshot: const NoSnapshot(),
-        release: release,
-        files: const [],
-        fileCount: 0,
-        labels: const PublicationLabels(
-          filesPage: 'All files',
-          openPage: 'Open',
-          moreFiles: 'And {count} more.',
-        ),
-        method: UploadMethod.turbo,
+    final job = PublicationJob(
+      publicationId: publicationId,
+      driveId: _drive,
+      rootFolderId: _root,
+      scope: scopeRoot == _root
+          ? const PublicationDriveScope()
+          : PublicationFolderScope(scopeRoot),
+      privacy: 'private',
+      owner: owner,
+      ownerName: null,
+      title: title,
+      description: '',
+      keywords: const [],
+      license: null,
+      icon: null,
+      cover: null,
+      social: null,
+      privatePage: plan,
+      snapshot: const NoSnapshot(),
+      release: release,
+      files: const [],
+      fileCount: 0,
+      labels: const PublicationLabels(
+        filesPage: 'All files',
+        openPage: 'Open',
+        moreFiles: 'And {count} more.',
       ),
-      wallet,
+      method: UploadMethod.turbo,
     );
+    try {
+      await publisher.publish(job, wallet);
+    } on PublicationFailure {
+      // Try again, with the same job, as the dialog does.
+      await publisher.publish(job, wallet);
+    }
     return (posted: uploader.posted, plan: plan);
   }
 
@@ -448,7 +482,24 @@ void main() {
 
   test('a drive page leaves hidden items out, with their keys', () async {
     final (posted: _, :plan) = await publish(scopeRoot: _root);
+    // Nor what is under a ghost folder, which the owner's summary leaves out.
     expect(plan.fileKeys.keys.toSet(), {_diary, _budget, _renamed});
+  });
+
+  test('signing again after the wallet refused never reuses the sealed IV',
+      () async {
+    final recording = _Recording()..refuseNextSettings = true;
+    final (:posted, :plan) =
+        await publish(scopeRoot: _root, recording: recording);
+    expect(recording.sealedIvs, hasLength(2));
+    expect(recording.sealedIvs.toSet(), hasLength(2));
+    final parts = partsOf(posted);
+    final settings = jsonDecode(utf8.decode(parts['publication.json']!));
+    expect(settings['sealed']['iv'], recording.sealedIvs.last);
+    final (cubit, db, _) = await open(parts, linkKey: plan.linkKey);
+    expect(cubit.state, isA<PublicationReady>(), reason: '${cubit.state}');
+    await cubit.close();
+    await db.close();
   });
 
   test('an update carries its slots forward and keeps a password', () async {
