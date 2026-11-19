@@ -180,7 +180,7 @@ Widget _buildDataListContent(
       // their meaning. They go before License as the table narrows.
       TableColumn(
         l10n.tableColumnType,
-        2,
+        3,
         index: ColumnIndexes.type,
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
