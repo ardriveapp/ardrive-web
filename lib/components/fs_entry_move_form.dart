@@ -81,6 +81,20 @@ class _FsEntryMoveFormState extends State<FsEntryMoveForm> {
     });
   }
 
+  /// Every item is already in the folder in view, so moving there would
+  /// change nothing.
+  bool _alreadyHere(FsEntryMoveLoadSuccess state) {
+    final here = state.viewingFolder.folder.id;
+    return state.itemsToMove.isNotEmpty &&
+        state.itemsToMove.every((item) => switch (item) {
+              FileDataTableItem(:final parentFolderId) =>
+                parentFolderId == here,
+              FolderDataTableItem(:final parentFolderId) =>
+                parentFolderId == here,
+              _ => false,
+            });
+  }
+
   void _moveHere(BuildContext context, FsEntryMoveLoadSuccess state) {
     if (_inFlight) return;
     setState(() => _inFlight = true);
@@ -271,6 +285,7 @@ class _FsEntryMoveFormState extends State<FsEntryMoveForm> {
               action: () => _moveHere(context, step),
               title: l10n.moveHereEmphasized,
               isLoading: busy,
+              isEnable: !_alreadyHere(step),
             ),
           ],
         );

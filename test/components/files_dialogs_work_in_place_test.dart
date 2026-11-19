@@ -559,6 +559,28 @@ void main() {
       expect(find.byType(ArDriveIcon), findsWidgets);
     });
 
+    testWidgets('Move here is held in the folder the items are already in',
+        (tester) async {
+      final here = createMockFileDataTableItem(parentFolderId: 'root');
+      final elsewhere = createMockFileDataTableItem(parentFolderId: 'Photos');
+      whenListen(bloc, states.stream,
+          initialState: FsEntryMoveLoadSuccess(
+            viewingRootFolder: true,
+            viewingFolder: loaded.viewingFolder,
+            itemsToMove: [here],
+          ));
+      await open(tester);
+      expect(button(tester, 'Move here').isDisabled, isTrue);
+
+      states.add(FsEntryMoveLoadSuccess(
+        viewingRootFolder: true,
+        viewingFolder: loaded.viewingFolder,
+        itemsToMove: [here, elsewhere],
+      ));
+      await tester.pump();
+      expect(button(tester, 'Move here').isDisabled, isFalse);
+    });
+
     testWidgets('while it moves the picker stays, busy', (tester) async {
       await open(tester);
 
