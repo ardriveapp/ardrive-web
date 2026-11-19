@@ -184,7 +184,7 @@ const _legacyCasts = <String, int>{
   'lib/blocs/fs_entry_license/fs_entry_license_bloc.dart': 2,
   'lib/blocs/fs_entry_move/fs_entry_move_bloc.dart': 1,
   'lib/blocs/fs_entry_rename/fs_entry_rename_cubit.dart': 1,
-  'lib/blocs/ghost_fixer/ghost_fixer_cubit.dart': 4,
+  'lib/blocs/ghost_fixer/ghost_fixer_cubit.dart': 1,
   'lib/blocs/hide/hide_bloc.dart': 5,
   'lib/blocs/pin_file/pin_file_bloc.dart': 5,
   'lib/blocs/profile/profile_cubit.dart': 1,

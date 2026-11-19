@@ -112,4 +112,24 @@ void main() {
       {'Link': false, 'Access key': true},
     );
   });
+
+  testWidgets('a failed or pending file is a notice with Close, not OK',
+      (tester) async {
+    for (final state in <FileShareState>[
+      FileShareLoadedFailedFile(),
+      FileShareLoadedPendingFile(),
+    ]) {
+      await pumpState(tester, state);
+
+      expect(find.byType(ArDriveNotice), findsOneWidget);
+      expect(find.text('OK'), findsNothing);
+      expect(
+        tester
+            .widget<ArDriveButtonNew>(
+                find.widgetWithText(ArDriveButtonNew, 'Close'))
+            .variant,
+        ButtonVariant.secondary,
+      );
+    }
+  });
 }

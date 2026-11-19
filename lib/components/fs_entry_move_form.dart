@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/components/folder_picker_body.dart';
+import 'package:ardrive/components/payment_required_notice.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -23,6 +24,7 @@ Future<void> promptToMove(
 }) {
   return showArDriveDialog(
     parentContext,
+    barrierDismissible: false,
     content: MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -46,344 +48,248 @@ Future<void> promptToMove(
   );
 }
 
-class FsEntryMoveForm extends StatelessWidget {
+class FsEntryMoveForm extends StatefulWidget {
   const FsEntryMoveForm({super.key});
+
+  @override
+  State<FsEntryMoveForm> createState() => _FsEntryMoveFormState();
+}
+
+class _FsEntryMoveFormState extends State<FsEntryMoveForm> {
+  /// The step the dialog was last on (the folder list, or the name conflict),
+  /// kept while the move runs or fails so the dialog stays as it was and says
+  /// the rest in itself.
+  FsEntryMoveState? _step;
+
+  /// Making a folder in the folder in view, in place of the list.
+  bool _creatingFolder = false;
+
+  /// Set when a move is asked for, cleared when the bloc answers with a
+  /// failure or a conflict: the bloc checks the wallet and the names before it
+  /// reports it is busy, so a quick second press would otherwise move twice.
+  bool _inFlight = false;
+
+  /// A move that is turned back before anything is reported (Wander could not
+  /// be reached and the person chose Cancel) emits no state at all, so the
+  /// flag is released after a while unless the bloc has gone busy.
+  void _releaseIfStuck(BuildContext context) {
+    final bloc = context.read<FsEntryMoveBloc>();
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && bloc.state is! FsEntryMoveLoadInProgress) {
+        setState(() => _inFlight = false);
+      }
+    });
+  }
+
+  /// Every item is already in the folder in view, so moving there would
+  /// change nothing.
+  bool _alreadyHere(FsEntryMoveLoadSuccess state) {
+    final here = state.viewingFolder.folder.id;
+    return state.itemsToMove.isNotEmpty &&
+        state.itemsToMove.every((item) => switch (item) {
+              FileDataTableItem(:final parentFolderId) =>
+                parentFolderId == here,
+              FolderDataTableItem(:final parentFolderId) =>
+                parentFolderId == here,
+              _ => false,
+            });
+  }
+
+  void _moveHere(BuildContext context, FsEntryMoveLoadSuccess state) {
+    if (_inFlight) return;
+    setState(() => _inFlight = true);
+    _releaseIfStuck(context);
+    context.read<FsEntryMoveBloc>().add(
+          FsEntryMoveSubmit(
+            folderInView: state.viewingFolder.folder,
+            showHiddenItems:
+                context.read<GlobalHideBloc>().state is ShowingHiddenItems,
+          ),
+        );
+    context.read<DriveDetailCubit>().forceDisableMultiselect = true;
+  }
+
+  void _skipConflicts(BuildContext context, FsEntryMoveNameConflict state) {
+    if (_inFlight) return;
+    setState(() => _inFlight = true);
+    _releaseIfStuck(context);
+    context.read<FsEntryMoveBloc>().add(
+          FsEntryMoveSkipConflicts(
+            folderInView: state.folderInView,
+            conflictingItems: state.conflictingItems,
+            showHiddenItems:
+                context.read<GlobalHideBloc>().state is ShowingHiddenItems,
+          ),
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<FsEntryMoveBloc, FsEntryMoveState>(
       listener: (context, state) {
-        if (state is FsEntryMoveLoadInProgress) {
-          showProgressDialog(
-            context,
-            title: appLocalizationsOf(context).movingItemsEmphasized,
-          );
-        } else if (state is FsEntryMoveSuccess) {
-          Navigator.pop(context);
+        if (state is FsEntryMoveSuccess) {
           Navigator.pop(context);
         } else if (state is FsEntryMoveWalletMismatch) {
           Navigator.pop(context);
-        } else if (state is FsEntryMoveFailure) {
-          Navigator.pop(context); // dismiss the progress dialog
-          if (state.isPaymentError) {
-            showTurboPaymentRequiredDialog(context);
-          } else {
-            showArDriveDialog(
-              context,
-              content: ArDriveStandardModalNew(
-                title: appLocalizationsOf(context).error,
-                description: appLocalizationsOf(context).actionFailedTryAgain,
-              ),
-            );
-          }
         }
       },
       builder: (context, state) {
-        return BlocBuilder<DriveDetailCubit, DriveDetailState>(
-          builder: (context, driveDetailState) {
-            return Builder(builder: (context) {
-              final typography = ArDriveTypographyNew.of(context);
+        if (state is FsEntryMoveLoadSuccess ||
+            state is FsEntryMoveNameConflict) {
+          _step = state;
+        }
+        final step = _step;
+        if (state is FsEntryMoveFailure ||
+            state is FsEntryMoveNameConflict ||
+            state is FsEntryMoveWalletMismatch) {
+          _inFlight = false;
+        }
+        final busy =
+            step != null && (_inFlight || state is FsEntryMoveLoadInProgress);
+        final failure = state is FsEntryMoveFailure ? state : null;
+        final l10n = appLocalizationsOf(context);
 
-              if (state is FsEntryMoveNameConflict) {
-                return ArDriveStandardModalNew(
-                  title: appLocalizationsOf(context).nameConflict,
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        appLocalizationsOf(context)
-                            .itemMoveNameConflict(state.destinationName),
-                        style: typography.paragraphNormal(),
-                      ),
-                      for (final itemName in state.conflictingFileNames() +
-                          state.conflictingFolderNames())
-                        Text(
-                          itemName,
-                          style: typography.paragraphNormal(),
-                        ),
-                    ],
-                  ),
-                  actions: [
-                    ModalAction(
-                      action: () {
-                        Navigator.pop(context);
-                      },
-                      title: appLocalizationsOf(context).cancelEmphasized,
-                    ),
-                    if (!state.areAllItemsConflicting())
-                      ModalAction(
-                        action: () {
-                          context.read<FsEntryMoveBloc>().add(
-                                FsEntryMoveSkipConflicts(
-                                  folderInView: state.folderInView,
-                                  conflictingItems: state.conflictingItems,
-                                  showHiddenItems: context
-                                      .read<GlobalHideBloc>()
-                                      .state is ShowingHiddenItems,
-                                ),
-                              );
-                        },
-                        title: appLocalizationsOf(context).skipEmphasized,
-                      ),
-                  ],
+        Widget? notice(VoidCallback retry) {
+          if (failure == null) return null;
+          return failure.isPaymentError
+              ? const PaymentRequiredNotice()
+              : ArDriveNotice(
+                  type: ArDriveNoticeType.error,
+                  title: l10n.couldNotMoveTitle,
+                  message: l10n.actionFailedTryAgain,
+                  actionLabel: l10n.tryAgain,
+                  onAction: retry,
                 );
-              }
-              if (state is FsEntryMoveLoadSuccess) {
-                final globalHideBloc = context.read<GlobalHideBloc>();
+        }
 
-                final List<FolderEntry> subFolders;
-                if (globalHideBloc.state is ShowingHiddenItems) {
-                  subFolders = state.viewingFolder.subfolders;
-                } else {
-                  subFolders = state.viewingFolder.subfolders
-                      .where((f) => !f.isHidden)
-                      .toList();
-                }
-
-                final items = [
-                  ...subFolders.map(
-                    (f) {
-                      final enabled = state.itemsToMove
-                          .where((item) => item.id == f.id)
-                          .isEmpty;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 16),
-                        child: GestureDetector(
-                          onTap: enabled
-                              ? () {
-                                  context.read<FsEntryMoveBloc>().add(
-                                        FsEntryMoveUpdateTargetFolder(
-                                          folderId: f.id,
-                                        ),
-                                      );
-                                }
-                              : null,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ArDriveIcons.folderOutline(
-                                size: 16,
-                                color: enabled ? null : _colorDisabled(context),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  f.name,
-                                  style: typography.paragraphNormal().copyWith(
-                                        color: enabled
-                                            ? null
-                                            : _colorDisabled(context),
-                                      ),
-                                ),
-                              ),
-                              ArDriveIcons.carretRight(
-                                size: 18,
-                                color: enabled ? null : _colorDisabled(context),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  ...state.viewingFolder.files.map(
-                    (f) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16.0,
-                        horizontal: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          ArDriveIcons.fileOutlined(
-                            size: 16,
-                            color: _colorDisabled(context),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              f.name,
-                              style: typography.paragraphNormal().copyWith(
-                                    color: _colorDisabled(context),
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
+        if (step is FsEntryMoveNameConflict) {
+          final names =
+              step.conflictingFileNames() + step.conflictingFolderNames();
+          final typography = ArDriveTypographyNew.of(context);
+          final failureNotice = notice(() => _skipConflicts(context, step));
+          return ArDriveStandardModalNew(
+            title: l10n.nameConflict,
+            scrollableContent: true,
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.itemMoveNameConflict(step.destinationName),
+                    style: typography.paragraphNormal(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colorTokens
+                          .textMid,
                     ),
                   ),
-                ];
+                  const SizedBox(height: ArDriveSpacing.sm),
+                  for (final name in names)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
+                      child: Text(name, style: typography.paragraphNormal()),
+                    ),
+                  if (failureNotice != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: ArDriveSpacing.md),
+                      child: failureNotice,
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              ModalAction.close(
+                action: () => Navigator.pop(context),
+                title: l10n.cancelEmphasized,
+                isEnable: !busy,
+              ),
+              if (!step.areAllItemsConflicting())
+                ModalAction(
+                  action: () => _skipConflicts(context, step),
+                  title: l10n.skipAndMoveRest,
+                  isLoading: busy,
+                ),
+            ],
+          );
+        }
 
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ArDriveCard(
-                    height: 441,
-                    width: kMediumDialogWidth,
-                    contentPadding: EdgeInsets.zero,
-                    content: SizedBox(
-                      height: 325,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.only(left: 16, right: 16),
-                            width: double.infinity,
-                            height: 77,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                AnimatedContainer(
-                                  width: !state.viewingRootFolder ? 20 : 0,
-                                  duration: const Duration(milliseconds: 200),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      context.read<FsEntryMoveBloc>().add(
-                                            FsEntryMoveGoBackToParent(
-                                              folderInView:
-                                                  state.viewingFolder.folder,
-                                            ),
-                                          );
-                                    },
-                                    child: AnimatedScale(
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      scale: !state.viewingRootFolder ? 1 : 0,
-                                      child: ArDriveIcons.arrowLeft(
-                                        size: 32,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                AnimatedPadding(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: !state.viewingRootFolder
-                                      ? const EdgeInsets.only(left: 8)
-                                      : const EdgeInsets.only(left: 0),
-                                  child: Text(
-                                    appLocalizationsOf(context).moveItems,
-                                    style: typography.paragraphXLarge(
-                                      fontWeight: ArFontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: ArDriveIcons.x(
-                                    size: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              itemCount: items.length,
-                              itemBuilder: (context, index) {
-                                return items[index];
-                              },
-                            ),
-                          ),
-                          const Divider(),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Flexible(
-                                child: ArDriveButtonNew(
-                                  typography: typography,
-                                  maxWidth: 200,
-                                  variant: ButtonVariant.secondary,
-                                  text: appLocalizationsOf(context)
-                                      .createFolderEmphasized,
-                                  content: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        ArDriveIcons.iconNewFolder1(),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          appLocalizationsOf(context)
-                                              .createFolderEmphasized,
-                                          style: typography.paragraphNormal(
-                                            fontWeight: ArFontWeight.semiBold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    showArDriveDialog(
-                                      context,
-                                      content: BlocProvider(
-                                        create: (context) => FolderCreateCubit(
-                                          driveId: state
-                                              .viewingFolder.folder.driveId,
-                                          parentFolderId:
-                                              state.viewingFolder.folder.id,
-                                          profileCubit:
-                                              context.read<ProfileCubit>(),
-                                          arweave:
-                                              context.read<ArweaveService>(),
-                                          turboUploadService: context
-                                              .read<TurboUploadService>(),
-                                          driveDao: context.read<DriveDao>(),
-                                        ),
-                                        child: const FolderCreateForm(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              Flexible(
-                                child: ArDriveButtonNew(
-                                  typography: typography,
-                                  maxWidth: 150,
-                                  variant: ButtonVariant.primary,
-                                  text: appLocalizationsOf(context)
-                                      .moveHereEmphasized,
-                                  onPressed: () {
-                                    context.read<FsEntryMoveBloc>().add(
-                                          FsEntryMoveSubmit(
-                                            folderInView:
-                                                state.viewingFolder.folder,
-                                            showHiddenItems: globalHideBloc
-                                                .state is ShowingHiddenItems,
-                                          ),
-                                        );
-                                    context
-                                        .read<DriveDetailCubit>()
-                                        .forceDisableMultiselect = true;
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+        if (step is! FsEntryMoveLoadSuccess) {
+          return const SizedBox();
+        }
+
+        if (_creatingFolder) {
+          return folderCreateStep(
+            context,
+            driveId: step.viewingFolder.folder.driveId,
+            parentFolderId: step.viewingFolder.folder.id,
+            onClose: () {
+              setState(() => _creatingFolder = false);
+              // A failed move left the list unwatched; watch it again so the
+              // new folder shows.
+              context.read<FsEntryMoveBloc>().add(
+                    FsEntryMoveUpdateTargetFolder(
+                      folderId: step.viewingFolder.folder.id,
+                    ),
+                  );
+            },
+          );
+        }
+
+        final globalHideBloc = context.read<GlobalHideBloc>();
+        final subFolders = globalHideBloc.state is ShowingHiddenItems
+            ? step.viewingFolder.subfolders
+            : step.viewingFolder.subfolders.where((f) => !f.isHidden).toList();
+        final failureNotice = notice(() => _moveHere(context, step));
+
+        return ArDriveStandardModalNew(
+          width: folderPickerWidth(context),
+          scrollableContent: true,
+          title: l10n.moveItems,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (failureNotice != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+                  child: failureNotice,
+                ),
+              FolderPickerBody(
+                folders: subFolders,
+                fileNames: step.viewingFolder.files.map((f) => f.name).toList(),
+                atRoot: step.viewingRootFolder,
+                enabled: !busy,
+                isFolderEnabled: (f) =>
+                    step.itemsToMove.where((item) => item.id == f.id).isEmpty,
+                onOpenFolder: (id) => context.read<FsEntryMoveBloc>().add(
+                      FsEntryMoveUpdateTargetFolder(folderId: id),
+                    ),
+                onBack: () => context.read<FsEntryMoveBloc>().add(
+                      FsEntryMoveGoBackToParent(
+                        folderInView: step.viewingFolder.folder,
                       ),
                     ),
-                  ),
-                );
-              } else {
-                return const SizedBox();
-              }
-            });
-          },
+                onCreateFolder: () => setState(() => _creatingFolder = true),
+              ),
+            ],
+          ),
+          actions: [
+            ModalAction.close(
+              action: () => Navigator.pop(context),
+              title: l10n.cancelEmphasized,
+              isEnable: !busy,
+            ),
+            ModalAction(
+              action: () => _moveHere(context, step),
+              title: l10n.moveHereEmphasized,
+              isLoading: busy,
+              isEnable: !_alreadyHere(step),
+            ),
+          ],
         );
       },
     );
   }
-
-  Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colorTokens.textXLow;
 }

@@ -74,25 +74,26 @@ void main() {
   ArDriveButtonNew button(WidgetTester tester, String text) => tester
       .widget<ArDriveButtonNew>(find.widgetWithText(ArDriveButtonNew, text));
 
-  testWidgets('is a standard dialog with Cancel and Fix', (tester) async {
+  testWidgets('is a standard dialog with Cancel and Recreate folder',
+      (tester) async {
     await pump(tester);
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
     expect(find.byType(ArDriveTextFieldNew), findsOneWidget);
     expect(find.text('Photos'), findsOneWidget);
     expect(button(tester, 'Cancel').variant, ButtonVariant.secondary);
-    expect(button(tester, 'FIX').variant, ButtonVariant.primary);
+    expect(button(tester, 'Recreate folder').variant, ButtonVariant.primary);
   });
 
   testWidgets('Fix waits for a valid name, then submits it', (tester) async {
     await pump(tester);
-    expect(button(tester, 'FIX').isDisabled, isTrue);
+    expect(button(tester, 'Recreate folder').isDisabled, isTrue);
 
     await tester.enterText(find.byType(TextField), 'Recovered');
     await tester.pump();
 
-    expect(button(tester, 'FIX').isDisabled, isFalse);
-    await tester.tap(find.text('FIX'));
+    expect(button(tester, 'Recreate folder').isDisabled, isFalse);
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Recreate folder'));
     verify(() => cubit.submit('Recovered')).called(1);
   });
 }
