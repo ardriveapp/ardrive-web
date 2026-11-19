@@ -4673,9 +4673,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "थंबनेल आपकी मुफ़्त अपलोड लिमिट इस्तेमाल करते हैं, और उसके खत्म होने पर Turbo क्रेडिट्स, और इनसे आपका अपलोड ज़्यादा समय ले सकता है।\nआप थंबनेल बाद में कभी भी जोड़ सकते हैं।",
+  "thumbnailsCostNote": "पहले आपकी मुफ़्त अपलोड लिमिट, फिर Turbo क्रेडिट्स इस्तेमाल होते हैं।",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "इस बदलाव के लिए आपके वॉलेट में काफ़ी AR नहीं है।",
   "@changeWalletShort": {

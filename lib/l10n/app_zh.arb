@@ -4673,9 +4673,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "缩略图会使用你的免费上传额度，用完后使用 Turbo 积分，并可能让上传耗时更长。\n你随时可以之后再添加缩略图。",
+  "thumbnailsCostNote": "先使用你的免费上传额度，然后使用 Turbo 积分。",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "你的钱包没有足够的 AR 来完成此次更改。",
   "@changeWalletShort": {

@@ -4673,9 +4673,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "Las miniaturas usan tu cupo de carga gratuito, o créditos de Turbo cuando se agote, y pueden hacer que tu carga tarde más.\nSiempre puedes adjuntar una miniatura después.",
+  "thumbnailsCostNote": "Usa tu cupo de carga gratuito y luego créditos de Turbo.",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "Tu monedero no tiene suficientes AR para este cambio.",
   "@changeWalletShort": {

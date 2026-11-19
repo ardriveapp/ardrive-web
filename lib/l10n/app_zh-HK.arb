@@ -4673,9 +4673,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "縮圖會使用你的免費上載額度，用完後使用 Turbo 積分，並可能令上載耗時更長。\n你隨時可以之後再加入縮圖。",
+  "thumbnailsCostNote": "先使用你的免費上載額度，然後使用 Turbo 積分。",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "你的錢包沒有足夠的 AR 來完成此次變更。",
   "@changeWalletShort": {

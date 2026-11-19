@@ -1,4 +1,5 @@
 import 'package:ardrive/components/upload_options.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -83,6 +84,22 @@ void main() {
     await tester.pump();
 
     expect(changed, isFalse);
+  });
+
+  testWidgets('says what thumbnails cost under the box, not in a hover tip',
+      (tester) async {
+    await pump(tester, compress: false);
+    await tester.tap(find.text('Options'));
+    await tester.pumpAndSettle();
+
+    const caption = 'Uses your free upload allowance, then Turbo Credits.';
+    expect(find.text(caption), findsOneWidget);
+    expect(find.byType(ArDriveIconButton), findsNothing);
+    // Lined up with its label, as the compression caption is.
+    expect(
+        tester.getTopLeft(find.text(caption)).dx,
+        closeTo(
+            tester.getTopLeft(find.text('Upload with thumbnails')).dx, 0.6));
   });
 
   testWidgets('says nothing about thumbnails without images', (tester) async {

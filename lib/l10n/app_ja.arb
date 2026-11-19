@@ -4673,9 +4673,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "サムネイルは無料アップロード枠を使用し、使い切った後はTurboクレジットを使用します。アップロードに時間がかかる場合があります。\nサムネイルは後からいつでも添付できます。",
+  "thumbnailsCostNote": "無料アップロード枠を使用し、その後はTurboクレジットを使用します。",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "ウォレットのARがこの変更に足りません。",
   "@changeWalletShort": {
