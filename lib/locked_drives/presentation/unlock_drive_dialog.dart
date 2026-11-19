@@ -254,16 +254,16 @@ class _UnlockDriveDialogState extends State<UnlockDriveDialog> {
                 ],
                 if (state.status == UnlockDriveStatus.networkError ||
                     state.status == UnlockDriveStatus.walletFailed) ...[
-                  const SizedBox(height: ArDriveSpacing.xs),
+                  const SizedBox(height: ArDriveSpacing.md),
                   // Read out when it appears: a failed unlock was silent.
                   Semantics(
                     liveRegion: true,
-                    child: ArDriveStatusText(
+                    child: ArDriveNotice(
                       key: const Key('unlockDriveNetworkError'),
-                      text: state.status == UnlockDriveStatus.walletFailed
+                      type: ArDriveNoticeType.error,
+                      message: state.status == UnlockDriveStatus.walletFailed
                           ? strings.unlockWalletFailed
                           : strings.unlockNetworkError,
-                      type: ArDriveStatusType.error,
                     ),
                   ),
                 ],

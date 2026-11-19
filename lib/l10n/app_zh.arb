@@ -165,7 +165,7 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "购买积分",
-  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "actionFailedTryAgain": "出了点问题。请检查网络连接后重试。",
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
   "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "是否移除网盘?",
+  "detachDrive": "移除网盘",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "你确定要移除名为'{driveName}'的网盘吗?",
+  "detachDriveQuestion": "名为'{driveName}'的网盘将从你的网盘中移除。",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "下载完成！",
+  "downloadFinished": "下载完成",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "下载文件中...",
+  "downloadingFile": "正在下载文件",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "已有同名的网盘。",
+  "renameAnyway": "仍然重命名",
   "renameEmphasized": "重命名",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "更新私有网盘",
+  "privateDrivesNeedUpdate": "这些私有网盘需要更新才能继续使用。",
+  "privateDrivesUpdated": "你的私有网盘已更新。",
+  "privateDrivesUpdateFailed": "有一个网盘无法更新。请重试。",
+  "updateAction": "更新",
   "skip": "跳过",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "该密钥无法打开此网盘。",
+  "attachDriveOwner": "所有者：{owner}",
   "attachDrivePrivateFound": "这是私有网盘。请输入其访问密钥以继续。",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
@@ -8143,5 +8152,29 @@
   "fileStatusPermanent": "永久",
   "@fileStatusPermanent": {"description": "Status column: the file's transaction is confirmed on Arweave and permanent"},
   "fileStatusFailed": "失败",
-  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"}
+  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"},
+  "changeExtensionTitle": "要更改文件扩展名吗?",
+  "changeExtensionBody": "扩展名将从 {previous} 变为 {next}。",
+  "couldNotRenameTitle": "无法重命名",
+  "couldNotCreateFolderTitle": "无法创建文件夹",
+  "nameAlreadyExistsHere": "这里已有名为 {name} 的文件或文件夹。请换一个名称。",
+  "couldNotRecreateFolderTitle": "无法重新创建文件夹",
+  "skipAndMoveRest": "跳过并移动其余项目",
+  "couldNotMoveTitle": "无法移动",
+  "failedToHideDrive": "隐藏云盘失败",
+  "failedToUnhideDrive": "取消隐藏云盘失败",
+  "hidingDrive": "正在隐藏云盘",
+  "unhidingDrive": "正在取消隐藏云盘",
+  "downloadLargeFileTitle": "下载大文件",
+  "downloadFileTooLargeTitle": "此文件太大，无法在此下载",
+  "exportCsvFailedTitle": "导出失败",
+  "exportingCsvTitle": "正在导出 CSV",
+  "createThumbnail": "创建缩略图",
+  "createThumbnailDescription": "缩略图是代表您文件的小图片，会显示在文件浏览器和文件详情中。",
+  "couldNotCreateThumbnailTitle": "无法创建缩略图",
+  "preparingYourFiles": "正在准备您的文件",
+  "saveNote": "保存笔记",
+  "keepEditing": "继续编辑",
+  "openingNote": "正在打开笔记",
+  "couldNotOpenNote": "无法打开笔记"
 }

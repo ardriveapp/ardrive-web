@@ -165,7 +165,7 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "クレジット購入",
-  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "actionFailedTryAgain": "問題が発生しました。接続を確認して、もう一度お試しください。",
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
   "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "ドライブを切り離しますか？",
+  "detachDrive": "ドライブを切り離す",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "'{driveName}'を切り離しますか？",
+  "detachDriveQuestion": "'{driveName}'はドライブ一覧から削除されます。",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "ダウンロードが完了しました！",
+  "downloadFinished": "ダウンロードが完了しました",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "ファイルのダウンロード中...",
+  "downloadingFile": "ファイルをダウンロードしています",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "この名前のドライブはすでにあります。",
+  "renameAnyway": "そのまま名前を変更",
   "renameEmphasized": "名前を変更する",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "プライベートドライブを更新",
+  "privateDrivesNeedUpdate": "これらのプライベートドライブは、引き続き使うために更新が必要です。",
+  "privateDrivesUpdated": "プライベートドライブを更新しました。",
+  "privateDrivesUpdateFailed": "ドライブを更新できませんでした。もう一度お試しください。",
+  "updateAction": "更新",
   "skip": "スキップする",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "このキーではこのドライブを開けません。",
+  "attachDriveOwner": "所有者: {owner}",
   "attachDrivePrivateFound": "これはプライベートドライブです。続行するにはアクセスキーを入力してください。",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
@@ -8143,5 +8152,29 @@
   "fileStatusPermanent": "永久",
   "@fileStatusPermanent": {"description": "Status column: the file's transaction is confirmed on Arweave and permanent"},
   "fileStatusFailed": "失敗",
-  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"}
+  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"},
+  "changeExtensionTitle": "ファイルの拡張子を変更しますか?",
+  "changeExtensionBody": "拡張子が {previous} から {next} に変わります。",
+  "couldNotRenameTitle": "名前を変更できませんでした",
+  "couldNotCreateFolderTitle": "フォルダを作成できませんでした",
+  "nameAlreadyExistsHere": "ここには {name} という名前のファイルまたはフォルダがすでにあります。別の名前を選んでください。",
+  "couldNotRecreateFolderTitle": "フォルダを再作成できませんでした",
+  "skipAndMoveRest": "競合をスキップして残りを移動",
+  "couldNotMoveTitle": "移動できませんでした",
+  "failedToHideDrive": "ドライブを非表示にできませんでした",
+  "failedToUnhideDrive": "ドライブを再表示できませんでした",
+  "hidingDrive": "ドライブを非表示にしています",
+  "unhidingDrive": "ドライブを再表示しています",
+  "downloadLargeFileTitle": "大きなファイルをダウンロード",
+  "downloadFileTooLargeTitle": "このファイルは大きすぎて、ここではダウンロードできません",
+  "exportCsvFailedTitle": "エクスポートに失敗しました",
+  "exportingCsvTitle": "CSV をエクスポートしています",
+  "createThumbnail": "サムネイルを作成",
+  "createThumbnailDescription": "サムネイルはファイルを表す小さな画像です。ファイルエクスプローラーとファイルの詳細に表示されます。",
+  "couldNotCreateThumbnailTitle": "サムネイルを作成できませんでした",
+  "preparingYourFiles": "ファイルを準備しています",
+  "saveNote": "ノートを保存",
+  "keepEditing": "編集を続ける",
+  "openingNote": "ノートを開いています",
+  "couldNotOpenNote": "ノートを開けませんでした"
 }

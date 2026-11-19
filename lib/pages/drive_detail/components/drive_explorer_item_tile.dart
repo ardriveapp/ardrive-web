@@ -631,9 +631,7 @@ Future<void> handleMarkdownFileEdit(
     // up while the file loads.
     unawaited(showArDriveDialog(
       context,
-      content: const Center(
-        child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
-      ),
+      content: ProgressDialog(title: appLocalizationsOf(context).openingNote),
       barrierDismissible: false,
     ));
     loaderOpen = true;
@@ -746,12 +744,12 @@ Future<void> handleMarkdownFileEdit(
       final strings = appLocalizationsOf(context);
       await showStandardDialog(
         context,
-        title: strings.error,
+        title: strings.couldNotOpenNote,
         description: strings.couldNotLoadFile,
         actions: [
-          ModalAction(
+          ModalAction.close(
             action: () => Navigator.of(context).pop(),
-            title: strings.ok,
+            title: strings.close,
           ),
         ],
       );

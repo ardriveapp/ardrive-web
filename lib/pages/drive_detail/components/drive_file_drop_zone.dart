@@ -30,7 +30,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      padding: const EdgeInsets.all(ArDriveSpacing.lg),
       child: IgnorePointer(
         child: Stack(
           children: [
@@ -59,9 +59,9 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                           description: appLocalizationsOf(context)
                               .errorDragAndDropFolder,
                           actions: [
-                            ModalAction(
+                            ModalAction.close(
                               action: () => Navigator.of(context).pop(false),
-                              title: appLocalizationsOf(context).ok,
+                              title: appLocalizationsOf(context).close,
                             ),
                           ],
                         ),
@@ -109,8 +109,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
 
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(ArDriveSpacing.md),
+        padding: const EdgeInsets.all(ArDriveSpacing.md),
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.width,
         decoration: BoxDecoration(
@@ -118,14 +118,14 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
             color: colorTokens.containerL0,
           ),
           color: colorTokens.containerL3,
-          borderRadius: BorderRadius.circular(ArDriveRadius.control),
+          borderRadius: BorderRadius.circular(ArDriveRadius.lg),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ArDriveIcons.iconUploadFiles(size: 64),
-            const SizedBox(width: 16),
+            const SizedBox(width: ArDriveSpacing.md),
             Text(
               appLocalizationsOf(context).uploadFiles,
               style: typography.heading1(

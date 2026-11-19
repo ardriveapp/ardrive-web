@@ -3,10 +3,9 @@ import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migra
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:ardrive/utils/open_url.dart';
 
 class PrivateDriveMigrationDialog extends StatefulWidget {
   const PrivateDriveMigrationDialog({super.key});
@@ -58,51 +57,42 @@ class _PrivateDriveMigrationDialogState
             state is PrivateDriveMigrationFailed ? state.error : null;
 
         return ArDriveStandardModalNew(
-          title: 'Update private drives',
-          hasCloseButton: false,
+          title: appLocalizationsOf(context).updatePrivateDrives,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (state is PrivateDriveMigrationComplete) ...[
-                const Text(
-                  'Drive updates complete!',
-                ),
-              ] else ...[
-                RichText(
-                  text: TextSpan(
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textMid,
-                    ),
+              if (state is PrivateDriveMigrationComplete)
+                Text(
+                  appLocalizationsOf(context).privateDrivesUpdated,
+                  style: typography.paragraphNormal(color: colorTokens.textMid),
+                )
+              else
+                Text.rich(
+                  TextSpan(
+                    style:
+                        typography.paragraphNormal(color: colorTokens.textMid),
                     children: [
-                      const TextSpan(
-                        text:
-                            'The following private drives need to be updated to continue using them in the future. Learn more ',
-                      ),
                       TextSpan(
-                        text: 'here',
-                        style: typography
-                            .paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold,
-                                color: colorTokens.textOnPrimary)
-                            .copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            launchUrl(
-                                Uri.parse(
-                                    'https://docs.ar.io/build/advanced/arfs/upgrading-drives'),
-                                mode: LaunchMode.externalApplication);
-                          },
+                        text:
+                            appLocalizationsOf(context).privateDrivesNeedUpdate,
                       ),
-                      const TextSpan(text: '.'),
+                      const TextSpan(text: ' '),
+                      ArDriveLink.span(
+                        text: appLocalizationsOf(context).learnMore,
+                        external: true,
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                        onTap: () => openUrl(
+                          url:
+                              'https://docs.ar.io/build/advanced/arfs/upgrading-drives',
+                        ),
+                      ),
                     ],
                   ),
-                )
-              ],
-              const SizedBox(height: 16),
+                ),
+              const SizedBox(height: ArDriveSpacing.md),
               Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
@@ -111,15 +101,14 @@ class _PrivateDriveMigrationDialogState
                       controller: _scrollController,
                       alwaysVisible: true,
                       child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 0),
+                        padding: EdgeInsets.zero,
                         controller: _scrollController,
                         shrinkWrap: true,
                         itemCount: drivesToMigrate.length,
                         itemBuilder: (BuildContext context, int index) {
                           final drive = drivesToMigrate[index];
                           final indicator = (completed.contains(drive))
-                              ? Icon(
-                                  Icons.check,
+                              ? ArDriveIcons.checkmark(
                                   size: 16.0,
                                   color: colorTokens.statusSuccessFg,
                                 )
@@ -130,14 +119,15 @@ class _PrivateDriveMigrationDialogState
                                       color: colorTokens.textMid,
                                     );
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: ArDriveSpacing.xxs),
                             child: Row(
                               mainAxisSize: MainAxisSize.max,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                const SizedBox(width: 12),
+                                const SizedBox(width: ArDriveSpacing.sm),
                                 indicator,
-                                const SizedBox(width: 8),
+                                const SizedBox(width: ArDriveSpacing.xs),
                                 Flexible(
                                   child: Text(
                                     drive.name,
@@ -155,13 +145,13 @@ class _PrivateDriveMigrationDialogState
               // A drive whose key the sign-in password doesn't make: its
               // own password, or skip it.
               if (state is PrivateDriveMigrationNeedsPassword) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 Text(
                   appLocalizationsOf(context)
                       .migrationDrivePasswordPrompt(state.drive.name),
                   style: typography.paragraphNormal(color: colorTokens.textMid),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ArDriveSpacing.xs),
                 ArDriveTextFieldNew(
                   key: const Key('migrationDrivePassword'),
                   controller: _password,
@@ -179,13 +169,12 @@ class _PrivateDriveMigrationDialogState
                 ),
               ],
               if (errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  errorMessage,
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colorTokens.textRed,
-                  ),
+                const SizedBox(height: ArDriveSpacing.md),
+                ArDriveNotice(
+                  type: ArDriveNoticeType.error,
+                  // The bloc's own text is English and for the log.
+                  message:
+                      appLocalizationsOf(context).privateDrivesUpdateFailed,
                 ),
               ]
             ],
@@ -198,18 +187,18 @@ class _PrivateDriveMigrationDialogState
                   ),
                   ModalAction(
                     action: () => _answer(_password.text),
-                    title: 'Update',
+                    title: appLocalizationsOf(context).updateAction,
                   ),
                 ]
               : [
-                  ModalAction(
+                  ModalAction.close(
                     action: () {
                       context
                           .read<PrivateDriveMigrationBloc>()
                           .add(const PrivateDriveMigrationCheck());
                       Navigator.of(context).pop();
                     },
-                    title: 'Close',
+                    title: appLocalizationsOf(context).close,
                     isEnable: state is! PrivateDriveMigrationInProgress,
                   ),
                   if (state is! PrivateDriveMigrationComplete) ...[
@@ -219,7 +208,7 @@ class _PrivateDriveMigrationDialogState
                         migrateBloc
                             .add(const PrivateDriveMigrationStartEvent());
                       },
-                      title: 'Update',
+                      title: appLocalizationsOf(context).updateAction,
                       isEnable: state is! PrivateDriveMigrationInProgress,
                     ),
                   ],
@@ -233,6 +222,7 @@ class _PrivateDriveMigrationDialogState
 void showMigratePrivateDrivesModal(BuildContext context) {
   showArDriveDialog(
     context,
+    barrierDismissible: false,
     content: const PrivateDriveMigrationDialog(),
   );
 }
