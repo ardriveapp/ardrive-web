@@ -417,7 +417,18 @@ class _MonthHeaderState extends State<_MonthHeader> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (onToggle != null)
+                Text(
+                  widget.title,
+                  style: typography.paragraphLarge(
+                    color: tokens.textHigh,
+                    fontWeight: ArFontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: ArDriveSpacing.sm),
+                Text(widget.count,
+                    style: typography.caption(color: tokens.textLow)),
+                if (onToggle != null) ...[
+                  const SizedBox(width: ArDriveSpacing.xs),
                   SizedBox(
                     width: 28,
                     height: 28,
@@ -461,17 +472,8 @@ class _MonthHeaderState extends State<_MonthHeader> {
                             ),
                           )
                         : null,
-                  ),
-                Text(
-                  widget.title,
-                  style: typography.paragraphLarge(
-                    color: tokens.textHigh,
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: ArDriveSpacing.sm),
-                Text(widget.count,
-                    style: typography.caption(color: tokens.textLow)),
+                  )
+                ],
               ],
             ),
           ),
