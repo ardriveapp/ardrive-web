@@ -40,18 +40,28 @@ class _UploadOptionsState extends State<UploadOptions> {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
     final l10n = appLocalizationsOf(context);
 
     final groups = <Widget>[
       if (_thumbnails != null)
-        CaptionedCheckbox(
-          title: l10n.uploadWithThumbnails,
-          caption: l10n.thumbnailsCostNote,
-          value: _thumbnails!,
-          onChanged: (value) {
-            setState(() => _thumbnails = value);
-            widget.onThumbnailsChanged(value);
-          },
+        Row(
+          children: [
+            ArDriveCheckBox(
+              title: l10n.uploadWithThumbnails,
+              useNewIcons: true,
+              checked: _thumbnails!,
+              titleStyle: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+              ),
+              onChange: (value) {
+                setState(() => _thumbnails = value);
+                widget.onThumbnailsChanged(value);
+              },
+            ),
+            const SizedBox(width: ArDriveSpacing.xxs),
+            ArDriveInfoTip(message: l10n.thumbnailsCostNote),
+          ],
         ),
       if (_compress != null)
         CompressTextAndCodeRow(
@@ -82,7 +92,9 @@ class _UploadOptionsState extends State<UploadOptions> {
   }
 }
 
-/// "Compress text and code": a [CaptionedCheckbox] with what it means.
+/// "Compress text and code": a checkbox like the thumbnails one beside it,
+/// since the choice applies when Upload is pressed, with what it means as a
+/// caption under the label, lined up with the label rather than the box.
 class CompressTextAndCodeRow extends StatelessWidget {
   const CompressTextAndCodeRow({
     super.key,
@@ -93,37 +105,6 @@ class CompressTextAndCodeRow extends StatelessWidget {
   final bool value;
   final void Function(bool) onChanged;
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = appLocalizationsOf(context);
-    return CaptionedCheckbox(
-      title: l10n.compressTextAndCode,
-      caption: l10n.compressTextAndCodeHint,
-      value: value,
-      onChanged: onChanged,
-    );
-  }
-}
-
-/// An upload option: a checkbox, since the choice applies when Upload is
-/// pressed, with what it means or costs as a caption under the label, lined
-/// up with the label rather than the box. A caption reads the same with a
-/// mouse, a finger or a screen reader, where a hover tip reached only the
-/// first.
-class CaptionedCheckbox extends StatelessWidget {
-  const CaptionedCheckbox({
-    super.key,
-    required this.title,
-    required this.caption,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String title;
-  final String caption;
-  final bool value;
-  final void Function(bool) onChanged;
-
   /// The box and the gap the checkbox leaves before its label.
   static const double _labelIndent = 18.5 + 8;
 
@@ -131,13 +112,14 @@ class CaptionedCheckbox extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         ArDriveCheckBox(
-          title: title,
+          title: l10n.compressTextAndCode,
           useNewIcons: true,
           checked: value,
           titleStyle: typography.paragraphNormal(
@@ -148,7 +130,7 @@ class CaptionedCheckbox extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: _labelIndent),
           child: Text(
-            caption,
+            l10n.compressTextAndCodeHint,
             style: typography.paragraphSmall(
               fontWeight: ArFontWeight.book,
               color: colorTokens.textMid,

@@ -22,10 +22,15 @@ class ArDriveTooltip extends StatefulWidget {
     super.key,
     required this.child,
     required this.message,
+    this.showOnTap = false,
   });
 
   final Widget child;
   final String message;
+
+  /// Shows the label on a click or tap as well, for a mark whose only job is
+  /// the label, such as [ArDriveInfoTip]. A click anywhere else puts it away.
+  final bool showOnTap;
 
   @override
   State<ArDriveTooltip> createState() => _ArDriveTooltipState();
@@ -124,6 +129,7 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
   }
 
   void _hide({Duration delay = Duration.zero}) {
+    _pinned = false;
     _timer?.cancel();
     _timer = null;
     final fade = _backingFade;
@@ -144,7 +150,32 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
   DateTime? _lastTouchDown;
   static const _touchHoverGrace = Duration(milliseconds: 1000);
 
+  /// Whether the label was up when the pointer went down: a second tap on
+  /// a touch screen puts it away rather than showing it again.
+  bool _shownAtDown = false;
+
+  /// Shown by a click, a tap or the keyboard, so it stays when the pointer
+  /// leaves, until a click elsewhere.
+  bool _pinned = false;
+
+  void _onPointerUp(PointerUpEvent event) {
+    if (!widget.showOnTap) return;
+    if (event.kind == PointerDeviceKind.touch && _shownAtDown) {
+      _hide();
+      return;
+    }
+    _showPinned();
+  }
+
+  void _showPinned() {
+    _pinned = true;
+    _show();
+  }
+
   void _onPointerDown(PointerDownEvent event) {
+    final fade = _backingFade?.status;
+    _shownAtDown =
+        fade == AnimationStatus.forward || fade == AnimationStatus.completed;
     if (event.kind == PointerDeviceKind.touch) _lastTouchDown = DateTime.now();
     if (!_longPressKinds.contains(event.kind)) return;
     // A long press here is the row's - see [ArDriveTooltipLongPressYields].
@@ -160,7 +191,11 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
     ))
       ..onLongPress = _onLongPress
       ..onLongPressUp = _onLongPressUp
-      ..onLongPressCancel = _hide
+      // A tap too short to be a long press ends here; a label it pinned
+      // stays.
+      ..onLongPressCancel = () {
+        if (!_pinned) _hide();
+      }
       ..addPointer(event);
   }
 
@@ -173,9 +208,18 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
 
   void _onAnyPointer(PointerEvent event) {
     if (event is PointerDownEvent &&
-        _longPress?.primaryPointer != event.pointer) {
+        _longPress?.primaryPointer != event.pointer &&
+        !(widget.showOnTap && _isOnChild(event.position))) {
       _hide();
     }
+  }
+
+  /// Whether [position] is over [child]: a press there is the mark's own,
+  /// handled when it lifts.
+  bool _isOnChild(Offset position) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return false;
+    return (box.localToGlobal(Offset.zero) & box.size).contains(position);
   }
 
   @override
@@ -213,9 +257,12 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
           }
           _show();
         },
-        onExit: (_) => _hide(delay: _hoverExitDelay),
+        onExit: (_) {
+          if (!_pinned) _hide(delay: _hoverExitDelay);
+        },
         child: Listener(
           onPointerDown: _onPointerDown,
+          onPointerUp: _onPointerUp,
           behavior: HitTestBehavior.opaque,
           child: child,
         ),
@@ -328,4 +375,62 @@ class ArDriveTooltipLongPressYields extends InheritedWidget {
 
   @override
   bool updateShouldNotify(ArDriveTooltipLongPressYields oldWidget) => false;
+}
+
+/// An info mark: [message] in a tooltip, shown on hover, on a click or tap,
+/// and from the keyboard with Enter or Space. A screen reader reads it as a
+/// button named by [message]. For a short note beside a control; a longer
+/// one belongs in the page or a dialog of its own.
+class ArDriveInfoTip extends StatefulWidget {
+  const ArDriveInfoTip({
+    super.key,
+    required this.message,
+    this.size = 16,
+    this.color,
+  });
+
+  final String message;
+  final double size;
+
+  /// The mark's colour; textMid when null.
+  final Color? color;
+
+  @override
+  State<ArDriveInfoTip> createState() => _ArDriveInfoTipState();
+}
+
+class _ArDriveInfoTipState extends State<ArDriveInfoTip> {
+  final _tooltip = GlobalKey<_ArDriveTooltipState>();
+
+  void _show() => _tooltip.currentState?._showPinned();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return Semantics(
+      button: true,
+      label: widget.message,
+      onTap: _show,
+      excludeSemantics: true,
+      child: ArDriveFocusable(
+        onActivate: _show,
+        radius: ArDriveRadius.control,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: ArDriveTooltip(
+            key: _tooltip,
+            message: widget.message,
+            showOnTap: true,
+            child: Padding(
+              padding: const EdgeInsets.all(ArDriveSpacing.xxs),
+              child: ArDriveIcons.info(
+                size: widget.size,
+                color: widget.color ?? colorTokens.textMid,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

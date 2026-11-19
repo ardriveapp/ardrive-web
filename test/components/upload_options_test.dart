@@ -1,6 +1,6 @@
 import 'package:ardrive/components/upload_options.dart';
-import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -86,20 +86,66 @@ void main() {
     expect(changed, isFalse);
   });
 
-  testWidgets('says what thumbnails cost under the box, not in a hover tip',
-      (tester) async {
-    await pump(tester, compress: false);
-    await tester.tap(find.text('Options'));
-    await tester.pumpAndSettle();
+  group('the thumbnails info mark', () {
+    const note = 'Uses your free upload allowance, then Turbo Credits.';
 
-    const caption = 'Uses your free upload allowance, then Turbo Credits.';
-    expect(find.text(caption), findsOneWidget);
-    expect(find.byType(ArDriveIconButton), findsNothing);
-    // Lined up with its label, as the compression caption is.
-    expect(
-        tester.getTopLeft(find.text(caption)).dx,
-        closeTo(
-            tester.getTopLeft(find.text('Upload with thumbnails')).dx, 0.6));
+    Future<void> openOptions(WidgetTester tester) async {
+      await pump(tester);
+      await tester.tap(find.text('Options'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows what thumbnails cost on a click', (tester) async {
+      await openOptions(tester);
+      expect(find.text(note), findsNothing);
+
+      await tester.tap(find.byType(ArDriveInfoTip));
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+
+      // A click elsewhere puts it away.
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('shows it on a tap, and a second tap puts it away',
+        (tester) async {
+      await openOptions(tester);
+      final mark = tester.getCenter(find.byType(ArDriveInfoTip));
+
+      await tester.tapAt(mark, kind: PointerDeviceKind.touch);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+
+      await tester.tapAt(mark, kind: PointerDeviceKind.touch);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('shows it from the keyboard', (tester) async {
+      await openOptions(tester);
+
+      // Tab order: the Options row, the checkbox, then the mark.
+      for (var i = 0; i < 3; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      }
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+    });
+
+    testWidgets('is a button named by the note to a screen reader',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openOptions(tester);
+
+      final node = tester.getSemantics(find.byType(ArDriveInfoTip));
+      expect(node.label, note);
+      expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      handle.dispose();
+    });
   });
 
   testWidgets('says nothing about thumbnails without images', (tester) async {
