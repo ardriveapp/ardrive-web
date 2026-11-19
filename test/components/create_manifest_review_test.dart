@@ -47,6 +47,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(UploadMethod.turbo);
+    registerFallbackValue(PrepareUploadPaymentMethod(params: _FakeParams()));
   });
 
   setUp(() {
@@ -96,6 +97,7 @@ void main() {
   Future<void> pumpReview(
     WidgetTester tester, {
     UploadPaymentMethodState? paymentState,
+    Stream<UploadPaymentMethodState>? paymentStream,
     bool pending = false,
     ArNSFlowNameCubit? names,
     Size size = const Size(1200, 900),
@@ -142,7 +144,7 @@ void main() {
     );
     whenListen(
       payment,
-      const Stream<UploadPaymentMethodState>.empty(),
+      paymentStream ?? const Stream<UploadPaymentMethodState>.empty(),
       initialState: paymentState ??
           UploadPaymentMethodLoaded(
             params: _FakeParams(),
@@ -300,6 +302,99 @@ void main() {
       tester.widget<ArDriveButtonNew>(primary('Cancel')).isDisabled,
       isTrue,
     );
+
+    gate.complete();
+    await tester.pump();
+  });
+
+  testWidgets('the wallet is used only when picked, then Create pays with it',
+      (tester) async {
+    final states = StreamController<UploadPaymentMethodState>();
+    addTearDown(states.close);
+    final loaded = UploadPaymentMethodLoaded(
+      params: _FakeParams(),
+      paymentMethodInfo: info().copyWith(sufficientArBalance: true),
+      canUpload: true,
+    );
+    when(() => payment.add(any())).thenAnswer((invocation) {
+      final event = invocation.positionalArguments.first;
+      if (event is ChangeUploadPaymentMethod) {
+        states.add(UploadPaymentMethodLoaded(
+          params: _FakeParams(),
+          paymentMethodInfo: loaded.paymentMethodInfo.copyWith(
+            uploadMethod: UploadMethod.ar,
+            arChosen: true,
+          ),
+          canUpload: true,
+        ));
+      }
+    });
+    await pumpReview(
+      tester,
+      paymentState: loaded,
+      paymentStream: states.stream,
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    // Turbo Credits first, the wallet an offered choice.
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
+    await tester.ensureVisible(find.text('Wallet (AR)'));
+    await tester.tap(find.text('Wallet (AR)'));
+    await tester.pump();
+    await tester.pump();
+
+    tester.widget<ArDriveButtonNew>(primary('Create deployment')).onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.uploadManifest(method: UploadMethod.ar)).called(1);
+  });
+
+  testWidgets('no Turbo price: the wallet-only review, Create pays with it',
+      (tester) async {
+    await pumpReview(
+      tester,
+      paymentState: UploadPaymentMethodLoaded(
+        params: _FakeParams(),
+        paymentMethodInfo: info(turbo: false)
+            .copyWith(sufficientArBalance: true, uploadMethod: UploadMethod.ar),
+        canUpload: true,
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Wallet (AR)'), findsOneWidget);
+    tester.widget<ArDriveButtonNew>(primary('Create deployment')).onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.uploadManifest(method: UploadMethod.ar)).called(1);
+  });
+
+  testWidgets('a wallet that changed says so, with nothing to try again',
+      (tester) async {
+    await pumpReview(tester, paymentState: UploadPaymentMethodWalletMismatch());
+
+    expect(find.byType(UploadCostBlock), findsNothing);
+    expect(find.textContaining('wallet changed'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+    expect(primary('Create deployment'), findsNothing);
+    expect(primary('Close'), findsOneWidget);
+  });
+
+  testWidgets('busy: the X is held as well as Cancel', (tester) async {
+    final gate = Completer<void>();
+    when(() => cubit.uploadManifest(method: any(named: 'method')))
+        .thenAnswer((_) => gate.future);
+    await pumpReview(tester);
+    tester.widget<ArDriveButtonNew>(primary('Create deployment')).onPressed!();
+    await tester.pump();
+
+    final x = find.ancestor(
+      of: find.byWidgetPredicate(
+          (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+      matching: find.byType(GestureDetector),
+    );
+    expect(tester.widget<GestureDetector>(x.first).onTap, isNull);
 
     gate.complete();
     await tester.pump();

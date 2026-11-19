@@ -405,6 +405,32 @@ void main() {
     );
 
     blocTest<DriveStateCreationCubit, DriveStateCreationState>(
+      'a top-up read that fails says the balance is unknown, and keeps the '
+      'artifact',
+      build: cubitWith,
+      setUp: () {
+        var call = 0;
+        when(() => costEstimator.estimate(
+              sizeInBytes: any(named: 'sizeInBytes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+            )).thenAnswer((_) async {
+          if (call++ > 0) throw Exception('offline');
+          return _cost();
+        });
+      },
+      act: (cubit) async {
+        await cubit.prepare();
+        await cubit.refreshTurboBalance();
+      },
+      verify: (cubit) {
+        final ready = cubit.state as DriveStateCreationReady;
+        expect(ready.cost.turboUnreachable, isTrue);
+        expect(ready.artifact.driveId, driveId);
+      },
+    );
+
+    blocTest<DriveStateCreationCubit, DriveStateCreationState>(
       'a top-up re-reads the balances without touching the artifact',
       build: cubitWith,
       setUp: () {

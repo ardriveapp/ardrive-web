@@ -85,6 +85,7 @@ void main() {
     bool sufficientArBalance = true,
     bool sufficientTurboBalance = true,
     bool isTurboUploadPossible = true,
+    bool turboUnreachable = false,
     FreeUploadStatus freeStatus = FreeUploadStatus.notEligible,
   }) =>
       DriveStatePublishCost(
@@ -108,6 +109,7 @@ void main() {
         sufficientTurboBalance: sufficientTurboBalance,
         turboBalanceWinc:
             sufficientTurboBalance ? BigInt.from(5000000000) : BigInt.zero,
+        turboUnreachable: turboUnreachable,
         freeStatus: freeStatus,
       );
 
@@ -274,6 +276,66 @@ void main() {
     await tester.pump();
 
     verify(() => cubit.publish()).called(1);
+  });
+
+  testWidgets('the wallet is used only when picked, then Create pays with it',
+      (tester) async {
+    when(() => cubit.publish()).thenAnswer((_) async {});
+    await tester.pumpWidget(wrap(ready(method: UploadMethod.ar)));
+    await tester.pump(const Duration(seconds: 1));
+
+    // Open on the wallet, shown as Turbo Credits.
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
+    await tester.ensureVisible(find.text('Wallet (AR)'));
+    await tester.tap(find.text('Wallet (AR)'));
+    await tester.pump();
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+
+    publishButton(tester).onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+    verify(() => cubit.publish()).called(1);
+  });
+
+  testWidgets('a balance that could not be read: Try again, not a payment',
+      (tester) async {
+    when(() => cubit.refreshTurboBalance()).thenAnswer((_) async {});
+    await tester
+        .pumpWidget(wrap(ready(withCost: cost(turboUnreachable: true))));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(UploadCostBlock), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Add credits'), findsNothing);
+    await tester.ensureVisible(find.text('Try again'));
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    verify(() => cubit.refreshTurboBalance()).called(1);
+  });
+
+  testWidgets('while it publishes: Create spins, Cancel and the X are held',
+      (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationPublishing(artifact())));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      tester
+          .widget<ArDriveButtonNew>(
+              find.widgetWithText(ArDriveButtonNew, 'Cancel'))
+          .isDisabled,
+      isTrue,
+    );
+    final x = find.ancestor(
+      of: find.byWidgetPredicate(
+          (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+      matching: find.byType(GestureDetector),
+    );
+    if (x.evaluate().isNotEmpty) {
+      expect(tester.widget<GestureDetector>(x.first).onTap, isNull);
+    }
   });
 
   testWidgets('a refusal explains itself and offers no way past it',

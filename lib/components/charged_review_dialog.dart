@@ -1,12 +1,20 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/components/turbo_credits_funding.dart';
 import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/turbo/services/credit_sharing_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// What a review that already knows its costs says about paying: the costs a
 /// cubit read, in the terms [UploadReviewSummary] decides from.
@@ -25,6 +33,8 @@ UploadPaymentMethodInfo chargedReviewPaymentInfo({
   required String arBalance,
   required bool sufficientArBalance,
   required FreeUploadStatus freeStatus,
+  bool turboUnreachable = false,
+  SourceWalletCredits? sourceWalletCredits,
 }) {
   // A zero estimate is the placeholder for a price Turbo did not give.
   final hasTurboPrice =
@@ -43,6 +53,8 @@ UploadPaymentMethodInfo chargedReviewPaymentInfo({
     freeStatus: freeStatus,
     totalSize: totalSize,
     turboBalanceWinc: turboBalance,
+    turboUnreachable: turboUnreachable,
+    sourceWalletCredits: sourceWalletCredits,
     arChosen: arChosen,
   );
 }
@@ -72,8 +84,12 @@ class ChargedReviewDialog extends StatefulWidget {
     required this.arBalance,
     required this.sufficientArBalance,
     required this.freeStatus,
+    required this.files,
+    this.turboUnreachable = false,
     this.leading = const [],
     this.extras = const [],
+    this.lookUpSourceCredits,
+    this.creditSharing,
   });
 
   final String title;
@@ -106,8 +122,22 @@ class ChargedReviewDialog extends StatefulWidget {
   final bool sufficientArBalance;
   final FreeUploadStatus freeStatus;
 
+  /// What is uploaded, as rows: the name and the size.
+  final List<UploadReviewFile> files;
+
+  /// The balance could not be read: no cost to pay on, only Try again.
+  final bool turboUnreachable;
+
   final List<Widget> leading;
   final List<Widget> extras;
+
+  /// Credits on the sign-in wallet, when credits are short. The app's own
+  /// lookup when null.
+  final Future<SourceWalletCredits?> Function(BuildContext context)?
+      lookUpSourceCredits;
+
+  /// Shares those credits to this account. The app's own when null.
+  final CreditSharingService? creditSharing;
 
   @override
   State<ChargedReviewDialog> createState() => _ChargedReviewDialogState();
@@ -119,6 +149,63 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
 
   /// The balance is being read again: no cost until it is back.
   var _reading = false;
+
+  /// Credits found on the sign-in wallet, asked once, and only when credits
+  /// are short: everyone else pays for none of it.
+  SourceWalletCredits? _sourceCredits;
+  var _lookedUp = false;
+
+  CreditSharingService get _sharing =>
+      widget.creditSharing ??
+      CreditSharingService.fromConfig(context.read<ConfigService>());
+
+  bool get _canShare =>
+      _sourceCredits?.walletType == WalletType.solana && _sharing.isSupported;
+
+  Future<SourceWalletCredits?> _findSourceCredits(BuildContext context) async {
+    final user = context.read<ArDriveAuth>().currentUser;
+    final address = user.sourceWalletAddress;
+    final type = walletTypeOfSourceAddress(address);
+    if (address == null || type == null) return null;
+    final balance = await context
+        .read<PaymentService>()
+        .getBalanceForAddress(address: address, walletType: type);
+    if (balance <= BigInt.zero) return null;
+    return SourceWalletCredits(
+      balance: balance,
+      sourceAddress: address,
+      walletType: type,
+      arweaveAddress: user.walletAddress,
+    );
+  }
+
+  Future<void> _lookUp() async {
+    try {
+      final found = await (widget.lookUpSourceCredits ?? _findSourceCredits)(
+          context);
+      if (mounted && found != null) setState(() => _sourceCredits = found);
+    } catch (e) {
+      logger.d('Could not check the sign-in wallet for credits: $e');
+    }
+  }
+
+  Future<bool> _share() async {
+    final credits = _sourceCredits;
+    if (credits == null || !_canShare) return false;
+    try {
+      await _sharing.shareCreditsFromSignInWallet(
+        sourceAddress: credits.sourceAddress,
+        approvedAddress: credits.arweaveAddress,
+        approvedWinc: credits.balance,
+      );
+    } catch (e) {
+      logger.i('Sharing credits from the sign-in wallet did not go through: $e');
+      return false;
+    }
+    // The grant changes what Turbo reports: read the balance again.
+    _refresh();
+    return true;
+  }
 
   Future<void> _refresh() async {
     setState(() => _reading = true);
@@ -140,6 +227,8 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
         arBalance: widget.arBalance,
         sufficientArBalance: widget.sufficientArBalance,
         freeStatus: widget.freeStatus,
+        turboUnreachable: widget.turboUnreachable,
+        sourceWalletCredits: _sourceCredits,
       );
 
   @override
@@ -147,6 +236,12 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
     final info = _info;
     final summary = _reading ? null : UploadReviewSummary.fromPaymentInfo(info);
     final legacy = summary?.usesLegacySelector ?? false;
+    if (summary != null && summary.needsCredits && !_lookedUp) {
+      _lookedUp = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _lookUp();
+      });
+    }
     // Shown as the review reads it: Turbo Credits until the wallet is picked.
     final shown = legacy
         ? info
@@ -157,7 +252,7 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
     return UploadReviewDialog(
       title: widget.title,
       destination: widget.destination,
-      files: const [],
+      files: widget.files,
       leading: widget.leading,
       extras: widget.extras,
       summary: summary,
@@ -169,6 +264,13 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
       },
       onCancel: widget.onCancel,
       funding: TurboCreditsFunding(context, onRefresh: _refresh),
+      canShareInApp: _canShare,
+      sourceWalletNotice: _sourceCredits == null
+          ? null
+          : SourceWalletCreditsNotice(
+              credits: _sourceCredits!,
+              onShare: _canShare ? _share : null,
+            ),
       paymentChoice: PaymentMethodSelector(
         key: ValueKey(shown.uploadMethod),
         uploadMethodInfo: shown,

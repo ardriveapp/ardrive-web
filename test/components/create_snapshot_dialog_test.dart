@@ -51,6 +51,7 @@ void main() {
         .thenAnswer((_) async {});
     when(() => cubit.confirmSnapshotCreation()).thenAnswer((_) async {});
     when(() => cubit.cancelSnapshotCreation()).thenAnswer((_) async {});
+    when(() => cubit.refreshTurboBalance()).thenAnswer((_) async {});
   });
 
   Future<void> pumpDialog(
@@ -169,7 +170,8 @@ void main() {
     expect(find.text('Create snapshot'), findsNWidgets(2),
         reason: 'the title and the action');
     expect(find.textContaining('makes My Drive load faster'), findsOneWidget);
-    expect(find.textContaining('Snapshot size'), findsOneWidget);
+    expect(find.text('2 KiB'), findsOneWidget,
+        reason: 'its row carries the size');
     expect(find.text('Upload snapshot'), findsNothing);
     expect(buttons(tester), ['Cancel', 'Create snapshot']);
 
@@ -330,5 +332,109 @@ void main() {
 
     gate.complete();
     await tester.pump();
+  });
+
+  ConfirmingSnapshotCreation walletCanPay({
+    bool turboPrice = true,
+    bool unreachable = false,
+  }) =>
+      ConfirmingSnapshotCreation(
+        snapshotSize: 2048,
+        costEstimateAr: UploadCostEstimate(
+          pstFee: BigInt.zero,
+          totalCost: BigInt.from(4000000000),
+          totalSize: 2048,
+          usdUploadCost: null,
+        ),
+        costEstimateTurbo: turboPrice
+            ? UploadCostEstimate(
+                pstFee: BigInt.zero,
+                totalCost: BigInt.from(3000000000),
+                totalSize: 2048,
+                usdUploadCost: 0.31,
+              )
+            : UploadCostEstimate.zero(),
+        hasNoTurboBalance: false,
+        isTurboUploadPossible: true,
+        arBalance: '1',
+        turboCredits: '1',
+        turboBalance: BigInt.from(5000000000),
+        turboUnreachable: unreachable,
+        // The cubit opens on the wallet; the review does not take that as a
+        // choice.
+        uploadMethod: UploadMethod.ar,
+        isButtonToUploadEnabled: true,
+        sufficientBalanceToPayWithAr: true,
+        sufficientBalanceToPayWithTurbo: true,
+        freeStatus: FreeUploadStatus.notEligible,
+      );
+
+  Future<void> settle(WidgetTester tester) =>
+      tester.pump(const Duration(seconds: 1));
+
+  testWidgets('the cubit opening on the wallet still shows Turbo Credits',
+      (tester) async {
+    await pumpDialog(tester, walletCanPay());
+    await settle(tester);
+
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
+    tester
+        .widget<ArDriveButtonNew>(
+            find.widgetWithText(ArDriveButtonNew, 'Create snapshot'))
+        .onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.setUploadMethod(UploadMethod.turbo)).called(1);
+  });
+
+  testWidgets('the wallet is used only when picked, then Create pays with it',
+      (tester) async {
+    await pumpDialog(tester, walletCanPay());
+    await settle(tester);
+
+    await tester.ensureVisible(find.text('Wallet (AR)'));
+    await tester.tap(find.text('Wallet (AR)'));
+    await tester.pump();
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+    tester
+        .widget<ArDriveButtonNew>(
+            find.widgetWithText(ArDriveButtonNew, 'Create snapshot'))
+        .onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+    verify(() => cubit.confirmSnapshotCreation()).called(1);
+  });
+
+  testWidgets('no Turbo price: the wallet-only review, Create pays with it',
+      (tester) async {
+    await pumpDialog(tester, walletCanPay(turboPrice: false));
+    await settle(tester);
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(buttons(tester), ['Cancel', 'Create snapshot']);
+    tester
+        .widget<ArDriveButtonNew>(
+            find.widgetWithText(ArDriveButtonNew, 'Create snapshot'))
+        .onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+    verify(() => cubit.confirmSnapshotCreation()).called(1);
+  });
+
+  testWidgets('a balance that could not be read: Try again, not a payment',
+      (tester) async {
+    await pumpDialog(tester, walletCanPay(unreachable: true));
+    await settle(tester);
+
+    expect(find.byType(UploadCostBlock), findsNothing);
+    expect(buttons(tester), ['Try again', 'Cancel']);
+    await tester.ensureVisible(find.text('Try again'));
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    verify(() => cubit.refreshTurboBalance()).called(1);
+    verifyNever(() => cubit.confirmSnapshotCreation());
   });
 }

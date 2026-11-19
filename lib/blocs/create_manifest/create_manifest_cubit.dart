@@ -391,7 +391,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (state is CreateManifestUploadReview) {
       try {
         final createManifestUploadReview = state as CreateManifestUploadReview;
-        _reviewToRetry = createManifestUploadReview;
+        // With the method it is sent by, so Try again pays the same way.
+        _reviewToRetry = createManifestUploadReview.copyWith(
+          uploadMethod: method ?? createManifestUploadReview.uploadMethod,
+        );
         final uploadType =
             (method ?? createManifestUploadReview.uploadMethod) ==
                     UploadMethod.ar

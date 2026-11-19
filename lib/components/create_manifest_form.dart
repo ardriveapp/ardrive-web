@@ -547,14 +547,30 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       child: BlocBuilder<UploadPaymentMethodBloc, UploadPaymentMethodState>(
         builder: (context, paymentState) {
           final paymentBloc = context.read<UploadPaymentMethodBloc>();
+          // The wallet is not the one signed in with: no price to read
+          // again, so no Try again to loop on.
+          if (paymentState is UploadPaymentMethodWalletMismatch) {
+            return ArDriveStandardModalNew(
+              width: kMediumDialogWidth,
+              title: l10n.createManifestEmphasized,
+              content: ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: l10n.deploymentWalletChanged,
+              ),
+              actions: [
+                ModalAction.close(
+                  action: () => Navigator.of(context).pop(false),
+                  title: l10n.close,
+                ),
+              ],
+            );
+          }
           // The same cost the upload review states. No price while it is read
           // again, after Add credits or Try again.
           final UploadReviewSummary? summary = switch (paymentState) {
             UploadPaymentMethodLoaded s =>
               UploadReviewSummary.fromPaymentInfo(s.paymentMethodInfo),
-            UploadPaymentMethodError _ ||
-            UploadPaymentMethodWalletMismatch _ =>
-              MetadataWriteCostReader.unavailable(),
+            UploadPaymentMethodError _ => MetadataWriteCostReader.unavailable(),
             _ => null,
           };
           final info = paymentState is UploadPaymentMethodLoaded
@@ -609,19 +625,15 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             paymentChoice: !(summary?.offersPaymentChoice == true ||
                     summary?.usesLegacySelector == true)
                 ? null
-                : RepositoryProvider.value(
-                    value: context.read<ArDriveUploadPreparationManager>(),
-                    child: UploadPaymentMethodView(
-                      // The review says what is short, above the choice; only the
-                      // wallet-only case keeps the selector's own messages.
-                      showBalanceMessages: summary?.usesLegacySelector ?? false,
-                      walletOnlyWhenChosen:
-                          !(summary?.usesLegacySelector ?? false),
-                      onError: () {},
-                      onUploadMethodChanged: (method, methodInfo, canUpload) =>
-                          cubit.selectUploadMethod(
-                              method, methodInfo, canUpload),
-                    ),
+                : UploadPaymentMethodView(
+                    // The review says what is short, above the choice; only the
+                    // wallet-only case keeps the selector's own messages.
+                    showBalanceMessages: summary?.usesLegacySelector ?? false,
+                    walletOnlyWhenChosen:
+                        !(summary?.usesLegacySelector ?? false),
+                    onError: () {},
+                    onUploadMethodChanged: (method, methodInfo, canUpload) =>
+                        cubit.selectUploadMethod(method, methodInfo, canUpload),
                   ),
             canShareInApp: paymentBloc.canShareSourceWalletCredits,
             sourceWalletNotice: info?.sourceWalletCredits == null

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
+import 'package:ardrive/components/charged_review_dialog.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
@@ -58,6 +60,8 @@ Future<DataItem> fakePrepareDataItem(invocation) async {
 class MockAppConfig extends Mock implements AppConfig {}
 
 class MockTurboUploadService extends Mock implements TurboUploadService {}
+
+CreateSnapshotCubit? cubitUnderTest;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -298,6 +302,138 @@ void main() {
         test('a used up allowance is reported as used up', () async {
           final state = await confirming(const TurboFreeAllowance.disabled());
           expect(state.freeStatus, FreeUploadStatus.allowanceUsedUp);
+        });
+      });
+
+      group('what the review is built from', () {
+        Future<ConfirmingSnapshotCreation> confirming() async {
+          final cubit = CreateSnapshotCubit(
+            arweave: arweave,
+            profileCubit: profileCubit,
+            driveDao: driveDao,
+            tabVisibility: tabVisibility,
+            pst: pst,
+            auth: auth,
+            configService: configService,
+            paymentService: paymentService,
+            turboBalanceRetriever: turboBalanceRetriever,
+            turboService: turboService,
+          );
+          addTearDown(cubit.close);
+          await cubit.confirmDriveAndHeighRange(
+            driveId,
+            range: Range(start: 0, end: 1),
+          );
+          cubitUnderTest = cubit;
+          return cubit.state as ConfirmingSnapshotCreation;
+        }
+
+        UploadReviewSummary reviewOf(ConfirmingSnapshotCreation state) =>
+            UploadReviewSummary.fromPaymentInfo(chargedReviewPaymentInfo(
+              method: state.uploadMethod,
+              arChosen: false,
+              totalSize: state.snapshotSize,
+              costEstimateAr: state.costEstimateAr,
+              costEstimateTurbo: state.costEstimateTurbo,
+              turboBalance: state.turboBalance,
+              turboCredits: state.turboCredits,
+              arBalance: state.arBalance,
+              sufficientArBalance: state.sufficientBalanceToPayWithAr,
+              freeStatus: state.freeStatus,
+              turboUnreachable: state.turboUnreachable,
+            ));
+
+        setUp(() {
+          // Paid: the allowance does not cover it, Turbo prices it at 1 and
+          // the balance is 1.
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.disabled());
+        });
+
+        test('the cubit opens on the wallet, yet the review shows Turbo',
+            () async {
+          final state = await confirming();
+
+          expect(state.uploadMethod, UploadMethod.ar);
+          expect(state.costEstimateTurbo!.totalCost, BigInt.one);
+          expect(state.turboBalance, BigInt.one);
+          final summary = reviewOf(state);
+          expect(summary.method, UploadMethod.turbo);
+          expect(summary.isCovered, isTrue);
+          expect(summary.isFree, isFalse);
+        });
+
+        test('with Turbo uploads off, Turbo is not priced, offered or free',
+            () async {
+          when(() => appConfig.useTurboUpload).thenAnswer((_) => false);
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+
+          final state = await confirming();
+
+          expect(state.costEstimateTurbo!.totalCost, BigInt.zero);
+          expect(state.freeStatus, FreeUploadStatus.notEligible);
+          expect(state.turboUnreachable, isFalse);
+          final summary = reviewOf(state);
+          expect(summary.method, UploadMethod.ar);
+          expect(summary.usesLegacySelector, isTrue);
+
+          // Not even by asking for it.
+          cubitUnderTest!.setUploadMethod(UploadMethod.turbo);
+          expect(
+            (cubitUnderTest!.state as ConfirmingSnapshotCreation).uploadMethod,
+            UploadMethod.ar,
+          );
+        });
+
+        test('a balance that could not be read is not zero credits', () async {
+          when(() => turboBalanceRetriever.getBalance(any()))
+              .thenThrow(Exception('offline'));
+
+          final state = await confirming();
+
+          expect(state.turboUnreachable, isTrue);
+          final summary = reviewOf(state);
+          expect(summary.priceUnavailable, isTrue);
+          expect(summary.needsCredits, isFalse,
+              reason: 'no invitation to pay on a guess');
+
+          // Try again: the balance reads, and the review prices.
+          when(() => turboBalanceRetriever.getBalance(any()))
+              .thenAnswer((_) async => BigInt.from(5));
+          await cubitUnderTest!.refreshTurboBalance();
+          final after = cubitUnderTest!.state as ConfirmingSnapshotCreation;
+          expect(after.turboUnreachable, isFalse);
+          expect(reviewOf(after).isCovered, isTrue);
+        });
+
+        test('a failed read after a payment keeps the last balance, unsure',
+            () async {
+          final state = await confirming();
+          expect(state.turboBalance, BigInt.one);
+
+          when(() => turboBalanceRetriever.getBalance(any()))
+              .thenThrow(Exception('offline'));
+          await cubitUnderTest!.refreshTurboBalance();
+
+          final after = cubitUnderTest!.state as ConfirmingSnapshotCreation;
+          expect(after.turboUnreachable, isTrue);
+          expect(reviewOf(after).priceUnavailable, isTrue);
+        });
+
+        test(
+            'no Turbo price puts the wallet in charge: there is no price '
+            'to try again on', () async {
+          when(() => paymentService.getPriceForBytes(
+              byteSize: any(named: 'byteSize'))).thenThrow(Exception('down'));
+
+          final state = await confirming();
+
+          final summary = reviewOf(state);
+          expect(summary.method, UploadMethod.ar);
+          expect(summary.usesLegacySelector, isTrue);
+          expect(summary.priceUnavailable, isFalse);
+          expect(summary.needsCredits, isFalse);
         });
       });
 

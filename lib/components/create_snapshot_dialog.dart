@@ -16,7 +16,6 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -416,12 +415,13 @@ Widget _confirmDialog(
           color: colorTokens.textMid,
         ),
       ),
-      const SizedBox(height: ArDriveSpacing.xs),
-      Text(
-        l10n.snapshotSize(filesize(state.snapshotSize)),
-        style: typography.paragraphNormal(
-          color: colorTokens.textMid,
-        ),
+    ],
+    // The snapshot is the one thing uploaded: its size is in its row.
+    files: [
+      (
+        name: drive.name,
+        size: state.snapshotSize,
+        contentType: 'application/json',
       ),
     ],
     method: state.uploadMethod,
@@ -433,6 +433,7 @@ Widget _confirmDialog(
     arBalance: state.arBalance,
     sufficientArBalance: state.sufficientBalanceToPayWithAr,
     freeStatus: state.freeStatus,
+    turboUnreachable: state.turboUnreachable,
     onMethodChanged: createSnapshotCubit.setUploadMethod,
     refresh: createSnapshotCubit.refreshTurboBalance,
     onConfirm: (_) => run(() async {

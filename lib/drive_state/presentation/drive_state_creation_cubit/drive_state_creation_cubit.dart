@@ -242,9 +242,15 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
       emit(current.copyWith(cost: cost));
     } catch (e) {
-      // The prices already on screen remain true; a failed refresh must not
-      // throw away a prepared artifact the user paid CPU time for.
+      // The artifact stays: a failed refresh must not throw away what the
+      // user paid CPU time for. But the balance on screen is no longer known
+      // to be true, so the review says so and offers Try again.
       logger.w('[drive-state] could not refresh the Turbo balance: $e');
+      if (isClosed) return;
+      final current = state;
+      if (current is DriveStateCreationReady) {
+        emit(current.copyWith(cost: current.cost.withTurboUnreachable()));
+      }
     }
   }
 

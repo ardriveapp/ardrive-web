@@ -18,7 +18,6 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -265,6 +264,13 @@ Widget _confirmModal(
         style: typography.paragraphSmall(color: colorTokens.textLow),
       ),
     ],
+    files: [
+      (
+        name: state.artifact.driveName,
+        size: state.artifact.sizeInBytes,
+        contentType: 'application/json',
+      ),
+    ],
     method: state.method,
     totalSize: state.artifact.sizeInBytes,
     costEstimateAr: state.cost.costEstimateAr,
@@ -274,6 +280,7 @@ Widget _confirmModal(
     arBalance: state.cost.arBalance,
     sufficientArBalance: state.cost.sufficientArBalance,
     freeStatus: state.cost.freeStatus,
+    turboUnreachable: state.cost.turboUnreachable,
     onMethodChanged: cubit.setUploadMethod,
     refresh: cubit.refreshTurboBalance,
     // The cubit refuses on its own what the method can't pay for.
@@ -297,14 +304,8 @@ Widget _summary(BuildContext context, DriveStateCreationReady state) {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _summaryRow(context, l10n.snapshotSummaryDrive, artifact.driveName),
         _summaryRow(
             context, l10n.snapshotSummaryItems, '${artifact.entityCount}'),
-        _summaryRow(
-          context,
-          l10n.snapshotSummarySize,
-          filesize(artifact.sizeInBytes),
-        ),
         _summaryRow(
           context,
           l10n.snapshotSummaryBlocks,

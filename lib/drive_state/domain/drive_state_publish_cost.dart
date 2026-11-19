@@ -47,6 +47,10 @@ class DriveStatePublishCost extends Equatable {
   /// [turboBalanceWinc], or zero.
   BigInt get turboBalance => turboBalanceWinc ?? BigInt.zero;
 
+  /// The Turbo balance could not be read, so [turboBalance] is a stand-in:
+  /// the review says so and offers Try again, never "short".
+  final bool turboUnreachable;
+
   /// Whether Turbo's free tier covers this artifact, and if not, why not.
   final FreeUploadStatus freeStatus;
 
@@ -61,7 +65,23 @@ class DriveStatePublishCost extends Equatable {
     required this.sufficientTurboBalance,
     required this.freeStatus,
     this.turboBalanceWinc,
+    this.turboUnreachable = false,
   });
+
+  /// This cost, with the balance in it marked as unreadable.
+  DriveStatePublishCost withTurboUnreachable() => DriveStatePublishCost(
+        costEstimateAr: costEstimateAr,
+        costEstimateTurbo: costEstimateTurbo,
+        isTurboUploadPossible: isTurboUploadPossible,
+        hasNoTurboBalance: hasNoTurboBalance,
+        arBalance: arBalance,
+        turboCredits: turboCredits,
+        sufficientArBalance: sufficientArBalance,
+        sufficientTurboBalance: sufficientTurboBalance,
+        turboBalanceWinc: turboBalanceWinc,
+        turboUnreachable: true,
+        freeStatus: freeStatus,
+      );
 
   bool get isFree => freeStatus == FreeUploadStatus.free;
 
@@ -105,6 +125,7 @@ class DriveStatePublishCost extends Equatable {
         sufficientArBalance,
         sufficientTurboBalance,
         turboBalanceWinc,
+        turboUnreachable,
         freeStatus,
       ];
 }
@@ -272,6 +293,7 @@ class DriveStatePublishCostEstimator {
     // the call has already returned, so a collaborator that throws on the way
     // to returning one is not caught by it at all.
     BigInt turboBalance;
+    var turboUnreachable = false;
     try {
       turboBalance = await _leg(
         'the Turbo balance',
@@ -281,6 +303,7 @@ class DriveStatePublishCostEstimator {
     } catch (e) {
       logger.e('[drive-state] could not read the Turbo balance', e);
       turboBalance = BigInt.zero;
+      turboUnreachable = isTurboUploadPossible;
     }
 
     return DriveStatePublishCost(
@@ -293,6 +316,7 @@ class DriveStatePublishCostEstimator {
       sufficientArBalance: walletBalance >= costEstimateAr.totalCost,
       sufficientTurboBalance: costEstimateTurbo.totalCost <= turboBalance,
       turboBalanceWinc: turboBalance,
+      turboUnreachable: turboUnreachable,
       freeStatus: await _freeStatus(
         sizeInBytes: sizeInBytes,
         itemSizes: itemSizes ?? [sizeInBytes],

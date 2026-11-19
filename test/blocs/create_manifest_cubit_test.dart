@@ -1,3 +1,5 @@
+import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
+import 'package:ardrive_uploader/ardrive_uploader.dart' show UploadType;
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -255,6 +257,68 @@ void main() {
       expect(uploads, 2);
       expect(cubit.state, isA<CreateManifestSuccess>());
       expect((cubit.state as CreateManifestSuccess).dataTxId, 'data-tx');
+      await cubit.close();
+    });
+
+    test('Try again pays the way the failed try did, the wallet included',
+        () async {
+      final profile = MockProfileCubit();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      final auth = MockArDriveAuth();
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      final file = await IOFile.fromData(
+        Uint8List(10),
+        name: 'site',
+        lastModifiedDate: DateTime(2024),
+      );
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: driveId,
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async => (false, null));
+      when(
+        () => manifestRepository.getManifestFile(
+          parentFolder: any(named: 'parentFolder'),
+          manifestName: any(named: 'manifestName'),
+          rootFolderNode: any(named: 'rootFolderNode'),
+          driveId: driveId,
+          fallbackTxId: any(named: 'fallbackTxId'),
+        ),
+      ).thenAnswer((_) async => file);
+      final types = <UploadType>[];
+      when(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        types.add((invocation.namedArguments[#params] as ManifestUploadParams)
+            .uploadType);
+        if (types.length == 1) throw Exception('offline');
+        return 'data-tx';
+      });
+
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth,
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      await cubit.checkForConflicts('site');
+
+      // The review sends the method it showed; the review state itself
+      // never held it.
+      await cubit.uploadManifest(method: UploadMethod.ar);
+      expect(cubit.state, isA<CreateManifestFailure>());
+      await cubit.retryUpload();
+
+      expect(types, [UploadType.d2n, UploadType.d2n]);
       await cubit.close();
     });
 
