@@ -374,7 +374,7 @@ class _ArDriveSectionedGalleryState extends State<ArDriveSectionedGallery> {
     return LayoutBuilder(builder: (context, constraints) {
       final phone = widget.isPhone ?? galleryScreenIsPhone(context);
       final target = widget.targetRowHeight ??
-          (phone ? galleryPhoneRowHeight : galleryDesktopRowHeight);
+          galleryTargetRowHeight(MediaQuery.sizeOf(context), isPhone: phone);
       final width =
           math.max(1.0, constraints.maxWidth - widget.padding.horizontal);
       final gap = phone ? galleryPhoneGap : galleryDesktopGap;

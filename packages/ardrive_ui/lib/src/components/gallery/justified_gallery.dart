@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -17,8 +19,30 @@ const double galleryPhoneGutter = 16;
 bool galleryScreenIsPhone(BuildContext context) =>
     MediaQuery.sizeOf(context).width < galleryPhoneBreakpoint;
 
-/// Row height and gap everywhere else.
+/// Row height and gap everywhere else, at the 1440x900 baseline.
 const double galleryDesktopRowHeight = 180;
+
+/// The tallest a desktop row grows to, on the biggest screens.
+const double galleryMaxRowHeight = 480;
+
+/// Tile size scales with the screen so the number of tiles on screen stays
+/// about what it is at 1440x900, however big the screen. A row's height grows
+/// with the square root of the screen's area (width and height each grow
+/// with it), so a 4x bigger screen has 2x taller rows and, for photos of the
+/// same shape, about as many tiles: more pixels, not more requests.
+///
+/// 1440x900 gives [galleryDesktopRowHeight] (180); 2560x1440 about 304;
+/// 3840x2160 about 455; never under 180 or over [galleryMaxRowHeight].
+/// The screen's size is used, not the gallery's, so a details panel opening
+/// beside it does not resize the tiles. A phone is [galleryPhoneRowHeight].
+double galleryTargetRowHeight(Size screen, {required bool isPhone}) {
+  if (isPhone) return galleryPhoneRowHeight;
+  const baseline = 1440.0 * 900.0;
+  final scaled = galleryDesktopRowHeight *
+      math.sqrt(screen.width * screen.height / baseline);
+  return scaled.clamp(galleryDesktopRowHeight, galleryMaxRowHeight);
+}
+
 const double galleryDesktopGap = ArDriveSpacing.xxs;
 
 typedef GalleryAspectRatio = double? Function(int index);
@@ -117,7 +141,7 @@ class _ArDriveJustifiedGalleryState extends State<ArDriveJustifiedGallery> {
     return LayoutBuilder(builder: (context, constraints) {
       final phone = widget.isPhone ?? galleryScreenIsPhone(context);
       final target = widget.targetRowHeight ??
-          (phone ? galleryPhoneRowHeight : galleryDesktopRowHeight);
+          galleryTargetRowHeight(MediaQuery.sizeOf(context), isPhone: phone);
       final width = constraints.maxWidth - widget.padding.horizontal;
       final gap = sanitizeGap(
         widget.gap ?? (phone ? galleryPhoneGap : galleryDesktopGap),

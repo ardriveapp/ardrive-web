@@ -673,4 +673,37 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('month headers align with the tiles', () {
+    testWidgets('text starts at the tiles\' left edge, at rest and on hover',
+        (tester) async {
+      await pump(tester, app(all));
+      double left(Finder f) => tester.getTopLeft(f).dx;
+      final tiles = left(tileOf('Alfama.jpg'));
+      expect(left(find.text('October 2026')), tiles);
+      expect(left(tileOf('Trips')), tiles);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('October 2026')));
+      await tester.pump();
+      expect(
+          find.byKey(const ValueKey('gallery-month-select')), findsOneWidget);
+      expect(left(find.text('October 2026')), tiles);
+      // The control sits after the count, not before the name.
+      expect(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('gallery-month-select')))
+            .dx,
+        greaterThan(left(find.text('3 items'))),
+      );
+    });
+
+    testWidgets('on a phone the same, inside the gutter', (tester) async {
+      await pump(tester, app(all), size: const Size(390, 800));
+      expect(tester.getTopLeft(find.text('October 2026')).dx, 16);
+      expect(tester.getTopLeft(tileOf('Alfama.jpg')).dx, 16);
+    });
+  });
 }
