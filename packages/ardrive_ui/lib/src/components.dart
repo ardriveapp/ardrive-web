@@ -37,3 +37,6 @@ export 'components/text_field_theme.dart';
 export 'components/text_field_new.dart';
 export 'components/toggle_switch.dart';
 export 'components/tooltip.dart';
+export 'components/gallery/gallery_tile.dart';
+export 'components/gallery/justified_gallery.dart';
+export 'components/gallery/justified_layout.dart';
