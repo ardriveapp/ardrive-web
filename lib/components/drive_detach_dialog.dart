@@ -68,7 +68,7 @@ class _DetachDriveModal extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     Widget line(String text, {bool emphasised = false}) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
           child: Text(
             text,
             style: typography.paragraphNormal(
@@ -101,7 +101,7 @@ class _DetachDriveModal extends StatelessWidget {
         ],
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(null),
           title: appLocalizationsOf(context).cancelEmphasized,
         ),

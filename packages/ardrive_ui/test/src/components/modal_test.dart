@@ -441,6 +441,52 @@ void main() {
       expect(wentBack, isFalse);
     });
 
+    // A dialog keeps itself open while its work runs (the design system:
+    // no progress dialog on top), so its Cancel and the X wait too.
+    testWidgets('a held Cancel holds the X: pressing it does nothing',
+        (tester) async {
+      var cancelled = 0;
+      await pump(tester, [
+        ModalAction.close(
+          action: () => cancelled++,
+          title: 'Cancel',
+          isEnable: false,
+        ),
+        ModalAction(action: () {}, title: 'Save', isLoading: true),
+      ]);
+      expect(xIcon, findsOneWidget);
+      await tester.tap(xIcon, warnIfMissed: false);
+      await tester.tap(find.text('Cancel'), warnIfMissed: false);
+      await tester.pump();
+      expect(cancelled, 0);
+      final cancel = tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+      expect(cancel.isDisabled, isTrue);
+    });
+
+    testWidgets('the X is named after the Cancel it runs, in its language',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, [
+        ModalAction.close(action: () {}, title: 'Cancelar'),
+        ModalAction(action: () {}, title: 'Guardar'),
+      ]);
+      expect(find.bySemanticsLabel('Cancelar'), findsWidgets);
+      expect(find.bySemanticsLabel('Close'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a Cancel that is not held still closes from the X',
+        (tester) async {
+      var cancelled = 0;
+      await pump(tester, [
+        ModalAction.close(action: () => cancelled++, title: 'Cancel'),
+        ModalAction(action: () {}, title: 'Save'),
+      ]);
+      await tester.tap(xIcon);
+      expect(cancelled, 1);
+    });
+
     testWidgets('false hides it and true shows it', (tester) async {
       await pump(tester, [ModalAction.close(action: () {}, title: 'Cancel')],
           hasCloseButton: false);
@@ -497,6 +543,30 @@ void main() {
       expect(tester.getSize(find.byType(ArDriveModalNew)).height - before,
           closeTo(280, 1));
     });
+  });
+
+  // The spec's gap between buttons in a row: xs, 8. It was 16.
+  testWidgets('the actions sit 8 apart', (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Center(
+            child: ArDriveStandardModalNew(
+              title: 'Title',
+              description: 'Text',
+              actions: [
+                ModalAction.dismiss(action: () {}, title: 'Cancel'),
+                ModalAction(action: () {}, title: 'Save'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final cancel =
+        tester.getRect(find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+    final save = tester.getRect(find.widgetWithText(ArDriveButtonNew, 'Save'));
+    expect(save.left - cancel.right, ArDriveSpacing.xs);
   });
 }
 

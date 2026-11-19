@@ -119,12 +119,16 @@ class ModalAction {
   /// secondary even when it is the only action: red says "this does the
   /// thing", and closing does nothing. A lone Cancel used to be drawn as a red
   /// primary button.
+  ///
+  /// [isEnable] false holds it while the dialog's work runs, such as a
+  /// rename being saved: the dialog stays open, its primary busy, until the
+  /// work ends in the dialog's own result or error.
   ModalAction.dismiss({
     required this.action,
     required this.title,
     this.customWidth,
-  })  : isEnable = true,
-        isLoading = false,
+    this.isEnable = true,
+  })  : isLoading = false,
         closesDialog = false,
         variant = ButtonVariant.secondary;
 
@@ -136,8 +140,8 @@ class ModalAction {
     required this.action,
     required this.title,
     this.customWidth,
-  })  : isEnable = true,
-        isLoading = false,
+    this.isEnable = true,
+  })  : isLoading = false,
         closesDialog = true,
         variant = ButtonVariant.secondary;
 
@@ -261,7 +265,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.width,
     this.hasCloseButton,
     this.close,
-    this.closeLabel = 'Close',
+    this.closeLabel,
     this.scrollableContent = false,
   });
 
@@ -284,7 +288,12 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final Function()? close;
 
   /// What a screen reader calls the close button.
-  final String closeLabel;
+  ///
+  /// When not given, the title of the dialog's Cancel or Close
+  /// ([ModalAction.close]), which the app has already put in the reader's
+  /// language, since the button does what that action does; "Close" when
+  /// the dialog has none.
+  final String? closeLabel;
 
   VoidCallback _close(BuildContext context) => () {
         if (close != null) {
@@ -325,6 +334,10 @@ class ArDriveStandardModalNew extends StatelessWidget {
 
     final showsClose = hasCloseButton ??
         (actions?.any((action) => action.closesDialog) ?? false);
+    // Held with the dialog's Cancel while its work runs: the X does what
+    // Cancel does, so it can't do it then either.
+    final closeEnabled =
+        actions?.where((a) => a.closesDialog).firstOrNull?.isEnable ?? true;
     final header = <Widget>[
       if (title != null || titleWidget != null) ...[
         Row(
@@ -345,19 +358,31 @@ class ArDriveStandardModalNew extends StatelessWidget {
               Semantics(
                 container: true,
                 button: true,
-                label: closeLabel,
+                label: closeLabel ??
+                    actions?.where((a) => a.closesDialog).firstOrNull?.title ??
+                    'Close',
+                // Said only while held, so a screen reader hears it can't be
+                // pressed; otherwise as before.
+                enabled: closeEnabled ? null : false,
                 excludeSemantics: true,
-                onTap: _close(context),
+                onTap: closeEnabled ? _close(context) : null,
                 child: ArDriveFocusable(
-                  onActivate: _close(context),
+                  onActivate: closeEnabled ? _close(context) : null,
                   child: ArDriveClickArea(
+                    showCursor: closeEnabled,
                     child: GestureDetector(
-                      onTap: _close(context),
-                      child: const Align(
+                      onTap: closeEnabled ? _close(context) : null,
+                      child: Align(
                         alignment: Alignment.centerRight,
                         child: ArDriveIcon(
                           icon: ArDriveIconsData.x,
                           size: 24,
+                          color: closeEnabled
+                              ? null
+                              : ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textXLow,
                         ),
                       ),
                     ),
@@ -540,7 +565,7 @@ class ArDriveModalActions extends StatelessWidget {
           ),
         if (actions.length > 1)
           Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.only(left: ArDriveSpacing.xs),
             child: ArDriveButtonNew(
               maxWidth: actions[1].customWidth ??
                   ArDriveButtonNew.fittedWidth(context, actions[1].title,
@@ -560,7 +585,7 @@ class ArDriveModalActions extends StatelessWidget {
         // wrapped onto a full-width row of its own, in a smaller font.
         if (actions.length > 2)
           Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.only(left: ArDriveSpacing.xs),
             child: ArDriveButtonNew(
               typography: typography,
               variant: actions[2].variant ?? ButtonVariant.primary,

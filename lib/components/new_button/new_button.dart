@@ -35,6 +35,12 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../manifests/data/repositories/manifest_repository_impl.dart';
 
+/// The deployment and file pin glyphs fill their whole box in the icon font,
+/// where the menu's other icons leave a margin. Drawn at this size they come
+/// out as big as the rest, and the box stays [defaultIconSize] so the labels
+/// stay in line.
+const double _edgeToEdgeGlyphSize = 16;
+
 class NewButton extends StatelessWidget {
   const NewButton({
     super.key,
@@ -169,7 +175,9 @@ class NewButton extends StatelessWidget {
                             showMouseCursor: !item.isDisabled,
                             child: ArDriveDropdownItemTile(
                               iconAlignment: item.iconAlignment,
-                              icon: item.icon.copyWith(size: 24),
+                              // Scaled, so a smaller glyph keeps its share
+                              // of the larger box.
+                              icon: item.icon.scaledTo(24),
                               name: item.name,
                               isDisabled: item.isDisabled,
                               fontStyle: ArDriveTypographyNew.of(context)
@@ -354,7 +362,9 @@ class NewButton extends StatelessWidget {
                   driveDetailState.driveIsEmpty ||
                   !canUpload,
               name: appLocalizations.createManifest,
-              icon: ArDriveIcons.manifest(size: defaultIconSize),
+              icon: ArDriveIcons.manifest(
+                size: defaultIconSize,
+              ).copyWith(glyphSize: _edgeToEdgeGlyphSize),
             ),
           ArDriveNewButtonItem(
             onClick: () {
@@ -565,7 +575,9 @@ class NewButton extends StatelessWidget {
       ),
       ArDriveNewButtonItem(
         name: appLocalizations.newFilePin,
-        icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
+        icon: ArDriveIcons.pinWithCircle(
+          size: defaultIconSize,
+        ).copyWith(glyphSize: _edgeToEdgeGlyphSize),
         // The pin dialog reads the loaded drive straight off the cubit, so it
         // only ever runs once the drive is open. Not gated on the balance, as
         // it never was.
@@ -732,7 +744,7 @@ class NewButton extends StatelessWidget {
       },
       isDisabled: isDisabled,
       name: 'Import from manifest',
-      icon: ArDriveIcons.manifest(size: defaultIconSize),
+      icon: ArDriveIcons.download(size: defaultIconSize),
     );
   }
 }
