@@ -82,7 +82,10 @@ class _DestinationRow extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final l10n = appLocalizationsOf(context);
-    final icon = ArDriveIcons.drive();
+    // The picker's own marks, so a drive looks the same in both.
+    final icon = drive.privacy == DrivePrivacyTag.private
+        ? ArDriveIcons.privateDrive(size: 20)
+        : ArDriveIcons.publicDrive(size: 20);
 
     // The word as well as the icon: public or private is the choice being
     // made here, and it cannot be taken back.

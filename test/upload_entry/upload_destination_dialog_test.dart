@@ -132,6 +132,13 @@ void main() {
       expect(find.text('Private'), findsNWidgets(2));
     });
 
+    testWidgets('marks each drive as the drive picker does', (tester) async {
+      await openChooser(tester);
+
+      expect(find.byIcon(Icons.language), findsOneWidget);
+      expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+    });
+
     testWidgets('marks only the drives nothing has read', (tester) async {
       await openChooser(tester, unsynced: {archive.id});
 
