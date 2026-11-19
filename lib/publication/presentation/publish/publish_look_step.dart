@@ -8,6 +8,8 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
+import 'package:ardrive/authentication/password/new_password.dart';
+import 'package:ardrive/authentication/password/new_password_fields.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
@@ -103,11 +105,13 @@ class _Form extends StatelessWidget {
       children: [
         ArDriveTextFieldNew(
           label: strings.publishTitleLabel,
-          isFieldRequired: true,
+          isFieldRequired: !state.isPrivatePage,
           initialValue: state.title,
           maxLength: publicationTitleMax,
           onChanged: cubit.setTitle,
         ),
+        // A private page's words are the only part of it everyone sees.
+        if (state.isPrivatePage) _Hint(strings.publishPrivateTitleHint),
         const SizedBox(height: 16),
         ArDriveTextFieldNew(
           label: strings.publishDescriptionLabel,
@@ -118,6 +122,10 @@ class _Form extends StatelessWidget {
           textInputAction: TextInputAction.newline,
           onChanged: cubit.setDescription,
         ),
+        if (state.isPrivatePage) ...[
+          const SizedBox(height: 24),
+          const _Password(),
+        ],
         const SizedBox(height: 24),
         // The pictures come right after the words, in view without a scroll.
         _ImageField(
@@ -235,6 +243,101 @@ class _MoreOptionsState extends State<_MoreOptions> {
             child: widget.child,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// A private page's optional password: set when publishing or added in an
+/// update, never changed or removed (docs/PUBLICATIONS.md, "Private
+/// publications").
+class _Password extends StatefulWidget {
+  const _Password();
+
+  @override
+  State<_Password> createState() => _PasswordState();
+}
+
+class _PasswordState extends State<_Password> {
+  late final TextEditingController _controller =
+      TextEditingController(text: context.read<PublishCubit>().state.password);
+  String? _suggested;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _suggest() async {
+    final words = await loadPassphraseWords(DefaultAssetBundle.of(context));
+    if (!mounted) return;
+    final phrase = suggestPassphrase(words);
+    _controller.text = phrase;
+    context.read<PublishCubit>().setPassword(phrase);
+    setState(() => _suggested = phrase);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final cubit = context.read<PublishCubit>();
+    final state = context.watch<PublishCubit>().state;
+    if (state.hasPassword) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Label(strings.publishPasswordLabel),
+          Text(strings.publishPasswordExisting,
+              style: typography.paragraphNormal(color: colors.textMid)),
+        ],
+      );
+    }
+    final password = state.password;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ArDriveTextFieldNew(
+          label: strings.publishPasswordLabel,
+          controller: _controller,
+          obscureText: _suggested == null,
+          showObfuscationToggle: true,
+          autocorrect: false,
+          onChanged: (value) {
+            if (_suggested != null && value != _suggested) {
+              setState(() => _suggested = null);
+            }
+            cubit.setPassword(value);
+          },
+        ),
+        _Hint(strings.publishPasswordHint),
+        if (password.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          PasswordStrengthMeter(strength: assessNewPassword(password)),
+          _Hint(strings.publishPasswordPermanent, color: colors.textMid),
+        ],
+        if (_suggested != null) ...[
+          const SizedBox(height: 8),
+          SuggestedPassphrase(phrase: _suggested!, onAnother: _suggest),
+        ] else ...[
+          const SizedBox(height: 6),
+          ArDriveClickArea(
+            child: GestureDetector(
+              onTap: _suggest,
+              child: Text(
+                strings.newPasswordSuggest,
+                style: typography
+                    .paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colors.textMid,
+                    )
+                    .copyWith(decoration: TextDecoration.underline),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -505,7 +608,7 @@ class _ImageField extends StatelessWidget {
                         onPressed: () => _upload(cubit),
                       ),
                       // A private drive's images can't go on a public page.
-                      if (!cubit.isPrivateFile)
+                      if (!cubit.isPrivateFile && !cubit.state.isPrivatePage)
                         publishButton(
                           context,
                           strings.publishFromDrive,
@@ -546,7 +649,10 @@ class _ImageField extends StatelessWidget {
           )
         else if (picked?.isSmall ?? false)
           _Hint(strings.publishImageSmall, color: colors.textMid)
-        else if (slot == PublicationImageSlot.social && picked == null)
+        // A private page never gets a generated card.
+        else if (slot == PublicationImageSlot.social &&
+            picked == null &&
+            !context.read<PublishCubit>().state.isPrivatePage)
           _Hint('$hint ${strings.publishSocialGenerated}')
         else
           _Hint(hint),
@@ -688,9 +794,13 @@ class _Previews extends StatelessWidget {
       children: [
         _Label(strings.publishPagePreview),
         const _HeaderPreview(),
-        const SizedBox(height: 20),
-        _Label(strings.publishLinkPreview),
-        const _CardPreview(),
+        // A private page shares a card only when its owner picked one.
+        if (!context.read<PublishCubit>().state.isPrivatePage ||
+            context.watch<PublishCubit>().state.social != null) ...[
+          const SizedBox(height: 20),
+          _Label(strings.publishLinkPreview),
+          const _CardPreview(),
+        ],
       ],
     );
   }
@@ -721,7 +831,9 @@ class _HeaderPreview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          state.title.trim().isEmpty ? ' ' : state.title.trim(),
+          state.title.trim().isEmpty
+              ? (state.isPrivatePage ? strings.publicationPrivatePage : ' ')
+              : state.title.trim(),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: typography.paragraphLarge(

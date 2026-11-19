@@ -439,13 +439,13 @@ A reader refuses a sealed block that breaks these rules:
 | `rootFolderId` | string | The drive's root folder: a lowercase UUID |
 | `catalog` | object | `path` (a plain relative path), `txId`, `key` (the catalog key, 32 bytes) and `tags` (string values: the tags an importer reads, as `snapshot.tags` in version 1, with `Cipher: AES256-GCM` and a 12-byte `Cipher-IV` describing the catalog's encryption) |
 | `files` | object | Lowercase file ID to file key (32 bytes), for every file in the catalog. The number of entries is the page's file count |
-| `ciphers` | object | Transaction ID to `{"cipher", "iv"}`: the `Cipher` and `Cipher-IV` tags of each file's data and thumbnails. For `AES256-GCM` and `AES256-CTR` the `iv` must be canonical base64url. An entry with another cipher is ignored, and a transaction missing here is looked up as usual |
+| `ciphers` | object | Transaction ID to `{"cipher", "iv"}`: the `Cipher` and `Cipher-IV` tags of each file's data and thumbnails. For `AES256-GCM` and `AES256-CTR` the `iv` must be canonical base64url. An entry with another cipher is ignored, and a transaction missing here is looked up as usual. A writer may leave it empty |
 
 A reader ignores keys it does not know.
 
 #### The catalog
 
-The catalog is a Drive State artifact ([DRIVE_STATE_ARTIFACT.md](DRIVE_STATE_ARTIFACT.md)) holding only the publication's scope: the folder and everything under it, or the whole drive, each at its current version. Hidden items are left out completely. It is serialised, gzipped and encrypted with AES-256-GCM under the catalog key, like a private Drive State under its drive key, and read by the same importer with the catalog key in place of the drive key.
+The catalog is a Drive State artifact ([DRIVE_STATE_ARTIFACT.md](DRIVE_STATE_ARTIFACT.md)) holding only the publication's scope: the folder and everything under it, or the whole drive, each at its current version. Hidden items are left out completely, with everything under a hidden folder. The drive row is always there, since a reader imports into it; in a folder page's catalog it carries no name and no custom metadata, which describe the drive around the folder. It is serialised, gzipped and encrypted with AES-256-GCM under the catalog key, like a private Drive State under its drive key, and read by the same importer with the catalog key in place of the drive key.
 
 #### Opening a version 3 page
 

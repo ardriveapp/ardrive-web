@@ -213,7 +213,7 @@ void main() {
         'secret': DrivePublications(publications: [
           _publication('p-plans',
               driveId: 'secret', fileId: 'plans', at: DateTime(2026, 2)),
-          // A private drive has no drive page; one claiming to is not listed.
+          // A private drive's own page, private like its file pages.
           _publication('p-secret', driveId: 'secret', at: DateTime(2026, 5)),
         ]),
       }),
@@ -227,7 +227,11 @@ void main() {
     addTearDown(cubit.close);
     final pages = (await loaded(cubit)).pages;
 
-    expect(pages.map((p) => p.id), ['p-lake', 'p-plans']);
+    expect(pages.map((p) => p.id), ['p-secret', 'p-lake', 'p-plans']);
+    final secret = pages[0];
+    expect(secret.kind, WebPageKind.publication);
+    expect(secret.isPrivate, isTrue);
+    pages.removeAt(0);
     final lake = pages[0];
     expect(lake.kind, WebPageKind.filePage);
     expect(lake.title, 'lake name');

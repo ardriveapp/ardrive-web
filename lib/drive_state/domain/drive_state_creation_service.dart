@@ -8,6 +8,7 @@ import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:arweave/arweave.dart' show Wallet;
 import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -118,12 +119,17 @@ class PreparedDriveStateArtifact {
   /// drive's body is the compressed payload itself.
   final int sizeInBytes;
 
+  /// A private page's catalog only: the files it carries, whose keys the
+  /// page's sealed block lists. Empty for a drive's own artifact.
+  final List<({String id, String dataTxId})> files;
+
   const PreparedDriveStateArtifact({
     required this.entity,
     required this.driveId,
     required this.driveName,
     required this.entityCount,
     required this.sizeInBytes,
+    this.files = const [],
   });
 
   int get blockStart => entity.blockStart;
@@ -243,7 +249,15 @@ class DriveStateCreationService {
     /// Asked during the export. A cancelled modal stops it rather than
     /// leaving it holding the database for nobody.
     bool Function()? isCancelled,
+
+    /// A private page's catalog (docs/ArweaveFS.md, "The catalog"): only
+    /// [pageScope], at its current version and without hidden items, sealed
+    /// under [catalogKey] instead of the drive key. Both or neither; only
+    /// for a private drive.
+    sqlite.ArtifactScope? pageScope,
+    SecretKey? catalogKey,
   }) async {
+    assert((pageScope == null) == (catalogKey == null));
     // First, before anything is read and long before anything is sealed. A
     // drive whose completeness cannot be vouched for is not exported at all —
     // there is no partial artifact, no "publish anyway", and no ordering in
@@ -272,10 +286,21 @@ class DriveStateCreationService {
     // Resolved from the drive's own row, not from whether the caller happened
     // to have a key. This is the single decision that separates the two
     // chains, and it is taken once, here, from the trustworthy value.
-    final resolved = DriveStateProtection.forDrive(
-      privacy: drive.privacy,
-      driveKey: driveKey,
-    );
+    // A catalog is a private drive's, under its own key: never in the
+    // clear, and never for a public drive, whose pages are snapshots.
+    if (catalogKey != null && drive.privacy != DrivePrivacyTag.private) {
+      return const DriveStateCreationResult.refused(
+        DriveStateCreationRefusal.protectionUnavailable,
+        'Only a private drive has a page catalog.',
+      );
+    }
+    final resolved = catalogKey != null
+        ? DriveStateProtectionResult.resolved(
+            DriveStateProtection.forCatalog(catalogKey))
+        : DriveStateProtection.forDrive(
+            privacy: drive.privacy,
+            driveKey: driveKey,
+          );
     if (resolved.isRefused) {
       return DriveStateCreationResult.refused(
         DriveStateCreationRefusal.protectionUnavailable,
@@ -332,6 +357,7 @@ class DriveStateCreationService {
         sink: sink,
         blockEnd: drive.lastBlockHeight ?? 0,
         isCancelled: isCancelled,
+        scope: pageScope,
       );
     } on sqlite.ArtifactExportRefused catch (e) {
       return DriveStateCreationResult.refused(
@@ -412,6 +438,7 @@ class DriveStateCreationService {
         driveName: drive.name,
         entityCount: artifact.entityCount,
         sizeInBytes: envelope.body.lengthInBytes,
+        files: artifact.files,
       ),
     );
   }

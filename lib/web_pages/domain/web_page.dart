@@ -94,9 +94,9 @@ class WebPage extends Equatable {
       ];
 }
 
-/// The Web pages list: [publications] and [deployments] in the owner's
-/// public [drives], and file pages in any of their [drives], most recently
-/// updated first. [files] are the files file pages show.
+/// The Web pages list: [deployments] in the owner's public [drives], and
+/// publications (drive, folder and file pages) in any of their [drives],
+/// most recently updated first. [files] are the files file pages show.
 ///
 /// A publication whose drive or folder is not on this device yet is left
 /// out: there is no name to show for it and nowhere to open. It appears once
@@ -139,7 +139,6 @@ List<WebPage> composeWebPages({
       ));
       continue;
     }
-    if (!drive.isPublic) continue;
     final folderId = latest.scope.folderIdOrNull;
     final isDrive = folderId == null || folderId == drive.rootFolderId;
     final folder = isDrive ? null : folders[folderId];
@@ -155,6 +154,7 @@ List<WebPage> composeWebPages({
       dataTxId: latest.txId,
       updatedAt: latest.publishedAt,
       publication: publication,
+      isPrivate: drive.isPrivate,
     ));
   }
 

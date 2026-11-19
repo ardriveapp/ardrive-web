@@ -1,6 +1,11 @@
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
+import 'package:ardrive/publication/domain/private_page.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
+import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
@@ -410,6 +415,11 @@ class WebPageRow extends StatelessWidget {
       icon: webPageIcon(context, page),
       title: page.title,
       subtitle: webPageSource(context, page),
+      // The mark the drive list puts after a private drive's name.
+      marks: [
+        if (page.isPrivate)
+          PrivateDriveLock(label: strings.publicationPrivateMark),
+      ],
     );
     final updated = formatDate(page.updatedAt);
 
@@ -453,27 +463,61 @@ class _WebPageActions {
   final WebPageLink link;
 
   /// The link to open or copy: a private file page's carries the file's
-  /// key, for its owner.
-  Future<String> _url() async {
-    // Only a private file page's link carries a key.
+  /// key, and a private drive or folder page's the page's key, for its
+  /// owner. Null for a private page whose drive this session can't open.
+  Future<String?> _url() async {
     if (!page.isPrivate) return link.url;
-    final fileId = page.publication?.scope.fileIdOrNull;
-    if (fileId == null) return link.url;
-    return withFileKey(
-      link.url,
-      await fileKeyForLink(
-        context.read<FileKeys>(),
-        context.read<ProfileCubit>().state,
-        driveId: page.driveId,
-        fileId: fileId,
-      ),
-    );
+    final publication = page.publication;
+    final fileId = publication?.scope.fileIdOrNull;
+    if (fileId != null) {
+      return withFileKey(
+        link.url,
+        await fileKeyForLink(
+          context.read<FileKeys>(),
+          context.read<ProfileCubit>().state,
+          driveId: page.driveId,
+          fileId: fileId,
+        ),
+      );
+    }
+    if (publication == null) return link.url;
+    final key = await _pageKey(publication);
+    return key == null ? null : withFileKey(link.url, key);
   }
 
-  Future<void> open() async => openUrl(url: await _url());
+  /// A private page's key, from its owner slot and the drive key.
+  Future<String?> _pageKey(Publication publication) async {
+    final profile = context.read<ProfileCubit>().state;
+    final driveDao = context.read<DriveDao>();
+    final repository = context.read<PublicationRepository>();
+    if (profile is! ProfileLoggedIn) return null;
+    try {
+      final driveKey =
+          await driveDao.getDriveKey(page.driveId, profile.user.cipherKey);
+      if (driveKey == null) return null;
+      final content = await repository.readContent(publication.latest.txId);
+      final settings = content.config.sealed?.settings;
+      if (settings == null) return null;
+      final key = await ownerPublicationKey(
+          settings, await driveKey.key.extractBytes());
+      return key == null ? null : b64u(key);
+    } catch (e) {
+      logger.w('[web pages] a private page key could not be read: $e');
+      return null;
+    }
+  }
+
+  /// A private page without its key opens on its unlock screen.
+  Future<void> open() async => openUrl(url: await _url() ?? link.url);
 
   Future<void> copyLink() async {
     final url = await _url();
+    if (url == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+          content: Text(appLocalizationsOf(context).publishUnlockToCopyLink)));
+      return;
+    }
     await Clipboard.setData(ClipboardData(text: url));
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.maybeOf(context);

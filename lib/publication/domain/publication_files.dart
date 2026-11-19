@@ -31,11 +31,15 @@ typedef PublicationTag = ({String name, String value});
 /// app tags and Unix-Time. Neither [folderId] nor [fileId] for a whole drive;
 /// a file page names its file with `Publication-Scope: file` and
 /// `Publication-File-Id`: never `File-Id`, which file lookups match alone.
+///
+/// [version] is a private drive or folder page's 3; otherwise it follows
+/// the scope.
 List<PublicationTag> publicationEntityTags({
   required String driveId,
   required String publicationId,
   String? folderId,
   String? fileId,
+  int? version,
 }) =>
     [
       (name: EntityTag.arFs, value: arfsVersion),
@@ -50,7 +54,7 @@ List<PublicationTag> publicationEntityTags({
       (
         name: EntityTag.publicationVersion,
         value:
-            '${fileId != null ? filePublicationVersion : publicationVersion}',
+            '${version ?? (fileId != null ? filePublicationVersion : publicationVersion)}',
       ),
     ];
 
@@ -177,6 +181,9 @@ String buildPublicationIndexHtml(
   ({String small, String touch})? icons,
   String? socialImageUrl,
   String? filesPageLabel,
+
+  /// A private page asks search engines not to list it.
+  bool noindex = false,
 }) {
   var html = releaseIndexHtml;
   for (final pattern in [..._replaced, if (icons != null) ..._iconLinks]) {
@@ -190,6 +197,7 @@ String buildPublicationIndexHtml(
 
   const e = escapePublicationHtml;
   final head = [
+    if (noindex) '<meta name="robots" content="noindex">',
     '<meta name="ardrive-publication" content="publication.json">',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
     '<title>${e(title)}</title>',
