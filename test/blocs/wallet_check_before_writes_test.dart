@@ -95,6 +95,25 @@ void main() {
   tearDown(() => db.close());
 
   group('creating a drive', () {
+    // On the chain for good: Try again or any caller must not get an empty
+    // name through.
+    blocTest<DriveCreateCubit, DriveCreateState>(
+      'a drive without a name is not created',
+      build: () => DriveCreateCubit(
+        arweave: arweave,
+        turboUploadService: DontUseUploadService(),
+        driveDao: db.driveDao,
+        profileCubit: profile,
+        drivesCubit: MockDrivesCubit(),
+      ),
+      act: (cubit) => cubit.submit('   '),
+      expect: () => <DriveCreateState>[],
+      verify: (_) async {
+        verifyZeroInteractions(arweave);
+        verifyNever(() => profile.logoutIfWalletMismatch());
+      },
+    );
+
     DriveCreateCubit build() {
       return DriveCreateCubit(
         arweave: arweave,
@@ -242,6 +261,34 @@ void main() {
         verifyZeroInteractions(arweave);
         expect(await driveName(), 'fake-drive-name');
       },
+    );
+  });
+
+  group('renaming a drive, a name clash after a failure', () {
+    // The dialog shows the clash as a warning; going back to the failure it
+    // had would show that error beside it again.
+    blocTest<DriveRenameCubit, DriveRenameState>(
+      'goes back to the start, not to the earlier failure',
+      setUp: wanderUnavailable,
+      build: () => DriveRenameCubit(
+        driveId: driveId,
+        arweave: arweave,
+        turboUploadService: DontUseUploadService(),
+        driveDao: db.driveDao,
+        profileCubit: profile,
+        syncCubit: MockSyncBloc(),
+      ),
+      act: (cubit) async {
+        await cubit.submit(newName: 'renamed');
+        when(() => profile.logoutIfWalletMismatch())
+            .thenAnswer((_) async => false);
+        await cubit.submit(newName: 'fake-drive-name');
+      },
+      expect: () => [
+        isA<DriveRenameFailure>(),
+        isA<DriveNameAlreadyExists>(),
+        isA<DriveRenameInitial>(),
+      ],
     );
   });
 

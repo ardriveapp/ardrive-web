@@ -1,6 +1,7 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -33,18 +34,16 @@ Future<T> _showModal<T>(
 ) async {
   late T content;
 
-  await showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return _FilePickerContent<T>(
-          pickFromCamera: pickFromCamera,
-          pickFromFileSystem: pickFromFileSystem,
-          pickFromGallery: pickFromGallery,
-          onClose: (c) async {
-            content = c;
-          },
-        );
-      });
+  await showArDriveBottomSheet<void>(context, builder: (context) {
+    return _FilePickerContent<T>(
+      pickFromCamera: pickFromCamera,
+      pickFromFileSystem: pickFromFileSystem,
+      pickFromGallery: pickFromGallery,
+      onClose: (c) async {
+        content = c;
+      },
+    );
+  });
   return content;
 }
 
@@ -67,146 +66,159 @@ class _FilePickerContent<T> extends StatefulWidget {
 
 class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
   bool _isLoading = false;
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = ArDriveTypographyNew.of(context).paragraphLarge(
-      color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-    );
-    return Container(
-      color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-      height: 240,
-      child: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+
+  /// Runs [pick] with the sheet showing it is working, then closes the sheet.
+  Future<void> _run(Future<void> Function() pick) async {
+    setState(() => _isLoading = true);
+    await pick();
+    if (mounted) {
+      setState(() => _isLoading = false);
+      Navigator.pop(context);
+    }
+  }
+
+  Widget _row({
+    required Widget icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return Semantics(
+      button: true,
+      container: true,
+      excludeSemantics: true,
+      label: label,
+      onTap: onTap,
+      child: ArDriveFocusable(
+        onActivate: onTap,
+        child: ArDriveClickArea(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.sm),
+              child: Row(
                 children: [
-                  ArDriveSpinner(size: ArDriveSpinnerSize.large),
-                  Padding(
-                    padding: EdgeInsets.only(top: 16.0),
-                    child: Text('Preparing your file(s)...'),
-                  ),
-                ],
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ListTile(
-                    onTap: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-
-                      try {
-                        final content = await widget.pickFromCamera();
-
-                        widget.onClose(content);
-                      } catch (e) {
-                        if (e is FileSystemPermissionDeniedException) {
-                          // ignore: use_build_context_synchronously
-                          await _showCameraPermissionModal(context);
-                          logger.e('Camera permission denied', e);
-                        }
-                      }
-
-                      setState(() {
-                        _isLoading = false;
-                      });
-
-                      // ignore: use_build_context_synchronously
-                      Navigator.pop(context);
-                    },
-                    title: Text(
-                      appLocalizationsOf(context).camera,
-                      style: textStyle,
+                  icon,
+                  const SizedBox(width: ArDriveSpacing.md),
+                  Text(
+                    label,
+                    style: ArDriveTypographyNew.of(context).paragraphLarge(
+                      color: colorTokens.textHigh,
                     ),
-                    leading: ArDriveIcons.camera1(),
                   ),
-                  const Divider(
-                    height: 8,
-                  ),
-                  ListTile(
-                    onTap: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      try {
-                        final isEnabled =
-                            await verifyStoragePermissionAndShowModalWhenDenied(
-                          context,
-                        );
-
-                        if (isEnabled) {
-                          final content = await widget.pickFromGallery();
-
-                          widget.onClose(content);
-
-                          logger.d('adding file from gallery');
-                        }
-                      } catch (e) {
-                        logger.e('Error while picking file from gallery', e);
-                      }
-
-                      setState(() {
-                        _isLoading = false;
-                      });
-
-                      // ignore: use_build_context_synchronously
-                      Navigator.pop(context);
-                    },
-                    title: Text(
-                      appLocalizationsOf(context).gallery,
-                      style: textStyle,
-                    ),
-                    leading: ArDriveIcons.image(),
-                  ),
-                  const Divider(
-                    height: 8,
-                  ),
-                  ListTile(
-                    onTap: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      try {
-                        final isEnabled =
-                            await verifyStoragePermissionAndShowModalWhenDenied(
-                          context,
-                        );
-
-                        if (isEnabled) {
-                          final content = await widget.pickFromFileSystem();
-
-                          widget.onClose(content);
-
-                          logger.d('adding file from file system');
-                        }
-                      } catch (e) {
-                        logger.e(
-                          'Error while picking file from file system',
-                          e,
-                        );
-                      }
-
-                      setState(() {
-                        _isLoading = false;
-                      });
-
-                      // ignore: use_build_context_synchronously
-                      Navigator.pop(context);
-                    },
-                    title: Text(
-                      appLocalizationsOf(context).fileSystem,
-                      style: textStyle,
-                    ),
-                    leading: ArDriveIcons.fileOutlined(),
-                  )
                 ],
               ),
             ),
+          ),
+        ),
+      ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+    return PopScope(
+        canPop: !_isLoading,
+        child: ArDriveBottomSheet(
+          title: l10n.uploadFiles,
+          hasCloseButton: !_isLoading,
+          content: _isLoading
+              ? Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: ArDriveSpacing.lg),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+                        const SizedBox(height: ArDriveSpacing.md),
+                        Text(
+                          l10n.preparingYourFiles,
+                          style:
+                              ArDriveTypographyNew.of(context).paragraphNormal(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textMid,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _row(
+                      icon: ArDriveIcons.camera1(),
+                      label: l10n.camera,
+                      onTap: () => _run(() async {
+                        try {
+                          final content = await widget.pickFromCamera();
+
+                          widget.onClose(content);
+                        } catch (e) {
+                          if (e is FileSystemPermissionDeniedException) {
+                            // ignore: use_build_context_synchronously
+                            await _showCameraPermissionModal(context);
+                            logger.e('Camera permission denied', e);
+                          }
+                        }
+                      }),
+                    ),
+                    _row(
+                      icon: ArDriveIcons.image(),
+                      label: l10n.gallery,
+                      onTap: () => _run(() async {
+                        try {
+                          final isEnabled =
+                              await verifyStoragePermissionAndShowModalWhenDenied(
+                            context,
+                          );
+
+                          if (isEnabled) {
+                            final content = await widget.pickFromGallery();
+
+                            widget.onClose(content);
+
+                            logger.d('adding file from gallery');
+                          }
+                        } catch (e) {
+                          logger.e('Error while picking file from gallery', e);
+                        }
+                      }),
+                    ),
+                    _row(
+                      icon: ArDriveIcons.fileOutlined(),
+                      label: l10n.fileSystem,
+                      onTap: () => _run(() async {
+                        try {
+                          final isEnabled =
+                              await verifyStoragePermissionAndShowModalWhenDenied(
+                            context,
+                          );
+
+                          if (isEnabled) {
+                            final content = await widget.pickFromFileSystem();
+
+                            widget.onClose(content);
+
+                            logger.d('adding file from file system');
+                          }
+                        } catch (e) {
+                          logger.e(
+                            'Error while picking file from file system',
+                            e,
+                          );
+                        }
+                      }),
+                    ),
+                  ],
+                ),
+        ));
   }
 }
 
@@ -226,47 +238,43 @@ Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
 }
 
 Future<void> showStoragePermissionModal(BuildContext context) async {
-  return showDialog(
-      context: context,
-      builder: (context) {
-        return ArDriveStandardModalNew(
-          title: appLocalizationsOf(context).enableStorageAccessTitle,
-          description: appLocalizationsOf(context).enableStorageAccess,
-          actions: [
-            ModalAction.dismiss(
-              action: () {
-                Navigator.pop(context);
-              },
-              title: appLocalizationsOf(context).cancel,
-            ),
-            ModalAction(
-              action: () {
-                AppSettings.openAppSettings();
-              },
-              title: appLocalizationsOf(context).goToDeviceSettings,
-            ),
-          ],
-        );
-      });
+  return showArDriveDialogWithBuilder<void>(context, builder: (context) {
+    return ArDriveStandardModalNew(
+      title: appLocalizationsOf(context).enableStorageAccessTitle,
+      description: appLocalizationsOf(context).enableStorageAccess,
+      actions: [
+        ModalAction.close(
+          action: () {
+            Navigator.pop(context);
+          },
+          title: appLocalizationsOf(context).cancel,
+        ),
+        ModalAction(
+          action: () {
+            AppSettings.openAppSettings();
+          },
+          title: appLocalizationsOf(context).goToDeviceSettings,
+        ),
+      ],
+    );
+  });
 }
 
 Future<void> _showCameraPermissionModal(BuildContext context) async {
-  return showDialog(
-      context: context,
-      builder: (context) {
-        return ArDriveStandardModalNew(
-          title: appLocalizationsOf(context).enableCamera,
-          description: appLocalizationsOf(context).enableCameraAccess,
-          actions: [
-            ModalAction.dismiss(
-              action: () => Navigator.pop(context),
-              title: appLocalizationsOf(context).cancel,
-            ),
-            ModalAction(
-              action: () => AppSettings.openAppSettings(),
-              title: appLocalizationsOf(context).goToDeviceSettings,
-            ),
-          ],
-        );
-      });
+  return showArDriveDialogWithBuilder<void>(context, builder: (context) {
+    return ArDriveStandardModalNew(
+      title: appLocalizationsOf(context).enableCamera,
+      description: appLocalizationsOf(context).enableCameraAccess,
+      actions: [
+        ModalAction.close(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).cancel,
+        ),
+        ModalAction(
+          action: () => AppSettings.openAppSettings(),
+          title: appLocalizationsOf(context).goToDeviceSettings,
+        ),
+      ],
+    );
+  });
 }

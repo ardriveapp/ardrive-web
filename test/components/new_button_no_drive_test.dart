@@ -570,4 +570,67 @@ void main() {
     expect(find.text('Advanced'), findsOneWidget);
     expect(find.text('Import from manifest'), findsNothing);
   });
+
+  /// The deployment and file pin glyphs fill their font box, so at the menu's
+  /// 20 px they drew about 20 px across while the rest drew 14 to 17. And
+  /// Import from manifest wore the deployment icon.
+  testWidgets(
+      'the New menu draws its icons at one size, and import has its own icon',
+      (tester) async {
+    final website = _drive(
+      ownerAddress: fakeUserJson.walletAddress,
+      privacy: 'public',
+    );
+    final entry = _FolderEntry();
+    when(() => entry.id).thenReturn('root-photos');
+    final folder = _Folder();
+    when(() => folder.folder).thenReturn(entry);
+    final loaded = _Loaded();
+    when(() => loaded.currentDrive).thenReturn(website);
+    when(() => loaded.hasWritePermissions).thenReturn(true);
+    when(() => loaded.driveIsEmpty).thenReturn(false);
+    when(() => loaded.folderInView).thenReturn(folder);
+
+    await pumpMenu(
+      tester,
+      state: loaded,
+      drive: website,
+      currentFolder: folder,
+    );
+    await tester.tap(find.text('Advanced'));
+    await tester.pumpAndSettle();
+
+    Finder iconOf(String name) => find.descendant(
+          of: find.widgetWithText(ArDriveDropdownItemTile, name),
+          matching: find.byType(ArDriveIcon),
+        );
+    IconData glyphOf(String name) =>
+        tester.widget<ArDriveIcon>(iconOf(name)).icon;
+    double drawnSizeOf(String name) => tester
+        .widget<Icon>(
+            find.descendant(of: iconOf(name), matching: find.byType(Icon)))
+        .size!;
+
+    expect(glyphOf('Import from manifest'), isNot(glyphOf('New deployment')));
+
+    const edgeToEdge = ['New deployment', 'New file pin'];
+    final names = [
+      for (final t in tester.widgetList<ArDriveDropdownItemTile>(
+          find.byType(ArDriveDropdownItemTile)))
+        if (t.name != 'Advanced' && t.icon != null) t.name,
+    ];
+    expect(names,
+        containsAll([...edgeToEdge, 'Import from manifest', 'New folder']));
+
+    final labelLefts = <double>{};
+    for (final name in names) {
+      expect(tester.getSize(iconOf(name)), const Size(20, 20), reason: name);
+      expect(drawnSizeOf(name), edgeToEdge.contains(name) ? 16 : 20,
+          reason: name);
+      labelLefts.add(tester.getTopLeft(find.text(name)).dx -
+          tester.getTopLeft(iconOf(name)).dx);
+    }
+    expect(labelLefts, hasLength(1),
+        reason: 'every label sits the same distance from its icon');
+  });
 }

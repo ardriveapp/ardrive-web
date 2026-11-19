@@ -320,7 +320,8 @@ class PrivateDriveMigrationBloc
       }
 
       emit(PrivateDriveMigrationComplete());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.e('Failed to update private drives', e, stackTrace);
       emit(const PrivateDriveMigrationFailed(
           error: 'Error updating drive, please try again.'));
     }

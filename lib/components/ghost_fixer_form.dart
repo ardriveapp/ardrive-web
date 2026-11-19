@@ -1,10 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/components/folder_picker_body.dart';
+import 'package:ardrive/components/payment_required_notice.dart';
 import 'package:ardrive/blocs/ghost_fixer/ghost_fixer_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -21,6 +21,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
     final driveDetailCubit = context.read<DriveDetailCubit>();
     return showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider(
         create: (context) => GhostFixerCubit(
           ghostFolder: ghostFolder,
@@ -56,218 +57,184 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
   final _folderNameController = TextEditingController();
   bool _isFolderNameValid = false;
 
+  /// The folder in view, kept while the cubit is busy, failed or found the
+  /// name taken, so the dialog stays as it was and says so in itself.
+  GhostFixerFolderLoadSuccess? _viewing;
+
+  /// The name the target folder already has, until the name or folder changes.
+  bool _nameTaken = false;
+
+  /// The failure, kept until the next try, an edit or a move to another
+  /// folder: the folder list can update under it.
+  GhostFixerFailure? _failure;
+
+  /// Making a folder in the target, in place of the list.
+  bool _creatingFolder = false;
+
+  @override
+  void dispose() {
+    _folderNameController.dispose();
+    super.dispose();
+  }
+
+  /// Set before the cubit is asked, cleared when it answers: the cubit checks
+  /// the wallet and the name before it reports it is busy, so a quick second
+  /// press would otherwise recreate the folder twice.
+  bool _inFlight = false;
+
+  Future<void> _submit(BuildContext context) async {
+    if (_inFlight || !_isFolderNameValid) return;
+    final cubit = context.read<GhostFixerCubit>();
+    setState(() {
+      _nameTaken = false;
+      _failure = null;
+      _inFlight = true;
+    });
+    try {
+      await cubit.submit(_folderNameController.text);
+    } finally {
+      if (mounted) setState(() => _inFlight = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<GhostFixerCubit, GhostFixerState>(
         listener: (context, state) {
-          if (state is GhostFixerRepairInProgress) {
-            showProgressDialog(
-              context,
-              title: appLocalizationsOf(context).recreatingFolderEmphasized,
-            );
-          } else if (state is GhostFixerSuccess) {
-            Navigator.pop(context);
+          if (state is GhostFixerSuccess) {
             Navigator.pop(context);
             widget.driveDetailCubit.refreshDriveDataTable();
           } else if (state is GhostFixerWalletMismatch) {
             Navigator.pop(context);
-          } else if (state is GhostFixerFailure) {
-            Navigator.pop(context);
-            if (state.isPaymentError) {
-              showTurboPaymentRequiredDialog(context);
-            } else {
-              showArDriveDialog(
-                context,
-                content: ArDriveStandardModalNew(
-                  title: appLocalizationsOf(context).error,
-                  description: appLocalizationsOf(context).actionFailedTryAgain,
-                ),
-              );
-            }
           } else if (state is GhostFixerNameConflict) {
-            showStandardDialog(
-              context,
-              title: appLocalizationsOf(context).nameConflict,
-              description: appLocalizationsOf(context)
-                  .validationEntityNameAlreadyPresent,
-            );
+            setState(() => _nameTaken = true);
+          } else if (state is GhostFixerFailure) {
+            setState(() => _failure = state);
           }
         },
         builder: (context, state) {
-          if (state is! GhostFixerFolderLoadSuccess) {
+          if (state is GhostFixerFolderLoadSuccess) {
+            _viewing = state;
+          }
+          final viewing = _viewing;
+          if (viewing == null) {
             return const SizedBox();
+          }
+          final l10n = appLocalizationsOf(context);
+
+          if (_creatingFolder) {
+            return folderCreateStep(
+              context,
+              driveId: viewing.viewingFolder.folder.driveId,
+              parentFolderId: viewing.viewingFolder.folder.id,
+              onClose: () => setState(() => _creatingFolder = false),
+            );
           }
 
           final typography = ArDriveTypographyNew.of(context);
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-          final screen = MediaQuery.sizeOf(context);
-          TextStyle rowStyle({required bool enabled}) =>
-              typography.paragraphLarge(
-                color: enabled ? colorTokens.textHigh : _colorDisabled(context),
-              );
-
-          final items = [
-            ...state.viewingFolder.subfolders.map(
-              (f) {
-                final enabled = f.id != state.movingEntryId;
-                return ArDriveClickArea(
-                  showCursor: enabled,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: enabled
-                        ? () => context.read<GhostFixerCubit>().loadFolder(f.id)
-                        : null,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: ArDriveSpacing.sm,
-                      ),
-                      child: Row(
-                        children: [
-                          ArDriveIcons.folderOutline(
-                            size: 16,
-                            color: enabled
-                                ? colorTokens.iconMid
-                                : _colorDisabled(context),
-                          ),
-                          const SizedBox(width: ArDriveSpacing.xs),
-                          Expanded(
-                            child:
-                                Text(f.name, style: rowStyle(enabled: enabled)),
-                          ),
-                          ArDriveIcons.carretRight(
-                            size: 18,
-                            color: enabled
-                                ? colorTokens.iconMid
-                                : _colorDisabled(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            ...state.viewingFolder.files.map(
-              (f) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: ArDriveSpacing.sm),
-                child: Row(
-                  children: [
-                    ArDriveIcons.fileOutlined(
-                      size: 16,
-                      color: _colorDisabled(context),
-                    ),
-                    const SizedBox(width: ArDriveSpacing.xs),
-                    Expanded(
-                      child: Text(f.name, style: rowStyle(enabled: false)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ];
+          final busy = _inFlight || state is GhostFixerRepairInProgress;
+          final failure = _failure;
 
           return ArDriveStandardModalNew(
-            // As wide as a large dialog, and no wider than the screen.
-            width: screen.width < kLargeDialogWidth + 32
-                ? screen.width - 32
-                : kLargeDialogWidth,
-            title: appLocalizationsOf(context).recreateFolderEmphasized,
-            content: SizedBox(
-              height: screen.height < 800 ? screen.height * 0.5 : 441,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ArDriveTextFieldNew(
-                    controller: _folderNameController,
-                    hintText: appLocalizationsOf(context).folderName,
-                    validator: (s) {
-                      final validation = validateEntityName(s, context);
-                      setState(() => _isFolderNameValid = validation == null);
-                      return validation;
-                    },
-                  ),
-                  const SizedBox(height: ArDriveSpacing.md),
-                  Text(
-                    appLocalizationsOf(context).targetFolderEmphasized,
-                    style: typography.paragraphNormal(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold,
+            width: folderPickerWidth(context),
+            scrollableContent: true,
+            title: l10n.recreateFolderEmphasized,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // First, so it is in view when the list is long.
+                if (_nameTaken)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+                    child: ArDriveNotice(
+                      type: ArDriveNoticeType.error,
+                      title: l10n.nameConflict,
+                      message: l10n.validationEntityNameAlreadyPresent,
                     ),
                   ),
-                  const SizedBox(height: ArDriveSpacing.xs),
-                  if (!state.viewingRootFolder)
-                    ArDriveClickArea(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () =>
-                            context.read<GhostFixerCubit>().loadParentFolder(),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: ArDriveSpacing.xs,
+                if (failure != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+                    child: failure.isPaymentError
+                        ? const PaymentRequiredNotice()
+                        : ArDriveNotice(
+                            type: ArDriveNoticeType.error,
+                            title: l10n.couldNotRecreateFolderTitle,
+                            message: l10n.actionFailedTryAgain,
+                            actionLabel: l10n.tryAgain,
+                            onAction: _isFolderNameValid && !busy
+                                ? () => _submit(context)
+                                : null,
                           ),
-                          child: Row(children: [
-                            ArDriveIcons.arrowLeft(
-                              size: 18,
-                              color: colorTokens.iconMid,
-                            ),
-                            const SizedBox(width: ArDriveSpacing.xs),
-                            Text(
-                              appLocalizationsOf(context).back,
-                              style: rowStyle(enabled: true),
-                            ),
-                          ]),
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: ArDriveScrollBar(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: items.length,
-                        itemBuilder: (context, index) => items[index],
-                      ),
-                    ),
                   ),
-                  Divider(color: colorTokens.strokeLow, height: 1),
-                  const SizedBox(height: ArDriveSpacing.sm),
-                  ArDriveButtonNew(
-                    variant: ButtonVariant.outline,
-                    size: ArDriveButtonSize.compact,
-                    typography: typography,
-                    icon: ArDriveIcons.iconNewFolder1(
-                      size: 16,
-                      color: colorTokens.textLink,
-                    ),
-                    text: appLocalizationsOf(context).createFolderEmphasized,
-                    onPressed: () =>
-                        promptToCreateFolderWithoutCongestionWarning(
-                      context,
-                      driveId: state.viewingFolder.folder.driveId,
-                      parentFolderId: state.viewingFolder.folder.id,
-                    ),
+                ArDriveTextFieldNew(
+                  controller: _folderNameController,
+                  label: l10n.folderName,
+                  isEnabled: !busy,
+                  onChanged: (_) {
+                    if (_nameTaken || _failure != null) {
+                      setState(() {
+                        _nameTaken = false;
+                        _failure = null;
+                      });
+                    }
+                  },
+                  validator: (s) {
+                    final validation = validateEntityName(s, context);
+                    setState(() => _isFolderNameValid = validation == null);
+                    return validation;
+                  },
+                ),
+                const SizedBox(height: ArDriveSpacing.md),
+                Text(
+                  l10n.targetFolderEmphasized,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: ArDriveSpacing.xs),
+                FolderPickerBody(
+                  folders: viewing.viewingFolder.subfolders,
+                  fileNames:
+                      viewing.viewingFolder.files.map((f) => f.name).toList(),
+                  atRoot: viewing.viewingRootFolder,
+                  enabled: !busy,
+                  isFolderEnabled: (f) => f.id != viewing.movingEntryId,
+                  onOpenFolder: (id) {
+                    setState(() {
+                      _nameTaken = false;
+                      _failure = null;
+                    });
+                    context.read<GhostFixerCubit>().loadFolder(id);
+                  },
+                  onBack: () {
+                    setState(() {
+                      _nameTaken = false;
+                      _failure = null;
+                    });
+                    context.read<GhostFixerCubit>().loadParentFolder();
+                  },
+                  onCreateFolder: () => setState(() => _creatingFolder = true),
+                ),
+              ],
             ),
             actions: [
-              ModalAction.dismiss(
+              ModalAction.close(
                 action: () => Navigator.pop(context),
-                title: appLocalizationsOf(context).cancelEmphasized,
+                title: l10n.cancelEmphasized,
+                isEnable: !busy,
               ),
               ModalAction(
                 isEnable: _isFolderNameValid,
-                action: () => context
-                    .read<GhostFixerCubit>()
-                    .submit(_folderNameController.text),
-                title: appLocalizationsOf(context).fixEmphasized,
+                isLoading: busy,
+                action: () => _submit(context),
+                title: l10n.recreateFolderEmphasized,
               ),
             ],
           );
         },
       );
-
-  Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colorTokens.textXLow;
 }
