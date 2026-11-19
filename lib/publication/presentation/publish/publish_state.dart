@@ -135,6 +135,7 @@ class PublishState extends Equatable {
     this.isPrivatePage = false,
     this.password = '',
     this.hasPassword = false,
+    this.weakPasswordAccepted = false,
   });
 
   /// A private drive or folder page (publication.json version 3).
@@ -147,6 +148,18 @@ class PublishState extends Equatable {
   /// Whether the published private page has a password already, which can't
   /// be changed or removed.
   final bool hasPassword;
+
+  /// Whether the owner confirmed they want [password] although it is weak.
+  /// Typing again asks again.
+  final bool weakPasswordAccepted;
+
+  /// A new password that can be guessed: anyone can try passwords against a
+  /// page offline, for ever, and it can never be changed.
+  bool get passwordIsWeak =>
+      isPrivatePage &&
+      !hasPassword &&
+      password.isNotEmpty &&
+      assessNewPassword(password).index < PasswordStrength.fair.index;
 
   final PublishStage stage;
 
@@ -217,6 +230,11 @@ class PublishState extends Equatable {
   /// A private page may have no title: it shows "Private page".
   bool get titleIsValid => isPrivatePage || title.trim().isNotEmpty;
 
+  /// Whether Next on the look can go on: a valid title, and a weak password
+  /// only once the owner confirmed it.
+  bool get lookIsReady =>
+      titleIsValid && (!passwordIsWeak || weakPasswordAccepted);
+
   bool get canPublish => cost != null && cost!.canPayWith(method);
 
   PublishState copyWith({
@@ -253,6 +271,7 @@ class PublishState extends Equatable {
     bool? isPrivatePage,
     String? password,
     bool? hasPassword,
+    bool? weakPasswordAccepted,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -287,6 +306,7 @@ class PublishState extends Equatable {
         isPrivatePage: isPrivatePage ?? this.isPrivatePage,
         password: password ?? this.password,
         hasPassword: hasPassword ?? this.hasPassword,
+        weakPasswordAccepted: weakPasswordAccepted ?? this.weakPasswordAccepted,
       );
 
   @override
@@ -323,6 +343,7 @@ class PublishState extends Equatable {
         isPrivatePage,
         password,
         hasPassword,
+        weakPasswordAccepted,
       ];
 }
 

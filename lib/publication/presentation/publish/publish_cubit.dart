@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/authentication/password/new_password.dart'
+    show PasswordStrength, assessNewPassword;
 import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
@@ -706,7 +708,14 @@ class PublishCubit extends Cubit<PublishState> {
 
   void setPassword(String value) {
     if (!isPrivatePage || state.hasPassword) return;
-    emit(state.copyWith(password: value));
+    if (value == state.password) return;
+    emit(state.copyWith(password: value, weakPasswordAccepted: false));
+  }
+
+  /// The owner's answer to "use this weak password anyway?".
+  void acceptWeakPassword(bool accepted) {
+    if (!state.passwordIsWeak) return;
+    emit(state.copyWith(weakPasswordAccepted: accepted));
   }
 
   Future<PrivatePagePlan?> _privatePlan(ProfileLoggedIn profile) async {
@@ -854,7 +863,7 @@ class PublishCubit extends Cubit<PublishState> {
       case PublishStage.included:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
-        if (state.titleIsValid) review();
+        if (state.lookIsReady) review();
       default:
     }
   }
@@ -968,7 +977,7 @@ class PublishCubit extends Cubit<PublishState> {
   // Review.
 
   Future<void> review() async {
-    if (!state.titleIsValid) {
+    if (!state.lookIsReady) {
       emit(state.copyWith(stage: PublishStage.look));
       return;
     }

@@ -263,6 +263,27 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('a weak password shows a box to confirm it', (tester) async {
+      when(() => cubit.acceptWeakPassword(any())).thenReturn(null);
+      when(() => cubit.state).thenReturn(const PublishState(
+          stage: PublishStage.look, isPrivatePage: true, password: 'tiger'));
+      await pump(tester, const Size(1200, 2400));
+      final box = find.text('I understand this password is easy to guess.');
+      expect(box, findsOneWidget);
+      await tester.tap(box);
+      verify(() => cubit.acceptWeakPassword(true)).called(1);
+    });
+
+    testWidgets('a strong password asks nothing', (tester) async {
+      when(() => cubit.state).thenReturn(const PublishState(
+          stage: PublishStage.look,
+          isPrivatePage: true,
+          password: 'tide lantern orbit maple quiet harbor'));
+      await pump(tester, const Size(1200, 2400));
+      expect(find.text('I understand this password is easy to guess.'),
+          findsNothing);
+    });
+
     testWidgets('a suggestion that loads after the owner typed is dropped',
         (tester) async {
       when(() => cubit.state).thenReturn(

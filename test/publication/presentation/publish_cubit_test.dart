@@ -1496,7 +1496,11 @@ void main() {
           driveName: '',
           entityCount: 2,
           sizeInBytes: 900,
-          files: prepared == 1 ? const [(id: 'ffffffff-0000-4000-8000-00000000000c', dataTxId: 'D')] : const [],
+          files: prepared == 1
+              ? const [
+                  (id: 'ffffffff-0000-4000-8000-00000000000c', dataTxId: 'D')
+                ]
+              : const [],
         ));
       });
       final c = cubit(onDrive: drive);
@@ -1523,6 +1527,49 @@ void main() {
       expect(c.isPrivatePage, isFalse);
       expect(c.state.isPrivatePage, isFalse);
       expect(c.state.title, 'My drive');
+      await c.close();
+    });
+
+    test('a weak new password needs a confirmation before Next', () {
+      const weak = PublishState(
+          stage: PublishStage.look, isPrivatePage: true, password: 'tiger');
+      expect(weak.passwordIsWeak, isTrue);
+      expect(weak.lookIsReady, isFalse);
+      expect(weak.copyWith(weakPasswordAccepted: true).lookIsReady, isTrue);
+      const strong = PublishState(
+          stage: PublishStage.look,
+          isPrivatePage: true,
+          password: 'tide lantern orbit maple quiet harbor');
+      expect(strong.passwordIsWeak, isFalse);
+      expect(strong.lookIsReady, isTrue);
+      // No password, or the one a page already has, asks nothing.
+      const none = PublishState(stage: PublishStage.look, isPrivatePage: true);
+      expect(none.lookIsReady, isTrue);
+      const kept = PublishState(
+          stage: PublishStage.look,
+          isPrivatePage: true,
+          hasPassword: true,
+          password: 'tiger');
+      expect(kept.passwordIsWeak, isFalse);
+    });
+
+    test('typing another password asks again', () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final drive = await privateDrive();
+      await db.driveDao.keepDriveKeyForSession(
+        driveId: drive.id,
+        driveKey: DriveKey(SecretKey(List.filled(32, 7)), true),
+      );
+      final c = cubit(onDrive: drive);
+      await c.load();
+      expect(c.state.isPrivatePage, isTrue);
+      c.setPassword('tiger');
+      c.acceptWeakPassword(true);
+      expect(c.state.weakPasswordAccepted, isTrue);
+      c.setPassword('tigers');
+      expect(c.state.weakPasswordAccepted, isFalse);
+      expect(c.state.lookIsReady, isFalse);
       await c.close();
     });
 

@@ -330,6 +330,17 @@ class _PasswordState extends State<_Password> {
           PasswordStrengthMeter(strength: assessNewPassword(password)),
           _Hint(strings.publishPasswordPermanent, color: colors.textMid),
         ],
+        if (state.passwordIsWeak) ...[
+          const SizedBox(height: 8),
+          ArDriveCheckBox(
+            // A new box for each password: ticking covers the one typed.
+            key: ValueKey(password),
+            title: strings.publishWeakPasswordAccept,
+            checked: state.weakPasswordAccepted,
+            onChange: cubit.acceptWeakPassword,
+            titleStyle: typography.paragraphNormal(color: colors.textMid),
+          ),
+        ],
         if (_suggested != null) ...[
           const SizedBox(height: 8),
           SuggestedPassphrase(phrase: _suggested!, onAnother: _suggest),

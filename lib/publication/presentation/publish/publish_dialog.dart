@@ -354,7 +354,7 @@ class PublishDialog extends StatelessWidget {
                 ModalAction(title: strings.back, action: cubit.back),
                 ModalAction(
                   title: strings.next,
-                  isEnable: state.titleIsValid,
+                  isEnable: state.lookIsReady,
                   action: cubit.next,
                 ),
               ],
