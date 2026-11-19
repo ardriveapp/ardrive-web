@@ -4981,10 +4981,6 @@
   "@publishBlockedEmpty": {
     "description": "Why a drive or folder can't be published."
   },
-  "publishWhatsIncluded": "Qué se incluye",
-  "@publishWhatsIncluded": {
-    "description": "First step of the publish dialog."
-  },
   "publishScopeDrive": "Toda la unidad",
   "@publishScopeDrive": {
     "description": "What a drive's web page shows."
@@ -5012,10 +5008,6 @@
   "publishIncludedNote": "Cualquiera puede encontrar esta página y los buscadores pueden indexar sus archivos.",
   "@publishIncludedNote": {
     "description": "Under the counts in the first step of the publish dialog."
-  },
-  "publishNextTitleNote": "Siguiente: un título. Las imágenes, una descripción y un nombre son opcionales y puedes añadirlos después.",
-  "@publishNextTitleNote": {
-    "description": "Muted line under the first step of the publish dialog: what the next step asks for."
   },
   "publishMoreOptions": "Más opciones",
   "@publishMoreOptions": {

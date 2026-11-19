@@ -104,8 +104,8 @@ class PublishDependencies {
   })? syncDrive;
 }
 
-/// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
-/// included, the look, review and publish, done.
+/// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): the
+/// look, review and publish, done.
 class PublishCubit extends Cubit<PublishState> {
   PublishCubit({
     required this.drive,
@@ -200,7 +200,7 @@ class PublishCubit extends Cubit<PublishState> {
       final summary = _contents!.summarize();
 
       var next = PublishState(
-        stage: PublishStage.included,
+        stage: PublishStage.look,
         summary: summary,
         title: _clip(scopeName, publicationTitleMax),
         ownerName: await _rememberedOwnerName() ?? '',
@@ -208,11 +208,10 @@ class PublishCubit extends Cubit<PublishState> {
       );
       if (previous != null) next = await _prefillFrom(previous!, next);
       if (isClosed) return;
+      // The look, whose Next is the review. An update opens on it too, filled
+      // in from the published page: Next keeps it, and anything to change is
+      // changed on the way.
       emit(next);
-
-      // An update opens on the look, filled in from the published page: Next
-      // keeps it, and anything to change is changed on the way.
-      if (previous != null) emit(state.copyWith(stage: PublishStage.look));
     } on PublicationReadException catch (e) {
       logger.e('[publication] preparing failed', e);
       if (isClosed) return;
@@ -647,10 +646,12 @@ class PublishCubit extends Cubit<PublishState> {
               ? PublishStage.look
               : PublishStage.itself,
         ));
-      case PublishStage.included:
-        emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
-        if (state.titleIsValid) review();
+        if (state.titleIsValid &&
+            state.choosingSlot == null &&
+            !state.imageProcessing) {
+          review();
+        }
       default:
     }
   }
@@ -660,8 +661,11 @@ class PublishCubit extends Cubit<PublishState> {
       case PublishStage.itself:
         emit(state.copyWith(stage: PublishStage.how));
       case PublishStage.look:
-        emit(state.copyWith(
-            stage: isFile ? PublishStage.how : PublishStage.included));
+        if (state.choosingSlot != null) {
+          closeImageChooser();
+          return;
+        }
+        if (isFile) emit(state.copyWith(stage: PublishStage.how));
       case PublishStage.review:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.failed:
@@ -701,11 +705,34 @@ class PublishCubit extends Cubit<PublishState> {
   void setLicence(PublicationLicence? licence) =>
       emit(state.copyWith(licence: () => licence));
 
+  /// Shows the drive's images in place of the look, for [slot].
+  void openImageChooser(PublicationImageSlot slot) {
+    if (state.stage != PublishStage.look) return;
+    emit(state.copyWith(choosingSlot: () => slot));
+  }
+
+  /// Back to the look from the image chooser.
+  void closeImageChooser() => emit(state.copyWith(choosingSlot: () => null));
+
   /// Uses [bytes] for [slot]: decoded by the browser and cropped to the
   /// slot's size. A picture that is not one, or too big, is refused with
   /// [PublishState.imageError].
   Future<void> pickImage(PublicationImageSlot slot, Uint8List bytes) async {
-    emit(state.copyWith(imageError: () => null));
+    _imagesProcessing++;
+    emit(state.copyWith(imageError: () => null, imageProcessing: true));
+    try {
+      await _pickImage(slot, bytes);
+    } finally {
+      _imagesProcessing--;
+      if (!isClosed) {
+        emit(state.copyWith(imageProcessing: _imagesProcessing > 0));
+      }
+    }
+  }
+
+  int _imagesProcessing = 0;
+
+  Future<void> _pickImage(PublicationImageSlot slot, Uint8List bytes) async {
     final PublicationPicture picture;
     try {
       picture = await PublicationPicture.decode(bytes);
@@ -728,7 +755,8 @@ class PublishCubit extends Cubit<PublishState> {
           };
     final preview =
         await publicationCrop(picture.image, kind.width, kind.height);
-    if (isClosed) return;
+    // Left the look while it was cropped: what is priced is what was shown.
+    if (isClosed || state.stage != PublishStage.look) return;
     final picked = PickedImage(
       preview: preview,
       image: NewPublicationImage(files),
@@ -945,8 +973,18 @@ class PublishCubit extends Cubit<PublishState> {
     );
   }
 
+  /// What publishing uploads, in bytes: the page and its snapshot, not the
+  /// files, which are on Arweave already. Zero before it is priced.
+  int get uploadSize {
+    final job = _job;
+    return job == null ? 0 : _deps.publisher.sizeOf(job);
+  }
+
   void setUploadMethod(UploadMethod method) {
     if (state.stage != PublishStage.review) return;
+    // Publish was pressed: it pays the way the review showed then. The
+    // review stays on screen while the wallet is checked.
+    if (_checkingWallet) return;
     emit(state.copyWith(method: method));
   }
 
@@ -982,6 +1020,7 @@ class PublishCubit extends Cubit<PublishState> {
       return;
     }
     _checkingWallet = true;
+    emit(state.copyWith(checkingWallet: true));
     try {
       if (await _deps.profileCubit.logoutIfWalletMismatch()) return;
     } on ArConnectUnavailableException catch (e) {
@@ -991,6 +1030,7 @@ class PublishCubit extends Cubit<PublishState> {
       return;
     } finally {
       _checkingWallet = false;
+      if (!isClosed) emit(state.copyWith(checkingWallet: false));
     }
     // The dialog stays live while the wallet is checked: closed, or Back to
     // an earlier step, means the owner left the review and nothing is sent.

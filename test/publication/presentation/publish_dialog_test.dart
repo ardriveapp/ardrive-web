@@ -2,6 +2,12 @@ import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
+
+import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
+import 'package:ardrive/components/upload_review_dialog.dart'
+    show UploadCostBlock;
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
     show DriveStateSyncSkipStatus;
@@ -20,6 +26,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../test_utils/mocks.dart' show MockDriveDao;
 import 'package:mocktail/mocktail.dart';
 
 class _MockPublishCubit extends MockCubit<PublishState>
@@ -62,6 +69,7 @@ void main() {
     when(() => cubit.scopeName).thenReturn('Archive');
     when(() => cubit.folder).thenReturn(null);
     when(() => cubit.isFile).thenReturn(false);
+    when(() => cubit.uploadSize).thenReturn(2048);
     when(() => cubit.isPrivateFile).thenReturn(false);
     when(() => cubit.canSyncDrive).thenReturn(false);
     when(() => cubit.names).thenReturn(null);
@@ -115,10 +123,74 @@ void main() {
       ),
     );
 
-    expect(find.text('Review and publish'), findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
     expect(find.text('Link'), findsOneWidget, reason: 'the rest stays');
     expect(find.text('Snapshot'), findsNothing);
     expect(find.textContaining('snapshot'), findsNothing);
+  });
+
+  testWidgets('the review is the upload review: its cost, Back and Publish',
+      (tester) async {
+    await open(
+      tester,
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        cost: _freeCost,
+      ),
+    );
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
+    expect(find.text('Payment method'), findsNothing,
+        reason: 'the old payment block is gone');
+    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Publish'), findsWidgets);
+    expect(find.text('2 KiB'), findsOneWidget,
+        reason: 'what publishing uploads, not the files');
+  });
+
+  // Priced short on both, so the cubit's method is the wallet; then credits
+  // arrive. The review shows Turbo Credits, covered: Publish is offered.
+  testWidgets('credits that cover it offer Publish whatever the priced method',
+      (tester) async {
+    await open(
+      tester,
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        method: UploadMethod.ar,
+        cost: DriveStatePublishCost(
+          costEstimateAr: UploadCostEstimate(
+            pstFee: BigInt.zero,
+            totalCost: BigInt.from(4000000000),
+            totalSize: 1024,
+            usdUploadCost: 0.4,
+          ),
+          costEstimateTurbo: UploadCostEstimate(
+            pstFee: BigInt.zero,
+            totalCost: BigInt.from(3000000000),
+            totalSize: 1024,
+            usdUploadCost: 0.3,
+          ),
+          isTurboUploadPossible: true,
+          hasNoTurboBalance: false,
+          arBalance: '0',
+          turboCredits: '5',
+          sufficientArBalance: false,
+          sufficientTurboBalance: true,
+          turboBalanceWinc: BigInt.from(5000000000),
+          freeStatus: FreeUploadStatus.notEligible,
+        ),
+      ),
+    );
+
+    final publish = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, 'Publish'));
+    expect(publish.isDisabled, isFalse);
   });
 
   testWidgets('the review no longer warns that publishing is permanent',
@@ -133,21 +205,92 @@ void main() {
       ),
     );
 
-    expect(find.text('Review and publish'), findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
     expect(find.textContaining('permanent'), findsNothing);
   });
 
-  testWidgets('the first step says what comes next', (tester) async {
+  testWidgets('a folder has no read-only included step: the review carries it',
+      (tester) async {
     await open(
       tester,
-      const PublishState(stage: PublishStage.included, summary: _summary),
+      PublishState(
+        stage: PublishStage.review,
+        summary: const PublicationSummary(
+          fileCount: 3,
+          folderCount: 1,
+          totalSize: 1024,
+          hiddenItems: 2,
+          inHiddenFolders: 0,
+          inGhostFolders: 0,
+          pendingFiles: 0,
+          failedFiles: 0,
+        ),
+        title: 'Archive',
+        cost: _freeCost,
+      ),
     );
 
+    expect(find.text("What's included"), findsNothing);
+    expect(find.text('Left out'), findsOneWidget);
+    expect(find.text('Hidden items in a public drive can still be found.'),
+        findsOneWidget);
     expect(
-      find.text('Next: a title. Images, a description and a name are '
-          'optional, and you can add them later.'),
+      find.text('Anyone can find this page, and search engines can list its '
+          'files.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a failure and an unaffordable cost are error notices',
+      (tester) async {
+    await open(
+      tester,
+      const PublishState(stage: PublishStage.failed, failure: 'It broke.'),
+    );
+    expect(find.byType(ArDriveNotice), findsOneWidget);
+    expect(find.text('It broke.'), findsOneWidget);
+  });
+
+  testWidgets('choosing an image replaces the look, with Back to return',
+      (tester) async {
+    when(() => cubit.drive).thenReturn(Drive(
+      id: 'drive',
+      rootFolderId: 'root',
+      ownerAddress: 'addr',
+      name: 'Drive',
+      privacy: 'public',
+      isHidden: false,
+      dateCreated: DateTime.utc(2026),
+      lastUpdated: DateTime.utc(2026),
+    ));
+    // The look stays mounted under the chooser.
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder);
+    final mark =
+        await tester.runAsync(() => recorder.endRecording().toImage(4, 4));
+    when(() => cubit.mark()).thenAnswer((_) async => mark!);
+    when(() => cubit.state).thenReturn(const PublishState(
+      stage: PublishStage.look,
+      title: 'A',
+      choosingSlot: PublicationImageSlot.cover,
+    ));
+    await tester.pumpWidget(app(RepositoryProvider<DriveDao>.value(
+      // Reading the images fails: the chooser's title and Back are the test.
+      value: MockDriveDao(),
+      child: BlocProvider<PublishCubit>.value(
+        value: cubit,
+        child: const Material(
+          type: MaterialType.transparency,
+          child: SingleChildScrollView(child: PublishDialog()),
+        ),
+      ),
+    )));
+    await tester.pump();
+
+    expect(find.text('Choose an image'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Next'), findsNothing);
+    expect(find.text('How it looks'), findsNothing);
   });
 
   group('the review of an update', () {
@@ -233,17 +376,22 @@ void main() {
     });
   });
 
-  testWidgets('what is included counts files and folders, not their size',
+  testWidgets('the review counts files and folders, not their size',
       (tester) async {
     // The files are stored already: a size here read as uploading them
     // again.
     await open(
       tester,
-      const PublishState(stage: PublishStage.included, summary: _summary),
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        cost: _freeCost,
+      ),
     );
 
-    expect(find.text('Files'), findsOneWidget);
     expect(find.text('Folders'), findsOneWidget);
+    expect(find.textContaining('3 files'), findsOneWidget);
     expect(find.text('Size'), findsNothing);
     expect(find.text('1 KB'), findsNothing);
   });
@@ -279,6 +427,16 @@ void main() {
       await open(tester, const PublishState(stage: PublishStage.syncing));
 
       expect(find.text('Syncing this drive...'), findsOneWidget);
+    });
+
+    testWidgets('centres the wait across the dialog', (tester) async {
+      await open(tester, const PublishState(stage: PublishStage.syncing));
+
+      final title = tester.getRect(find.text('Syncing this drive...'));
+      final spinner = tester.getCenter(find.byType(ArDriveSpinner));
+      final dialog = tester.getRect(find.byType(ArDriveStandardModalNew));
+      expect(spinner.dx, moreOrLessEquals(dialog.center.dx, epsilon: 1));
+      expect(title.center.dx, moreOrLessEquals(dialog.center.dx, epsilon: 1));
     });
   });
 
@@ -548,6 +706,94 @@ void main() {
 
       expect(find.text('Saving a snapshot of the drive'), findsNothing);
       expect(find.text("Signing the page's files"), findsOneWidget);
+    });
+  });
+
+  group('the look', () {
+    Drive aDrive() => Drive(
+          id: 'drive',
+          rootFolderId: 'root',
+          ownerAddress: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
+          name: 'Drive',
+          privacy: 'public',
+          isHidden: false,
+          dateCreated: DateTime.utc(2026),
+          lastUpdated: DateTime.utc(2026),
+        );
+
+    Future<void> stubLook(WidgetTester tester) async {
+      when(() => cubit.drive).thenReturn(aDrive());
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder);
+      final mark =
+          await tester.runAsync(() => recorder.endRecording().toImage(4, 4));
+      when(() => cubit.mark()).thenAnswer((_) async => mark!);
+    }
+
+    testWidgets('the first step of a folder has Cancel, not a dead Back',
+        (tester) async {
+      await stubLook(tester);
+      await open(
+        tester,
+        const PublishState(stage: PublishStage.look, title: 'A'),
+      );
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Back'), findsNothing);
+    });
+
+    testWidgets('a file keeps Back on its look', (tester) async {
+      await stubLook(tester);
+      when(() => cubit.isFile).thenReturn(true);
+      await open(
+        tester,
+        const PublishState(stage: PublishStage.look, title: 'A'),
+      );
+      expect(find.text('Back'), findsOneWidget);
+    });
+
+    testWidgets('a keyword being typed survives choosing an image',
+        (tester) async {
+      await stubLook(tester);
+      const look = PublishState(stage: PublishStage.look, title: 'A');
+      const choosing = PublishState(
+        stage: PublishStage.look,
+        title: 'A',
+        choosingSlot: PublicationImageSlot.cover,
+      );
+      final states = StreamController<PublishState>.broadcast();
+      addTearDown(states.close);
+      whenListen(cubit, states.stream, initialState: look);
+      when(() => cubit.state).thenReturn(look);
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(app(RepositoryProvider<DriveDao>.value(
+        value: MockDriveDao(),
+        child: BlocProvider<PublishCubit>.value(
+          value: cubit,
+          child: const Material(
+            type: MaterialType.transparency,
+            child: SingleChildScrollView(child: PublishDialog()),
+          ),
+        ),
+      )));
+      await tester.pump();
+
+      await tester.tap(find.text('More options'));
+      await tester.pump();
+      await tester.enterText(find.byType(EditableText).last, 'draft');
+      await tester.pump();
+
+      when(() => cubit.state).thenReturn(choosing);
+      states.add(choosing);
+      await tester.pump();
+      expect(find.text('Choose an image'), findsOneWidget);
+
+      when(() => cubit.state).thenReturn(look);
+      states.add(look);
+      await tester.pump();
+
+      expect(find.text('Choose an image'), findsNothing);
+      expect(find.text('draft'), findsOneWidget);
     });
   });
 }

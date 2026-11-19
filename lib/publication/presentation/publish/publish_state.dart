@@ -13,7 +13,6 @@ enum PublishStage {
   /// The file itself: its link, and a name for it.
   itself,
 
-  included,
   look,
 
   /// Working out the snapshot and the cost, on the way to [review].
@@ -121,11 +120,14 @@ class PublishState extends Equatable {
     this.link,
     this.isUpdate = false,
     this.imageError,
+    this.choosingSlot,
     this.names,
     this.naming = const [],
     this.namingStarted = false,
     this.how = FilePublishHow.page,
     this.filePages = FilePageAvailability.checking,
+    this.imageProcessing = false,
+    this.checkingWallet = false,
   });
 
   final PublishStage stage;
@@ -194,6 +196,18 @@ class PublishState extends Equatable {
     PublicationImageProblem problem
   })? imageError;
 
+  /// The image field choosing a picture from the drive, in place of the
+  /// look, until one is picked or Back.
+  final PublicationImageSlot? choosingSlot;
+
+  /// A picked image is still being cropped: Next waits for it, so what is
+  /// priced is what the look shows.
+  final bool imageProcessing;
+
+  /// Publish was pressed and the wallet is being checked: the review holds
+  /// its payment choice, and Publish is busy.
+  final bool checkingWallet;
+
   bool get titleIsValid => title.trim().isNotEmpty;
 
   bool get canPublish => cost != null && cost!.canPayWith(method);
@@ -224,11 +238,14 @@ class PublishState extends Equatable {
     bool? isUpdate,
     ({PublicationImageSlot slot, PublicationImageProblem problem})? Function()?
         imageError,
+    PublicationImageSlot? Function()? choosingSlot,
     ArNSFlowOutcome? names,
     List<String>? naming,
     bool? namingStarted,
     FilePublishHow? how,
     FilePageAvailability? filePages,
+    bool? imageProcessing,
+    bool? checkingWallet,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -255,11 +272,14 @@ class PublishState extends Equatable {
         link: link ?? this.link,
         isUpdate: isUpdate ?? this.isUpdate,
         imageError: imageError != null ? imageError() : this.imageError,
+        choosingSlot: choosingSlot != null ? choosingSlot() : this.choosingSlot,
         names: names ?? this.names,
         naming: naming ?? this.naming,
         namingStarted: namingStarted ?? this.namingStarted,
         how: how ?? this.how,
         filePages: filePages ?? this.filePages,
+        imageProcessing: imageProcessing ?? this.imageProcessing,
+        checkingWallet: checkingWallet ?? this.checkingWallet,
       );
 
   @override
@@ -288,11 +308,14 @@ class PublishState extends Equatable {
         link,
         isUpdate,
         imageError,
+        choosingSlot,
         names,
         naming,
         namingStarted,
         how,
         filePages,
+        imageProcessing,
+        checkingWallet,
       ];
 }
 

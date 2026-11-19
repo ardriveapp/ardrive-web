@@ -1,4 +1,7 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
+
+import 'package:ardrive/publication/data/publication_repository.dart';
 
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
@@ -12,6 +15,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+class _MockRepository extends Mock implements PublicationRepository {}
 
 class _MockPublishCubit extends MockCubit<PublishState>
     implements PublishCubit {}
@@ -236,6 +241,135 @@ void main() {
       expect(find.text('Lake.jpg', skipOffstage: false), findsNothing);
       expect(find.text('Encrypted file', skipOffstage: false), findsOneWidget);
       expect(find.text('From this drive', skipOffstage: false), findsNothing);
+    });
+  });
+
+  group('choosing an image from the drive', () {
+    setUpAll(() {
+      registerFallbackValue(PublicationImageSlot.cover);
+      registerFallbackValue(Uint8List(0));
+    });
+
+    FileEntry image() => FileEntry(
+          id: 'f',
+          driveId: 'drive',
+          name: 'cat.png',
+          parentFolderId: 'root',
+          path: '/cat.png',
+          dataTxId: 'tx',
+          size: 3,
+          dateCreated: DateTime.utc(2026),
+          lastUpdated: DateTime.utc(2026),
+          lastModifiedDate: DateTime.utc(2026),
+          dataContentType: 'image/png',
+          isHidden: false,
+          customJsonMetadata: null,
+          customGQLTags: null,
+          pinnedDataOwnerAddress: null,
+          bundledIn: null,
+        );
+
+    testWidgets('returns to the look with the picture applied, once',
+        (tester) async {
+      final repository = _MockRepository();
+      when(() => repository.readData('tx'))
+          .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+      when(() => cubit.state).thenReturn(const PublishState(
+        stage: PublishStage.look,
+        choosingSlot: PublicationImageSlot.cover,
+      ));
+      when(() => cubit.closeImageChooser()).thenReturn(null);
+      when(() => cubit.pickImage(any(), any())).thenAnswer((_) async {});
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: RepositoryProvider<PublicationRepository>.value(
+                value: repository,
+                child: BlocProvider<PublishCubit>.value(
+                  value: cubit,
+                  child: ImageFromDriveChooser(
+                    slot: PublicationImageSlot.cover,
+                    loadImages: () async => [image()],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('cat.png'));
+      // A second press in the same frame.
+      when(() => cubit.state).thenReturn(const PublishState(
+        stage: PublishStage.look,
+      ));
+      await tester.tap(find.text('cat.png'));
+      await tester.pump();
+
+      verify(() => cubit.closeImageChooser()).called(1);
+      verify(() => cubit.pickImage(
+          PublicationImageSlot.cover, Uint8List.fromList([1, 2, 3]))).called(1);
+    });
+
+    testWidgets('reads the images once while the dialog rebuilds',
+        (tester) async {
+      when(() => cubit.state).thenReturn(const PublishState(
+        stage: PublishStage.look,
+        choosingSlot: PublicationImageSlot.cover,
+      ));
+      var loads = 0;
+      final rebuild = ValueNotifier(0);
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<PublishCubit>.value(
+                value: cubit,
+                // Stands in for the dialog's BlocBuilder: a new chooser
+                // widget on every state change.
+                child: ValueListenableBuilder<int>(
+                  valueListenable: rebuild,
+                  builder: (_, __, ___) => ImageFromDriveChooser(
+                    slot: PublicationImageSlot.cover,
+                    loadImages: () async {
+                      loads++;
+                      return [image()];
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('cat.png'), findsOneWidget);
+
+      rebuild.value++;
+      await tester.pump();
+      rebuild.value++;
+      await tester.pump();
+
+      expect(loads, 1);
+      expect(find.text('cat.png'), findsOneWidget);
+      expect(find.byType(ArDriveSpinner), findsNothing);
     });
   });
 }

@@ -4981,10 +4981,6 @@
   "@publishBlockedEmpty": {
     "description": "Why a drive or folder can't be published."
   },
-  "publishWhatsIncluded": "含まれる内容",
-  "@publishWhatsIncluded": {
-    "description": "First step of the publish dialog."
-  },
   "publishScopeDrive": "ドライブ全体",
   "@publishScopeDrive": {
     "description": "What a drive's web page shows."
@@ -5012,10 +5008,6 @@
   "publishIncludedNote": "このページは誰でも見つけられ、検索エンジンがファイルを一覧表示することがあります。",
   "@publishIncludedNote": {
     "description": "Under the counts in the first step of the publish dialog."
-  },
-  "publishNextTitleNote": "次はタイトルです。画像、説明、名前は任意で、後から追加できます。",
-  "@publishNextTitleNote": {
-    "description": "Muted line under the first step of the publish dialog: what the next step asks for."
   },
   "publishMoreOptions": "その他のオプション",
   "@publishMoreOptions": {

@@ -44,6 +44,9 @@ Future<void> showPublishedView(
       ),
     );
 
+/// The published view's width.
+const _publishedWidth = 520.0;
+
 class PublishedView extends StatefulWidget {
   const PublishedView({
     super.key,
@@ -139,7 +142,7 @@ class _PublishedViewState extends State<PublishedView> {
 
     return ArDriveStandardModalNew(
       title: strings.publishedToWeb,
-      width: 520,
+      width: _publishedWidth,
       scrollableContent: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -175,9 +178,13 @@ class _PublishedViewState extends State<PublishedView> {
           ),
           const SizedBox(height: 16),
           if (_outOfDate) ...[
-            Text(strings.publishFileOutOfDate,
-                style: typography.paragraphNormal(color: colors.textHigh)),
-            const SizedBox(height: 12),
+            ArDriveNotice(
+              type: ArDriveNoticeType.warning,
+              message: strings.publishFileOutOfDate,
+              actionLabel: strings.publishUpdate,
+              onAction: update,
+            ),
+            const SizedBox(height: ArDriveSpacing.sm),
           ],
           if (_isPrivateFile && !_keyChecked)
             const SizedBox(
@@ -194,11 +201,12 @@ class _PublishedViewState extends State<PublishedView> {
               ].join(' '),
             ),
           if (earlier.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             InkWell(
               onTap: () => setState(() => _showEarlier = !_showEarlier),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
                 child: Row(
                   children: [
                     Text(
@@ -230,19 +238,10 @@ class _PublishedViewState extends State<PublishedView> {
                               typography.paragraphNormal(color: colors.textMid),
                         ),
                       ),
-                      ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () => openUrl(url: _link(version.txId)),
-                          child: Text(
-                            strings.publishOpen,
-                            style: typography
-                                .paragraphNormal(
-                                  fontWeight: ArFontWeight.semiBold,
-                                  color: colors.textMid,
-                                )
-                                .copyWith(decoration: TextDecoration.underline),
-                          ),
-                        ),
+                      ArDriveLink(
+                        text: strings.publishOpen,
+                        external: true,
+                        onTap: () => openUrl(url: _link(version.txId)),
                       ),
                     ],
                   ),
@@ -250,15 +249,18 @@ class _PublishedViewState extends State<PublishedView> {
           ],
         ],
       ),
+      hasCloseButton: true,
       actions: [
-        ModalAction(title: strings.publishUpdate, action: update),
+        // An out-of-date notice carries Update itself.
+        if (!_outOfDate)
+          ModalAction.dismiss(title: strings.publishUpdate, action: update),
+        ModalAction.close(
+          title: strings.doneEmphasized,
+          action: () => Navigator.of(context).pop(),
+        ),
         ModalAction(
           title: strings.publishOpenPage,
           action: () => openUrl(url: _link(latest.txId)),
-        ),
-        ModalAction(
-          title: strings.doneEmphasized,
-          action: () => Navigator.of(context).pop(),
         ),
       ],
     );

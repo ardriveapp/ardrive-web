@@ -179,11 +179,15 @@ void main() {
           dark: dark);
     });
 
-    testWidgets('included, dark: $dark', (tester) async {
+    testWidgets('review, dark: $dark', (tester) async {
       await capture(
         tester,
-        '3-included',
-        const PublishState(stage: PublishStage.included, summary: _summary),
+        '3-review',
+        PublishState(
+            stage: PublishStage.review,
+            summary: _summary,
+            title: 'Archive',
+            cost: _cost),
         dark: dark,
       );
     });
