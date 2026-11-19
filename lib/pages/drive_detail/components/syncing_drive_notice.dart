@@ -81,21 +81,31 @@ class SyncingDriveNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!locksMultiSelect(
+    final shown = locksMultiSelect(
       context.watch<SyncCubit>().state,
       syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
       syncingDriveIds: context.watch<SyncCubit>().syncingDriveIds,
       driveId: driveId,
-    )) {
-      return const SizedBox.shrink();
-    }
+    );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
-      child: ArDriveNotice(
-        type: ArDriveNoticeType.info,
-        message: appLocalizationsOf(context).syncStillReadingThisDrive,
-      ),
+    // Its height grows and shrinks rather than jumping, so the table under it
+    // glides instead of moving by a notice's height in one frame. Not at all
+    // for a reader who asked for less motion.
+    return AnimatedSize(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: shown
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
+              child: ArDriveNotice(
+                type: ArDriveNoticeType.info,
+                message: appLocalizationsOf(context).syncStillReadingThisDrive,
+              ),
+            )
+          : const SizedBox(width: double.infinity),
     );
   }
 }

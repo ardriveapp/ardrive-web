@@ -59,123 +59,120 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                 ? appLocalizationsOf(context).shareFolderWithOthers
                 : appLocalizationsOf(context).shareDriveWithOthers,
             scrollableContent: true,
-            content: SizedBox(
-              width: kLargeDialogWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (state is DriveShareLoadInProgress)
-                    const Center(
-                        child: ArDriveSpinner(size: ArDriveSpinnerSize.large))
-                  else if (state is DriveShareLoadSuccess) ...{
-                    // What is being shared, confirmed before the sharer copies
-                    // anything. Not the modal's `description`, which it only
-                    // renders when there is no `content` - so this dialog never
-                    // showed one.
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        state.folderName ?? state.drive.name,
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: colorTokens.textHigh,
-                        ),
+            // The way out in every state, loading and failing too.
+            hasCloseButton: true,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (state is DriveShareLoadInProgress)
+                  const Center(
+                      child: ArDriveSpinner(size: ArDriveSpinnerSize.large))
+                else if (state is DriveShareLoadSuccess) ...{
+                  // What is being shared, confirmed before the sharer copies
+                  // anything. Not the modal's `description`, which it only
+                  // renders when there is no `content` - so this dialog never
+                  // showed one.
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+                    child: Text(
+                      state.folderName ?? state.drive.name,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
                       ),
                     ),
+                  ),
+                  CopyableShareArtifact(
+                    label: appLocalizationsOf(context).shareFileLinkLabel,
+                    text: state.driveShareLink.toString(),
+                    copyLabel: appLocalizationsOf(context).copyLink,
+                    revealLabel:
+                        appLocalizationsOf(context).shareDriveRevealLink,
+                    // Only a link the sharer chose to embed the key in holds
+                    // a secret. A keyless link - the default - is not worth
+                    // hiding, and hiding it would suggest it is dangerous to
+                    // share, which is the opposite of the point.
+                    isSecret: state.keyIsInLink,
+                    alignsWithSecret: state.hasSeparateKeyArtifact,
+                  ),
+                  if (state.hasSeparateKeyArtifact) ...{
+                    const SizedBox(height: ArDriveSpacing.md),
                     CopyableShareArtifact(
-                      label: appLocalizationsOf(context).shareFileLinkLabel,
-                      text: state.driveShareLink.toString(),
-                      copyLabel: appLocalizationsOf(context).copyLink,
+                      label:
+                          appLocalizationsOf(context).shareDriveAccessKeyLabel,
+                      text: state.driveKeyBase64!,
+                      copyLabel: appLocalizationsOf(context).copyAccessKey,
                       revealLabel:
-                          appLocalizationsOf(context).shareDriveRevealLink,
-                      // Only a link the sharer chose to embed the key in holds
-                      // a secret. A keyless link - the default - is not worth
-                      // hiding, and hiding it would suggest it is dangerous to
-                      // share, which is the opposite of the point.
-                      isSecret: state.keyIsInLink,
-                      alignsWithSecret: state.hasSeparateKeyArtifact,
+                          appLocalizationsOf(context).shareFileRevealKey,
+                      isSecret: true,
+                      isKey: true,
                     ),
-                    if (state.hasSeparateKeyArtifact) ...{
-                      const SizedBox(height: 16),
-                      CopyableShareArtifact(
-                        label: appLocalizationsOf(context)
-                            .shareDriveAccessKeyLabel,
-                        text: state.driveKeyBase64!,
-                        copyLabel: appLocalizationsOf(context).copyAccessKey,
-                        revealLabel:
-                            appLocalizationsOf(context).shareFileRevealKey,
-                        isSecret: true,
-                        isKey: true,
+                    _HelperText(
+                      appLocalizationsOf(context).shareDriveSendKeySeparately,
+                      color: colorTokens.textLow,
+                    ),
+                  },
+                  if (state.drive.isPrivate) ...{
+                    const SizedBox(height: ArDriveSpacing.md),
+                    ArDriveCheckBox(
+                      // Follows the cubit's answer as it changes.
+                      checked: state.keyIsInLink,
+                      title: state.isFolder
+                          ? appLocalizationsOf(context)
+                              .shareFolderIncludeKeyInLink
+                          : appLocalizationsOf(context)
+                              .shareDriveIncludeKeyInLink,
+                      titleStyle: typography.paragraphNormal(
+                        color: colorTokens.textMid,
                       ),
-                      _HelperText(
-                        appLocalizationsOf(context).shareDriveSendKeySeparately,
-                        color: colorTokens.textLow,
-                      ),
-                    },
-                    if (state.drive.isPrivate) ...{
-                      const SizedBox(height: 20),
-                      ArDriveCheckBox(
-                        // Follows the cubit's answer as it changes.
-                        checked: state.keyIsInLink,
-                        title: state.isFolder
+                      onChange: (value) =>
+                          context.read<DriveShareCubit>().setKeyIsInLink(
+                                value,
+                              ),
+                    ),
+                    if (state.keyIsInLink)
+                      ShareWarning(
+                        // There is no folder key: a folder in a private
+                        // drive is opened with the drive's key, which opens
+                        // the rest of the drive too. A folder share must say
+                        // so, or it reads as sharing only the folder.
+                        state.isFolder
                             ? appLocalizationsOf(context)
-                                .shareFolderIncludeKeyInLink
+                                .shareFolderKeyInLinkWarning(state.drive.name)
                             : appLocalizationsOf(context)
-                                .shareDriveIncludeKeyInLink,
-                        titleStyle: typography.paragraphNormal(
-                          color: colorTokens.textMid,
-                        ),
-                        onChange: (value) =>
-                            context.read<DriveShareCubit>().setKeyIsInLink(
-                                  value,
-                                ),
+                                .shareDriveKeyInLinkWarning,
                       ),
-                      if (state.keyIsInLink)
-                        ShareWarning(
-                          // There is no folder key: a folder in a private
-                          // drive is opened with the drive's key, which opens
-                          // the rest of the drive too. A folder share must say
-                          // so, or it reads as sharing only the folder.
-                          state.isFolder
-                              ? appLocalizationsOf(context)
-                                  .shareFolderKeyInLinkWarning(state.drive.name)
-                              : appLocalizationsOf(context)
-                                  .shareDriveKeyInLinkWarning,
-                        ),
-                    },
-                    // With the key in the link, the warning above already says
-                    // what the link opens. A notice under it only repeated it,
-                    // and in larger type than the warning itself.
-                    if (!state.keyIsInLink) ...{
-                      const SizedBox(height: 20),
-                      Text(
-                        // A keyless private link does *not* grant access on
-                        // its own, so it must not be described as though it
-                        // does - that copy predates the key ever being
-                        // optional.
-                        _notice(context, state),
-                        // Guidance, not the headline. As `paragraphLarge` it
-                        // was the largest text in a dialog whose actual
-                        // subject is the two fields above it.
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textMid,
-                        ),
-                      ),
-                    },
-                  } else if (state is DriveShareLoadFail)
+                  },
+                  // With the key in the link, the warning above already says
+                  // what the link opens. A notice under it only repeated it,
+                  // and in larger type than the warning itself.
+                  if (!state.keyIsInLink) ...{
+                    const SizedBox(height: ArDriveSpacing.md),
                     Text(
-                      appLocalizationsOf(context).shareDriveFailure,
+                      // A keyless private link does *not* grant access on
+                      // its own, so it must not be described as though it
+                      // does - that copy predates the key ever being
+                      // optional.
+                      _notice(context, state),
+                      // Guidance, not the headline. As `paragraphLarge` it
+                      // was the largest text in a dialog whose actual
+                      // subject is the two fields above it.
                       style: typography.paragraphNormal(
                         color: colorTokens.textMid,
                       ),
                     ),
-                ],
-              ),
+                  },
+                } else if (state is DriveShareLoadFail)
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.error,
+                    message: appLocalizationsOf(context).shareDriveFailure,
+                  ),
+              ],
             ),
             actions: [
               if (state is DriveShareLoadFail) ...[
-                ModalAction(
+                ModalAction.close(
                   action: () => Navigator.pop(context),
                   title: appLocalizationsOf(context).cancel,
                 ),
@@ -223,7 +220,7 @@ class _HelperText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
         child: Text(
           text,
           style: ArDriveTypographyNew.of(context).paragraphSmall(color: color),

@@ -333,6 +333,241 @@ void main() {
     expect(await dialogWidthAt(tester, const Size(1440, 900)),
         lessThanOrEqualTo(350));
   });
+
+  group('ArDriveStandardModalNew close button', () {
+    Future<void> pump(WidgetTester tester, List<ModalAction> actions,
+        {bool? hasCloseButton}) async {
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Center(
+              child: ArDriveStandardModalNew(
+                title: 'Title',
+                description: 'Text',
+                hasCloseButton: hasCloseButton,
+                actions: actions,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final xIcon = find.byWidgetPredicate(
+        (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x);
+
+    testWidgets('a dialog with a Cancel gets it by default', (tester) async {
+      await pump(tester, [
+        ModalAction.close(action: () {}, title: 'Cancel'),
+        ModalAction(action: () {}, title: 'Go'),
+      ]);
+      expect(xIcon, findsOneWidget);
+    });
+
+    testWidgets('a Back or Try again dismiss does not give it one',
+        (tester) async {
+      await pump(tester, [
+        ModalAction.dismiss(action: () {}, title: 'Back'),
+        ModalAction(action: () {}, title: 'Go'),
+      ]);
+      expect(xIcon, findsNothing);
+    });
+
+    testWidgets('a dialog with no way to dismiss it has none', (tester) async {
+      await pump(tester, [ModalAction(action: () {}, title: 'Go')]);
+      expect(xIcon, findsNothing);
+    });
+
+    testWidgets('the X runs the dismiss action, so both give the same result',
+        (tester) async {
+      Object? result = 'unset';
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => ArDriveStandardModalNew(
+                      title: 'Title',
+                      description: 'Text',
+                      actions: [
+                        ModalAction.close(
+                          action: () => Navigator.of(context).pop(false),
+                          title: 'Cancel',
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(xIcon);
+      await tester.pumpAndSettle();
+      expect(result, false);
+    });
+
+    testWidgets('an explicit close wins over a Back dismiss, as in the top-up',
+        (tester) async {
+      var closed = false;
+      var wentBack = false;
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Center(
+              child: ArDriveStandardModalNew(
+                title: 'Title',
+                description: 'Text',
+                hasCloseButton: true,
+                close: () => closed = true,
+                actions: [
+                  ModalAction.dismiss(
+                      action: () => wentBack = true, title: 'Back'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(xIcon);
+      expect(closed, isTrue);
+      expect(wentBack, isFalse);
+    });
+
+    // A dialog keeps itself open while its work runs (the design system:
+    // no progress dialog on top), so its Cancel and the X wait too.
+    testWidgets('a held Cancel holds the X: pressing it does nothing',
+        (tester) async {
+      var cancelled = 0;
+      await pump(tester, [
+        ModalAction.close(
+          action: () => cancelled++,
+          title: 'Cancel',
+          isEnable: false,
+        ),
+        ModalAction(action: () {}, title: 'Save', isLoading: true),
+      ]);
+      expect(xIcon, findsOneWidget);
+      await tester.tap(xIcon, warnIfMissed: false);
+      await tester.tap(find.text('Cancel'), warnIfMissed: false);
+      await tester.pump();
+      expect(cancelled, 0);
+      final cancel = tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+      expect(cancel.isDisabled, isTrue);
+    });
+
+    testWidgets('the X is named after the Cancel it runs, in its language',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, [
+        ModalAction.close(action: () {}, title: 'Cancelar'),
+        ModalAction(action: () {}, title: 'Guardar'),
+      ]);
+      expect(find.bySemanticsLabel('Cancelar'), findsWidgets);
+      expect(find.bySemanticsLabel('Close'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a Cancel that is not held still closes from the X',
+        (tester) async {
+      var cancelled = 0;
+      await pump(tester, [
+        ModalAction.close(action: () => cancelled++, title: 'Cancel'),
+        ModalAction(action: () {}, title: 'Save'),
+      ]);
+      await tester.tap(xIcon);
+      expect(cancelled, 1);
+    });
+
+    testWidgets('false hides it and true shows it', (tester) async {
+      await pump(tester, [ModalAction.close(action: () {}, title: 'Cancel')],
+          hasCloseButton: false);
+      expect(xIcon, findsNothing);
+      await pump(tester, [ModalAction(action: () {}, title: 'Done')],
+          hasCloseButton: true);
+      expect(xIcon, findsOneWidget);
+    });
+  });
+
+  group('ArDriveStandardModalNew size changes', () {
+    Widget host(double height, {bool reduceMotion = false}) => ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Builder(
+              builder: (context) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(disableAnimations: reduceMotion),
+                child: Center(
+                  child: ArDriveStandardModalNew(
+                    title: 'Title',
+                    content: SizedBox(key: const Key('body'), height: height),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('grows to its new content over time, not in one frame',
+        (tester) async {
+      await tester.pumpWidget(host(20));
+      final before = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      await tester.pumpWidget(host(300));
+      await tester.pump(const Duration(milliseconds: 50));
+      final during = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      await tester.pumpAndSettle();
+      final after = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      expect(after - before, closeTo(280, 1));
+      expect(during, greaterThan(before));
+      expect(during, lessThan(after));
+    });
+
+    testWidgets('is instant when the platform asks for reduced motion',
+        (tester) async {
+      await tester.pumpWidget(host(20, reduceMotion: true));
+      final before = tester.getSize(find.byType(ArDriveModalNew)).height;
+
+      await tester.pumpWidget(host(300, reduceMotion: true));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(tester.getSize(find.byType(ArDriveModalNew)).height - before,
+          closeTo(280, 1));
+    });
+  });
+
+  // The spec's gap between buttons in a row: xs, 8. It was 16.
+  testWidgets('the actions sit 8 apart', (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Center(
+            child: ArDriveStandardModalNew(
+              title: 'Title',
+              description: 'Text',
+              actions: [
+                ModalAction.dismiss(action: () {}, title: 'Cancel'),
+                ModalAction(action: () {}, title: 'Save'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final cancel =
+        tester.getRect(find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+    final save = tester.getRect(find.widgetWithText(ArDriveButtonNew, 'Save'));
+    expect(save.left - cancel.right, ArDriveSpacing.xs);
+  });
 }
 
 class _TestWidget extends StatelessWidget {

@@ -9,6 +9,7 @@ import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -628,7 +629,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // This one already emits before it waits, which is the shape openFolder
     // now has too.
     if (drive == null) {
-      emit(DriveDetailLoadInProgress());
+      emit(DriveDetailLoadInProgress(driveId: driveId));
       // Same gate as openFolder. A single-drive sync of another drive cannot
       // discover this one - only a drive-list refresh does that, and
       // syncTouchesDrive already treats one as covering everything - so
@@ -907,7 +908,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             (otherDriveId ?? _driveId);
 
     if (!showingThisDriveAlready) {
-      emit(DriveDetailLoadInProgress());
+      emit(DriveDetailLoadInProgress(
+        driveId: otherDriveId ?? _driveId,
+        folderId: folderId,
+      ));
     }
 
     // No wait. A folder is read from committed transactions, so what comes
@@ -1780,22 +1784,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   /// The column the explorer shows by default only when the drive has a
   /// licensed file. See [DriveDetailLoadSuccess.driveHasLicensedFiles].
-  static const licenseColumnIndex = 4;
+  static const licenseColumnIndex = ColumnIndexes.licenseType;
 
   Future<Map<int, bool>> getTableColumnVisibility() async {
     final columnVisibility = <int, bool>{};
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < ColumnIndexes.count; i++) {
       final isVisible = (await _store()).getBool(
         'drive_detail_column_$i',
       );
 
       if (isVisible != null) {
         columnVisibility[i] = isVisible;
-      } else if (i != licenseColumnIndex) {
+      } else if (i != licenseColumnIndex && ColumnIndexes.shownByDefault(i)) {
         // License is left out when the reader never chose: its default
         // depends on the drive, so the table decides it from
-        // [DriveDetailLoadSuccess.driveHasLicensedFiles].
+        // [DriveDetailLoadSuccess.driveHasLicensedFiles]. Transaction ID and
+        // Status are left out too, and are off unless chosen.
         columnVisibility[i] = true;
       }
     }

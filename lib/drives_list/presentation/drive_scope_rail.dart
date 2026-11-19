@@ -108,7 +108,7 @@ class DriveScopeRail extends StatelessWidget {
 /// Shared so the permanent "Your drives" anchor the sidebar draws above this
 /// rail is the same object as the scopes below it - the row a reader relies on
 /// to get home must not be a lookalike that drifts.
-class DriveNavRow extends StatelessWidget {
+class DriveNavRow extends StatefulWidget {
   const DriveNavRow({
     super.key,
     required this.icon,
@@ -161,7 +161,28 @@ class DriveNavRow extends StatelessWidget {
   static const navRowHeight = 40.0;
 
   @override
+  State<DriveNavRow> createState() => _DriveNavRowState();
+}
+
+class _DriveNavRowState extends State<DriveNavRow> {
+  bool _hovering = false;
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final icon = widget.icon;
+    final label = widget.label;
+    final onTap = widget.onTap;
+    final count = widget.count;
+    final isCurrent = widget.isCurrent;
+    final showLabel = widget.showLabel;
+    final trailing = widget.trailing;
+    final isMuted = widget.isMuted;
+    final dense = widget.dense;
+    final isExpanded = widget.isExpanded;
+    final onToggle = widget.onToggle;
+    const iconSize = DriveNavRow.iconSize;
+    const navRowHeight = DriveNavRow.navRowHeight;
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -173,96 +194,117 @@ class DriveNavRow extends StatelessWidget {
             ? colorTokens.textLow
             : colorTokens.textMid;
 
+    // The row's own pill draws hover and press, the shape selected has, so
+    // the three read as one object. HoverWidget's fill sat on its padding
+    // and ran edge to edge with square corners.
+    final pillColor = isCurrent
+        ? ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor
+        : _pressed
+            ? colorTokens.buttonSecondaryPress
+            : _hovering
+                ? colorTokens.buttonSecondaryHover
+                : null;
+
     return HoverWidget(
       tooltip: showLabel ? '' : label,
-      child: ArDriveClickArea(
-        child: Semantics(
-          button: true,
-          selected: isCurrent,
-          // Said by the chevron instead when it is a button of its own.
-          expanded: onToggle == null ? isExpanded : null,
-          // Tab reaches every scope, not only the first; Enter or Space
-          // opens it.
-          child: ArDriveFocusable(
-            onActivate: onTap,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap,
-              child: Container(
-                // The table's selected-row colour, so the nav and the table
-                // mark where you are alike. containerL2 was about 1.1:1
-                // against the page in dark.
-                decoration: isCurrent
-                    ? BoxDecoration(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .tableTheme
-                            .selectedItemColor,
-                        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
-                      )
-                    : null,
-                // A full row is the 40 px touch target at any label length;
-                // a dense row, a drive under its heading, is its label's
-                // height with the scale's smallest step either side.
-                constraints:
-                    BoxConstraints(minHeight: dense ? 0 : navRowHeight),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: ArDriveSpacing.sm,
-                  vertical: ArDriveSpacing.xxs,
-                ),
-                child: Row(
-                  mainAxisAlignment: showLabel
-                      ? MainAxisAlignment.start
-                      : MainAxisAlignment.center,
-                  children: [
-                    if (icon == null)
-                      const SizedBox(width: iconSize)
-                    else
-                      Icon(icon, size: iconSize, color: color),
-                    if (showLabel) ...[
-                      const SizedBox(width: ArDriveSpacing.xs),
-                      // Wraps rather than ellipsizes, like the drive names that
-                      // used to be here: at a large text scale a clipped scope is
-                      // a destination the reader cannot identify.
-                      Expanded(
-                        child: Text(
-                          label,
-                          // SemiBold, like every label: Bold is for titles, and
-                          // the fill already marks the current row.
-                          style: typography.paragraphNormal(
-                            color: color,
-                            fontWeight: ArFontWeight.semiBold,
+      hoverColor: Colors.transparent,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovering = true),
+        onExit: (_) => setState(() {
+          _hovering = false;
+          _pressed = false;
+        }),
+        child: ArDriveClickArea(
+          child: Semantics(
+            button: true,
+            selected: isCurrent,
+            // Said by the chevron instead when it is a button of its own.
+            expanded: onToggle == null ? isExpanded : null,
+            // Tab reaches every scope, not only the first; Enter or Space
+            // opens it.
+            child: ArDriveFocusable(
+              onActivate: onTap,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onTap,
+                onTapDown: (_) => setState(() => _pressed = true),
+                onTapUp: (_) => setState(() => _pressed = false),
+                onTapCancel: () => setState(() => _pressed = false),
+                child: Container(
+                  // The table's selected-row colour, so the nav and the table
+                  // mark where you are alike. containerL2 was about 1.1:1
+                  // against the page in dark.
+                  decoration: pillColor != null
+                      ? BoxDecoration(
+                          color: pillColor,
+                          borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+                        )
+                      : null,
+                  // A full row is the 40 px touch target at any label length;
+                  // a dense row, a drive under its heading, is its label's
+                  // height with the scale's smallest step either side.
+                  constraints:
+                      BoxConstraints(minHeight: dense ? 0 : navRowHeight),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ArDriveSpacing.sm,
+                    vertical: ArDriveSpacing.xxs,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: showLabel
+                        ? MainAxisAlignment.start
+                        : MainAxisAlignment.center,
+                    children: [
+                      if (icon == null)
+                        const SizedBox(width: iconSize)
+                      else
+                        Icon(icon, size: iconSize, color: color),
+                      if (showLabel) ...[
+                        const SizedBox(width: ArDriveSpacing.xs),
+                        // Wraps rather than ellipsizes, like the drive names that
+                        // used to be here: at a large text scale a clipped scope is
+                        // a destination the reader cannot identify.
+                        Expanded(
+                          child: Text(
+                            label,
+                            // SemiBold, like every label: Bold is for titles, and
+                            // the fill already marks the current row.
+                            style: typography.paragraphNormal(
+                              color: color,
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
                           ),
                         ),
-                      ),
-                      if (count != null) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          '$count',
-                          style: typography
-                              .paragraphSmall(
-                            color: colorTokens.textLow,
-                          )
-                              .copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                        if (count != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '$count',
+                            style: typography
+                                .paragraphSmall(
+                              color: colorTokens.textLow,
+                            )
+                                .copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                      if (trailing != null) ...[
-                        const SizedBox(width: 8),
-                        trailing!,
-                      ],
-                      if (onToggle != null) ...[
-                        const SizedBox(width: 4),
-                        _Chevron(
-                          key: ValueKey('nav-toggle-$label'),
-                          section: label,
-                          isExpanded: isExpanded ?? false,
-                          onToggle: onToggle!,
-                        ),
+                        ],
+                        if (trailing != null) ...[
+                          const SizedBox(width: 8),
+                          trailing,
+                        ],
+                        if (onToggle != null) ...[
+                          const SizedBox(width: 4),
+                          _Chevron(
+                            key: ValueKey('nav-toggle-$label'),
+                            section: label,
+                            isExpanded: isExpanded ?? false,
+                            onToggle: onToggle,
+                          ),
+                        ],
                       ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

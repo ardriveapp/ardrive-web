@@ -26,6 +26,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -40,6 +41,10 @@ class DriveExplorerItemTile extends TableRowWidget {
     required DateTime lastUpdated,
     required DateTime dateCreated,
     required String license,
+    String type = '',
+    String? transactionId,
+    String? status,
+    String? statusValue,
     required Function() onPressed,
     required bool isHidden,
     required ArdriveTypographyNew typography,
@@ -110,8 +115,65 @@ class DriveExplorerItemTile extends TableRowWidget {
                 style: typography.paragraphSmall(color: colorTokens.textMid),
               ),
             ),
+            dimIfHidden(
+              isHidden,
+              Text(
+                type,
+                style: typography.paragraphSmall(color: colorTokens.textMid),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                softWrap: false,
+              ),
+            ),
+            dimIfHidden(isHidden, _TransactionIdCell(id: transactionId)),
+            dimIfHidden(
+              isHidden,
+              // Words only: the row's icon already carries the status dot.
+              status == null || statusValue == null
+                  ? const SizedBox.shrink()
+                  : Text(
+                      status,
+                      style: typography.paragraphSmall(
+                        color: colorTokens.textMid,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+            ),
           ],
         );
+}
+
+/// A file's data transaction in the Transaction ID column: shortened, in
+/// full in its tooltip, with the button that copies it. Empty for a folder,
+/// which has no transaction of its own to show.
+class _TransactionIdCell extends StatelessWidget {
+  const _TransactionIdCell({required this.id});
+
+  final String? id;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = this.id;
+    if (id == null || id.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        Flexible(
+          child: ArDriveTooltip(
+            message: id,
+            child: ArDriveIdText(
+              shortenId(id),
+              style: ArDriveTypographyNew.of(context).code(),
+            ),
+          ),
+        ),
+        const SizedBox(width: ArDriveSpacing.xxs),
+        CopyButton(text: id, size: 16),
+      ],
+    );
+  }
 }
 
 TextStyle _titleStyle(ArdriveTypographyNew typography) =>
@@ -571,9 +633,7 @@ Future<void> handleMarkdownFileEdit(
     // up while the file loads.
     unawaited(showArDriveDialog(
       context,
-      content: const Center(
-        child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
-      ),
+      content: ProgressDialog(title: appLocalizationsOf(context).openingNote),
       barrierDismissible: false,
     ));
     loaderOpen = true;
@@ -674,12 +734,12 @@ Future<void> handleMarkdownFileEdit(
       final strings = appLocalizationsOf(context);
       await showStandardDialog(
         context,
-        title: strings.error,
+        title: strings.couldNotOpenNote,
         description: strings.couldNotLoadFile,
         actions: [
-          ModalAction(
+          ModalAction.close(
             action: () => Navigator.of(context).pop(),
-            title: strings.ok,
+            title: strings.close,
           ),
         ],
       );

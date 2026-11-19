@@ -1,6 +1,7 @@
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
@@ -163,7 +164,12 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   ),
                 );
 
-                return _frame(context, content);
+                // A wait that is not a sync is almost always a fraction of a
+                // second: the panel only appears if it lasts.
+                return DelayedReveal(
+                  immediate: isSyncing,
+                  child: _frame(context, content),
+                );
               },
             );
           },
@@ -192,13 +198,22 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         // No top padding: whoever places the card sets the gap above it.
         // Under a folder's heading that is the gap the table gets.
         padding: const EdgeInsets.only(bottom: 20),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: ArDriveCard(
-            width: double.infinity,
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-            content: content,
+        // Under a header it has the rest of the page, no more.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SizedBox(
+            height: constraints.hasBoundedHeight
+                // The padding above has already taken its 20 px off.
+                ? math.min(
+                    MediaQuery.of(context).size.height * 0.8,
+                    constraints.maxHeight,
+                  )
+                : MediaQuery.of(context).size.height * 0.8,
+            child: ArDriveCard(
+              width: double.infinity,
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+              content: content,
+            ),
           ),
         ),
       ),
@@ -439,6 +454,9 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
           key: const ValueKey('driveDetailSyncProgress'),
           percentage: _progress,
           initialPercentage: _initialProgress,
+          // Not a grey track that turns red: a bar with nothing to measure
+          // yet moves in the colour it will keep.
+          indeterminateAtZero: true,
         ),
       if (detail != null) ...[
         const SizedBox(height: 12),
@@ -491,4 +509,105 @@ class _IndeterminateProgress extends LinearProgress {
 
   @override
   bool get isIndeterminate => true;
+}
+
+/// How long a short wait stays invisible before its panel fades in.
+const Duration _revealDelay = Duration(milliseconds: 300);
+const Duration _revealFade = Duration(milliseconds: 180);
+
+/// Shows [child] straight away when [immediate], otherwise only once the wait
+/// has lasted [delay], and then fades it in.
+///
+/// So a drive that opens in 400 ms goes from the list to the explorer without
+/// flashing a near-empty "Opening ..." page between them, while a long wait
+/// still shows its panel, and a running sync shows its progress at once.
+@visibleForTesting
+class DelayedReveal extends StatefulWidget {
+  const DelayedReveal({
+    super.key,
+    required this.immediate,
+    required this.child,
+    this.delay = _revealDelay,
+  });
+
+  final bool immediate;
+  final Duration delay;
+  final Widget child;
+
+  @override
+  State<DelayedReveal> createState() => _DelayedRevealState();
+}
+
+class _DelayedRevealState extends State<DelayedReveal>
+    with SingleTickerProviderStateMixin {
+  Timer? _timer;
+  bool _revealed = false;
+
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: _revealFade,
+  );
+  late final CurvedAnimation _curved =
+      CurvedAnimation(parent: _fade, curve: Curves.easeOut);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.immediate) {
+      _revealed = true;
+      _fade.value = 1;
+    } else {
+      _timer = Timer(widget.delay, _reveal);
+    }
+  }
+
+  void _reveal() {
+    if (!mounted) return;
+    setState(() => _revealed = true);
+    if (MediaQuery.of(context).disableAnimations) {
+      _fade.value = 1;
+    } else {
+      _fade.forward();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion turned on half way through a fade: jump to full.
+    if (_fade.isAnimating && MediaQuery.disableAnimationsOf(context)) {
+      _fade.value = 1;
+    }
+  }
+
+  @override
+  void didUpdateWidget(DelayedReveal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A sync shows at once, even half way through a fade: jump to full, the
+    // child stays mounted.
+    if (widget.immediate) {
+      _timer?.cancel();
+      _revealed = true;
+      _fade.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _curved.dispose();
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: !_revealed,
+      child: ExcludeSemantics(
+        excluding: !_revealed,
+        child: FadeTransition(opacity: _curved, child: widget.child),
+      ),
+    );
+  }
 }

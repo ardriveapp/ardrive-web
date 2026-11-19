@@ -192,9 +192,9 @@ class FileDownloadDialog extends StatelessWidget {
                   description: appLocalizationsOf(context)
                       .downloadFileNotFoundDescription,
                   actions: [
-                    ModalAction(
+                    ModalAction.close(
                       action: () => Navigator.pop(context),
-                      title: appLocalizationsOf(context).ok,
+                      title: appLocalizationsOf(context).close,
                     ),
                   ],
                 );
@@ -231,9 +231,9 @@ class FileDownloadDialog extends StatelessWidget {
                   description:
                       appLocalizationsOf(context).downloadNeedsKeyDescription,
                   actions: [
-                    ModalAction(
+                    ModalAction.close(
                       action: () => Navigator.pop(context),
-                      title: appLocalizationsOf(context).ok,
+                      title: appLocalizationsOf(context).close,
                     ),
                   ],
                 );
@@ -266,7 +266,7 @@ class FileDownloadDialog extends StatelessWidget {
       title: title,
       description: description,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.pop(context),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -281,13 +281,13 @@ class FileDownloadDialog extends StatelessWidget {
   ArDriveStandardModalNew _fileDownloadFailedDueToFileAbovePrivateLimit(
       BuildContext context) {
     return _modalWrapper(
-      title: appLocalizationsOf(context).warningEmphasized,
+      title: appLocalizationsOf(context).downloadFileTooLargeTitle,
       description:
           appLocalizationsOf(context).fileFailedToDownloadFileAboveLimit,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.pop(context),
-          title: appLocalizationsOf(context).ok,
+          title: appLocalizationsOf(context).close,
         ),
       ],
     );
@@ -296,13 +296,13 @@ class FileDownloadDialog extends StatelessWidget {
   ArDriveStandardModalNew _fileDownloadFailedDueToAboveBrowserLimit(
       BuildContext context) {
     return _modalWrapper(
-      title: appLocalizationsOf(context).warningEmphasized,
+      title: appLocalizationsOf(context).downloadFileTooLargeTitle,
       description:
           appLocalizationsOf(context).fileFailedToDownloadFileAbovePublicLimit,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.pop(context),
-          title: appLocalizationsOf(context).ok,
+          title: appLocalizationsOf(context).close,
         ),
       ],
     );
@@ -310,27 +310,34 @@ class FileDownloadDialog extends StatelessWidget {
 
   ArDriveStandardModalNew _warningToWaitDownloadFinishes(BuildContext context) {
     return _modalWrapper(
-        title: appLocalizationsOf(context).warningEmphasized,
-        description: appLocalizationsOf(context).waitForDownload,
-        actions: [
-          ModalAction(
-            action: () {
-              final profileState = context.read<ProfileCubit>().state;
+      title: appLocalizationsOf(context).downloadLargeFileTitle,
+      child: SizedBox(
+        width: kMediumDialogWidth,
+        child: ArDriveNotice(
+          type: ArDriveNoticeType.warning,
+          message: appLocalizationsOf(context).waitForDownload,
+        ),
+      ),
+      actions: [
+        ModalAction.close(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).cancel,
+        ),
+        ModalAction(
+          action: () {
+            final profileState = context.read<ProfileCubit>().state;
 
-              final cipherKey = profileState is ProfileLoggedIn
-                  ? profileState.user.cipherKey
-                  : null;
+            final cipherKey = profileState is ProfileLoggedIn
+                ? profileState.user.cipherKey
+                : null;
 
-              (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
-                  .download(cipherKey);
-            },
-            title: appLocalizationsOf(context).ok,
-          ),
-          ModalAction(
-            action: () => Navigator.pop(context),
-            title: appLocalizationsOf(context).cancel,
-          ),
-        ]);
+            (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
+                .download(cipherKey);
+          },
+          title: appLocalizationsOf(context).download,
+        ),
+      ],
+    );
   }
 
   ArDriveStandardModalNew _downloadStartingDialog(BuildContext context) {
@@ -353,28 +360,21 @@ class FileDownloadDialog extends StatelessWidget {
 
   ArDriveStandardModalNew _fileDownloadInProgressDialog(
       BuildContext context, FileDownloadInProgress state) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadingFile,
-      child: SizedBox(
-        width: kMediumDialogWidth,
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            state.fileName,
-            style: ArDriveTypographyNew.of(context).paragraphLarge(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-              fontWeight: ArFontWeight.semiBold,
-            ),
+      child: _fileRow(
+        context,
+        icon: ArDriveIcons.fileOutlined(size: 24),
+        name: state.fileName,
+        details: [
+          Text(
+            filesize(state.totalByteCount),
+            style: ArDriveTypographyNew.of(context)
+                .paragraphNormal(color: colorTokens.textMid),
           ),
-          subtitle: Text(
-            filesize(
-              state.totalByteCount,
-            ),
-            style: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textMid),
-          ),
-          trailing: const ArDriveSpinner(),
-        ),
+        ],
+        trailing: const ArDriveSpinner(),
       ),
       actions: [
         ModalAction.dismiss(
@@ -389,6 +389,57 @@ class FileDownloadDialog extends StatelessWidget {
     );
   }
 
+  /// The one row every download state shows: the file's icon and name, a
+  /// line or two under it, and what belongs at its end. Every state is the
+  /// same width, so the dialog does not resize between them.
+  Widget _fileRow(
+    BuildContext context, {
+    required Widget icon,
+    required String name,
+    required List<Widget> details,
+    Widget? trailing,
+  }) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    // A [Row] rather than a [ListTile]: everything the row describes has to
+    // start where the file name starts. A ListTile indents its title past
+    // the leading icon while leaving anything below the tile at the content
+    // edge, which is how the bar came to begin 56px to the left of the file
+    // name it measures.
+    return SizedBox(
+      width: kMediumDialogWidth,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: ArDriveSpacing.xxs / 2),
+            child: icon,
+          ),
+          const SizedBox(width: ArDriveSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  style: ArDriveTypographyNew.of(context).paragraphLarge(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                ...details,
+              ],
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: ArDriveSpacing.md),
+            trailing,
+          ],
+        ],
+      ),
+    );
+  }
+
   /// The file is saved and its integrity check has not answered yet.
   ///
   /// Nothing to cancel and nothing to decide, so there are no actions: the
@@ -399,24 +450,19 @@ class FileDownloadDialog extends StatelessWidget {
       BuildContext context, FileDownloadVerifying state) {
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadVerifying,
-      child: SizedBox(
-        width: kMediumDialogWidth,
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            state.fileName,
-            style: ArDriveTypographyNew.of(context).paragraphLarge(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-          subtitle: Text(
+      child: _fileRow(
+        context,
+        icon: ArDriveIcons.fileOutlined(size: 24),
+        name: state.fileName,
+        details: [
+          Text(
             appLocalizationsOf(context).downloadVerifyingDescription,
             style: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textMid),
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
           ),
-          trailing: const ArDriveSpinner(),
-        ),
+        ],
+        trailing: const ArDriveSpinner(),
       ),
     );
   }
@@ -457,7 +503,7 @@ class FileDownloadDialog extends StatelessWidget {
       title: appLocalizationsOf(context).downloadFinished,
       description: state.fileName,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () {
             context.read<FileDownloadCubit>().abortDownload();
             Navigator.pop(context);
@@ -502,96 +548,65 @@ class FileDownloadDialog extends StatelessWidget {
 
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadingFile,
-      // A [Row] rather than a [ListTile]: everything the bar describes - the
-      // file name, the status and the byte count - has to start where the bar
-      // starts. A ListTile indents its title past the leading icon while
-      // leaving anything below the tile at the content edge, which is how the
-      // bar came to begin 56px to the left of the file name it measures.
-      child: SizedBox(
-        width: kLargeDialogWidth,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: getIconForContentType(
-                state.contentType,
-                size: 24,
+      child: _fileRow(
+        context,
+        icon: getIconForContentType(state.contentType, size: 24),
+        name: state.fileName,
+        details: [
+          AnimatedSwitcher(
+            duration: const Duration(seconds: 1),
+            // A dropped connection stops the bar without stopping the
+            // download. The key is what makes the switcher treat this
+            // as a new child and cross-fade it, rather than silently
+            // editing the string.
+            child: Text(
+              state.isReconnecting
+                  ? appLocalizationsOf(context).downloadReconnecting
+                  : appLocalizationsOf(context).downloading,
+              key: ValueKey<bool>(state.isReconnecting),
+              style: typography.paragraphNormal(
+                color: state.isReconnecting
+                    ? colorTokens.textHigh
+                    : colorTokens.textMid,
+                fontWeight: ArFontWeight.semiBold,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    state.fileName,
-                    style: typography.paragraphLarge(
-                      color: colorTokens.textHigh,
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                  ),
-                  AnimatedSwitcher(
-                    duration: const Duration(seconds: 1),
-                    // A dropped connection stops the bar without stopping the
-                    // download. The key is what makes the switcher treat this
-                    // as a new child and cross-fade it, rather than silently
-                    // editing the string.
-                    child: Text(
-                      state.isReconnecting
-                          ? appLocalizationsOf(context).downloadReconnecting
-                          : appLocalizationsOf(context).downloading,
-                      key: ValueKey<bool>(state.isReconnecting),
-                      style: typography.paragraphNormal(
-                        color: state.isReconnecting
-                            ? colorTokens.textHigh
-                            : colorTokens.textMid,
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    progressText,
-                    style: typography.paragraphNormal(
-                      color: colorTokens.textLow,
-                    ),
-                  ),
-                  const SizedBox(height: ArDriveSpacing.sm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ArDriveLinearProgress(
-                          value: state.progress / 100,
-                          color: indicatorColor,
-                        ),
-                      ),
-                      const SizedBox(width: ArDriveSpacing.sm),
-                      // Fixed width so the bar's right-hand end does not
-                      // twitch left and right as the reading goes 9% to 62%
-                      // to 100%.
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          '${state.progress}%',
-                          textAlign: TextAlign.right,
-                          style: typography
-                              .paragraphNormal(
-                            color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.semiBold,
-                          )
-                              .copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+          ),
+          Text(
+            progressText,
+            style: typography.paragraphNormal(color: colorTokens.textLow),
+          ),
+          const SizedBox(height: ArDriveSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: ArDriveLinearProgress(
+                  value: state.progress / 100,
+                  color: indicatorColor,
+                ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: ArDriveSpacing.sm),
+              // Fixed width so the bar's right-hand end does not
+              // twitch left and right as the reading goes 9% to 62%
+              // to 100%.
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '${state.progress}%',
+                  textAlign: TextAlign.right,
+                  style: typography
+                      .paragraphNormal(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.semiBold,
+                  )
+                      .copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
         ModalAction.dismiss(
@@ -606,75 +621,27 @@ class FileDownloadDialog extends StatelessWidget {
   }
 
   /// The two ways the integrity check can say "these are not the bytes that
-  /// were signed", given the one treatment in this app reserved for copy that
-  /// has to be read rather than clicked past.
-  ///
-  /// Built by hand instead of through [_modalWrapper] because the difference
-  /// *is* the shape. Every [ArDriveModalNew] wears the same red strip, so red
-  /// on its own separates nothing here - "Download finished!" has one too.
-  /// What separates this modal is an alert icon beside the title and a body
-  /// lifted out of running text into the bordered notice panel that the share
-  /// dialog's pending-file warning and the seed-phrase modal already use for
-  /// the sentences they need read.
+  /// were signed": an error notice, the one treatment in this app for copy
+  /// that has to be read rather than clicked past.
   ArDriveStandardModalNew _integrityFailureDialog(
     BuildContext context, {
     required String title,
     required String description,
     required VoidCallback onDismiss,
   }) {
-    // `colorTokens.textRed` rather than anything from the older `colors`: it is
-    // the text red, held to 4.5:1 on every surface in both themes
-    // (text_contrast_test). `themeErrorDefault` is the same red.400 either way
-    // and manages only 2.5:1 on the light surface, which is a warning sign
-    // nobody with low vision would find.
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
     return ArDriveStandardModalNew(
-      titleWidget: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            // The sentence says everything the icon does; announcing it twice
-            // is noise.
-            child: ExcludeSemantics(
-              child: ArDriveIcons.triangle(
-                size: 24,
-                color: colorTokens.textRed,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              title,
-              style: typography.heading3(fontWeight: ArFontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-      content: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colorTokens.containerL1,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colorTokens.textRed),
-        ),
-        child: Text(
-          description,
-          // `textHigh`, not the red: ~9.4:1 light and ~14.7:1 dark on this
-          // panel, where the red would be ~4:1 and short of AA for body copy.
-          // The border and the icon carry the severity; the sentence only has
-          // to be readable.
-          style: typography.paragraphSmall(color: colorTokens.textHigh),
+      title: title,
+      content: SizedBox(
+        width: kMediumDialogWidth,
+        child: ArDriveNotice(
+          type: ArDriveNoticeType.error,
+          message: description,
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: onDismiss,
-          title: appLocalizationsOf(context).ok,
+          title: appLocalizationsOf(context).close,
         ),
       ],
     );
@@ -699,9 +666,9 @@ class FileDownloadDialog extends StatelessWidget {
       title: appLocalizationsOf(context).downloadCancelled,
       description: appLocalizationsOf(context).downloadCancelledDescription,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.pop(context),
-          title: appLocalizationsOf(context).ok,
+          title: appLocalizationsOf(context).close,
         ),
       ],
     );

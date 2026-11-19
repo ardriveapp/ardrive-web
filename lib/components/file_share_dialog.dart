@@ -53,6 +53,7 @@ class FileShareDialogState extends State<FileShareDialog> {
     return BlocBuilder<FileShareCubit, FileShareState>(
       builder: (context, state) => ArDriveStandardModalNew(
         width: kLargeDialogWidth,
+        hasCloseButton: true,
         scrollableContent: true,
         title: appLocalizationsOf(context).shareFileWithOthers,
         content: Column(
@@ -61,7 +62,7 @@ class FileShareDialogState extends State<FileShareDialog> {
           children: [
             if (state is FileShareLoadSuccess)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
                 child: Text(
                   state.fileName,
                   style: typography.paragraphNormal(
@@ -74,18 +75,14 @@ class FileShareDialogState extends State<FileShareDialog> {
               const Center(
                   child: ArDriveSpinner(size: ArDriveSpinnerSize.large))
             else if (state is FileShareLoadedFailedFile)
-              Text(
-                appLocalizationsOf(context).shareFailedFile,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
+              ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: appLocalizationsOf(context).shareFailedFile,
               )
             else if (state is FileShareLoadedPendingFile)
-              Text(
-                appLocalizationsOf(context).sharePendingFile,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
+              ArDriveNotice(
+                type: ArDriveNoticeType.info,
+                message: appLocalizationsOf(context).sharePendingFile,
               )
             // A list spread, not a set: the same `const SizedBox` appears more
             // than once below, and a set literal would silently collapse them
@@ -94,7 +91,7 @@ class FileShareDialogState extends State<FileShareDialog> {
               if (state.isPending)
                 ShareWarning(
                   appLocalizationsOf(context).shareFilePendingWarning,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: ArDriveSpacing.md),
                 ),
               CopyableShareArtifact(
                 label: appLocalizationsOf(context).shareFileLinkLabel,
@@ -119,9 +116,13 @@ class FileShareDialogState extends State<FileShareDialog> {
               // over quietly is how that happens, so the sharer is told and
               // given the one action that fixes it.
               if (state.cipherDetailsFailed)
-                _HelperText(
-                  appLocalizationsOf(context).shareFileLinkIncomplete,
-                  color: colorTokens.statusErrorFg,
+                Padding(
+                  padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
+                  child: ArDriveNotice(
+                    type: ArDriveNoticeType.error,
+                    message:
+                        appLocalizationsOf(context).shareFileLinkIncomplete,
+                  ),
                 ),
               if (state.isPublicFile)
                 _HelperText(
@@ -129,7 +130,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                   color: colorTokens.textLow,
                 ),
               if (state.hasSeparateKeyArtifact) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 CopyableShareArtifact(
                   label: appLocalizationsOf(context).shareFileAccessKeyLabel,
                   text: state.fileKeyBase64!,
@@ -144,7 +145,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                 ),
               ],
               if (!state.isPublicFile) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 ArDriveToggleSwitch(
                   text: appLocalizationsOf(context).shareFileIncludeKeyInLink,
                   textStyle: typography.paragraphSmall(
@@ -158,7 +159,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                   ShareWarning(
                     appLocalizationsOf(context).shareFileKeyInLinkWarning,
                   ),
-                const SizedBox(height: 16),
+                const SizedBox(height: ArDriveSpacing.md),
                 ArDriveToggleSwitch(
                   text: appLocalizationsOf(context).shareFileHideDetails,
                   textStyle: typography.paragraphSmall(
@@ -173,7 +174,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                   color: colorTokens.textLow,
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: ArDriveSpacing.md),
               ArDriveToggleSwitch(
                 text: appLocalizationsOf(context).shareFilePinToThisVersion,
                 textStyle: typography.paragraphSmall(
@@ -193,7 +194,11 @@ class FileShareDialogState extends State<FileShareDialog> {
           ],
         ),
         actions: [
-          // Offered only when the link is the incomplete one, and beside Done
+          ModalAction.close(
+            action: () => Navigator.pop(context),
+            title: appLocalizationsOf(context).close,
+          ),
+          // Offered only when the link is the incomplete one, and beside Close
           // rather than instead of it: the sharer may still choose to hand over
           // a link that cannot announce itself, and that is their call to make.
           if (state is FileShareLoadSuccess && state.cipherDetailsFailed)
@@ -201,17 +206,6 @@ class FileShareDialogState extends State<FileShareDialog> {
               action: () => context.read<FileShareCubit>().retryCipherDetails(),
               title: appLocalizationsOf(context).tryAgain,
             ),
-          if (state is FileShareLoadSuccess)
-            ModalAction(
-              action: () => Navigator.pop(context),
-              title: appLocalizationsOf(context).doneEmphasized,
-            ),
-          if (state is FileShareLoadedFailedFile ||
-              state is FileShareLoadedPendingFile)
-            ModalAction(
-              action: () => Navigator.pop(context),
-              title: appLocalizationsOf(context).ok,
-            )
         ],
       ),
     );
@@ -226,7 +220,7 @@ class _HelperText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
         child: Text(
           text,
           style: ArDriveTypographyNew.of(context).paragraphSmall(color: color),

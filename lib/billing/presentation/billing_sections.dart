@@ -129,10 +129,14 @@ class _BillingBody extends StatelessWidget {
                 state: state,
               ),
             ),
-            _PurchasesSection(
-              kind: kind,
-              walletName: walletName,
-              state: state,
+            // The same width as the sections around it: it was the one card
+            // on the page that ran to the edge.
+            PageContentColumn(
+              child: _PurchasesSection(
+                kind: kind,
+                walletName: walletName,
+                state: state,
+              ),
             ),
             if (hasShares)
               PageContentColumn(
@@ -169,7 +173,9 @@ class _BalanceSection extends StatelessWidget {
     // when the read failed, "Couldn't load" (no row at all for Phantom and
     // MetaMask accounts, which show AR only when it is above 0).
     final showAr = switch (arState.status) {
-      LoadStatus.loading => false,
+      // The row is held (with a spinner) for an Arweave account, which will
+      // show it, so the card does not grow when the balance arrives.
+      LoadStatus.loading => !crypto,
       LoadStatus.error => !crypto,
       LoadStatus.ready => !crypto || ar > BigInt.zero,
     };
@@ -183,16 +189,29 @@ class _BalanceSection extends StatelessWidget {
           PageRow(
             key: const Key('billingArRow'),
             title: strings.billingArRow,
-            trailing: Text(
-              arState.status == LoadStatus.error
-                  ? strings.billingArUnavailable
-                  : '${convertWinstonToLiteralString(ar)} AR',
-              key: const Key('billingArAmount'),
-              style: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
+            trailing: arState.status == LoadStatus.loading
+                ? _HeldFor(
+                    text: '0.0000 AR',
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                    child: const ArDriveSpinner(
+                      key: Key('billingArLoading'),
+                    ),
+                  )
+                : Text(
+                    arState.status == LoadStatus.error
+                        ? strings.billingArUnavailable
+                        : '${convertWinstonToLiteralString(ar)} AR',
+                    key: const Key('billingArAmount'),
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colorTokens
+                          .textHigh,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
           ),
         if (credits != null)
           _SourceCreditsRow(
@@ -237,12 +256,22 @@ class _BalanceCard extends StatelessWidget {
     final Widget figure;
     switch (balance.status) {
       case LoadStatus.loading:
-        figure = const Padding(
-          padding: EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
-          child: ArDriveSpinner(
-            key: Key('billingBalanceLoading'),
-            size: ArDriveSpinnerSize.small,
-          ),
+        // The height the figure and its storage line will take, so the card
+        // does not grow as they arrive.
+        figure = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _HeldFor(
+              text: '0.0000',
+              style: typography.heading2(fontWeight: ArFontWeight.bold),
+              alignment: Alignment.centerLeft,
+              child: const ArDriveSpinner(
+                key: Key('billingBalanceLoading'),
+                size: ArDriveSpinnerSize.small,
+              ),
+            ),
+            _HeldFor(text: '\u00A0', style: small, child: null),
+          ],
         );
       case LoadStatus.error:
         // Never 0: a failed read says so.
@@ -291,7 +320,12 @@ class _BalanceCard extends StatelessWidget {
                 ),
                 key: const Key('billingStorage'),
                 style: small,
-              ),
+              )
+            else if (!state.storageSettled)
+              // The estimate arrives after the balance, so its line is held
+              // rather than pushing Add credits down when it does; once there
+              // is none to show, the line goes.
+              _HeldFor(text: '\u00A0', style: small, child: null),
             if (balance.shared > BigInt.zero)
               Text(
                 strings.billingYoursAndShared(
@@ -357,6 +391,38 @@ class _BalanceCard extends StatelessWidget {
       case TurboFreeAllowanceStatus.unknown:
         return const [];
     }
+  }
+}
+
+/// A slot that is as large as [text] set in [style] and shows [child] in it,
+/// for something still loading that will fill that space.
+class _HeldFor extends StatelessWidget {
+  const _HeldFor({
+    required this.text,
+    required this.style,
+    required this.child,
+    this.alignment = Alignment.centerRight,
+  });
+
+  final String text;
+  final TextStyle style;
+  final Widget? child;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: alignment,
+      children: [
+        ExcludeSemantics(
+          child: Opacity(
+            opacity: 0,
+            child: Text(text, style: style),
+          ),
+        ),
+        if (child != null) child!,
+      ],
+    );
   }
 }
 

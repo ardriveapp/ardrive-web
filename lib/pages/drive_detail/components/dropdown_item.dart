@@ -14,6 +14,12 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
   final double? height;
 
+  /// Starts the label where the labels of the menu's other rows start, past
+  /// the icon column, for a row with no icon on the left (a submenu's
+  /// "Advanced", whose icon is a chevron on the right). Without it the label
+  /// sat under the icons rather than in line with their labels.
+  final bool alignLabelWithIcons;
+
   /// A second, smaller line under [name] saying what the item does. The menu
   /// sizes its items from [height] and does not measure them, so a tile with
   /// one needs a [height] with room for it, and its menu a matching
@@ -29,6 +35,7 @@ class ArDriveDropdownItemTile extends StatelessWidget {
     this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
     this.height,
     this.description,
+    this.alignLabelWithIcons = false,
   });
 
   TextStyle _nameStyle(BuildContext context) =>
@@ -71,13 +78,24 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                     ArDriveArDriveDropdownItemTileIconAlignment.left) ...[
               _icon(context),
               const SizedBox(width: ArDriveSpacing.md),
-            ],
+            ] else if (alignLabelWithIcons)
+              // An icon's width and the gap after it: defaultIconSize is 20.
+              const SizedBox(width: 20 + ArDriveSpacing.md),
             // Flexible, and allowed to ellipsize. The row is `MainAxisSize.max`
             // inside a menu whose width is the screen's on a phone, so a label
             // that insisted on its full width overflowed it: at 320px and text
             // scale 2.0, "Deep Resync" ran 58 pixels past the right edge of
             // every menu in the app, with no way for the label to give.
             Flexible(
+              // With the icon at the far end the label takes what is left, so it
+              // is one flex child rather than two beside a Spacer: a menu is as
+              // wide as its widest row's intrinsic width, and two flex children
+              // doubled the label's share of it.
+              fit: icon != null &&
+                      iconAlignment ==
+                          ArDriveArDriveDropdownItemTileIconAlignment.right
+                  ? FlexFit.tight
+                  : FlexFit.loose,
               child: description == null
                   ? Text(
                       name,
@@ -130,7 +148,6 @@ class ArDriveDropdownItemTile extends StatelessWidget {
             if (icon != null &&
                 iconAlignment ==
                     ArDriveArDriveDropdownItemTileIconAlignment.right) ...[
-              const Spacer(),
               _icon(context),
             ]
           ],

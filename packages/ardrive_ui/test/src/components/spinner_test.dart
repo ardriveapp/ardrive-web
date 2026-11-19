@@ -10,20 +10,48 @@ void main() {
       );
 
   testWidgets('ArDriveSpinner comes in two sizes', (tester) async {
-    for (final (size, dimension, stroke) in [
-      (ArDriveSpinnerSize.small, 16.0, 2.0),
-      (ArDriveSpinnerSize.large, 32.0, 3.0),
+    for (final (size, dimension) in [
+      (ArDriveSpinnerSize.small, 16.0),
+      (ArDriveSpinnerSize.large, 32.0),
     ]) {
       await tester.pumpWidget(wrap(ArDriveSpinner(size: size)));
       expect(
           tester.getSize(find.byType(ArDriveSpinner)), Size.square(dimension));
-      expect(
-          tester
-              .widget<CircularProgressIndicator>(
-                  find.byType(CircularProgressIndicator))
-              .strokeWidth,
-          stroke);
     }
+  });
+
+  testWidgets('ArDriveSpinner is a full arc from the first frame',
+      (tester) async {
+    await tester.pumpWidget(wrap(const ArDriveSpinner()));
+    // Not Material's indeterminate ring, which starts as a dot and grows.
+    final ring = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator));
+    expect(ring.value, 0.75);
+  });
+
+  testWidgets('ArDriveSpinner can go spinning, measured, spinning again',
+      (tester) async {
+    for (final value in [null, 0.5, null]) {
+      await tester.pumpWidget(wrap(ArDriveSpinner(value: value)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(tester.takeException(), isNull);
+    expect(
+        tester
+            .widget<CircularProgressIndicator>(
+                find.byType(CircularProgressIndicator))
+            .value,
+        0.75);
+  });
+
+  testWidgets('ArDriveSpinner shows a measured value as given', (tester) async {
+    await tester.pumpWidget(wrap(const ArDriveSpinner(value: 0.4)));
+    expect(
+        tester
+            .widget<CircularProgressIndicator>(
+                find.byType(CircularProgressIndicator))
+            .value,
+        0.4);
   });
 
   testWidgets('ArDriveLinearProgress is 4 high and can show progress',

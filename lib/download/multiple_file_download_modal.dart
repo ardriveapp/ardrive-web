@@ -9,6 +9,7 @@ import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -98,6 +99,9 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
     }
   }
 
+  /// Every state is this wide, so the dialog does not resize between them.
+  static const _width = kMediumDialogWidth;
+
   /// Above this the confirmation adds that it will take a while.
   static const _largeDownload = 100 * 1024 * 1024;
 
@@ -111,20 +115,24 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
         isFile ? file.fileName : (file as MultiDownloadFolder).folderPath;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.sm,
+        vertical: ArDriveSpacing.xs,
+      ),
+      margin: const EdgeInsets.only(bottom: ArDriveSpacing.xxs),
       decoration: BoxDecoration(
         color: colorTokens.containerL1,
-        borderRadius: BorderRadius.circular(ArDriveRadius.control),
+        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
       ),
       child: Row(
         children: [
-          Icon(
-            isFile ? Icons.insert_drive_file_outlined : Icons.folder_outlined,
-            size: 16,
-            color: colorTokens.textLow,
-          ),
-          const SizedBox(width: 8),
+          isFile
+              ? ArDriveIcons.fileOutlined(size: 16, color: colorTokens.textLow)
+              : ArDriveIcons.folderOutline(
+                  size: 16,
+                  color: colorTokens.textLow,
+                ),
+          const SizedBox(width: ArDriveSpacing.xs),
           Expanded(
             child: Text(
               name,
@@ -194,7 +202,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
           if (state is MultipleDownloadReady) {
             final strings = appLocalizationsOf(context);
             return ArDriveStandardModalNew(
-              width: 408,
+              width: _width,
               title: strings.downloadConfirmTitle(state.fileCount),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -210,7 +218,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                     ),
                   ),
                   if (state.totalSize > _largeDownload) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: ArDriveSpacing.sm),
                     Text(
                       strings.downloadConfirmLarge,
                       style: typography.paragraphNormal(
@@ -221,7 +229,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 ],
               ),
               actions: [
-                ModalAction(
+                ModalAction.close(
                   action: () => Navigator.of(context).pop(false),
                   title: strings.cancelEmphasized,
                 ),
@@ -236,7 +244,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
           }
           if (state is MultipleDownloadInProgress) {
             return ArDriveStandardModalNew(
-              width: 408,
+              width: _width,
               title: appLocalizationsOf(context)
                   .multiDownloadDownloadingFilesProgress(
                       state.currentFileNumber, state.fileCount),
@@ -244,6 +252,12 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  ArDriveLinearProgress(
+                    value: state.fileCount == 0
+                        ? null
+                        : (state.currentFileNumber - 1) / state.fileCount,
+                  ),
+                  const SizedBox(height: ArDriveSpacing.sm),
                   _buildFileList(state.files, typography, colorTokens),
                 ],
               ),
@@ -262,7 +276,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
           } else if (state is MultipleDownloadFinishedWithSuccess) {
             final strings = appLocalizationsOf(context);
             return ArDriveStandardModalNew(
-              width: 408,
+              width: _width,
               title: strings.multiDownloadCompleteWithSkippedFiles(
                   state.skippedFiles.length),
               content: Column(
@@ -285,7 +299,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 ],
               ),
               actions: [
-                ModalAction.dismiss(
+                ModalAction.close(
                   action: () {
                     Navigator.of(context).pop(false);
                   },
@@ -299,90 +313,79 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               ],
             );
           } else if (state is MultipleDownloadFailure) {
-            late Widget content;
+            final strings = appLocalizationsOf(context);
+            final String title;
+            final String message;
             bool showRetryAndSkip = true;
 
             switch (state.reason) {
               case FileDownloadFailureReason.fileAboveLimit:
-                content = Text(
-                  appLocalizationsOf(context)
-                      .fileFailedToDownloadFileAbovePublicLimit,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                  ),
-                );
+                title = strings.downloadFileTooLargeTitle;
+                message = strings.fileFailedToDownloadFileAbovePublicLimit;
                 showRetryAndSkip = false;
                 break;
               case FileDownloadFailureReason.fileNotFound:
-                content = Text(
-                  appLocalizationsOf(context).tryAgainDownloadingFile,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                  ),
-                );
+                title = strings.fileFailedToDownload;
+                message = strings.tryAgainDownloadingFile;
                 break;
               case FileDownloadFailureReason.networkConnectionError:
-                content = Text(
-                  appLocalizationsOf(context).multiDownloadErrorTryAgain,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                  ),
-                );
+                title = strings.fileFailedToDownload;
+                message = strings.multiDownloadErrorTryAgain;
                 break;
               default:
-                content = Text(
-                  appLocalizationsOf(context).fileDownloadFailed,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                  ),
-                );
+                title = strings.fileFailedToDownload;
+                message = strings.fileDownloadFailed;
             }
 
             return ArDriveStandardModalNew(
-              title: appLocalizationsOf(context).download,
-              content: content,
+              width: _width,
+              title: title,
+              content: ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: message,
+              ),
               actions: [
-                ModalAction(
+                // Cancel stops the download as well as closing the dialog.
+                ModalAction.dismiss(
                   action: () {
                     context
                         .read<MultipleDownloadBloc>()
                         .add(const CancelDownload());
                     Navigator.pop(context);
                   },
-                  title: appLocalizationsOf(context).cancel,
+                  title: strings.cancel,
                 ),
                 if (showRetryAndSkip) ...[
+                  ModalAction.dismiss(
+                    action: () {
+                      context
+                          .read<MultipleDownloadBloc>()
+                          .add(const SkipFileAndResumeDownload());
+                    },
+                    title: strings.skip,
+                  ),
                   ModalAction(
                     action: () {
                       context
                           .read<MultipleDownloadBloc>()
                           .add(const ResumeDownload());
                     },
-                    title: appLocalizationsOf(context).tryAgain,
-                  ),
-                  ModalAction(
-                    action: () {
-                      context
-                          .read<MultipleDownloadBloc>()
-                          .add(const SkipFileAndResumeDownload());
-                    },
-                    title: appLocalizationsOf(context).skip,
+                    title: strings.tryAgain,
                   ),
                 ]
               ],
             );
           }
 
+          // Before the first answer: a wait, not a sentence.
           return ArDriveStandardModalNew(
+            width: _width,
             title: appLocalizationsOf(context).download,
-            content: Text(
-              appLocalizationsOf(context).download,
-              style: typography.paragraphNormal(
-                color: colorTokens.textMid,
-              ),
+            content: const Center(
+              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
             ),
             actions: [
-              ModalAction.dismiss(
+              ModalAction.close(
                 action: () => Navigator.pop(context),
                 title: appLocalizationsOf(context).close,
               ),

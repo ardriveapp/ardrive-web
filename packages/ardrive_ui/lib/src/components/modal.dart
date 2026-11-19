@@ -113,23 +113,46 @@ class ModalAction {
     this.customWidth,
     this.variant,
     this.isLoading = false,
-  });
+  }) : closesDialog = false;
 
   /// An action that only closes the dialog, such as Cancel or Close. It is
   /// secondary even when it is the only action: red says "this does the
   /// thing", and closing does nothing. A lone Cancel used to be drawn as a red
   /// primary button.
+  ///
+  /// [isEnable] false holds it while the dialog's work runs, such as a
+  /// rename being saved: the dialog stays open, its primary busy, until the
+  /// work ends in the dialog's own result or error.
   ModalAction.dismiss({
     required this.action,
     required this.title,
     this.customWidth,
-  })  : isEnable = true,
-        isLoading = false,
+    this.isEnable = true,
+  })  : isLoading = false,
+        closesDialog = false,
+        variant = ButtonVariant.secondary;
+
+  /// A [ModalAction.dismiss] that only closes the dialog: Cancel or Close,
+  /// not Back, Try again or anything that also stops work. A dialog with one
+  /// gets the close button by default, and the button runs this action, so
+  /// both give the caller the same result.
+  ModalAction.close({
+    required this.action,
+    required this.title,
+    this.customWidth,
+    this.isEnable = true,
+  })  : isLoading = false,
+        closesDialog = true,
         variant = ButtonVariant.secondary;
 
   final String title;
   final dynamic Function() action;
   final bool isEnable;
+
+  /// Whether this only closes the dialog (see [ModalAction.close]). A dialog
+  /// with one can be closed, so [ArDriveStandardModalNew] gives it the close
+  /// button.
+  final bool closesDialog;
 
   /// Draws a spinner in place of the title, and takes no press, while the
   /// action it started is still running. The button keeps its width, so
@@ -240,9 +263,9 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.content,
     this.actions,
     this.width,
-    this.hasCloseButton = false,
+    this.hasCloseButton,
     this.close,
-    this.closeLabel = 'Close',
+    this.closeLabel,
     this.scrollableContent = false,
   });
 
@@ -255,15 +278,33 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final List<ModalAction>? actions;
   final Widget? content;
   final double? width;
-  final bool hasCloseButton;
+
+  /// Whether the title row has the close button, in the same place on every
+  /// dialog. Null, the default, shows it when the dialog can be dismissed:
+  /// it has a Cancel or Close that only closes ([ModalAction.close]). Pass false for a
+  /// dialog that has one but must not be closed from the corner, true for one
+  /// whose own action closes it.
+  final bool? hasCloseButton;
   final Function()? close;
 
   /// What a screen reader calls the close button.
-  final String closeLabel;
+  ///
+  /// When not given, the title of the dialog's Cancel or Close
+  /// ([ModalAction.close]), which the app has already put in the reader's
+  /// language, since the button does what that action does; "Close" when
+  /// the dialog has none.
+  final String? closeLabel;
 
   VoidCallback _close(BuildContext context) => () {
         if (close != null) {
           close?.call();
+          return;
+        }
+        // The X does what the dialog's own Cancel or Close does, so both
+        // hand the caller the same result.
+        final dismiss = actions?.where((a) => a.closesDialog).firstOrNull;
+        if (dismiss != null) {
+          dismiss.action();
         } else {
           Navigator.pop(context);
         }
@@ -291,6 +332,12 @@ class ArDriveStandardModalNew extends StatelessWidget {
       maxWidth = modalStandardMaxWidthSize;
     }
 
+    final showsClose = hasCloseButton ??
+        (actions?.any((action) => action.closesDialog) ?? false);
+    // Held with the dialog's Cancel while its work runs: the X does what
+    // Cancel does, so it can't do it then either.
+    final closeEnabled =
+        actions?.where((a) => a.closesDialog).firstOrNull?.isEnable ?? true;
     final header = <Widget>[
       if (title != null || titleWidget != null) ...[
         Row(
@@ -305,25 +352,37 @@ class ArDriveStandardModalNew extends StatelessWidget {
                     ),
                   ),
             ),
-            if (hasCloseButton)
+            if (showsClose)
               // Named, so a screen reader says what it does; it was an
               // unlabelled icon.
               Semantics(
                 container: true,
                 button: true,
-                label: closeLabel,
+                label: closeLabel ??
+                    actions?.where((a) => a.closesDialog).firstOrNull?.title ??
+                    'Close',
+                // Said only while held, so a screen reader hears it can't be
+                // pressed; otherwise as before.
+                enabled: closeEnabled ? null : false,
                 excludeSemantics: true,
-                onTap: _close(context),
+                onTap: closeEnabled ? _close(context) : null,
                 child: ArDriveFocusable(
-                  onActivate: _close(context),
+                  onActivate: closeEnabled ? _close(context) : null,
                   child: ArDriveClickArea(
+                    showCursor: closeEnabled,
                     child: GestureDetector(
-                      onTap: _close(context),
-                      child: const Align(
+                      onTap: closeEnabled ? _close(context) : null,
+                      child: Align(
                         alignment: Alignment.centerRight,
                         child: ArDriveIcon(
                           icon: ArDriveIconsData.x,
                           size: 24,
+                          color: closeEnabled
+                              ? null
+                              : ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textXLow,
                         ),
                       ),
                     ),
@@ -402,43 +461,67 @@ class ArDriveStandardModalNew extends StatelessWidget {
       contentPadding: scrollableContent
           ? const EdgeInsets.symmetric(vertical: 16)
           : const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      content: scrollableContent
-          ? ConstrainedBox(
-              // Bound the modal to most of the viewport and keep the actions
-              // in view, scrolling the title and content above them, as
-              // Flutter's own scrollable AlertDialog does. The actions used to
-              // scroll away with the content, so a long form had to be
-              // scrolled to its end to reach Next. The title scrolls too: at
-              // the largest text on a short screen there is no room to hold
-              // it as well.
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Shows that it scrolls: a scrollbar in the right margin
-                  // and a divider above the actions while more is below.
-                  Flexible(
-                    child: ArDriveScrollArea(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [...header, ...middle],
+      content: _AnimatedModalSize(
+        child: scrollableContent
+            ? ConstrainedBox(
+                // Bound the modal to most of the viewport and keep the actions
+                // in view, scrolling the title and content above them, as
+                // Flutter's own scrollable AlertDialog does. The actions used to
+                // scroll away with the content, so a long form had to be
+                // scrolled to its end to reach Next. The title scrolls too: at
+                // the largest text on a short screen there is no room to hold
+                // it as well.
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Shows that it scrolls: a scrollbar in the right margin
+                    // and a divider above the actions while more is below.
+                    Flexible(
+                      child: ArDriveScrollArea(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [...header, ...middle],
+                        ),
                       ),
                     ),
-                  ),
-                  ...footer,
-                ],
+                    ...footer,
+                  ],
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [...header, ...middle, ...footer],
               ),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [...header, ...middle, ...footer],
-            ),
+      ),
+    );
+  }
+}
+
+/// Lets a modal grow or shrink to its next content over about 200 ms rather
+/// than snapping when a loading stub gives way to the real thing. Instant when
+/// the platform asks for reduced motion.
+class _AnimatedModalSize extends StatelessWidget {
+  const _AnimatedModalSize({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // No AnimatedSize at all, rather than one with a zero duration, which
+    // asserts in layout.
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      alignment: Alignment.topLeft,
+      child: child,
     );
   }
 }
@@ -482,7 +565,7 @@ class ArDriveModalActions extends StatelessWidget {
           ),
         if (actions.length > 1)
           Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.only(left: ArDriveSpacing.xs),
             child: ArDriveButtonNew(
               maxWidth: actions[1].customWidth ??
                   ArDriveButtonNew.fittedWidth(context, actions[1].title,
@@ -502,7 +585,7 @@ class ArDriveModalActions extends StatelessWidget {
         // wrapped onto a full-width row of its own, in a smaller font.
         if (actions.length > 2)
           Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.only(left: ArDriveSpacing.xs),
             child: ArDriveButtonNew(
               typography: typography,
               variant: actions[2].variant ?? ButtonVariant.primary,

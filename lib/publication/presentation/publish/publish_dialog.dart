@@ -41,6 +41,7 @@ import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -74,7 +75,7 @@ Future<void> promptToPublish(
         title: strings.publishToWeb,
         description: strings.publishCheckFailed,
         actions: [
-          ModalAction.dismiss(
+          ModalAction.close(
             title: strings.close,
             action: () => Navigator.of(context).pop(),
           ),
@@ -296,11 +297,11 @@ class PublishDialog extends StatelessWidget {
               content: _Blocked(state: state),
               actions: [
                 if (cubit.canSyncDrive) ...[
-                  ModalAction(title: strings.close, action: close),
+                  ModalAction.close(title: strings.close, action: close),
                   ModalAction(
                       title: strings.publishSyncDrive, action: cubit.syncDrive),
                 ] else
-                  ModalAction.dismiss(title: strings.close, action: close),
+                  ModalAction.close(title: strings.close, action: close),
               ],
             );
           case PublishStage.how:
@@ -310,7 +311,7 @@ class PublishDialog extends StatelessWidget {
               step: strings.publishStepOf(1, 3),
               content: _How(state: state),
               actions: [
-                ModalAction(title: strings.cancel, action: close),
+                ModalAction.close(title: strings.cancel, action: close),
                 ModalAction(
                   title: strings.next,
                   isEnable: state.howIsReady,
@@ -338,7 +339,7 @@ class PublishDialog extends StatelessWidget {
                   scopeName: cubit.scopeName,
                   isFolder: cubit.folder != null),
               actions: [
-                ModalAction(title: strings.cancel, action: close),
+                ModalAction.close(title: strings.cancel, action: close),
                 ModalAction(title: strings.next, action: cubit.next),
               ],
             );
@@ -411,7 +412,7 @@ class PublishDialog extends StatelessWidget {
                 hasSnapshot: !cubit.isFile && !state.isPrivatePage,
               ),
               actions: [
-                ModalAction.dismiss(title: strings.close, action: close)
+                ModalAction.close(title: strings.close, action: close)
               ],
             );
           case PublishStage.failed:
@@ -420,7 +421,7 @@ class PublishDialog extends StatelessWidget {
               title: strings.publishFailedTitle,
               content: _Failed(state: state),
               actions: [
-                ModalAction(title: strings.close, action: close),
+                ModalAction.close(title: strings.close, action: close),
                 ModalAction(
                     title: strings.publishBackToReview, action: cubit.back),
                 if (state.canRetry)
@@ -495,7 +496,7 @@ class PublishDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
             title: appLocalizationsOf(context).cancel, action: close),
       ],
     );
@@ -514,7 +515,7 @@ Widget _modal(
   final colors = ArDriveTheme.of(context).themeData.colorTokens;
   return ArDriveStandardModalNew(
     title: title,
-    width: wide ? 860 : 520,
+    width: wide ? 860 : kLargeDialogWidth,
     scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
@@ -1015,6 +1016,7 @@ class _How extends StatelessWidget {
                 title: strings.publishHowPage,
                 note: pageNote,
                 isSelected: state.how == FilePublishHow.page,
+                reservesCheck: true,
                 isChecking: state.how == FilePublishHow.page &&
                     state.filePages == FilePageAvailability.checking,
                 onTap: () {
@@ -1047,6 +1049,7 @@ class _HowOption extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.isChecking = false,
+    this.reservesCheck = false,
   });
 
   final String title;
@@ -1058,6 +1061,10 @@ class _HowOption extends StatelessWidget {
 
   /// Whether this choice is still being checked.
   final bool isChecking;
+
+  /// Whether the spinner's slot is kept while not checking, so the note does
+  /// not rewrap when the check starts or ends.
+  final bool reservesCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -1113,10 +1120,12 @@ class _HowOption extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (isChecking) ...[
+                  if (isChecking || reservesCheck) ...[
                     const SizedBox(width: 12),
-                    const SizedBox.square(
-                        dimension: 16, child: ArDriveSpinner()),
+                    SizedBox.square(
+                      dimension: 16,
+                      child: isChecking ? const ArDriveSpinner() : null,
+                    ),
                   ],
                 ],
               ),

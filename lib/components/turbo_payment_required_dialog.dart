@@ -18,7 +18,7 @@ void showTurboPaymentRequiredDialog(BuildContext context) {
       title: appLocalizationsOf(context).freeAllowanceUsedUpTitle,
       description: appLocalizationsOf(context).freeAllowanceUsedUpDescription,
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(),
           title: appLocalizationsOf(context).cancel,
         ),

@@ -9,10 +9,12 @@ import 'package:ardrive/authentication/login/views/landing_view.dart';
 import 'package:ardrive/authentication/login/views/log_in_view.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/authentication/components/max_device_sizes_constrained_box.dart';
 import 'package:ardrive/authentication/login/views/wallet_wait_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/used_metamask_before_view.dart';
 import 'package:ardrive/authentication/login/views/welcome_back_view.dart';
+import 'package:ardrive/components/wallet_gradient_avatar.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -34,7 +36,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
+import '../../../test_utils/fake_user.dart';
 import '../../../test_utils/utils.dart';
+import 'package:ardrive/utils/secret_blur.dart';
 
 class _MockLoginBloc extends MockBloc<LoginEvent, LoginState>
     implements LoginBloc {}
@@ -231,6 +235,147 @@ void main() {
       ]) {
         expect(loginPanelRebuildsOn(state), isFalse, reason: '$state');
       }
+    });
+
+    testWidgets('a step change crossfades, and is instant when motion is off',
+        (tester) async {
+      Widget panel(String key, {bool reduced = false}) => MaterialApp(
+            home: Builder(
+              builder: (context) => MediaQuery(
+                data:
+                    MediaQuery.of(context).copyWith(disableAnimations: reduced),
+                child: LoginPanelFade(child: Text(key, key: Key(key))),
+              ),
+            ),
+          );
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('a')), findsOneWidget);
+      expect(find.byKey(const Key('b')), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byKey(const Key('a')), findsNothing);
+
+      // Instant with motion off (a fresh tree: the switcher's durations are
+      // fixed when a step arrives).
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(panel('x', reduced: true));
+      await tester.pumpWidget(panel('y', reduced: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(find.byKey(const Key('x')), findsNothing);
+      expect(find.byKey(const Key('y')), findsOneWidget);
+    });
+
+    testWidgets('the old step is gone before the new one starts to show',
+        (tester) async {
+      Widget panel(String key) => MaterialApp(
+            home: LoginPanelFade(child: SizedBox(key: Key(key))),
+          );
+      double opacityOf(String key) {
+        final fade = find
+            .ancestor(
+                of: find.byKey(Key(key)), matching: find.byType(FadeTransition))
+            .first;
+        return tester.widget<FadeTransition>(fade).opacity.value;
+      }
+
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      final seenBoth = <int>[];
+      var elapsed = 0;
+      for (final at in [50, 100, 150, 200]) {
+        await tester.pump(Duration(milliseconds: at - elapsed));
+        elapsed = at;
+        final out = find.byKey(const Key('a')).evaluate().isEmpty
+            ? 0.0
+            : opacityOf('a');
+        final inn = opacityOf('b');
+        if (out > 0 && inn > 0) seenBoth.add(at);
+      }
+      expect(seenBoth, isEmpty, reason: 'the two steps are never both drawn');
+      // And the old one is already fading at 50 ms, not held until 100.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(panel('a'));
+      await tester.pumpWidget(panel('b'));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(opacityOf('a'), lessThan(1));
+    });
+
+    testWidgets('the step arriving takes its autofocus; the one leaving none',
+        (tester) async {
+      final aFocus = FocusNode();
+      final bFocus = FocusNode();
+      addTearDown(aFocus.dispose);
+      addTearDown(bFocus.dispose);
+      Widget panel(Key key, FocusNode node) => MaterialApp(
+            home: Material(
+              child: LoginPanelFade(
+                child: SizedBox(
+                  key: key,
+                  width: 200,
+                  child: TextField(focusNode: node, autofocus: true),
+                ),
+              ),
+            ),
+          );
+      await tester.pumpWidget(panel(const Key('a'), aFocus));
+      await tester.pump();
+      expect(aFocus.hasFocus, isTrue);
+      await tester.pumpWidget(panel(const Key('b'), bFocus));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('a')), findsOneWidget, reason: 'mid-fade');
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      expect(bFocus.hasFocus, isTrue);
+      expect(aFocus.hasFocus, isFalse);
+    });
+
+    testWidgets('the recovery phrase step has focus in its field once settled',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: ArDriveApp(
+            builder: (_) => const LoginPanelFade(
+              child: SizedBox(
+                key: Key('landing'),
+                child: TextField(autofocus: false),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: ArDriveApp(
+            builder: (_) => const LoginPanelFade(
+              child: SizedBox(
+                key: Key('enterRecoveryPhraseView'),
+                width: 400,
+                child: EnterRecoveryPhraseView(),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      final field = find.descendant(
+          of: find.byType(EnterRecoveryPhraseView),
+          matching: find.byType(EditableText));
+      expect(tester.widget<EditableText>(field).focusNode.hasFocus, isTrue);
+    });
+
+    test('a finished sign-in swaps the panel to its waiting card', () {
+      final user = fakeUserJson;
+      expect(loginPanelRebuildsOn(LoginSuccess(user)), isTrue);
+      expect(loginPanelFor(LoginSuccess(user), loginBloc),
+          isA<MaxDeviceSizesConstrainedBox>());
     });
 
     test('each step has its panel', () {
@@ -788,6 +933,12 @@ void main() {
           style: const TextStyle(color: Color(0xFF000000)),
           withComposing: false);
       expect(span.style!.color!.opacity, 0, reason: 'only the blur is drawn');
+      expect(
+          Shadow.convertRadiusToSigma(span.style!.shadows!.single.blurRadius),
+          closeTo(secretBlurSigma, 0.01),
+          reason: 'the shared secret blur');
+      expect(secretBlurSigma, greaterThanOrEqualTo(10),
+          reason: 'blurred too strongly to read a word');
 
       await tester.tap(find.byKey(const Key('phraseShow')));
       await tester.pump();
@@ -1030,6 +1181,94 @@ void main() {
       expect(find.text('iKryOe...oRjA'), findsOneWidget);
     });
 
+    Future<void> pumpWithName(WidgetTester tester, String? logo) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      whenListen(
+        profileNameBloc,
+        const Stream<ProfileNameState>.empty(),
+        initialState: ProfileNameLoaded(
+            PrimaryNameDetails(primaryName: 'arie', logo: logo), address),
+      );
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+    }
+
+    Finder logoImage(String url) => find.byWidgetPredicate((w) =>
+        w is Image &&
+        w.image is NetworkImage &&
+        (w.image as NetworkImage).url == url);
+
+    testWidgets('shows the ArNS logo as the account picture', (tester) async {
+      await pumpWithName(tester, 'abc123txid');
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(avatar, findsOneWidget);
+      expect(tester.getSize(avatar), const Size(56, 56));
+      expect(
+          find.ancestor(
+              of: logoImage('https://turbo-gateway.com/abc123txid'),
+              matching: find.byType(ClipOval)),
+          findsOneWidget);
+      expect(logoImage('https://turbo-gateway.com/abc123txid'), findsOneWidget);
+    });
+
+    testWidgets('takes a logo URL as it is', (tester) async {
+      await pumpWithName(tester, 'https://example.com/a.png');
+      expect(logoImage('https://example.com/a.png'), findsOneWidget);
+    });
+
+    testWidgets('shows the wallet avatar when the name has no logo',
+        (tester) async {
+      await pumpWithName(tester, null);
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(find.descendant(of: avatar, matching: find.byType(Image)),
+          findsNothing);
+      expect(
+          tester
+              .widget<WalletGradientAvatar>(find.descendant(
+                  of: avatar, matching: find.byType(WalletGradientAvatar)))
+              .address,
+          address);
+    });
+
+    testWidgets('shows the wallet avatar while the name loads', (tester) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(tester.getSize(avatar), const Size(56, 56));
+      expect(
+          find.descendant(
+              of: avatar, matching: find.byType(WalletGradientAvatar)),
+          findsOneWidget);
+    });
+
+    testWidgets('falls back to the wallet avatar when the logo fails',
+        (tester) async {
+      await pumpWithName(tester, 'abc123txid');
+      // The test HTTP client answers 400, so the logo errors out.
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+      await tester.pump();
+      final avatar = find.byKey(const Key('welcomeBackAvatar'));
+      expect(
+          find.descendant(
+              of: avatar, matching: find.byType(WalletGradientAvatar)),
+          findsOneWidget);
+    });
+
+    testWidgets('the wallet unlock shows the picture too', (tester) async {
+      when(() => auth.getWalletAddress()).thenAnswer((_) async => address);
+      whenListen(
+        loginBloc,
+        const Stream<LoginState>.empty(),
+        initialState: const PromptWalletUnlock(wallet: BrowserWallet.wander),
+      );
+      await pump(tester, const WelcomeBackView());
+      await tester.pump();
+      expect(find.byKey(const Key('welcomeBackAvatar')), findsOneWidget);
+    });
+
     testWidgets('says the password is being checked, then that it was wrong',
         (tester) async {
       whenListen(
@@ -1060,7 +1299,7 @@ void main() {
       await pump(tester, const WelcomeBackView());
       await tester.tap(find.byKey(const Key('welcomeBackDifferentAccount')));
       await tester.pumpAndSettle();
-      expect(find.text('Forget wallet'), findsOneWidget);
+      expect(find.text('Use a different account?'), findsOneWidget);
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
       expect(added().single, isA<ForgetWallet>());

@@ -1,7 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:ui';
-
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/components/login_card_new.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -16,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:ardrive/utils/secret_blur.dart';
 
 class WalletCreatedView extends StatefulWidget {
   const WalletCreatedView({super.key, this.mnemonic, required this.wallet});
@@ -413,7 +412,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
 
     return isBlurred
         ? ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            imageFilter: secretBlurFilter,
             child: text,
           )
         : text;

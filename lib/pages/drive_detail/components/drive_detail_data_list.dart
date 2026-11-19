@@ -29,11 +29,55 @@ Widget _allItemsHidden(BuildContext context) => Center(
       ),
     );
 
+/// How wide the explorer's list will be once the details panel has finished
+/// sliding in or out.
+///
+/// The list is squeezed over the panel's 300 ms slide, so a list that picks
+/// its columns from its own width drops them part-way through, or in one frame
+/// at the end. A list that takes the narrower of this and its own width
+/// decides at the start of an opening slide, and still follows a closing one.
+/// The same idea as `ListTargetWidth` on the list pages.
+class _ExplorerTargetWidth extends InheritedWidget {
+  const _ExplorerTargetWidth({required this.width, required super.child});
+
+  final double width;
+
+  /// [actual] narrowed to the target width, when there is one.
+  static double narrowed(BuildContext context, double actual) {
+    final target = context
+        .dependOnInheritedWidgetOfExactType<_ExplorerTargetWidth>()
+        ?.width;
+    return target == null ? actual : min(actual, target);
+  }
+
+  @override
+  bool updateShouldNotify(_ExplorerTargetWidth oldWidget) =>
+      width != oldWidget.width;
+}
+
+/// A publication root's header as it scrolls with the table: the slivers
+/// that go first in the table's scroll, and what to show above `emptyState`
+/// when there is no table to scroll it with.
+class _CollapsingHeader {
+  const _CollapsingHeader({
+    required this.slivers,
+    required this.extent,
+    required this.pinnedInset,
+    required this.staticHeader,
+  });
+
+  final List<Widget> slivers;
+  final CollapsingHeaderExtent extent;
+  final double pinnedInset;
+  final Widget staticHeader;
+}
+
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
-  Widget emptyState,
-) {
+  Widget emptyState, {
+  _CollapsingHeader? collapsingHeader,
+}) {
   return _buildDataListContent(
     context,
     state.currentFolderContents,
@@ -46,6 +90,7 @@ Widget _buildDataList(
     emptyState: emptyState,
     revealSelectedItem: state.revealSelectedItem,
     rowsPerPage: state.rowsPerPage,
+    collapsingHeader: collapsingHeader,
   );
 }
 
@@ -61,10 +106,13 @@ Widget _buildDataListContent(
   required Widget emptyState,
   bool revealSelectedItem = false,
   required int rowsPerPage,
+  _CollapsingHeader? collapsingHeader,
 }) {
   return LayoutBuilder(builder: (context, constraints) {
+    final width = _ExplorerTargetWidth.narrowed(context, constraints.maxWidth);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     final columns = [
       TableColumn(
@@ -77,44 +125,41 @@ Widget _buildDataListContent(
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 500)
+      // if (width > 500)
       TableColumn(
         appLocalizationsOf(context).size,
         3,
         index: 1,
         canHide: false,
-        isVisible:
-            (constraints.maxWidth > 500 && (columnVisibility[1] ?? true)),
+        isVisible: (width > 500 && (columnVisibility[1] ?? true)),
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 640)
+      // if (width > 640)
       TableColumn(
         appLocalizationsOf(context).lastUpdated,
         3,
         index: 2,
-        isVisible:
-            (constraints.maxWidth > 640 && (columnVisibility[2] ?? true)),
+        isVisible: (width > 640 && (columnVisibility[2] ?? true)),
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 700)
+      // if (width > 700)
       TableColumn(
         appLocalizationsOf(context).dateCreated,
         3,
         index: 3,
-        isVisible:
-            (constraints.maxWidth > 700 && (columnVisibility[3] ?? true)),
+        isVisible: (width > 700 && (columnVisibility[3] ?? true)),
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
-      // if (constraints.maxWidth > 820)
+      // if (width > 820)
       TableColumn(
         appLocalizationsOf(context).tableColumnLicense,
         2,
@@ -125,11 +170,56 @@ Widget _buildDataListContent(
         ),
         // Hidden by default unless something in the drive is licensed: in
         // most drives it was a column of blanks. The reader's choice wins.
-        isVisible: constraints.maxWidth > 820 &&
+        isVisible: width > 820 &&
             DriveDetailCubit.showsLicenseColumn(
               columnVisibility: columnVisibility,
               driveHasLicensedFiles: driveHasLicensedFiles,
             ),
+      ),
+      // The three after License, so the saved choices keyed by number keep
+      // their meaning. They go before License as the table narrows.
+      TableColumn(
+        l10n.tableColumnType,
+        3,
+        index: ColumnIndexes.type,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        isVisible: showsAddedColumn(
+          index: ColumnIndexes.type,
+          width: width,
+          columnVisibility: columnVisibility,
+        ),
+      ),
+      TableColumn(
+        l10n.tableColumnTransactionId,
+        // The short ID in full and its copy button, without a second cut.
+        5,
+        index: ColumnIndexes.transactionId,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        isVisible: showsAddedColumn(
+          index: ColumnIndexes.transactionId,
+          width: width,
+          columnVisibility: columnVisibility,
+        ),
+      ),
+      TableColumn(
+        l10n.tableColumnStatus,
+        3,
+        index: ColumnIndexes.status,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        isVisible: showsAddedColumn(
+          index: ColumnIndexes.status,
+          width: width,
+          columnVisibility: columnVisibility,
+        ),
       ),
     ];
 
@@ -151,13 +241,22 @@ Widget _buildDataListContent(
           // Everything here is hidden: say so, with the way to show it. The
           // columns menu that holds that option belongs to the table, and
           // there is no table to open it from.
-          if (items.isNotEmpty) {
-            return _allItemsHidden(context);
-          }
-          return emptyState;
+          final Widget content =
+              items.isNotEmpty ? _allItemsHidden(context) : emptyState;
+          if (collapsingHeader == null) return content;
+          // The header has no list to scroll with.
+          return Column(
+            children: [
+              collapsingHeader.staticHeader,
+              Expanded(child: content),
+            ],
+          );
         }
 
         final table = ArDriveDataTable<ArDriveDataTableItem>(
+          leadingSlivers: collapsingHeader?.slivers,
+          leadingExtent: collapsingHeader?.extent,
+          pinnedInset: collapsingHeader?.pinnedInset ?? 0,
           headerDivider: PublicationMode.isOn,
           countOnOnePage: PublicationMode.isOn,
           key: ValueKey(
@@ -281,7 +380,19 @@ Widget _buildDataListContent(
             }
 
             // Sort folders and files
-            _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+            sortDriveTableItems(
+              folders,
+              files,
+              columnIndex,
+              ascDescSort,
+              typeLabel: (item) => driveTableTypeLabel(
+                l10n,
+                driveTableType(
+                  contentType: item.contentType,
+                  name: item.name,
+                ),
+              ),
+            );
 
             return folders + files;
           },
@@ -299,6 +410,14 @@ Widget _buildDataListContent(
               license: row is FileDataTableItem && row.licenseTxId != null
                   ? 'Licensed'
                   : '',
+              type: driveTableTypeLabel(
+                l10n,
+                driveTableType(contentType: row.contentType, name: row.name),
+              ),
+              transactionId: driveTableTransactionId(row),
+              status:
+                  driveTableStatusLabel(l10n, row.fileStatusFromTransactions),
+              statusValue: row.fileStatusFromTransactions,
               isHidden: row.isHidden,
               onPressed: () {
                 // Not reached by the table, which handles its own taps; kept
@@ -322,70 +441,4 @@ Widget _buildDataListContent(
       },
     );
   });
-}
-
-void _sortFoldersAndFiles(List<ArDriveDataTableItem> folders,
-    List<ArDriveDataTableItem> files, int columnIndex, TableSort ascDescSort) {
-  _sortItems(folders, columnIndex, ascDescSort);
-  _sortItems(files, columnIndex, ascDescSort);
-}
-
-int _getResult(int result, TableSort ascDescSort) {
-  if (ascDescSort == TableSort.asc) {
-    result *= -1;
-  }
-
-  return result;
-}
-
-void _sortItems(
-    List<ArDriveDataTableItem> items, int columnIndex, TableSort ascDescSort) {
-  if (columnIndex == ColumnIndexes.licenseType) {
-    final licenseFiles = items.where((e) => e.licenseType != null).toList();
-
-    licenseFiles.sort((a, b) {
-      int result = 0;
-      result = (a.licenseType ?? LicenseType.unknown)
-          .index
-          .compareTo((b.licenseType ?? LicenseType.unknown).index);
-      return _getResult(result, ascDescSort);
-    });
-
-    final noLicenseFiles = items.where((e) => e.licenseType == null).toList();
-
-    noLicenseFiles.sort((a, b) {
-      int result = 0;
-      result = compareAlphabeticallyAndNatural(a.name, b.name);
-      return _getResult(result, ascDescSort);
-    });
-    items.clear();
-    items.addAll(licenseFiles + noLicenseFiles);
-    return;
-  }
-
-  items.sort((a, b) {
-    int result = 0;
-    if (columnIndex == ColumnIndexes.name) {
-      result = compareAlphabeticallyAndNatural(a.name, b.name);
-    } else if (columnIndex == ColumnIndexes.size) {
-      result = (a.size ?? 0).compareTo(b.size ?? 0);
-    } else if (columnIndex == ColumnIndexes.lastUpdated) {
-      result = a.lastUpdated.compareTo(b.lastUpdated);
-    } else if (columnIndex == ColumnIndexes.licenseType) {
-      result = (a.licenseType ?? LicenseType.unknown)
-          .index
-          .compareTo((b.licenseType ?? LicenseType.unknown).index);
-    } else {
-      result = a.dateCreated.compareTo(b.dateCreated);
-    }
-    return _getResult(result, ascDescSort);
-  });
-}
-
-class ColumnIndexes {
-  static const int name = 0;
-  static const int size = 1;
-  static const int lastUpdated = 2;
-  static const int dateCreated = 3;
-  static const int licenseType = 4;
 }

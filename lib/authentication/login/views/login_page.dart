@@ -687,7 +687,6 @@ bool loginPanelRebuildsOn(LoginState current) {
       current is LoginProfileFromNewerVersion ||
       current is GatewayLoginFailure ||
       current is LoginPasswordFailedWithPrivateDriveNotFound;
-  final isSuccess = current is LoginSuccess;
   final isLoading = current is LoginLoading ||
       current is LoginShowLoader ||
       current is LoginShowBlockingDialog ||
@@ -710,8 +709,10 @@ bool loginPanelRebuildsOn(LoginState current) {
       current is LoginLoadingIfUserAlreadyExists ||
           current is LoginLoadingIfUserAlreadyExistsSuccess;
 
+  // Not LoginSuccess: the panel swaps to its waiting card then, so the step
+  // the user finished ("Enter your recovery phrase") is not left on screen
+  // behind the closing password dialog until the app takes over.
   return !(isFailure ||
-      isSuccess ||
       isLoading ||
       isPasswordDialog ||
       isPasswordChecking ||
@@ -728,15 +729,58 @@ Widget _buildContent(
   return BlocBuilder<LoginBloc, LoginState>(
     key: globalKey,
     buildWhen: (previous, current) => loginPanelRebuildsOn(current),
-    builder: (context, loginState) => loginPanelFor(
-      loginState,
-      context.read<LoginBloc>(),
-      presence: loginState is LoginLoading
-          ? context.read<ProfileCubit>().presence
-          : ProfilePresence.unknown,
+    builder: (context, loginState) => LoginPanelFade(
+      child: loginPanelFor(
+        loginState,
+        context.read<LoginBloc>(),
+        presence: loginState is LoginLoading
+            ? context.read<ProfileCubit>().presence
+            : ProfilePresence.unknown,
+      ),
     ),
   );
 }
+
+/// Crossfades the sign-in panel when its step changes (a different key),
+/// instead of cutting; the same step updates in place. Instant under reduced
+/// motion.
+@visibleForTesting
+class LoginPanelFade extends StatelessWidget {
+  const LoginPanelFade({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: MediaQuery.of(context).disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
+      // One after the other, so two steps' text is never drawn on top of each
+      // other: the old one out in the first half, the new one in the second.
+      switchInCurve: const Interval(0.5, 1, curve: Curves.easeOut),
+      switchOutCurve: const Interval(0.5, 1, curve: Curves.easeOut),
+      // The step on its way out takes no focus and no taps, so the step
+      // arriving can take its autofocus. Every entry is wrapped the same way
+      // (and keyed like its child), so none is remounted when it becomes the
+      // outgoing one.
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.center,
+        children: [
+          for (final entry in previous) _leaving(entry, true),
+          if (current != null) _leaving(current, false),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+Widget _leaving(Widget entry, bool leaving) => ExcludeFocus(
+      key: entry.key,
+      excluding: leaving,
+      child: IgnorePointer(ignoring: leaving, child: entry),
+    );
 
 /// Whether the sign-in panel is usable: the check for an account on this
 /// device ([CheckIfUserIsLoggedIn]) is in. Until then the panel is drawn

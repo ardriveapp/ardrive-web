@@ -340,6 +340,30 @@ class ListDetailsHost extends StatefulWidget {
 /// columns the list pages other than Your drives draw.
 const double listDetailsMinListWidth = 560;
 
+/// The width the list beside a [ListDetailsHost] panel will have once the
+/// panel has finished sliding in or out.
+///
+/// The list is squeezed over the panel's 300 ms slide, so a list that picks
+/// its columns from its own width drops them part-way through, or in one
+/// frame at the end. A list that takes the narrower of this and its own width
+/// decides at the start of an opening slide and still follows a closing one.
+class ListTargetWidth extends InheritedWidget {
+  const ListTargetWidth({super.key, required this.width, required super.child});
+
+  final double width;
+
+  /// [actual] narrowed to the target width, when there is a host.
+  static double narrowed(BuildContext context, double actual) {
+    final target =
+        context.dependOnInheritedWidgetOfExactType<ListTargetWidth>()?.width;
+    return target == null ? actual : math.min(actual, target);
+  }
+
+  @override
+  bool updateShouldNotify(ListTargetWidth oldWidget) =>
+      width != oldWidget.width;
+}
+
 bool listDetailsPushList(double width, double panelWidth, double textScale) =>
     width - panelWidth >= listDetailsMinListWidth * textScale;
 
@@ -396,56 +420,62 @@ class _ListDetailsHostState extends State<ListDetailsHost> {
               );
           final covers = panel != null && !pushes;
 
-          return Stack(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    // The explorer's gap between the list and its panel, and
-                    // the page's right margin when there is no panel.
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: listPagePadding),
-                      child: widget.buildBody(
-                        chosenId: panel == null ? null : id,
-                        onChoose: _choose,
+          return ListTargetWidth(
+            width: constraints.maxWidth -
+                listPagePadding -
+                (pushes ? panelWidth : 0),
+            child: Stack(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      // The explorer's gap between the list and its panel, and
+                      // the page's right margin when there is no panel.
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: listPagePadding),
+                        child: widget.buildBody(
+                          chosenId: panel == null ? null : id,
+                          onChoose: _choose,
+                        ),
                       ),
                     ),
-                  ),
-                  // The explorer's animation, the explorer's width.
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: pushes
-                        ? SizedBox(width: panelWidth, child: panel)
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-              if (covers)
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  right: 0,
-                  width: panelWidth,
-                  // Over the list, so it needs its own ground and an edge.
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: ArDriveTheme.of(context).themeData.backgroundColor,
-                      boxShadow: [
-                        BoxShadow(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .shadow,
-                          blurRadius: 16,
-                        ),
-                      ],
+                    // The explorer's animation, the explorer's width.
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: pushes
+                          ? SizedBox(width: panelWidth, child: panel)
+                          : const SizedBox.shrink(),
                     ),
-                    child: panel,
-                  ),
+                  ],
                 ),
-            ],
+                if (covers)
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    width: panelWidth,
+                    // Over the list, so it needs its own ground and an edge.
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color:
+                            ArDriveTheme.of(context).themeData.backgroundColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .shadow,
+                            blurRadius: 16,
+                          ),
+                        ],
+                      ),
+                      child: panel,
+                    ),
+                  ),
+              ],
+            ),
           );
         },
       ),

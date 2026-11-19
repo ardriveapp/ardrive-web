@@ -56,6 +56,46 @@ void main() {
     );
   });
 
+  test('a dialog\'s work stays in the dialog', () {
+    expect(
+      _violations(sources, _progressOverForm, _progressOverFormExceptions),
+      isEmpty,
+      reason: 'Keep the dialog open with its primary busy '
+          '(ModalAction(isLoading: true), Cancel held with isEnable: false) '
+          'and show a failure in it as an ArDriveNotice, or add the file to '
+          '_progressOverFormExceptions with a reason.',
+    );
+  });
+
+  test('comments are left out, strings and line numbers kept', () {
+    const source = 'a(); // b()\n'
+        '/* c()\n'
+        'd() */ e();\n'
+        "f('//not a comment', r'\\', \"/* nor this */\");\n"
+        'g();';
+    final lines = _withoutComments(source).split('\n');
+    expect(lines, hasLength(5));
+    expect(lines[0].trim(), 'a();');
+    expect(lines[1].trim(), isEmpty);
+    expect(lines[2].trim(), 'e();');
+    expect(lines[3], contains("'//not a comment'"));
+    expect(lines[3], contains('"/* nor this */"'));
+    expect(lines[4], 'g();');
+  });
+
+  test('a block comment between two tokens keeps them apart', () {
+    expect(_withoutComments('show/**/ProgressDialog('),
+        isNot(contains('showProgressDialog(')));
+  });
+
+  test('nested block comments are left out whole', () {
+    const source = 'a(); /* outer /* inner */ showProgressDialog(x); */ b();';
+    final out = _withoutComments(source);
+    expect(out, isNot(contains('showProgressDialog')));
+    expect(out, contains('a();'));
+    expect(out, contains('b();'));
+  });
+
   test('every exception still needs to be one', () {
     final stale = <String>[
       for (final path in _spinnerExceptions.keys)
@@ -66,10 +106,25 @@ void main() {
         if (!_matches(sources[path], _rawMenu)) path,
       for (final path in _shorteningExceptions.keys)
         if (!_matches(sources[path], _rawShortening)) path,
+      for (final path in _progressOverFormExceptions.keys)
+        if (!_matches(sources[path], _progressOverForm)) path,
     ];
     expect(stale, isEmpty, reason: 'Remove these from the exception lists.');
   });
 }
+
+/// A progress dialog opened over the dialog whose work it is (the design
+/// system: never a dialog on top of a dialog).
+final _progressOverForm = RegExp(r'\bshowProgressDialog\(');
+
+/// Each moves its wait into its own dialog in the dialog review's area PRs
+/// (18 Nov 2026); each PR takes its files off this list.
+const _progressOverFormExceptions = {
+  'lib/components/progress_dialog.dart':
+      'Where it is defined; it goes once no dialog uses it',
+  'lib/components/fs_entry_license_form.dart':
+      'Moves into the dialog in its area PR',
+};
 
 /// A Material spinner or bar, drawn directly.
 final _rawProgress =
@@ -152,13 +207,74 @@ Map<String, List<String>> _sources() {
           path.startsWith('lib/services/arweave/graphql/')) {
         continue;
       }
-      files[path] = entity
-          .readAsLinesSync()
-          .map((line) => line.replaceFirst(RegExp(r'//.*$'), ''))
-          .toList();
+      files[path] = _withoutComments(entity.readAsStringSync()).split('\n');
     }
   }
   return files;
+}
+
+/// [source] with its comments blanked: `//` to the end of the line and
+/// `/* ... */` (line breaks kept, so line numbers stay true), never inside a
+/// string literal, so a commented-out call counts neither as a violation nor
+/// as keeping an exception alive.
+String _withoutComments(String source) {
+  final out = StringBuffer();
+  var i = 0;
+  String? quote;
+  var raw = false;
+  while (i < source.length) {
+    final c = source[i];
+    final next = i + 1 < source.length ? source[i + 1] : '';
+    if (quote != null) {
+      out.write(c);
+      if (!raw && c == r'\' && i + 1 < source.length) {
+        out.write(next);
+        i += 2;
+        continue;
+      }
+      if (source.startsWith(quote, i)) {
+        out.write(source.substring(i + 1, i + quote.length));
+        i += quote.length;
+        quote = null;
+        continue;
+      }
+      i++;
+    } else if (c == '/' && next == '/') {
+      while (i < source.length && source[i] != '\n') {
+        i++;
+      }
+    } else if (c == '/' && next == '*') {
+      // Dart's block comments nest: /* a /* b */ c */ is one comment. It
+      // leaves a space, as the compiler reads it, so a/**/b stays two tokens.
+      out.write(' ');
+      i += 2;
+      var depth = 1;
+      while (i < source.length && depth > 0) {
+        if (source.startsWith('/*', i)) {
+          depth++;
+          i += 2;
+        } else if (source.startsWith('*/', i)) {
+          depth--;
+          i += 2;
+        } else {
+          if (source[i] == '\n') out.write('\n');
+          i++;
+        }
+      }
+    } else if (c == "'" || c == '"') {
+      // r'...' takes no escapes: a backslash in it is just a backslash.
+      raw = i > 0 &&
+          source[i - 1] == 'r' &&
+          (i < 2 || !RegExp(r'[A-Za-z0-9_$]').hasMatch(source[i - 2]));
+      quote = source.startsWith(c * 3, i) ? c * 3 : c;
+      out.write(quote);
+      i += quote.length;
+    } else {
+      out.write(c);
+      i++;
+    }
+  }
+  return out.toString();
 }
 
 bool _matches(List<String>? lines, RegExp rule) =>

@@ -24,7 +24,7 @@ class CreatingAccountView extends StatelessWidget {
             // The plate stack: ArDrive's own "working" mark.
             Semantics(
               label: s.creatingAccountTitle,
-              child: const Center(child: SyncLoadingIndicator(size: 96)),
+              child: const Center(child: SyncLoadingIndicator(size: 56)),
             ),
             const SizedBox(height: 16),
             Text(

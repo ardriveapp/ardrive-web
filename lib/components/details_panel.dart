@@ -323,11 +323,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       (widget.item as FileDataTableItem).thumbnail == null &&
                       widget.item.isOwner) ...[
                     ArDriveIconButton(
-                      icon: ArDriveIcons.image(),
+                      icon: ArDriveIcons.plus(),
                       tooltip: 'Create thumbnail',
                       onPressed: () {
                         showArDriveDialog(
                           context,
+                          barrierDismissible: false,
                           content: BlocProvider.value(
                             value: context.read<DriveDetailCubit>(),
                             child: ThumbnailCreationModal(
@@ -469,7 +470,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(widget.item.lastUpdated),
+          formatDateTimeStacked(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -478,7 +479,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(widget.item.dateCreated),
+          formatDateTimeStacked(widget.item.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -519,7 +520,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(widget.item.lastUpdated),
+          formatDateTimeStacked(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -528,7 +529,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(widget.item.dateCreated),
+          formatDateTimeStacked(widget.item.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -589,7 +590,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(state.drive.lastUpdated),
+          formatDateTimeStacked(state.drive.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -598,7 +599,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(state.drive.dateCreated),
+          formatDateTimeStacked(state.drive.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -682,7 +683,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(item.lastUpdated),
+          formatDateTimeStacked(item.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -691,7 +692,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateTime(item.dateCreated),
+          formatDateTimeStacked(item.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),

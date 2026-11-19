@@ -11,6 +11,7 @@ import 'package:ardrive/components/turbo_credits_funding.dart';
 import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -29,48 +30,41 @@ Future<void> promptToToggleHideState(
 
   final isHidden = item.isHidden;
 
+  final HideEvent event;
   if (item is FileDataTableItem) {
-    if (isHidden) {
-      hideBloc.add(UnhideFileEvent(
-        driveId: item.driveId,
-        fileId: item.id,
-      ));
-    } else {
-      hideBloc.add(HideFileEvent(
-        driveId: item.driveId,
-        fileId: item.id,
-      ));
-    }
+    event = isHidden
+        ? UnhideFileEvent(driveId: item.driveId, fileId: item.id)
+        : HideFileEvent(driveId: item.driveId, fileId: item.id);
   } else if (item is FolderDataTableItem) {
-    if (isHidden) {
-      hideBloc.add(UnhideFolderEvent(
-        driveId: item.driveId,
-        folderId: item.id,
-      ));
-    } else {
-      hideBloc.add(HideFolderEvent(
-        driveId: item.driveId,
-        folderId: item.id,
-      ));
-    }
+    event = isHidden
+        ? UnhideFolderEvent(driveId: item.driveId, folderId: item.id)
+        : HideFolderEvent(driveId: item.driveId, folderId: item.id);
   } else if (item is DriveDataItem) {
-    if (isHidden) {
-      hideBloc.add(UnhideDriveEvent(
-        driveId: item.driveId,
-      ));
-    } else {
-      hideBloc.add(HideDriveEvent(
-        driveId: item.driveId,
-      ));
-    }
+    event = isHidden
+        ? UnhideDriveEvent(driveId: item.driveId)
+        : HideDriveEvent(driveId: item.driveId);
   } else {
     throw UnimplementedError('Unknown item type: ${item.runtimeType}');
   }
+  hideBloc.add(event);
+
+  // A quick second Try again must not start a second hide.
+  var retrying = false;
 
   await showArDriveDialog(
     context,
     barrierDismissible: false,
-    content: HideDialog(driveDetailCubit: driveDetailCubit),
+    content: HideDialog(
+      driveDetailCubit: driveDetailCubit,
+      onRetry: () {
+        if (retrying) return;
+        retrying = true;
+        hideBloc.add(event);
+        hideBloc.stream
+            .firstWhere((s) => s is! FailureHideState)
+            .then((_) => retrying = false);
+      },
+    ),
   );
 
   // A named file just left public view: offer to remove its name too.
@@ -95,9 +89,14 @@ Future<void> promptToToggleHideState(
 class HideDialog extends StatelessWidget {
   final DriveDetailCubit _driveDetailCubit;
 
+  /// Runs the hide or unhide again, for Try again after a failure. Without
+  /// it a failure offers only Close.
+  final VoidCallback? onRetry;
+
   const HideDialog({
     super.key,
     required DriveDetailCubit driveDetailCubit,
+    this.onRetry,
   }) : _driveDetailCubit = driveDetailCubit;
 
   @override
@@ -186,9 +185,9 @@ class HideDialog extends StatelessWidget {
         case HideAction.unhideFolder:
           return appLocalizationsOf(context).failedToUnhideFolder;
         case HideAction.hideDrive:
-          return 'Failed to hide drive';
+          return appLocalizationsOf(context).failedToHideDrive;
         case HideAction.unhideDrive:
-          return 'Failed to unhide drive';
+          return appLocalizationsOf(context).failedToUnhideDrive;
       }
     }
 
@@ -202,30 +201,22 @@ class HideDialog extends StatelessWidget {
       case HideAction.unhideFolder:
         return appLocalizationsOf(context).unhidingFolder;
       case HideAction.hideDrive:
-        return 'Hiding drive';
+        return appLocalizationsOf(context).hidingDrive;
       case HideAction.unhideDrive:
-        return 'Unhiding drive';
+        return appLocalizationsOf(context).unhidingDrive;
     }
   }
 
   Widget _buildContent(BuildContext context, HideState state) {
     if (state is FailureHideState) {
-      final hideAction = state.hideAction;
-
-      switch (hideAction) {
-        case HideAction.hideFile:
-          return Text(appLocalizationsOf(context).failedToHideFile);
-        case HideAction.hideFolder:
-          return Text(appLocalizationsOf(context).failedToHideFolder);
-        case HideAction.unhideFile:
-          return Text(appLocalizationsOf(context).failedToUnhideFile);
-        case HideAction.unhideFolder:
-          return Text(appLocalizationsOf(context).failedToUnhideFolder);
-        case HideAction.hideDrive:
-          return const Text('Failed to hide drive');
-        case HideAction.unhideDrive:
-          return const Text('Failed to unhide drive');
-      }
+      // The title says what failed; the notice says what to do.
+      return SizedBox(
+        width: kMediumDialogWidth,
+        child: ArDriveNotice(
+          type: ArDriveNoticeType.error,
+          message: appLocalizationsOf(context).actionFailedTryAgain,
+        ),
+      );
     }
 
     return const Column(
@@ -243,12 +234,17 @@ class HideDialog extends StatelessWidget {
   ) {
     if (state is FailureHideState) {
       return [
-        ModalAction(
+        ModalAction.close(
           action: () {
             Navigator.of(context).pop();
           },
           title: appLocalizationsOf(context).close,
         ),
+        if (onRetry != null)
+          ModalAction(
+            action: onRetry!,
+            title: appLocalizationsOf(context).tryAgain,
+          ),
       ];
     } else {
       return null;

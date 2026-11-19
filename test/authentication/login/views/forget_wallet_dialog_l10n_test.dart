@@ -28,19 +28,20 @@ void main() {
     await pump(tester, const Locale('es'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Olvidar monedero'), findsOneWidget);
+    expect(find.text('¿Usar otra cuenta?'), findsOneWidget);
     expect(find.text('¿Seguro que quieres olvidar este monedero?'),
         findsOneWidget);
     expect(find.text('Cancelar'), findsOneWidget);
     expect(find.text('Confirmar'), findsOneWidget);
-    expect(find.text('Forget wallet'), findsNothing);
+    expect(find.text('Use a different account?'), findsNothing);
   });
 
   testWidgets('shows the same dialog in English, as before', (tester) async {
     await pump(tester, const Locale('en'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Forget wallet'), findsOneWidget);
+    expect(find.text('Use a different account?'), findsOneWidget);
+    expect(find.text('Forget wallet'), findsNothing);
     expect(find.text('Are you sure you want to forget this wallet?'),
         findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);

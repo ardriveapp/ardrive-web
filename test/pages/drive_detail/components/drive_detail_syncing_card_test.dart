@@ -160,6 +160,43 @@ void main() {
     );
   }
 
+  testWidgets(
+      'on a desktop it takes the room it is given, less its bottom gap once',
+      (tester) async {
+    await tester.binding.setSurfaceSize(desktopSize);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    whenListen(
+      syncCubit,
+      syncStates.stream,
+      initialState: SyncInProgress(trigger: SyncTrigger.background),
+    );
+
+    // A parent that sets only the most it may take, so the card's own height
+    // shows rather than being forced to fit.
+    await tester.pumpWidget(host(
+      Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 400),
+          child: const DriveDetailSyncingCard(),
+        ),
+      ),
+      size: desktopSize,
+    ));
+    await tester.pump();
+
+    final card = find
+        .descendant(
+          of: find.byType(DriveDetailSyncingCard),
+          matching: find.byType(ArDriveCard),
+        )
+        .first;
+    // 400 to fill; the card's own 20 px gap comes off once.
+    expect(tester.getSize(card).height, 380);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('a background sync is named, not spun at', (tester) async {
     await pumpSyncing(
       tester,

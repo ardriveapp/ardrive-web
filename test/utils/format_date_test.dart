@@ -60,4 +60,16 @@ void main() {
           formatUtcOffset(const Duration(hours: 12, minutes: 45)), 'GMT+12:45');
     });
   });
+
+  group('formatDateTimeStacked', () {
+    test('is the day, a line break, then the time with its zone', () {
+      final instant = DateTime.utc(2022, 5, 18, 20, 48, 13);
+      final lines = formatDateTimeStacked(instant).split('\n');
+      expect(lines, hasLength(2));
+      expect(lines[0].replaceAll('\u00A0', ' '), formatDate(instant));
+      expect(lines[0], isNot(contains(' ')), reason: 'no break inside the day');
+      expect('${lines[0].replaceAll('\u00A0', ' ')} ${lines[1]}',
+          formatDateTime(instant));
+    });
+  });
 }

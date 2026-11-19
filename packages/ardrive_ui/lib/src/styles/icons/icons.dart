@@ -7,18 +7,40 @@ class ArDriveIcon extends StatelessWidget {
     this.color,
     this.size = 24,
     required this.icon,
+    this.glyphSize,
   });
 
   final double? size;
   final Color? color;
   final IconData icon;
 
+  /// Draws the glyph at this size, centred in a [size] box. For a glyph drawn
+  /// edge to edge in its font, which looks bigger than the icons around it
+  /// at the same [size]; the box keeps what sits beside it where it was.
+  final double? glyphSize;
+
   @override
   Widget build(BuildContext context) {
-    return Icon(
+    final drawn = Icon(
       icon,
-      size: size,
+      size: glyphSize ?? size,
       color: color ?? ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
+    );
+    final box = size;
+    if (glyphSize == null || box == null) return drawn;
+    return SizedBox.square(dimension: box, child: Center(child: drawn));
+  }
+
+  /// The same icon in a [newSize] box, its glyph scaled with it, so a
+  /// [glyphSize] keeps its share of the box.
+  ArDriveIcon scaledTo(double newSize) {
+    final glyph = glyphSize;
+    final box = size;
+    return ArDriveIcon(
+      icon: icon,
+      color: color,
+      size: newSize,
+      glyphSize: glyph == null || box == null ? null : glyph * newSize / box,
     );
   }
 
@@ -26,11 +48,13 @@ class ArDriveIcon extends StatelessWidget {
     double? size,
     Color? color,
     IconData? icon,
+    double? glyphSize,
   }) {
     return ArDriveIcon(
       icon: icon ?? this.icon,
       size: size ?? this.size,
       color: color ?? this.color,
+      glyphSize: glyphSize ?? this.glyphSize,
     );
   }
 }
@@ -493,8 +517,11 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// Material's sun, not the ArDriveIcons font's: that font's sun
+  /// glyph (0xe802) is a plain filled disc, so it read as a dot beside the
+  /// moon.
   static ArDriveIcon sun({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.sun,
+        icon: Icons.light_mode,
         size: size ?? 26,
         color: color,
       );

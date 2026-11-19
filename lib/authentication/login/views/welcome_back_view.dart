@@ -1,3 +1,4 @@
+import 'package:ardrive/components/account_avatar.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -346,8 +347,8 @@ class _SavedByNewerVersion extends StatelessWidget {
   }
 }
 
-/// The account the password unlocks: its ArNS name once loaded, and its
-/// short address.
+/// The account the password unlocks: its picture, its ArNS name once
+/// loaded, and its short address.
 class _Account extends StatelessWidget {
   const _Account({required this.address});
 
@@ -359,26 +360,40 @@ class _Account extends StatelessWidget {
     final type = ArDriveTypographyNew.of(context);
     return BlocBuilder<ProfileNameBloc, ProfileNameState>(
       builder: (context, state) {
-        final name =
+        final details =
             state is ProfileNameLoaded && state.walletAddress == address
-                ? state.primaryNameDetails.primaryName
+                ? state.primaryNameDetails
                 : null;
-        return Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: ArDriveSpacing.xs,
+        final name = details?.primaryName;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (name != null)
-              Text(
-                name,
-                style: type.paragraphNormal(
-                  color: colors.textMid,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
+              child: AccountAvatar(
+                key: const Key('welcomeBackAvatar'),
+                address: address,
+                logo: details?.logo,
               ),
-            ArDriveIdText(
-              shortenId(address),
-              style: type.code(color: colors.textLow),
+            ),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: ArDriveSpacing.xs,
+              children: [
+                if (name != null)
+                  Text(
+                    name,
+                    style: type.paragraphNormal(
+                      color: colors.textMid,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
+                ArDriveIdText(
+                  shortenId(address),
+                  style: type.code(color: colors.textLow),
+                ),
+              ],
             ),
           ],
         );

@@ -134,7 +134,8 @@ void main() {
 
     await tester.enterText(field('newPassword'), _strong);
     await tester.enterText(field('confirmNewPassword'), _strong);
-    await tester.pump();
+    // The dialog grows to fit what typing adds; Cancel is where it ends up.
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 

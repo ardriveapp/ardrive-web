@@ -207,6 +207,7 @@ class _ArDriveMenuAnchorState extends State<ArDriveMenuAnchor> {
     final covered = route != null && !route.isCurrent;
 
     return ArDriveOverlay(
+      animate: true,
       visible: widget.controller.isOpen,
       onVisibleChange: (visible) {
         if (!visible) _closeItself();
@@ -338,7 +339,12 @@ class _SubmenuItemState extends State<_SubmenuItem> {
     final item = widget.item;
 
     return ArDriveOverlay(
+      animate: true,
       visible: _open,
+      // Closed with the menu it opens from.
+      onVisibleChange: (visible) {
+        if (!visible && _open) setState(() => _open = false);
+      },
       // The menu it opens from has the click-outside and Escape handling.
       closeOnBarrierTap: false,
       anchor: const _MenuPlacement(

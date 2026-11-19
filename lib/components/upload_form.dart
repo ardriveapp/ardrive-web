@@ -1623,7 +1623,7 @@ class _UploadFolderNameConflictWidget extends StatelessWidget {
       ),
       // Cancel first, so that Skip, the way on, is the primary button.
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -1780,7 +1780,7 @@ class _UploadFileConflictWidget extends StatelessWidget {
       // Cancel first and the main action last, as in the other upload
       // dialogs: the last button is the primary one.
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -1851,7 +1851,7 @@ class _UploadFileTooLargeWidget extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -1933,7 +1933,7 @@ class _UploadReadyWidget extends StatelessWidget {
     final summary = paymentBloc.state is UploadPaymentMethodLoading
         ? null
         : UploadReviewSummary.fromPaymentInfo(info);
-    final folderName = state.params.targetFolder.name;
+    final folderName = uploadDestinationName(state.params);
 
     return ReactiveForm(
       formGroup: context.watch<UploadCubit>().licenseCategoryForm,
@@ -2492,7 +2492,7 @@ class UploadFailureWidget extends StatelessWidget {
         title: appLocalizationsOf(context).freeAllowanceUsedUpTitle,
         description: appLocalizationsOf(context).freeAllowanceUsedUpDescription,
         actions: [
-          ModalAction(
+          ModalAction.close(
             action: () => Navigator.of(context).pop(false),
             title: appLocalizationsOf(context).cancel,
           ),
@@ -2726,7 +2726,7 @@ class _UploadShowingWarningWidget extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -3160,10 +3160,10 @@ class _UploadLoadingFilesSuccessWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ArDriveStandardModalNew(
-      title: 'All set!',
-      description: 'We are ready to start preparing your upload.',
-    );
+    // Shown for a frame or two before preparing starts; a card here only
+    // flashed at a size the next step then replaced. Stay as empty as
+    // [_UploadLoadingFilesWidget] is while it waits.
+    return const SizedBox();
   }
 }
 
@@ -3310,7 +3310,7 @@ class _UploadPaymentRequiredWidgetState
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
     final reviewed = widget.reviewed;
-    final folderName = reviewed.params.targetFolder.name;
+    final folderName = uploadDestinationName(reviewed.params);
 
     return UploadReviewDialog(
       title: l10n.uploadNFiles(reviewed.numberOfFiles),
@@ -3335,6 +3335,14 @@ class _UploadPaymentRequiredWidgetState
     );
   }
 }
+
+/// Where an upload goes, as the review names it: the drive's name when the
+/// target is its root folder (whose own name is an internal one, such as
+/// "Bundled Drive 10-18"), else the folder's.
+String uploadDestinationName(UploadParams params) =>
+    params.targetFolder.parentFolderId == null
+        ? params.targetDrive.name
+        : params.targetFolder.name;
 
 /// The note after an upload: how many files are saved, and Share.
 void showUploadSavedToast(

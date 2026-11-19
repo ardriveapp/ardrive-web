@@ -83,7 +83,7 @@ class _ArDriveScrollAreaState extends State<ArDriveScrollArea> {
             thumbVisibility: true,
             thickness: 4,
             // Off the rounded edge of a dialog or sheet.
-            crossAxisMargin: 6,
+            crossAxisMargin: 10,
             radius: const Radius.circular(2),
             thumbColor: colors.iconLow,
             child: SingleChildScrollView(

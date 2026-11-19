@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../test_utils/utils.dart';
+import 'package:ardrive/utils/secret_blur.dart';
 
 class _MockLoginBloc extends MockBloc<LoginEvent, LoginState>
     implements LoginBloc {}
@@ -742,6 +743,8 @@ void main() {
       ImageFiltered words() =>
           tester.widget<ImageFiltered>(find.byKey(const Key('recoveryWords')));
       expect(words().enabled, isTrue);
+      expect(words().imageFilter, same(secretBlurFilter),
+          reason: 'blurred too strongly to read a word');
       await tester.tap(find.byKey(const Key('recoveryShow')));
       await tester.pump();
       expect(words().enabled, isFalse);
