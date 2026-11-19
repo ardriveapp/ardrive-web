@@ -53,6 +53,8 @@ const int galleryMaxOriginalBytes = 2 * 1024 * 1024;
 ///   [maxOriginalBytes], the tile is [onScreen] and the loader is [idle], and
 ///   no variant covers the tile (no thumbnails at all, or only small ones).
 ///   Private drives never load originals in the grid.
+/// - An original with a size of 0 or less (unknown) is never eligible, and
+///   variants with unknown (0) dimensions never cover and rank last.
 /// - null when there is nothing eligible to load.
 GalleryVariantChoice? chooseGalleryVariant({
   required List<GalleryVariant> variants,
@@ -67,7 +69,7 @@ GalleryVariantChoice? chooseGalleryVariant({
   GalleryVariant? covering;
   GalleryVariant? largest;
   for (final v in variants) {
-    if (largest == null || _area(v) > _area(largest)) largest = v;
+    if (largest == null || _outranks(v, largest)) largest = v;
     if (v.width >= tileWidthPx && v.height >= tileHeightPx) {
       if (covering == null || _area(v) < _area(covering)) covering = v;
     }
@@ -79,6 +81,7 @@ GalleryVariantChoice? chooseGalleryVariant({
 
   final originalAllowed = !isPrivate &&
       original != null &&
+      original.size > 0 &&
       original.size <= maxOriginalBytes &&
       onScreen &&
       idle;
@@ -92,4 +95,12 @@ GalleryVariantChoice? chooseGalleryVariant({
   return null;
 }
 
-int _area(GalleryVariant v) => v.width * v.height;
+int _area(GalleryVariant v) =>
+    v.width > 0 && v.height > 0 ? v.width * v.height : 0;
+
+/// Bigger by pixels; variants with unknown dimensions rank last, by size.
+bool _outranks(GalleryVariant a, GalleryVariant b) {
+  final aa = _area(a), ab = _area(b);
+  if (aa != ab) return aa > ab;
+  return a.size > b.size;
+}

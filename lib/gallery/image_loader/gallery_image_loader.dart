@@ -59,6 +59,8 @@ class GalleryLoaderConfig {
     this.backoffBase = const Duration(seconds: 2),
     this.backoffCap = const Duration(seconds: 60),
     this.cancelInFlightAboveBytes = 256 * 1024,
+    this.starvationDelay = const Duration(seconds: 1),
+    this.starvedConcurrent = 2,
   });
 
   /// The app's existing data-fetch setting.
@@ -85,6 +87,12 @@ class GalleryLoaderConfig {
   /// A tile that leaves the screen mid-fetch aborts the fetch only when the
   /// rendition is larger than this; small thumbnails finish into the cache.
   final int cancelInFlightAboveBytes;
+
+  /// Unbroken scrolling longer than this starts the nearest on-screen tiles
+  /// anyway (at most [starvedConcurrent] at once), so a long scroll is not a
+  /// blank screen.
+  final Duration starvationDelay;
+  final int starvedConcurrent;
 }
 
 /// A tile's request: which file, which renditions exist, and how big the tile
@@ -152,10 +160,11 @@ class GalleryImageState {
 
 /// A tile's view of one image. Listen to it; tell it where the tile is.
 class GalleryImageHandle implements ValueListenable<GalleryImageState> {
-  GalleryImageHandle._(this._loader, this._entry);
+  GalleryImageHandle._(this._loader, this._entry, this._request);
 
   final GalleryImageLoader _loader;
   final _Entry _entry;
+  final GalleryImageRequest _request;
   bool _released = false;
   bool _onScreen = false;
   double _priority = 0;
@@ -198,11 +207,10 @@ class GalleryImageHandle implements ValueListenable<GalleryImageState> {
 }
 
 class _Entry {
-  _Entry(this.key, this.target, this.tileWidthPx);
+  _Entry(this.key, this.target);
 
   final String key;
   final GalleryFetchTarget? target;
-  final double tileWidthPx;
   final ValueNotifier<GalleryImageState> notifier =
       ValueNotifier(const GalleryImageState.loading());
   final List<GalleryImageHandle> handles = [];
@@ -212,7 +220,7 @@ class _Entry {
   bool inFlight = false;
   bool queued = false;
   Completer<void>? cancel;
-  bool disposed = false;
+  DateTime? startedAt;
 }
 
 /// One shared, polite queue for gallery images.
@@ -246,7 +254,16 @@ class GalleryImageLoader {
   Timer? _idleTimer;
   Timer? _wakeTimer;
   DateTime? _pausedUntil;
+  // When the most recent pause began and ends: a 429 from a request started
+  // before the pause began is the same burst, not a new hit.
+  DateTime? _lastPauseStart;
+  DateTime? _lastPauseEnd;
   int _rateLimitHits = 0;
+  // After a pause resume with one request and add one per success.
+  late int _rampLimit = config.maxConcurrent;
+  bool _starving = false;
+  Timer? _starveTimer;
+  final Set<_Entry> _live = {};
   bool _disposed = false;
 
   /// Requests currently being fetched. For tests and diagnostics.
@@ -271,10 +288,11 @@ class GalleryImageLoader {
     );
 
     if (choice == null) {
-      final entry = _Entry('${request.fileId}/-', null, request.tileWidthPx);
+      final entry = _Entry('${request.fileId}/-', null);
+      _live.add(entry);
       entry.notifier.value =
           const GalleryImageState.failed(GalleryFailureReason.noSource);
-      final handle = GalleryImageHandle._(this, entry);
+      final handle = GalleryImageHandle._(this, entry, request);
       entry.handles.add(handle);
       return handle;
     }
@@ -283,10 +301,13 @@ class GalleryImageLoader {
     final cached = _cacheGet(key);
     if (cached != null) {
       // Standalone: already loaded, nothing to schedule or share.
-      final entry = _Entry(key, null, request.tileWidthPx);
-      entry.notifier.value =
-          GalleryImageState.loaded(_provider(cached, request.tileWidthPx));
-      final handle = GalleryImageHandle._(this, entry);
+      final entry = _Entry(key, null);
+      _live.add(entry);
+      entry.notifier.value = GalleryImageState.loaded(
+        _provider(
+            cached, choice.variant, request.tileWidthPx, request.tileHeightPx),
+      );
+      final handle = GalleryImageHandle._(this, entry, request);
       entry.handles.add(handle);
       return handle;
     }
@@ -301,24 +322,36 @@ class GalleryImageLoader {
           isPrivate: request.isPrivate,
           isOriginal: choice.isOriginal,
         ),
-        request.tileWidthPx,
       );
+      _live.add(entry);
       _entries[key] = entry;
     }
 
-    final handle = GalleryImageHandle._(this, entry);
+    final handle = GalleryImageHandle._(this, entry, request);
     entry.handles.add(handle);
     return handle;
   }
 
   /// Tell the loader scrolling is happening (call on every scroll update or
-  /// scrubber move). New work waits for [GalleryLoaderConfig.idleDelay] of rest.
+  /// scrubber move). New work waits for [GalleryLoaderConfig.idleDelay] of
+  /// rest, except that unbroken scrolling longer than
+  /// [GalleryLoaderConfig.starvationDelay] lets the nearest few tiles start.
   void notifyScrolling() {
     if (_disposed) return;
-    _idle = false;
+    if (_idle) {
+      _idle = false;
+      _starving = false;
+      _starveTimer?.cancel();
+      _starveTimer = Timer.periodic(config.starvationDelay, (_) {
+        _starving = true;
+        _pump();
+      });
+    }
     _idleTimer?.cancel();
     _idleTimer = Timer(config.idleDelay, () {
       _idle = true;
+      _starving = false;
+      _starveTimer?.cancel();
       _pump();
     });
   }
@@ -327,9 +360,12 @@ class GalleryImageLoader {
     _disposed = true;
     _idleTimer?.cancel();
     _wakeTimer?.cancel();
-    for (final e in _entries.values) {
+    _starveTimer?.cancel();
+    for (final e in _live) {
       _abort(e);
+      e.notifier.dispose();
     }
+    _live.clear();
     _entries.clear();
     _cache.clear();
     _cacheSize = 0;
@@ -340,14 +376,11 @@ class GalleryImageLoader {
   void _positionChanged(_Entry entry) {
     if (_disposed) return;
     final state = entry.notifier.value;
-    if (state.status == GalleryImageStatus.loading &&
-        !entry.inFlight &&
-        entry.handles.any((h) => h._onScreen)) {
-      entry.queued = true;
-      if (entry.order == 0) entry.order = ++_counter;
-    } else if (!entry.inFlight) {
-      entry.queued = false;
-    } else if (!entry.handles.any((h) => h._onScreen)) {
+    final onScreen = entry.handles.any((h) => h._onScreen);
+    if (state.status == GalleryImageStatus.loading && !entry.inFlight) {
+      entry.queued = onScreen;
+      if (onScreen && entry.order == 0) entry.order = ++_counter;
+    } else if (entry.inFlight && !onScreen) {
       _maybeAbort(entry);
     }
     _pump();
@@ -365,6 +398,7 @@ class GalleryImageLoader {
   }
 
   void _release(_Entry entry, GalleryImageHandle handle) {
+    if (_disposed) return;
     entry.handles.remove(handle);
     if (entry.handles.isNotEmpty) {
       _positionChanged(entry);
@@ -394,12 +428,18 @@ class GalleryImageLoader {
 
   void _dispose(_Entry entry) {
     if (identical(_entries[entry.key], entry)) _entries.remove(entry.key);
-    entry.disposed = true;
+    if (!_live.remove(entry)) return;
     // Defer so a listener removing itself in the same turn is not disturbed.
     scheduleMicrotask(entry.notifier.dispose);
   }
 
   // ---- scheduling ----
+
+  int get _effectiveCap {
+    var cap = math.min(config.maxConcurrent, _rampLimit);
+    if (!_idle) cap = math.min(cap, config.starvedConcurrent);
+    return math.max(1, cap);
+  }
 
   void _pump() {
     if (_disposed) return;
@@ -413,13 +453,16 @@ class GalleryImageLoader {
       }
       _pausedUntil = null;
     }
-    if (!_idle) return; // the idle timer pumps again
+    // While scrolling, new work waits for rest, unless it has gone on so long
+    // that the screen would stay blank.
+    if (!_idle && !_starving) return;
 
     Duration? wait;
-    while (_inFlight < config.maxConcurrent) {
+    while (_inFlight < _effectiveCap) {
       _Entry? best;
       for (final e in _entries.values) {
         if (!e.queued || e.inFlight) continue;
+        if (!e.handles.any((h) => h._onScreen)) continue;
         final nb = e.notBefore;
         if (nb != null && now.isBefore(nb)) {
           final d = nb.difference(now);
@@ -452,6 +495,7 @@ class GalleryImageLoader {
     entry.inFlight = true;
     entry.queued = false;
     entry.cancel = Completer<void>();
+    entry.startedAt = clock.now();
     _inFlight++;
     final cancel = entry.cancel!;
 
@@ -468,43 +512,60 @@ class GalleryImageLoader {
     final aborted = cancel.isCompleted;
     entry.cancel = null;
     if (_disposed) return;
+    final onScreen = entry.handles.any((h) => h._onScreen);
 
     if (error == null && bytes != null) {
-      _rateLimitHits = 0;
+      _onSuccess(entry);
       _cachePut(entry.key, bytes);
       if (entry.handles.isEmpty) {
         _dispose(entry);
       } else {
         entry.notifier.value =
-            GalleryImageState.loaded(_provider(bytes, entry.tileWidthPx));
+            GalleryImageState.loaded(_providerFor(entry, bytes));
         if (identical(_entries[entry.key], entry)) _entries.remove(entry.key);
       }
-    } else if (aborted && entry.handles.isEmpty) {
+    } else if (entry.handles.isEmpty) {
+      if (error is GalleryRateLimited) _backoff(error, entry);
       _dispose(entry);
+    } else if (aborted) {
+      // We hung up because the tile left the screen, and it is still around:
+      // not a failure. It stays loading and is queued again only if it is
+      // back on screen.
+      entry.queued = onScreen;
     } else if (error is GalleryRateLimited) {
-      _backoff(error);
-      entry.queued = entry.handles.isNotEmpty;
-      if (entry.handles.isEmpty) _dispose(entry);
+      _backoff(error, entry);
+      entry.queued = onScreen;
     } else {
       entry.attempts++;
       if (entry.attempts > config.maxRetries) {
-        if (entry.handles.isEmpty) {
-          _dispose(entry);
-        } else {
-          entry.notifier.value =
-              const GalleryImageState.failed(GalleryFailureReason.fetchFailed);
-        }
-      } else if (entry.handles.isEmpty) {
-        _dispose(entry);
+        entry.notifier.value =
+            const GalleryImageState.failed(GalleryFailureReason.fetchFailed);
       } else {
-        entry.queued = true;
+        entry.queued = onScreen;
         entry.notBefore = clock.now().add(config.retryDelay * entry.attempts);
       }
     }
     _pump();
   }
 
-  void _backoff(GalleryRateLimited e) {
+  /// A request started after the last pause ended got through: the gateway has
+  /// recovered, so forget the backoff and let concurrency grow back one step.
+  void _onSuccess(_Entry entry) {
+    final started = entry.startedAt;
+    final end = _lastPauseEnd;
+    if (end != null && started != null && started.isBefore(end)) return;
+    _rateLimitHits = 0;
+    if (_rampLimit < config.maxConcurrent) _rampLimit++;
+  }
+
+  void _backoff(GalleryRateLimited e, _Entry entry) {
+    final now = clock.now();
+    final started = entry.startedAt;
+    final sameBurst = (_pausedUntil != null && now.isBefore(_pausedUntil!)) ||
+        (started != null &&
+            _lastPauseStart != null &&
+            started.isBefore(_lastPauseStart!));
+
     Duration delay;
     final ra = e.retryAfter;
     if (ra != null) {
@@ -516,21 +577,69 @@ class GalleryImageLoader {
           (capped.inMilliseconds * 0.25 * _random.nextDouble()).round();
       delay = capped + Duration(milliseconds: jitterMs);
     }
+
+    if (sameBurst) {
+      // One burst of 429s is one hit. Honour a longer Retry-After, nothing
+      // more.
+      if (ra != null && _pausedUntil != null) {
+        final until = now.add(delay);
+        if (until.isAfter(_pausedUntil!)) {
+          _pausedUntil = until;
+          _lastPauseEnd = until;
+        }
+      }
+      return;
+    }
+
     _rateLimitHits++;
-    final until = clock.now().add(delay);
-    final current = _pausedUntil;
-    if (current == null || until.isAfter(current)) _pausedUntil = until;
+    _rampLimit = 1;
+    final until = now.add(delay);
+    _lastPauseStart = now;
+    _lastPauseEnd = until;
+    _pausedUntil = until;
   }
 
   // ---- cache ----
 
   static String _key(String fileId, String txId) => '$fileId/$txId';
 
-  ImageProvider _provider(Uint8List bytes, double widthPx) => ResizeImage(
+  /// Decoded for the largest tile sharing the entry.
+  ImageProvider _providerFor(_Entry entry, Uint8List bytes) {
+    var w = 0.0, h = 0.0;
+    for (final handle in entry.handles) {
+      w = math.max(w, handle._request.tileWidthPx);
+      h = math.max(h, handle._request.tileHeightPx);
+    }
+    return _provider(bytes, entry.target!.variant, w, h);
+  }
+
+  /// Decodes at the size the tile needs, never smaller than it fills: for a
+  /// tile that crops (cover), that is the limiting side, so a panorama is not
+  /// blurred. No resize when the stored image is already no bigger.
+  ImageProvider _provider(
+    Uint8List bytes,
+    GalleryVariant variant,
+    double tileWidthPx,
+    double tileHeightPx,
+  ) {
+    if (variant.width <= 0 || variant.height <= 0) {
+      return ResizeImage(
         MemoryImage(bytes),
-        width: math.max(1, widthPx.round()),
+        width: math.max(1, tileWidthPx.round()),
         allowUpscaling: false,
       );
+    }
+    final scale = math.max(
+      tileWidthPx / variant.width,
+      tileHeightPx / variant.height,
+    );
+    if (scale >= 1) return MemoryImage(bytes);
+    return ResizeImage(
+      MemoryImage(bytes),
+      width: math.max(1, (variant.width * scale).ceil()),
+      allowUpscaling: false,
+    );
+  }
 
   Uint8List? _cacheGet(String key) {
     final v = _cache.remove(key);

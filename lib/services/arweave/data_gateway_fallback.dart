@@ -337,6 +337,11 @@ class DataGatewayFallback {
   }) async {
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
+    // Whether any gateway said slow down, whether anything else went wrong
+    // (other than a 404), and the longest Retry-After seen.
+    var sawRateLimit = false;
+    var sawOtherFailure = false;
+    Duration? retryAfter;
 
     for (final client in clients) {
       if (isCancelled?.call() ?? false) {
@@ -379,6 +384,15 @@ class DataGatewayFallback {
         } on _ErrorFromStatus catch (e) {
           if (e.statusCode != 404) all404 = false;
           retryable = e.statusCode == 404;
+          if (e.statusCode == 429 || e.statusCode == 503) {
+            sawRateLimit = true;
+            final ra = e.retryAfter;
+            if (ra != null && (retryAfter == null || ra > retryAfter)) {
+              retryAfter = ra;
+            }
+          } else if (e.statusCode != 404) {
+            sawOtherFailure = true;
+          }
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         } catch (e) {
           // Aborted on purpose, not a gateway failing.
@@ -387,6 +401,7 @@ class DataGatewayFallback {
           }
 
           all404 = false;
+          sawOtherFailure = true;
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         }
 
@@ -400,6 +415,9 @@ class DataGatewayFallback {
 
     if (all404) {
       throw TransactionNotFound(txId);
+    }
+    if (sawRateLimit && !sawOtherFailure) {
+      throw GatewayRateLimited(txId, retryAfter: retryAfter);
     }
     throw Exception('All gateways failed for tx $txId');
   }
@@ -779,7 +797,11 @@ class DataGatewayFallback {
         // status; streaming has to say so.
         await response.stream.listen(null).cancel();
 
-        throw _ErrorFromStatus(response.statusCode, txId);
+        throw _ErrorFromStatus(
+          response.statusCode,
+          txId,
+          retryAfter: parseRetryAfter(response.headers['retry-after']),
+        );
       }
 
       final chunks = <List<int>>[];
@@ -889,11 +911,40 @@ class FetchCancelled implements Exception {
   String toString() => 'FetchCancelled: $txId';
 }
 
+/// Every gateway that failed for a transaction said 429 or 503 (a 404 from
+/// another does not change that): the caller should slow down, not give up.
+///
+/// Reads like the generic failure it replaces ("Exception: All gateways failed
+/// for tx ...") so logs and `on Exception` catches behave as before.
+class GatewayRateLimited implements Exception {
+  const GatewayRateLimited(this.txId, {this.retryAfter});
+
+  final String txId;
+
+  /// The longest Retry-After any gateway sent, when one did.
+  final Duration? retryAfter;
+
+  @override
+  String toString() => 'Exception: All gateways failed for tx $txId '
+      '(rate limited${retryAfter == null ? '' : ', retry after $retryAfter'})';
+}
+
+/// A Retry-After header given as delta-seconds. Null when absent or not a
+/// number (the HTTP-date form is ignored; the caller falls back to its own
+/// backoff).
+@visibleForTesting
+Duration? parseRetryAfter(String? value) {
+  final seconds = int.tryParse(value?.trim() ?? '');
+  if (seconds == null || seconds < 0) return null;
+  return Duration(seconds: seconds);
+}
+
 class _ErrorFromStatus implements Exception {
   final int statusCode;
   final String txId;
+  final Duration? retryAfter;
 
-  _ErrorFromStatus(this.statusCode, this.txId);
+  _ErrorFromStatus(this.statusCode, this.txId, {this.retryAfter});
 
   @override
   String toString() => 'Gateway returned $statusCode for tx $txId';

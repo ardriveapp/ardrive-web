@@ -31,7 +31,12 @@ class FakeFetcher implements GalleryImageFetcher {
   }) {
     final c = FakeCall(target, cancelWhen);
     calls.add(c);
-    cancelWhen.then((_) => c.aborted = true);
+    cancelWhen.then((_) {
+      c.aborted = true;
+      if (!c.completer.isCompleted) {
+        c.completer.completeError(Exception('aborted'));
+      }
+    });
     inFlight++;
     if (inFlight > maxInFlight) maxInFlight = inFlight;
     return c.completer.future.whenComplete(() => inFlight--);
@@ -47,14 +52,18 @@ GalleryImageRequest req(
   bool isPrivate = false,
   int size = 5000,
   List<GalleryVariant>? variants,
+  double tileW = 100,
+  double tileH = 100,
+  int vw = 512,
+  int vh = 512,
 }) =>
     GalleryImageRequest(
       fileId: id,
       isPrivate: isPrivate,
       variants: variants ??
-          [GalleryVariant(txId: 'tx-$id', size: size, width: 512, height: 512)],
-      tileWidth: 100,
-      tileHeight: 100,
+          [GalleryVariant(txId: 'tx-$id', size: size, width: vw, height: vh)],
+      tileWidth: tileW,
+      tileHeight: tileH,
       devicePixelRatio: 1,
     );
 
@@ -189,7 +198,12 @@ void main() {
       async.elapse(const Duration(seconds: 9));
       expect(fetcher.started, ['a', 'b']);
       async.elapse(const Duration(seconds: 2));
-      expect(fetcher.started.length, 4); // a again + c
+      // Resumes gently: one request, not a burst, then grows back.
+      expect(fetcher.started.length, 3); // a again, c still waiting
+      expect(fetcher.inFlight, 1);
+      fetcher.succeed(fetcher.calls.last.target.fileId);
+      async.flushMicrotasks();
+      expect(fetcher.started.length, 4);
       expect(fetcher.started.toSet(), {'a', 'b', 'c'});
     });
   });
@@ -315,6 +329,155 @@ void main() {
       async.flushMicrotasks();
       expect(fetcher.calls.single.target.variant.txId, 't');
       expect(fetcher.calls.single.target.isOriginal, isFalse);
+    });
+  });
+
+  test('a tile that left the screen alive is not refetched or failed', () {
+    run((async) {
+      final h = loader.acquire(req('big', size: 1024 * 1024))
+        ..updatePosition(onScreen: true);
+      async.flushMicrotasks();
+      h.updatePosition(onScreen: false);
+      async.flushMicrotasks();
+      expect(fetcher.call('big').aborted, isTrue);
+      async.elapse(const Duration(seconds: 10));
+      expect(fetcher.calls.length, 1);
+      expect(h.value.status, GalleryImageStatus.loading);
+
+      h.updatePosition(onScreen: true);
+      async.flushMicrotasks();
+      expect(fetcher.calls.length, 2);
+      fetcher.succeed('big');
+      async.flushMicrotasks();
+      expect(h.value.status, GalleryImageStatus.loaded);
+    });
+  });
+
+  test('a retryable failure off screen waits until back on screen', () {
+    run((async) {
+      final h = show('a');
+      async.flushMicrotasks();
+      h.updatePosition(onScreen: false);
+      fetcher.fail('a', Exception('boom'));
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 10));
+      expect(fetcher.calls.length, 1);
+      expect(h.value.status, GalleryImageStatus.loading);
+      h.updatePosition(onScreen: true);
+      async.elapse(const Duration(seconds: 1));
+      expect(fetcher.calls.length, 2);
+    });
+  });
+
+  test('a burst of 429s is one hit, and concurrency ramps back up', () {
+    run((async) {
+      show('a', priority: 0);
+      show('b', priority: 1);
+      show('c', priority: 2);
+      show('d', priority: 3);
+      async.flushMicrotasks();
+      fetcher.fail('a', const GalleryRateLimited());
+      fetcher.fail('b', const GalleryRateLimited());
+      async.flushMicrotasks();
+      // One hit: base 2 s (+25% jitter), not 2 s then 4 s.
+      async.elapse(const Duration(milliseconds: 2600));
+      expect(fetcher.calls.length, 3);
+      expect(fetcher.inFlight, 1);
+      fetcher.succeed(fetcher.calls.last.target.fileId);
+      async.flushMicrotasks();
+      expect(fetcher.inFlight, 2); // ramp: 1 -> 2
+      expect(fetcher.maxInFlight, 2);
+    });
+  });
+
+  test('a success from before the pause does not reset the backoff', () {
+    run((async) {
+      show('a', priority: 0);
+      show('b', priority: 1);
+      async.flushMicrotasks();
+      fetcher.fail('a', const GalleryRateLimited());
+      async.flushMicrotasks();
+      fetcher.succeed('b'); // started before the pause
+      async.elapse(const Duration(milliseconds: 2600));
+      expect(fetcher.calls.length, 3);
+      fetcher.fail('a', const GalleryRateLimited());
+      async.flushMicrotasks();
+      // second hit => 4 s, so nothing within 3.9 s
+      async.elapse(const Duration(milliseconds: 3900));
+      expect(fetcher.calls.length, 3);
+      async.elapse(const Duration(seconds: 2));
+      expect(fetcher.calls.length, 4);
+    });
+  });
+
+  test('continuous scrolling still loads the nearest few after a second', () {
+    run((async) {
+      loader.notifyScrolling();
+      for (var i = 0; i < 4; i++) {
+        show('f$i', priority: i.toDouble());
+      }
+      for (var t = 0; t < 9; t++) {
+        loader.notifyScrolling();
+        async.elapse(const Duration(milliseconds: 100));
+      }
+      expect(fetcher.calls, isEmpty);
+      for (var t = 0; t < 4; t++) {
+        loader.notifyScrolling();
+        async.elapse(const Duration(milliseconds: 100));
+      }
+      expect(fetcher.started, ['f0', 'f1']);
+    });
+  });
+
+  group('decode size', () {
+    int? widthOf(GalleryImageHandle h) => (h.value.image as ResizeImage).width;
+
+    test('panorama in a cover tile decodes by the limiting side', () {
+      run((async) {
+        final h = loader
+            .acquire(req('p', tileW: 300, tileH: 100, vw: 1000, vh: 200))
+          ..updatePosition(onScreen: true);
+        async.flushMicrotasks();
+        fetcher.succeed('p');
+        async.flushMicrotasks();
+        expect(widthOf(h), 500);
+      });
+    });
+
+    test('a shared entry decodes for the largest tile', () {
+      run((async) {
+        final small = loader
+            .acquire(req('s', tileW: 100, tileH: 100, vw: 1000, vh: 1000))
+          ..updatePosition(onScreen: true);
+        loader
+            .acquire(req('s', tileW: 400, tileH: 400, vw: 1000, vh: 1000))
+            .updatePosition(onScreen: true);
+        async.flushMicrotasks();
+        fetcher.succeed('s');
+        async.flushMicrotasks();
+        expect(widthOf(small), 400);
+      });
+    });
+
+    test('no resize when the stored image is not larger than the tile', () {
+      run((async) {
+        final h = loader
+            .acquire(req('z', tileW: 600, tileH: 600, vw: 512, vh: 512))
+          ..updatePosition(onScreen: true);
+        async.flushMicrotasks();
+        fetcher.succeed('z');
+        async.flushMicrotasks();
+        expect(h.value.image, isA<MemoryImage>());
+      });
+    });
+  });
+
+  test('dispose disposes notifiers without throwing on later release', () {
+    run((async) {
+      final h = show('a');
+      loader.dispose();
+      h.release();
+      async.flushMicrotasks();
     });
   });
 }

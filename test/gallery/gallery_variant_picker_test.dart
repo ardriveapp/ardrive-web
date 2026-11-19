@@ -73,6 +73,18 @@ void main() {
       expect(pick(variants: [], orig: original, isPrivate: true), isNull);
     });
 
+    test('an original of unknown (0) size is never eligible', () {
+      expect(pick(variants: [small], orig: v('o', 4000, 3000, 0)), 'small');
+      expect(pick(variants: [], orig: v('o', 4000, 3000, 0)), isNull);
+    });
+
+    test('variants with unknown dimensions rank last', () {
+      final unknown = v('unk', 0, 0, 90000);
+      expect(pick(variants: [unknown, small], w: 900, h: 700), 'small');
+      expect(pick(variants: [unknown, small]), 'small');
+      expect(pick(variants: [unknown, v('u2', 0, 0, 100)]), 'unk');
+    });
+
     test('nothing eligible gives null', () {
       expect(pick(), isNull);
     });

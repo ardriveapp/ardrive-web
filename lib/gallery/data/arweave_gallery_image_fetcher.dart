@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 
 /// The production [GalleryImageFetcher].
 ///
@@ -60,15 +62,14 @@ class ArweaveGalleryImageFetcher implements GalleryImageFetcher {
   }
 }
 
-/// The gateway layers surface HTTP failures as exceptions whose text carries
-/// the status ("Gateway returned 429 for tx ..."), without the headers, so
-/// Retry-After is not available here and the loader falls back to its own
-/// backoff.
+/// Maps the typed rate-limit failures of the two fetch paths to the loader's:
+/// [GatewayRateLimited] from the data gateway waterfall (with its Retry-After),
+/// and [DownloadRateLimitException] from the downloader. Null for anything else.
 GalleryRateLimited? rateLimitFromError(Object error) {
-  final text = error.toString();
-  // Anchored to the gateway's wording: a bare 429 could be part of a tx ID.
-  if (RegExp(r'\breturned (429|503)\b').hasMatch(text) &&
-      !text.contains('FetchCancelled')) {
+  if (error is GatewayRateLimited) {
+    return GalleryRateLimited(retryAfter: error.retryAfter);
+  }
+  if (error is DownloadRateLimitException) {
     return const GalleryRateLimited();
   }
   return null;
