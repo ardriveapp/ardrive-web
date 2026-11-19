@@ -18,21 +18,17 @@ class LabeledInput extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // A field's label, as every field draws it (the design system's
+        // text fields): it used to be 16 px in text-mid, bigger than the
+        // labels of the fields beside it.
         Text(
           labelText,
-          // Not the disabled colour it was drawn in, which was too faint to
-          // read against the dialog.
-          style: ArDriveTheme.of(context)
-              .themeData
-              .textFieldTheme
-              .inputTextStyle
-              .copyWith(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: ArDriveSpacing.xs),
         child,
       ],
     );

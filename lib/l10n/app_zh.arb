@@ -576,23 +576,9 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "manifestsToUpdate": "{count, plural, =1{1 个部署待更新} other{{count} 个部署待更新}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
   "updateManifests": "更新部署",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "作为部署上传",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncAllDrives": "同步所有网盘",
   "@syncAllDrives": {
@@ -2821,27 +2807,18 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "请检查许可设置",
   "licenseHeading": "许可证",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "另外 {count} 个",
+  "moreFiles": "显示另外 {count} 个",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "5"
-      }
-    }
-  },
-  "namedLicense": "{name} 许可证",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
       }
     }
   },
@@ -2853,25 +2830,13 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "缩略图已关闭",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "缩略图已开启",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "压缩文本和代码",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "网站和代码占用的存储更少。其他应用可能需要解压这些文件。",
+  "compressTextAndCodeHint": "网站和代码占用的存储更少。",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "已压缩",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "共 {size}",
   "@totalUploadSize": {
@@ -3182,6 +3147,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "已隐藏",
   "hiddenDrives": "已隐藏",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4557,7 +4523,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "由你的免费上传额度承担。永久保存，一次付费。",
+  "uploadCostFreeNote": "由你的免费上传额度承担",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4565,7 +4531,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "用 Turbo 积分一次付费。永久保存，无需订阅。",
+  "uploadCostCreditsNote": "用 Turbo 积分付费",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4573,7 +4539,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "从你的钱包一次付费。永久保存，无需订阅。",
+  "uploadCostWalletNote": "从你的钱包付费",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },
@@ -4717,9 +4683,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "缩略图会使用你的免费上传额度，用完后使用 Turbo 积分，并可能让上传耗时更长。\n你随时可以之后再添加缩略图。",
+  "thumbnailsCostNote": "先使用你的免费上传额度，然后使用 Turbo 积分。",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "你的钱包没有足够的 AR 来完成此次更改。",
   "@changeWalletShort": {
@@ -6005,9 +5971,9 @@
   "@arnsNoWalletFound": {
     "description": "No Solana wallet is installed in this browser."
   },
-  "arnsNoWalletFoundBody": "请在钱包的应用中打开 ArDrive，或获取一个钱包。",
+  "arnsNoWalletFoundBody": "请在钱包的应用中打开 ArDrive。",
   "@arnsNoWalletFoundBody": {
-    "description": "What to do when no Solana wallet is installed."
+    "description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."
   },
   "arnsOpenInPhantom": "在 Phantom 中打开",
   "@arnsOpenInPhantom": {
@@ -6017,9 +5983,17 @@
   "@arnsOpenInSolflare": {
     "description": "Link that opens ArDrive in the Solflare app's browser."
   },
-  "arnsGetAWallet": "获取钱包",
-  "@arnsGetAWallet": {
-    "description": "Link to install a Solana wallet."
+  "arnsNoWalletFoundBodyDesktop": "请安装 Solana 钱包，然后重新加载。",
+  "@arnsNoWalletFoundBodyDesktop": {
+    "description": "What to do on a computer when no Solana wallet is installed."
+  },
+  "arnsGetPhantom": "获取 Phantom",
+  "@arnsGetPhantom": {
+    "description": "Link to install the Phantom wallet."
+  },
+  "arnsGetSolflare": "获取 Solflare",
+  "@arnsGetSolflare": {
+    "description": "Link to install the Solflare wallet."
   },
   "arnsConnected": "已连接",
   "@arnsConnected": {
@@ -8125,6 +8099,46 @@
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
   "shareUploadTitle": "上传{count, plural, =1{1 个共享文件} other{{count} 个共享文件}}",
   "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
+  "licenseAddedTitle": "已添加许可",
+  "licenseAddedMessage": "{license} 已添加到 {count, plural, =1{1 个文件} other{{count} 个文件}}。",
+  "noFileToLicenseTitle": "没有可添加许可的文件",
+  "noFileToLicenseMessage": "请选择文件，或包含文件的文件夹。",
+  "licenseFixSettingsForCost": "请检查许可设置以查看费用",
+  "licenseChooseTypeForCost": "选择许可类型以查看费用",
+  "licenseTypeLabel": "类型",
+  "licenseFeeLabel": "许可费",
+  "commercialUseLabel": "商业用途",
+  "derivationsLabel": "衍生作品",
+  "tableColumnType": "类型",
+  "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
+  "tableColumnTransactionId": "交易 ID",
+  "@tableColumnTransactionId": {"description": "Heading of the file table column that shows each file's data transaction ID"},
+  "tableColumnStatus": "状态",
+  "@tableColumnStatus": {"description": "Heading of the file table column that shows whether each file is on Arweave yet"},
+  "typeFolder": "文件夹",
+  "@typeFolder": {"description": "Type column: what a folder is called"},
+  "typeText": "文本",
+  "@typeText": {"description": "Type column: plain text files"},
+  "typeDeployment": "部署",
+  "@typeDeployment": {"description": "Type column: an Arweave manifest, which the app calls a deployment"},
+  "typeFile": "文件",
+  "@typeFile": {"description": "Type column: a file of a kind with no name of its own and no extension"},
+  "typeFileWithExtension": "{extension} 文件",
+  "@typeFileWithExtension": {"description": "Type column: a file of an unknown kind, named by its extension, e.g. DOCX file", "placeholders": {"extension": {"type": "String"}}},
+  "typeImage": "{format} 图像",
+  "@typeImage": {"description": "Type column: an image with its format, e.g. PNG image", "placeholders": {"format": {"type": "String"}}},
+  "typeVideo": "{format} 视频",
+  "@typeVideo": {"description": "Type column: a video with its format, e.g. MP4 video", "placeholders": {"format": {"type": "String"}}},
+  "typeAudio": "{format} 音频",
+  "@typeAudio": {"description": "Type column: an audio file with its format, e.g. MP3 audio", "placeholders": {"format": {"type": "String"}}},
+  "typeArchive": "{format} 压缩包",
+  "@typeArchive": {"description": "Type column: an archive with its format, e.g. ZIP archive", "placeholders": {"format": {"type": "String"}}},
+  "fileStatusPending": "待处理",
+  "@fileStatusPending": {"description": "Status column: the file's transaction is waiting to be mined on Arweave"},
+  "fileStatusPermanent": "永久",
+  "@fileStatusPermanent": {"description": "Status column: the file's transaction is confirmed on Arweave and permanent"},
+  "fileStatusFailed": "失败",
+  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"},
   "changeExtensionTitle": "要更改文件扩展名吗?",
   "changeExtensionBody": "扩展名将从 {previous} 变为 {next}。",
   "couldNotRenameTitle": "无法重命名",

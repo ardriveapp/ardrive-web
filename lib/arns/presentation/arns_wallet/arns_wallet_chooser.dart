@@ -244,16 +244,28 @@ class ArNSWalletIcon extends StatelessWidget {
   }
 }
 
-/// "No Solana wallet found": common on phones, where wallets only inject
-/// inside their own app browsers. Names stay readable from the remembered
-/// address.
+/// "No Solana wallet found". On a phone, wallets connect only inside their
+/// own app's browser, so the way out is to open ArDrive there. On a computer
+/// that would only reach the wallet's website, so the way out is to install
+/// one. Names stay readable from the remembered address.
 class ArNSNoWalletFound extends StatelessWidget {
   const ArNSNoWalletFound({super.key});
 
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
+    final onPhone = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
     final here = walletBrowseTarget(Uri.base, isWeb: kIsWeb);
+    final links = onPhone
+        ? [
+            (strings.arnsOpenInPhantom, phantomBrowseUrl(here)),
+            (strings.arnsOpenInSolflare, solflareBrowseUrl(here)),
+          ]
+        : [
+            (strings.arnsGetPhantom, phantomDownloadUrl),
+            (strings.arnsGetSolflare, solflareDownloadUrl),
+          ];
     return ArDriveNotice(
       type: ArDriveNoticeType.info,
       title: strings.arnsNoWalletFound,
@@ -262,7 +274,9 @@ class ArNSNoWalletFound extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            strings.arnsNoWalletFoundBody,
+            onPhone
+                ? strings.arnsNoWalletFoundBody
+                : strings.arnsNoWalletFoundBodyDesktop,
             style: ArDriveTypographyNew.of(context).paragraphNormal(
               color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
             ),
@@ -272,21 +286,12 @@ class ArNSNoWalletFound extends StatelessWidget {
             spacing: ArDriveSpacing.md,
             runSpacing: ArDriveSpacing.xxs,
             children: [
-              ArDriveLink(
-                text: strings.arnsOpenInPhantom,
-                external: true,
-                onTap: () => openUrl(url: phantomBrowseUrl(here)),
-              ),
-              ArDriveLink(
-                text: strings.arnsOpenInSolflare,
-                external: true,
-                onTap: () => openUrl(url: solflareBrowseUrl(here)),
-              ),
-              ArDriveLink(
-                text: strings.arnsGetAWallet,
-                external: true,
-                onTap: () => openUrl(url: phantomDownloadUrl),
-              ),
+              for (final (text, url) in links)
+                ArDriveLink(
+                  text: text,
+                  external: true,
+                  onTap: () => openUrl(url: url),
+                ),
             ],
           ),
         ],
