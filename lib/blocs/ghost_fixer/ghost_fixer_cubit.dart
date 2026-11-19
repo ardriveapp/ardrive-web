@@ -22,6 +22,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
   StreamSubscription? _selectedFolderSubscription;
 
+  /// The folder in view, kept past a failure or a name conflict so the
+  /// dialog goes on showing it and a retry still knows the target.
+  GhostFixerFolderLoadSuccess? _viewing;
+
   GhostFixerCubit({
     required this.ghostFolder,
     required ProfileCubit profileCubit,
@@ -39,7 +43,8 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         .then((d) => loadFolder(d.rootFolderId));
   }
   Future<void> loadParentFolder() async {
-    final state = this.state as GhostFixerFolderLoadSuccess;
+    final state = _viewing;
+    if (state == null) return;
     if (state.viewingFolder.folder.parentFolderId != null) {
       return loadFolder(state.viewingFolder.folder.parentFolderId!);
     }
@@ -55,7 +60,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         )
         .listen(
           (f) => emit(
-            GhostFixerFolderLoadSuccess(
+            _viewing = GhostFixerFolderLoadSuccess(
               viewingRootFolder: f.folder.parentFolderId == null,
               viewingFolder: f,
               movingEntryId: ghostFolder.id,
@@ -86,7 +91,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   Future<void> submit(String folderName) async {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
-      final state = this.state as GhostFixerFolderLoadSuccess;
+      final state = _viewing!;
 
       final parentFolder = state.viewingFolder.folder;
 
@@ -97,7 +102,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
       if (await entityNameExists(
           name: folderName, parentFolderId: parentFolder.id)) {
-        final state = this.state as GhostFixerFolderLoadSuccess;
         emit(GhostFixerNameConflict(name: folderName));
         emit(state);
         return;

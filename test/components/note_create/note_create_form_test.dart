@@ -1,12 +1,20 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/note_create/note_create_cubit.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
 import 'package:ardrive/components/note_create/note_create_form.dart';
+import 'package:ardrive/components/note_create/note_editor_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockNoteCubit extends MockCubit<NoteCreateState>
+    implements NoteCreateCubit {}
 
 void main() {
   group('NoteCreateForm', () {
@@ -48,7 +56,7 @@ void main() {
 
     testWidgets('renders with initial state', (tester) async {
       // Set larger viewport to accommodate modal
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(1000, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
@@ -56,7 +64,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should find the modal title
-      expect(find.text('Create new note'), findsOneWidget);
+      expect(find.text('New note'), findsOneWidget);
 
       // Should find the .md extension label
       expect(find.text('.md'), findsOneWidget);
@@ -66,12 +74,13 @@ void main() {
 
       // Should find action buttons
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Next'), findsOneWidget);
+      expect(find.text('Save note'), findsOneWidget);
+      expect(find.text('Next'), findsNothing);
     });
 
     testWidgets('Create Note button is disabled when name is empty',
         (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(1000, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
@@ -85,7 +94,7 @@ void main() {
     });
 
     testWidgets('updates note name when text is entered', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(1000, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
@@ -109,7 +118,7 @@ void main() {
     });
 
     testWidgets('view mode toggle button works', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(1000, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
@@ -154,7 +163,7 @@ void main() {
 
     testWidgets('displays error when invalid name is entered', (tester) async {
       // Set a larger viewport to accommodate error message display
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(1000, 1200);
       tester.view.devicePixelRatio = 1.0;
 
       await tester.pumpWidget(createTestWidget());
@@ -182,6 +191,60 @@ void main() {
       // The ArDriveTextFieldNew should have autofocus enabled
       final textField = tester.widget<ArDriveTextFieldNew>(textFieldFinder);
       expect(textField.autofocus, true);
+    });
+  });
+
+  group('NoteCreateForm failure', () {
+    testWidgets('a note that could not be made is a notice in the editor',
+        (tester) async {
+      tester.view.physicalSize = const Size(1000, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final cubit = _MockNoteCubit();
+      final states = StreamController<NoteCreateState>.broadcast();
+      addTearDown(states.close);
+      const editing = NoteCreateEditing(
+        noteName: 'a',
+        content: 'x',
+        isValidName: true,
+      );
+      whenListen(cubit, states.stream, initialState: editing);
+      when(() => cubit.isEditMode).thenReturn(false);
+
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            home: Scaffold(
+              body: BlocProvider<NoteCreateCubit>.value(
+                value: cubit,
+                child: const NoteCreateForm(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      states
+        ..add(const NoteCreateError(NoteCreateErrorKey.createFileFailed))
+        ..add(editing);
+      await tester.pump();
+      await tester.pump();
+
+      // One dialog, with the notice in it, and the editor still there.
+      expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
+      expect(find.byType(ArDriveNotice), findsOneWidget);
+      expect(find.byType(NoteEditorWidget), findsOneWidget);
+      expect(find.text('OK'), findsNothing);
     });
   });
 }

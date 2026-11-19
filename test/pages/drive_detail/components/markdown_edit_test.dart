@@ -74,7 +74,7 @@ void main() {
     // "Instance of 'minified:Xy'".
     expect(find.text('Could not load file'), findsOneWidget);
     expect(find.textContaining('no such drive'), findsNothing);
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
     expect(find.text('Edit'), findsOneWidget,

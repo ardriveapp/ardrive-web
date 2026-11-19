@@ -165,7 +165,7 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "購買積分",
-  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "actionFailedTryAgain": "發生問題。請檢查網絡連線後再試一次。",
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
   "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "要卸離磁碟？",
+  "detachDrive": "卸離檔案盤",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "確定要卸離 '{driveName}' 嗎？",
+  "detachDriveQuestion": "'{driveName}' 將從你的檔案盤中移除。",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "下載完成！",
+  "downloadFinished": "下載完成",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "已有同名的檔案盤。",
+  "renameAnyway": "仍然重新命名",
   "renameEmphasized": "重新命名",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "更新私人檔案盤",
+  "privateDrivesNeedUpdate": "這些私人檔案盤需要更新才能繼續使用。",
+  "privateDrivesUpdated": "你的私人檔案盤已更新。",
+  "privateDrivesUpdateFailed": "有一個檔案盤無法更新。請再試一次。",
+  "updateAction": "更新",
   "skip": "跳過",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "該密鑰無法開啟此檔案盤。",
+  "attachDriveOwner": "擁有者：{owner}",
   "attachDrivePrivateFound": "這是私人檔案盤。請輸入其存取密鑰以繼續。",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
@@ -8115,5 +8124,29 @@
   "syncUsingGateway": "正在使用閘道：{url}",
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
   "shareUploadTitle": "上載{count, plural, =1{1 個共享檔案} other{{count} 個共享檔案}}",
-  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}}
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
+  "changeExtensionTitle": "要更改檔案副檔名嗎?",
+  "changeExtensionBody": "副檔名將從 {previous} 變為 {next}。",
+  "couldNotRenameTitle": "無法重新命名",
+  "couldNotCreateFolderTitle": "無法建立資料夾",
+  "nameAlreadyExistsHere": "這裡已有名為 {name} 的檔案或資料夾。請換一個名稱。",
+  "couldNotRecreateFolderTitle": "無法重新建立資料夾",
+  "skipAndMoveRest": "略過並移動其餘項目",
+  "couldNotMoveTitle": "無法移動",
+  "failedToHideDrive": "隱藏雲端硬碟失敗",
+  "failedToUnhideDrive": "取消隱藏雲端硬碟失敗",
+  "hidingDrive": "正在隱藏雲端硬碟",
+  "unhidingDrive": "正在取消隱藏雲端硬碟",
+  "downloadLargeFileTitle": "下載大檔案",
+  "downloadFileTooLargeTitle": "此檔案太大，無法在此下載",
+  "exportCsvFailedTitle": "匯出失敗",
+  "exportingCsvTitle": "正在匯出 CSV",
+  "createThumbnail": "建立縮圖",
+  "createThumbnailDescription": "縮圖是代表您檔案的小圖片，會顯示在檔案瀏覽器和檔案詳情中。",
+  "couldNotCreateThumbnailTitle": "無法建立縮圖",
+  "preparingYourFiles": "正在準備您的檔案",
+  "saveNote": "儲存筆記",
+  "keepEditing": "繼續編輯",
+  "openingNote": "正在開啟筆記",
+  "couldNotOpenNote": "無法開啟筆記"
 }

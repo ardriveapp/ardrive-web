@@ -326,6 +326,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       onPressed: () {
                         showArDriveDialog(
                           context,
+                          barrierDismissible: false,
                           content: BlocProvider.value(
                             value: context.read<DriveDetailCubit>(),
                             child: ThumbnailCreationModal(
