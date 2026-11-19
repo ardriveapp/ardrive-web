@@ -656,8 +656,8 @@ class PublishCubit extends Cubit<PublishState> {
   /// An update's slots, carried forward as they were.
   List<Map<String, Object>>? _previousSlots;
 
-  /// The catalog, its key and the files' keys, made once per dialog: the
-  /// look doesn't change them.
+  /// The catalog, its key and the files' keys, made again each time the page
+  /// is priced, so a publish carries what the drive holds then.
   PreparedDriveStateArtifact? _catalog;
   Uint8List? _catalogKey;
   Map<String, String>? _fileKeysOfCatalog;
@@ -974,6 +974,15 @@ class PublishCubit extends Cubit<PublishState> {
     }
     // Whatever was priced before may not match what the owner sees.
     _job = null;
+    if (isPrivatePage) {
+      // The drive may have synced since it was last priced: a file moved
+      // out of the page, or hidden, must take its key out with it. The
+      // catalog is made again from what the drive holds now (under a fresh
+      // nonce: the catalog key stays).
+      _catalog = null;
+      _fileKeysOfCatalog = null;
+      _lastJob = null;
+    }
     emit(state.copyWith(stage: PublishStage.pricing));
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return;

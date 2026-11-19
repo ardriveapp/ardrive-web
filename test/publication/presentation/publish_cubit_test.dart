@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -11,6 +12,8 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    show ArtifactScope;
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
@@ -24,6 +27,7 @@ import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -93,6 +97,8 @@ void main() {
   setUpAll(() {
     registerFallbackValue(getTestWallet());
     registerFallbackValue(BigInt.zero);
+    registerFallbackValue(const ArtifactScope(''));
+    registerFallbackValue(SecretKey(const [0]));
     registerFallbackValue(PublicationJob(
       publicationId: 'p',
       driveId: _drive,
@@ -1391,7 +1397,7 @@ void main() {
       const id = 'dddddddd-0000-4000-8000-00000000000a';
       await db.into(db.drives).insert(DrivesCompanion.insert(
             id: id,
-            rootFolderId: 'private-root-2',
+            rootFolderId: 'eeeeeeee-0000-4000-8000-00000000000b',
             ownerAddress: fakeUserJson.walletAddress,
             name: 'Private',
             privacy: DrivePrivacyTag.private,
@@ -1403,16 +1409,16 @@ void main() {
                 unopenableKey ? const Value(true) : const Value.absent(),
           ));
       await db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
-            id: 'private-root-2',
+            id: 'eeeeeeee-0000-4000-8000-00000000000b',
             driveId: id,
             name: 'Private',
             path: '',
           ));
       await insertPublicationFile(db,
           driveId: id,
-          id: 'p1',
+          id: 'ffffffff-0000-4000-8000-00000000000c',
           name: 'p.txt',
-          parentFolderId: 'private-root-2');
+          parentFolderId: 'eeeeeeee-0000-4000-8000-00000000000b');
       return db.driveDao.driveById(driveId: id).getSingle();
     }
 
@@ -1456,6 +1462,58 @@ void main() {
 
       expect(c.state.stage, PublishStage.blocked);
       expect(c.state.blocked, PublishBlock.locked);
+      await c.close();
+    });
+
+    test('each pricing makes the catalog again from the drive as it is',
+        () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final drive = await privateDrive();
+      await db.driveDao.keepDriveKeyForSession(
+        driveId: drive.id,
+        driveKey: DriveKey(SecretKey(List.filled(32, 7)), true),
+      );
+      var prepared = 0;
+      when(() => creation.prepare(
+            driveId: any(named: 'driveId'),
+            driveKey: any(named: 'driveKey'),
+            wallet: any(named: 'wallet'),
+            isCancelled: any(named: 'isCancelled'),
+            pageScope: any(named: 'pageScope'),
+            catalogKey: any(named: 'catalogKey'),
+          )).thenAnswer((_) async {
+        prepared++;
+        return DriveStateCreationResult.prepared(PreparedDriveStateArtifact(
+          entity: DriveStateEntity(
+              id: 'x',
+              driveId: drive.id,
+              blockEnd: 1,
+              dataStart: 0,
+              dataEnd: 1,
+              entityCount: 2),
+          driveId: drive.id,
+          driveName: '',
+          entityCount: 2,
+          sizeInBytes: 900,
+          files: prepared == 1 ? const [(id: 'ffffffff-0000-4000-8000-00000000000c', dataTxId: 'D')] : const [],
+        ));
+      });
+      final c = cubit(onDrive: drive);
+      await c.load();
+      expect(c.state.stage, isNot(PublishStage.blocked),
+          reason: '${c.state.blockedReason}');
+
+      await c.review();
+      expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+      c.back();
+      await c.review();
+      expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+      expect(prepared, 2);
+      final jobs = verify(() => publisher.sizeOf(captureAny())).captured;
+      final last = jobs.last as PublicationJob;
+      // The file the drive no longer shows took its key out with it.
+      expect(last.privatePage!.fileKeys, isEmpty);
       await c.close();
     });
 
