@@ -112,6 +112,7 @@ Widget _buildDataListContent(
     final width = _ExplorerTargetWidth.narrowed(context, constraints.maxWidth);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     final columns = [
       TableColumn(
@@ -174,6 +175,51 @@ Widget _buildDataListContent(
               columnVisibility: columnVisibility,
               driveHasLicensedFiles: driveHasLicensedFiles,
             ),
+      ),
+      // The three after License, so the saved choices keyed by number keep
+      // their meaning. They go before License as the table narrows.
+      TableColumn(
+        l10n.tableColumnType,
+        3,
+        index: ColumnIndexes.type,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        isVisible: showsAddedColumn(
+          index: ColumnIndexes.type,
+          width: width,
+          columnVisibility: columnVisibility,
+        ),
+      ),
+      TableColumn(
+        l10n.tableColumnTransactionId,
+        // The short ID in full and its copy button, without a second cut.
+        5,
+        index: ColumnIndexes.transactionId,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        isVisible: showsAddedColumn(
+          index: ColumnIndexes.transactionId,
+          width: width,
+          columnVisibility: columnVisibility,
+        ),
+      ),
+      TableColumn(
+        l10n.tableColumnStatus,
+        3,
+        index: ColumnIndexes.status,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        isVisible: showsAddedColumn(
+          index: ColumnIndexes.status,
+          width: width,
+          columnVisibility: columnVisibility,
+        ),
       ),
     ];
 
@@ -334,7 +380,19 @@ Widget _buildDataListContent(
             }
 
             // Sort folders and files
-            _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+            sortDriveTableItems(
+              folders,
+              files,
+              columnIndex,
+              ascDescSort,
+              typeLabel: (item) => driveTableTypeLabel(
+                l10n,
+                driveTableType(
+                  contentType: item.contentType,
+                  name: item.name,
+                ),
+              ),
+            );
 
             return folders + files;
           },
@@ -352,6 +410,14 @@ Widget _buildDataListContent(
               license: row is FileDataTableItem && row.licenseTxId != null
                   ? 'Licensed'
                   : '',
+              type: driveTableTypeLabel(
+                l10n,
+                driveTableType(contentType: row.contentType, name: row.name),
+              ),
+              transactionId: driveTableTransactionId(row),
+              status:
+                  driveTableStatusLabel(l10n, row.fileStatusFromTransactions),
+              statusValue: row.fileStatusFromTransactions,
               isHidden: row.isHidden,
               onPressed: () {
                 // Not reached by the table, which handles its own taps; kept
@@ -375,70 +441,4 @@ Widget _buildDataListContent(
       },
     );
   });
-}
-
-void _sortFoldersAndFiles(List<ArDriveDataTableItem> folders,
-    List<ArDriveDataTableItem> files, int columnIndex, TableSort ascDescSort) {
-  _sortItems(folders, columnIndex, ascDescSort);
-  _sortItems(files, columnIndex, ascDescSort);
-}
-
-int _getResult(int result, TableSort ascDescSort) {
-  if (ascDescSort == TableSort.asc) {
-    result *= -1;
-  }
-
-  return result;
-}
-
-void _sortItems(
-    List<ArDriveDataTableItem> items, int columnIndex, TableSort ascDescSort) {
-  if (columnIndex == ColumnIndexes.licenseType) {
-    final licenseFiles = items.where((e) => e.licenseType != null).toList();
-
-    licenseFiles.sort((a, b) {
-      int result = 0;
-      result = (a.licenseType ?? LicenseType.unknown)
-          .index
-          .compareTo((b.licenseType ?? LicenseType.unknown).index);
-      return _getResult(result, ascDescSort);
-    });
-
-    final noLicenseFiles = items.where((e) => e.licenseType == null).toList();
-
-    noLicenseFiles.sort((a, b) {
-      int result = 0;
-      result = compareAlphabeticallyAndNatural(a.name, b.name);
-      return _getResult(result, ascDescSort);
-    });
-    items.clear();
-    items.addAll(licenseFiles + noLicenseFiles);
-    return;
-  }
-
-  items.sort((a, b) {
-    int result = 0;
-    if (columnIndex == ColumnIndexes.name) {
-      result = compareAlphabeticallyAndNatural(a.name, b.name);
-    } else if (columnIndex == ColumnIndexes.size) {
-      result = (a.size ?? 0).compareTo(b.size ?? 0);
-    } else if (columnIndex == ColumnIndexes.lastUpdated) {
-      result = a.lastUpdated.compareTo(b.lastUpdated);
-    } else if (columnIndex == ColumnIndexes.licenseType) {
-      result = (a.licenseType ?? LicenseType.unknown)
-          .index
-          .compareTo((b.licenseType ?? LicenseType.unknown).index);
-    } else {
-      result = a.dateCreated.compareTo(b.dateCreated);
-    }
-    return _getResult(result, ascDescSort);
-  });
-}
-
-class ColumnIndexes {
-  static const int name = 0;
-  static const int size = 1;
-  static const int lastUpdated = 2;
-  static const int dateCreated = 3;
-  static const int licenseType = 4;
 }
