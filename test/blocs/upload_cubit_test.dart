@@ -597,8 +597,9 @@ void main() {
     // The review stays on screen while the wallet is checked: a change
     // made there in that time is not what was confirmed.
     test(
-        'Upload pays and updates deployments as they were when it was '
-        'pressed, whatever changes during the wallet check', () async {
+        'Upload pays, with the payer, and updates deployments as they were '
+        'when it was pressed, whatever changes during the wallet check',
+        () async {
       when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
           .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
       // Preparation checks the wallet too: only the check after the press
@@ -607,6 +608,7 @@ void main() {
       when(() => mockProfileCubit!.checkIfWalletMismatch())
           .thenAnswer((_) => walletCheck?.future ?? Future.value(false));
       Object? paidWith = #none;
+      Object? paidBy = #none;
       when(() => mockUploadRepository.uploadFiles(
             files: any(named: 'files'),
             targetDrive: any(named: 'targetDrive'),
@@ -619,6 +621,7 @@ void main() {
             compressTextAndCode: any(named: 'compressTextAndCode'),
           )).thenAnswer((i) async {
         paidWith = i.namedArguments[#uploadMethod];
+        paidBy = i.namedArguments[#paidBy];
         return _MockUploadController();
       });
       final cubit = getUploadCubitInstanceWith([]);
@@ -633,7 +636,8 @@ void main() {
         folderDataItemUploadHandles: {},
         turboUploadService: DontUseUploadService(),
       );
-      final info = stubPaymentInfo.copyWith(uploadPlanForAR: uploadPlan);
+      final info = stubPaymentInfo
+          .copyWith(uploadPlanForAR: uploadPlan, paidBy: ['confirmed-payer']);
       cubit.setUploadMethod(UploadMethod.turbo, info, true);
       await Future<void>.delayed(const Duration(milliseconds: 10));
       final confirmed = ManifestSelection(manifest: _manifestEntry('site'));
@@ -644,13 +648,15 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
       // During the wallet check: the wallet picked, the deployment unticked
       // and another ticked.
-      cubit.setUploadMethod(UploadMethod.ar, info, true);
+      cubit.setUploadMethod(
+          UploadMethod.ar, info.copyWith(paidBy: ['other-payer']), true);
       cubit.updateManifestSelection(
           [ManifestSelection(manifest: _manifestEntry('other'))]);
       walletCheck.complete(false);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(paidWith, UploadMethod.turbo);
+      expect(paidBy, ['confirmed-payer']);
       expect(cubit.pressedManifests, [confirmed]);
     });
 

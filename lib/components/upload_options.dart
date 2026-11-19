@@ -47,17 +47,21 @@ class _UploadOptionsState extends State<UploadOptions> {
       if (_thumbnails != null)
         Row(
           children: [
-            ArDriveCheckBox(
-              title: l10n.uploadWithThumbnails,
-              useNewIcons: true,
-              checked: _thumbnails!,
-              titleStyle: typography.paragraphNormal(
-                fontWeight: ArFontWeight.semiBold,
+            // Bounded, so at large text the label wraps and the mark stays
+            // in the row.
+            Flexible(
+              child: ArDriveCheckBox(
+                title: l10n.uploadWithThumbnails,
+                useNewIcons: true,
+                checked: _thumbnails!,
+                titleStyle: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+                onChange: (value) {
+                  setState(() => _thumbnails = value);
+                  widget.onThumbnailsChanged(value);
+                },
               ),
-              onChange: (value) {
-                setState(() => _thumbnails = value);
-                widget.onThumbnailsChanged(value);
-              },
             ),
             const SizedBox(width: ArDriveSpacing.xxs),
             ArDriveInfoTip(message: l10n.thumbnailsCostNote),

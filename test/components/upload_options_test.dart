@@ -109,6 +109,28 @@ void main() {
       expect(find.text(note), findsNothing);
     });
 
+    testWidgets('stays in the row on a narrow screen at large text',
+        (tester) async {
+      tester.view.physicalSize = const Size(260, 900);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await openOptions(tester);
+      expect(tester.takeException(), isNull);
+
+      final row = find.ancestor(
+          of: find.byType(ArDriveInfoTip), matching: find.byType(Row));
+      final rowRect = tester.getRect(row.first);
+      final mark = tester.getRect(find.byType(ArDriveInfoTip));
+      expect(mark.right, lessThanOrEqualTo(rowRect.right));
+
+      await tester.tap(find.byType(ArDriveInfoTip));
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+    });
+
     testWidgets('shows it on a tap, and a second tap puts it away',
         (tester) async {
       await openOptions(tester);

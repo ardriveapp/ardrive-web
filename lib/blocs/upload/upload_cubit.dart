@@ -302,11 +302,13 @@ class UploadCubit extends Cubit<UploadState> {
   Map<String, WebFolder> _foldersByPath = {};
   UploadMethod? _uploadMethod;
 
-  /// How the upload pressed is paid, and the deployments it updates, as the
+  /// How the upload pressed is paid, who pays, and the deployments it
+  /// updates, as the
   /// review showed them when Upload was pressed. The review stays on screen
   /// while the wallet is checked, and a change made there in that time is
   /// not what the person confirmed: everything after the press reads these.
   UploadMethod? _pressedUploadMethod;
+  List<String> _pressedPaidBy = const [];
   List<ManifestSelection> _pressedManifests = const [];
   bool _uploadThumbnail;
   bool? _containsLargeTurboUpload;
@@ -1031,6 +1033,7 @@ class UploadCubit extends Cubit<UploadState> {
     // A new run is not a canceled one.
     _uploadCanceled = false;
     _pressedUploadMethod = _uploadMethod;
+    _pressedPaidBy = List.unmodifiable(_paidBy);
     _pressedManifests = List.unmodifiable(_selectedManifestModels);
 
     if (_uploadFileAsCustomManifest) {
@@ -1259,7 +1262,7 @@ class UploadCubit extends Cubit<UploadState> {
       foldersByPath: _foldersByPath,
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
-      paidBy: _paidBy,
+      paidBy: _pressedPaidBy,
       compressTextAndCode: compressTextAndCode,
     );
 
@@ -1319,7 +1322,7 @@ class UploadCubit extends Cubit<UploadState> {
       targetFolder: _targetFolder,
       uploadMethod: _pressedUploadMethod!,
       uploadThumbnail: _uploadThumbnail,
-      paidBy: _paidBy,
+      paidBy: _pressedPaidBy,
       compressTextAndCode: compressTextAndCode,
     );
 
