@@ -411,9 +411,7 @@ class PublishDialog extends StatelessWidget {
                 // page's own files.
                 hasSnapshot: !cubit.isFile && !state.isPrivatePage,
               ),
-              actions: [
-                ModalAction.close(title: strings.close, action: close)
-              ],
+              actions: [ModalAction.close(title: strings.close, action: close)],
             );
           case PublishStage.failed:
             return _modal(
