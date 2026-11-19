@@ -403,17 +403,25 @@ class _Contents extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _Message(state.syncRefused
-              ? switch (state.refusal) {
-                  SyncRefusal.anotherSync => strings.drivePickerSyncAnother,
-                  SyncRefusal.activityInProgress =>
-                    strings.drivePickerSyncActivity,
-                  SyncRefusal.tabHidden => strings.drivePickerSyncTab,
-                  SyncRefusal.publicationMode => strings.drivePickerSyncOff,
-                  null => strings.drivePickerSyncFailed,
-                }
-              : strings.driveNeverSynced),
-          if (cubit.canSync)
+          if (state.syncRefused)
+            ArDriveNotice(
+              // A refusal is something to wait out; no reason is a failure.
+              type: state.refusal == null
+                  ? ArDriveNoticeType.error
+                  : ArDriveNoticeType.warning,
+              message: switch (state.refusal) {
+                SyncRefusal.anotherSync => strings.drivePickerSyncAnother,
+                SyncRefusal.activityInProgress =>
+                  strings.drivePickerSyncActivity,
+                SyncRefusal.tabHidden => strings.drivePickerSyncTab,
+                SyncRefusal.publicationMode => strings.drivePickerSyncOff,
+                null => strings.drivePickerSyncFailed,
+              },
+            )
+          else
+            _Message(strings.driveNeverSynced),
+          if (cubit.canSync) ...[
+            const SizedBox(height: ArDriveSpacing.sm),
             ArDriveButtonNew(
               text: strings.sync,
               typography: ArDriveTypographyNew.of(context),
@@ -421,6 +429,7 @@ class _Contents extends StatelessWidget {
               size: ArDriveButtonSize.compact,
               onPressed: cubit.syncDrive,
             ),
+          ],
         ],
       );
     }

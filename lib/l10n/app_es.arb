@@ -165,7 +165,7 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "Comprar créditos",
-  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "actionFailedTryAgain": "Algo salió mal. Comprueba tu conexión e inténtalo de nuevo.",
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
   "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "¿Desvincular unidad?",
+  "detachDrive": "Desvincular unidad",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "¿Confirmas que quieres desvincular '{driveName}'?",
+  "detachDriveQuestion": "'{driveName}' se quitará de tus unidades.",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "¡Descarga terminada!",
+  "downloadFinished": "Descarga terminada",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "Descargando archivo...",
+  "downloadingFile": "Descargando archivo",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "Ya existe una unidad con este nombre.",
+  "renameAnyway": "Cambiar el nombre de todos modos",
   "renameEmphasized": "Renombrar",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "Actualizar unidades privadas",
+  "privateDrivesNeedUpdate": "Estas unidades privadas necesitan una actualización para seguir funcionando.",
+  "privateDrivesUpdated": "Tus unidades privadas están actualizadas.",
+  "privateDrivesUpdateFailed": "No se pudo actualizar una unidad. Inténtalo de nuevo.",
+  "updateAction": "Actualizar",
   "skip": "Omitir",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "Esa clave no abre esta unidad.",
+  "attachDriveOwner": "Propietario: {owner}",
   "attachDrivePrivateFound": "Esta es una unidad privada. Introduce su clave de acceso para continuar.",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
@@ -8105,5 +8114,29 @@
   "profileArioBalanceError": "Error al obtener el saldo de ARIO",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Usando la pasarela: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "changeExtensionTitle": "¿Cambiar la extensión del archivo?",
+  "changeExtensionBody": "La extensión cambiará de {previous} a {next}.",
+  "couldNotRenameTitle": "No se pudo cambiar el nombre",
+  "couldNotCreateFolderTitle": "No se pudo crear la carpeta",
+  "nameAlreadyExistsHere": "Ya hay un archivo o carpeta llamado {name} aquí. Elige otro nombre.",
+  "couldNotRecreateFolderTitle": "No se pudo recrear la carpeta",
+  "skipAndMoveRest": "Omitir y mover el resto",
+  "couldNotMoveTitle": "No se pudo mover",
+  "failedToHideDrive": "No se pudo ocultar la unidad",
+  "failedToUnhideDrive": "No se pudo mostrar la unidad",
+  "hidingDrive": "Ocultando unidad",
+  "unhidingDrive": "Mostrando unidad de nuevo",
+  "downloadLargeFileTitle": "Descargar un archivo grande",
+  "downloadFileTooLargeTitle": "Este archivo es demasiado grande para descargarlo aquí",
+  "exportCsvFailedTitle": "Error al exportar",
+  "exportingCsvTitle": "Exportando CSV",
+  "createThumbnail": "Crear miniatura",
+  "createThumbnailDescription": "Una miniatura es una imagen pequeña que representa tu archivo. Se muestra en el explorador de archivos y en los detalles del archivo.",
+  "couldNotCreateThumbnailTitle": "No se pudo crear la miniatura",
+  "preparingYourFiles": "Preparando tus archivos",
+  "saveNote": "Guardar nota",
+  "keepEditing": "Seguir editando",
+  "openingNote": "Abriendo nota",
+  "couldNotOpenNote": "No se pudo abrir la nota"
 }

@@ -58,7 +58,7 @@ void main() {
     await open(tester, const DataExportInProgress());
 
     expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
-    expect(find.text('Downloading CSV...'), findsOneWidget);
+    expect(find.text('Exporting CSV'), findsOneWidget);
     expect(find.byType(ArDriveSpinner), findsOneWidget);
     final cancel =
         tester.widget<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
@@ -77,8 +77,7 @@ void main() {
     expect(find.byType(CsvExportDialog), findsNothing);
   });
 
-  testWidgets('offers no Cancel while the file is being saved',
-      (tester) async {
+  testWidgets('offers no Cancel while the file is being saved', (tester) async {
     await open(
       tester,
       DataExportSuccess(
@@ -93,11 +92,18 @@ void main() {
     expect(find.text('Cancel'), findsNothing);
   });
 
-  testWidgets('a failure is shown, with a way out', (tester) async {
+  testWidgets('a failure is shown, with a way out and a way to try again',
+      (tester) async {
+    when(() => cubit.exportData()).thenAnswer((_) async {});
     await open(tester, DataExportFailure());
 
-    expect(find.text('File download failed'), findsOneWidget);
-    await tester.tap(find.text('OK'));
+    expect(find.text('Export failed'), findsOneWidget);
+    expect(find.byType(ArDriveNotice), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    verify(() => cubit.exportData()).called(1);
+
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect(find.byType(CsvExportDialog), findsNothing);
   });

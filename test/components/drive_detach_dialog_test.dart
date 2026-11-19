@@ -145,6 +145,27 @@ void main() {
     expect(find.textContaining('share link'), findsOneWidget);
   });
 
+  testWidgets('the title is not a question and the body names the change',
+      (tester) async {
+    await openDialog(tester);
+
+    expect(find.text('Detach drive'), findsOneWidget);
+    expect(find.textContaining('Are you sure'), findsNothing);
+    expect(find.textContaining('will be removed from your drives'),
+        findsOneWidget);
+  });
+
+  testWidgets('Cancel only closes, so the dialog has the close button',
+      (tester) async {
+    await openDialog(tester);
+
+    // The corner close button; its label is the dialog's own Cancel/Close.
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+        findsOneWidget);
+  });
+
   testWidgets('detaching asks the cubit to do it', (tester) async {
     when(() => drivesCubit.detachDrive(any())).thenAnswer((_) async {});
 

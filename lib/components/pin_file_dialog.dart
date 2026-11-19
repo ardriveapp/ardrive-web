@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/components/payment_required_notice.dart';
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -33,6 +33,7 @@ Future<void> showPinFileDialog({
     context,
     () => showArDriveDialog(
       context,
+      barrierDismissible: false,
       content: BlocProvider(
         create: (context) {
           final FileIdResolver fileIdResolver = NetworkFileIdResolver(
@@ -113,6 +114,21 @@ class _PinFileDialogState extends State<PinFileDialog> {
   /// That is not the reader leaving it.
   bool _lookupRunning = false;
 
+  /// What went wrong when the pin could not be made, until the next try or an
+  /// edit. The bloc goes back to its valid state after it, so the fields stay
+  /// as they were and the notice carries the retry.
+  PinFileError? _createFailure;
+
+  /// Set when Create pin is pressed, cleared when the bloc reports an error:
+  /// a second press before the bloc is busy would otherwise pin twice.
+  bool _submitted = false;
+
+  void _submit() {
+    if (_submitted) return;
+    setState(() => _submitted = true);
+    context.read<PinFileBloc>().add(const PinFileSubmit());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -121,6 +137,10 @@ class _PinFileDialogState extends State<PinFileDialog> {
         setState(() => _idSettled = true);
       }
     });
+  }
+
+  void _clearCreateFailure() {
+    if (_createFailure != null) setState(() => _createFailure = null);
   }
 
   @override
@@ -138,43 +158,20 @@ class _PinFileDialogState extends State<PinFileDialog> {
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {
-          if (state.isPaymentError) {
-            Navigator.of(context).pop(); // close the pin dialog
-            showTurboPaymentRequiredDialog(context);
-          } else {
-            showArDriveDialog(
-              context,
-              content: _errorDialog(
-                context,
-                errorText: appLocalizationsOf(context).pinFailedToUpload,
-                doublePop: true,
-              ),
-            );
-          }
-        } else if (state is PinFileFieldsValidationError) {
-          if (state.networkError) {
-            showArDriveDialog(
-              context,
-              content: _errorDialog(
-                context,
-                errorText:
-                    appLocalizationsOf(context).failedToRetrieveFileInfromation,
-                // FIXME: We've decided to force the user start over again
-                /// In the future there's gonna be a retry button
-                doublePop: true,
-              ),
-            );
-          }
+          setState(() {
+            _createFailure = state;
+            _submitted = false;
+          });
+        } else if (state is PinFileCreating) {
+          setState(() => _createFailure = null);
         }
       },
       builder: (context, state) {
-        if (state is PinFileError) {
-          return const SizedBox();
-        }
-
         _lookupRunning = state is PinFileNetworkCheckRunning;
         final idValidationError = _getIdValidationError(context, state);
         final nameValidationError = _getNameValidationError(context, state);
+        final creating = _submitted || state is PinFileCreating;
+        final failure = _createFailure;
 
         return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).newFilePin,
@@ -184,7 +181,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ArDriveTextFieldNew(
-                  isEnabled: state is! PinFileNetworkCheckRunning,
+                  isEnabled: state is! PinFileNetworkCheckRunning && !creating,
                   label: appLocalizationsOf(context).enterTxIdOrFileId,
                   textStyle: ArDriveTypographyNew.of(context).code(),
                   isFieldRequired: true,
@@ -192,6 +189,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
                   showErrorMessage: idValidationError != null,
                   focusNode: _idFocusNode,
                   onChanged: (value) {
+                    _clearCreateFailure();
                     if (value.isEmpty) {
                       // A new ID is being started.
                       _idSettled = false;
@@ -212,11 +210,11 @@ class _PinFileDialogState extends State<PinFileDialog> {
                 // not reach the semantics tree, so a screen reader missed it.
                 if (state is PinFileNetworkCheckRunning)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
                     child: Row(
                       children: [
                         const ArDriveSpinner(),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: ArDriveSpacing.xs),
                         Text(
                           appLocalizationsOf(context).lookingUpThisId,
                           style:
@@ -231,32 +229,48 @@ class _PinFileDialogState extends State<PinFileDialog> {
                     ),
                   ),
                 ArDriveTextFieldNew(
-                  isEnabled: true,
+                  isEnabled: !creating,
                   label: appLocalizationsOf(context).enterFileName,
                   isFieldRequired: true,
                   errorMessage: nameValidationError,
                   showErrorMessage: nameValidationError != null,
                   onChanged: (value) {
+                    _clearCreateFailure();
                     pinFileBloc.add(
                       FieldsChanged(id: state.id, name: value),
                     );
                   },
                   controller: pinFileBloc.nameTextController,
                 ),
+                if (failure != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: ArDriveSpacing.md),
+                    child: failure.isPaymentError
+                        ? const PaymentRequiredNotice()
+                        : ArDriveNotice(
+                            type: ArDriveNoticeType.error,
+                            message:
+                                appLocalizationsOf(context).failedToCreatePin,
+                            actionLabel: appLocalizationsOf(context).tryAgain,
+                            onAction: creating ? null : _submit,
+                          ),
+                  ),
               ],
             ),
           ),
           actions: [
-            ModalAction(
+            ModalAction.close(
               action: () => pinFileBloc.add(const PinFileCancel()),
               title: appLocalizationsOf(context).cancel,
+              isEnable: !creating,
             ),
             ModalAction(
-              action: () => pinFileBloc.add(const PinFileSubmit()),
+              action: _submit,
               title: appLocalizationsOf(context).createPin,
-              // FIXME: "isEnabled"
-              isEnable: state is PinFileFieldsValid &&
-                  state.nameValidation == NameValidationResult.valid,
+              isLoading: creating,
+              isEnable: creating ||
+                  (state is PinFileFieldsValid &&
+                      state.nameValidation == NameValidationResult.valid),
             ),
           ],
         );
@@ -301,35 +315,4 @@ class _PinFileDialogState extends State<PinFileDialog> {
     }
     return null;
   }
-
-  ArDriveStandardModalNew _errorDialog(
-    BuildContext context, {
-    required String errorText,
-    bool doublePop = false,
-  }) =>
-      ArDriveStandardModalNew(
-        width: kMediumDialogWidth,
-        title: appLocalizationsOf(context).failedToCreatePin,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Text(errorText),
-            ),
-          ],
-        ),
-        actions: [
-          ModalAction(
-            action: () {
-              Navigator.pop(context);
-              if (doublePop) {
-                Navigator.pop(context);
-              }
-            },
-            title: appLocalizationsOf(context).okEmphasized,
-          ),
-        ],
-      );
 }

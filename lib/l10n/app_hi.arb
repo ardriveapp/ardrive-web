@@ -165,7 +165,7 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "क्रेडिट्स खरीदें ",
-  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "actionFailedTryAgain": "कुछ गलत हो गया। कृपया अपना कनेक्शन जांचें और फिर से कोशिश करें।",
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
   "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
@@ -419,11 +419,11 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "detachDrive": "क्या ड्राइव को अलग करें?",
+  "detachDrive": "ड्राइव को अलग करें",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "क्या आप पक्का '{driveName}' को अलग करना चाहते हैं?",
+  "detachDriveQuestion": "'{driveName}' आपकी ड्राइव से हटा दी जाएगी।",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "डाउनलोड समाप्त हुआ!",
+  "downloadFinished": "डाउनलोड समाप्त हुआ",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "फ़ाइल डाउनलोड हो रही है...",
+  "downloadingFile": "फ़ाइल डाउनलोड हो रही है",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -1699,6 +1699,8 @@
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
+  "driveNameAlreadyExists": "इस नाम की ड्राइव पहले से मौजूद है।",
+  "renameAnyway": "फिर भी नाम बदलें",
   "renameEmphasized": "नाम बदलें",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
@@ -2029,6 +2031,11 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
+  "updatePrivateDrives": "निजी ड्राइव अपडेट करें",
+  "privateDrivesNeedUpdate": "इन निजी ड्राइव को काम करते रहने के लिए अपडेट चाहिए।",
+  "privateDrivesUpdated": "आपकी निजी ड्राइव अपडेट हो गई हैं।",
+  "privateDrivesUpdateFailed": "एक ड्राइव अपडेट नहीं हो सकी। फिर से कोशिश करें।",
+  "updateAction": "अपडेट करें",
   "skip": "स्किप करें ",
   "@skip": {
     "description": "Skip"
@@ -3899,6 +3906,8 @@
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
+  "attachDriveInvalidKey": "यह कुंजी इस ड्राइव को नहीं खोलती।",
+  "attachDriveOwner": "स्वामी: {owner}",
   "attachDrivePrivateFound": "यह प्राइवेट ड्राइव है। आगे बढ़ने के लिए इसकी एक्सेस कुंजी डालें।",
   "@attachDrivePrivateFound": {
     "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
@@ -8105,5 +8114,29 @@
   "profileArioBalanceError": "ARIO बैलेंस प्राप्त करने में त्रुटि",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "गेटवे का उपयोग हो रहा है: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "changeExtensionTitle": "फ़ाइल एक्सटेंशन बदलें?",
+  "changeExtensionBody": "एक्सटेंशन {previous} से {next} में बदल जाएगा।",
+  "couldNotRenameTitle": "नाम नहीं बदला जा सका",
+  "couldNotCreateFolderTitle": "फ़ोल्डर नहीं बनाया जा सका",
+  "nameAlreadyExistsHere": "यहाँ {name} नाम की फ़ाइल या फ़ोल्डर पहले से है। कोई दूसरा नाम चुनें।",
+  "couldNotRecreateFolderTitle": "फ़ोल्डर फिर से नहीं बनाया जा सका",
+  "skipAndMoveRest": "छोड़ें और बाकी को ले जाएँ",
+  "couldNotMoveTitle": "ले जाया नहीं जा सका",
+  "failedToHideDrive": "ड्राइव छिपाई नहीं जा सकी",
+  "failedToUnhideDrive": "ड्राइव दोबारा दिखाई नहीं जा सकी",
+  "hidingDrive": "ड्राइव छिपाई जा रही है",
+  "unhidingDrive": "ड्राइव दोबारा दिखाई जा रही है",
+  "downloadLargeFileTitle": "बड़ी फ़ाइल डाउनलोड करें",
+  "downloadFileTooLargeTitle": "यह फ़ाइल यहाँ डाउनलोड करने के लिए बहुत बड़ी है",
+  "exportCsvFailedTitle": "एक्सपोर्ट विफल रहा",
+  "exportingCsvTitle": "CSV एक्सपोर्ट हो रहा है",
+  "createThumbnail": "थंबनेल बनाएँ",
+  "createThumbnailDescription": "थंबनेल एक छोटी छवि है जो आपकी फ़ाइल को दर्शाती है। यह फ़ाइल एक्सप्लोरर और फ़ाइल विवरण में दिखती है।",
+  "couldNotCreateThumbnailTitle": "थंबनेल नहीं बनाया जा सका",
+  "preparingYourFiles": "आपकी फ़ाइलें तैयार की जा रही हैं",
+  "saveNote": "नोट सहेजें",
+  "keepEditing": "संपादन जारी रखें",
+  "openingNote": "नोट खोला जा रहा है",
+  "couldNotOpenNote": "नोट खोला नहीं जा सका"
 }
