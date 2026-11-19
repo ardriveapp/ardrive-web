@@ -309,7 +309,9 @@ Every file the publish uploads, other than the Drive State, is a plain data item
 
 `file` has `dataTxId` and `metadataTxId` (43-character transaction IDs, the version of the file shown) and optional `name`, `size` (integer, at least 0), `contentType`, `cipher` and `cipherIv`. The JSON keys are camelCase, unlike the tags. On a public file page the block may carry `name`, `size` and `contentType` and must not carry `cipher` or `cipherIv`. On a private file page it must carry `cipher` and `cipherIv` (the values on the data transaction's tags, which are not secret) and must not carry `name`, `size` or `contentType`.
 
-A reader must refuse a `publication.json` that breaks a rule above, with these further checks: a file page must have `version` 2 or later, and `images` and `snapshot.path` must be plain relative paths (letters, digits, `.`, `_`, `-` and `/`; no leading `/`, no empty, `.` or `..` segment). A reader ignores keys it does not know.
+A reader must refuse a `publication.json` that breaks a rule above, with these further checks: a file page must have `version` 2 or later, and `images` and `snapshot.path` must be plain relative paths (letters, digits, `.`, `_`, `-` and `/`; no leading `/`, no empty, `.` or `..` segment). | `pad` | string | no | Padding, so the sealed part's size does not give the file count away. A writer adds it: ASCII spaces, as many as bring the canonical JSON's UTF-8 length up to the next multiple of 4096 bytes (none when it already is one). A reader ignores `pad`, whatever it holds, and accepts a block without it, as older writers wrote |
+
+A reader ignores keys it does not know.
 
 Nothing in `publication.json` is secret. It must not contain a drive, folder or file name that is not already public. The `title` is typed by the owner.
 
@@ -395,7 +397,7 @@ There is no `snapshot`, `files.html` or `sitemap.xml`. `sealed` and `catalog` ar
 | `title` | string | yes | May be empty. A reader shows "Private page" for an empty title |
 | `description`, `ownerName`, `keywords`, `license`, `images`, `publishedAt`, `names`, `viewer` | | no | As in version 1 |
 
-A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` or `fileCount`. A reader refuses one that does, and one larger than 64 KiB. Nothing in it is secret: it holds no drive, folder or file name, no count of files and no key except wrapped ones. What stays visible: whether the page has a password, and the sizes of `sealed` and `catalog`, which show roughly how many files and folders it has.
+A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` or `fileCount`. A reader refuses one that does, and one larger than 64 KiB. Nothing in it is secret: it holds no drive, folder or file name, no count of files and no key except wrapped ones. What stays visible: whether the page has a password, and the sizes of `sealed` and `catalog`. The sealed block is padded to a multiple of 4096 bytes, so `sealed` shows the file count only roughly; `catalog` is not padded.
 
 **Password slot:**
 
@@ -408,7 +410,7 @@ A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` 
 2. Run Argon2id (RFC 9106, version 0x13) over it with the slot's `salt` (at least 16 random bytes), memory `m` in KiB, `t` passes and `p` lanes, with no secret and no associated data, for 32 bytes.
 3. Those 32 bytes are the key that wraps: `wrapped` is the AES-256-GCM encryption of the publication key under it, with the slot's `iv` and the associated data `ArDrive publication slot v1|<publicationId>` in UTF-8.
 
-A reader never runs a password slot with `m` outside 8192 to 262144, `t` outside 1 to 10, `p` outside 1 to 4, a salt outside 16 to 64 bytes, or any field it cannot read. The page can still open by key. Writers use a 16-byte salt and `m` 65536, `t` 3, `p` 1 unless a release raises them. The slot's associated data does not cover these settings. It doesn't need to: changing one changes the key that wraps.
+A reader never runs a password slot with `m` outside 8192 to 131072, `t` outside 1 to 6, `p` outside 1 to 4, a salt outside 16 to 64 bytes, or any field it cannot read. The page can still open by key. Writers use a 16-byte salt and `m` 65536, `t` 3, `p` 1 unless a release raises them. The slot's associated data does not cover these settings. It doesn't need to: changing one changes the key that wraps.
 
 **Owner slot:**
 

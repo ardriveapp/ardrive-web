@@ -23,6 +23,7 @@ import {
   passwordKek,
   passwordSlot,
   passwordBytes,
+  padSealedBlock,
   sealBlock,
   sealPlaintext,
   sealedAad,
@@ -122,8 +123,8 @@ const RFC9106_ARGON2ID = {
   tag: '0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659',
 };
 
-function sealedBlockFor({ folderId, label }) {
-  return {
+function sealedBlockFor({ folderId, label, padded = true }) {
+  const block = ({
     v: 1,
     scope: folderId ? { type: 'folder', folderId } : { type: 'drive' },
     rootFolderId: ROOT_FOLDER_ID,
@@ -151,14 +152,15 @@ function sealedBlockFor({ folderId, label }) {
       [txId(`${label}|data B`)]: { cipher: 'AES256-CTR', iv: b64u(fixed(`${label}|data B iv`, 16)) },
       [txId(`${label}|thumbnail A`)]: { cipher: 'AES256-GCM', iv: b64u(fixed(`${label}|thumbnail A iv`, 12)) },
     },
-  };
+  });
+  return padded ? padSealedBlock(block) : block;
 }
 
-function page({ label, folderId, password, title = '', description }) {
+function page({ label, folderId, password, title = '', description, padded = true }) {
   const publicationId = folderId ? '3f1e2d4c-5b6a-4798-8a9b-0c1d2e3f4a5b' : '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d';
   const publicationKey = fixed(`${label}|publication key`);
   const driveKey = fixed(`${label}|drive key`);
-  const block = sealedBlockFor({ folderId, label });
+  const block = sealedBlockFor({ folderId, label, padded });
   const sealedIv = fixed(`${label}|sealed iv`, 12);
   const header = {
     publicationId,
@@ -282,9 +284,10 @@ function refusals(good) {
     // Real slots that would open the page, made outside the bounds: a reader
     // must refuse to run them, not merely fail to open them.
     ...[
-      ['passes above the bound', { t: 11 }],
+      ['passes above the bound', { t: 7 }],
       ['memory below the bound', { m: 4096 }],
-      ['memory above the bound', { m: 262145 }],
+      ['memory above the bound', { m: 131073 }],
+      ['memory at the old maximum', { m: 262144 }],
       ['lanes above the bound', { m: 8192, p: 5 }],
       ['salt under 16 bytes', { saltBytes: 8 }],
       ['salt over 64 bytes', { saltBytes: 65 }],
@@ -295,7 +298,7 @@ function refusals(good) {
     { name: 'a password slot with a non-canonical salt is never run', sealed: good.sealed, outOfBounds: true,
       publicationJson: edit((c) => { c.slots[0].salt = looseSpelling(c.slots[0].salt); }), input: good.password, error: 'no-match' },
     { name: 'only the first password slot is read', sealed: good.sealed,
-      publicationJson: edit((c) => { c.slots = [unboundedSlot(good, { t: 11 }), c.slots[0], c.slots[1]]; }),
+      publicationJson: edit((c) => { c.slots = [unboundedSlot(good, { t: 7 }), c.slots[0], c.slots[1]]; }),
       input: good.password, error: 'no-match' },
     // The sealed part is bound to the page: reused under another drive,
     // owner or title, the right key no longer opens it.
@@ -344,6 +347,8 @@ export function buildVectors() {
     title: 'Q3 "final" \\ draft\t\u0001\u001f\u007f\u2028 é 😀 \ud800 </script>',
     description: 'Line one\nLine two\r\n\b\f',
   });
+  // An older writer's block has no pad, and a reader still opens it.
+  const unpaddedPage = page({ label: 'drive page, sealed block without pad', padded: false });
   const keyShapedPages = [
     keyShaped('correct-horse-battery-staple-and-two-more-R', false),
     keyShaped('correct-horse-battery-staple-and-two-more-Q', true),
@@ -382,7 +387,7 @@ export function buildVectors() {
       const c = JSON.parse(p.publicationJson);
       return { name: p.name, publicationJson: p.publicationJson, aadUtf8Hex: hex(Buffer.from(sealedAad(c), 'utf8')) };
     }),
-    pages: [folderPage, drivePage, awkwardPage, ...keyShapedPages],
+    pages: [folderPage, drivePage, awkwardPage, unpaddedPage, ...keyShapedPages],
     refusals: refusals(folderPage),
   };
 }
