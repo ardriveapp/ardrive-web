@@ -63,11 +63,22 @@ class CsvExportDialog extends StatelessWidget {
 
           if (state is DataExportFailure) {
             return ArDriveStandardModalNew(
-              title: strings.fileDownloadFailed,
+              title: strings.exportCsvFailedTitle,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: ArDriveNotice(
+                  type: ArDriveNoticeType.error,
+                  message: strings.actionFailedTryAgain,
+                ),
+              ),
               actions: [
-                ModalAction(
+                ModalAction.close(
                   action: () => Navigator.pop(context),
-                  title: strings.ok,
+                  title: strings.close,
+                ),
+                ModalAction(
+                  action: () => context.read<DataExportCubit>().exportData(),
+                  title: strings.tryAgain,
                 ),
               ],
             );
@@ -76,7 +87,7 @@ class CsvExportDialog extends StatelessWidget {
           final typography = ArDriveTypographyNew.of(context);
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           return ArDriveStandardModalNew(
-            title: strings.downloadingCSV,
+            title: strings.exportingCsvTitle,
             content: SizedBox(
               width: kMediumDialogWidth,
               child: Row(

@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "डाउनलोड समाप्त हुआ!",
+  "downloadFinished": "डाउनलोड समाप्त हुआ",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "फ़ाइल डाउनलोड हो रही है...",
+  "downloadingFile": "फ़ाइल डाउनलोड हो रही है",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -8122,5 +8122,29 @@
   "profileArioBalanceError": "ARIO बैलेंस प्राप्त करने में त्रुटि",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "गेटवे का उपयोग हो रहा है: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "changeExtensionTitle": "फ़ाइल एक्सटेंशन बदलें?",
+  "changeExtensionBody": "एक्सटेंशन {previous} से {next} में बदल जाएगा।",
+  "couldNotRenameTitle": "नाम नहीं बदला जा सका",
+  "couldNotCreateFolderTitle": "फ़ोल्डर नहीं बनाया जा सका",
+  "nameAlreadyExistsHere": "यहाँ {name} नाम की फ़ाइल या फ़ोल्डर पहले से है। कोई दूसरा नाम चुनें।",
+  "couldNotRecreateFolderTitle": "फ़ोल्डर फिर से नहीं बनाया जा सका",
+  "skipAndMoveRest": "छोड़ें और बाकी को ले जाएँ",
+  "couldNotMoveTitle": "ले जाया नहीं जा सका",
+  "failedToHideDrive": "ड्राइव छिपाई नहीं जा सकी",
+  "failedToUnhideDrive": "ड्राइव दोबारा दिखाई नहीं जा सकी",
+  "hidingDrive": "ड्राइव छिपाई जा रही है",
+  "unhidingDrive": "ड्राइव दोबारा दिखाई जा रही है",
+  "downloadLargeFileTitle": "बड़ी फ़ाइल डाउनलोड करें",
+  "downloadFileTooLargeTitle": "यह फ़ाइल यहाँ डाउनलोड करने के लिए बहुत बड़ी है",
+  "exportCsvFailedTitle": "एक्सपोर्ट विफल रहा",
+  "exportingCsvTitle": "CSV एक्सपोर्ट हो रहा है",
+  "createThumbnail": "थंबनेल बनाएँ",
+  "createThumbnailDescription": "थंबनेल एक छोटी छवि है जो आपकी फ़ाइल को दर्शाती है। यह फ़ाइल एक्सप्लोरर और फ़ाइल विवरण में दिखती है।",
+  "couldNotCreateThumbnailTitle": "थंबनेल नहीं बनाया जा सका",
+  "preparingYourFiles": "आपकी फ़ाइलें तैयार की जा रही हैं",
+  "saveNote": "नोट सहेजें",
+  "keepEditing": "संपादन जारी रखें",
+  "openingNote": "नोट खोला जा रहा है",
+  "couldNotOpenNote": "नोट खोला नहीं जा सका"
 }

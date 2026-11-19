@@ -494,7 +494,7 @@
   "@downloadCancelledDescription": {
     "description": "Description of the dialog shown when a download is cancelled"
   },
-  "downloadFinished": "¡Descarga terminada!",
+  "downloadFinished": "Descarga terminada",
   "@downloadFinished": {
     "description": "Download finished"
   },
@@ -506,7 +506,7 @@
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
-  "downloadingFile": "Descargando archivo...",
+  "downloadingFile": "Descargando archivo",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
@@ -8122,5 +8122,29 @@
   "profileArioBalanceError": "Error al obtener el saldo de ARIO",
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "Usando la pasarela: {url}",
-  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}}
+  "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "changeExtensionTitle": "¿Cambiar la extensión del archivo?",
+  "changeExtensionBody": "La extensión cambiará de {previous} a {next}.",
+  "couldNotRenameTitle": "No se pudo cambiar el nombre",
+  "couldNotCreateFolderTitle": "No se pudo crear la carpeta",
+  "nameAlreadyExistsHere": "Ya hay un archivo o carpeta llamado {name} aquí. Elige otro nombre.",
+  "couldNotRecreateFolderTitle": "No se pudo recrear la carpeta",
+  "skipAndMoveRest": "Omitir y mover el resto",
+  "couldNotMoveTitle": "No se pudo mover",
+  "failedToHideDrive": "No se pudo ocultar la unidad",
+  "failedToUnhideDrive": "No se pudo mostrar la unidad",
+  "hidingDrive": "Ocultando unidad",
+  "unhidingDrive": "Mostrando unidad de nuevo",
+  "downloadLargeFileTitle": "Descargar un archivo grande",
+  "downloadFileTooLargeTitle": "Este archivo es demasiado grande para descargarlo aquí",
+  "exportCsvFailedTitle": "Error al exportar",
+  "exportingCsvTitle": "Exportando CSV",
+  "createThumbnail": "Crear miniatura",
+  "createThumbnailDescription": "Una miniatura es una imagen pequeña que representa tu archivo. Se muestra en el explorador de archivos y en los detalles del archivo.",
+  "couldNotCreateThumbnailTitle": "No se pudo crear la miniatura",
+  "preparingYourFiles": "Preparando tus archivos",
+  "saveNote": "Guardar nota",
+  "keepEditing": "Seguir editando",
+  "openingNote": "Abriendo nota",
+  "couldNotOpenNote": "No se pudo abrir la nota"
 }
