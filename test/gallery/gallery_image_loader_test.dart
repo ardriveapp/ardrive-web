@@ -538,4 +538,139 @@ void main() {
       loader.dispose();
     });
   });
+
+  group('request budget', () {
+    const budget = GalleryLoaderConfig(
+      maxConcurrent: 5,
+      idleDelay: Duration(milliseconds: 150),
+      requestsPerMinute: 120,
+      burst: 20,
+    );
+
+    /// Runs [seconds] of fake time, answering every fetch right away.
+    int drive(FakeAsync async, FakeFetcher f, int seconds) {
+      var answered = 0;
+      for (var t = 0; t < seconds * 10; t++) {
+        async.elapse(const Duration(milliseconds: 100));
+        for (final c in f.calls) {
+          if (!c.completer.isCompleted) {
+            c.completer.complete(Uint8List(10));
+            answered++;
+          }
+        }
+        async.flushMicrotasks();
+      }
+      return answered;
+    }
+
+    void budgeted(
+      void Function(FakeAsync async, FakeFetcher f, GalleryImageLoader l)
+          body, {
+      GalleryLoaderConfig cfg = budget,
+    }) {
+      fakeAsync((async) {
+        final f = FakeFetcher();
+        final l = GalleryImageLoader(fetcher: f, config: cfg);
+        body(async, f, l);
+        l.dispose();
+      });
+    }
+
+    test('a fling through 500 tiles never exceeds the budget per minute', () {
+      budgeted((async, f, l) {
+        final handles = [
+          for (var i = 0; i < 500; i++)
+            l.acquire(req('f$i'))
+              ..updatePosition(onScreen: true, priority: i.toDouble()),
+        ];
+        drive(async, f, 60);
+        // burst + one minute of refill, at most.
+        expect(f.calls.length, lessThanOrEqualTo(20 + 120));
+        expect(f.calls.length, greaterThan(100)); // and it does use it
+        // Nothing errored: the rest wait in the skeleton state.
+        expect(
+            handles.where((h) => h.value.status == GalleryImageStatus.failed),
+            isEmpty);
+
+        // Any rolling minute after that stays within the refill rate.
+        final before = f.calls.length;
+        drive(async, f, 60);
+        expect(f.calls.length - before, lessThanOrEqualTo(120 + 1));
+      });
+    });
+
+    test('tiles resume as tokens refill, nearest first, none dropped', () {
+      budgeted((async, f, l) {
+        final handles = [
+          for (var i = 0; i < 30; i++)
+            l.acquire(req('f$i'))
+              ..updatePosition(onScreen: true, priority: i.toDouble()),
+        ];
+        drive(async, f, 1);
+        expect(
+            f.calls.length, inInclusiveRange(20, 22)); // the burst + 1 s refill
+        expect(handles[25].value.status, GalleryImageStatus.loading);
+
+        drive(async, f, 10); // 2 tokens a second: 10 more in 5 s
+        expect(f.calls.length, 30);
+        expect(f.started, [for (var i = 0; i < 30; i++) 'f$i']);
+        expect(
+            handles.every((h) => h.value.status == GalleryImageStatus.loaded),
+            isTrue);
+      });
+    });
+
+    test('the budget still respects maxConcurrent', () {
+      budgeted((async, f, l) {
+        for (var i = 0; i < 30; i++) {
+          l
+              .acquire(req('f$i'))
+              .updatePosition(onScreen: true, priority: i.toDouble());
+        }
+        async.elapse(const Duration(seconds: 1));
+        expect(f.inFlight, 5);
+        expect(f.calls.length, 5);
+      });
+    });
+
+    test('a 429 pause and an empty bucket both hold; neither errors a tile',
+        () {
+      budgeted((async, f, l) {
+        final handles = [
+          for (var i = 0; i < 40; i++)
+            l.acquire(req('f$i'))
+              ..updatePosition(onScreen: true, priority: i.toDouble()),
+        ];
+        async.elapse(const Duration(seconds: 1));
+        f.fail(
+            'f0', const GalleryRateLimited(retryAfter: Duration(seconds: 20)));
+        async.flushMicrotasks();
+        final before = f.calls.length;
+        async.elapse(const Duration(seconds: 15));
+        expect(f.calls.length, before); // paused
+        drive(async, f, 120);
+        expect(
+            handles.where((h) => h.value.status == GalleryImageStatus.failed),
+            isEmpty);
+        expect(f.calls.length, lessThanOrEqualTo(20 + 120 * 2 + 21));
+        expect(
+            handles
+                .where((h) => h.value.status == GalleryImageStatus.loaded)
+                .length,
+            40);
+      });
+    });
+
+    test('a budget of 0 is off', () {
+      budgeted((async, f, l) {
+        for (var i = 0; i < 100; i++) {
+          l
+              .acquire(req('f$i'))
+              .updatePosition(onScreen: true, priority: i.toDouble());
+        }
+        drive(async, f, 5);
+        expect(f.calls.length, 100);
+      }, cfg: const GalleryLoaderConfig(requestsPerMinute: 0));
+    });
+  });
 }
