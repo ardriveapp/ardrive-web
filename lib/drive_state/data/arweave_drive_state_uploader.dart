@@ -108,6 +108,7 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
       return const DriveStateUploadResult.failed(
         'You are no longer logged in. Nothing was uploaded and nothing was '
         'spent.',
+        failure: DriveStateUploadFailure.notLoggedIn,
       );
     }
 
@@ -121,12 +122,14 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
         return const DriveStateUploadResult.failed(
           'Your wallet changed while this snapshot was being prepared. '
           'Nothing was uploaded and nothing was spent.',
+          failure: DriveStateUploadFailure.walletChanged,
         );
       }
     } on ArConnectUnavailableException catch (e) {
       logger.w('[drive-state] could not check the wallet: $e');
       return const DriveStateUploadResult.failed(
         "Wander didn't answer. Nothing was uploaded and nothing was spent.",
+        failure: DriveStateUploadFailure.walletUnavailable,
       );
     }
 
@@ -217,6 +220,7 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
         return const DriveStateUploadResult.failed(
           'Turbo declined the payment for this snapshot. Add credits or '
           'pay with AR, then try again.',
+          failure: DriveStateUploadFailure.paymentDeclined,
         );
       }
 

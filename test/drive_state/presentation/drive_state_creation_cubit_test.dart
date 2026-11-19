@@ -139,13 +139,16 @@ void main() {
   DriveStateCreationCubit cubitWith({
     DriveStateSyncSkipStatus skipStatus =
         const DriveStateSyncSkipStatus.clean(),
+    DriveStateSyncSkipSource? skipSource,
     void Function()? onPublished,
+    DriveStateSyncDrive? syncDrive,
   }) =>
       DriveStateCreationCubit(
         driveId: driveId,
+        syncDrive: syncDrive,
         service: DriveStateCreationService(
           driveDao: driveDao,
-          skipSource: _FixedSkipSource(skipStatus),
+          skipSource: skipSource ?? _FixedSkipSource(skipStatus),
           appVersion: () async => '9.9.9',
         ),
         uploader: uploader,
@@ -182,6 +185,108 @@ void main() {
             reason: 'the user must be told no money moved');
       },
     );
+  });
+
+  group('syncing from a refusal', () {
+    const unknown = DriveStateSyncSkipStatus.unknown('No sync yet.');
+    const skipped = DriveStateSyncSkipStatus.skipped(
+      skippedEntityCount: 2,
+      reason: 'The last sync of this drive could not read 2 items.',
+    );
+
+    test('offers a sync only where one can clear the refusal', () async {
+      final withSync = cubitWith(
+        skipStatus: unknown,
+        syncDrive: (
+                {required deep, required force, required isCancelled}) async =>
+            true,
+      );
+      await withSync.prepare();
+      expect((withSync.state as DriveStateCreationRefused).canSync, isTrue);
+      await withSync.close();
+
+      final withoutSync = cubitWith(skipStatus: unknown);
+      await withoutSync.prepare();
+      expect((withoutSync.state as DriveStateCreationRefused).canSync, isFalse);
+      await withoutSync.close();
+    });
+
+    test('syncs, then prepares the snapshot', () async {
+      final source = _MutableSkipSource(unknown);
+      bool? deepAsked;
+      final cubit = cubitWith(
+        skipSource: source,
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
+          deepAsked = deep;
+          source.status = const DriveStateSyncSkipStatus.clean();
+          return true;
+        },
+      );
+      await cubit.prepare();
+      final states = <DriveStateCreationState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await cubit.syncThenPrepare();
+      await sub.cancel();
+
+      expect(deepAsked, isFalse);
+      expect(states.first, isA<DriveStateCreationSyncing>());
+      expect(cubit.state, isA<DriveStateCreationReady>());
+      verifyNever(() => uploader.publish(any(), method: any(named: 'method')));
+      await cubit.close();
+    });
+
+    test('asks for a deep sync when items were skipped', () async {
+      bool? deepAsked;
+      final cubit = cubitWith(
+        skipStatus: skipped,
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
+          deepAsked = deep;
+          return true;
+        },
+      );
+      await cubit.prepare();
+      await cubit.syncThenPrepare();
+      expect(deepAsked, isTrue);
+      await cubit.close();
+    });
+
+    test('syncs a drive with no watermark even when its skips are clean',
+        () async {
+      bool? forced;
+      final cubit = cubitWith(
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
+          forced = force;
+          return true;
+        },
+      );
+      cubit.emit(DriveStateCreationRefused(
+        refusal: DriveStateCreationRefusal.noWatermark,
+        reason: 'No watermark.',
+        canSync: true,
+      ));
+      await cubit.syncThenPrepare();
+      expect(forced, isTrue);
+      await cubit.close();
+    });
+
+    test('says so when the sync could not start', () async {
+      final cubit = cubitWith(
+        skipStatus: unknown,
+        syncDrive: (
+                {required deep, required force, required isCancelled}) async =>
+            false,
+      );
+      await cubit.prepare();
+      await cubit.syncThenPrepare();
+      final state = cubit.state as DriveStateCreationRefused;
+      expect(state.syncDidNotStart, isTrue);
+      expect(state.canSync, isTrue);
+      await cubit.close();
+    });
   });
 
   group('prepare', () {
@@ -402,6 +507,32 @@ void main() {
       verify: (_) => verifyNever(
         () => uploader.publish(any(), method: any(named: 'method')),
       ),
+    );
+
+    blocTest<DriveStateCreationCubit, DriveStateCreationState>(
+      'a top-up read that fails says the balance is unknown, and keeps the '
+      'artifact',
+      build: cubitWith,
+      setUp: () {
+        var call = 0;
+        when(() => costEstimator.estimate(
+              sizeInBytes: any(named: 'sizeInBytes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+            )).thenAnswer((_) async {
+          if (call++ > 0) throw Exception('offline');
+          return _cost();
+        });
+      },
+      act: (cubit) async {
+        await cubit.prepare();
+        await cubit.refreshTurboBalance();
+      },
+      verify: (cubit) {
+        final ready = cubit.state as DriveStateCreationReady;
+        expect(ready.cost.turboUnreachable, isTrue);
+        expect(ready.artifact.driveId, driveId);
+      },
     );
 
     blocTest<DriveStateCreationCubit, DriveStateCreationState>(
@@ -770,6 +901,24 @@ void main() {
       await cubit.close();
     });
 
+    test(
+        'a published snapshot lands on success and is listed even if '
+        'onPublished throws, never on "nothing was spent"', () async {
+      final cubit = cubitWith(onPublished: () => throw StateError('boom'));
+      await cubit.prepare();
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer(
+        (_) async => const DriveStateUploadResult.published('tx-throws'),
+      );
+      final announced = SnapshotEventBus.instance.stream.first;
+
+      await cubit.publish();
+
+      expect(cubit.state, isA<DriveStateCreationPublished>());
+      expect((await announced).snapshot.txId, 'tx-throws');
+      await cubit.close();
+    });
+
     test('onPublished is not called when the upload fails', () async {
       var called = false;
       final cubit = cubitWith(onPublished: () => called = true);
@@ -858,6 +1007,15 @@ DriveStatePublishCost _cost({
       sufficientTurboBalance: sufficientTurboBalance,
       freeStatus: freeStatus,
     );
+
+class _MutableSkipSource implements DriveStateSyncSkipSource {
+  DriveStateSyncSkipStatus status;
+
+  _MutableSkipSource(this.status);
+
+  @override
+  DriveStateSyncSkipStatus statusFor(String driveId) => status;
+}
 
 class _FixedSkipSource implements DriveStateSyncSkipSource {
   final DriveStateSyncSkipStatus _status;

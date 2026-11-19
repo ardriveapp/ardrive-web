@@ -1,26 +1,21 @@
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/turbo/models/free_upload_status.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
+import 'package:ardrive/components/charged_review_dialog.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
-import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -100,9 +95,12 @@ Future<bool> drivePublishesStateSnapshot({
 /// Opens whichever snapshot [drive] gets - see [createsDriveStateSnapshot].
 Future<void> promptToCreateSnapshot(
   BuildContext context,
-  Drive drive,
-) async {
-  final createsDriveState = await createsDriveStateSnapshot(context, drive);
+  Drive drive, {
+  /// Already looked up, by a caller that closes its own dialog first and so
+  /// can't wait on the lookup with that dialog's context.
+  bool? createsDriveState,
+}) async {
+  createsDriveState ??= await createsDriveStateSnapshot(context, drive);
   if (!context.mounted) {
     return;
   }
@@ -142,7 +140,7 @@ Future<void> promptToCreateSnapshot(
   });
 }
 
-class CreateSnapshotDialog extends StatelessWidget {
+class CreateSnapshotDialog extends StatefulWidget {
   final Drive drive;
   final PromptToSnapshotBloc promptToSnapshotBloc;
 
@@ -153,112 +151,89 @@ class CreateSnapshotDialog extends StatelessWidget {
   });
 
   @override
+  State<CreateSnapshotDialog> createState() => _CreateSnapshotDialogState();
+}
+
+class _CreateSnapshotDialogState extends State<CreateSnapshotDialog> {
+  Drive get drive => widget.drive;
+
+  /// Whether Create snapshot or Try again has been pressed and has not come
+  /// back. Set before the call: the cubit's busy state arrives only after it
+  /// has checked the wallet, and a fast second press would pay twice.
+  bool _submitting = false;
+
+  Future<void> _run(Future<void> Function() step) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await step();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Opening the dialog is the ask: it starts working out the size and the
+    // cost at once, so the first thing to read is the one screen that
+    // creates the snapshot, not a screen that only explains it.
+    final cubit = context.read<CreateSnapshotCubit>();
+    if (cubit.state is CreateSnapshotInitial) {
+      cubit.confirmDriveAndHeighRange(drive.id);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
     return BlocConsumer<CreateSnapshotCubit, CreateSnapshotState>(
       listener: (context, state) {
         if (state is SnapshotUploadSuccess) {
-          promptToSnapshotBloc.add(
+          widget.promptToSnapshotBloc.add(
             DriveSnapshotted(
               driveId: drive.id,
               // TODO
               /// txsSyncedWithGqlCount: state.notSnapshottedTxsCount,
             ),
           );
-        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
-          // This dialog is shown with barrierDismissible: false, so it has to
-          // be popped first — otherwise dismissing the payment dialog leaves
-          // an invisible, undismissable barrier over the app.
-          Navigator.of(context).pop();
-          showTurboPaymentRequiredDialog(context);
         }
       },
       builder: (context, state) {
-        if (state is CreateSnapshotInitial) {
-          return _explanationDialog(context, drive);
-        } else if (state is ComputingSnapshotData ||
-            state is UploadingSnapshot ||
-            state is PreparingAndSigningTransaction) {
-          return _loadingDialog(context, state);
-        } else if (state is SnapshotUploadSuccess) {
+        if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
-        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
-          // Pop + payment dialog handled in the listener; render nothing for
-          // any frame between the state landing and the pop taking effect.
-          return const SizedBox.shrink();
         } else if (state is SnapshotUploadFailure ||
             state is ComputeSnapshotDataFailure) {
-          return _failureDialog(context, drive.id);
-        } else if (state is CreateSnapshotInsufficientBalance) {
-          return _insufficientBalanceDialog(context, state);
-        } else {
+          // A payment the Turbo account can't make is told in this dialog,
+          // with the way on, like any other failure.
+          return _failureDialog(
+            context,
+            drive.id,
+            busy: _submitting,
+            run: _run,
+            isPaymentError:
+                state is SnapshotUploadFailure && state.isPaymentError,
+            postedTxId:
+                state is SnapshotUploadFailure ? state.postedTxId : null,
+          );
+        } else if (state is ConfirmingSnapshotCreation) {
           return _confirmDialog(
             context,
             drive,
             createSnapshotCubit,
             state,
+            busy: _submitting,
+            run: _run,
           );
         }
+
+        // Initial, computing, signing and uploading: the work, in this
+        // dialog.
+        return _loadingDialog(context, state);
       },
     );
   }
-}
-
-Widget _explanationDialog(BuildContext context, Drive drive) {
-  final createSnapshotCubit = context.read<CreateSnapshotCubit>();
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-  return ArDriveStandardModalNew(
-    title: appLocalizationsOf(context).newSnapshot,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text.rich(
-          TextSpan(
-            children: splitTranslationsWithMultipleStyles(
-              originalText: appLocalizationsOf(context)
-                  .createSnapshotExplanation(drive.name),
-              defaultMapper: (t) => TextSpan(
-                text: t,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
-              ),
-              parts: {
-                drive.name: (t) => TextSpan(
-                      text: t,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textHigh,
-                      ),
-                    ),
-              },
-            ),
-          ),
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-          ),
-        ),
-      ],
-    ),
-    actions: [
-      ModalAction(
-        title: appLocalizationsOf(context).cancelEmphasized,
-        action: () {
-          Navigator.of(context).pop();
-        },
-      ),
-      ModalAction(
-        title: appLocalizationsOf(context).createSnapshot,
-        action: () {
-          createSnapshotCubit.confirmDriveAndHeighRange(drive.id);
-        },
-      ),
-    ],
-  );
 }
 
 Widget _loadingDialog(
@@ -272,12 +247,14 @@ Widget _loadingDialog(
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  final onDismiss = state is ComputingSnapshotData
-      ? () {
-          Navigator.of(context).pop();
-          createSnapshotCubit.cancelSnapshotCreation();
-        }
-      : null;
+  // Until the upload starts, the work can be stopped: it has paid nothing.
+  final onDismiss =
+      state is ComputingSnapshotData || state is CreateSnapshotInitial
+          ? () {
+              Navigator.of(context).pop();
+              createSnapshotCubit.cancelSnapshotCreation();
+            }
+          : null;
 
   return ProgressDialog(
     title: _loadingDialogTitle(context, state),
@@ -300,10 +277,10 @@ Widget _loadingDialog(
 }
 
 String _loadingDialogTitle(BuildContext context, CreateSnapshotState state) {
-  if (state is ComputingSnapshotData) {
-    return appLocalizationsOf(context).determiningSizeAndCostOfSnapshot;
+  if (state is ComputingSnapshotData || state is CreateSnapshotInitial) {
+    return appLocalizationsOf(context).snapshotPreparing;
   } else if (state is PreparingAndSigningTransaction) {
-    return appLocalizationsOf(context).finishingThingsUp;
+    return appLocalizationsOf(context).snapshotFinishing;
   } else {
     return appLocalizationsOf(context).uploadingSnapshot;
   }
@@ -321,43 +298,28 @@ String _loadingDialogDescription(
         state.totalTransactions,
       );
     }
-    return appLocalizationsOf(context).thisMayTakeAWhile;
+    return appLocalizationsOf(context).snapshotMayTakeAWhile;
   } else if (state is PreparingAndSigningTransaction) {
     if (isArConnectProfile) {
       return appLocalizationsOf(context).pleaseRemainOnThisTabSnapshots;
     } else {
-      return appLocalizationsOf(context).thisMayTakeAWhile;
+      return appLocalizationsOf(context).snapshotMayTakeAWhile;
     }
   } else {
-    // Description for uploading snapshot
+    // Description for the start and for uploading the snapshot
     return '';
   }
 }
 
 Widget _successDialog(BuildContext context, String driveName) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: appLocalizationsOf(context).snapshotSuceeded,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text.rich(
-          TextSpan(
-            text: appLocalizationsOf(context)
-                .snapshotCreationSucceeded(driveName),
-          ),
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-          ),
-        ),
-      ],
-    ),
+    title: l10n.snapshotSuceeded,
+    description: l10n.snapshotCreationSucceeded(driveName),
     actions: [
-      ModalAction(
-        title: appLocalizationsOf(context).ok,
+      ModalAction.close(
+        title: l10n.close,
         action: () {
           Navigator.of(context).pop();
         },
@@ -368,209 +330,128 @@ Widget _successDialog(BuildContext context, String driveName) {
 
 Widget _failureDialog(
   BuildContext context,
-  DriveID driveId,
-) {
+  DriveID driveId, {
+  required bool busy,
+  required Future<void> Function(Future<void> Function()) run,
+  bool isPaymentError = false,
+  String? postedTxId,
+}) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   return ArDriveStandardModalNew(
-    title: appLocalizationsOf(context).snapshotFailed,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text.rich(
-          TextSpan(
-            text: appLocalizationsOf(context).snapshotCreationFailed,
-          ),
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-          ),
-        ),
-      ],
+    title: isPaymentError ? l10n.freeAllowanceUsedUpTitle : l10n.snapshotFailed,
+    content: ArDriveNotice(
+      type: ArDriveNoticeType.error,
+      message: isPaymentError
+          ? l10n.freeAllowanceUsedUpDescription
+          : postedTxId != null
+              ? l10n.snapshotFailureUncertain(postedTxId)
+              : l10n.snapshotCreationFailed,
     ),
     actions: [
-      ModalAction(
-        action: () {
-          createSnapshotCubit.confirmDriveAndHeighRange(driveId);
-        },
-        title: appLocalizationsOf(context).tryAgainEmphasized,
-      ),
-      ModalAction(
-        title: appLocalizationsOf(context).ok,
+      ModalAction.close(
+        title: l10n.close,
+        isEnable: !busy,
         action: () {
           Navigator.of(context).pop();
         },
       ),
-    ],
-  );
-}
-
-Widget _insufficientBalanceDialog(
-  BuildContext context,
-  CreateSnapshotInsufficientBalance state,
-) {
-  final typography = ArDriveTypographyNew.of(context);
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-  return ArDriveStandardModalNew(
-    title: appLocalizationsOf(context).insufficientARForUpload,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text.rich(
-          TextSpan(
-            text: appLocalizationsOf(context).insufficientBalanceForSnapshot(
-              state.walletBalance,
-              state.arCost,
-            ),
+      if (isPaymentError)
+        ModalAction(
+          title: l10n.buyCredits,
+          action: () {
+            Navigator.of(context).pop();
+            showTurboTopupModal(context);
+          },
+        )
+      // Not after an AR send that may have posted: a retry pays again.
+      else if (postedTxId == null)
+        ModalAction(
+          isLoading: busy,
+          action: () => run(
+            () => createSnapshotCubit.confirmDriveAndHeighRange(driveId),
           ),
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-          ),
+          title: l10n.tryAgainEmphasized,
         ),
-      ],
-    ),
-    actions: [
-      ModalAction(
-        title: appLocalizationsOf(context).ok,
-        action: () {
-          Navigator.of(context).pop();
-        },
-      ),
     ],
   );
 }
 
+/// What a snapshot is, how big it is and what it costs, with the one button
+/// that creates it.
 Widget _confirmDialog(
   BuildContext context,
   Drive drive,
   CreateSnapshotCubit createSnapshotCubit,
-  CreateSnapshotState state,
-) {
+  ConfirmingSnapshotCreation state, {
+  required bool busy,
+  required Future<void> Function(Future<void> Function()) run,
+}) {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
-  return ArDriveStandardModalNew(
-    title: appLocalizationsOf(context).newSnapshot,
-    content: SizedBox(
-        width: kMediumDialogWidth,
-        child: Row(
-          children: [
-            if (state is ConfirmingSnapshotCreation) ...{
-              Flexible(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text.rich(
-                      TextSpan(
-                        children: splitTranslationsWithMultipleStyles(
-                          originalText: appLocalizationsOf(context)
-                              .snapshotOfDrive(drive.name),
-                          defaultMapper: (t) => TextSpan(
-                            text: t,
-                            style: typography.paragraphNormal(
-                              color: colorTokens.textMid,
-                            ),
-                          ),
-                          parts: {
-                            drive.name: (t) => TextSpan(
-                                  text: t,
-                                  style: typography.paragraphNormal(
-                                    fontWeight: ArFontWeight.semiBold,
-                                    color: colorTokens.textHigh,
-                                  ),
-                                ),
-                          },
-                        ),
-                      ),
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textMid,
-                      ),
-                    ),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context).snapshotSize(
-                              filesize(state.snapshotSize),
-                            ),
-                          ),
-                        ],
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textMid,
-                        ),
-                      ),
-                    ),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    TurboFreeStatusMessage(
-                      status: state.freeStatus,
-                      padding: const EdgeInsets.only(bottom: 12),
-                    ),
-                    if (!state.isFreeThanksToTurbo) ...{
-                      PaymentMethodSelector(
-                        uploadMethodInfo: UploadPaymentMethodInfo(
-                          uploadMethod: state.uploadMethod,
-                          totalSize: state.snapshotSize,
-                          costEstimateTurbo: state.costEstimateTurbo,
-                          costEstimateAr: state.costEstimateAr,
-                          hasNoTurboBalance: state.hasNoTurboBalance,
-                          // Without a price from Turbo there is no Turbo
-                          // option, rather than one that costs 0 credits.
-                          isTurboUploadPossible:
-                              (state.costEstimateTurbo?.totalCost ??
-                                      BigInt.zero) >
-                                  BigInt.zero,
-                          arBalance: state.arBalance,
-                          sufficientArBalance:
-                              state.sufficientBalanceToPayWithAr,
-                          turboCredits: state.turboCredits,
-                          sufficentCreditsBalance:
-                              state.sufficientBalanceToPayWithTurbo,
-                          freeStatus: FreeUploadStatus.notEligible,
-                        ),
-                        onTurboTopupSucess: () {
-                          createSnapshotCubit.refreshTurboBalance();
-                        },
-                        onArSelect: () {
-                          createSnapshotCubit.setUploadMethod(UploadMethod.ar);
-                        },
-                        onTurboSelect: () {
-                          createSnapshotCubit
-                              .setUploadMethod(UploadMethod.turbo);
-                        },
-                      ),
-                    }
-                  ],
-                ),
+  return ChargedReviewDialog(
+    title: l10n.createSnapshot,
+    destination: l10n.uploadReviewTo(drive.name),
+    primaryLabel: l10n.createSnapshot,
+    busy: busy,
+    leading: [
+      const SizedBox(height: ArDriveSpacing.md),
+      Text.rich(
+        TextSpan(
+          children: splitTranslationsWithMultipleStyles(
+            originalText: l10n.createSnapshotExplanation(drive.name),
+            defaultMapper: (t) => TextSpan(
+              text: t,
+              style: typography.paragraphNormal(
+                color: colorTokens.textMid,
               ),
-
-              // TODO: PE-2933
-            }
-          ],
-        )),
-    actions: [
-      if (state is ConfirmingSnapshotCreation) ...{
-        ModalAction(
-          title: appLocalizationsOf(context).cancelEmphasized,
-          action: () {
-            logger.i('Canceling snapshot creation');
-            Navigator.of(context).pop();
-          },
+            ),
+            parts: {
+              drive.name: (t) => TextSpan(
+                    text: t,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+            },
+          ),
         ),
-        ModalAction(
-          action: () async => {
-            logger.i('Confirming snapshot creation'),
-            await createSnapshotCubit.confirmSnapshotCreation(),
-          },
-          title: appLocalizationsOf(context).uploadSnapshot,
-          isEnable: state.isButtonToUploadEnabled,
+        style: typography.paragraphNormal(
+          color: colorTokens.textMid,
         ),
-      }
+      ),
     ],
+    // The snapshot is the one thing uploaded: its size is in its row.
+    files: [
+      (
+        name: drive.name,
+        size: state.snapshotSize,
+        contentType: 'application/json',
+      ),
+    ],
+    method: state.uploadMethod,
+    totalSize: state.snapshotSize,
+    costEstimateAr: state.costEstimateAr,
+    costEstimateTurbo: state.costEstimateTurbo,
+    turboBalance: state.turboBalance,
+    turboCredits: state.turboCredits,
+    arBalance: state.arBalance,
+    sufficientArBalance: state.sufficientBalanceToPayWithAr,
+    freeStatus: state.freeStatus,
+    turboUnreachable: state.turboUnreachable,
+    onMethodChanged: createSnapshotCubit.setUploadMethod,
+    refresh: createSnapshotCubit.refreshTurboBalance,
+    onConfirm: (_) => run(() async {
+      logger.i('Confirming snapshot creation');
+      await createSnapshotCubit.confirmSnapshotCreation();
+    }),
+    onCancel: () {
+      logger.i('Canceling snapshot creation');
+      Navigator.of(context).pop();
+    },
   );
 }

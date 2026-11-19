@@ -257,6 +257,14 @@ void main() {
 
       expect(cost.hasNoTurboBalance, isTrue);
       expect(cost.canPayWith(UploadMethod.ar), isTrue);
+      // Zero is a stand-in, not a balance: the review must not call it short.
+      expect(cost.turboUnreachable, isTrue);
+    });
+
+    test('a balance that reads is not marked unreadable', () async {
+      final cost = await estimate();
+
+      expect(cost.turboUnreachable, isFalse);
     });
 
     test('all three at once still prices the artifact in AR', () async {

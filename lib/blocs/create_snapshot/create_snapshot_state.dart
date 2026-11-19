@@ -44,19 +44,6 @@ class ComputeSnapshotDataFailure extends CreateSnapshotState {
   List<Object> get props => [errorMessage];
 }
 
-class CreateSnapshotInsufficientBalance extends CreateSnapshotState {
-  final String walletBalance;
-  final String arCost;
-
-  CreateSnapshotInsufficientBalance({
-    required this.walletBalance,
-    required this.arCost,
-  });
-
-  @override
-  List<Object> get props => [walletBalance, arCost];
-}
-
 class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final int snapshotSize;
 
@@ -66,6 +53,13 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final bool isTurboUploadPossible;
   final String arBalance;
   final String turboCredits;
+
+  /// The Turbo Credits balance, in winston credits, for the review's cost.
+  final BigInt turboBalance;
+
+  /// The Turbo balance could not be read, so [turboBalance] is not to be
+  /// trusted: the review says so and offers Try again, never "short".
+  final bool turboUnreachable;
   final UploadMethod uploadMethod;
   final bool isButtonToUploadEnabled;
   final bool sufficientBalanceToPayWithAr;
@@ -87,7 +81,9 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     required this.sufficientBalanceToPayWithAr,
     required this.sufficientBalanceToPayWithTurbo,
     required this.freeStatus,
-  });
+    BigInt? turboBalance,
+    this.turboUnreachable = false,
+  }) : turboBalance = turboBalance ?? BigInt.zero;
 
   bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
 
@@ -104,6 +100,8 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
         isTurboUploadPossible,
         arBalance,
         turboCredits,
+        turboBalance,
+        turboUnreachable,
         uploadMethod,
         isButtonToUploadEnabled,
         sufficientBalanceToPayWithAr,
@@ -121,6 +119,8 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     bool? isTurboUploadPossible,
     String? arBalance,
     String? turboCredits,
+    BigInt? turboBalance,
+    bool? turboUnreachable,
     UploadMethod? uploadMethod,
     bool? isButtonToUploadEnabled,
     bool? sufficientBalanceToPayWithAr,
@@ -136,6 +136,8 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
           isTurboUploadPossible ?? this.isTurboUploadPossible,
       arBalance: arBalance ?? this.arBalance,
       turboCredits: turboCredits ?? this.turboCredits,
+      turboBalance: turboBalance ?? this.turboBalance,
+      turboUnreachable: turboUnreachable ?? this.turboUnreachable,
       uploadMethod: uploadMethod ?? this.uploadMethod,
       isButtonToUploadEnabled:
           isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
@@ -152,10 +154,16 @@ class UploadingSnapshot extends CreateSnapshotState {}
 
 class SnapshotUploadFailure extends CreateSnapshotState {
   final bool isPaymentError;
-  SnapshotUploadFailure({this.isPaymentError = false});
+
+  /// The transaction an AR upload had started sending when it failed. It may
+  /// have reached the network and been paid for, so the dialog names it and
+  /// offers no retry, which would sign and pay for a second one.
+  final String? postedTxId;
+
+  SnapshotUploadFailure({this.isPaymentError = false, this.postedTxId});
 
   @override
-  List<Object> get props => [isPaymentError];
+  List<Object> get props => [isPaymentError, postedTxId ?? ''];
 }
 
 class SnapshotUploadSuccess extends CreateSnapshotState {}

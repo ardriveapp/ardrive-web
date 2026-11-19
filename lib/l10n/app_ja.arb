@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "デプロイは、フォルダーを1つのArweaveアドレスで公開し、各ファイルにわかりやすいパスを割り当てます。Arweaveマニフェストとして保存されます。",
+  "aManifestIsASpecialKindOfFile": "デプロイは、フォルダーを1つのArweaveアドレスで公開し、各ファイルにわかりやすいパスを割り当てます。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "新規スナップショット",
+  "createSnapshot": "スナップショットを作成",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "スナップショットにより、ドライブの読み込み時間が短縮されます。お使いの{driveName}ドライブのスナップショットを作成しますか？",
+  "createSnapshotExplanation": "スナップショットにより {driveName} の読み込みが速くなります。",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -871,7 +871,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "このフォルダー内の一部のファイルはまだ保留中です。保留中のファイルを含むデプロイの作成はおすすめしません。続行しますか？",
+  "filesPendingManifestExplanation": "このフォルダー内の一部のファイルはまだ保留中です。確認されるまでデプロイの作成はおすすめしません。",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1102,7 +1102,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "ARが不足しているためアップロードできません。",
+  "insufficientARForUpload": "ARが足りません",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1124,7 +1124,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "ウォレット残高が{walletBalance}ARでは、このスナップショットのトランザクションコストである{totalCost}ARに不足しています...",
+  "insufficientBalanceForSnapshot": "ウォレットの残高は{walletBalance} ARです。このスナップショットには{totalCost} ARかかります。",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -2030,7 +2030,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "{driveName}のスナップショットの作成に成功しました。",
+  "snapshotCreationSucceeded": "{driveName} のスナップショットをArweaveに送信中です。",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2064,7 +2064,7 @@
       }
     }
   },
-  "snapshotSuceeded": "成功",
+  "snapshotSuceeded": "スナップショットを作成しました",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2665,7 +2665,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "今後は確認しない。",
+  "dontAskMeAgain": "今後は確認しない",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -8341,6 +8341,136 @@
   "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
   "logsExportedWebNotice": "ログをエクスポートしました。ダウンロードに保存されました。",
   "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."},
+  "deploymentFolder": "フォルダー",
+  "deploymentFallbackLabel": "フォールバックページ（任意）",
+  "deploymentFallbackHelp": "デプロイ内のパスが存在しないときに表示されるページです（404ページなど）。そのファイルのトランザクションIDを入力してください。",
+  "deploymentInvalidTxId": "無効なトランザクションID",
+  "deploymentHiddenNotice": "非表示のファイルとフォルダーはデプロイに追加されません。",
+  "loadingFolders": "フォルダーを読み込み中",
+  "deploymentPreparing": "デプロイを準備中",
+  "deploymentUploading": "デプロイをアップロード中",
+  "deploymentCreating": "デプロイを作成中",
+  "deploymentNameConflictTitle": "名前はすでに使われています",
+  "deploymentNameConflictBody": "このフォルダーには「{name}」という名前のファイルまたはフォルダーがすでにあります。別の名前を選んでください。",
+  "deploymentUseName": "この名前を使う",
+  "deploymentExistsTitle": "デプロイはすでに存在します",
+  "deploymentExistsBody": "「{name}」はこのフォルダーにすでにあるデプロイです。作成すると、その新しいバージョンが追加されます。",
+  "deploymentCreateNewVersion": "新しいバージョンを作成",
+  "deploymentCreatedTitle": "デプロイを作成しました",
+  "deploymentFailedTitle": "デプロイを作成できませんでした",
+  "deploymentFailedBody": "デプロイをArweaveにアップロードできませんでした。",
+  "deploymentMaybeSentBody": "アップロードは送信され、支払いも済んでいる可能性があります。もう一度作成する前に、ドライブを同期して確認してください。",
+  "deploymentWalletChanged": "デプロイの作成中にウォレットが変わりました。何もアップロードされていません。",
+  "importFromDeployment": "デプロイからインポート",
+  "importDeploymentIdLabel": "デプロイID",
+  "importEnterId": "ファイルをインポートするデプロイのIDを入力してください。",
+  "importIdRequired": "デプロイIDを入力してください",
+  "importIdInvalid": "無効なデプロイID",
+  "importLoading": "デプロイを読み込み中",
+  "importResolving": "ファイルパスを解決中",
+  "importProgress": "{total}件中{processed}件",
+  "importCreatingFolder": "フォルダー {path} を作成中",
+  "importingFile": "{name} をインポート中",
+  "importFilesFailed": "{count, plural, other{{count}件のファイルが失敗しました}}",
+  "importConflictsTitle": "ファイルはすでに存在します",
+  "importConflictsBody": "次のファイルはこのフォルダーにすでにあります:",
+  "importConflictsQuestion": "置き換えますか？",
+  "importReplace": "ファイルを置き換える",
+  "importReviewTitle": "ファイルを確認",
+  "importReviewSummary": "{count, plural, other{{count}件のファイルをインポートします}}",
+  "importAction": "インポート",
+  "importCancelledTitle": "インポートをキャンセルしました",
+  "importCancelledBody": "{count, plural, other{停止するまでに{count}件のファイルをインポートしました。}}",
+  "importSuccessTitle": "インポートが完了しました",
+  "importSuccessBody": "{count, plural, other{{count}件のファイルをインポートしました}}",
+  "snapshotPreparing": "スナップショットを準備中",
+  "snapshotFinishing": "スナップショットを仕上げ中",
+  "snapshotMayTakeAWhile": "時間がかかる場合があります",
+  "snapshotNotNow": "今はしない",
+  "snapshotPromptDriveStateTitle": "このドライブの読み込みを速くする",
+  "snapshotPromptDriveStateBody": "このドライブは、履歴を1件ずつ読み込むため同期に時間がかかります。スナップショットはドライブ全体を1つのファイルとしてArweaveに保存するので、どこでサインインしても読み込みがずっと速くなります。アップロードの前にサイズと費用を確認できます。",
+  "snapshotPreparingBody": "{driveName} のスナップショットを準備中です。",
+  "snapshotWhatItDoesEncrypted": "この操作は、このドライブのスナップショットをドライブキーで暗号化してArweaveに保存し、どこでサインインしても読み込みを速くします。永久に残り、削除できません。",
+  "snapshotWhatItDoes": "この操作は、このドライブのスナップショットをArweaveに保存し、どこでサインインしても読み込みを速くします。永久に残り、削除できません。",
+  "snapshotSummaryDrive": "ドライブ",
+  "snapshotSummaryItems": "項目",
+  "snapshotSummarySize": "サイズ",
+  "snapshotSummaryBlocks": "ブロック",
+  "snapshotBlocksRange": "{start}〜{end}",
+  "snapshotUnaffordable": "ARの残高もTurboクレジットもこのスナップショットの費用に足りないため、まだ作成できません。",
+  "snapshotCreating": "スナップショットを作成中",
+  "snapshotPublishedBody": "{driveName} のスナップショットをArweaveに送信中です。確認されると、ArDriveはこのドライブの読み込みを速くするために使い始めます。ドライブのスナップショットタブで状況を確認できます。",
+  "permanenceTitle": "あなたの永続性",
+  "permanenceShareTitle": "永続性を共有",
+  "permanenceCopyText": "テキストをコピー",
+  "permanenceDownloadImage": "画像をダウンロード",
+  "permanenceTextCopied": "テキストをコピーしました",
+  "permanenceImageSaved": "画像を保存しました",
+  "permanencePreserved": "保存済み",
+  "permanenceFiles": "{count, plural, other{{count} 個のファイル}}",
+  "permanenceDrives": "{count, plural, other{{count} 個のドライブ}}",
+  "permanenceSince": "{year}年から",
+  "permanenceChartLabel": "年ごとのアップロード: {years}",
+  "permanenceCostToday": "現在の費用",
+  "permanenceCostNote": "保存にかかるネットワークの価格",
+  "permanenceNetworkUnreachable": "ネットワークに接続できませんでした",
+  "permanenceSpent": "支出",
+  "permanenceCountingAr": "直接支払ったARを集計中...",
+  "permanencePaidDirectly": "+ 直接支払い {ar}",
+  "permanencePaidDirectlyAtLeast": "+ 直接支払い 少なくとも {ar}",
+  "permanencePaidInAr": "ARで直接支払い",
+  "permanencePaidInArAtLeast": "ARで直接支払い、少なくとも",
+  "permanenceNoteAsOf": "{note}（{when}時点）",
+  "permanenceTooMany": "ここで数えきれないほどのチャージ",
+  "permanenceCreditsUnreadable": "クレジットを読み取れませんでした",
+  "permanenceNoTopUps": "チャージが見つかりません",
+  "permanenceNoCreditsUsed": "まだクレジットを使っていません",
+  "permanenceCreditsUsed": "使用したTurboクレジット",
+  "permanenceRefreshCredits": "使用したクレジットを更新",
+  "permanenceShowCredits": "使用したクレジットを表示",
+  "permanenceWalletSigns": "クレジットの読み取りにウォレットの署名が必要です",
+  "permanenceReadingCredits": "クレジットを読み取り中",
+  "permanenceHowTitle": "これらの数値の仕組み",
+  "permanenceSize": "サイズ",
+  "permanencePermanence": "永続性",
+  "permanenceFineSize": "このデバイスで同期した自分のドライブにある、アップロードが確認されたすべてのファイルのすべてのバージョンを数えます。複数の場所に保存されたデータは1回として数えます。非表示のドライブとピン留めしたファイルは含まれないため、ドライブ一覧の合計と異なる場合があります。",
+  "permanenceFineSpent": "は、使用したTurboクレジットです。このウォレットに付与されたすべてから残高を引いたものです。ArNS名に使ったクレジットや、共有したウォレットが使ったクレジットも含まれます。その下には、このウォレットが直接アップロードに支払ったAR（ネットワーク手数料とArDriveのチップ）をArweaveから読み取って表示します。どちらもドルではありません。クレジットとARは時期によって異なる価格で購入されたためです。",
+  "permanenceFineSpentChain": "{chain}ウォレットから共有されたクレジットは含まれません。",
+  "permanenceFineCost": "は、これだけのデータを今保存するためのArweaveネットワーク自体の価格をARで示し、今日のAR価格で換算したものです。ネットワークの価格もARのドル価値も変動します。ArDriveやTurboの請求額ではなく、請求書や見積もりでもありません。",
+  "permanenceFinePermanence": "はArDriveではなくArweaveネットワークが提供します。Arweaveは、そのストレージ基金が200年以上分の保存費用を賄うよう設計されていると述べています。詳しくは",
+  "permanenceTermsOfService": "利用規約",
+  "importErrorNotFound": "そのデプロイが見つかりませんでした。",
+  "importErrorNetwork": "デプロイに接続できませんでした。接続を確認してもう一度お試しください。",
+  "importErrorUnreadable": "そのデプロイを読み取れませんでした。",
+  "importErrorNoFilesToReplace": "置き換えるファイルがありません。インポートをやり直してください。",
+  "importErrorReplaceFailed": "ファイルを置き換えられませんでした。もう一度お試しください。",
+  "importErrorImportFailed": "ファイルをインポートできませんでした。もう一度お試しください。",
+  "importErrorNothingImported": "ファイルは1つもインポートされませんでした。デプロイを確認してもう一度お試しください。",
+  "importErrorUnexpected": "インポート中に問題が発生しました。もう一度お試しください。",
+  "snapshotRefusedSyncSkipped": "前回の同期で、このドライブの一部の項目を読み取れませんでした。スナップショットに含まれるよう、もう一度同期してください。",
+  "snapshotRefusedSyncUnknown": "スナップショットにすべてが含まれるよう、先にこのドライブを同期してください。",
+  "snapshotSyncCouldNotStart": "同期を開始できませんでした。進行中のアップロードが終わるのを待ってから、もう一度お試しください。",
+  "snapshotRefusedNotFound": "このドライブはこのデバイスにありません。",
+  "snapshotRefusedProtection": "このドライブのスナップショットは現在保護できないため、作成できません。",
+  "snapshotRefusedNotOwner": "スナップショットを作成するには、ドライブの所有者のウォレットでサインインしてください。",
+  "snapshotRefusedNoWatermark": "このドライブはまだ同期が完了していません。先に同期してください。",
+  "snapshotRefusedTooLarge": "このドライブは1つのスナップショットには大きすぎます。これまでどおりの方法で読み込まれます。",
+  "snapshotRefusedUnconfirmed": "このドライブの一部の変更はまだ確認されていません。数分後にもう一度お試しください。",
+  "snapshotRefusedSealFailed": "スナップショットを準備できませんでした。もう一度お試しください。",
+  "snapshotFailureCostTimeout": "費用の計算に時間がかかりすぎたため、確認に進めません。何もアップロードされず、何も支払われていません。しばらくしてからもう一度お試しください。",
+  "snapshotFailureCostUnknown": "このスナップショットの費用を判定できなかったため、確認に進めません。何もアップロードされず、何も支払われていません。",
+  "snapshotFailurePrepare": "スナップショットを準備できませんでした。もう一度お試しください。",
+  "snapshotFailureNotEnabled": "このビルドでは、この方法でのスナップショット作成は有効になっていません。何もアップロードされず、何も支払われていません。",
+  "snapshotFailureNotLoggedIn": "サインインしていません。何もアップロードされず、何も支払われていません。",
+  "snapshotFailureWalletChanged": "このスナップショットの準備中にウォレットが変わりました。何もアップロードされず、何も支払われていません。",
+  "snapshotFailureWalletUnavailable": "Wanderから応答がありませんでした。何もアップロードされず、何も支払われていません。",
+  "snapshotFailurePaymentDeclined": "Turboがこのスナップショットの支払いを拒否しました。クレジットを追加するかARで支払ってから、もう一度お試しください。",
+  "snapshotFailurePublish": "スナップショットを作成できませんでした。何も投稿されていなければ、何も支払われていません。もう一度試す前にドライブを確認してください。",
+  "snapshotFailureUncertain": "このスナップショットのトランザクション（{txId}）はアップロード失敗の前にネットワークに届いたため支払い済みですが、データが不完全な可能性があります。もう一度試す前にゲートウェイで確認してください。再試行すると2つ目のトランザクションが作成され、再度支払いが発生します。",
+  "snapshotFailureThrew": "スナップショットを作成できませんでした。何も支払われていません。",
+  "deploymentPostedBody": "デプロイはArweaveに投稿されましたが（トランザクション {txId}）、ここに保存できませんでした。支払い済みですので、もう一度作成しないでください。ドライブを同期すると表示されます。",
+  "deploymentNameNotSet": "デプロイは作成されましたが、名前を設定できませんでした。「名前」から設定できます。",
+  "deploymentAddress": "アドレス",
   "shareUploadTitle": "共有された{count, plural, =1{1 件のファイル} other{{count} 件のファイル}}をアップロード",
   "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "ライセンスを追加しました",

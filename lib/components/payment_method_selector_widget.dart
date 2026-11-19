@@ -532,11 +532,15 @@ class _PaymentOptionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  cost,
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.bold,
-                    color: colorTokens.textHigh,
+                // Wraps rather than overflows on a narrow dialog.
+                Flexible(
+                  child: Text(
+                    cost,
+                    textAlign: TextAlign.end,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.bold,
+                      color: colorTokens.textHigh,
+                    ),
                   ),
                 ),
               ],

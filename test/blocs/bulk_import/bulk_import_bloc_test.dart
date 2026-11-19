@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
@@ -272,6 +274,56 @@ void main() {
       act: importManifest,
       verify: (bloc) => expect(bloc.state, isSuccess(successful: 1, failed: 2)),
     );
+
+    // Cancel makes the import throw. The dialog stays open on the cancelled
+    // outcome, so the failure that follows must not replace it.
+    test('a cancelled import ends cancelled, not failed', () async {
+      final cancelled = Completer<void>();
+      when(() => bulkImportFiles(
+            driveId: any(named: 'driveId'),
+            parentFolderId: any(named: 'parentFolderId'),
+            files: any(named: 'files'),
+            wallet: any(named: 'wallet'),
+            userCipherKey: any(named: 'userCipherKey'),
+            onFolderProgress: any(named: 'onFolderProgress'),
+            onFileProgress: any(named: 'onFileProgress'),
+            onFileUploadSuccess: any(named: 'onFileUploadSuccess'),
+            onFileFailure: any(named: 'onFileFailure'),
+            onCreateFolderHierarchyStart:
+                any(named: 'onCreateFolderHierarchyStart'),
+            onCreateFolderHierarchyEnd:
+                any(named: 'onCreateFolderHierarchyEnd'),
+            manifestTxId: any(named: 'manifestTxId'),
+            originalOwnerAddress: any(named: 'originalOwnerAddress'),
+          )).thenAnswer((_) async {
+        await cancelled.future;
+        throw BulkImportException('Bulk import cancelled');
+      });
+      final bloc = buildBloc();
+      addTearDown(bloc.close);
+
+      bloc.add(const StartManifestBulkImport(
+        manifestTxId: manifestTxId,
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+      ));
+      final review = await bloc.stream
+              .firstWhere((state) => state is BulkImportReviewingManifest)
+          as BulkImportReviewingManifest;
+      bloc.add(ConfirmManifestBulkImport(
+        manifestTxId: manifestTxId,
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+        files: review.files,
+      ));
+      await bloc.stream.firstWhere((state) => state is BulkImportInProgress);
+      bloc.add(const CancelBulkImport());
+      await bloc.stream.firstWhere((state) => state is BulkImportCancelled);
+      cancelled.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(bloc.state, isA<BulkImportCancelled>());
+    });
 
     blocTest<BulkImportBloc, BulkImportState>(
       'when the whole import fails before any file is imported',

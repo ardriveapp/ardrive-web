@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/sync/domain/sync_run.dart';
@@ -111,6 +113,27 @@ void main() {
     // One frame for the local read to come back.
     await tester.pump();
   }
+
+  group('while the history is read', () {
+    testWidgets('a spinner stands in, not an empty dialog', (tester) async {
+      final read = Completer<List<SyncRun>>();
+      when(() => preferences.loadSyncHistory()).thenAnswer((_) => read.future);
+
+      await pumpPanel(tester);
+
+      expect(find.byType(ArDriveSpinner), findsOneWidget);
+      expect(find.text('Nothing has synced on this device yet.'), findsNothing);
+
+      read.complete(const []);
+      await tester.pump();
+
+      expect(find.byType(ArDriveSpinner), findsNothing);
+      expect(
+        find.text('Nothing has synced on this device yet.'),
+        findsOneWidget,
+      );
+    });
+  });
 
   group('a wallet that has never synced', () {
     testWidgets('reads as nothing yet, not as an error and not as a blank',
