@@ -37,6 +37,56 @@ void main() {
     });
 
     group('PaymentFormUpdateQuote', () {
+      blocTest<PaymentFormBloc, PaymentFormState>(
+        'does nothing, and throws nothing, when the countries failed to load',
+        build: () {
+          when(() => mockTurbo.getSupportedCountries()).thenThrow(Exception());
+          when(() => mockTurbo.refreshPriceEstimate())
+              .thenAnswer((_) async => initialPriceEstimate);
+          return paymentFormBloc;
+        },
+        act: (bloc) async {
+          bloc.add(PaymentFormLoadSupportedCountries());
+          await Future.delayed(const Duration(milliseconds: 20));
+          bloc.add(PaymentFormUpdateQuote());
+        },
+        expect: () => [
+          isA<PaymentFormLoading>(),
+          isA<PaymentFormError>(),
+        ],
+        errors: () => isEmpty,
+      );
+
+      blocTest<PaymentFormBloc, PaymentFormState>(
+        'refreshes again after a failed quote',
+        build: () {
+          when(() => mockTurbo.getSupportedCountries())
+              .thenAnswer((_) async => ['US']);
+          var calls = 0;
+          when(() => mockTurbo.refreshPriceEstimate()).thenAnswer((_) async {
+            if (calls++ == 0) throw Exception();
+            return initialPriceEstimate;
+          });
+          return paymentFormBloc;
+        },
+        act: (bloc) async {
+          bloc.add(PaymentFormLoadSupportedCountries());
+          await Future.delayed(const Duration(milliseconds: 20));
+          bloc.add(PaymentFormUpdateQuote());
+          await Future.delayed(const Duration(milliseconds: 20));
+          bloc.add(PaymentFormUpdateQuote());
+        },
+        expect: () => [
+          isA<PaymentFormLoading>(),
+          isA<PaymentFormLoaded>(),
+          isA<PaymentFormLoadingQuote>(),
+          isA<PaymentFormQuoteLoadFailure>(),
+          isA<PaymentFormLoadingQuote>(),
+          isA<PaymentFormQuoteLoaded>(),
+        ],
+        errors: () => isEmpty,
+      );
+
       setUp(() {
         mockTurbo = MockTurbo();
         final initialPriceEstimate = PriceEstimate(

@@ -205,7 +205,7 @@ const _legacyCasts = <String, int>{
       1,
   'lib/sync/domain/cubit/sync_cubit.dart': 1,
   'lib/sync/presentation/sync_failure_toast.dart': 1,
-  'lib/turbo/topup/blocs/payment_form/payment_form_bloc.dart': 3,
+  'lib/turbo/topup/blocs/payment_form/payment_form_bloc.dart': 1,
   'lib/turbo/topup/blocs/topup_estimation_bloc.dart': 1,
   'lib/turbo/topup/blocs/unified_topup/unified_topup_bloc.dart': 11,
   'lib/turbo/topup/views/topup_review_view.dart': 1,

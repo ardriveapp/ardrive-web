@@ -183,7 +183,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
           errorMessage:
               failed ? appLocalizationsOf(context).unableToUpdateQuote : null,
           onRefresh: () => bloc.add(PaymentFormUpdateQuote()),
-          onExpired: failed ? null : () => bloc.add(PaymentFormUpdateQuote()),
+          onExpired: failed || state is PaymentFormError
+              ? null
+              : () => bloc.add(PaymentFormUpdateQuote()),
         );
       },
     );
