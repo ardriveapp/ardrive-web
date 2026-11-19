@@ -194,7 +194,8 @@ Widget _buildDataListContent(
       ),
       TableColumn(
         l10n.tableColumnTransactionId,
-        3,
+        // The short ID in full and its copy button, without a second cut.
+        5,
         index: ColumnIndexes.transactionId,
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,

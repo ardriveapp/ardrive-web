@@ -127,24 +127,17 @@ class DriveExplorerItemTile extends TableRowWidget {
             dimIfHidden(isHidden, _TransactionIdCell(id: transactionId)),
             dimIfHidden(
               isHidden,
+              // Words only: the row's icon already carries the status dot.
               status == null || statusValue == null
                   ? const SizedBox.shrink()
-                  : Row(
-                      children: [
-                        FileStatusDot(status: statusValue),
-                        const SizedBox(width: ArDriveSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            status,
-                            style: typography.paragraphSmall(
-                              color: colorTokens.textMid,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                        ),
-                      ],
+                  : Text(
+                      status,
+                      style: typography.paragraphSmall(
+                        color: colorTokens.textMid,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      softWrap: false,
                     ),
             ),
           ],
