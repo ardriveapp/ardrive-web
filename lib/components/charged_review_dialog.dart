@@ -90,6 +90,8 @@ class ChargedReviewDialog extends StatefulWidget {
     this.extras = const [],
     this.lookUpSourceCredits,
     this.creditSharing,
+    this.primaryEnabled = true,
+    this.onBack,
   });
 
   final String title;
@@ -139,6 +141,12 @@ class ChargedReviewDialog extends StatefulWidget {
   /// Shares those credits to this account. The app's own when null.
   final CreditSharingService? creditSharing;
 
+  /// False holds the primary, as for a step still getting ready.
+  final bool primaryEnabled;
+
+  /// When set, the secondary action is Back, to the step before.
+  final VoidCallback? onBack;
+
   @override
   State<ChargedReviewDialog> createState() => _ChargedReviewDialogState();
 }
@@ -181,8 +189,8 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
 
   Future<void> _lookUp() async {
     try {
-      final found = await (widget.lookUpSourceCredits ?? _findSourceCredits)(
-          context);
+      final found =
+          await (widget.lookUpSourceCredits ?? _findSourceCredits)(context);
       if (mounted && found != null) setState(() => _sourceCredits = found);
     } catch (e) {
       logger.d('Could not check the sign-in wallet for credits: $e');
@@ -199,7 +207,8 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
         approvedWinc: credits.balance,
       );
     } catch (e) {
-      logger.i('Sharing credits from the sign-in wallet did not go through: $e');
+      logger
+          .i('Sharing credits from the sign-in wallet did not go through: $e');
       return false;
     }
     if (!mounted) return true;
@@ -262,6 +271,8 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
       summary: summary,
       primaryLabel: widget.primaryLabel,
       primaryBusy: widget.busy,
+      primaryEnabled: widget.primaryEnabled,
+      onBack: widget.onBack,
       onUpload: (method) {
         widget.onMethodChanged(method);
         widget.onConfirm(method);

@@ -12,11 +12,9 @@ import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
+import 'package:ardrive/components/charged_review_dialog.dart';
 import 'package:ardrive/components/copyable_share_artifact.dart';
-import 'package:ardrive/components/payment_method_selector_widget.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/drive_state/data/arweave_drive_state_uploader.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
@@ -38,7 +36,6 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/graphql/graphql.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -180,7 +177,11 @@ Future<void> showPublishDialog(
           SyncCubitDriveStateSkipSource(syncCubit).statusFor(driveId).isClean) {
         return true;
       }
-      return syncCubit.startSyncForDrive(driveId: driveId, deepSync: deep);
+      // False also for a sync that ran and failed, which the check that
+      // follows describes. Only a refused start is "couldn't start".
+      final ran =
+          await syncCubit.startSyncForDrive(driveId: driveId, deepSync: deep);
+      return ran || syncCubit.lastSingleSyncRefusal == null;
     },
     cipherOf: (dataTxId) async {
       try {
@@ -334,27 +335,30 @@ class PublishDialog extends StatelessWidget {
           case PublishStage.look:
             // A picture from the drive is chosen in place of the look, and
             // Back returns to it. The look stays mounted under it, hidden,
-            // so a keyword being typed, the scroll and the opened options
-            // are still there on return.
+            // so a keyword being typed and the opened options are still
+            // there on return; the dialog's scroll is put back too.
             final choosing = state.choosingSlot;
             return _modal(
               context,
               title: choosing != null ? strings.publishChooseImageTitle : title,
               step: strings.publishStepOf(cubit.isFile ? 2 : 1, total),
               wide: true,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Offstage(
-                    offstage: choosing != null,
-                    child: ExcludeFocus(
-                      excluding: choosing != null,
-                      child: const PublishLookStep(),
+              content: KeepsScrollWhileAway(
+                away: choosing != null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Offstage(
+                      offstage: choosing != null,
+                      child: ExcludeFocus(
+                        excluding: choosing != null,
+                        child: const PublishLookStep(),
+                      ),
                     ),
-                  ),
-                  if (choosing != null) ImageFromDriveChooser(slot: choosing),
-                ],
+                    if (choosing != null) ImageFromDriveChooser(slot: choosing),
+                  ],
+                ),
               ),
               actions: choosing != null
                   ? [
@@ -378,34 +382,56 @@ class PublishDialog extends StatelessWidget {
             );
           case PublishStage.review:
             final names = cubit.names;
-            Widget review(BuildContext context) => _modal(
-                  context,
-                  title: title,
-                  step: strings.publishStepOf(total, total),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _Review(
-                          state: state,
-                          scopeName: cubit.scopeName,
-                          names: names),
-                      if (names != null) ...[
-                        const SizedBox(height: 16),
-                        ArNSFlowNameSection(cubit: names),
-                      ],
-                    ],
+            // The upload review, as every other review with a cost: the
+            // summary first, the names after, then the cost and how to pay.
+            Widget review(BuildContext context) {
+              final cost = state.cost!;
+              final size = cubit.isFile
+                  ? (cubit.file?.size ?? 0)
+                  : (state.summary?.totalSize ?? 0);
+              return ChargedReviewDialog(
+                title: title,
+                destination: strings.publishStepOf(total, total),
+                primaryLabel: strings.publishButton,
+                busy: false,
+                primaryEnabled: state.canPublish && (names?.ready ?? true),
+                onBack: cubit.back,
+                leading: [
+                  const SizedBox(height: ArDriveSpacing.md),
+                  _Review(
+                      state: state, scopeName: cubit.scopeName, names: names),
+                ],
+                extras: [
+                  if (names != null) ArNSFlowNameSection(cubit: names),
+                ],
+                files: [
+                  (
+                    name: cubit.scopeName,
+                    size: size,
+                    contentType: cubit.isFile
+                        ? (cubit.file?.dataContentType ?? 'text/html')
+                        : 'text/html',
                   ),
-                  actions: [
-                    ModalAction.dismiss(
-                        title: strings.back, action: cubit.back),
-                    ModalAction(
-                      title: strings.publishButton,
-                      isEnable: state.canPublish && (names?.ready ?? true),
-                      action: cubit.publish,
-                    ),
-                  ],
-                );
+                ],
+                method: state.method,
+                totalSize: size,
+                costEstimateAr: cost.costEstimateAr,
+                costEstimateTurbo:
+                    cost.isTurboUploadPossible ? cost.costEstimateTurbo : null,
+                turboBalance: cost.turboBalance,
+                turboCredits: cost.turboCredits,
+                arBalance: cost.arBalance,
+                sufficientArBalance: cost.sufficientArBalance,
+                freeStatus: cost.freeStatus,
+                turboUnreachable: cost.turboUnreachable,
+                onMethodChanged: cubit.setUploadMethod,
+                refresh: cubit.refreshBalance,
+                // The cubit refuses on its own what can't be paid for.
+                onConfirm: (_) => cubit.publish(),
+                onCancel: close,
+              );
+            }
+
             if (names == null) return review(context);
             // The button waits for the name step: priced, wallet ready.
             return BlocBuilder<ArNSNameDialogCubit, ArNSNameDialogState>(
@@ -702,13 +728,9 @@ class _Review extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final cubit = context.read<PublishCubit>();
-    final cost = state.cost!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(strings.publishReview,
-            style: typography.heading5(fontWeight: ArFontWeight.bold)),
-        const SizedBox(height: 16),
         _Card(children: [
           SummaryRow(
               strings.publishReviewWhat,
@@ -730,42 +752,6 @@ class _Review extends StatelessWidget {
           const SizedBox(height: 12),
           Text(strings.publishReviewPrivateFile,
               style: typography.paragraphSmall(color: colors.textMid)),
-        ],
-        const SizedBox(height: 16),
-        TurboFreeStatusMessage(
-          status: cost.freeStatus,
-          padding: const EdgeInsets.only(bottom: 12),
-        ),
-        if (!cost.isFree)
-          PaymentMethodSelector(
-            uploadMethodInfo: UploadPaymentMethodInfo(
-              uploadMethod: state.method,
-              totalSize: 0,
-              costEstimateAr: cost.costEstimateAr,
-              costEstimateTurbo: cost.costEstimateTurbo,
-              hasNoTurboBalance: cost.hasNoTurboBalance,
-              isTurboUploadPossible: cost.isTurboUploadPossible,
-              arBalance: cost.arBalance,
-              sufficientArBalance: cost.sufficientArBalance,
-              turboCredits: cost.turboCredits,
-              sufficentCreditsBalance: cost.sufficientTurboBalance,
-              freeStatus: FreeUploadStatus.notEligible,
-            ),
-            onTurboTopupSucess: cubit.refreshBalance,
-            onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),
-            onTurboSelect: () => cubit.setUploadMethod(UploadMethod.turbo),
-          ),
-        if (state.method == UploadMethod.ar && !cost.isFree) ...[
-          const SizedBox(height: 8),
-          Text(strings.publishArNote,
-              style: typography.paragraphSmall(color: colors.textMid)),
-        ],
-        if (cost.isUnaffordable) ...[
-          const SizedBox(height: 8),
-          ArDriveNotice(
-            type: ArDriveNoticeType.error,
-            message: strings.publishUnaffordable,
-          ),
         ],
       ],
     );
@@ -1168,4 +1154,53 @@ class _Itself extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Puts the dialog's scroll back where it was when [child] shows something
+/// else in place of its content for a while, such as a chooser.
+///
+/// The content behind stays mounted, but the dialog's one scroll view
+/// clamps to the shorter thing shown instead, so its offset is lost unless
+/// it is kept here.
+@visibleForTesting
+class KeepsScrollWhileAway extends StatefulWidget {
+  const KeepsScrollWhileAway({
+    super.key,
+    required this.away,
+    required this.child,
+  });
+
+  /// Something else is shown in place of the content.
+  final bool away;
+  final Widget child;
+
+  @override
+  State<KeepsScrollWhileAway> createState() => _KeepsScrollWhileAwayState();
+}
+
+class _KeepsScrollWhileAwayState extends State<KeepsScrollWhileAway> {
+  double? _saved;
+
+  @override
+  void didUpdateWidget(KeepsScrollWhileAway oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final position = Scrollable.maybeOf(context)?.position;
+    if (position == null) return;
+    if (!oldWidget.away && widget.away) {
+      _saved = position.pixels;
+      return;
+    }
+    final saved = _saved;
+    if (oldWidget.away && !widget.away && saved != null) {
+      _saved = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !position.hasPixels) return;
+        position.jumpTo(
+            saved.clamp(position.minScrollExtent, position.maxScrollExtent));
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

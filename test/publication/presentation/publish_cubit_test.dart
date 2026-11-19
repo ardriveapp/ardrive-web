@@ -701,6 +701,30 @@ void main() {
           .called(1);
     });
 
+    test('the method shown at Publish is the one that pays', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+      final before = c.state.method;
+      final other =
+          before == UploadMethod.turbo ? UploadMethod.ar : UploadMethod.turbo;
+
+      final publishing = c.publish();
+      c.setUploadMethod(other);
+      checked.complete(false);
+      await publishing;
+
+      final job = verify(() => publisher.publish(captureAny(), any(),
+          onStep: any(named: 'onStep'))).captured.single as PublicationJob;
+      expect(job.method, before);
+    });
+
     test('Back while the wallet is checked publishes nothing', () async {
       discovery.candidates = [freshSnapshot()];
       when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))

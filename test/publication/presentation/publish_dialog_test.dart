@@ -5,6 +5,7 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dar
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/components/upload_review_dialog.dart' show UploadCostBlock;
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
     show DriveStateSyncSkipStatus;
@@ -119,10 +120,31 @@ void main() {
       ),
     );
 
-    expect(find.text('Review and publish'), findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
     expect(find.text('Link'), findsOneWidget, reason: 'the rest stays');
     expect(find.text('Snapshot'), findsNothing);
     expect(find.textContaining('snapshot'), findsNothing);
+  });
+
+  testWidgets('the review is the upload review: its cost, Back and Publish',
+      (tester) async {
+    await open(
+      tester,
+      PublishState(
+        stage: PublishStage.review,
+        summary: _summary,
+        title: 'Archive',
+        cost: _freeCost,
+      ),
+    );
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
+    expect(find.text('Payment method'), findsNothing,
+        reason: 'the old payment block is gone');
+    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Publish'), findsWidgets);
   });
 
   testWidgets('the review no longer warns that publishing is permanent',
@@ -137,7 +159,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Review and publish'), findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
     expect(find.textContaining('permanent'), findsNothing);
   });
 

@@ -956,6 +956,9 @@ class PublishCubit extends Cubit<PublishState> {
 
   void setUploadMethod(UploadMethod method) {
     if (state.stage != PublishStage.review) return;
+    // Publish was pressed: it pays the way the review showed then. The
+    // review stays on screen while the wallet is checked.
+    if (_checkingWallet) return;
     emit(state.copyWith(method: method));
   }
 
