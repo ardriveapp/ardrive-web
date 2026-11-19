@@ -1,6 +1,5 @@
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
-import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/password/breached_password.dart';
 import 'package:ardrive/authentication/password/new_password.dart';
 import 'package:ardrive/authentication/password/new_password_fields.dart';
@@ -142,27 +141,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
         ? (widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana')
         : null;
 
-    if (!isReturning && chainName == null) {
-      return appLocalizationsOf(context).newPasswordBody;
+    if (isReturning) return appLocalizationsOf(context).signInFoundDrivesBody;
+    if (chainName != null) {
+      return appLocalizationsOf(context).signInLinkedWalletBody(chainName);
     }
-    if (isReturning && chainName != null) {
-      return 'We found your drives! Enter a password to encrypt '
-          'your private files. This password can never be changed, '
-          'reset, or recovered.';
-    } else if (isReturning) {
-      return 'We found your drives! Enter a password to encrypt '
-          'your private files. This password can never be changed, '
-          'reset, or recovered.';
-    } else if (chainName != null) {
-      return 'ArDrive creates a secure storage wallet linked to your '
-          '$chainName wallet. Enter a password to encrypt your '
-          'private files. This password can never be changed, '
-          'reset, or recovered.';
-    }
-    return 'Please enter and confirm a password to secure your wallet. '
-        'This password is used to encrypt your private files, and can '
-        'never be changed, reset, or recovered. Be sure to store it '
-        'somewhere safe.';
+    return appLocalizationsOf(context).newPasswordBody;
   }
 
   /// Leaves this wallet, back to the first panel as it always went. Nothing
@@ -204,7 +187,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   // under the new-account rules, even if it has drives.
                   widget.isNewUser || widget.fromSignUp
                       ? appLocalizationsOf(context).newPasswordTitle
-                      : 'Welcome back',
+                      : appLocalizationsOf(context).welcomeBackTitle,
                   style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold),
@@ -275,7 +258,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 ),
               ],
               const SizedBox(height: ArDriveSpacing.lg),
-              Text('Password',
+              Text(appLocalizationsOf(context).password,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
@@ -283,7 +266,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ArDriveTextFieldNew(
                 controller: _passwordController,
                 key: const Key('signUpPassword'),
-                hintText: 'Enter your password',
+                hintText: appLocalizationsOf(context).enterPasswordHint,
                 obscureText: _obscured,
                 suffixIcon: PasswordRevealToggle(
                   key: const Key('signUpPasswordReveal'),
@@ -366,7 +349,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   ),
               ],
               const SizedBox(height: ArDriveSpacing.md),
-              Text('Confirm password',
+              Text(appLocalizationsOf(context).confirmPassword,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
@@ -374,9 +357,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ArDriveTextFieldNew(
                   controller: _confirmPasswordController,
                   key: const Key('signUpConfirmPassword'),
-                  hintText: 'Re-enter your password',
+                  hintText: appLocalizationsOf(context).confirmPasswordHint,
                   obscureText: _obscured,
-                  autofocus: true,
+                  autofocus: false,
                   autofillHints: const [AutofillHints.newPassword],
                   textInputAction: TextInputAction.done,
                   isEnabled: !_isProcessing,
@@ -419,7 +402,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ArDriveButtonNew(
                   size: ArDriveButtonSize.large,
                   maxWidth: double.infinity,
-                  text: 'Continue',
+                  text: appLocalizationsOf(context).continueEmphasized,
                   typography: typography,
                   variant: ButtonVariant.primary,
                   isDisabled: !_isPasswordValid ||
@@ -437,21 +420,12 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   }
 
   Future<void> _onSubmit() async {
+    if (_isProcessing) return;
     final isValid = _formKey.currentState!.validateSync();
 
-    if (!isValid) {
-      showErrorDialog(
-          context: context,
-          title: appLocalizationsOf(context).error,
-          message: appLocalizationsOf(context).passwordDoNotMatch);
-      return;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      showErrorDialog(
-          context: context,
-          title: appLocalizationsOf(context).error,
-          message: appLocalizationsOf(context).passwordDoNotMatch);
+    // A mismatch shows on the confirm field itself, not in a dialog on top.
+    if (!isValid ||
+        _passwordController.text != _confirmPasswordController.text) {
       return;
     }
 

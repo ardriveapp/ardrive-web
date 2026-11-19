@@ -351,6 +351,29 @@ void main() {
       expect(continueEnabled(tester), isFalse);
     });
 
+    testWidgets('a mismatch is the field\'s error, never a dialog on top',
+        (tester) async {
+      await pump(tester, dialog());
+      await tester.enterText(
+          find.byType(TextField).at(0), 'Copper meadow 92 kites unfold');
+      await tester.enterText(
+          find.byType(TextField).at(1), 'Velvet harbour 47 lanterns drift');
+      await tester.pump();
+
+      // Continue is off, but Enter in the confirm field submits too.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Continue'),
+          warnIfMissed: false);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('The confirmation password does not match.'),
+          findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('Error'), findsNothing);
+      verifyNever(() => loginBloc.add(any()));
+    });
+
     testWidgets('a short password is refused', (tester) async {
       await pump(tester, dialog());
       await enterBoth(tester, 'short');

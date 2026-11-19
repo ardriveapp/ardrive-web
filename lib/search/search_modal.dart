@@ -153,6 +153,14 @@ class _FileSearchModalState extends State<FileSearchModal> {
     );
   }
 
+  final _resultsScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _resultsScrollController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -207,7 +215,7 @@ class _FileSearchModalState extends State<FileSearchModal> {
     ArdriveTypographyNew typography,
     ArDriveColorTokens colorTokens,
   ) {
-    final scrollController = ScrollController();
+    final scrollController = _resultsScrollController;
     return Expanded(
       child: BlocBuilder<SearchBloc, SearchState>(
         builder: (context, state) {

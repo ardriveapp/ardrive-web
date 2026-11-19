@@ -1166,7 +1166,7 @@ Future<void> showArNSWalletDialog(BuildContext context) {
           ],
         ),
         actions: [
-          ModalAction.dismiss(
+          ModalAction.close(
             title: strings.cancel,
             action: () => Navigator.of(dialogContext).pop(),
           ),
@@ -1195,7 +1195,7 @@ Future<void> showArNSWalletDialog(BuildContext context) {
               ],
             ),
             actions: [
-              ModalAction.dismiss(
+              ModalAction.close(
                 title: strings.cancel,
                 action: () => Navigator.of(sheetContext).pop(),
               ),

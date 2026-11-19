@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,12 +9,12 @@ Future<void> showLicensingInfoModal({
 }) async {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   showArDriveDialog(
     context,
     content: ArDriveStandardModalNew(
-      hasCloseButton: true,
-      title: 'Licensing your data',
+      title: l10n.licensingInfoTitle,
       content: SizedBox(
         width: 450,
         child: Column(
@@ -21,63 +22,45 @@ Future<void> showLicensingInfoModal({
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Apply licenses to control how others can use your content.',
+              l10n.licensingInfoIntro,
               style: typography.paragraphNormal(
                 color: colorTokens.textMid,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: ArDriveSpacing.lg),
             Text(
-              'Available options',
+              l10n.licensingInfoOptions,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ArDriveSpacing.sm),
             _buildBulletPoint(
               context,
               'Universal Data License (UDL)',
-              'For blockchain-based storage',
+              l10n.licensingInfoUdl,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             _buildBulletPoint(
               context,
               'Creative Commons',
-              'Six license types from permissive to restrictive',
+              l10n.licensingInfoCreativeCommons,
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorTokens.containerL2,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: ArDriveIcons.info(
-                      size: 16,
-                      color: colorTokens.textMid,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Licenses are free to apply and visible in file details. Select a file after upload to add a license.',
-                      style: typography.paragraphSmall(
-                        color: colorTokens.textMid,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: ArDriveSpacing.lg),
+            ArDriveNotice(
+              type: ArDriveNoticeType.info,
+              message: l10n.licensingInfoNotice,
             ),
           ],
         ),
       ),
+      actions: [
+        ModalAction.close(
+          title: l10n.close,
+          action: () => Navigator.of(context).pop(),
+        ),
+      ],
     ),
   );
 }
@@ -88,12 +71,12 @@ Future<void> showKeyfileInfoModal({
 }) async {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final l10n = appLocalizationsOf(context);
 
   showArDriveDialog(
     context,
     content: ArDriveStandardModalNew(
-      hasCloseButton: true,
-      title: 'Keyfile & Seed Phrase',
+      title: l10n.keyfileInfoTitle,
       content: SizedBox(
         width: 450,
         child: Column(
@@ -101,66 +84,48 @@ Future<void> showKeyfileInfoModal({
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Keyfiles',
+              l10n.keyfileInfoKeyfiles,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             Text(
-              'Your Arweave wallet file that authenticates your identity. You will need your keyfile and password to log in.',
+              l10n.keyfileInfoKeyfilesBody,
               style: typography.paragraphNormal(
                 color: colorTokens.textMid,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             Text(
-              'Seed phrases',
+              l10n.keyfileInfoSeedPhrases,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             Text(
-              'A sequence of words that can generate your wallet. Enter your seed phrase and password to access your account.',
+              l10n.keyfileInfoSeedPhrasesBody,
               style: typography.paragraphNormal(
                 color: colorTokens.textMid,
               ),
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorTokens.containerRed,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: ArDriveIcons.triangle(
-                      size: 16,
-                      color: colorTokens.textHigh,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Keep your keyfile and seed phrase secure. Anyone with access can control your account. ArDrive cannot recover lost credentials.',
-                      style: typography.paragraphSmall(
-                        color: colorTokens.textHigh,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: ArDriveSpacing.lg),
+            ArDriveNotice(
+              type: ArDriveNoticeType.warning,
+              message: l10n.keyfileInfoWarning,
             ),
           ],
         ),
       ),
+      actions: [
+        ModalAction.close(
+          title: l10n.close,
+          action: () => Navigator.of(context).pop(),
+        ),
+      ],
     ),
   );
 }

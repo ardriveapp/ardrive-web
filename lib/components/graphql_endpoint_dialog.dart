@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class GraphQLEndpointDialog extends StatefulWidget {
   final String initialEndpoint;
-  final Function(String) onSave;
+  final FutureOr<void> Function(String) onSave;
 
   const GraphQLEndpointDialog({
     super.key,
@@ -24,6 +26,32 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
   late final TextEditingController _endpointController;
   bool _isLoading = false;
   bool? _isValid;
+
+  /// True from the press until the save has finished: a second press must not
+  /// save twice, and nothing here changes while it runs.
+  bool _saving = false;
+  bool _saveFailed = false;
+
+  Future<void> _save(FutureOr<void> Function() save) async {
+    if (_saving) return;
+    setState(() {
+      _saving = true;
+      _saveFailed = false;
+    });
+    try {
+      await save();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      logger.e('Failed to save the setting', e);
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveFailed = true;
+        });
+      }
+    }
+  }
+
   Timer? _debounce;
   String _lastValidatedText = '';
 
@@ -91,90 +119,85 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
+    final strings = appLocalizationsOf(context);
 
-    return ArDriveStandardModalNew(
-      width: 500,
-      title: 'Switch GraphQL server',
-      content: Form(
-        key: _formKey,
-        child: SizedBox(
+    return PopScope(
+        canPop: !_saving,
+        child: ArDriveStandardModalNew(
           width: 500,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Enter the URL of the GraphQL server you want to use',
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ArDriveTextFieldNew(
-                controller: _endpointController,
-                hintText: 'Enter host name (e.g. https://ardrive.net)',
-                label: 'GraphQL Server URL',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a URL';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 8),
-              _isLoading
-                  ? Row(
-                      children: [
-                        const ArDriveSpinner(),
-                        const SizedBox(width: ArDriveSpacing.xs),
-                        Text(
-                          'Validating endpoint...',
-                          style: typography.paragraphSmall(
-                            color: colorTokens.textMid,
-                          ),
-                        ),
-                      ],
-                    )
-                  : _endpointController.text.isNotEmpty && _isValid == false
+          title: strings.graphqlServerTitle,
+          content: Form(
+            key: _formKey,
+            child: SizedBox(
+              width: 500,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ArDriveTextFieldNew(
+                    controller: _endpointController,
+                    isEnabled: !_saving,
+                    hintText: strings.graphqlServerUrlHint,
+                    label: strings.graphqlServerUrlLabel,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return strings.urlRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: ArDriveSpacing.xs),
+                  _isLoading
                       ? Row(
                           children: [
-                            Icon(
-                              Icons.error,
-                              size: 16,
-                              color: colorTokens.statusErrorFg,
-                            ),
-                            const SizedBox(width: 4),
+                            const ArDriveSpinner(),
+                            const SizedBox(width: ArDriveSpacing.xs),
                             Text(
-                              'Invalid GraphQL endpoint',
-                              style: typography.paragraphSmall(
-                                color: colorTokens.statusErrorFg,
+                              strings.graphqlServerChecking,
+                              style: ArDriveTypographyNew.of(context)
+                                  .paragraphSmall(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .textMid,
                               ),
                             ),
                           ],
                         )
-                      : const SizedBox.shrink(),
-            ],
+                      : _endpointController.text.isNotEmpty && _isValid == false
+                          ? ArDriveNotice(
+                              type: ArDriveNoticeType.error,
+                              message: strings.graphqlServerInvalid,
+                            )
+                          : const SizedBox.shrink(),
+                  if (_saveFailed) ...[
+                    const SizedBox(height: ArDriveSpacing.md),
+                    ArDriveNotice(
+                      type: ArDriveNoticeType.error,
+                      message: strings.settingsSaveFailed,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-      actions: [
-        ModalAction.close(
-          title: 'Cancel',
-          action: () => Navigator.of(context).pop(),
-        ),
-        ModalAction(
-          title: 'Save',
-          isEnable: _isValid == true && !_isLoading,
-          action: () {
-            if (_formKey.currentState!.validate()) {
-              widget.onSave(_endpointController.text.trim());
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-      ],
-    );
+          actions: [
+            ModalAction.close(
+              title: strings.cancel,
+              isEnable: !_saving,
+              action: () => Navigator.of(context).pop(),
+            ),
+            ModalAction(
+              title: strings.save,
+              isLoading: _saving,
+              isEnable: _isValid == true && !_isLoading && !_saving,
+              action: () {
+                if (_formKey.currentState!.validate()) {
+                  _save(() => widget.onSave(_endpointController.text.trim()));
+                }
+              },
+            ),
+          ],
+        ));
   }
 
   Future<bool> _isValidGraphQLEndpoint(String endpoint) async {

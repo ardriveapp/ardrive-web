@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
@@ -22,51 +24,12 @@ void main() {
   });
 
   testWidgets('a typed email does not tick the news opt-in', (tester) async {
-    final review = _MockReviewBloc();
-    final flow = _MockFlowBloc();
-    whenListen(
-      review,
-      const Stream<PaymentReviewState>.empty(),
-      initialState: PaymentReviewPaymentModelLoaded(
-        total: '25.00',
-        subTotal: null,
-        credits: '4.6037',
-        promoDiscount: null,
-        quoteExpirationDate: DateTime.now().add(const Duration(minutes: 20)),
-        creditsWinc: BigInt.from(4603700000000),
-        currentBalance: BigInt.from(8847800000000),
-        storageEstimate: '1.0 GB',
-        currentBalanceStorage: '1.0 GB',
-        newBalanceStorage: '2.0 GB',
-      ),
-    );
-    whenListen(flow, const Stream<TurboTopupFlowState>.empty(),
-        initialState: const TurboTopupFlowInitial());
-    tester.view.physicalSize = const Size(1200, 1600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(ArDriveApp(
-      builder: (context) => MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: MultiBlocProvider(
-            providers: [
-              BlocProvider<PaymentReviewBloc>.value(value: review),
-              BlocProvider<TurboTopupFlowBloc>.value(value: flow),
-            ],
-            child: const TurboReviewView(),
-          ),
-        ),
-      ),
-    ));
-    await tester.pump();
+    final review = await _pumpReview(tester);
 
     await tester.enterText(find.byType(EditableText).first, 'a@b.co');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Confirm & Pay'));
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Pay'));
     await tester.pump();
 
     final event = verify(() => review.add(captureAny())).captured.single
@@ -74,4 +37,103 @@ void main() {
     expect(event.email, 'a@b.co');
     expect(event.userAcceptedToReceiveEmails, isFalse);
   });
+
+  testWidgets(
+      'a quote refresh while a payment is pending does not allow a '
+      'second payment', (tester) async {
+    final states = StreamController<PaymentReviewState>();
+    addTearDown(states.close);
+    final review = await _pumpReview(tester, states: states.stream);
+
+    final pay = find.widgetWithText(ArDriveButtonNew, 'Pay');
+    await tester.tap(pay);
+    await tester.pump();
+
+    // The bloc answers with its busy state, then a quote refresh runs
+    // meanwhile; neither is the payment's answer.
+    PaymentReviewLoadingQuote loadingQuote() => PaymentReviewLoadingQuote(
+          quoteExpirationDate: DateTime.now().add(const Duration(minutes: 20)),
+          total: '25.00',
+          subTotal: null,
+          credits: '4.6037',
+          promoDiscount: null,
+        );
+    states.add(loadingQuote());
+    await tester.pump();
+    states.add(PaymentReviewQuoteLoaded(
+      quoteExpirationDate: DateTime.now().add(const Duration(minutes: 20)),
+      total: '25.00',
+      subTotal: null,
+      credits: '4.6037',
+      promoDiscount: null,
+    ));
+    await tester.pump();
+
+    // Pay is busy or disabled, so look for the primary by position.
+    await tester.tap(find.byType(ArDriveButtonNew).last, warnIfMissed: false);
+    await tester.pump();
+
+    verify(() => review.add(any(that: isA<PaymentReviewFinishPayment>())))
+        .called(1);
+  });
+
+  testWidgets('two fast presses of Pay start one payment', (tester) async {
+    final review = await _pumpReview(tester);
+
+    final pay = find.widgetWithText(ArDriveButtonNew, 'Pay');
+    await tester.tap(pay);
+    // The bloc has not shown its busy state yet.
+    await tester.tap(pay, warnIfMissed: false);
+    await tester.pump();
+
+    verify(() => review.add(any(that: isA<PaymentReviewFinishPayment>())))
+        .called(1);
+  });
+}
+
+Future<_MockReviewBloc> _pumpReview(
+  WidgetTester tester, {
+  Stream<PaymentReviewState> states = const Stream<PaymentReviewState>.empty(),
+}) async {
+  final review = _MockReviewBloc();
+  final flow = _MockFlowBloc();
+  whenListen(
+    review,
+    states,
+    initialState: PaymentReviewPaymentModelLoaded(
+      total: '25.00',
+      subTotal: null,
+      credits: '4.6037',
+      promoDiscount: null,
+      quoteExpirationDate: DateTime.now().add(const Duration(minutes: 20)),
+      creditsWinc: BigInt.from(4603700000000),
+      currentBalance: BigInt.from(8847800000000),
+      storageEstimate: '1.0 GB',
+      currentBalanceStorage: '1.0 GB',
+      newBalanceStorage: '2.0 GB',
+    ),
+  );
+  whenListen(flow, const Stream<TurboTopupFlowState>.empty(),
+      initialState: const TurboTopupFlowInitial());
+  tester.view.physicalSize = const Size(1200, 1600);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(ArDriveApp(
+    builder: (context) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: MultiBlocProvider(
+          providers: [
+            BlocProvider<PaymentReviewBloc>.value(value: review),
+            BlocProvider<TurboTopupFlowBloc>.value(value: flow),
+          ],
+          child: const TurboReviewView(),
+        ),
+      ),
+    ),
+  ));
+  await tester.pump();
+  return review;
 }

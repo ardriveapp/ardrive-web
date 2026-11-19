@@ -12,6 +12,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
   final Turbo turbo;
   final int Function(DateTime d)? mockExpirationTimeInSeconds;
 
+  /// Set once the countries loaded. A quote needs them to keep the form
+  /// whole, and the state alone can't say: after a failed quote it holds none.
+  List<String>? _supportedCountries;
+
   PaymentFormBloc(
     this.turbo,
     PriceEstimate initialPriceEstimation, {
@@ -44,6 +48,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
 
     try {
       final supportedCountries = await turbo.getSupportedCountries();
+      _supportedCountries = supportedCountries;
 
       emit(
         PaymentFormLoaded(
@@ -74,6 +79,10 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
     PaymentFormUpdateQuote event,
     Emitter<PaymentFormState> emit,
   ) async {
+    final supportedCountries = _supportedCountries;
+    // No countries yet (they failed to load): there is no form to refresh.
+    if (supportedCountries == null) return;
+
     emit(
       PaymentFormLoadingQuote(
         state.priceEstimate,
@@ -81,7 +90,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
           turbo.maxQuoteExpirationDate,
           mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
         ),
-        (state as PaymentFormLoaded).supportedCountries,
+        supportedCountries,
       ),
     );
 
@@ -97,7 +106,7 @@ class PaymentFormBloc extends Bloc<PaymentFormEvent, PaymentFormState> {
             turbo.maxQuoteExpirationDate,
             mockExpirationTimeInSeconds: mockExpirationTimeInSeconds,
           ),
-          (state as PaymentFormLoaded).supportedCountries,
+          supportedCountries,
         ),
       );
     } catch (e, s) {

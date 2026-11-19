@@ -30,7 +30,7 @@ import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -274,17 +274,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return BlocListener<TurboTopupFlowBloc, TurboTopupFlowState>(
       listener: (context, state) {
-        if (state is TurboTopupFlowShowingSuccessView) {
+        // Whoever chose the amount says what happened; otherwise the result
+        // shows in this dialog, in place of the payment screens.
+        if (state is TurboTopupFlowShowingSuccessView && _cardOnly) {
           Navigator.of(context).pop();
-          // Whoever chose the amount says what happened.
-          if (_cardOnly) return;
-          _showSuccessDialog(
-            amountPaid: state.amountPaid,
-            creditsReceived: state.creditsReceived,
-            storageEstimate: state.storageEstimate,
-            newBalanceCredits: state.newBalanceCredits,
-            newBalanceStorage: state.newBalanceStorage,
-          );
         }
       },
       // Each screen is a standard dialog (TurboTopupScaffold); the shell only
@@ -440,15 +433,14 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             }) {
               // The caller hears of it when the modal closes, as for a card.
               widget.onCryptoPaid?.call();
-              // Pop the modal and show success dialog (same as credit card flow)
-              Navigator.of(context).pop();
-              _showSuccessDialog(
-                amountPaid: amountPaid,
-                creditsReceived: creditsReceived,
-                storageEstimate: storageEstimate,
-                newBalanceCredits: newBalanceCredits,
-                newBalanceStorage: newBalanceStorage,
-              );
+              // The result shows in this dialog, as it does after a card.
+              context.read<TurboTopupFlowBloc>().add(TurboTopUpShowSuccessView(
+                    amountPaid: amountPaid,
+                    creditsReceived: creditsReceived,
+                    storageEstimate: storageEstimate,
+                    newBalanceCredits: newBalanceCredits,
+                    newBalanceStorage: newBalanceStorage,
+                  ));
             },
             onCancel: () {
               Navigator.of(context).pop();
@@ -459,6 +451,14 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                   .read<TurboTopupFlowBloc>()
                   .add(const TurboTopUpShowEstimationView());
             },
+          );
+        } else if (state is TurboTopupFlowShowingSuccessView) {
+          view = TurboSuccessView(
+            amountPaid: state.amountPaid,
+            creditsReceived: state.creditsReceived,
+            storageEstimate: state.storageEstimate,
+            newBalanceCredits: state.newBalanceCredits,
+            newBalanceStorage: state.newBalanceStorage,
           );
         } else if (state is TurboTopupFlowShowingErrorView) {
           // In place of the screen that failed, not a second dialog over it.
@@ -476,9 +476,9 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             },
           );
         } else {
-          view = const TurboTopupScaffold(
-            title: 'Buy Turbo Credits',
-            child: SizedBox(
+          view = TurboTopupScaffold(
+            title: appLocalizationsOf(context).turboBuyCredits,
+            child: const SizedBox(
               height: 400,
               child: Center(
                 child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
@@ -532,7 +532,26 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   ///
   /// For card payments: transitions to the payment form view.
   /// For crypto payments: opens the crypto modal.
+  /// Set before the first call starts and cleared when it ends: a second
+  /// press of Continue meanwhile would price and move on twice.
+  bool _continuing = false;
+
   Future<void> _handleUnifiedContinue(
+    BuildContext context,
+    PaymentMethod method,
+    CryptoToken? token,
+    double amount,
+  ) async {
+    if (_continuing) return;
+    _continuing = true;
+    try {
+      await _continueFromPayView(context, method, token, amount);
+    } finally {
+      _continuing = false;
+    }
+  }
+
+  Future<void> _continueFromPayView(
     BuildContext context,
     PaymentMethod method,
     CryptoToken? token,
@@ -600,31 +619,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             newBalanceStorage: newBalanceStorage,
           ));
     }
-  }
-
-  void _showSuccessDialog({
-    String? amountPaid,
-    String? creditsReceived,
-    String? storageEstimate,
-    String? newBalanceCredits,
-    String? newBalanceStorage,
-  }) {
-    // Use parentContext since the current context is invalid after pop()
-    // TurboSuccessView has its own modal structure, so we don't wrap it
-    showArDriveDialog(
-      widget.parentContext,
-      content: SizedBox(
-        width: 575,
-        child: TurboSuccessView(
-          amountPaid: amountPaid,
-          creditsReceived: creditsReceived,
-          storageEstimate: storageEstimate,
-          newBalanceCredits: newBalanceCredits,
-          newBalanceStorage: newBalanceStorage,
-        ),
-      ),
-      barrierDismissible: false,
-    );
   }
 }
 

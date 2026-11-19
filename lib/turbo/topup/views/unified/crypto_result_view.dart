@@ -129,7 +129,7 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                         Divider(color: colors.strokeMid, height: 1),
                         const SizedBox(height: 12),
                         _SummaryRow(
-                          label: 'Paid',
+                          label: appLocalizationsOf(context).turboPaid,
                           value: _formatTokenAmount(
                               state.tokenAmountSpent, token.symbol),
                           subValue: state.usdValue != null
@@ -141,7 +141,7 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                           Divider(color: colors.strokeMid, height: 1),
                           const SizedBox(height: 12),
                           _SummaryRow(
-                            label: 'New balance',
+                            label: appLocalizationsOf(context).turboNewBalance,
                             value:
                                 '${_formatCredits(state.newBalance!)} credits',
                             subValue: state.newBalanceStorage != null
@@ -319,13 +319,12 @@ class CryptoErrorView extends StatelessWidget {
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
-        String errorMessage =
-            'An error occurred while processing your payment.';
+        String errorMessage = appLocalizationsOf(context).turboErrorProcessing;
         String? errorDetails;
         bool canRetry = true;
 
         if (state is CryptoTopupError) {
-          errorMessage = _getErrorMessage(state.errorType);
+          errorMessage = _getErrorMessage(context, state.errorType);
           errorDetails = state.message;
           canRetry = state.canRetry;
         }
@@ -333,15 +332,22 @@ class CryptoErrorView extends StatelessWidget {
         final action = canRetry ? onRetry : onClose;
 
         return TurboTopupScaffold(
-          title: 'Payment failed',
+          title: appLocalizationsOf(context).turboCryptoFailed,
           canClose: onClose != null,
           onClose: onClose,
           actions: [
-            ModalAction(
-              title: canRetry ? 'Try again' : 'Close',
-              isEnable: action != null,
-              action: action ?? () {},
-            ),
+            if (canRetry)
+              ModalAction(
+                title: appLocalizationsOf(context).tryAgain,
+                isEnable: action != null,
+                action: action ?? () {},
+              )
+            else
+              ModalAction.close(
+                title: appLocalizationsOf(context).close,
+                isEnable: action != null,
+                action: action ?? () {},
+              ),
           ],
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -372,26 +378,28 @@ class CryptoErrorView extends StatelessWidget {
     );
   }
 
-  String _getErrorMessage(CryptoTopupErrorType errorType) {
+  String _getErrorMessage(
+      BuildContext context, CryptoTopupErrorType errorType) {
+    final strings = appLocalizationsOf(context);
     switch (errorType) {
       case CryptoTopupErrorType.network:
-        return 'Network error occurred. Please check your connection.';
+        return strings.turboCryptoErrNetwork;
       case CryptoTopupErrorType.transactionRejected:
-        return 'You rejected the transaction in your wallet.';
+        return strings.turboCryptoErrRejected;
       case CryptoTopupErrorType.insufficientFunds:
-        return 'Insufficient funds in your wallet.';
+        return strings.turboCryptoErrFunds;
       case CryptoTopupErrorType.insufficientGas:
-        return 'Insufficient gas for the transaction.';
+        return strings.turboCryptoErrGas;
       case CryptoTopupErrorType.transactionFailed:
-        return 'The transaction failed on the network.';
+        return strings.turboCryptoErrFailed;
       case CryptoTopupErrorType.quoteExpired:
-        return 'The price quote expired. Please try again.';
+        return strings.turboCryptoErrQuoteExpired;
       case CryptoTopupErrorType.promoCodeInvalid:
-        return 'The promo code is invalid.';
+        return strings.turboCryptoErrPromo;
       case CryptoTopupErrorType.sessionExpired:
-        return 'Your session expired. Please try again.';
+        return strings.turboCryptoErrSession;
       case CryptoTopupErrorType.unknown:
-        return 'An unexpected error occurred.';
+        return strings.turboCryptoErrUnknown;
     }
   }
 }

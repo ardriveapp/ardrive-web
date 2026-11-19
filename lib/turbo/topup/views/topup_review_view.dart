@@ -57,6 +57,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
     return BlocListener<PaymentReviewBloc, PaymentReviewState>(
       listener: (context, state) {
+        // Held until the payment has answered. Not on a quote refresh while
+        // it is pending: that would let a second press start a second one.
+        if (_payRequested &&
+            (state is PaymentReviewPaymentSuccess ||
+                state is PaymentReviewPaymentError)) {
+          setState(() => _payRequested = false);
+        }
         if (state is PaymentReviewPaymentSuccess) {
           context.read<TurboTopupFlowBloc>().add(TurboTopUpShowSuccessView(
                 amountPaid: '\$${state.total}',
@@ -79,7 +86,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
         builder: (context, state) {
           if (state is PaymentReviewErrorLoadingPaymentModel) {
             return TurboTopupScaffold(
-              title: 'Confirm payment',
+              title: appLocalizationsOf(context).turboConfirmPayment,
               actions: [
                 ModalAction.dismiss(
                   title: appLocalizationsOf(context).back,
@@ -106,9 +113,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
           if (state is PaymentReviewLoadingPaymentModel ||
               state is PaymentReviewInitial) {
-            return const TurboTopupScaffold(
-              title: 'Confirm payment',
-              child: SizedBox(
+            return TurboTopupScaffold(
+              title: appLocalizationsOf(context).turboConfirmPayment,
+              child: const SizedBox(
                 height: 400,
                 child: Center(
                   child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
@@ -123,7 +130,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           // quote and the payment while the sections keep the loaded model.
           return BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
             builder: (context, payState) => TurboTopupScaffold(
-              title: 'Confirm payment',
+              title: appLocalizationsOf(context).turboConfirmPayment,
               actions: _actions(context, payState),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -154,7 +161,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     ArDriveNotice(
                       type: ArDriveNoticeType.error,
                       message: turboErrorMessage(context, payState.errorType),
-                      actionLabel: 'Edit card details',
+                      actionLabel:
+                          appLocalizationsOf(context).turboEditCardDetails,
                       onAction: () => context
                           .read<TurboTopupFlowBloc>()
                           .add(const TurboTopUpShowPaymentFormView(2)),
@@ -207,10 +215,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     TextSpan(
                       style: typography.paragraphSmall(color: colors.textMid),
                       children: [
-                        const TextSpan(
-                            text: 'By continuing, you agree to the '),
+                        TextSpan(
+                            text: appLocalizationsOf(context).turboTermsPrefix),
                         ArDriveLink.span(
-                          text: 'Terms of Service',
+                          text: appLocalizationsOf(context).turboTermsLink,
                           external: true,
                           style: typography.paragraphSmall(),
                           onTap: () => openUrl(url: Resources.agreementLink),
@@ -228,10 +236,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     );
   }
 
-  /// Back, and Confirm & Pay: disabled while the quote refreshes, without a
+  /// Back, and Pay: disabled while the quote refreshes, without a
   /// valid email or once the quote has expired, and saying so while paying.
   List<ModalAction> _actions(BuildContext context, PaymentReviewState state) {
-    final isPaying = state is PaymentReviewLoading;
+    final isPaying = state is PaymentReviewLoading || _payRequested;
     final quoteExpired = state is PaymentReviewPaymentModelLoaded &&
         DateTime.now().isAfter(state.quoteExpirationDate);
 
@@ -243,7 +251,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             .add(const TurboTopUpShowPaymentFormView(2)),
       ),
       ModalAction(
-        title: isPaying ? 'Processing...' : 'Confirm & Pay',
+        title: appLocalizationsOf(context).pay,
+        isLoading: isPaying,
         isEnable: !isPaying &&
             state is! PaymentReviewLoadingQuote &&
             // After a failure the card details go back to the form.
@@ -255,8 +264,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     ];
   }
 
+  /// Set the moment Pay is pressed, before the bloc emits its busy state: a
+  /// second press in that gap must not start a second payment.
+  bool _payRequested = false;
+
   void _handlePay(BuildContext context, PaymentReviewState state) {
-    if (state is PaymentReviewLoading) return;
+    if (state is PaymentReviewLoading || _payRequested) return;
+    setState(() => _payRequested = true);
 
     context.read<PaymentReviewBloc>().add(
           PaymentReviewFinishPayment(
@@ -332,14 +346,14 @@ class _PayingWithSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Credit card',
+                      appLocalizationsOf(context).turboCreditCard,
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
                         color: colors.textHigh,
                       ),
                     ),
                     Text(
-                      'Secure payment via Stripe',
+                      appLocalizationsOf(context).turboSecureViaStripe,
                       style: typography.paragraphSmall(
                         color: colors.textMid,
                       ),
@@ -441,7 +455,7 @@ class _YoullReceiveSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "YOU'LL RECEIVE",
+                  appLocalizationsOf(context).turboYoullReceive,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: colors.textMid,
@@ -492,7 +506,7 @@ class _YoullReceiveSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'NEW BALANCE',
+                  appLocalizationsOf(context).turboNewBalance,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: colors.textMid,
