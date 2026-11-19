@@ -15,14 +15,6 @@ class FsEntryLicenseNoFiles extends FsEntryLicenseState {
   const FsEntryLicenseNoFiles() : super();
 }
 
-class FsEntryLicenseSelecting extends FsEntryLicenseState {
-  const FsEntryLicenseSelecting() : super();
-}
-
-class FsEntryLicenseConfiguring extends FsEntryLicenseState {
-  const FsEntryLicenseConfiguring() : super();
-}
-
 class FsEntryLicenseReviewing extends FsEntryLicenseState {
   /// What writing the license costs, and whether it can go ahead. Null while
   /// it is read.
@@ -32,11 +24,28 @@ class FsEntryLicenseReviewing extends FsEntryLicenseState {
   /// connection, so the notice does not blame either.
   final bool pricingFailed;
 
-  const FsEntryLicenseReviewing({this.summary, this.pricingFailed = false})
-      : super();
+  /// The license's settings are not complete yet, such as a Creative
+  /// Commons license with no type picked: nothing is priced or written.
+  final bool incomplete;
+
+  /// The license is being written: the dialog stays, its primary busy.
+  final bool busy;
+
+  /// The last write failed for a reason other than payment. The dialog says
+  /// so, and Add license tries again, sending only what did not get through.
+  final bool failed;
+
+  const FsEntryLicenseReviewing({
+    this.summary,
+    this.pricingFailed = false,
+    this.incomplete = false,
+    this.busy = false,
+    this.failed = false,
+  }) : super();
 
   @override
-  List<Object?> get props => [summary, pricingFailed];
+  List<Object?> get props =>
+      [summary, pricingFailed, incomplete, busy, failed];
 }
 
 class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
@@ -45,12 +54,6 @@ class FsEntryLicenseWalletMismatch extends FsEntryLicenseState {
 
 class FsEntryLicenseSuccess extends FsEntryLicenseState {
   const FsEntryLicenseSuccess() : super();
-}
-
-/// The write failed for a reason other than payment. A refused payment goes
-/// back to [FsEntryLicenseReviewing], where Add credits is.
-class FsEntryLicenseFailure extends FsEntryLicenseState {
-  const FsEntryLicenseFailure() : super();
 }
 
 class FsEntryLicenseComplete extends FsEntryLicenseState {

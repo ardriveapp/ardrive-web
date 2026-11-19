@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
@@ -409,7 +411,7 @@ void main() {
           for (var i = 0; i < rootFolderFileCount; i++)
             await driveDao.fileById(fileId: '$rootFolderId$i').getSingle(),
         ];
-        bloc.add(const FsEntryLicenseConfigurationSubmit());
+        bloc.add(const FsEntryLicenseSettingsChanged());
         await bloc.stream.firstWhere(
             (s) => s is FsEntryLicenseReviewing && s.summary != null);
         return bloc;
@@ -507,8 +509,8 @@ void main() {
         costs(_summary());
 
         bloc.add(const FsEntryLicenseReviewConfirm());
-        final back = await bloc.stream.firstWhere(
-                (s) => s is FsEntryLicenseReviewing && s.summary != null)
+        final back = await bloc.stream.firstWhere((s) =>
+                s is FsEntryLicenseReviewing && s.summary != null && !s.busy)
             as FsEntryLicenseReviewing;
 
         expect(back.summary!.needsCredits, isTrue);
@@ -535,7 +537,9 @@ void main() {
         final bloc = await reviewing();
 
         bloc.add(const FsEntryLicenseReviewConfirm());
-        await bloc.stream.firstWhere((s) => s is FsEntryLicenseFailure);
+        // In the dialog: the review again, saying it failed, priced anew.
+        await bloc.stream.firstWhere((s) =>
+            s is FsEntryLicenseReviewing && s.failed && s.summary != null);
 
         expect(await licensesSaved(), 0);
         await bloc.close();
@@ -592,17 +596,16 @@ void main() {
         final bloc = await reviewing();
 
         bloc.add(const FsEntryLicenseReviewConfirm());
-        await bloc.stream.firstWhere((s) => s is FsEntryLicenseFailure);
+        // In the dialog: the review again, saying it failed, priced anew.
+        await bloc.stream.firstWhere((s) =>
+            s is FsEntryLicenseReviewing && s.failed && s.summary != null);
 
         // The first file's assertion and metadata reached Turbo.
         expect(sent, hasLength(2));
         expect(await licensesSaved(), 1);
         expect(await licenseRevisionsSaved(), 1);
 
-        bloc.add(const FsEntryLicenseFailureTryAgain());
-        await bloc.stream.firstWhere(
-            (s) => s is FsEntryLicenseReviewing && s.summary != null);
-        // The review prices what is left.
+        // The review prices what is left, and Add license tries again.
         final sizes = verify(() => costReader.read(
               itemSizes: captureAny(named: 'itemSizes'),
               wallet: any(named: 'wallet'),
@@ -630,8 +633,8 @@ void main() {
         costs(_summary());
 
         bloc.add(const FsEntryLicenseReviewConfirm());
-        await bloc.stream.firstWhere(
-            (s) => s is FsEntryLicenseReviewing && s.summary != null);
+        await bloc.stream.firstWhere((s) =>
+            s is FsEntryLicenseReviewing && s.summary != null && !s.busy);
 
         expect(sent, hasLength(3));
         expect(await licensesSaved(), 2);
@@ -682,6 +685,98 @@ void main() {
         expect(state.summary!.isCovered, isFalse);
         // Not the connection's fault, so the notice doesn't say it is.
         expect(state.pricingFailed, isTrue);
+        await bloc.close();
+      });
+
+      test('while it writes, the review stays, busy', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final bloc = await reviewing();
+        final seen = <FsEntryLicenseState>[];
+        final sub = bloc.stream.listen(seen.add);
+
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await bloc.stream.firstWhere((s) => s is FsEntryLicenseSuccess);
+        await sub.cancel();
+
+        expect(seen.first,
+            isA<FsEntryLicenseReviewing>().having((s) => s.busy, 'busy', true));
+        expect(seen.whereType<FsEntryLicenseLoadInProgress>(), isEmpty);
+        await bloc.close();
+      });
+
+      test(
+          'a Creative Commons license waits for its type, then is priced '
+          'with it', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final bloc = await reviewing();
+        clearInteractions(costReader);
+
+        bloc.categoryForm.control('licenseCategory').value = LicenseCategory.cc;
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        final waiting = await bloc.stream
+                .firstWhere((s) => s is FsEntryLicenseReviewing && s.incomplete)
+            as FsEntryLicenseReviewing;
+        expect(waiting.summary, equals(null));
+        verifyNever(() => costReader.read(
+              itemSizes: any(named: 'itemSizes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+              refusedByTurbo: any(named: 'refusedByTurbo'),
+            ));
+        // Nothing is written while it waits.
+        bloc.add(const FsEntryLicenseReviewConfirm());
+        await Future.delayed(const Duration(milliseconds: 50));
+        verifyNever(() => turbo.postDataItem(
+            dataItem: any(named: 'dataItem'),
+            wallet: any(named: 'wallet'),
+            headers: any(named: 'headers')));
+
+        bloc.ccTypeForm.control('ccTypeField').value = ccByLicenseMetaV2;
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        await bloc.stream.firstWhere(
+            (s) => s is FsEntryLicenseReviewing && s.summary != null);
+        expect(bloc.selectedLicenseMeta, ccByLicenseMetaV2);
+        expect(bloc.licenseParams, equals(null));
+        await bloc.close();
+      });
+
+      test('a cost read for settings since changed is dropped', () async {
+        costs(_summary(isFree: true, isCovered: true));
+        final bloc = await reviewing();
+
+        // The read for the first change is slow; the second is not.
+        final slow = Completer<MetadataWriteCost>();
+        var calls = 0;
+        when(() => costReader.read(
+              itemSizes: any(named: 'itemSizes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+              refusedByTurbo: any(named: 'refusedByTurbo'),
+            )).thenAnswer((_) {
+          calls++;
+          return calls == 1
+              ? slow.future
+              : Future.value(
+                  MetadataWriteCost(_summary(isFree: false, isCovered: true)));
+        });
+        bloc.udlParamsForm.control('licenseFeeAmount').value = '1';
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        await Future.delayed(const Duration(milliseconds: 20));
+        bloc.udlParamsForm.control('licenseFeeAmount').value = '2';
+        bloc.add(const FsEntryLicenseSettingsChanged());
+        final latest = await bloc.stream.firstWhere(
+                (s) => s is FsEntryLicenseReviewing && s.summary != null)
+            as FsEntryLicenseReviewing;
+        expect(latest.summary!.isFree, isFalse);
+
+        // The stale read lands last, and changes nothing.
+        final seen = <FsEntryLicenseState>[];
+        final sub = bloc.stream.listen(seen.add);
+        slow.complete(
+            MetadataWriteCost(_summary(isFree: true, isCovered: true)));
+        await Future.delayed(const Duration(milliseconds: 50));
+        await sub.cancel();
+        expect(seen, isEmpty);
         await bloc.close();
       });
 
