@@ -1382,4 +1382,76 @@ void main() {
       });
     });
   });
+
+  group('a private drive or folder', () {
+    Future<Drive> privateDrive() async {
+      const id = 'dddddddd-0000-4000-8000-00000000000a';
+      await db.into(db.drives).insert(DrivesCompanion.insert(
+            id: id,
+            rootFolderId: 'private-root-2',
+            ownerAddress: fakeUserJson.walletAddress,
+            name: 'Private',
+            privacy: DrivePrivacyTag.private,
+          ));
+      await db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
+            id: 'private-root-2',
+            driveId: id,
+            name: 'Private',
+            path: '',
+          ));
+      await insertPublicationFile(db,
+          driveId: id,
+          id: 'p1',
+          name: 'p.txt',
+          parentFolderId: 'private-root-2');
+      return db.driveDao.driveById(driveId: id).getSingle();
+    }
+
+    PublicationRelease release(int version) => PublicationRelease(
+        manifestId: _release,
+        manifest: const {},
+        indexHtml: '',
+        version: '3.1.0',
+        publicationVersion: version);
+
+    test('waits for a release that opens private pages', () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(2));
+      final c = cubit(onDrive: await privateDrive());
+      await c.load();
+
+      expect(c.isPrivatePage, isTrue);
+      expect(c.state.stage, PublishStage.blocked);
+      expect(c.state.blocked, PublishBlock.needsRelease);
+      await c.close();
+    });
+
+    test('needs the drive unlocked', () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final c = cubit(onDrive: await privateDrive());
+      await c.load();
+
+      expect(c.state.stage, PublishStage.blocked);
+      expect(c.state.blocked, PublishBlock.locked);
+      verifyNever(() => publisher.sizeOf(any()));
+      await c.close();
+    });
+
+    test('a public drive is not a private page', () async {
+      final c = cubit();
+      await c.load();
+      expect(c.isPrivatePage, isFalse);
+      expect(c.state.isPrivatePage, isFalse);
+      expect(c.state.title, 'My drive');
+      await c.close();
+    });
+
+    test('an empty title is a valid private page title', () {
+      const s = PublishState(stage: PublishStage.look, isPrivatePage: true);
+      expect(s.titleIsValid, isTrue);
+      const public = PublishState(stage: PublishStage.look);
+      expect(public.titleIsValid, isFalse);
+    });
+  });
 }

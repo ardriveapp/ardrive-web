@@ -1,5 +1,8 @@
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
+import 'package:ardrive/publication/domain/private_page.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
@@ -90,12 +93,52 @@ class _PublishedViewState extends State<PublishedView> {
 
   bool get _isPrivateFile => widget.file != null && widget.drive.isPrivate;
 
+  /// A private drive or folder page: its link carries the page's key, which
+  /// its owner slot gives back to the drive key.
+  bool get _isPrivatePage => widget.file == null && widget.drive.isPrivate;
+
+  /// A private page whose drive this session can't open: no key, no link.
+  bool _locked = false;
+
   @override
   void initState() {
     super.initState();
+    if (_isPrivatePage) {
+      _checkPage();
+      return;
+    }
     final file = widget.file;
     if (file == null) return;
     _checkFile(file);
+  }
+
+  Future<void> _checkPage() async {
+    final driveDao = context.read<DriveDao>();
+    final profile = context.read<ProfileCubit>().state;
+    String? key;
+    var locked = true;
+    try {
+      final driveKey = profile is ProfileLoggedIn
+          ? await driveDao.getDriveKey(widget.drive.id, profile.user.cipherKey)
+          : null;
+      final settings = (await _content)?.config.sealed?.settings;
+      if (driveKey != null) {
+        locked = false;
+        final publicationKey = settings == null
+            ? null
+            : await ownerPublicationKey(
+                settings, await driveKey.key.extractBytes());
+        key = publicationKey == null ? null : b64u(publicationKey);
+      }
+    } catch (e) {
+      logger.w('[publication] the page key could not be read back: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      _fileKey = key;
+      _locked = locked;
+      _keyChecked = true;
+    });
   }
 
   Future<void> _checkFile(FileEntry file) async {
@@ -156,10 +199,15 @@ class _PublishedViewState extends State<PublishedView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    config?.title ??
-                        widget.file?.name ??
-                        widget.folder?.name ??
-                        widget.drive.name,
+                    config == null
+                        ? (_isPrivatePage
+                            ? strings.publicationPrivatePage
+                            : widget.file?.name ??
+                                widget.folder?.name ??
+                                widget.drive.name)
+                        : config.title.isEmpty
+                            ? strings.publicationPrivatePage
+                            : config.title,
                     style: typography.heading5(fontWeight: ArFontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -180,17 +228,23 @@ class _PublishedViewState extends State<PublishedView> {
                 style: typography.paragraphNormal(color: colors.textHigh)),
             const SizedBox(height: 12),
           ],
-          if (_isPrivateFile && !_keyChecked)
+          if ((_isPrivateFile || _isPrivatePage) && !_keyChecked)
             const SizedBox(
               height: 48,
               child: Center(child: ArDriveSpinner()),
             )
+          else if (_isPrivatePage && _locked)
+            Text(strings.publishUnlockToCopyLink,
+                style: typography.paragraphNormal(color: colors.textHigh))
           else
             PublishedLink(
               link: _link(latest.txId),
               isSecret: _fileKey != null,
               note: [
-                if (_fileKey != null) strings.publishFileKeyInLink,
+                if (_fileKey != null)
+                  _isPrivatePage
+                      ? strings.publishPageKeyInLink
+                      : strings.publishFileKeyInLink,
                 strings.publishUpdateNote,
               ].join(' '),
             ),

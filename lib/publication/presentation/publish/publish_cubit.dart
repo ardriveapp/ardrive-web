@@ -18,7 +18,11 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/entities/constants.dart' show ContentType;
 import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    show ArtifactScope;
+import 'package:ardrive/publication/domain/private_page.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
@@ -33,6 +37,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:uuid/uuid.dart';
 
 part 'publish_state.dart';
@@ -142,6 +147,10 @@ class PublishCubit extends Cubit<PublishState> {
   /// opens with the file's key in its link.
   bool get isPrivateFile => isFile && drive.isPrivate;
 
+  /// A private drive or folder: its page opens with a key of its own, in its
+  /// link, or with a password (publication.json version 3).
+  bool get isPrivatePage => !isFile && drive.isPrivate;
+
   /// The file's link: its own data, on the gateway publications are on.
   String get fileLink => '${_deps.publisher.gatewayUrl}/${file!.dataTxId}';
 
@@ -201,15 +210,46 @@ class PublishCubit extends Cubit<PublishState> {
       }
       _release ??= await _deps.repository.readRelease(_deps.viewer);
       final summary = _contents!.summarize();
+      if (isPrivatePage) {
+        final block = await _checkPrivatePage();
+        if (isClosed) return;
+        if (block != null) {
+          emit(PublishState(
+            stage: PublishStage.blocked,
+            blocked: block.$1,
+            blockedReason: block.$2,
+            summary: summary,
+          ));
+          return;
+        }
+      }
 
       var next = PublishState(
         stage: PublishStage.included,
         summary: summary,
-        title: _clip(scopeName, publicationTitleMax),
+        // A private page's title is visible to everyone: it starts empty,
+        // never filled in from the drive's or folder's name.
+        title: isPrivatePage ? '' : _clip(scopeName, publicationTitleMax),
         ownerName: await _rememberedOwnerName() ?? '',
         isUpdate: previous != null,
+        isPrivatePage: isPrivatePage,
       );
       if (previous != null) next = await _prefillFrom(previous!, next);
+      if (isPrivatePage && previous != null) {
+        final block = await _recoverPublicationKey();
+        if (isClosed) return;
+        if (block != null) {
+          emit(PublishState(
+            stage: PublishStage.blocked,
+            blocked: block.$1,
+            blockedReason: block.$2,
+            summary: summary,
+          ));
+          return;
+        }
+        next = next.copyWith(
+            hasPassword: _previousSlots!.any((s) => s['type'] == 'password'));
+      }
       if (isClosed) return;
       emit(next);
 
@@ -538,6 +578,7 @@ class PublishCubit extends Cubit<PublishState> {
 
   Future<PublishState> _prefillFrom(Publication p, PublishState s) async {
     final content = await _deps.repository.readContent(p.latest.txId);
+    _previousContent = content;
     final config = content.config;
 
     /// The earlier version's files for [paths], kept by transaction ID; its
@@ -599,6 +640,158 @@ class PublishCubit extends Cubit<PublishState> {
   ExistingPublicationImage? _previousCard;
   String? _previousCardKey;
 
+  // A private page (docs/ArweaveFS.md, "Private publications").
+
+  /// The version an update starts from, as read back.
+  PublishedContent? _previousContent;
+
+  /// The drive key, read when the dialog opens: the owner slot is made from
+  /// it, and the files' keys come from it.
+  List<int>? _driveKey;
+
+  /// The page's key: new for a first version, the owner slot's for an update.
+  Uint8List? _publicationKey;
+
+  /// An update's slots, carried forward as they were.
+  List<Map<String, Object>>? _previousSlots;
+
+  /// The catalog, its key and the files' keys, made once per dialog: the
+  /// look doesn't change them.
+  PreparedDriveStateArtifact? _catalog;
+  Uint8List? _catalogKey;
+  Map<String, String>? _fileKeysOfCatalog;
+
+  /// The slots for the password they were made with: a password slot runs
+  /// Argon2id, which takes a second, so it is made once per password.
+  (String, List<Map<String, Object>>)? _slots;
+
+  /// What stops a private drive or folder page: a release that can't open
+  /// one, or a drive this session can't open.
+  Future<(PublishBlock, String)?> _checkPrivatePage() async {
+    if (!_release!.opensPrivatePages) return (PublishBlock.needsRelease, '');
+    final profile = _deps.profileCubit.state;
+    if (profile is! ProfileLoggedIn) return (PublishBlock.locked, '');
+    final key =
+        await _deps.driveDao.getDriveKey(drive.id, profile.user.cipherKey);
+    if (key == null) return (PublishBlock.locked, '');
+    _driveKey = await key.key.extractBytes();
+    return null;
+  }
+
+  /// An update keeps the page's key, which its owner slot gives back to the
+  /// drive key, and its slots.
+  Future<(PublishBlock, String)?> _recoverPublicationKey() async {
+    final sealed = _previousContent?.config.sealed;
+    final key = sealed == null
+        ? null
+        : await ownerPublicationKey(sealed.settings, _driveKey!);
+    if (key == null) {
+      return (
+        PublishBlock.other,
+        "This page's key couldn't be read back with this drive's key, so it "
+            "can't be updated here.",
+      );
+    }
+    _publicationKey = key;
+    _previousSlots = slotsOf(sealed!.settings);
+    return null;
+  }
+
+  void setPassword(String value) {
+    if (!isPrivatePage || state.hasPassword) return;
+    emit(state.copyWith(password: value));
+  }
+
+  Future<PrivatePagePlan?> _privatePlan(ProfileLoggedIn profile) async {
+    final publicationId =
+        previous?.id ?? (_publicationId ??= const Uuid().v4());
+    _publicationKey ??= secureRandomBytes(32);
+    if (_catalog == null) {
+      _catalogKey ??= secureRandomBytes(32);
+      final prepared = await _deps.creationService.prepare(
+        driveId: drive.id,
+        driveKey: null,
+        wallet: profile.user.wallet,
+        isCancelled: () => isClosed,
+        pageScope: ArtifactScope(_scopeRootFolderId),
+        catalogKey: SecretKey(_catalogKey!),
+      );
+      if (prepared.isRefused) {
+        emit(state.copyWith(
+          stage: PublishStage.blocked,
+          blocked: PublishBlock.other,
+          blockedReason: prepared.reason,
+        ));
+        return null;
+      }
+      final catalog = prepared.artifact!;
+      final ring = await _deps.fileKeys
+          .forDrive(drive.id, cipherKey: profile.user.cipherKey);
+      if (ring == null) throw const _DriveLocked();
+      final keys = <String, String>{};
+      for (final file in catalog.files) {
+        final key = await ring.keyFor(file.id);
+        if (key == null) throw const _DriveLocked();
+        keys[file.id] = b64u(await key.extractBytes());
+      }
+      _fileKeysOfCatalog = keys;
+      _catalog = catalog;
+    }
+    final password = state.hasPassword ? '' : state.password;
+    if (_slots?.$1 != password) {
+      _slots = (
+        password,
+        await pageSlots(
+          publicationKey: _publicationKey!,
+          publicationId: publicationId,
+          driveKey: _driveKey!,
+          previous: _previousSlots,
+          password: password.isEmpty ? null : password,
+        ),
+      );
+    }
+    return PrivatePagePlan(
+      catalog: _catalog!,
+      catalogKey: _catalogKey!,
+      publicationKey: _publicationKey!,
+      slots: _slots!.$2,
+      fileKeys: _fileKeysOfCatalog!,
+      rootFolderId: drive.rootFolderId,
+    );
+  }
+
+  Future<PublicationJob?> _buildPrivateJob(ProfileLoggedIn profile) async {
+    final plan = await _privatePlan(profile);
+    if (plan == null) return null;
+    return PublicationJob(
+      publicationId: previous?.id ?? _publicationId!,
+      driveId: drive.id,
+      rootFolderId: drive.rootFolderId,
+      scope: folder == null
+          ? const PublicationDriveScope()
+          : PublicationFolderScope(folder!.id),
+      privacy: drive.privacy,
+      owner: profile.user.walletAddress,
+      ownerName: _nonEmpty(state.ownerName.trim()),
+      title: state.title.trim(),
+      description: state.description.trim(),
+      keywords: state.keywords,
+      license: state.licence?.toJson(),
+      icon: state.icon?.image,
+      cover: state.cover?.image,
+      // Only the owner's own card: a private page never gets a generated
+      // one.
+      social: state.social?.image,
+      privatePage: plan,
+      snapshot: const NoSnapshot(),
+      release: _release!,
+      files: const [],
+      fileCount: 0,
+      labels: _deps.labels,
+      method: state.method,
+    );
+  }
+
   /// What the generated card shows, as one comparable value.
   String _cardKey(PublishState s) => [
         s.title.trim(),
@@ -619,6 +812,7 @@ class PublishCubit extends Cubit<PublishState> {
         _imageKey(s.icon),
         _imageKey(s.cover),
         s.social == null ? 'generated:${_cardKey(s)}' : _imageKey(s.social),
+        s.password,
       ].join('\u0000');
 
   static String _imageKey(PickedImage? picked) => switch (picked?.image) {
@@ -777,14 +971,20 @@ class PublishCubit extends Cubit<PublishState> {
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return;
     try {
-      _snapshotPlan ??=
-          isFile ? const NoSnapshot() : await _planSnapshot(profile);
+      _snapshotPlan ??= isFile || isPrivatePage
+          ? const NoSnapshot()
+          : await _planSnapshot(profile);
       final plan = _snapshotPlan;
       if (plan == null) return;
       final key = _jobKey(state);
-      final job = _lastJob != null && key == _lastJobKey
-          ? _lastJob!
-          : (await _buildJob(profile)).carrySnapshotFrom(_lastJob);
+      final PublicationJob job;
+      if (_lastJob != null && key == _lastJobKey) {
+        job = _lastJob!;
+      } else {
+        final built = await _buildJob(profile);
+        if (built == null) return;
+        job = built.carrySnapshotFrom(_lastJob);
+      }
       final cost = await _deps.costEstimator
           .estimate(
             sizeInBytes: _deps.publisher.sizeOf(job),
@@ -807,11 +1007,16 @@ class PublishCubit extends Cubit<PublishState> {
       if (isClosed) return;
       emit(state.copyWith(
         stage: PublishStage.failed,
-        failure: e is _CipherUnknown
-            ? "ArDrive couldn't read this file's encryption details from the "
-                'gateway. Nothing was uploaded. Try again in a moment.'
-            : 'The cost of publishing could not be worked out. Nothing '
-                'was uploaded. Try again in a moment.',
+        failure: switch (e) {
+          _CipherUnknown() =>
+            "ArDrive couldn't read this file's encryption details from the "
+                'gateway. Nothing was uploaded. Try again in a moment.',
+          _DriveLocked() =>
+            "ArDrive couldn't read the keys of this drive's files. Nothing "
+                'was uploaded. Unlock the drive and try again.',
+          _ => 'The cost of publishing could not be worked out. Nothing '
+              'was uploaded. Try again in a moment.',
+        },
         paidTxId: () => null,
       ));
     }
@@ -899,8 +1104,9 @@ class PublishCubit extends Cubit<PublishState> {
     return latest != null && latest <= unixTime;
   }
 
-  Future<PublicationJob> _buildJob(ProfileLoggedIn profile) async {
+  Future<PublicationJob?> _buildJob(ProfileLoggedIn profile) async {
     if (isFile) return _buildFileJob(profile);
+    if (isPrivatePage) return _buildPrivateJob(profile);
     final summary = _contents!.summarize();
     final keepCard = state.social == null &&
         _previousCard != null &&
@@ -1041,7 +1247,11 @@ class PublishCubit extends Cubit<PublishState> {
       final page = live.isNotEmpty
           ? arnsUrlFor(live.last)
           : '${_deps.publisher.gatewayUrl}/${version.txId}/';
-      final link = await _withFileKey(page);
+      // A private page's link carries its key in the fragment, for the
+      // owner to share; the page opens with a password too when it has one.
+      final link = run.privatePage != null
+          ? withFileKey(page, run.privatePage!.linkKey)
+          : await _withFileKey(page);
       if (isClosed) {
         onSettledAfterClose?.call(link);
         return;
@@ -1158,6 +1368,11 @@ class PublishCubit extends Cubit<PublishState> {
 /// how to decrypt it.
 class _CipherUnknown implements Exception {
   const _CipherUnknown();
+}
+
+/// A private page's file keys could not be read: the drive is locked.
+class _DriveLocked implements Exception {
+  const _DriveLocked();
 }
 
 String _clip(String text, int max) =>

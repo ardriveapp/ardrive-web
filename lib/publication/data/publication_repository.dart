@@ -105,6 +105,10 @@ class PublicationRelease {
   /// Whether the release opens file pages.
   bool get opensFilePages =>
       publicationVersion >= PublicationConfig.fileScopeVersion;
+
+  /// Whether the release opens private drive and folder pages.
+  bool get opensPrivatePages =>
+      publicationVersion >= PublicationConfig.privatePageVersion;
 }
 
 class PublicationReadException implements Exception {
@@ -283,6 +287,8 @@ class PublicationRepository {
 
   static const _ownPaths = [
     'snapshot',
+    'sealed',
+    'catalog',
     'icon-32.png',
     'icon-180.png',
     'icon-512.png',

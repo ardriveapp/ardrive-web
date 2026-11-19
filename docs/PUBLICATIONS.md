@@ -621,6 +621,17 @@ use) and Dart elsewhere. Decided on 2026-11-17:
   the drive unlocked; the owner slot gives the key back from the drive key on
   any device. Private rows on Web pages carry the lock the drive list puts
   after a private drive's name.
+- **How the app publishes one.** Publish to web on a private drive or folder
+  (only for the drive's owner, with the drive unlocked, and once the release
+  new pages run says it opens version 3) exports the scope's catalog with the
+  drive state exporter (`ArtifactScope`), collects each file's key through
+  `FileKeys`, makes the slots (`lib/publication/domain/private_page.dart`),
+  and signs the catalog, then the sealed block naming it, then
+  `publication.json` naming that, then `index.html` and the manifest. The
+  manifest's `Publication-Version` is 3. An update keeps the publication key,
+  from the owner slot, and carries the slots forward as they were; it adds a
+  password slot only when there is none. The writer leaves `ciphers` empty
+  for now, as the viewer looks each file's tags up anyway.
 - **Passwords.** Any password, with a strength indicator and "Suggest one"
   (a six-word passphrase from the sign-up word list). Argon2id runs in a
   WebAssembly module in the browser; the cost settings live in each slot.

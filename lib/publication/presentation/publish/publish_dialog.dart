@@ -162,6 +162,7 @@ Future<void> showPublishDialog(
       filesPage: strings.publicationFilesPageLink,
       openPage: strings.publicationFilesOpen,
       moreFiles: strings.publicationFilesMore('{count}'),
+      privatePage: strings.publicationPrivatePage,
     ),
     cardMark: () => loadAssetImage(Resources.images.brand.logo1),
     fileCountLabel: strings.publishFileCount,
@@ -405,7 +406,9 @@ class PublishDialog extends StatelessWidget {
               content: _Progress(
                 state: state,
                 names: cubit.names,
-                hasSnapshot: !cubit.isFile,
+                // A private page has no snapshot: its catalog goes with the
+                // page's own files.
+                hasSnapshot: !cubit.isFile && !state.isPrivatePage,
               ),
               actions: [
                 ModalAction.dismiss(title: strings.close, action: close)
@@ -439,7 +442,10 @@ class PublishDialog extends StatelessWidget {
                     link: state.link!,
                     isSecret: linkHasKey(state.link!),
                     note: [
-                      if (linkHasKey(state.link!)) strings.publishFileKeyInLink,
+                      if (linkHasKey(state.link!))
+                        state.isPrivatePage
+                            ? strings.publishPageKeyInLink
+                            : strings.publishFileKeyInLink,
                       state.method == UploadMethod.ar
                           ? strings.publishDoneArNote
                           : strings.publishDoneNote,
@@ -546,6 +552,8 @@ class _Blocked extends StatelessWidget {
       PublishBlock.hiddenFile => strings.publishBlockedHiddenFile,
       PublishBlock.failedUpload => strings.publishBlockedFailedFile,
       PublishBlock.empty => strings.publishBlockedEmpty,
+      PublishBlock.needsRelease => strings.publishHowNeedsRelease,
+      PublishBlock.locked => strings.publishBlockedLocked,
       _ => state.blockedReason,
     };
     return Text(text,
@@ -626,6 +634,7 @@ class _Included extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final summary = state.summary!;
+    final isPrivate = state.isPrivatePage;
     final leftOut = [
       if (summary.hiddenItems > 0)
         strings.publishLeftOutHidden(summary.hiddenItems),
@@ -664,17 +673,25 @@ class _Included extends StatelessWidget {
                   style: typography.paragraphNormal(color: colors.textMid)),
             ),
           // Hiding is not privacy: a public drive's data stays readable.
-          if (summary.hiddenItems > 0 || summary.inHiddenFolders > 0) ...[
+          // A private page leaves hidden items out with their keys.
+          if (!isPrivate &&
+              (summary.hiddenItems > 0 || summary.inHiddenFolders > 0)) ...[
             const SizedBox(height: 8),
             Text(strings.publishHiddenFindable,
                 style: typography.paragraphSmall(color: colors.textMid)),
           ],
         ],
         const SizedBox(height: 16),
-        Text(strings.publishIncludedNote,
+        Text(
+            isPrivate
+                ? strings.publishPrivateIncludedNote
+                : strings.publishIncludedNote,
             style: typography.paragraphSmall(color: colors.textLow)),
         const SizedBox(height: 8),
-        Text(strings.publishNextTitleNote,
+        Text(
+            isPrivate
+                ? strings.publishPrivateNextNote
+                : strings.publishNextTitleNote,
             style: typography.paragraphSmall(color: colors.textLow)),
       ],
     );
@@ -719,7 +736,18 @@ class _Review extends StatelessWidget {
               cubit.isFile
                   ? scopeName
                   : '$scopeName $arDriveSeparator ${strings.publishFileCount(state.summary!.fileCount)}'),
-          SummaryRow(strings.publishTitleLabel, state.title.trim()),
+          SummaryRow(
+              strings.publishTitleLabel,
+              state.title.trim().isEmpty && state.isPrivatePage
+                  ? strings.publicationPrivatePage
+                  : state.title.trim()),
+          if (state.isPrivatePage)
+            SummaryRow(
+              strings.publishReviewPassword,
+              state.hasPassword || state.password.isNotEmpty
+                  ? strings.publishReviewPasswordSet
+                  : strings.publishReviewPasswordNone,
+            ),
           SummaryRow(
             strings.publishReviewLink,
             state.isUpdate
@@ -727,9 +755,12 @@ class _Review extends StatelessWidget {
                 : strings.publishReviewNewLink,
           ),
         ]),
-        if (cubit.isPrivateFile) ...[
+        if (cubit.isPrivateFile || state.isPrivatePage) ...[
           const SizedBox(height: 12),
-          Text(strings.publishReviewPrivateFile,
+          Text(
+              state.isPrivatePage
+                  ? strings.publishReviewPrivatePage
+                  : strings.publishReviewPrivateFile,
               style: typography.paragraphSmall(color: colors.textMid)),
         ],
         const SizedBox(height: 16),

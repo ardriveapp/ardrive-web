@@ -40,6 +40,12 @@ enum PublishBlock {
   failedUpload,
   empty,
 
+  /// The release new pages run can't open a private drive or folder page.
+  needsRelease,
+
+  /// A private drive this session can't open: its page needs the drive key.
+  locked,
+
   /// The release could not be read, or a new snapshot was refused: the
   /// sentence says which.
   other,
@@ -126,7 +132,21 @@ class PublishState extends Equatable {
     this.namingStarted = false,
     this.how = FilePublishHow.page,
     this.filePages = FilePageAvailability.checking,
+    this.isPrivatePage = false,
+    this.password = '',
+    this.hasPassword = false,
   });
+
+  /// A private drive or folder page (publication.json version 3).
+  final bool isPrivatePage;
+
+  /// The password a private page gets with this version, if any. Empty for
+  /// none.
+  final String password;
+
+  /// Whether the published private page has a password already, which can't
+  /// be changed or removed.
+  final bool hasPassword;
 
   final PublishStage stage;
 
@@ -194,7 +214,8 @@ class PublishState extends Equatable {
     PublicationImageProblem problem
   })? imageError;
 
-  bool get titleIsValid => title.trim().isNotEmpty;
+  /// A private page may have no title: it shows "Private page".
+  bool get titleIsValid => isPrivatePage || title.trim().isNotEmpty;
 
   bool get canPublish => cost != null && cost!.canPayWith(method);
 
@@ -229,6 +250,9 @@ class PublishState extends Equatable {
     bool? namingStarted,
     FilePublishHow? how,
     FilePageAvailability? filePages,
+    bool? isPrivatePage,
+    String? password,
+    bool? hasPassword,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -260,6 +284,9 @@ class PublishState extends Equatable {
         namingStarted: namingStarted ?? this.namingStarted,
         how: how ?? this.how,
         filePages: filePages ?? this.filePages,
+        isPrivatePage: isPrivatePage ?? this.isPrivatePage,
+        password: password ?? this.password,
+        hasPassword: hasPassword ?? this.hasPassword,
       );
 
   @override
@@ -293,6 +320,9 @@ class PublishState extends Equatable {
         namingStarted,
         how,
         filePages,
+        isPrivatePage,
+        password,
+        hasPassword,
       ];
 }
 
