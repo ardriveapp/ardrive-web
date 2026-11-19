@@ -565,7 +565,7 @@ class _ImageField extends StatelessWidget {
 /// The drive's images, newest first, to choose one for [slot]: shown in the
 /// publish dialog in place of the look, so no second dialog opens over it.
 /// Picking one returns to the look with the picture used.
-class ImageFromDriveChooser extends StatelessWidget {
+class ImageFromDriveChooser extends StatefulWidget {
   const ImageFromDriveChooser({
     super.key,
     required this.slot,
@@ -576,6 +576,16 @@ class ImageFromDriveChooser extends StatelessWidget {
 
   /// Stands in for the drive's images in a test.
   final Future<List<FileEntry>> Function()? loadImages;
+
+  @override
+  State<ImageFromDriveChooser> createState() => _ImageFromDriveChooserState();
+}
+
+class _ImageFromDriveChooserState extends State<ImageFromDriveChooser> {
+  // Read once: the dialog rebuilds on every state change while this shows,
+  // and a new query each time would flash the spinner and query again.
+  late final Future<List<FileEntry>> _files = widget.loadImages?.call() ??
+      _images(context.read<DriveDao>(), context.read<PublishCubit>().drive.id);
 
   Future<List<FileEntry>> _images(DriveDao driveDao, String driveId) async {
     final db = driveDao.attachedDatabase;
@@ -607,9 +617,9 @@ class ImageFromDriveChooser extends StatelessWidget {
     cubit.closeImageChooser();
     try {
       final bytes = await repository.readData(file.dataTxId);
-      await cubit.pickImage(slot, bytes);
+      await cubit.pickImage(widget.slot, bytes);
     } catch (_) {
-      await cubit.pickImage(slot, Uint8List(0));
+      await cubit.pickImage(widget.slot, Uint8List(0));
     }
   }
 
@@ -618,12 +628,10 @@ class ImageFromDriveChooser extends StatelessWidget {
     final strings = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final driveId = context.read<PublishCubit>().drive.id;
     return SizedBox(
       height: _chooserHeight,
       child: FutureBuilder<List<FileEntry>>(
-        future:
-            loadImages?.call() ?? _images(context.read<DriveDao>(), driveId),
+        future: _files,
         builder: (context, snapshot) {
           final files = snapshot.data;
           if (files == null) {

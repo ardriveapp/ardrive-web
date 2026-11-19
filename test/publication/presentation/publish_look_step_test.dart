@@ -320,5 +320,56 @@ void main() {
       verify(() => cubit.pickImage(
           PublicationImageSlot.cover, Uint8List.fromList([1, 2, 3]))).called(1);
     });
+
+    testWidgets('reads the images once while the dialog rebuilds',
+        (tester) async {
+      when(() => cubit.state).thenReturn(const PublishState(
+        stage: PublishStage.look,
+        choosingSlot: PublicationImageSlot.cover,
+      ));
+      var loads = 0;
+      final rebuild = ValueNotifier(0);
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<PublishCubit>.value(
+                value: cubit,
+                // Stands in for the dialog's BlocBuilder: a new chooser
+                // widget on every state change.
+                child: ValueListenableBuilder<int>(
+                  valueListenable: rebuild,
+                  builder: (_, __, ___) => ImageFromDriveChooser(
+                    slot: PublicationImageSlot.cover,
+                    loadImages: () async {
+                      loads++;
+                      return [image()];
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('cat.png'), findsOneWidget);
+
+      rebuild.value++;
+      await tester.pump();
+      rebuild.value++;
+      await tester.pump();
+
+      expect(loads, 1);
+      expect(find.text('cat.png'), findsOneWidget);
+      expect(find.byType(ArDriveSpinner), findsNothing);
+    });
   });
 }
