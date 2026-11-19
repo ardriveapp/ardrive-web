@@ -126,6 +126,8 @@ class PublishState extends Equatable {
     this.namingStarted = false,
     this.how = FilePublishHow.page,
     this.filePages = FilePageAvailability.checking,
+    this.imageProcessing = false,
+    this.checkingWallet = false,
   });
 
   final PublishStage stage;
@@ -198,6 +200,14 @@ class PublishState extends Equatable {
   /// look, until one is picked or Back.
   final PublicationImageSlot? choosingSlot;
 
+  /// A picked image is still being cropped: Next waits for it, so what is
+  /// priced is what the look shows.
+  final bool imageProcessing;
+
+  /// Publish was pressed and the wallet is being checked: the review holds
+  /// its payment choice, and Publish is busy.
+  final bool checkingWallet;
+
   bool get titleIsValid => title.trim().isNotEmpty;
 
   bool get canPublish => cost != null && cost!.canPayWith(method);
@@ -234,6 +244,8 @@ class PublishState extends Equatable {
     bool? namingStarted,
     FilePublishHow? how,
     FilePageAvailability? filePages,
+    bool? imageProcessing,
+    bool? checkingWallet,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -266,6 +278,8 @@ class PublishState extends Equatable {
         namingStarted: namingStarted ?? this.namingStarted,
         how: how ?? this.how,
         filePages: filePages ?? this.filePages,
+        imageProcessing: imageProcessing ?? this.imageProcessing,
+        checkingWallet: checkingWallet ?? this.checkingWallet,
       );
 
   @override
@@ -300,6 +314,8 @@ class PublishState extends Equatable {
         namingStarted,
         how,
         filePages,
+        imageProcessing,
+        checkingWallet,
       ];
 }
 

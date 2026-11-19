@@ -286,19 +286,26 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
               credits: _sourceCredits!,
               onShare: _canShare ? _share : null,
             ),
-      paymentChoice: PaymentMethodSelector(
-        key: ValueKey(shown.uploadMethod),
-        uploadMethodInfo: shown,
-        showBalanceMessages: legacy,
-        onTurboTopupSucess: _refresh,
-        onArSelect: () {
-          setState(() => _arChosen = true);
-          widget.onMethodChanged(UploadMethod.ar);
-        },
-        onTurboSelect: () {
-          setState(() => _arChosen = false);
-          widget.onMethodChanged(UploadMethod.turbo);
-        },
+      // Held while confirming: the way it pays is the way it showed then.
+      paymentChoice: ExcludeFocus(
+        excluding: widget.busy,
+        child: AbsorbPointer(
+          absorbing: widget.busy,
+          child: PaymentMethodSelector(
+            key: ValueKey(shown.uploadMethod),
+            uploadMethodInfo: shown,
+            showBalanceMessages: legacy,
+            onTurboTopupSucess: _refresh,
+            onArSelect: () {
+              setState(() => _arChosen = true);
+              widget.onMethodChanged(UploadMethod.ar);
+            },
+            onTurboSelect: () {
+              setState(() => _arChosen = false);
+              widget.onMethodChanged(UploadMethod.turbo);
+            },
+          ),
+        ),
       ),
     );
   }

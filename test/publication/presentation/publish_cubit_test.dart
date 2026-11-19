@@ -544,8 +544,10 @@ void main() {
     await sub.cancel();
 
     expect(c.state.stage, PublishStage.done);
-    expect(publishing.first.naming, ['news_acme']);
-    expect(publishing.first.namingStarted, isFalse);
+    final first =
+        publishing.firstWhere((s) => s.stage == PublishStage.publishing);
+    expect(first.naming, ['news_acme']);
+    expect(first.namingStarted, isFalse);
     expect(namingWhenApplied, hasLength(1));
     expect(namingWhenApplied.single.$1, ['news_acme']);
     expect(namingWhenApplied.single.$2, isTrue);
@@ -723,6 +725,41 @@ void main() {
       final job = verify(() => publisher.publish(captureAny(), any(),
           onStep: any(named: 'onStep'))).captured.single as PublicationJob;
       expect(job.method, before);
+    });
+
+    test('the review knows while the wallet is checked', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+      expect(c.state.checkingWallet, isFalse);
+
+      final publishing = c.publish();
+      expect(c.state.checkingWallet, isTrue);
+      checked.complete(false);
+      await publishing;
+
+      expect(c.state.checkingWallet, isFalse);
+    });
+
+    test('Next waits for a picked image still being cropped', () async {
+      final c = cubit();
+      await c.load();
+      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+      c.emit(c.state.copyWith(
+        stage: PublishStage.look,
+        title: 'Archive',
+        imageProcessing: true,
+      ));
+
+      c.next();
+
+      expect(c.state.stage, PublishStage.look);
     });
 
     test('Back while the wallet is checked publishes nothing', () async {

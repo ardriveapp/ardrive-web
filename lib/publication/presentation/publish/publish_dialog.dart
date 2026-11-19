@@ -375,7 +375,7 @@ class PublishDialog extends StatelessWidget {
                         ModalAction.close(title: strings.cancel, action: close),
                       ModalAction(
                         title: strings.next,
-                        isEnable: state.titleIsValid,
+                        isEnable: state.titleIsValid && !state.imageProcessing,
                         action: cubit.next,
                       ),
                     ],
@@ -392,7 +392,7 @@ class PublishDialog extends StatelessWidget {
                 title: title,
                 destination: strings.publishStepOf(total, total),
                 primaryLabel: strings.publishButton,
-                busy: false,
+                busy: state.checkingWallet,
                 // Whether the cost is covered is the review's to say, by the
                 // method it shows; the cubit checks again with that method.
                 // Here it only waits for the name step.

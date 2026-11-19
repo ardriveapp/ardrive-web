@@ -647,7 +647,11 @@ class PublishCubit extends Cubit<PublishState> {
               : PublishStage.itself,
         ));
       case PublishStage.look:
-        if (state.titleIsValid && state.choosingSlot == null) review();
+        if (state.titleIsValid &&
+            state.choosingSlot == null &&
+            !state.imageProcessing) {
+          review();
+        }
       default:
     }
   }
@@ -714,7 +718,21 @@ class PublishCubit extends Cubit<PublishState> {
   /// slot's size. A picture that is not one, or too big, is refused with
   /// [PublishState.imageError].
   Future<void> pickImage(PublicationImageSlot slot, Uint8List bytes) async {
-    emit(state.copyWith(imageError: () => null));
+    _imagesProcessing++;
+    emit(state.copyWith(imageError: () => null, imageProcessing: true));
+    try {
+      await _pickImage(slot, bytes);
+    } finally {
+      _imagesProcessing--;
+      if (!isClosed) {
+        emit(state.copyWith(imageProcessing: _imagesProcessing > 0));
+      }
+    }
+  }
+
+  int _imagesProcessing = 0;
+
+  Future<void> _pickImage(PublicationImageSlot slot, Uint8List bytes) async {
     final PublicationPicture picture;
     try {
       picture = await PublicationPicture.decode(bytes);
@@ -737,7 +755,8 @@ class PublishCubit extends Cubit<PublishState> {
           };
     final preview =
         await publicationCrop(picture.image, kind.width, kind.height);
-    if (isClosed) return;
+    // Left the look while it was cropped: what is priced is what was shown.
+    if (isClosed || state.stage != PublishStage.look) return;
     final picked = PickedImage(
       preview: preview,
       image: NewPublicationImage(files),
@@ -1001,6 +1020,7 @@ class PublishCubit extends Cubit<PublishState> {
       return;
     }
     _checkingWallet = true;
+    emit(state.copyWith(checkingWallet: true));
     try {
       if (await _deps.profileCubit.logoutIfWalletMismatch()) return;
     } on ArConnectUnavailableException catch (e) {
@@ -1010,6 +1030,7 @@ class PublishCubit extends Cubit<PublishState> {
       return;
     } finally {
       _checkingWallet = false;
+      if (!isClosed) emit(state.copyWith(checkingWallet: false));
     }
     // The dialog stays live while the wallet is checked: closed, or Back to
     // an earlier step, means the owner left the review and nothing is sent.

@@ -117,6 +117,15 @@ void main() {
         arweaveAddress: 'arweaveAddress',
       );
 
+  testWidgets('while confirming, the payment choice is held', (tester) async {
+    await pump(tester, busy: true, arSufficient: true);
+
+    final held = tester.widgetList<AbsorbPointer>(find.ancestor(
+        of: find.byType(PaymentMethodSelector),
+        matching: find.byType(AbsorbPointer)));
+    expect(held.any((a) => a.absorbing), isTrue);
+  });
+
   testWidgets('the snapshot is a real row, not an empty card', (tester) async {
     await pump(tester, balance: credit * BigInt.from(5));
 
