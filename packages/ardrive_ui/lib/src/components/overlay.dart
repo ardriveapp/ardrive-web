@@ -27,6 +27,21 @@ class ArDriveRowMenuScope extends InheritedWidget {
   bool updateShouldNotify(ArDriveRowMenuScope oldWidget) => false;
 }
 
+/// Opens an [ArDriveDropdown] from code, such as a right-click on the row or
+/// tile the menu belongs to. Give the same controller to the dropdown.
+class ArDriveDropdownController {
+  _ArDriveDropdownState? _state;
+
+  bool get isOpen => _state?.visible ?? false;
+
+  /// Opens the menu where its button is. Does nothing if it is open already
+  /// or no dropdown is attached.
+  void open() {
+    final state = _state;
+    if (state != null && state.mounted && !state.visible) state._toggle();
+  }
+}
+
 class ArDriveDropdown extends StatefulWidget {
   const ArDriveDropdown({
     super.key,
@@ -49,7 +64,11 @@ class ArDriveDropdown extends StatefulWidget {
     this.header,
     this.fitContent = false,
     this.onOpenChanged,
+    this.controller,
   });
+
+  /// Lets the caller open the menu from code.
+  final ArDriveDropdownController? controller;
 
   final double height;
   final List<ArDriveDropdownItem> items;
@@ -140,6 +159,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
         row?.call(false);
       });
     }
+    if (widget.controller?._state == this) widget.controller?._state = null;
     _triggerFocus.dispose();
     for (final node in _itemFocus) {
       node.dispose();
@@ -152,8 +172,20 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
   @override
   void initState() {
     _anchor = widget.anchor;
+    widget.controller?._state = this;
 
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(ArDriveDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller?._state == this) {
+        oldWidget.controller?._state = null;
+      }
+      widget.controller?._state = this;
+    }
   }
 
   /// The menu's height once [_placeMenu] fitted it to the screen, when the

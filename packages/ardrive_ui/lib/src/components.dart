@@ -40,3 +40,5 @@ export 'components/tooltip.dart';
 export 'components/gallery/gallery_tile.dart';
 export 'components/gallery/justified_gallery.dart';
 export 'components/gallery/justified_layout.dart';
+export 'components/gallery/sectioned_gallery.dart';
+export 'components/gallery/gallery_scrubber.dart';
