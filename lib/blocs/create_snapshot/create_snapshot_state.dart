@@ -53,6 +53,9 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final bool isTurboUploadPossible;
   final String arBalance;
   final String turboCredits;
+
+  /// The Turbo Credits balance, in winston credits, for the review's cost.
+  final BigInt turboBalance;
   final UploadMethod uploadMethod;
   final bool isButtonToUploadEnabled;
   final bool sufficientBalanceToPayWithAr;
@@ -74,7 +77,8 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     required this.sufficientBalanceToPayWithAr,
     required this.sufficientBalanceToPayWithTurbo,
     required this.freeStatus,
-  });
+    BigInt? turboBalance,
+  }) : turboBalance = turboBalance ?? BigInt.zero;
 
   bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
 
@@ -91,6 +95,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
         isTurboUploadPossible,
         arBalance,
         turboCredits,
+        turboBalance,
         uploadMethod,
         isButtonToUploadEnabled,
         sufficientBalanceToPayWithAr,
@@ -108,6 +113,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     bool? isTurboUploadPossible,
     String? arBalance,
     String? turboCredits,
+    BigInt? turboBalance,
     UploadMethod? uploadMethod,
     bool? isButtonToUploadEnabled,
     bool? sufficientBalanceToPayWithAr,
@@ -123,6 +129,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
           isTurboUploadPossible ?? this.isTurboUploadPossible,
       arBalance: arBalance ?? this.arBalance,
       turboCredits: turboCredits ?? this.turboCredits,
+      turboBalance: turboBalance ?? this.turboBalance,
       uploadMethod: uploadMethod ?? this.uploadMethod,
       isButtonToUploadEnabled:
           isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,

@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
@@ -8,6 +9,7 @@ import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_cubit/drive_state_creation_cubit.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -104,6 +106,8 @@ void main() {
         turboCredits: '2.5',
         sufficientArBalance: sufficientArBalance,
         sufficientTurboBalance: sufficientTurboBalance,
+        turboBalanceWinc:
+            sufficientTurboBalance ? BigInt.from(5000000000) : BigInt.zero,
         freeStatus: freeStatus,
       );
 
@@ -185,15 +189,25 @@ void main() {
     await tester.pumpWidget(wrap(ready()));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.0030 credits'), findsOneWidget);
+    // The upload review's own cost block: Turbo Credits, in dollars.
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Cost'), findsOneWidget);
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
     expect(find.text('2.5 credits available'), findsOneWidget);
   });
 
-  testWidgets('switching to AR shows the AR price instead', (tester) async {
-    await tester.pumpWidget(wrap(ready(method: UploadMethod.ar)));
+  testWidgets('without a Turbo price the wallet pays, and the cost says so',
+      (tester) async {
+    await tester.pumpWidget(wrap(ready(
+      withCost: cost(isTurboUploadPossible: false),
+      method: UploadMethod.ar,
+    )));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.0040 AR'), findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.textContaining('0.004', findRichText: true), findsOneWidget);
+    expect(find.textContaining('AR', findRichText: true), findsWidgets);
+    expect(publishButton(tester).isDisabled, isFalse);
   });
 
   testWidgets('a free artifact says so and offers no method to pay with',
@@ -203,8 +217,9 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Uploads this small are free with Turbo.'),
-        findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
     expect(find.byType(PaymentMethodSelector), findsNothing);
     expect(publishButton(tester).isDisabled, isFalse);
   });
@@ -219,11 +234,11 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(publishButton(tester).isDisabled, isTrue);
+    // Nothing to pay with: no way to create it, only to add credits.
     expect(
-      find.textContaining("can't be created yet"),
-      findsOneWidget,
-    );
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Add credits'), findsOneWidget);
   });
 
   testWidgets('a method the user cannot afford disables the confirm button',
@@ -234,10 +249,13 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(publishButton(tester).isDisabled, isTrue);
-    // AR would still work, so the modal must not claim the artifact is
-    // unpublishable — only that this method is.
-    expect(find.textContaining("can't be created yet"), findsNothing);
+    // Credits are short, so Add credits is the way on, never the wallet
+    // unasked; the wallet is on offer as a choice.
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Add credits'), findsOneWidget);
+    expect(find.byType(PaymentMethodSelector), findsOneWidget);
   });
 
   testWidgets('nothing is published until the user asks for it',
@@ -436,7 +454,8 @@ void main() {
     /// `Dialog` left — so on a phone an overridden cap overflows nothing and
     /// is invisible to the two checks above. It is visible here, on any
     /// screen with room to honour it.
-    void expectFitsOnScreen(WidgetTester tester, Size surface) {
+    void expectFitsOnScreen(WidgetTester tester, Size surface,
+        {bool review = false}) {
       expect(tester.takeException(), isNull);
 
       final rect = tester.getRect(find.byType(ArDriveStandardModalNew));
@@ -447,7 +466,11 @@ void main() {
       // Under the tablet breakpoint (834) a dialog fills the width less a
       // 16 px gutter (design system,
       // Dialogs); anywhere wider the cap holds.
-      if (surface.width < 834 && surface.height >= 600) {
+      if (review) {
+        // The review is the upload review's own dialog, wider than the rest.
+        expect(rect.width, lessThanOrEqualTo(surface.width - 32));
+        expect(rect.width, lessThanOrEqualTo(kLargeDialogWidth));
+      } else if (surface.width < 834 && surface.height >= 600) {
         expect(rect.width, surface.width - 32);
       } else {
         expect(rect.width, lessThanOrEqualTo(modalStandardMaxWidthSize));
@@ -463,11 +486,11 @@ void main() {
           (tester) async {
         await openModal(tester, ready(), surface: surface.value);
 
-        expectFitsOnScreen(tester, surface.value);
+        expectFitsOnScreen(tester, surface.value, review: true);
 
         // What it costs, and the selector that decides who pays, are both
         // readable — not merely present in the tree.
-        await tester.ensureVisible(find.text('0.0030 credits'));
+        await tester.ensureVisible(find.byType(UploadCostBlock));
         expect(find.byType(PaymentMethodSelector), findsOneWidget);
         await tester.ensureVisible(find.byType(PaymentMethodSelector));
 
@@ -507,12 +530,12 @@ void main() {
             'Correspondence 2019-2026',
       );
 
-      expectFitsOnScreen(tester, smallPhone);
+      expectFitsOnScreen(tester, smallPhone, review: true);
 
       // The long values are shown in full rather than dropped, and the
       // confirm button survives them.
       expect(
-          find.textContaining('Quarterly Financial Reporting'), findsOneWidget);
+          find.textContaining('Quarterly Financial Reporting'), findsWidgets);
       expect(find.text('1234567890'), findsOneWidget);
       expect(find.text('0 to 1814228999'), findsOneWidget);
 
@@ -625,7 +648,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('an unaffordable artifact still fits, with its own warning',
+    testWidgets('an unaffordable artifact still fits, with Add credits',
         (tester) async {
       await openModal(
         tester,
@@ -638,12 +661,13 @@ void main() {
         surface: smallPhone,
       );
 
-      expectFitsOnScreen(tester, smallPhone);
+      expectFitsOnScreen(tester, smallPhone, review: true);
 
-      await tester.ensureVisible(find.textContaining("can't be created"));
-      await tester.ensureVisible(
-          find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
-      expect(publishButton(tester).isDisabled, isTrue);
+      await tester.ensureVisible(find.byType(UploadCostBlock));
+      await tester
+          .ensureVisible(find.widgetWithText(ArDriveButtonNew, 'Add credits'));
+      expect(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
+          findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

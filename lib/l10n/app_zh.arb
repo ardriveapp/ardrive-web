@@ -2825,7 +2825,7 @@
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "另外 {count} 个",
+  "moreFiles": "显示另外 {count} 个",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -4557,7 +4557,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "由你的免费上传额度承担。永久保存，一次付费。",
+  "uploadCostFreeNote": "由你的免费上传额度承担",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4565,7 +4565,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "用 Turbo 积分一次付费。永久保存，无需订阅。",
+  "uploadCostCreditsNote": "用 Turbo 积分付费",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4573,7 +4573,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "从你的钱包一次付费。永久保存，无需订阅。",
+  "uploadCostWalletNote": "从你的钱包付费",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },

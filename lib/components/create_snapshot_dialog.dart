@@ -1,15 +1,12 @@
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/turbo/models/free_upload_status.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
+import 'package:ardrive/components/charged_review_dialog.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
-import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/models/models.dart';
@@ -387,99 +384,64 @@ Widget _confirmDialog(
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final l10n = appLocalizationsOf(context);
 
-  return ArDriveStandardModalNew(
+  return ChargedReviewDialog(
     title: l10n.createSnapshot,
-    scrollableContent: true,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text.rich(
-          TextSpan(
-            children: splitTranslationsWithMultipleStyles(
-              originalText: l10n.createSnapshotExplanation(drive.name),
-              defaultMapper: (t) => TextSpan(
-                text: t,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
+    destination: l10n.uploadReviewTo(drive.name),
+    primaryLabel: l10n.createSnapshot,
+    busy: busy,
+    leading: [
+      const SizedBox(height: ArDriveSpacing.md),
+      Text.rich(
+        TextSpan(
+          children: splitTranslationsWithMultipleStyles(
+            originalText: l10n.createSnapshotExplanation(drive.name),
+            defaultMapper: (t) => TextSpan(
+              text: t,
+              style: typography.paragraphNormal(
+                color: colorTokens.textMid,
               ),
-              parts: {
-                drive.name: (t) => TextSpan(
-                      text: t,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textHigh,
-                      ),
+            ),
+            parts: {
+              drive.name: (t) => TextSpan(
+                    text: t,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
                     ),
-              },
-            ),
-          ),
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-          ),
-        ),
-        const SizedBox(height: ArDriveSpacing.xs),
-        Text(
-          l10n.snapshotSize(filesize(state.snapshotSize)),
-          style: typography.paragraphNormal(
-            color: colorTokens.textMid,
-          ),
-        ),
-        const SizedBox(height: ArDriveSpacing.lg),
-        TurboFreeStatusMessage(
-          status: state.freeStatus,
-          padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
-        ),
-        if (!state.isFreeThanksToTurbo)
-          PaymentMethodSelector(
-            uploadMethodInfo: UploadPaymentMethodInfo(
-              uploadMethod: state.uploadMethod,
-              totalSize: state.snapshotSize,
-              costEstimateTurbo: state.costEstimateTurbo,
-              costEstimateAr: state.costEstimateAr,
-              hasNoTurboBalance: state.hasNoTurboBalance,
-              // Without a price from Turbo there is no Turbo
-              // option, rather than one that costs 0 credits.
-              isTurboUploadPossible:
-                  (state.costEstimateTurbo?.totalCost ?? BigInt.zero) >
-                      BigInt.zero,
-              arBalance: state.arBalance,
-              sufficientArBalance: state.sufficientBalanceToPayWithAr,
-              turboCredits: state.turboCredits,
-              sufficentCreditsBalance: state.sufficientBalanceToPayWithTurbo,
-              freeStatus: FreeUploadStatus.notEligible,
-            ),
-            onTurboTopupSucess: () {
-              createSnapshotCubit.refreshTurboBalance();
-            },
-            onArSelect: () {
-              createSnapshotCubit.setUploadMethod(UploadMethod.ar);
-            },
-            onTurboSelect: () {
-              createSnapshotCubit.setUploadMethod(UploadMethod.turbo);
+                  ),
             },
           ),
-      ],
-    ),
-    actions: [
-      ModalAction.close(
-        title: l10n.cancelEmphasized,
-        isEnable: !busy,
-        action: () {
-          logger.i('Canceling snapshot creation');
-          Navigator.of(context).pop();
-        },
+        ),
+        style: typography.paragraphNormal(
+          color: colorTokens.textMid,
+        ),
       ),
-      ModalAction(
-        action: () => run(() async {
-          logger.i('Confirming snapshot creation');
-          await createSnapshotCubit.confirmSnapshotCreation();
-        }),
-        title: l10n.createSnapshot,
-        isLoading: busy,
-        isEnable: state.isButtonToUploadEnabled,
+      const SizedBox(height: ArDriveSpacing.xs),
+      Text(
+        l10n.snapshotSize(filesize(state.snapshotSize)),
+        style: typography.paragraphNormal(
+          color: colorTokens.textMid,
+        ),
       ),
     ],
+    method: state.uploadMethod,
+    totalSize: state.snapshotSize,
+    costEstimateAr: state.costEstimateAr,
+    costEstimateTurbo: state.costEstimateTurbo,
+    turboBalance: state.turboBalance,
+    turboCredits: state.turboCredits,
+    arBalance: state.arBalance,
+    sufficientArBalance: state.sufficientBalanceToPayWithAr,
+    freeStatus: state.freeStatus,
+    onMethodChanged: createSnapshotCubit.setUploadMethod,
+    refresh: createSnapshotCubit.refreshTurboBalance,
+    onConfirm: (_) => run(() async {
+      logger.i('Confirming snapshot creation');
+      await createSnapshotCubit.confirmSnapshotCreation();
+    }),
+    onCancel: () {
+      logger.i('Canceling snapshot creation');
+      Navigator.of(context).pop();
+    },
   );
 }

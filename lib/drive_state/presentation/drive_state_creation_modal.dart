@@ -1,10 +1,8 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
-import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
-import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/components/payment_method_selector_widget.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
+import 'package:ardrive/components/charged_review_dialog.dart';
 import 'package:ardrive/drive_state/data/arweave_drive_state_uploader.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
@@ -15,10 +13,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -246,92 +242,45 @@ Widget _confirmModal(
   final cubit = context.read<DriveStateCreationCubit>();
   final l10n = appLocalizationsOf(context);
 
-  return ArDriveStandardModalNew(
+  return ChargedReviewDialog(
     title: l10n.createSnapshot,
-    scrollableContent: true,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          state.artifact.isEncrypted
-              ? l10n.snapshotWhatItDoesEncrypted
-              : l10n.snapshotWhatItDoes,
-          style: typography.paragraphNormal(color: colorTokens.textMid),
-        ),
-        const SizedBox(height: ArDriveSpacing.md),
-        _summary(context, state),
-        const SizedBox(height: ArDriveSpacing.md),
-        TurboFreeStatusMessage(
-          status: state.cost.freeStatus,
-          padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
-        ),
-        // Free means Turbo bills nothing, so there is no method to choose
-        // and no balance that could be short. The same rule the snapshot
-        // dialog applies.
-        if (!state.cost.isFree)
-          PaymentMethodSelector(
-            uploadMethodInfo: _paymentMethodInfo(state),
-            onTurboTopupSucess: cubit.refreshTurboBalance,
-            onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),
-            onTurboSelect: () => cubit.setUploadMethod(UploadMethod.turbo),
-          ),
-        if (state.cost.isUnaffordable) ...[
-          const SizedBox(height: ArDriveSpacing.sm),
-          ArDriveNotice(
-            type: ArDriveNoticeType.error,
-            message: l10n.snapshotUnaffordable,
-            // The way on: Turbo Credits pay for a snapshot.
-            actionLabel: l10n.buyCredits,
-            onAction: () => showTurboTopupModal(
-              context,
-              onSuccess: cubit.refreshTurboBalance,
-            ),
-          ),
-        ],
-        const SizedBox(height: ArDriveSpacing.md),
-        Text(
-          l10n.snapshotNothingUploaded,
-          style: typography.paragraphSmall(color: colorTokens.textLow),
-        ),
-      ],
-    ),
-    actions: [
-      ModalAction.close(
-        title: l10n.cancelEmphasized,
-        action: () => Navigator.of(context).pop(),
+    destination: l10n.uploadReviewTo(state.artifact.driveName),
+    primaryLabel: l10n.createSnapshot,
+    // The upload starts a state of its own, which holds Cancel.
+    busy: false,
+    leading: [
+      const SizedBox(height: ArDriveSpacing.md),
+      Text(
+        state.artifact.isEncrypted
+            ? l10n.snapshotWhatItDoesEncrypted
+            : l10n.snapshotWhatItDoes,
+        style: typography.paragraphNormal(color: colorTokens.textMid),
       ),
-      ModalAction(
-        title: l10n.createSnapshot,
-        // The one place in the app that spends money on an artifact, and it
-        // is off unless the chosen method can actually pay for it. The cubit
-        // refuses independently; this is the half the user can see.
-        isEnable: state.canPublish,
-        action: () => cubit.publish(),
+      const SizedBox(height: ArDriveSpacing.md),
+      _summary(context, state),
+    ],
+    extras: [
+      Text(
+        l10n.snapshotNothingUploaded,
+        style: typography.paragraphSmall(color: colorTokens.textLow),
       ),
     ],
+    method: state.method,
+    totalSize: state.artifact.sizeInBytes,
+    costEstimateAr: state.cost.costEstimateAr,
+    costEstimateTurbo: state.cost.costEstimateTurbo,
+    turboBalance: state.cost.turboBalance,
+    turboCredits: state.cost.turboCredits,
+    arBalance: state.cost.arBalance,
+    sufficientArBalance: state.cost.sufficientArBalance,
+    freeStatus: state.cost.freeStatus,
+    onMethodChanged: cubit.setUploadMethod,
+    refresh: cubit.refreshTurboBalance,
+    // The cubit refuses on its own what the method can't pay for.
+    onConfirm: (_) => cubit.publish(),
+    onCancel: () => Navigator.of(context).pop(),
   );
 }
-
-/// Feeds the shared [PaymentMethodSelector] rather than restating its layout.
-///
-/// `freeStatus` is deliberately [FreeUploadStatus.notEligible]: the free
-/// message is rendered above by [TurboFreeStatusMessage], and the selector is
-/// only built at all when the upload is not free.
-UploadPaymentMethodInfo _paymentMethodInfo(DriveStateCreationReady state) =>
-    UploadPaymentMethodInfo(
-      uploadMethod: state.method,
-      totalSize: state.artifact.sizeInBytes,
-      costEstimateAr: state.cost.costEstimateAr,
-      costEstimateTurbo: state.cost.costEstimateTurbo,
-      hasNoTurboBalance: state.cost.hasNoTurboBalance,
-      isTurboUploadPossible: state.cost.isTurboUploadPossible,
-      arBalance: state.cost.arBalance,
-      sufficientArBalance: state.cost.sufficientArBalance,
-      turboCredits: state.cost.turboCredits,
-      sufficentCreditsBalance: state.cost.sufficientTurboBalance,
-      freeStatus: FreeUploadStatus.notEligible,
-    );
 
 Widget _summary(BuildContext context, DriveStateCreationReady state) {
   final artifact = state.artifact;

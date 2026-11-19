@@ -876,7 +876,7 @@
       }
     }
   },
-  "moreFiles": "+ {count} more",
+  "moreFiles": "Show {count} more",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
@@ -4335,15 +4335,15 @@
   "@uploadCostLabel": {"description": "Label over the upload review's cost"},
   "uploadCostFree": "Free",
   "@uploadCostFree": {"description": "The upload review's cost when the free upload allowance covers it"},
-  "uploadCostFreeNote": "Covered by your free upload allowance. Saved for good, paid once.",
+  "uploadCostFreeNote": "Covered by your free upload allowance",
   "@uploadCostFreeNote": {"description": "Beside the cost when an upload is free"},
   "uploadCostUsdUnit": "USD",
   "@uploadCostUsdUnit": {"description": "Unit after a cost in US dollars"},
-  "uploadCostCreditsNote": "Paid once with Turbo Credits. Saved for good, no subscription.",
+  "uploadCostCreditsNote": "Paid with Turbo Credits",
   "@uploadCostCreditsNote": {"description": "Beside the cost when Turbo Credits pay for an upload"},
   "uploadCostArUnit": "AR",
   "@uploadCostArUnit": {"description": "Unit after a cost in AR"},
-  "uploadCostWalletNote": "Paid once from your wallet. Saved for good, no subscription.",
+  "uploadCostWalletNote": "Paid from your wallet",
   "@uploadCostWalletNote": {"description": "Beside the cost when the wallet pays for an upload in AR"},
   "uploadOverFreeAllowance": "This upload is over your free upload allowance.",
   "@uploadOverFreeAllowance": {"description": "First sentence of the notice when an upload is not free and Turbo Credits do not cover it"},

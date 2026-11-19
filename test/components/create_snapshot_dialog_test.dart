@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
@@ -108,6 +109,34 @@ void main() {
         sufficientBalanceToPayWithAr: true,
         sufficientBalanceToPayWithTurbo: true,
         freeStatus: FreeUploadStatus.free,
+      );
+
+  /// A paid snapshot: [balance] winston credits against a price of 3 billion.
+  ConfirmingSnapshotCreation paid({BigInt? balance}) =>
+      ConfirmingSnapshotCreation(
+        snapshotSize: 2048,
+        costEstimateAr: UploadCostEstimate(
+          pstFee: BigInt.zero,
+          totalCost: BigInt.from(4000000000),
+          totalSize: 2048,
+          usdUploadCost: null,
+        ),
+        costEstimateTurbo: UploadCostEstimate(
+          pstFee: BigInt.zero,
+          totalCost: BigInt.from(3000000000),
+          totalSize: 2048,
+          usdUploadCost: 0.31,
+        ),
+        hasNoTurboBalance: false,
+        isTurboUploadPossible: true,
+        arBalance: '0',
+        turboCredits: '1',
+        turboBalance: balance ?? BigInt.from(5000000000),
+        uploadMethod: UploadMethod.turbo,
+        isButtonToUploadEnabled: true,
+        sufficientBalanceToPayWithAr: false,
+        sufficientBalanceToPayWithTurbo: true,
+        freeStatus: FreeUploadStatus.notEligible,
       );
 
   List<String> buttons(WidgetTester tester) => tester
@@ -243,6 +272,62 @@ void main() {
     await tester.pump();
 
     verify(() => cubit.confirmDriveAndHeighRange('drive-id')).called(1);
+    gate.complete();
+    await tester.pump();
+  });
+
+  testWidgets('free: the upload review\'s cost block says Free',
+      (tester) async {
+    await pumpDialog(tester, confirming());
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Cost'), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
+  });
+
+  testWidgets('paid with credits: the cost in dollars, and Create snapshot',
+      (tester) async {
+    await pumpDialog(tester, paid());
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
+    expect(find.text('Free'), findsNothing);
+    expect(buttons(tester), ['Cancel', 'Create snapshot']);
+
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
+    await tester.pump();
+
+    verify(() => cubit.setUploadMethod(UploadMethod.turbo)).called(1);
+    verify(() => cubit.confirmSnapshotCreation()).called(1);
+  });
+
+  testWidgets('short of credits: Add credits, never Create snapshot',
+      (tester) async {
+    await pumpDialog(tester, paid(balance: BigInt.zero));
+
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(buttons(tester), ['Cancel', 'Add credits']);
+    verifyNever(() => cubit.confirmSnapshotCreation());
+  });
+
+  testWidgets('Create snapshot is busy from the press, and Cancel waits',
+      (tester) async {
+    final gate = Completer<void>();
+    when(() => cubit.confirmSnapshotCreation()).thenAnswer((_) => gate.future);
+    await pumpDialog(tester, confirming());
+
+    tester
+        .widget<ArDriveButtonNew>(
+            find.widgetWithText(ArDriveButtonNew, 'Create snapshot'))
+        .onPressed!();
+    await tester.pump();
+
+    expect(find.byType(ArDriveSpinner), findsOneWidget);
+    final cancel = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+    expect(cancel.isDisabled, isTrue);
+
     gate.complete();
     await tester.pump();
   });

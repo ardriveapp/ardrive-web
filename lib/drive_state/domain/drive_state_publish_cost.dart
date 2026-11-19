@@ -41,6 +41,12 @@ class DriveStatePublishCost extends Equatable {
   final bool sufficientArBalance;
   final bool sufficientTurboBalance;
 
+  /// The Turbo Credits balance, in winston credits, for the review's cost.
+  final BigInt? turboBalanceWinc;
+
+  /// [turboBalanceWinc], or zero.
+  BigInt get turboBalance => turboBalanceWinc ?? BigInt.zero;
+
   /// Whether Turbo's free tier covers this artifact, and if not, why not.
   final FreeUploadStatus freeStatus;
 
@@ -54,6 +60,7 @@ class DriveStatePublishCost extends Equatable {
     required this.sufficientArBalance,
     required this.sufficientTurboBalance,
     required this.freeStatus,
+    this.turboBalanceWinc,
   });
 
   bool get isFree => freeStatus == FreeUploadStatus.free;
@@ -97,6 +104,7 @@ class DriveStatePublishCost extends Equatable {
         turboCredits,
         sufficientArBalance,
         sufficientTurboBalance,
+        turboBalanceWinc,
         freeStatus,
       ];
 }
@@ -284,6 +292,7 @@ class DriveStatePublishCostEstimator {
       turboCredits: convertWinstonToLiteralString(turboBalance),
       sufficientArBalance: walletBalance >= costEstimateAr.totalCost,
       sufficientTurboBalance: costEstimateTurbo.totalCost <= turboBalance,
+      turboBalanceWinc: turboBalance,
       freeStatus: await _freeStatus(
         sizeInBytes: sizeInBytes,
         itemSizes: itemSizes ?? [sizeInBytes],

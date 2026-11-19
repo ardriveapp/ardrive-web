@@ -171,6 +171,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           isTurboUploadPossible: _isTurboUploadPossible,
           arBalance: _arBalance,
           turboCredits: _turboCredits,
+          turboBalance: _turboBalance,
           uploadMethod: _uploadMethod,
           isButtonToUploadEnabled: _isButtonToUploadEnabled,
           sufficientBalanceToPayWithAr: _sufficientArBalance,
@@ -507,6 +508,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(
         stateAsConfirming.copyWith(
           turboCredits: _turboCredits,
+          turboBalance: _turboBalance,
           hasNoTurboBalance: _hasNoTurboBalance,
           sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
           uploadMethod: _uploadMethod,

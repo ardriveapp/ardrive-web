@@ -3,7 +3,12 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/components/copyable_share_artifact.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
+import 'package:ardrive/components/turbo_credits_funding.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
+import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart'
+    show SourceWalletCreditsNotice;
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -14,6 +19,7 @@ import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_v
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
+import 'package:ardrive/entities/constants.dart' show ContentType;
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -27,7 +33,6 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
@@ -95,10 +100,17 @@ Future<void> promptToCreateManifest(
 }
 
 class CreateManifestForm extends StatefulWidget {
-  const CreateManifestForm({super.key, @visibleForTesting this.names});
+  const CreateManifestForm({
+    super.key,
+    @visibleForTesting this.names,
+    @visibleForTesting this.paymentBloc,
+  });
 
   /// A name step to use instead of the one built from the app's providers.
   final ArNSFlowNameCubit? names;
+
+  /// A cost reader to use instead of the one built from the app's providers.
+  final UploadPaymentMethodBloc? paymentBloc;
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -511,206 +523,212 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     ArNSFlowNameCubit? names,
   }) {
     final l10n = appLocalizationsOf(context);
-    final readCubitContext = context.read<CreateManifestCubit>();
+    final cubit = context.read<CreateManifestCubit>();
+    UploadParams params() => _uploadParams(state, context);
+
+    return MultiBlocProvider(
+      providers: [
+        RepositoryProvider(
+          create: (context) => _preparationManager(context),
+        ),
+        if (widget.paymentBloc != null)
+          BlocProvider.value(value: widget.paymentBloc!)
+        else
+          BlocProvider(
+            create: (context) => UploadPaymentMethodBloc(
+              context.read<ProfileCubit>(),
+              context.read<ArDriveUploadPreparationManager>(),
+              context.read<ArDriveAuth>(),
+              context.read<PaymentService>(),
+              CreditSharingService.fromConfig(context.read<ConfigService>()),
+            )..add(PrepareUploadPaymentMethod(params: params())),
+          ),
+      ],
+      child: BlocBuilder<UploadPaymentMethodBloc, UploadPaymentMethodState>(
+        builder: (context, paymentState) {
+          final paymentBloc = context.read<UploadPaymentMethodBloc>();
+          // The same cost the upload review states. No price while it is read
+          // again, after Add credits or Try again.
+          final UploadReviewSummary? summary = switch (paymentState) {
+            UploadPaymentMethodLoaded s =>
+              UploadReviewSummary.fromPaymentInfo(s.paymentMethodInfo),
+            UploadPaymentMethodError _ ||
+            UploadPaymentMethodWalletMismatch _ =>
+              MetadataWriteCostReader.unavailable(),
+            _ => null,
+          };
+          final info = paymentState is UploadPaymentMethodLoaded
+              ? paymentState.paymentMethodInfo
+              : null;
+
+          return UploadReviewDialog(
+            title: l10n.createManifestEmphasized,
+            destination: l10n.uploadReviewTo(
+              // The drive's name for its root folder, whose own name is an
+              // internal one.
+              state.parentFolder.parentFolderId == null
+                  ? state.drive.name
+                  : state.parentFolder.name,
+            ),
+            files: [
+              (
+                name: state.manifestName,
+                size: state.manifestSize,
+                contentType: ContentType.manifest,
+              ),
+            ],
+            leading: [
+              if (state.folderHasPendingFiles) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: ArDriveNotice(
+                    type: ArDriveNoticeType.warning,
+                    message: l10n.filesPendingManifestExplanation,
+                  ),
+                ),
+              ],
+              if (state.fallbackTxId != null) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                _fallbackTxIdRow(context, state.fallbackTxId!),
+              ],
+            ],
+            summary: summary,
+            primaryLabel: l10n.createManifestEmphasized,
+            primaryEnabled: names?.ready ?? true,
+            primaryBusy: _submitting,
+            // The way the review showed is the way it is paid.
+            onUpload: (method) =>
+                _submit(() => cubit.uploadManifest(method: method)),
+            onCancel: () => Navigator.of(context).pop(false),
+            funding: TurboCreditsFunding(
+              context,
+              onRefresh: () =>
+                  paymentBloc.add(PrepareUploadPaymentMethod(params: params())),
+            ),
+            paymentChoice: !(summary?.offersPaymentChoice == true ||
+                    summary?.usesLegacySelector == true)
+                ? null
+                : RepositoryProvider.value(
+                    value: context.read<ArDriveUploadPreparationManager>(),
+                    child: UploadPaymentMethodView(
+                      // The review says what is short, above the choice; only the
+                      // wallet-only case keeps the selector's own messages.
+                      showBalanceMessages: summary?.usesLegacySelector ?? false,
+                      walletOnlyWhenChosen:
+                          !(summary?.usesLegacySelector ?? false),
+                      onError: () {},
+                      onUploadMethodChanged: (method, methodInfo, canUpload) =>
+                          cubit.selectUploadMethod(
+                              method, methodInfo, canUpload),
+                    ),
+                  ),
+            canShareInApp: paymentBloc.canShareSourceWalletCredits,
+            sourceWalletNotice: info?.sourceWalletCredits == null
+                ? null
+                : SourceWalletCreditsNotice(
+                    credits: info!.sourceWalletCredits!,
+                    onShare: paymentBloc.canShareSourceWalletCredits
+                        ? paymentBloc.shareSourceWalletCredits
+                        : null,
+                  ),
+            extras: [
+              if (names != null) ArNSFlowNameSection(cubit: names),
+              Text(
+                l10n.filesWillBePermanentlyPublicWarning,
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// The fallback page's transaction, whole, so monospace: it wraps like text.
+  Widget _fallbackTxIdRow(BuildContext context, String txId) {
+    final l10n = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final hasPendingFiles = state.folderHasPendingFiles;
-    final textStyle = typography.paragraphNormal(color: colorTokens.textMid);
-
-    return ArDriveStandardModalNew(
-      width: kMediumDialogWidth,
-      // The name step makes this taller than a laptop screen: without a
-      // scroll, Create deployment was pushed below the window.
-      scrollableContent: true,
-      title: l10n.createManifestEmphasized,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return RichText(
+      text: TextSpan(
+        style: typography.paragraphNormal(color: colorTokens.textMid),
         children: [
-          if (hasPendingFiles) ...[
-            ArDriveNotice(
-              type: ArDriveNoticeType.warning,
-              message: l10n.filesPendingManifestExplanation,
-            ),
-            const SizedBox(height: ArDriveSpacing.md),
-          ],
-          Text(
-            state.manifestName,
+          TextSpan(
+            text: '${l10n.manifestFallbackTxID}\n',
             style: typography.paragraphLarge(
               color: colorTokens.textHigh,
               fontWeight: ArFontWeight.bold,
             ),
           ),
-          Text(filesize(state.manifestSize), style: textStyle),
-          if (state.fallbackTxId != null) ...[
-            const SizedBox(height: ArDriveSpacing.xs),
-            RichText(
-              text: TextSpan(
-                style: textStyle,
-                children: [
-                  TextSpan(
-                    text: '${l10n.manifestFallbackTxID}\n',
-                    style: typography.paragraphLarge(
-                      color: colorTokens.textHigh,
-                      fontWeight: ArFontWeight.bold,
-                    ),
-                  ),
-                  // A transaction ID, whole, so monospace: it wraps
-                  // like text rather than taking a fixed width.
-                  TextSpan(
-                    text: state.fallbackTxId,
-                    style: typography.code(
-                      color: colorTokens.textMid,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: ArDriveSpacing.lg),
-          TurboFreeStatusMessage(
-            status: state.freeStatus,
-            padding: const EdgeInsets.only(bottom: ArDriveSpacing.lg),
+          TextSpan(
+            text: txId,
+            style: typography.code(color: colorTokens.textMid, fontSize: 11),
           ),
-          if (!state.freeUpload) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: ArDriveSpacing.lg),
-              child: _paymentOptions(state, context),
-            ),
-          ],
-          if (names != null) ...[
-            ArNSFlowNameSection(cubit: names),
-            const SizedBox(height: ArDriveSpacing.lg),
-          ],
-          Text(l10n.filesWillBePermanentlyPublicWarning, style: textStyle),
         ],
       ),
-      actions: [
-        ModalAction.close(
-          isEnable: !_submitting,
-          action: () => Navigator.of(context).pop(false),
-          title: l10n.cancelEmphasized,
-        ),
-        ModalAction(
-          isEnable: state.canUpload && (names?.ready ?? true),
-          isLoading: _submitting,
-          action: () => _submit(() => readCubitContext.uploadManifest()),
-          title: l10n.createManifestEmphasized,
-        ),
-      ],
     );
   }
 
-  Widget _paymentOptions(
-      CreateManifestUploadReview state, BuildContext context) {
-    final readCubitContext = context.read<CreateManifestCubit>();
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  UploadParams _uploadParams(
+    CreateManifestUploadReview state,
+    BuildContext context,
+  ) {
+    final file = UploadFile(
+      ioFile: state.manifestFile,
+      parentFolderId: state.parentFolder.id,
+    );
+    return UploadParams(
+      conflictingFiles: {},
+      files: [file],
+      foldersByPath: UploadPlanUtils.generateFoldersForFiles([file]),
+      targetDrive: state.drive,
+      targetFolder: state.parentFolder,
+      user: context.read<ArDriveAuth>().currentUser,
+      // Theres no thumbnail generation for manifests
+      containsSupportedImageTypeForThumbnailGeneration: false,
+    );
+  }
 
-    return MultiBlocProvider(
-      providers: [
-        RepositoryProvider(
-          create: (context) => ArDriveUploadPreparationManager(
-            uploadPreparePaymentOptions: UploadPaymentEvaluator(
-              appConfig: context.read<ConfigService>().config,
-              auth: context.read<ArDriveAuth>(),
-              turboBalanceRetriever: TurboBalanceRetriever(
+  ArDriveUploadPreparationManager _preparationManager(BuildContext context) =>
+      ArDriveUploadPreparationManager(
+        uploadPreparePaymentOptions: UploadPaymentEvaluator(
+          appConfig: context.read<ConfigService>().config,
+          auth: context.read<ArDriveAuth>(),
+          turboBalanceRetriever: TurboBalanceRetriever(
+            paymentService: context.read<PaymentService>(),
+          ),
+          turboUploadCostCalculator: TurboUploadCostCalculator(
+            priceEstimator: TurboPriceEstimator(
+              wallet: context.read<ArDriveAuth>().currentUser.wallet,
+              costCalculator: TurboCostCalculator(
                 paymentService: context.read<PaymentService>(),
               ),
-              turboUploadCostCalculator: TurboUploadCostCalculator(
-                priceEstimator: TurboPriceEstimator(
-                  wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                  costCalculator: TurboCostCalculator(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  paymentService: context.read<PaymentService>(),
-                ),
-                turboCostCalculator: TurboCostCalculator(
-                  paymentService: context.read<PaymentService>(),
-                ),
-              ),
-              uploadCostEstimateCalculatorForAR:
-                  UploadCostEstimateCalculatorForAR(
-                arweaveService: context.read<ArweaveService>(),
-                pstService: context.read<PstService>(),
-                arCostToUsd: ConvertArToUSD(
-                  arweave: context.read<ArweaveService>(),
-                ),
-              ),
+              paymentService: context.read<PaymentService>(),
             ),
-            uploadPreparer: UploadPreparer(
-              uploadPlanUtils: UploadPlanUtils(
-                crypto: ArDriveCrypto(),
-                arweave: context.read<ArweaveService>(),
-                turboUploadService: context.read<TurboUploadService>(),
-                driveDao: context.read<DriveDao>(),
-              ),
+            turboCostCalculator: TurboCostCalculator(
+              paymentService: context.read<PaymentService>(),
+            ),
+          ),
+          uploadCostEstimateCalculatorForAR: UploadCostEstimateCalculatorForAR(
+            arweaveService: context.read<ArweaveService>(),
+            pstService: context.read<PstService>(),
+            arCostToUsd: ConvertArToUSD(
+              arweave: context.read<ArweaveService>(),
             ),
           ),
         ),
-        BlocProvider(
-          create: (context) => UploadPaymentMethodBloc(
-            context.read<ProfileCubit>(),
-            context.read<ArDriveUploadPreparationManager>(),
-            context.read<ArDriveAuth>(),
-            context.read<PaymentService>(),
-            CreditSharingService.fromConfig(context.read<ConfigService>()),
-          )..add(
-              PrepareUploadPaymentMethod(
-                params: UploadParams(
-                  conflictingFiles: {},
-                  files: [
-                    UploadFile(
-                      ioFile: state.manifestFile,
-                      parentFolderId: state.parentFolder.id,
-                    ),
-                  ],
-                  foldersByPath: UploadPlanUtils.generateFoldersForFiles([
-                    UploadFile(
-                      ioFile: state.manifestFile,
-                      parentFolderId: state.parentFolder.id,
-                    ),
-                  ]),
-                  targetDrive: state.drive,
-                  targetFolder: state.parentFolder,
-                  user: context.read<ArDriveAuth>().currentUser,
-                  // Theres no thumbnail generation for manifests
-                  containsSupportedImageTypeForThumbnailGeneration: false,
-                ),
-              ),
-            ),
-        ),
-      ],
-      child: UploadPaymentMethodView(
-        onUploadMethodChanged: (method, methodInfo, canUpload) {
-          readCubitContext.selectUploadMethod(
-            method,
-            methodInfo,
-            canUpload,
-          );
-        },
-        onError: () {},
-        loadingIndicator: Center(
-          child: Column(
-            children: [
-              Text(
-                appLocalizationsOf(context).loadingPaymentMethods,
-                style: typography.paragraphLarge(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 32),
-                child: ArDriveLinearProgress(),
-              ),
-            ],
+        uploadPreparer: UploadPreparer(
+          uploadPlanUtils: UploadPlanUtils(
+            crypto: ArDriveCrypto(),
+            arweave: context.read<ArweaveService>(),
+            turboUploadService: context.read<TurboUploadService>(),
+            driveDao: context.read<DriveDao>(),
           ),
         ),
-      ),
-    );
-  }
+      );
 
   /// The folder to deploy, the deployment's name and, if wanted, its
   /// fallback page: one screen, then the review with the cost.
