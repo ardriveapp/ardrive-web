@@ -243,8 +243,6 @@ const _legacyPropsGaps = <String, Set<String>>{
     'derivedEthWallet',
     'sourceWalletAddress'
   },
-  'lib/blocs/create_manifest/create_manifest_state.dart CreateManifestSuccess':
-      {'dataTxId', 'parentFolder'},
   'lib/blocs/create_manifest/create_manifest_state.dart CreateManifestUploadReview':
       {'canUpload'},
   'lib/blocs/data_export/data_export_state.dart DataExportSuccess': {

@@ -230,6 +230,9 @@ class CreateManifestSuccess extends CreateManifestState {
     this.dataTxId,
     this.name,
   });
+
+  @override
+  List<Object?> get props => [parentFolder, dataTxId, name];
 }
 
 enum CreateManifestUploadProgress {
