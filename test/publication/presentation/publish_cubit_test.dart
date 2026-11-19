@@ -1503,6 +1503,11 @@ void main() {
               : const [],
         ));
       });
+      final priced = <PublicationJob>[];
+      when(() => publisher.sizeOf(any())).thenAnswer((i) {
+        priced.add(i.positionalArguments.first as PublicationJob);
+        return 5000;
+      });
       final c = cubit(onDrive: drive);
       await c.load();
       expect(c.state.stage, isNot(PublishStage.blocked),
@@ -1514,10 +1519,16 @@ void main() {
       await c.review();
       expect(c.state.stage, PublishStage.review, reason: c.state.failure);
       expect(prepared, 2);
-      final jobs = verify(() => publisher.sizeOf(captureAny())).captured;
-      final last = jobs.last as PublicationJob;
+
+      // A publish that failed after signing: its parts may be paid for, so
+      // an unchanged look keeps that job rather than signing a new one.
+      final signed = priced.last..markSignedForTest();
+      c.back();
+      await c.review();
+      expect(prepared, 2, reason: 'no new catalog for a signed job');
+      expect(priced.last, same(signed));
       // The file the drive no longer shows took its key out with it.
-      expect(last.privatePage!.fileKeys, isEmpty);
+      expect(priced.last.privatePage!.fileKeys, isEmpty);
       await c.close();
     });
 

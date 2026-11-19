@@ -422,11 +422,15 @@ void main() {
     // Someone holding the key wraps the owner's real page in their own
     // manifest, with a sealed block of their own under the named path.
     final page = await _Page.build();
-    final cubit = loader(page, linkKey: b64u(_publicationKey), dataIds: {
-      'publication.json': _settingsTx,
-      'sealed': 'FORGED00000000000000000000000000000000000000',
-      'catalog': page.catalogTxId,
-    });
+    final cubit = loader(page,
+        linkKey: b64u(_publicationKey),
+        ownerOf: (txId) async =>
+            txId.startsWith('FORGED') ? 'someone-else' : page.owner,
+        dataIds: {
+          'publication.json': _settingsTx,
+          'sealed': 'FORGED00000000000000000000000000000000000000',
+          'catalog': page.catalogTxId,
+        });
     await cubit.load();
     expect(cubit.state,
         const PublicationFailed(PublicationFailure.snapshotRejected));
@@ -435,11 +439,15 @@ void main() {
 
   test('a catalog served from another transaction is refused', () async {
     final page = await _Page.build();
-    final cubit = loader(page, linkKey: b64u(_publicationKey), dataIds: {
-      'publication.json': _settingsTx,
-      'sealed': _sealedTxId,
-      'catalog': 'FORGED00000000000000000000000000000000000000',
-    });
+    final cubit = loader(page,
+        linkKey: b64u(_publicationKey),
+        ownerOf: (txId) async =>
+            txId.startsWith('FORGED') ? 'someone-else' : page.owner,
+        dataIds: {
+          'publication.json': _settingsTx,
+          'sealed': _sealedTxId,
+          'catalog': 'FORGED00000000000000000000000000000000000000',
+        });
     await cubit.load();
     expect(cubit.state,
         const PublicationFailed(PublicationFailure.snapshotRejected));

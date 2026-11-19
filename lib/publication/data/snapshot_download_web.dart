@@ -25,6 +25,7 @@ Future<SnapshotDownloaded> _download(
     ..responseType = 'arraybuffer';
   var tooLarge = false;
   request.onProgress.listen((event) {
+    if (done.isCompleted || tooLarge) return;
     final loaded = event.loaded ?? 0;
     final total = event.lengthComputable ? event.total : null;
     if (loaded > maxBytes || (total != null && total > maxBytes)) {
@@ -36,21 +37,27 @@ Future<SnapshotDownloaded> _download(
   });
   request.onLoadEnd.listen((_) {
     if (done.isCompleted) return;
-    if (tooLarge) {
-      done.completeError(const SnapshotTooLarge());
-      return;
+    // Anything thrown here would leave the download waiting for ever.
+    try {
+      if (tooLarge) {
+        done.completeError(const SnapshotTooLarge());
+        return;
+      }
+      // A request also ends, without a body, on a 304 and some redirects.
+      final response = request.response;
+      if (request.status != 200 || response is! ByteBuffer) {
+        done.completeError(SnapshotDownloadException(request.status));
+        return;
+      }
+      final bytes = response.asUint8List();
+      if (bytes.length > maxBytes) {
+        done.completeError(const SnapshotTooLarge());
+        return;
+      }
+      done.complete((bytes: bytes, header: request.getResponseHeader(header)));
+    } catch (e) {
+      if (!done.isCompleted) done.completeError(e);
     }
-    // A request also ends, without a body, on a 304 and some redirects.
-    if (request.status != 200) {
-      done.completeError(SnapshotDownloadException(request.status));
-      return;
-    }
-    final bytes = (request.response as ByteBuffer).asUint8List();
-    if (bytes.length > maxBytes) {
-      done.completeError(const SnapshotTooLarge());
-      return;
-    }
-    done.complete((bytes: bytes, header: request.getResponseHeader(header)));
   });
   request.send();
   return done.future;

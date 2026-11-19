@@ -111,14 +111,20 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   bool _partsBound = true;
 
   /// Whether the gateway served [txId] for [path]: true when it said so,
-  /// false when it didn't say. Throws [_NotTheNamedPart] when it served
-  /// another transaction: the page's manifest points its path elsewhere than
-  /// its settings say, and the owner check would prove nothing.
-  bool _bound(String path, String txId) {
+  /// false when it didn't say, or served another transaction of the same
+  /// owner (settings and part from two versions of a page, as a cache or a
+  /// name that just moved can give). Throws [_NotTheNamedPart] when it
+  /// served a transaction someone else signed: a page built around the
+  /// owner's real parts, where the owner check would prove nothing.
+  Future<bool> _bound(
+      PublicationConfig config, String path, String txId) async {
     final served = _source.dataIdOf(path);
     if (served == null) return false;
-    if (served != txId) throw _NotTheNamedPart(path, txId, served);
-    return true;
+    if (served == txId) return true;
+    if (await _signedBy(config, served) == false) {
+      throw _NotTheNamedPart(path, txId, served);
+    }
+    return false;
   }
 
   Future<void> load() async {
@@ -319,7 +325,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     final Uint8List bytes;
     try {
       bytes = await _source.readPart(sealed.path, maxBytes: maxSealedBytes);
-      _partsBound = _bound(sealed.path, sealed.txId);
+      _partsBound = await _bound(config, sealed.path, sealed.txId);
     } on _NotTheNamedPart catch (e) {
       logger.w('Publication refused: $e');
       emit(_refused);
@@ -509,7 +515,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
           PublicationLoadingSnapshot(config, received: received, total: total),
         ),
       );
-      if (!_bound(path, txId)) _partsBound = false;
+      if (!await _bound(config, path, txId)) _partsBound = false;
     } on _NotTheNamedPart catch (e) {
       logger.w('Publication refused: $e');
       emit(_refused);
@@ -588,7 +594,7 @@ String? publicationLinkKey(Uri page) {
 }
 
 /// A page part the gateway served from another transaction than the page's
-/// settings name.
+/// settings name, signed by someone other than their owner.
 class _NotTheNamedPart implements Exception {
   const _NotTheNamedPart(this.path, this.named, this.served);
 

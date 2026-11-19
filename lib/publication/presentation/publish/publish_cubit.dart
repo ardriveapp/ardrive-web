@@ -709,7 +709,8 @@ class PublishCubit extends Cubit<PublishState> {
       logger.w('[publication] the previous slots were refused: $e');
       return (
         PublishBlock.other,
-        "This page's password slot isn't valid, so it can't be updated here.",
+        "This page's settings couldn't be read back, so it can't be updated "
+            'here.',
       );
     }
     _publicationKey = key;
@@ -993,7 +994,12 @@ class PublishCubit extends Cubit<PublishState> {
     }
     // Whatever was priced before may not match what the owner sees.
     _job = null;
-    if (isPrivatePage) {
+    // A job already signed (a publish that failed partway) is kept while the
+    // look is the same: its parts may be paid for, and a retry posts the
+    // rest of them.
+    final keepsSigned =
+        _lastJob != null && _lastJob!.isSigned && _jobKey(state) == _lastJobKey;
+    if (isPrivatePage && !keepsSigned) {
       // The drive may have synced since it was last priced: a file moved
       // out of the page, or hidden, must take its key out with it. The
       // catalog is made again from what the drive holds now (under a fresh

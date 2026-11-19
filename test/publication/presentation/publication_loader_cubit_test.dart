@@ -518,13 +518,29 @@ void main() {
         'refused', () async {
       // Someone else's page that names the owner's real snapshot, and serves
       // its own under that path.
+      const forged = 'FORGED00000000000000000000000000000000000000';
       final cubit = loader(
         page(fixture.publicationJson()),
-        dataIds: {'snapshot': 'FORGED00000000000000000000000000000000000000'},
+        dataIds: {'snapshot': forged},
+        ownerOf: (txId) async => txId == forged ? stranger : fixture.owner,
       );
       await cubit.load();
       expect(cubit.state,
           const PublicationFailed(PublicationFailure.snapshotRejected));
+      await cubit.close();
+    });
+
+    test('a part from another version of the owner opens unverified', () async {
+      // A cache, or a name that just moved, gives the settings of one
+      // version and a part of the next: both the owner's.
+      const next = 'NEXTVERSION0000000000000000000000000000000000';
+      final cubit = loader(
+        page(fixture.publicationJson()),
+        dataIds: {'snapshot': next},
+      );
+      await cubit.load();
+      final ready = cubit.state as PublicationReady;
+      expect(ready.ownerVerified, isFalse);
       await cubit.close();
     });
 

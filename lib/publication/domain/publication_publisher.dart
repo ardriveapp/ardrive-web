@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_uploader.dart';
@@ -123,6 +124,14 @@ class PublicationJob {
   final PrivatePagePlan? privatePage;
 
   bool get isPrivatePage => privatePage != null;
+
+  /// Whether its parts are signed: from then on it is frozen, and a retry
+  /// posts what is left of it rather than signing anew.
+  bool get isSigned => _signed != null;
+
+  /// For tests that stand in for the publisher: marks the job as signed.
+  @visibleForTesting
+  void markSignedForTest() => _signed ??= [];
   final PublicationSnapshotPlan snapshot;
   final PublicationRelease release;
 
