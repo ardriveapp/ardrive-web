@@ -174,7 +174,7 @@ const Map<String, _Exception> _propsExceptions = {
 
 const _legacyCasts = <String, int>{
   'lib/blocs/bulk_import/bulk_import_bloc.dart': 1,
-  'lib/blocs/create_manifest/create_manifest_cubit.dart': 11,
+  'lib/blocs/create_manifest/create_manifest_cubit.dart': 8,
   'lib/blocs/create_snapshot/create_snapshot_cubit.dart': 10,
   'lib/blocs/drive_create/drive_create_cubit.dart': 2,
   'lib/blocs/drive_detail/drive_detail_cubit.dart': 10,
@@ -243,8 +243,6 @@ const _legacyPropsGaps = <String, Set<String>>{
     'derivedEthWallet',
     'sourceWalletAddress'
   },
-  'lib/blocs/create_manifest/create_manifest_state.dart CreateManifestSuccess':
-      {'dataTxId', 'parentFolder'},
   'lib/blocs/create_manifest/create_manifest_state.dart CreateManifestUploadReview':
       {'canUpload'},
   'lib/blocs/data_export/data_export_state.dart DataExportSuccess': {

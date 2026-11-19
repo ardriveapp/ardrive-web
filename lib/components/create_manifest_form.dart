@@ -1,9 +1,16 @@
+import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
-import 'package:ardrive/components/turbo_free_status_message.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/components/copyable_share_artifact.dart';
+import 'package:ardrive/components/turbo_credits_funding.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
+import 'package:ardrive/blocs/upload/models/upload_review_summary.dart';
+import 'package:ardrive/core/upload/metadata_write_cost.dart';
+import 'package:ardrive/components/payment_method_selector_widget.dart'
+    show SourceWalletCreditsNotice;
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
@@ -13,6 +20,7 @@ import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_v
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
+import 'package:ardrive/entities/constants.dart' show ContentType;
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -20,14 +28,13 @@ import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
@@ -51,6 +58,9 @@ Future<void> promptToCreateManifest(
   final configService = context.read<ConfigService>();
   return showArDriveDialog(
     context,
+    // Its work, the upload included, runs in the dialog: a click outside
+    // must not close it mid-way.
+    barrierDismissible: false,
     content: MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.read<DriveDetailCubit>()),
@@ -92,7 +102,23 @@ Future<void> promptToCreateManifest(
 }
 
 class CreateManifestForm extends StatefulWidget {
-  const CreateManifestForm({super.key});
+  const CreateManifestForm({
+    super.key,
+    @visibleForTesting this.names,
+    @visibleForTesting this.paymentBloc,
+    @visibleForTesting this.lookupFollowing,
+  });
+
+  /// A name step to use instead of the one built from the app's providers.
+  final ArNSFlowNameCubit? names;
+
+  /// A cost reader to use instead of the one built from the app's providers.
+  final UploadPaymentMethodBloc? paymentBloc;
+
+  /// The names on the deployment a new version replaces, instead of the ones
+  /// read from the app's providers.
+  final Future<List<ArNSNameRecord>> Function(FileID existingFileId)?
+      lookupFollowing;
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -106,39 +132,93 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
   bool _namesStarted = false;
   Future<ArNSFlowOutcome>? _namesApplied;
 
+  bool _followingStarted = false;
+
+  /// False while the names on the deployment being replaced are read: until
+  /// they are, what Create would move is not known, so it is not offered.
+  bool _followingReady = true;
+
   /// Builds the name step once, with the names on the deployment it
   /// updates, which move to the new version.
   ArNSFlowNameCubit? _nameStep(CreateManifestUploadReview state) {
-    if (_namesStarted) return _names;
-    _namesStarted = true;
-    final names = _names = createArNSFlowNameCubit(context);
-    final existing = state.existingManifestFileId;
-    if (names != null && existing != null) {
-      context
-          .read<DriveDao>()
-          .fileById(fileId: existing)
-          .getSingleOrNull()
-          .then((file) {
-        if (!mounted || file == null) return;
-        names.setFollowing(arnsNamesOnVersion(context, file.dataTxId));
-      });
+    if (!_namesStarted) {
+      _namesStarted = true;
+      _names = createArNSFlowNameCubit(context);
     }
-    return names;
+    _startFollowing(state);
+    return _names;
+  }
+
+  void _startFollowing(CreateManifestUploadReview state) {
+    if (_followingStarted) return;
+    _followingStarted = true;
+    final names = _names;
+    final existing = state.existingManifestFileId;
+    if (names == null || existing == null) return;
+    _followingReady = false;
+    final driveDao =
+        widget.lookupFollowing == null ? context.read<DriveDao>() : null;
+    final lookup = widget.lookupFollowing ??
+        (fileId) async {
+          final file =
+              await driveDao!.fileById(fileId: fileId).getSingleOrNull();
+          // ignore: use_build_context_synchronously
+          return file == null || !mounted
+              ? <ArNSNameRecord>[]
+              : arnsNamesOnVersion(context, file.dataTxId);
+        };
+    lookup(existing).then((following) {
+      if (mounted) names.setFollowing(following);
+    }).catchError((Object e) {
+      // Nothing moves then, and the review says so by showing no names.
+      logger.w('Could not read the names on the deployment: $e');
+    }).whenComplete(() {
+      if (mounted) setState(() => _followingReady = true);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final given = widget.names;
+    if (given != null) {
+      _names = given;
+      _namesStarted = true;
+    }
   }
 
   @override
   void dispose() {
     _names?.close();
+    _manifestNameController.dispose();
     super.dispose();
   }
 
   bool _isFormValid = false;
 
-  ArDriveTextFieldNew manifestNameForm() {
-    final readCubitContext = context.read<CreateManifestCubit>();
+  /// Whether a step that writes or pays has been asked for and has not come
+  /// back. Set before the call: the cubit emits its busy state only after
+  /// awaiting its checks, so a fast second press would start a second step.
+  bool _submitting = false;
 
+  Future<void> _submit(Future<void> Function() step) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await step();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// The deployment's name, on the folder screen and again on the name
+  /// conflict screen, where it is asked for anew.
+  ArDriveTextFieldNew manifestNameForm({
+    required void Function(String name) onSubmit,
+  }) {
     return ArDriveTextFieldNew(
-      hintText: appLocalizationsOf(context).manifestName,
+      isEnabled: !_submitting,
+      label: appLocalizationsOf(context).manifestName,
       controller: _manifestNameController,
       validator: (value) {
         final validation = validateEntityName(value, context);
@@ -150,51 +230,39 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         return validation;
       },
       autofocus: true,
-      onFieldSubmitted: (s) {
-        readCubitContext.processManifestName(s);
+      onFieldSubmitted: (name) {
+        if (_isFormValid && !_submitting) onSubmit(name);
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     return BlocConsumer<CreateManifestCubit, CreateManifestState>(
         listener: (context, state) {
       if (state is CreateManifestPrivacyMismatch) {
         Navigator.pop(context);
-      } else if (state is CreateManifestFailure && state.isPaymentError) {
-        Navigator.pop(context);
-        showTurboPaymentRequiredDialog(context);
       }
     }, builder: (context, state) {
-      final textStyle = typography.paragraphNormal(
-        color: colorTokens.textLow,
-        fontWeight: ArFontWeight.semiBold,
+      // The barrier is not the only way out: the platform's Back would close
+      // the dialog on a step that writes or pays.
+      final busy = _submitting ||
+          state is CreateManifestPreparingManifest ||
+          state is CreateManifestCheckingForConflicts ||
+          state is CreateManifestUploadInProgress;
+      return PopScope(
+        canPop: !busy,
+        child: _content(context, state),
       );
+    });
+  }
 
-      ArDriveStandardModalNew errorDialog({required String errorText}) =>
-          ArDriveStandardModalNew(
-            width: kMediumDialogWidth,
-            title: appLocalizationsOf(context).failedToCreateManifestEmphasized,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
-                Text(errorText),
-                const SizedBox(height: 16),
-              ],
-            ),
-            actions: [
-              ModalAction(
-                action: () => Navigator.pop(context),
-                title: appLocalizationsOf(context).continueEmphasized,
-              ),
-            ],
-          );
+  Widget _content(BuildContext context, CreateManifestState state) {
+    {
+      final l10n = appLocalizationsOf(context);
+      final typography = ArDriveTypographyNew.of(context);
+      final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
       if (state is CreateManifestSuccess) {
         final names = _names;
         final dataTxId = state.dataTxId;
@@ -202,61 +270,46 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           _namesApplied ??= names.applyTo(dataTxId);
           return FutureBuilder<ArNSFlowOutcome>(
             future: _namesApplied,
-            builder: (context, outcome) => outcome.hasData
-                ? _createManifestSuccess(context, state, names: outcome.data)
-                : ProgressDialog(
-                    title: appLocalizationsOf(context).arnsSettingTheName,
+            // An error here still ends in the success screen: the deployment
+            // exists, and a wait with nothing to press is a trap.
+            builder: (context, outcome) => outcome.hasData || outcome.hasError
+                ? _createManifestSuccess(
+                    context,
+                    state,
+                    names: outcome.data,
+                    // The deployment exists, so this is the success screen;
+                    // the name the person chose is not set, and they are
+                    // told.
+                    nameFailed: outcome.hasError,
+                  )
+                : PopScope(
+                    canPop: false,
+                    child: ProgressDialog(
+                      title: l10n.arnsSettingTheName,
+                    ),
                   ),
           );
         }
         return _createManifestSuccess(context, state);
       }
 
-      if (state is CreateManifestWalletMismatch) {
-        Navigator.pop(context);
-        return errorDialog(
-          errorText:
-              appLocalizationsOf(context).walletChangedDuringManifestCreation,
-        );
-      } else if (state is CreateManifestFailure && state.isPaymentError) {
-        // Pop + payment dialog handled in the listener; render nothing.
-        return const SizedBox.shrink();
-      } else if (state is CreateManifestFailure) {
-        Navigator.pop(context);
-        return errorDialog(
-          errorText:
-              appLocalizationsOf(context).manifestTransactionUnexpectedlyFailed,
-        );
-      } else if (state is CreateManifestPreparingManifest) {
-        return ProgressDialog(
-          title: appLocalizationsOf(context).preparingManifestEmphasized,
-        );
+      if (state is CreateManifestWalletMismatch ||
+          state is CreateManifestFailure) {
+        return _failureModal(context, state);
+      } else if (state is CreateManifestPreparingManifest ||
+          state is CreateManifestCheckingForConflicts) {
+        return ProgressDialog(title: l10n.deploymentPreparing);
       } else if (state is CreateManifestNameConflict) {
-        return _createManifestNameConflict(
-          contexty: context,
-          textStyle: textStyle,
-        );
+        return _createManifestNameConflict(context, state);
       } else if (state is CreateManifestRevisionConfirm) {
-        return _createManifestRevisionConfirm(
-          context: context,
-          textStyle: textStyle,
-        );
+        return _createManifestRevisionConfirm(context);
       } else if (state is CreateManifestInitial) {
-        return const ProgressDialog(
-          title: 'Loading Folders...',
-        );
-      } else if (state is CreateManifestNameInput) {
-        return _createManifestNameInput(
-          context: context,
-          textStyle: textStyle,
-          state: state,
-        );
-      }
-      if (state is CreateManifestUploadInProgress) {
+        return ProgressDialog(title: l10n.loadingFolders);
+      } else if (state is CreateManifestUploadInProgress) {
         return ProgressDialog(
-          title: 'Creating deployment...',
+          title: l10n.deploymentCreating,
           progressDescription: Text(
-            _getProgressDescription(state.progress),
+            _getProgressDescription(context, state.progress),
             style: typography.paragraphLarge(
               color: colorTokens.textHigh,
               fontWeight: ArFontWeight.bold,
@@ -264,85 +317,156 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           ),
         );
       } else if (state is CreateManifestUploadReview) {
-        return _createManifestUploadReview(
-          state: state,
-          context: context,
-          textStyle: textStyle,
-        );
+        return _createManifestUploadReview(state: state, context: context);
       } else if (state is CreateManifestFolderLoadSuccess) {
         return _selectFolder(state, context);
       }
 
       return const SizedBox();
-    });
+    }
+  }
+
+  /// A failure stays in the dialog, in a notice, with the way on: Try again
+  /// where a retry sends the same deployment again, and Buy credits when
+  /// Turbo wants credits. A wallet that changed has nothing to retry.
+  Widget _failureModal(BuildContext context, CreateManifestState state) {
+    final l10n = appLocalizationsOf(context);
+    final isPaymentError =
+        state is CreateManifestFailure && state.isPaymentError;
+    final isWalletMismatch = state is CreateManifestWalletMismatch;
+    final postedTxId = state is CreateManifestFailure ? state.postedTxId : null;
+    final canRetry = state is CreateManifestFailure && state.canRetry;
+
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      title: isPaymentError
+          ? l10n.freeAllowanceUsedUpTitle
+          : l10n.deploymentFailedTitle,
+      content: ArDriveNotice(
+        type: ArDriveNoticeType.error,
+        // May have been sent comes before a payment refusal: Turbo can take
+        // the metadata item and then refuse the data item, and the person
+        // must know that before paying to try again.
+        message: postedTxId != null
+            ? l10n.deploymentPostedBody(postedTxId)
+            : state is CreateManifestFailure && state.maybeSent
+                ? l10n.deploymentMaybeSentBody
+                : isPaymentError
+                    ? l10n.freeAllowanceUsedUpDescription
+                    : isWalletMismatch
+                        ? l10n.deploymentWalletChanged
+                        : l10n.deploymentFailedBody,
+      ),
+      actions: [
+        ModalAction.close(
+          isEnable: !_submitting,
+          action: () => Navigator.pop(context),
+          title: l10n.close,
+        ),
+        // The dialog stays: after the top-up the person is back here, with
+        // Try again, instead of at the start.
+        if (isPaymentError)
+          ModalAction(
+            action: () => showTurboTopupModal(context),
+            title: l10n.buyCredits,
+          ),
+        if (!isWalletMismatch && canRetry)
+          ModalAction(
+            isLoading: _submitting,
+            variant: isPaymentError ? ButtonVariant.secondary : null,
+            action: () => _submit(
+              () => context.read<CreateManifestCubit>().retryUpload(),
+            ),
+            title: l10n.tryAgain,
+          ),
+      ],
+    );
   }
 
   Widget _createManifestSuccess(
     BuildContext context,
     CreateManifestSuccess state, {
     ArNSFlowOutcome? names,
+    bool nameFailed = false,
   }) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
+    final dataTxId = state.dataTxId;
+    // The deployment's address: its data transaction on the gateway the app
+    // reads data from, as a file's data link is built.
+    final address = dataTxId == null
+        ? null
+        : '${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}/$dataTxId';
+    void finish() {
+      context
+          .read<DriveDetailCubit>()
+          .openFolder(folderId: state.parentFolder.id);
+      context.read<DriveDetailCubit>().refreshDriveDataTable();
+      Navigator.pop(context);
+    }
+
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ArDriveIcons.checkCirle(
-              size: 50,
-              color: ArDriveTheme.of(context)
-                  .themeData
-                  .colorTokens
-                  .statusSuccessFg,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Deployment created successfully',
-              style: typography.heading3(
-                fontWeight: ArFontWeight.bold,
+      title: l10n.deploymentCreatedTitle,
+      scrollableContent: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (address != null) ...[
+            if (state.name != null)
+              Text(
+                state.name!,
+                style: ArDriveTypographyNew.of(context).paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
+                ),
               ),
-              textAlign: TextAlign.center,
+            const SizedBox(height: ArDriveSpacing.xs),
+            CopyableShareArtifact(
+              label: l10n.deploymentAddress,
+              text: address,
+              copyLabel: l10n.copyLink,
+              revealLabel: l10n.copyLink,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Your deployment has been created.',
-              style: typography.paragraphNormal(
-                color: colorTokens.textMid,
-              ),
+            const SizedBox(height: ArDriveSpacing.xs),
+            ArDriveLink(
+              text: l10n.open,
+              external: true,
+              onTap: () => openUrl(url: address),
             ),
-            if (names != null && !names.isEmpty) ...[
-              const SizedBox(height: 16),
-              ArNSFlowNameResult(outcome: names),
-            ],
           ],
-        ),
+          if (nameFailed) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArDriveNotice(
+              type: ArDriveNoticeType.warning,
+              message: l10n.deploymentNameNotSet,
+            ),
+          ] else if (names != null && !names.isEmpty) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArNSFlowNameResult(outcome: names),
+          ],
+        ],
       ),
       actions: [
-        ModalAction.dismiss(
-          action: () {
-            context
-                .read<DriveDetailCubit>()
-                .openFolder(folderId: state.parentFolder.id);
-            context.read<DriveDetailCubit>().refreshDriveDataTable();
-            Navigator.pop(context);
-          },
-          title: 'Close',
+        ModalAction.close(
+          action: finish,
+          title: l10n.close,
         ),
       ],
     );
   }
 
-  String _getProgressDescription(CreateManifestUploadProgress progress) {
+  String _getProgressDescription(
+    BuildContext context,
+    CreateManifestUploadProgress progress,
+  ) {
+    final l10n = appLocalizationsOf(context);
     switch (progress) {
       case CreateManifestUploadProgress.preparingManifest:
-        return 'Preparing deployment...';
+        return l10n.deploymentPreparing;
       case CreateManifestUploadProgress.uploadingManifest:
-        return 'Uploading deployment...';
+        return l10n.deploymentUploading;
       case CreateManifestUploadProgress.completed:
-        return 'Completed';
+        return l10n.doneEmphasized;
     }
   }
 
@@ -356,140 +480,83 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     return folderNode.isEmpty();
   }
 
-  Widget _createManifestNameConflict({
-    required BuildContext contexty,
-    required TextStyle textStyle,
-  }) {
-    final readCubitContext = context.read<CreateManifestCubit>();
+  /// A file or folder already has the name: asked for another, in the
+  /// dialog, with that said in words of its own.
+  Widget _createManifestNameConflict(
+    BuildContext context,
+    CreateManifestNameConflict state,
+  ) {
+    final l10n = appLocalizationsOf(context);
+    final cubit = context.read<CreateManifestCubit>();
+    final canRetry =
+        _isFormValid && _manifestNameController.text != state.conflictingName;
 
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
-      title: appLocalizationsOf(context).conflictingNameFound,
-      content: SizedBox(
-        height: 200,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              appLocalizationsOf(context).conflictingManifestFoundChooseNewName,
-              style: textStyle,
-            ),
-            manifestNameForm()
-          ],
-        ),
-      ),
-      actions: [
-        ModalAction(
-          action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
-        ),
-        ModalAction(
-          action: () =>
-              readCubitContext.reCheckConflicts(_manifestNameController.text),
-          title: appLocalizationsOf(context).continueEmphasized,
-        ),
-      ],
-    );
-  }
-
-  Widget _createManifestRevisionConfirm({
-    required BuildContext context,
-    required TextStyle textStyle,
-  }) {
-    final readCubitContext = context.read<CreateManifestCubit>();
-    return ArDriveStandardModalNew(
-      width: kMediumDialogWidth,
-      title: appLocalizationsOf(context).conflictingManifestFound,
+      title: l10n.deploymentNameConflictTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-          Text(
-            appLocalizationsOf(context).conflictingManifestFoundChooseNewName,
-            style: textStyle,
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message: l10n.deploymentNameConflictBody(state.conflictingName),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: ArDriveSpacing.md),
+          manifestNameForm(
+            onSubmit: (name) {
+              if (canRetry) _submit(() => cubit.reCheckConflicts(name));
+            },
+          ),
         ],
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
+          isEnable: !_submitting,
           action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
+          title: l10n.cancelEmphasized,
         ),
         ModalAction(
-          isEnable: _isFormValid,
-          action: () =>
-              readCubitContext.confirmRevision(_manifestNameController.text),
-          title: appLocalizationsOf(context).continueEmphasized,
+          isEnable: canRetry,
+          isLoading: _submitting,
+          action: () => _submit(
+            () => cubit.reCheckConflicts(_manifestNameController.text),
+          ),
+          title: l10n.deploymentUseName,
         ),
       ],
     );
   }
 
-  Widget _createManifestNameInput({
-    required BuildContext context,
-    required TextStyle textStyle,
-    required CreateManifestNameInput state,
-  }) {
-    final readCubitContext = context.read<CreateManifestCubit>();
+  /// A deployment of that name is already here: say so, and that creating
+  /// this one adds a version of it.
+  Widget _createManifestRevisionConfirm(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+    final cubit = context.read<CreateManifestCubit>();
     return ArDriveStandardModalNew(
-      width: kLargeDialogWidth,
-      title: appLocalizationsOf(context).addnewManifestEmphasized,
+      width: kMediumDialogWidth,
+      title: l10n.deploymentExistsTitle,
+      description: l10n.deploymentExistsBody(_manifestNameController.text),
       actions: [
-        ModalAction(
-          action: () => Navigator.pop(context),
-          title: appLocalizationsOf(context).cancelEmphasized,
+        ModalAction.close(
+          isEnable: !_submitting,
+          action: () => Navigator.of(context).pop(false),
+          title: l10n.cancelEmphasized,
         ),
         ModalAction(
-          isEnable: _isFormValid,
-          action: () => readCubitContext
-              .processManifestName(_manifestNameController.text),
-          title: appLocalizationsOf(context).nextEmphasized,
+          isLoading: _submitting,
+          action: () => _submit(
+            () => cubit.confirmRevision(_manifestNameController.text),
+          ),
+          title: l10n.deploymentCreateNewVersion,
         ),
       ],
-      content: SizedBox(
-        height: 180,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              RichText(
-                text: TextSpan(children: [
-                  TextSpan(
-                    text: appLocalizationsOf(context)
-                        .aManifestIsASpecialKindOfFile, // trimmed spaces
-                    style: textStyle,
-                  ),
-                  const TextSpan(text: ' '),
-                  ArDriveLink.span(
-                    text: appLocalizationsOf(context).learnMore,
-                    style: textStyle,
-                    color: textStyle.color,
-                    external: true,
-                    onTap: () => openUrl(
-                      url: Resources.manifestLearnMoreLink,
-                    ),
-                  ),
-                ]),
-              ),
-              manifestNameForm()
-            ],
-          ),
-        ),
-      ),
     );
   }
 
   Widget _createManifestUploadReview({
     required CreateManifestUploadReview state,
     required BuildContext context,
-    required TextStyle textStyle,
   }) {
     final names = _nameStep(state);
     if (names != null) {
@@ -499,292 +566,307 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           builder: (context, __) => _reviewModal(
             state: state,
             context: context,
-            textStyle: textStyle,
             names: names,
           ),
         ),
       );
     }
-    return _reviewModal(state: state, context: context, textStyle: textStyle);
+    return _reviewModal(state: state, context: context);
   }
 
   Widget _reviewModal({
     required CreateManifestUploadReview state,
     required BuildContext context,
-    required TextStyle textStyle,
     ArNSFlowNameCubit? names,
   }) {
-    final readCubitContext = context.read<CreateManifestCubit>();
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final hasPendingFiles = state.folderHasPendingFiles;
-
-    return ArDriveStandardModalNew(
-      width: kMediumDialogWidth,
-      // The name step makes this taller than a laptop screen: without a
-      // scroll, Create deployment was pushed below the window.
-      scrollableContent: true,
-      title: hasPendingFiles
-          ? appLocalizationsOf(context).filesPending
-          : appLocalizationsOf(context).createManifestEmphasized,
-      content: SizedBox(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (hasPendingFiles) ...[
-              Text(
-                appLocalizationsOf(context).filesPendingManifestExplanation,
-                style: textStyle,
-              ),
-              const Divider(
-                height: 48,
-              ),
-            ],
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 256),
-              child: Scrollbar(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    Text(
-                      state.manifestName,
-                      style: typography.paragraphLarge(
-                        color: colorTokens.textHigh,
-                        fontWeight: ArFontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      filesize(state.manifestSize),
-                      style: textStyle,
-                    ),
-                    const SizedBox(height: 8),
-                    if (state.fallbackTxId != null) ...[
-                      RichText(
-                        text: TextSpan(
-                          style: textStyle,
-                          children: [
-                            TextSpan(
-                              text: 'Fallback page\n',
-                              style: typography.paragraphLarge(
-                                color: colorTokens.textHigh,
-                                fontWeight: ArFontWeight.bold,
-                              ),
-                            ),
-                            // A transaction ID, whole, so monospace: it wraps
-                            // like text rather than taking a fixed width.
-                            TextSpan(
-                              text: state.fallbackTxId,
-                              style: typography.code(
-                                color: colorTokens.textMid,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const Divider(height: 48),
-            TurboFreeStatusMessage(
-              status: state.freeStatus,
-              padding: const EdgeInsets.only(bottom: 24),
-            ),
-            if (!state.freeUpload) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: _paymentOptions(state, context),
-              ),
-            ],
-            if (names != null) ...[
-              ArNSFlowNameSection(cubit: names),
-              const SizedBox(height: 24),
-            ],
-            Text(
-              appLocalizationsOf(context).filesWillBePermanentlyPublicWarning,
-              style: textStyle,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        ModalAction(
-          action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
-        ),
-        ModalAction(
-          isEnable: state.canUpload && (names?.ready ?? true),
-          action: () => readCubitContext.uploadManifest(),
-          title: appLocalizationsOf(context).createManifestEmphasized,
-        ),
-      ],
-    );
-  }
-
-  Widget _paymentOptions(
-      CreateManifestUploadReview state, BuildContext context) {
-    final readCubitContext = context.read<CreateManifestCubit>();
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
+    final cubit = context.read<CreateManifestCubit>();
+    UploadParams params() => _uploadParams(state, context);
 
     return MultiBlocProvider(
       providers: [
         RepositoryProvider(
-          create: (context) => ArDriveUploadPreparationManager(
-            uploadPreparePaymentOptions: UploadPaymentEvaluator(
-              appConfig: context.read<ConfigService>().config,
-              auth: context.read<ArDriveAuth>(),
-              turboBalanceRetriever: TurboBalanceRetriever(
-                paymentService: context.read<PaymentService>(),
-              ),
-              turboUploadCostCalculator: TurboUploadCostCalculator(
-                priceEstimator: TurboPriceEstimator(
-                  wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                  costCalculator: TurboCostCalculator(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  paymentService: context.read<PaymentService>(),
-                ),
-                turboCostCalculator: TurboCostCalculator(
-                  paymentService: context.read<PaymentService>(),
-                ),
-              ),
-              uploadCostEstimateCalculatorForAR:
-                  UploadCostEstimateCalculatorForAR(
-                arweaveService: context.read<ArweaveService>(),
-                pstService: context.read<PstService>(),
-                arCostToUsd: ConvertArToUSD(
-                  arweave: context.read<ArweaveService>(),
-                ),
-              ),
-            ),
-            uploadPreparer: UploadPreparer(
-              uploadPlanUtils: UploadPlanUtils(
-                crypto: ArDriveCrypto(),
-                arweave: context.read<ArweaveService>(),
-                turboUploadService: context.read<TurboUploadService>(),
-                driveDao: context.read<DriveDao>(),
-              ),
-            ),
+          create: (context) => _preparationManager(context),
+        ),
+        if (widget.paymentBloc != null)
+          BlocProvider.value(value: widget.paymentBloc!)
+        else
+          BlocProvider(
+            create: (context) => UploadPaymentMethodBloc(
+              context.read<ProfileCubit>(),
+              context.read<ArDriveUploadPreparationManager>(),
+              context.read<ArDriveAuth>(),
+              context.read<PaymentService>(),
+              CreditSharingService.fromConfig(context.read<ConfigService>()),
+            )..add(PrepareUploadPaymentMethod(params: params())),
           ),
-        ),
-        BlocProvider(
-          create: (context) => UploadPaymentMethodBloc(
-            context.read<ProfileCubit>(),
-            context.read<ArDriveUploadPreparationManager>(),
-            context.read<ArDriveAuth>(),
-            context.read<PaymentService>(),
-            CreditSharingService.fromConfig(context.read<ConfigService>()),
-          )..add(
-              PrepareUploadPaymentMethod(
-                params: UploadParams(
-                  conflictingFiles: {},
-                  files: [
-                    UploadFile(
-                      ioFile: state.manifestFile,
-                      parentFolderId: state.parentFolder.id,
-                    ),
-                  ],
-                  foldersByPath: UploadPlanUtils.generateFoldersForFiles([
-                    UploadFile(
-                      ioFile: state.manifestFile,
-                      parentFolderId: state.parentFolder.id,
-                    ),
-                  ]),
-                  targetDrive: state.drive,
-                  targetFolder: state.parentFolder,
-                  user: context.read<ArDriveAuth>().currentUser,
-                  // Theres no thumbnail generation for manifests
-                  containsSupportedImageTypeForThumbnailGeneration: false,
-                ),
-              ),
-            ),
-        ),
       ],
-      child: UploadPaymentMethodView(
-        onUploadMethodChanged: (method, methodInfo, canUpload) {
-          readCubitContext.selectUploadMethod(
-            method,
-            methodInfo,
-            canUpload,
-          );
-        },
-        onError: () {},
-        loadingIndicator: Center(
-          child: Column(
-            children: [
-              Text(
-                appLocalizationsOf(context).loadingPaymentMethods,
-                style: typography.paragraphLarge(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
-                ),
+      child: BlocBuilder<UploadPaymentMethodBloc, UploadPaymentMethodState>(
+        builder: (context, paymentState) {
+          final paymentBloc = context.read<UploadPaymentMethodBloc>();
+          // The wallet is not the one signed in with: no price to read
+          // again, so no Try again to loop on.
+          if (paymentState is UploadPaymentMethodWalletMismatch) {
+            return ArDriveStandardModalNew(
+              width: kMediumDialogWidth,
+              title: l10n.createManifestEmphasized,
+              content: ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: l10n.deploymentWalletChanged,
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 32),
-                child: ArDriveLinearProgress(),
+              actions: [
+                ModalAction.close(
+                  action: () => Navigator.of(context).pop(false),
+                  title: l10n.close,
+                ),
+              ],
+            );
+          }
+          // The same cost the upload review states. No price while it is read
+          // again, after Add credits or Try again.
+          final UploadReviewSummary? summary = switch (paymentState) {
+            UploadPaymentMethodLoaded s =>
+              UploadReviewSummary.fromPaymentInfo(s.paymentMethodInfo),
+            UploadPaymentMethodError _ => MetadataWriteCostReader.unavailable(),
+            _ => null,
+          };
+          final info = paymentState is UploadPaymentMethodLoaded
+              ? paymentState.paymentMethodInfo
+              : null;
+
+          return UploadReviewDialog(
+            title: l10n.createManifestEmphasized,
+            destination: l10n.uploadReviewTo(
+              // The drive's name for its root folder, whose own name is an
+              // internal one.
+              state.parentFolder.parentFolderId == null
+                  ? state.drive.name
+                  : state.parentFolder.name,
+            ),
+            files: [
+              (
+                name: state.manifestName,
+                size: state.manifestSize,
+                contentType: ContentType.manifest,
               ),
             ],
-          ),
-        ),
+            leading: [
+              if (state.folderHasPendingFiles) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: ArDriveNotice(
+                    type: ArDriveNoticeType.warning,
+                    message: l10n.filesPendingManifestExplanation,
+                  ),
+                ),
+              ],
+              if (state.fallbackTxId != null) ...[
+                const SizedBox(height: ArDriveSpacing.md),
+                _fallbackTxIdRow(context, state.fallbackTxId!),
+              ],
+            ],
+            summary: summary,
+            primaryLabel: l10n.createManifestEmphasized,
+            primaryEnabled: (names?.ready ?? true) && _followingReady,
+            primaryBusy: _submitting,
+            // The way the review showed is the way it is paid.
+            onUpload: (method) =>
+                _submit(() => cubit.uploadManifest(method: method)),
+            onCancel: () => Navigator.of(context).pop(false),
+            funding: TurboCreditsFunding(
+              context,
+              onRefresh: () =>
+                  paymentBloc.add(PrepareUploadPaymentMethod(params: params())),
+            ),
+            paymentChoice: !(summary?.offersPaymentChoice == true ||
+                    summary?.usesLegacySelector == true)
+                ? null
+                : _lockedWhileSubmitting(UploadPaymentMethodView(
+                    // The review says what is short, above the choice; only the
+                    // wallet-only case keeps the selector's own messages.
+                    showBalanceMessages: summary?.usesLegacySelector ?? false,
+                    walletOnlyWhenChosen:
+                        !(summary?.usesLegacySelector ?? false),
+                    onError: () {},
+                    onUploadMethodChanged: (method, methodInfo, canUpload) =>
+                        cubit.selectUploadMethod(method, methodInfo, canUpload),
+                  )),
+            canShareInApp: paymentBloc.canShareSourceWalletCredits,
+            sourceWalletNotice: info?.sourceWalletCredits == null
+                ? null
+                : SourceWalletCreditsNotice(
+                    credits: info!.sourceWalletCredits!,
+                    onShare: paymentBloc.canShareSourceWalletCredits
+                        ? paymentBloc.shareSourceWalletCredits
+                        : null,
+                  ),
+            extras: [
+              if (names != null)
+                _lockedWhileSubmitting(ArNSFlowNameSection(cubit: names)),
+              Text(
+                l10n.filesWillBePermanentlyPublicWarning,
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
+  /// What Create was pressed on is what is sent: the wallet check after the
+  /// press can take a while, and the payment method and the names must not
+  /// change under it.
+  Widget _lockedWhileSubmitting(Widget child) => ExcludeFocus(
+        excluding: _submitting,
+        child: AbsorbPointer(absorbing: _submitting, child: child),
+      );
+
+  /// The fallback page's transaction, whole, so monospace: it wraps like text.
+  Widget _fallbackTxIdRow(BuildContext context, String txId) {
+    final l10n = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return RichText(
+      text: TextSpan(
+        style: typography.paragraphNormal(color: colorTokens.textMid),
+        children: [
+          TextSpan(
+            text: '${l10n.manifestFallbackTxID}\n',
+            style: typography.paragraphLarge(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.bold,
+            ),
+          ),
+          TextSpan(
+            text: txId,
+            style: typography.code(color: colorTokens.textMid, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  UploadParams _uploadParams(
+    CreateManifestUploadReview state,
+    BuildContext context,
+  ) {
+    final file = UploadFile(
+      ioFile: state.manifestFile,
+      parentFolderId: state.parentFolder.id,
+    );
+    return UploadParams(
+      conflictingFiles: {},
+      files: [file],
+      foldersByPath: UploadPlanUtils.generateFoldersForFiles([file]),
+      targetDrive: state.drive,
+      targetFolder: state.parentFolder,
+      user: context.read<ArDriveAuth>().currentUser,
+      // Theres no thumbnail generation for manifests
+      containsSupportedImageTypeForThumbnailGeneration: false,
+    );
+  }
+
+  ArDriveUploadPreparationManager _preparationManager(BuildContext context) =>
+      ArDriveUploadPreparationManager(
+        uploadPreparePaymentOptions: UploadPaymentEvaluator(
+          appConfig: context.read<ConfigService>().config,
+          auth: context.read<ArDriveAuth>(),
+          turboBalanceRetriever: TurboBalanceRetriever(
+            paymentService: context.read<PaymentService>(),
+          ),
+          turboUploadCostCalculator: TurboUploadCostCalculator(
+            priceEstimator: TurboPriceEstimator(
+              wallet: context.read<ArDriveAuth>().currentUser.wallet,
+              costCalculator: TurboCostCalculator(
+                paymentService: context.read<PaymentService>(),
+              ),
+              paymentService: context.read<PaymentService>(),
+            ),
+            turboCostCalculator: TurboCostCalculator(
+              paymentService: context.read<PaymentService>(),
+            ),
+          ),
+          uploadCostEstimateCalculatorForAR: UploadCostEstimateCalculatorForAR(
+            arweaveService: context.read<ArweaveService>(),
+            pstService: context.read<PstService>(),
+            arCostToUsd: ConvertArToUSD(
+              arweave: context.read<ArweaveService>(),
+            ),
+          ),
+        ),
+        uploadPreparer: UploadPreparer(
+          uploadPlanUtils: UploadPlanUtils(
+            crypto: ArDriveCrypto(),
+            arweave: context.read<ArweaveService>(),
+            turboUploadService: context.read<TurboUploadService>(),
+            driveDao: context.read<DriveDao>(),
+          ),
+        ),
+      );
+
+  /// The folder to deploy, the deployment's name and, if wanted, its
+  /// fallback page: one screen, then the review with the cost.
   Widget _selectFolder(
       CreateManifestFolderLoadSuccess state, BuildContext context) {
     final cubit = context.read<CreateManifestCubit>();
+    final l10n = appLocalizationsOf(context);
 
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    final rowStyle = typography.paragraphLarge(
+      fontWeight: ArFontWeight.bold,
+      color: colorTokens.textHigh,
+    );
+    final disabledStyle = typography.paragraphLarge(
+      color: colorTokens.iconLow,
+    );
 
     final items = <Widget>[
       ...state.viewingFolder.subfolders
           .where((element) => !element.isHidden)
           .map(
         (f) {
-          final enabled = !_isFolderEmpty(
-            f.id,
-            context.read<CreateManifestCubit>().rootFolderNode,
-          );
+          final enabled = !_isFolderEmpty(f.id, cubit.rootFolderNode);
 
           return ArDriveClickArea(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16),
-              child: GestureDetector(
-                onTap: enabled
-                    ? () {
-                        cubit.loadFolder(f.id);
-                      }
-                    : null,
+            showCursor: enabled,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: enabled
+                  ? () {
+                      cubit.loadFolder(f.id);
+                      // Review waits for the folder, which is not here yet.
+                      setState(() {});
+                    }
+                  : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: ArDriveSpacing.sm,
+                  horizontal: ArDriveSpacing.md,
+                ),
                 child: Row(
                   children: [
                     ArDriveIcons.folderOutline(
                       size: 20,
-                      color: enabled
-                          ? colorTokens.textHigh
-                          : _colorDisabled(context),
+                      color:
+                          enabled ? colorTokens.textHigh : colorTokens.iconLow,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: ArDriveSpacing.xs),
                     Expanded(
                       child: Text(
                         f.name,
-                        style: typography.paragraphLarge(
-                            fontWeight: ArFontWeight.bold,
-                            color: enabled
-                                ? colorTokens.textHigh
-                                : _colorDisabled(context)),
+                        style: enabled ? rowStyle : disabledStyle,
                       ),
                     ),
                     ArDriveIcons.carretRight(
                       size: 24,
-                      color: enabled
-                          ? colorTokens.textHigh
-                          : _colorDisabled(context),
+                      color:
+                          enabled ? colorTokens.textHigh : colorTokens.iconLow,
                     ),
                   ],
                 ),
@@ -796,187 +878,179 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       ...state.viewingFolder.files.where((element) => !element.isHidden).map(
             (f) => Padding(
               padding: const EdgeInsets.symmetric(
-                vertical: 16.0,
-                horizontal: 16,
+                vertical: ArDriveSpacing.sm,
+                horizontal: ArDriveSpacing.md,
               ),
               child: Row(
                 children: [
-                  ArDriveIcons.file(
-                    size: 20,
-                    color: _colorDisabled(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      f.name,
-                      style: typography.paragraphLarge(
-                        color: _colorDisabled(context),
-                      ),
-                    ),
-                  ),
+                  ArDriveIcons.file(size: 20, color: colorTokens.iconLow),
+                  const SizedBox(width: ArDriveSpacing.xs),
+                  Expanded(child: Text(f.name, style: disabledStyle)),
                 ],
               ),
             ),
           ),
     ];
 
-    return ArDriveModalNew(
-      constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
-      contentPadding: EdgeInsets.zero,
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              height: 77,
-              alignment: Alignment.centerLeft,
-              color: colorTokens.containerL1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    ArDriveClickArea(
-                      child: AnimatedContainer(
-                        width: !state.viewingRootFolder ? 20 : 0,
-                        duration: const Duration(milliseconds: 200),
-                        child: GestureDetector(
-                          onTap: () {
-                            cubit.loadParentFolder();
-                          },
-                          child: AnimatedScale(
-                            duration: const Duration(milliseconds: 200),
-                            scale: !state.viewingRootFolder ? 1 : 0,
-                            child: ArDriveIcons.arrowLeft(
-                              size: 32,
+    void goBack() {
+      cubit.loadParentFolder();
+      setState(() {});
+    }
+
+    final canContinue = state.enableManifestCreationButton &&
+        _isFormValid &&
+        !cubit.isLoadingFolder(state);
+
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      scrollableContent: true,
+      title: l10n.addnewManifestEmphasized,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: TextSpan(children: [
+              TextSpan(
+                text: l10n.aManifestIsASpecialKindOfFile,
+                style: typography.paragraphNormal(color: colorTokens.textMid),
+              ),
+              const TextSpan(text: ' '),
+              ArDriveLink.span(
+                text: l10n.learnMore,
+                style: typography.paragraphNormal(color: colorTokens.textMid),
+                color: colorTokens.textMid,
+                external: true,
+                onTap: () => openUrl(url: Resources.manifestLearnMoreLink),
+              ),
+            ]),
+          ),
+          const SizedBox(height: ArDriveSpacing.lg),
+          manifestNameForm(
+            onSubmit: (name) {
+              if (state.enableManifestCreationButton &&
+                  !cubit.isLoadingFolder(state)) {
+                _submit(() => cubit.checkForConflicts(name));
+              }
+            },
+          ),
+          const SizedBox(height: ArDriveSpacing.lg),
+          Text(
+            l10n.deploymentFolder,
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+          const SizedBox(height: ArDriveSpacing.xs),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: colorTokens.strokeLow),
+              borderRadius: BorderRadius.circular(ArDriveRadius.md),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  color: colorTokens.containerL1,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ArDriveSpacing.md,
+                    vertical: ArDriveSpacing.sm,
+                  ),
+                  child: Row(
+                    children: [
+                      if (!state.viewingRootFolder)
+                        Semantics(
+                          button: true,
+                          label: l10n.back,
+                          onTap: goBack,
+                          excludeSemantics: true,
+                          child: ArDriveClickArea(
+                            child: GestureDetector(
+                              onTap: goBack,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  right: ArDriveSpacing.xs,
+                                ),
+                                child: ArDriveIcons.arrowLeft(size: 20),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    AnimatedPadding(
-                      duration: const Duration(milliseconds: 200),
-                      padding: !state.viewingRootFolder
-                          ? const EdgeInsets.only(left: 14)
-                          : const EdgeInsets.only(left: 0),
-                      child: Text(
-                        appLocalizationsOf(context).targetFolderEmphasized,
-                        style: typography.heading5(
-                          color: colorTokens.textHigh,
-                          fontWeight: ArFontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          state.viewingFolder.folder.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.paragraphLarge(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ),
-                    const Spacer(),
-                    ArDriveIconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: ArDriveIcons.x(
-                        size: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  return items[index];
-                },
-              ),
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ArDriveClickArea(
-                child: ArDriveTooltip(
-                  message:
-                      'The page shown when a path in the deployment does not exist, such as a 404 page.\nEnter the transaction ID of its file.',
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Fallback page',
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ArDriveIcons.info(
-                        size: 16,
-                        color: colorTokens.iconMid,
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ArDriveTextFieldNew(
-                hintText: 'Transaction ID',
-                textStyle: ArDriveTypographyNew.of(context).code(),
-                onChanged: (value) {
-                  cubit.setFallbackTxId(value);
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return null;
-                  }
-
-                  return isValidArweaveTxId(value)
-                      ? null
-                      : 'Invalid transaction ID';
-                },
-              ),
-            ),
-            const Divider(
-              height: 24,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: ArDriveCard(
-                backgroundColor: colorTokens.containerL1,
-                borderRadius: 5,
-                content: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ArDriveIcons.info(size: 16, color: colorTokens.iconHigh),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Hidden files and folders are not added to the deployment.',
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textMid,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                    ),
-                  ],
+                // The one list that scrolls on its own: a folder can hold
+                // hundreds of entries, and the name and the fallback page
+                // stay in reach.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    children: items,
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
+          const SizedBox(height: ArDriveSpacing.lg),
+          ArDriveTextFieldNew(
+            label: l10n.deploymentFallbackLabel,
+            textStyle: typography.code(),
+            isEnabled: !_submitting,
+            onChanged: (value) {
+              cubit.setFallbackTxId(value);
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return null;
+              }
+
+              return isValidArweaveTxId(value)
+                  ? null
+                  : l10n.deploymentInvalidTxId;
+            },
+          ),
+          const SizedBox(height: ArDriveSpacing.xs),
+          Text(
+            l10n.deploymentFallbackHelp,
+            style: typography.paragraphSmall(color: colorTokens.textMid),
+          ),
+          const SizedBox(height: ArDriveSpacing.lg),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
+            message: l10n.deploymentHiddenNotice,
+          ),
+        ],
+      ),
+      actions: [
+        ModalAction.close(
+          isEnable: !_submitting,
+          action: () => Navigator.pop(context),
+          title: l10n.cancelEmphasized,
         ),
-      ),
-      action: ModalAction(
-        isEnable: state.enableManifestCreationButton,
-        action: () => cubit.promptForManifestName(),
-        title: appLocalizationsOf(context).nextEmphasized,
-      ),
+        ModalAction(
+          isEnable: canContinue,
+          isLoading: _submitting,
+          action: () => _submit(
+            () => cubit.checkForConflicts(_manifestNameController.text),
+          ),
+          title: l10n.review,
+        ),
+      ],
     );
   }
-
-  Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colorTokens.iconLow;
 }

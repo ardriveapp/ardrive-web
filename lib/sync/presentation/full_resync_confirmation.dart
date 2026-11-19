@@ -75,14 +75,13 @@ class _FullResyncModal extends StatelessWidget {
 
     return ArDriveStandardModalNew(
       title: localizations.fullResyncConfirmTitle,
-      hasCloseButton: true,
       closeLabel: localizations.close,
       content: Text(
         body,
         style: typography.paragraphNormal(color: colorTokens.textMid),
       ),
       actions: [
-        ModalAction(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(),
           title: localizations.cancelEmphasized,
         ),

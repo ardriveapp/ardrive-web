@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "部署會將一個資料夾發佈到同一個 Arweave 地址，每個檔案都有易讀的路徑。它以 Arweave 資訊清單的形式儲存。",
+  "aManifestIsASpecialKindOfFile": "部署會將一個資料夾發佈到同一個 Arweave 地址，每個檔案都有易讀的路徑。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "開新快照",
+  "createSnapshot": "建立快照",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "快照會縮短磁碟機載入所需的時間。您要建立磁碟機 {driveName} 的快照嗎？",
+  "createSnapshotExplanation": "快照可令 {driveName} 載入得更快。",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -871,7 +871,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "此資料夾中的部分檔案仍在處理中。我們不建議以處理中的檔案建立部署。要繼續嗎？",
+  "filesPendingManifestExplanation": "此資料夾中的部分檔案仍在等待確認。建議在它們確認後再建立部署。",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1102,7 +1102,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "AR不足, 未能上載",
+  "insufficientARForUpload": "AR 不足",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1124,7 +1124,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "您提供的錢包餘額為 {walletBalance} AR，不足以支付這筆快照交易的費用：{totalCost} AR...",
+  "insufficientBalanceForSnapshot": "您的錢包有 {walletBalance} AR。此快照需要 {totalCost} AR。",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -2034,7 +2034,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "您已成功建立 {driveName} 的快照！",
+  "snapshotCreationSucceeded": "您的 {driveName} 快照正在發送到 Arweave。",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2068,7 +2068,7 @@
       }
     }
   },
-  "snapshotSuceeded": "成功",
+  "snapshotSuceeded": "快照已建立",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2669,7 +2669,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "不要再問我。",
+  "dontAskMeAgain": "不再詢問",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -8097,6 +8097,136 @@
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "正在使用閘道：{url}",
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "deploymentFolder": "資料夾",
+  "deploymentFallbackLabel": "備用頁面（選填）",
+  "deploymentFallbackHelp": "當部署中的路徑不存在時顯示的頁面，例如 404 頁面。請輸入其檔案的交易識別碼。",
+  "deploymentInvalidTxId": "交易識別碼無效",
+  "deploymentHiddenNotice": "隱藏的檔案和資料夾不會加入部署。",
+  "loadingFolders": "正在載入資料夾",
+  "deploymentPreparing": "正在準備部署",
+  "deploymentUploading": "正在上載部署",
+  "deploymentCreating": "正在建立部署",
+  "deploymentNameConflictTitle": "名稱已被使用",
+  "deploymentNameConflictBody": "此資料夾中已有名為「{name}」的檔案或資料夾。請選擇其他名稱。",
+  "deploymentUseName": "使用此名稱",
+  "deploymentExistsTitle": "部署已存在",
+  "deploymentExistsBody": "「{name}」已是此資料夾中的部署。建立後會為其加入新版本。",
+  "deploymentCreateNewVersion": "建立新版本",
+  "deploymentCreatedTitle": "部署已建立",
+  "deploymentFailedTitle": "無法建立部署",
+  "deploymentFailedBody": "無法將部署上載到 Arweave。",
+  "deploymentMaybeSentBody": "上載可能已發送並已付費。再次建立前，請同步雲端硬碟進行確認。",
+  "deploymentWalletChanged": "建立部署時您的錢包已變更。沒有上載任何內容。",
+  "importFromDeployment": "從部署匯入",
+  "importDeploymentIdLabel": "部署識別碼",
+  "importEnterId": "輸入要從中匯入檔案的部署識別碼。",
+  "importIdRequired": "請輸入部署識別碼",
+  "importIdInvalid": "部署識別碼無效",
+  "importLoading": "正在載入部署",
+  "importResolving": "正在解析檔案路徑",
+  "importProgress": "{processed} / {total}",
+  "importCreatingFolder": "正在建立資料夾 {path}",
+  "importingFile": "正在匯入 {name}",
+  "importFilesFailed": "{count, plural, other{{count} 個檔案失敗}}",
+  "importConflictsTitle": "檔案已存在",
+  "importConflictsBody": "此資料夾中已有這些檔案：",
+  "importConflictsQuestion": "要取代它們嗎？",
+  "importReplace": "取代檔案",
+  "importReviewTitle": "檢查檔案",
+  "importReviewSummary": "{count, plural, other{將匯入 {count} 個檔案}}",
+  "importAction": "匯入",
+  "importCancelledTitle": "匯入已取消",
+  "importCancelledBody": "{count, plural, other{停止前已匯入 {count} 個檔案。}}",
+  "importSuccessTitle": "匯入完成",
+  "importSuccessBody": "{count, plural, other{已匯入 {count} 個檔案}}",
+  "snapshotPreparing": "正在準備快照",
+  "snapshotFinishing": "正在完成快照",
+  "snapshotMayTakeAWhile": "這可能需要一些時間",
+  "snapshotNotNow": "暫不",
+  "snapshotPromptDriveStateTitle": "令此雲端硬碟載入得更快",
+  "snapshotPromptDriveStateBody": "此雲端硬碟同步較慢，因為它的歷史記錄是逐項讀取的。快照會將整個雲端硬碟儲存為 Arweave 上的一個檔案，因此無論在哪裡登入，載入都會快得多。上載之前，您可以看到大小和費用。",
+  "snapshotPreparingBody": "正在準備 {driveName} 的快照。",
+  "snapshotWhatItDoesEncrypted": "這會將此雲端硬碟的快照用您的雲端硬碟金鑰加密後儲存到 Arweave，因此無論在哪裡登入，載入都會快得多。快照是永久的，無法移除。",
+  "snapshotWhatItDoes": "這會將此雲端硬碟的快照儲存到 Arweave，因此無論在哪裡登入，載入都會快得多。快照是永久的，無法移除。",
+  "snapshotSummaryDrive": "雲端硬碟",
+  "snapshotSummaryItems": "項目",
+  "snapshotSummarySize": "大小",
+  "snapshotSummaryBlocks": "區塊",
+  "snapshotBlocksRange": "{start} 至 {end}",
+  "snapshotUnaffordable": "您的 AR 餘額和 Turbo 積分都不足以支付此快照，因此暫時無法建立。",
+  "snapshotCreating": "正在建立快照",
+  "snapshotPublishedBody": "您的 {driveName} 快照正在發送到 Arweave。確認後，ArDrive 會開始用它更快地載入此雲端硬碟。您可以在雲端硬碟的「快照」分頁中查看進度。",
+  "permanenceTitle": "您的永久儲存",
+  "permanenceShareTitle": "分享您的永久儲存",
+  "permanenceCopyText": "複製文字",
+  "permanenceDownloadImage": "下載圖片",
+  "permanenceTextCopied": "文字已複製",
+  "permanenceImageSaved": "圖片已儲存",
+  "permanencePreserved": "已保存",
+  "permanenceFiles": "{count, plural, other{{count} 個檔案}}",
+  "permanenceDrives": "{count, plural, other{{count} 個雲端硬碟}}",
+  "permanenceSince": "自 {year} 年起",
+  "permanenceChartLabel": "按年份上載：{years}",
+  "permanenceCostToday": "目前費用",
+  "permanenceCostNote": "網絡儲存價格",
+  "permanenceNetworkUnreachable": "無法連接網絡",
+  "permanenceSpent": "已花費",
+  "permanenceCountingAr": "正在統計直接支付的 AR...",
+  "permanencePaidDirectly": "+ 直接支付 {ar}",
+  "permanencePaidDirectlyAtLeast": "+ 直接支付至少 {ar}",
+  "permanencePaidInAr": "直接用 AR 支付",
+  "permanencePaidInArAtLeast": "直接用 AR 支付，至少",
+  "permanenceNoteAsOf": "{note}，截至 {when}",
+  "permanenceTooMany": "增值次數過多，無法在此統計",
+  "permanenceCreditsUnreadable": "無法讀取您的積分",
+  "permanenceNoTopUps": "找不到增值記錄",
+  "permanenceNoCreditsUsed": "尚未使用積分",
+  "permanenceCreditsUsed": "已使用的 Turbo 積分",
+  "permanenceRefreshCredits": "重新整理已使用積分",
+  "permanenceShowCredits": "顯示已使用積分",
+  "permanenceWalletSigns": "您的錢包需要簽署才能讀取積分",
+  "permanenceReadingCredits": "正在讀取您的積分",
+  "permanenceHowTitle": "這些數字如何計算",
+  "permanenceSize": "大小",
+  "permanencePermanence": "永久儲存",
+  "permanenceFineSize": "統計此裝置上已同步的您自己雲端硬碟中每個檔案的每個版本，上載確認後才計入。儲存在多個位置的資料只計一次。隱藏的雲端硬碟和固定的檔案不包括在內，因此可能與雲端硬碟列表的總和不同。",
+  "permanenceFineSpent": "是您已使用的 Turbo 積分：記入此錢包的全部積分減去您的餘額。其中包括用於 ArNS 名稱的積分，以及與您共享積分的錢包所使用的積分。下方是此錢包為直接上載支付的 AR（網絡費用和 ArDrive 小費），從 Arweave 讀取。兩者都不以美元計價：積分和 AR 是在不同時間以不同價格購買的。",
+  "permanenceFineSpentChain": "從您的 {chain} 錢包共享的積分不計入。",
+  "permanenceFineCost": "是 Arweave 網絡現在儲存這麼多資料的自身價格，以 AR 計，並按今天的 AR 價格換算。網絡價格和 AR 的美元價值都會變化。這不是 ArDrive 或 Turbo 的收費，也不是賬單或報價。",
+  "permanenceFinePermanence": "由 Arweave 網絡提供，而不是 ArDrive。Arweave 表示其儲存基金旨在支付 200 年或更長時間的儲存費用。請參閱",
+  "permanenceTermsOfService": "服務條款",
+  "importErrorNotFound": "找不到該部署。",
+  "importErrorNetwork": "無法存取該部署。請檢查網絡連線後再試。",
+  "importErrorUnreadable": "無法讀取該部署。",
+  "importErrorNoFilesToReplace": "沒有可取代的檔案。請重新開始匯入。",
+  "importErrorReplaceFailed": "無法取代檔案。請再試一次。",
+  "importErrorImportFailed": "無法匯入檔案。請再試一次。",
+  "importErrorNothingImported": "沒有匯入任何檔案。請檢查部署後再試。",
+  "importErrorUnexpected": "匯入時出錯。請再試一次。",
+  "snapshotRefusedSyncSkipped": "上次同步無法讀取此雲端硬碟中的部分項目。請重新同步，讓快照包含它們。",
+  "snapshotRefusedSyncUnknown": "請先同步此雲端硬碟，讓快照包含其中的全部內容。",
+  "snapshotSyncCouldNotStart": "無法開始同步。請等待正在進行的上載完成，然後重試。",
+  "snapshotRefusedNotFound": "此雲端硬碟不在此裝置上。",
+  "snapshotRefusedProtection": "目前無法保護此雲端硬碟的快照，因此無法建立。",
+  "snapshotRefusedNotOwner": "請使用雲端硬碟擁有者的錢包登入後再建立快照。",
+  "snapshotRefusedNoWatermark": "此雲端硬碟尚未完成同步。請先同步。",
+  "snapshotRefusedTooLarge": "此雲端硬碟太大，無法建立單一快照。它將繼續按現有方式載入。",
+  "snapshotRefusedUnconfirmed": "此雲端硬碟的部分更改尚未確認。請幾分鐘後再試。",
+  "snapshotRefusedSealFailed": "無法準備快照。請再試一次。",
+  "snapshotFailureCostTimeout": "計算費用耗時過長，因此無法進入確認。沒有上載任何內容，也沒有花費任何費用。請稍後再試。",
+  "snapshotFailureCostUnknown": "無法確定此快照的費用，因此無法進入確認。沒有上載任何內容，也沒有花費任何費用。",
+  "snapshotFailurePrepare": "無法準備快照。請再試一次。",
+  "snapshotFailureNotEnabled": "此版本未啟用這種方式建立快照。沒有上載任何內容，也沒有花費任何費用。",
+  "snapshotFailureNotLoggedIn": "您已不再登入。沒有上載任何內容，也沒有花費任何費用。",
+  "snapshotFailureWalletChanged": "準備此快照時您的錢包已變更。沒有上載任何內容，也沒有花費任何費用。",
+  "snapshotFailureWalletUnavailable": "Wander 沒有回應。沒有上載任何內容，也沒有花費任何費用。",
+  "snapshotFailurePaymentDeclined": "Turbo 拒絕了此快照的付款。請增值積分或使用 AR 支付，然後再試。",
+  "snapshotFailurePublish": "無法建立快照。如果沒有發佈任何內容，則沒有花費任何費用。再試之前請檢查您的雲端硬碟。",
+  "snapshotFailureUncertain": "此快照的交易（{txId}）在上載失敗前已到達網絡，因此已付費，但其資料可能不完整。再試前請先在閘道上查詢。再次嘗試會建立第二筆交易並再次付費。",
+  "snapshotFailureThrew": "無法建立快照。沒有花費任何費用。",
+  "deploymentPostedBody": "部署已發佈到 Arweave（交易 {txId}），但無法在此儲存，因此已付費。請不要重複建立；同步雲端硬碟即可看到它。",
+  "deploymentNameNotSet": "部署已建立，但無法設定名稱。您可以在「名稱」中設定。",
+  "deploymentAddress": "地址",
   "shareUploadTitle": "上載{count, plural, =1{1 個共享檔案} other{{count} 個共享檔案}}",
   "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "已加入授權",

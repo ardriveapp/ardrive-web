@@ -72,6 +72,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   String _arBalance = '';
   String _turboCredits = '';
   BigInt _turboBalance = BigInt.zero;
+
+  /// The last read of the Turbo balance failed: [_turboBalance] is stale.
+  bool _turboUnreachable = false;
   bool _isButtonToUploadEnabled = false;
   bool _isTurboUploadPossible = true;
   bool _sufficentCreditsBalance = false;
@@ -171,6 +174,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           isTurboUploadPossible: _isTurboUploadPossible,
           arBalance: _arBalance,
           turboCredits: _turboCredits,
+          turboBalance: _turboBalance,
+          turboUnreachable: _turboUnreachable,
           uploadMethod: _uploadMethod,
           isButtonToUploadEnabled: _isButtonToUploadEnabled,
           sufficientBalanceToPayWithAr: _sufficientArBalance,
@@ -458,6 +463,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _costEstimateAr = await costCalculatorForAr.calculateCost(
       totalSize: _snapshotEntity!.data!.length,
     );
+    // Turbo uploads off: Turbo is neither priced nor offered nor posted to.
+    if (!appConfig.useTurboUpload) {
+      _costEstimateTurbo = UploadCostEstimate.zero();
+      _isTurboUploadPossible = false;
+      return;
+    }
     try {
       _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
         totalSize: _snapshotEntity!.data!.length,
@@ -476,17 +487,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     /// necessary to wait for backend update the balance
     await Future.delayed(const Duration(seconds: 2));
 
-    final BigInt turboBalance =
-        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
-      logger.e('Error while retrieving turbo balance', e);
-      return BigInt.zero;
-    });
+    await _readTurboBalance(wallet);
+    final turboBalance = _turboBalance;
 
     logger.d('Balance after topping up: $turboBalance');
 
-    _turboBalance = turboBalance;
-    _hasNoTurboBalance = turboBalance == BigInt.zero;
-    _turboCredits = convertWinstonToLiteralString(turboBalance);
     // As in _computeIsSufficientBalance: a zero estimate is no price.
     _sufficentCreditsBalance = _costEstimateTurbo.totalCost > BigInt.zero &&
         _costEstimateTurbo.totalCost <= _turboBalance;
@@ -507,6 +512,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(
         stateAsConfirming.copyWith(
           turboCredits: _turboCredits,
+          turboBalance: _turboBalance,
+          turboUnreachable: _turboUnreachable,
           hasNoTurboBalance: _hasNoTurboBalance,
           sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
           uploadMethod: _uploadMethod,
@@ -516,21 +523,30 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
   }
 
+  /// Reads the Turbo balance. A read that fails leaves the balance as it
+  /// was and says so: it is not zero credits, and the review must not invite
+  /// a payment on the strength of it.
+  Future<void> _readTurboBalance(Wallet wallet) async {
+    try {
+      final balance = await turboBalanceRetriever.getBalance(wallet);
+      _turboBalance = balance;
+      _turboUnreachable = false;
+    } catch (e) {
+      logger.e('Error while retrieving turbo balance', e);
+      _turboUnreachable = appConfig.useTurboUpload;
+    }
+    _hasNoTurboBalance = _turboBalance == BigInt.zero;
+    _turboCredits = convertWinstonToLiteralString(_turboBalance);
+  }
+
   Future<void> _computeBalanceEstimate() async {
     final ProfileLoggedIn profileState = _profileCubit.state as ProfileLoggedIn;
     final Wallet wallet = profileState.user.wallet;
 
-    final BigInt turboBalance =
-        await turboBalanceRetriever.getBalance(wallet).catchError((e) {
-      logger.e('Error while retrieving turbo balance', e);
-      return BigInt.zero;
-    });
+    await _readTurboBalance(wallet);
 
-    logger.d('Balance before topping up: $turboBalance');
+    logger.d('Balance before topping up: $_turboBalance');
 
-    _turboBalance = turboBalance;
-    _hasNoTurboBalance = turboBalance == BigInt.zero;
-    _turboCredits = convertWinstonToLiteralString(turboBalance);
     _arBalance = convertWinstonToLiteralString(auth.currentUser.walletBalance);
   }
 
@@ -555,6 +571,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> _computeIsFreeThanksToTurbo() async {
+    // Free is a Turbo billing outcome: with Turbo uploads off there is none.
+    if (!appConfig.useTurboUpload) {
+      _freeStatus = FreeUploadStatus.notEligible;
+      return;
+    }
+
     final allowedDataItemSizeForTurbo = appConfig.allowedDataItemSizeForTurbo;
     final snapshotSize = _snapshotEntity!.data!.length;
     final isSizeEligibleForFree = snapshotSize <= allowedDataItemSizeForTurbo;
@@ -581,6 +603,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   void setUploadMethod(UploadMethod method) {
+    // Create was pressed: it pays the way it showed then. The review stays
+    // on screen while the wallet is checked.
+    if (_confirming) return;
+    // Never to Turbo while Turbo uploads are off.
+    if (method == UploadMethod.turbo && !appConfig.useTurboUpload) return;
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
@@ -668,6 +695,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       return;
     }
 
+    // Set once an AR upload starts sending: from then on a failure may have
+    // posted, and paid for, the transaction.
+    String? sendingArTxId;
     try {
       // Inside the try: a signature Wander never gave, then Cancel, is a
       // failure the dialog can close, not a spinner that never ends.
@@ -682,6 +712,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           dataItem: _preparedDataItem!,
         );
       } else {
+        sendingArTxId = _preparedTx!.id;
         await _arweave.uploadTx(_preparedTx!, maxConcurrentUploadCount: 1);
       }
 
@@ -729,7 +760,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
-      emit(SnapshotUploadFailure(isPaymentError: isTurboPaymentError(err)));
+      emit(SnapshotUploadFailure(
+        isPaymentError: isTurboPaymentError(err),
+        postedTxId: sendingArTxId,
+      ));
     }
   }
 

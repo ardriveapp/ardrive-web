@@ -11,6 +11,8 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -259,20 +261,15 @@ void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
     context,
     content: _NoScrollbar(
       child: ArDriveStandardModalNew(
-        width: 460,
+        width: kLargeDialogWidth,
         hasCloseButton: true,
+        closeLabel: appLocalizationsOf(context).close,
         scrollableContent: true,
-        titleWidget: Text(
-          'Your permanence',
-          style: ArDriveTypographyNew.of(context).heading3(
-            fontWeight: ArFontWeight.bold,
-          ),
-        ),
+        title: appLocalizationsOf(context).permanenceTitle,
         content: PermanencePanel(summary: summary),
         actions: [
           ModalAction(
-            title: 'Share my permanence',
-            customWidth: 240,
+            title: appLocalizationsOf(context).share,
             action: () {
               navigator.pop();
               showPermanenceShare(navigator.context, summary);
@@ -293,6 +290,7 @@ class PermanencePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -309,7 +307,7 @@ class PermanencePanel extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text: '  preserved',
+                text: '  ${l10n.permanencePreserved}',
                 style: typography.paragraphXLarge(
                   color: colors.textMid,
                   fontWeight: ArFontWeight.semiBold,
@@ -318,12 +316,13 @@ class PermanencePanel extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: ArDriveSpacing.xs),
         Text(
           [
-            permanenceCount(summary.fileCount, 'file'),
-            permanenceCount(summary.driveCount, 'drive'),
-            if (summary.firstYear != null) 'since ${summary.firstYear}',
+            l10n.permanenceFiles(summary.fileCount),
+            l10n.permanenceDrives(summary.driveCount),
+            if (summary.firstYear != null)
+              l10n.permanenceSince(summary.firstYear.toString()),
           ].join(permanenceSeparator),
           style: typography.paragraphNormal(
             color: colors.textLow,
@@ -331,13 +330,13 @@ class PermanencePanel extends StatelessWidget {
           ),
         ),
         if (summary.bytesByYear.isNotEmpty) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: ArDriveSpacing.lg),
           Semantics(
             // The chart is painted, so it says in words what it draws.
-            label: 'Uploaded by year: ${[
+            label: l10n.permanenceChartLabel([
               for (final year in summary.bytesByYear.entries)
                 '${year.key}, ${_formatSize(year.value)}',
-            ].join('; ')}',
+            ].join('; ')),
             child: SizedBox(
               // Taller with each year past six, so every year keeps room for
               // its label.
@@ -357,7 +356,7 @@ class PermanencePanel extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: ArDriveSpacing.lg),
         LayoutBuilder(builder: (context, box) {
           final spendTile = _SpendTile(
             spend: summary.spend,
@@ -373,7 +372,11 @@ class PermanencePanel extends StatelessWidget {
           if (box.maxWidth < 280) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [spendTile, const SizedBox(height: 12), costTile],
+              children: [
+                spendTile,
+                const SizedBox(height: ArDriveSpacing.sm),
+                costTile,
+              ],
             );
           }
 
@@ -382,13 +385,13 @@ class PermanencePanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: spendTile),
-                const SizedBox(width: 12),
+                const SizedBox(width: ArDriveSpacing.sm),
                 Expanded(child: costTile),
               ],
             ),
           );
         }),
-        const SizedBox(height: 12),
+        const SizedBox(height: ArDriveSpacing.sm),
         _FinePrint(signInChain: summary.signInChain),
       ],
     );
@@ -422,17 +425,20 @@ class _Tile extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.md,
+        vertical: ArDriveSpacing.sm,
+      ),
       decoration: BoxDecoration(
         // A step off the modal's own ground (containerL3), in either theme.
         color: colors.containerL1,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            label.toUpperCase(),
             style: typography
                 .caption(
                   color: colors.textLow,
@@ -440,7 +446,7 @@ class _Tile extends StatelessWidget {
                 )
                 .copyWith(letterSpacing: 0.6),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: ArDriveSpacing.xs),
           Text(
             value,
             style: typography.heading2(
@@ -448,7 +454,7 @@ class _Tile extends StatelessWidget {
               fontWeight: ArFontWeight.light,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: ArDriveSpacing.xxs),
           Text(
             note,
             style: typography.caption(
@@ -457,7 +463,7 @@ class _Tile extends StatelessWidget {
             ),
           ),
           if (action != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: ArDriveSpacing.xs),
             ArDriveClickArea(
               child: GestureDetector(
                 onTap: onAction,
@@ -475,7 +481,7 @@ class _Tile extends StatelessWidget {
             ),
           ],
           if (extra != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: ArDriveSpacing.xs),
             Text(
               extra!,
               style: typography.caption(
@@ -497,25 +503,26 @@ class _CostTile extends StatelessWidget {
 
   final Future<NetworkCost?>? cost;
 
-  static const _label = 'COST TODAY';
-  static const _note = 'Network price to store it';
-
   @override
   Widget build(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+    final label = l10n.permanenceCostToday;
+    final note = l10n.permanenceCostNote;
+
     return FutureBuilder<NetworkCost?>(
       future: cost,
       builder: (context, snapshot) {
         if (cost != null && snapshot.connectionState != ConnectionState.done) {
-          return const _Tile(label: _label, value: '...', note: _note);
+          return _Tile(label: label, value: '...', note: note);
         }
 
         final network = snapshot.data;
 
         if (network == null) {
-          return const _Tile(
-            label: _label,
+          return _Tile(
+            label: label,
             value: '-',
-            note: "couldn't reach the network",
+            note: l10n.permanenceNetworkUnreachable,
           );
         }
 
@@ -524,16 +531,16 @@ class _CostTile extends StatelessWidget {
         // Without a dollar rate, the AR price alone.
         if (usd == null) {
           return _Tile(
-            label: _label,
+            label: label,
             value: _formatAr(network.ar),
-            note: _note,
+            note: note,
           );
         }
 
         return _Tile(
-          label: _label,
+          label: label,
           value: formatUsd(usd),
-          note: _note,
+          note: note,
           extra: _formatAr(network.ar),
         );
       },
@@ -607,8 +614,6 @@ class _SpendTile extends StatefulWidget {
 }
 
 class _SpendTileState extends State<_SpendTile> {
-  static const _label = 'SPENT';
-
   /// The credits being read: from the start, or once asked for.
   late Future<SpendLookup>? spend = widget.spend;
 
@@ -627,6 +632,9 @@ class _SpendTileState extends State<_SpendTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+    final label = l10n.permanenceSpent;
+
     return FutureBuilder<ArSpendTally>(
       future: arSpend,
       builder: (context, arSnapshot) {
@@ -635,32 +643,39 @@ class _SpendTileState extends State<_SpendTile> {
         final ar = arSnapshot.data;
         final paidAr = ar != null && ar.winston > BigInt.zero ? ar : null;
 
+        String withWhen(String note, DateTime? when) => when == null
+            ? note
+            : l10n.permanenceNoteAsOf(note, _formatAsOf(when));
+
         String? arLine() {
           if (arCounting) {
-            return 'counting AR paid directly...';
+            return l10n.permanenceCountingAr;
           }
 
           if (paidAr == null) {
             return null;
           }
 
-          return '+ ${paidAr.complete ? '' : 'at least '}'
-              '${_formatAr(paidAr.ar)} paid directly';
+          return paidAr.complete
+              ? l10n.permanencePaidDirectly(_formatAr(paidAr.ar))
+              : l10n.permanencePaidDirectlyAtLeast(_formatAr(paidAr.ar));
         }
 
         // AR on its own, when there are no credits to show beside it.
         _Tile arOnly({
-          String when = '',
+          DateTime? when,
           String? action,
           VoidCallback? onAction,
         }) =>
             _Tile(
-              label: _label,
+              label: label,
               value: _formatAr(paidAr!.ar),
-              note: (paidAr.complete
-                      ? 'paid directly in AR'
-                      : 'paid directly in AR, at least') +
-                  when,
+              note: withWhen(
+                paidAr.complete
+                    ? l10n.permanencePaidInAr
+                    : l10n.permanencePaidInArAtLeast,
+                when,
+              ),
               action: action,
               onAction: onAction,
             );
@@ -674,13 +689,13 @@ class _SpendTileState extends State<_SpendTile> {
           VoidCallback? onAction,
         }) {
           final credits = lookup?.creditsWinc;
-          final when = asOf == null ? '' : ', as of ${_formatAsOf(asOf)}';
+          final when = asOf;
 
           if (lookup != null && lookup.tooMany) {
             return _Tile(
-              label: _label,
+              label: label,
               value: '-',
-              note: 'more top-ups than we can count here$when',
+              note: withWhen(l10n.permanenceTooMany, when),
               extra: arLine(),
               action: action,
               onAction: onAction,
@@ -691,9 +706,9 @@ class _SpendTileState extends State<_SpendTile> {
             return paidAr != null
                 ? arOnly(when: when, action: action, onAction: onAction)
                 : _Tile(
-                    label: _label,
+                    label: label,
                     value: '-',
-                    note: "couldn't read your credits",
+                    note: l10n.permanenceCreditsUnreadable,
                     extra: arLine(),
                   );
           }
@@ -702,12 +717,14 @@ class _SpendTileState extends State<_SpendTile> {
             return paidAr != null
                 ? arOnly(when: when, action: action, onAction: onAction)
                 : _Tile(
-                    label: _label,
+                    label: label,
                     value: '-',
-                    note: (credits == null
-                            ? 'no top-ups found'
-                            : 'no credits used yet') +
-                        when,
+                    note: withWhen(
+                      credits == null
+                          ? l10n.permanenceNoTopUps
+                          : l10n.permanenceNoCreditsUsed,
+                      when,
+                    ),
                     extra: arLine(),
                     action: action,
                     onAction: onAction,
@@ -715,9 +732,9 @@ class _SpendTileState extends State<_SpendTile> {
           }
 
           return _Tile(
-            label: _label,
+            label: label,
             value: _formatCredits(credits),
-            note: 'Turbo credits used$when',
+            note: withWhen(l10n.permanenceCreditsUsed, when),
             extra: arLine(),
             action: action,
             onAction: onAction,
@@ -741,20 +758,20 @@ class _SpendTileState extends State<_SpendTile> {
             return settled(
               earlier.lookup,
               asOf: earlier.fetchedAt,
-              action: 'Refresh credits used',
+              action: l10n.permanenceRefreshCredits,
               onAction: ask,
             );
           }
 
           return _Tile(
-            label: _label,
+            label: label,
             value: paidAr == null ? '-' : _formatAr(paidAr.ar),
             note: paidAr == null
-                ? 'your wallet signs to read your credits'
+                ? l10n.permanenceWalletSigns
                 : paidAr.complete
-                    ? 'paid directly in AR'
-                    : 'paid directly in AR, at least',
-            action: 'Show credits used',
+                    ? l10n.permanencePaidInAr
+                    : l10n.permanencePaidInArAtLeast,
+            action: l10n.permanenceShowCredits,
             onAction: ask,
             extra: paidAr == null ? arLine() : null,
           );
@@ -771,10 +788,10 @@ class _SpendTileState extends State<_SpendTile> {
             }
 
             if (reading) {
-              return const _Tile(
-                label: _label,
+              return _Tile(
+                label: label,
                 value: '...',
-                note: 'reading your credits',
+                note: l10n.permanenceReadingCredits,
               );
             }
 
@@ -817,6 +834,7 @@ class _FinePrintState extends State<_FinePrint> {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
     final body = typography.caption(
       color: colors.textMid,
       fontWeight: ArFontWeight.book,
@@ -838,7 +856,10 @@ class _FinePrintState extends State<_FinePrint> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 5, right: 10),
+                padding: const EdgeInsets.only(
+                  top: ArDriveSpacing.xxs,
+                  right: ArDriveSpacing.xs,
+                ),
                 child: Container(
                   width: 4,
                   height: 4,
@@ -867,7 +888,7 @@ class _FinePrintState extends State<_FinePrint> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'How these numbers work',
+                    l10n.permanenceHowTitle,
                     style: typography.caption(
                       color: colors.textMid,
                       fontWeight: ArFontWeight.semiBold,
@@ -899,57 +920,28 @@ class _FinePrintState extends State<_FinePrint> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       point(TextSpan(children: [
-                        lead('Size'),
-                        const TextSpan(
-                          text: ' counts every version of every file in your '
-                              'own drives synced on this device, once its '
-                              'upload is confirmed. Data saved in more than '
-                              'one place counts once. Hidden drives and '
-                              "pinned files aren't included, so this can "
-                              'differ from what your drives list adds up to.',
-                        ),
+                        lead(l10n.permanenceSize),
+                        TextSpan(text: ' ${l10n.permanenceFineSize}'),
                       ])),
                       point(TextSpan(children: [
-                        lead('Spent'),
-                        const TextSpan(
-                          text: " is the Turbo credits you've used: "
-                              'everything credited to this wallet, minus '
-                              'your balance. It includes credits spent on '
-                              'ArNS names and credits used by wallets you '
-                              'shared them with. Under it is the AR this '
-                              'wallet paid for direct uploads (network fees '
-                              'and ArDrive tips), read from Arweave. Neither '
-                              'is in dollars: credits and AR were bought at '
-                              'different prices over time.',
-                        ),
+                        lead(l10n.permanenceSpent),
+                        TextSpan(text: ' ${l10n.permanenceFineSpent}'),
                         if (widget.signInChain != null)
                           TextSpan(
-                            text: ' Credits shared from your '
-                                "${widget.signInChain} wallet aren't counted.",
+                            text:
+                                ' ${l10n.permanenceFineSpentChain(widget.signInChain!)}',
                           ),
                       ])),
                       point(TextSpan(children: [
-                        lead('Cost today'),
-                        const TextSpan(
-                          text: " is the Arweave network's own price to "
-                              'store this much data now, in AR, converted at '
-                              "today's AR price. The network's price and "
-                              "AR's dollar value both change. It isn't what "
-                              "ArDrive or Turbo would charge, and it isn't a "
-                              'bill or a quote.',
-                        ),
+                        lead(l10n.permanenceCostToday),
+                        TextSpan(text: ' ${l10n.permanenceFineCost}'),
                       ])),
                       point(TextSpan(
                         children: [
-                          lead('Permanence'),
-                          const TextSpan(
-                            text: ' is provided by the Arweave network, not '
-                                'by ArDrive. Arweave says its storage '
-                                'endowment is designed to pay for storage for '
-                                '200 years or more. See the ',
-                          ),
+                          lead(l10n.permanencePermanence),
+                          TextSpan(text: ' ${l10n.permanenceFinePermanence} '),
                           TextSpan(
-                            text: 'Terms of Service',
+                            text: l10n.permanenceTermsOfService,
                             style: body.copyWith(
                               decoration: TextDecoration.underline,
                             ),
@@ -996,6 +988,9 @@ String permanenceShareText(PermanenceSummary summary) => [
 void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
   showArDriveDialog(
     context,
+    // Saving the image is work: a click outside must not close the dialog
+    // under it.
+    barrierDismissible: false,
     content: _NoScrollbar(child: _PermanenceShareDialog(summary: summary)),
   );
 }
@@ -1011,12 +1006,24 @@ class _PermanenceShareDialog extends StatefulWidget {
   State<_PermanenceShareDialog> createState() => _PermanenceShareDialogState();
 }
 
+enum _ShareDone { copied, saved }
+
 class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
   final _cardKey = GlobalKey();
 
-  bool _copied = false;
   bool _saving = false;
-  bool _saved = false;
+
+  /// The latest action that finished, said until [_doneFor] has passed
+  /// with nothing newer.
+  _ShareDone? _done;
+  var _doneCount = 0;
+
+  Future<void> _say(_ShareDone done) async {
+    final count = ++_doneCount;
+    setState(() => _done = done);
+    await Future.delayed(_doneFor);
+    if (mounted && count == _doneCount) setState(() => _done = null);
+  }
 
   /// How long a button says it is done before it reads as itself again.
   static const _doneFor = Duration(seconds: 2);
@@ -1027,9 +1034,7 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
     );
 
     if (!mounted) return;
-    setState(() => _copied = true);
-    await Future.delayed(_doneFor);
-    if (mounted) setState(() => _copied = false);
+    await _say(_ShareDone.copied);
   }
 
   Future<void> _save() async {
@@ -1066,32 +1071,30 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
     }
 
     if (!mounted) return;
-    setState(() => _saved = true);
-    await Future.delayed(_doneFor);
-    if (mounted) setState(() => _saved = false);
+    await _say(_ShareDone.saved);
   }
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
 
+    final l10n = appLocalizationsOf(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return ArDriveStandardModalNew(
-      width: 600,
+      width: kLargeDialogWidth,
       hasCloseButton: true,
+      closeLabel: l10n.close,
       scrollableContent: true,
-      titleWidget: Text(
-        'Share your permanence',
-        style: typography.heading3(fontWeight: ArFontWeight.bold),
-      ),
+      title: l10n.permanenceShareTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 16),
           // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
           // social sites expect for a link card.
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(ArDriveRadius.md),
             child: FittedBox(
               child: RepaintBoundary(
                 key: _cardKey,
@@ -1099,30 +1102,36 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: ArDriveSpacing.md),
           Text(
             permanenceShareText(widget.summary),
             style: typography.paragraphSmall(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+              color: colorTokens.textMid,
               fontWeight: ArFontWeight.book,
             ),
           ),
+          // Each says when it is done, here, so its button keeps its name.
+          if (_done != null) ...[
+            const SizedBox(height: ArDriveSpacing.md),
+            ArDriveNotice(
+              type: ArDriveNoticeType.success,
+              message: _done == _ShareDone.saved
+                  ? l10n.permanenceImageSaved
+                  : l10n.permanenceTextCopied,
+            ),
+          ],
         ],
       ),
       actions: [
         ModalAction(
-          title: _copied ? 'Copied' : 'Copy text',
-          customWidth: 120,
+          title: l10n.permanenceCopyText,
+          variant: ButtonVariant.secondary,
+          isEnable: !_saving,
           action: _copy,
         ),
         ModalAction(
-          title: _saving
-              ? 'Saving...'
-              : _saved
-                  ? 'Saved'
-                  : 'Download image',
-          customWidth: 160,
-          isEnable: !_saving,
+          title: l10n.permanenceDownloadImage,
+          isLoading: _saving,
           action: _save,
         ),
       ],
@@ -1138,6 +1147,10 @@ class PermanenceShareCard extends StatelessWidget {
 
   final PermanenceSummary summary;
 
+  // The card is an image people post elsewhere, so it is drawn in the
+  // brand's own fixed colours, whatever the app's theme: they are not
+  // theme tokens on purpose. The card and the share text stay English for
+  // the same reason, as the post they go into does.
   static const _ground = Color(0xFF0E0E0F);
   static const _brand = Color(0xFFFE0230);
   static const _text = Color(0xFFFAFAFA);
