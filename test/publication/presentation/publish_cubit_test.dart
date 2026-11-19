@@ -1502,7 +1502,7 @@ void main() {
       final c = cubit(onDrive: drive);
       await c.load();
       expect(c.state.stage, isNot(PublishStage.blocked),
-          reason: '${c.state.blockedReason}');
+          reason: c.state.blockedReason);
 
       await c.review();
       expect(c.state.stage, PublishStage.review, reason: c.state.failure);
