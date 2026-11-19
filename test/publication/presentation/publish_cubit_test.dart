@@ -1515,10 +1515,19 @@ void main() {
 
       await c.review();
       expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+      final before = c.state.summary!.fileCount;
+      // A sync adds a file while the dialog is open.
+      await insertPublicationFile(db,
+          driveId: drive.id,
+          id: 'ffffffff-0000-4000-8000-00000000000d',
+          name: 'q.txt',
+          parentFolderId: 'eeeeeeee-0000-4000-8000-00000000000b');
       c.back();
       await c.review();
       expect(c.state.stage, PublishStage.review, reason: c.state.failure);
       expect(prepared, 2);
+      expect(c.state.summary!.fileCount, before + 1,
+          reason: 'the review counts what the new catalog holds');
 
       // A publish that failed after signing: its parts may be paid for, so
       // an unchanged look keeps that job rather than signing a new one.

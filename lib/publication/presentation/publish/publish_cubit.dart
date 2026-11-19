@@ -1008,10 +1008,21 @@ class PublishCubit extends Cubit<PublishState> {
       _fileKeysOfCatalog = null;
       _lastJob = null;
     }
+    final refreshesContents = isPrivatePage && !keepsSigned;
     emit(state.copyWith(stage: PublishStage.pricing));
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return;
     try {
+      if (refreshesContents) {
+        // The summary the review shows comes from the same moment as the
+        // catalog it prices.
+        _contents = await PublicationContents.loadScope(
+          _deps.driveDao,
+          driveId: drive.id,
+          rootFolderId: drive.rootFolderId,
+          scopeRootFolderId: _scopeRootFolderId,
+        );
+      }
       _snapshotPlan ??= isFile || isPrivatePage
           ? const NoSnapshot()
           : await _planSnapshot(profile);
@@ -1042,6 +1053,7 @@ class PublishCubit extends Cubit<PublishState> {
         reusesSnapshot: plan is ReusedSnapshot,
         cost: cost,
         method: cost.defaultMethod,
+        summary: refreshesContents ? _contents?.summarize() : null,
       ));
     } catch (e, stackTrace) {
       logger.e('[publication] pricing failed', e, stackTrace);

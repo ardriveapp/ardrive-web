@@ -565,6 +565,7 @@ class PublicationPublisher {
       plan.sealedBlock(scope: _scopeJson(job), catalogTxId: catalogTxId),
       draft,
     );
+    _refuseOversizedSealed(sealed.length);
     final sealedTxId = await sign(_part(job, 'sealed', sealed));
     for (final item in _privatePageItems(
       job,
@@ -580,6 +581,19 @@ class PublicationPublisher {
     return signed;
   }
 
+  /// A reader refuses a sealed part over [maxSealedBytes], so a page whose
+  /// file list is that long would be paid for and never open. Thrown when
+  /// pricing, before anything is uploaded.
+  void _refuseOversizedSealed(int bytes) {
+    if (bytes <= maxSealedBytes) return;
+    throw const PublicationFailure(
+      PublicationStep.publication,
+      'This page has too many files to publish as one page. Nothing was '
+      'uploaded. Publish a folder of it instead.',
+      canRetry: false,
+    );
+  }
+
   /// [_signPrivate]'s items with placeholder IDs, for the cost. The sealed
   /// block is measured, not encrypted: AES-GCM adds its 16-byte tag.
   List<PublicationItem> _privateItemsForSize(
@@ -588,6 +602,7 @@ class PublicationPublisher {
     final block =
         plan.sealedBlock(scope: _scopeJson(job), catalogTxId: placeholderId);
     final sealedSize = utf8.encode(canonicalJson(block)).length + tagBytes;
+    _refuseOversizedSealed(sealedSize);
     final ids = <String, String>{
       for (final image in [job.icon, job.cover, job.social])
         if (image is ExistingPublicationImage) ...image.files,

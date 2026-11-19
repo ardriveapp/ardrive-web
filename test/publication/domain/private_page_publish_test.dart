@@ -653,6 +653,46 @@ void main() {
               filesPage: 'a', openPage: 'b', moreFiles: 'c'),
           method: UploadMethod.turbo,
         );
+    // A page whose file list pads past what a reader opens.
+    final huge = PrivatePagePlan(
+      catalog: plan.catalog,
+      catalogKey: plan.catalogKey,
+      publicationKey: plan.publicationKey,
+      slots: plan.slots,
+      fileKeys: {
+        for (var i = 0; i < 400000; i++)
+          '${i.toRadixString(16).padLeft(8, '0')}-0000-4000-8000-000000000000':
+              'A' * 43,
+      },
+      rootFolderId: plan.rootFolderId,
+    );
+    expect(
+        () => publisher.sizeOf(PublicationJob(
+              publicationId: job('').publicationId,
+              driveId: _drive,
+              rootFolderId: _root,
+              scope: const PublicationDriveScope(),
+              privacy: 'private',
+              owner: owner,
+              ownerName: null,
+              title: '',
+              description: '',
+              keywords: const [],
+              license: null,
+              icon: null,
+              cover: null,
+              social: null,
+              privatePage: huge,
+              snapshot: const NoSnapshot(),
+              release: release,
+              files: const [],
+              fileCount: 0,
+              labels: const PublicationLabels(
+                  filesPage: 'a', openPage: 'b', moreFiles: 'c'),
+              method: UploadMethod.turbo,
+            )),
+        throwsA(isA<PublicationFailure>()
+            .having((e) => e.canRetry, 'canRetry', false)));
     // One character to a grapheme counter: an 'a' under 33,000 accents.
     final heavy = 'a${'\u0301' * 33000}';
     expect(
