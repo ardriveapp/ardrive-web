@@ -5961,9 +5961,9 @@
   "@arnsNoWalletFound": {
     "description": "No Solana wallet is installed in this browser."
   },
-  "arnsNoWalletFoundBody": "請在錢包的應用程式中開啟 ArDrive，或取得一個錢包。",
+  "arnsNoWalletFoundBody": "請在錢包的應用程式中開啟 ArDrive。",
   "@arnsNoWalletFoundBody": {
-    "description": "What to do when no Solana wallet is installed."
+    "description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."
   },
   "arnsOpenInPhantom": "在 Phantom 中開啟",
   "@arnsOpenInPhantom": {
@@ -5973,9 +5973,17 @@
   "@arnsOpenInSolflare": {
     "description": "Link that opens ArDrive in the Solflare app's browser."
   },
-  "arnsGetAWallet": "取得錢包",
-  "@arnsGetAWallet": {
-    "description": "Link to install a Solana wallet."
+  "arnsNoWalletFoundBodyDesktop": "請安裝 Solana 錢包，然後重新載入。",
+  "@arnsNoWalletFoundBodyDesktop": {
+    "description": "What to do on a computer when no Solana wallet is installed."
+  },
+  "arnsGetPhantom": "取得 Phantom",
+  "@arnsGetPhantom": {
+    "description": "Link to install the Phantom wallet."
+  },
+  "arnsGetSolflare": "取得 Solflare",
+  "@arnsGetSolflare": {
+    "description": "Link to install the Solflare wallet."
   },
   "arnsConnected": "已連接",
   "@arnsConnected": {

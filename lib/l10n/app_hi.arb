@@ -5961,9 +5961,9 @@
   "@arnsNoWalletFound": {
     "description": "No Solana wallet is installed in this browser."
   },
-  "arnsNoWalletFoundBody": "अपने वॉलेट के ऐप में ArDrive खोलें, या कोई वॉलेट लें।",
+  "arnsNoWalletFoundBody": "अपने वॉलेट के ऐप में ArDrive खोलें।",
   "@arnsNoWalletFoundBody": {
-    "description": "What to do when no Solana wallet is installed."
+    "description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."
   },
   "arnsOpenInPhantom": "Phantom में खोलें",
   "@arnsOpenInPhantom": {
@@ -5973,9 +5973,17 @@
   "@arnsOpenInSolflare": {
     "description": "Link that opens ArDrive in the Solflare app's browser."
   },
-  "arnsGetAWallet": "वॉलेट लें",
-  "@arnsGetAWallet": {
-    "description": "Link to install a Solana wallet."
+  "arnsNoWalletFoundBodyDesktop": "कोई Solana वॉलेट इंस्टॉल करें, फिर पेज रीलोड करें।",
+  "@arnsNoWalletFoundBodyDesktop": {
+    "description": "What to do on a computer when no Solana wallet is installed."
+  },
+  "arnsGetPhantom": "Phantom लें",
+  "@arnsGetPhantom": {
+    "description": "Link to install the Phantom wallet."
+  },
+  "arnsGetSolflare": "Solflare लें",
+  "@arnsGetSolflare": {
+    "description": "Link to install the Solflare wallet."
   },
   "arnsConnected": "कनेक्टेड",
   "@arnsConnected": {
