@@ -49,7 +49,7 @@ void main() {
     await tester.pumpWidget(wrap(FreeUploadStatus.allowanceUsedUp));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Free upload allowance used up'), findsOneWidget);
+    expect(find.textContaining('Free allowance used up'), findsOneWidget);
   });
 
   testWidgets('notEligible renders nothing at all', (tester) async {
