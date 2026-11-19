@@ -4,6 +4,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 /// A tooltip: [message] in a small label under [child], shown while a mouse
 /// is over [child] or after a long press on a touch screen.
@@ -160,6 +161,9 @@ class _ArDriveTooltipState extends State<ArDriveTooltip>
 
   void _onPointerUp(PointerUpEvent event) {
     if (!widget.showOnTap) return;
+    // A press that ends elsewhere, such as a scroll that began on the mark,
+    // is not a tap.
+    if (!_isOnChild(event.position)) return;
     if (event.kind == PointerDeviceKind.touch && _shownAtDown) {
       _hide();
       return;
@@ -402,6 +406,36 @@ class ArDriveInfoTip extends StatefulWidget {
 class _ArDriveInfoTipState extends State<ArDriveInfoTip> {
   final _tooltip = GlobalKey<_ArDriveTooltipState>();
 
+  /// Escape puts a note shown from the keyboard away, and so does moving
+  /// the focus off the mark. Escape with no note up is left to what is
+  /// around it, such as the dialog.
+  late final _focus = FocusNode(
+    debugLabel: 'ArDriveInfoTip',
+    onKeyEvent: (node, event) {
+      final tooltip = _tooltip.currentState;
+      if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.escape &&
+          tooltip != null &&
+          tooltip._pinned) {
+        tooltip._hide();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    },
+  )..addListener(_onFocusChange);
+
+  void _onFocusChange() {
+    if (!_focus.hasFocus) _tooltip.currentState?._hide();
+  }
+
+  @override
+  void dispose() {
+    _focus
+      ..removeListener(_onFocusChange)
+      ..dispose();
+    super.dispose();
+  }
+
   void _show() => _tooltip.currentState?._showPinned();
 
   @override
@@ -415,6 +449,7 @@ class _ArDriveInfoTipState extends State<ArDriveInfoTip> {
       child: ArDriveFocusable(
         onActivate: _show,
         radius: ArDriveRadius.control,
+        focusNode: _focus,
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: ArDriveTooltip(

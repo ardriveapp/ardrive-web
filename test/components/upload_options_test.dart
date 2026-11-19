@@ -133,6 +133,32 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       expect(find.text(note), findsOneWidget);
+
+      // Escape puts it away.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+
+      // So does moving on with Tab.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('a press that slides off the mark does not show it',
+        (tester) async {
+      await openOptions(tester);
+      final mark = tester.getCenter(find.byType(ArDriveInfoTip));
+
+      final gesture =
+          await tester.startGesture(mark, kind: PointerDeviceKind.touch);
+      await gesture.moveBy(const Offset(0, 120));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
     });
 
     testWidgets('is a button named by the note to a screen reader',
