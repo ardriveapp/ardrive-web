@@ -25,8 +25,8 @@ export const ARGON2_DEFAULTS = Object.freeze({ m: 65536, t: 3, p: 1 });
  * otherwise ask a visitor's browser for gigabytes. m is in KiB.
  */
 export const ARGON2_BOUNDS = Object.freeze({
-  m: [8192, 262144],
-  t: [1, 10],
+  m: [8192, 131072],
+  t: [1, 6],
   p: [1, 4],
   saltBytes: [16, 64],
 });
@@ -259,6 +259,24 @@ export function sealedAad(config) {
     scope: scopeOf(config.scope),
     title: config.title,
   });
+}
+
+/**
+ * The sealed block's size is rounded up to a multiple of this, so the sealed
+ * part's length does not give the file count away.
+ */
+export const SEALED_PAD_UNIT = 4096;
+
+/**
+ * [block] with a `pad` field: a string of ASCII spaces that brings the
+ * canonical JSON's UTF-8 length up to the next multiple of SEALED_PAD_UNIT
+ * (none when it already is one). A reader ignores `pad`, and a block
+ * without one is valid.
+ */
+export function padSealedBlock(block) {
+  const base = Buffer.byteLength(canonicalJson({ ...block, pad: '' }), 'utf8');
+  const pad = ' '.repeat((SEALED_PAD_UNIT - (base % SEALED_PAD_UNIT)) % SEALED_PAD_UNIT);
+  return { ...block, pad };
 }
 
 /** The sealed part's bytes: the block's canonical JSON, bound to its page. */

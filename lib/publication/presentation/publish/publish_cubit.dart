@@ -23,7 +23,8 @@ import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
     show ArtifactScope;
 import 'package:ardrive/publication/domain/private_page.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
-import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart'
+    show SealError, b64u;
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
@@ -654,7 +655,7 @@ class PublishCubit extends Cubit<PublishState> {
   Uint8List? _publicationKey;
 
   /// An update's slots, carried forward as they were.
-  List<Map<String, Object>>? _previousSlots;
+  List<Map<String, Object?>>? _previousSlots;
 
   /// The catalog, its key and the files' keys, made again each time the page
   /// is priced, so a publish carries what the drive holds then.
@@ -664,7 +665,7 @@ class PublishCubit extends Cubit<PublishState> {
 
   /// The slots for the password they were made with: a password slot runs
   /// Argon2id, which takes a second, so it is made once per password.
-  (String, List<Map<String, Object>>)? _slots;
+  (String, List<Map<String, Object?>>)? _slots;
 
   /// What stops a private drive or folder page: a release that can't open
   /// one, or a drive this session can't open.
@@ -699,8 +700,17 @@ class PublishCubit extends Cubit<PublishState> {
             "can't be updated here.",
       );
     }
+    try {
+      _previousSlots = slotsOf(sealed!.settings);
+    } on SealError catch (e) {
+      // A password slot a gateway made up: never carried into a new version.
+      logger.w('[publication] the previous slots were refused: $e');
+      return (
+        PublishBlock.other,
+        "This page's password slot isn't valid, so it can't be updated here.",
+      );
+    }
     _publicationKey = key;
-    _previousSlots = slotsOf(sealed!.settings);
     return null;
   }
 

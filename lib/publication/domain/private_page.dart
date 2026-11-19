@@ -31,7 +31,7 @@ class PrivatePagePlan {
 
   /// As written into publication.json: an owner slot, and a password slot
   /// when the page has one.
-  final List<Map<String, Object>> slots;
+  final List<Map<String, Object?>> slots;
 
   /// File ID to its key, base64url, for every file in [catalog].
   final Map<String, String> fileKeys;
@@ -49,12 +49,14 @@ class PrivatePagePlan {
 
   /// The sealed block, given the transaction the catalog was signed as
   /// (docs/ArweaveFS.md, "The sealed block"). `ciphers` is left empty: a
-  /// reader looks a transaction's cipher up as usual when it is missing.
+  /// reader looks a transaction's cipher up as usual when it is missing. It is
+  /// padded to a multiple of 4096 bytes, so its size doesn't give the file
+  /// count away.
   Map<String, Object?> sealedBlock({
     required Map<String, Object?> scope,
     required String catalogTxId,
   }) =>
-      {
+      padSealedBlock({
         'v': sealedVersion,
         'scope': scope,
         'rootFolderId': rootFolderId,
@@ -66,7 +68,7 @@ class PrivatePagePlan {
         },
         'files': fileKeys,
         'ciphers': const <String, Object>{},
-      };
+      });
 }
 
 /// The tags [entity] is published with, as a map.
@@ -111,11 +113,11 @@ Future<Uint8List?> ownerPublicationKey(
 /// as it was, adding a password slot only when it has none: access is never
 /// taken back, so a password is never changed or removed. A first version
 /// gets an owner slot and, with [password], a password slot.
-Future<List<Map<String, Object>>> pageSlots({
+Future<List<Map<String, Object?>>> pageSlots({
   required Uint8List publicationKey,
   required String publicationId,
   required List<int> driveKey,
-  List<Map<String, Object>>? previous,
+  List<Map<String, Object?>>? previous,
   String? password,
   Sealing? sealing,
   Argon2Settings settings = argon2Defaults,
@@ -145,8 +147,23 @@ Future<List<Map<String, Object>>> pageSlots({
   return slots;
 }
 
-/// A previous version's slots, as its publication.json had them.
-List<Map<String, Object>> slotsOf(Map<String, dynamic> settings) => [
-      for (final slot in settings['slots'] as List? ?? const [])
-        if (slot is Map) Map<String, Object>.from(slot),
-    ];
+/// A previous version's slots, as its publication.json had them: every
+/// field, unknown ones too, kept as it was (a null stays null).
+///
+/// Throws a [SealError] when the page's password slot doesn't parse under
+/// the reader's own rules: a gateway that slipped one in would otherwise have
+/// it carried into every later version.
+List<Map<String, Object?>> slotsOf(Map<String, dynamic> settings) {
+  final slots = [
+    for (final slot in settings['slots'] as List? ?? const [])
+      if (slot is Map) Map<String, Object?>.from(slot),
+  ];
+  if (slots.any((s) => s['type'] == 'password') &&
+      readPrivatePublication(settings).passwordSlot == null) {
+    throw const SealError(
+      SealErrorCode.invalid,
+      "the page's password slot is malformed or out of bounds",
+    );
+  }
+  return slots;
+}

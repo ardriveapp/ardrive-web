@@ -405,6 +405,9 @@ void main() {
         parts.keys, isNot(anyOf(contains('snapshot'), contains('files.html'))));
     expect(parts.keys, isNot(contains('sitemap.xml')));
     expect(parts.keys, isNot(contains('social.jpg')));
+    // The sealed block is padded: its size gives the file count away only to
+    // the nearest 4 KiB (the GCM tag adds 16 bytes).
+    expect(parts['sealed']!.length % sealedPadUnit, tagBytes);
 
     final (cubit, db, fileKeys) = await open(parts, linkKey: plan.linkKey);
     expect(cubit.state, isA<PublicationReady>(), reason: '${cubit.state}');
