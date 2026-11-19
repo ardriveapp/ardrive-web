@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -461,7 +462,7 @@ class _WebPageActions {
     return withFileKey(
       link.url,
       await fileKeyForLink(
-        context.read<DriveDao>(),
+        context.read<FileKeys>(),
         context.read<ProfileCubit>().state,
         driveId: page.driveId,
         fileId: fileId,

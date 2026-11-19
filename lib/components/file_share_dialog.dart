@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive/components/share_warning.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -23,6 +24,7 @@ Future<void> promptToShareFile({
           fileId: fileId,
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
+          fileKeys: context.read<FileKeys>(),
           arweave: context.read<ArweaveService>(),
         ),
         child: const FileShareDialog(),

@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/models/models.dart';
 // Both of these live in the very large drive detail library; `show` keeps the
 // rest of that surface out of this file.
@@ -602,6 +603,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           key: ValueKey(revision.dataTxId),
           create: (context) => FsEntryPreviewCubit(
             crypto: ArDriveCrypto(),
+            fileKeys: context.read<FileKeys>(),
             isSharedFile: true,
             driveId: revision.driveId,
             fileKey: widget.state.fileKey,

@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
@@ -52,17 +53,19 @@ Map<String, Object> buildFilePageBlock({
 /// A private file's key, encoded for a link, derived from the drive key the
 /// signed-in owner holds; null when this device does not hold it.
 Future<String?> fileKeyForLink(
-  DriveDao driveDao,
+  FileKeys fileKeys,
   ProfileState profile, {
   required String driveId,
   required String fileId,
 }) async {
   if (profile is! ProfileLoggedIn) return null;
   try {
-    final driveKey =
-        await driveDao.getDriveKey(driveId, profile.user.cipherKey);
-    if (driveKey == null) return null;
-    final key = await driveDao.getFileKey(fileId, driveKey.key);
+    final key = await fileKeys.keyFor(
+      driveId: driveId,
+      fileId: fileId,
+      cipherKey: profile.user.cipherKey,
+    );
+    if (key == null) return null;
     return encodeBytesToBase64(await key.extractBytes());
   } catch (e) {
     logger.w('[publication] the file key could not be derived: $e');

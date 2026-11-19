@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
@@ -54,6 +55,7 @@ void main() async {
         arweave: arweave ?? mockArweaveService,
         crypto: crypto ?? mockCrypto,
         driveDao: driveDao ?? mockDriveDao,
+        fileKeys: FileKeys(driveDao: driveDao ?? mockDriveDao),
         cipherKey: cipherKey ?? SecretKey([]),
         deviceInfo: deviceInfo);
   }

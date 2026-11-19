@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail.dart';
 import 'package:ardrive/models/models.dart';
@@ -22,6 +22,7 @@ class ThumbnailRepository {
   final ArweaveService _arweaveService;
   final ArDriveDownloader _arDriveDownloader;
   final DriveDao _driveDao;
+  final FileKeys _fileKeys;
   final ArDriveAuth _arDriveAuth;
   final ArDriveUploader _arDriveUploader;
   final TurboUploadService _turboUploadService;
@@ -30,11 +31,13 @@ class ThumbnailRepository {
     required ArweaveService arweaveService,
     required ArDriveDownloader arDriveDownloader,
     required DriveDao driveDao,
+    required FileKeys fileKeys,
     required ArDriveAuth arDriveAuth,
     required ArDriveUploader arDriveUploader,
     required TurboUploadService turboUploadService,
   })  : _arDriveUploader = arDriveUploader,
         _driveDao = driveDao,
+        _fileKeys = fileKeys,
         _arDriveDownloader = arDriveDownloader,
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
@@ -81,7 +84,16 @@ class ThumbnailRepository {
       throw Exception('Data transaction not found');
     }
 
-    final driveKey = await _driveKeyFor(fileDataTableItem.driveId);
+    // A visitor has no profile, so their drive key is in the memory vault,
+    // which is where download and preview already look.
+    final fileKey = await _fileKeys.keyFor(
+      driveId: fileDataTableItem.driveId,
+      fileId: fileDataTableItem.id,
+      cipherKey: _cipherKeyOrNull(),
+    );
+    if (fileKey == null) {
+      throw StateError('No key for the thumbnail of ${fileDataTableItem.id}');
+    }
 
     return await _arDriveDownloader.downloadToMemory(
       txId: thumbnailTxId,
@@ -92,20 +104,16 @@ class ThumbnailRepository {
       isManifest: false,
       cipher: dataTx.getTag(EntityTag.cipher),
       cipherIvString: dataTx.getTag(EntityTag.cipherIv),
-      fileKey: await _driveDao.getFileKey(fileDataTableItem.id, driveKey!.key),
+      fileKey: fileKey,
     );
   }
 
-  /// The drive key for a thumbnail. A visitor has no profile, so their key is
-  /// in the memory vault, which is where download and preview already look.
-  Future<DriveKey?> _driveKeyFor(String driveId) async {
+  /// The signed-in profile's key, or null for a visitor.
+  SecretKey? _cipherKeyOrNull() {
     try {
-      return await _driveDao.getDriveKey(
-        driveId,
-        _arDriveAuth.currentUser.cipherKey,
-      );
+      return _arDriveAuth.currentUser.cipherKey;
     } on AuthenticationUserIsNotLoggedInException {
-      return _driveDao.getDriveKeyFromMemory(driveId);
+      return null;
     }
   }
 
@@ -125,15 +133,14 @@ class ThumbnailRepository {
 
     if (drive.isPrivate) {
       logger.d('Drive is private. Getting drive key');
-      final driveKey = await _driveDao.getDriveKey(
-        drive.id,
-        _arDriveAuth.currentUser.cipherKey,
+      fileKey = await _fileKeys.keyFor(
+        driveId: drive.id,
+        fileId: fileEntry.id,
+        cipherKey: _arDriveAuth.currentUser.cipherKey,
       );
-
-      fileKey = await ArDriveCrypto().deriveFileKey(
-        driveKey!.key,
-        fileEntry.id,
-      );
+      if (fileKey == null) {
+        throw StateError('No key for ${fileEntry.id}');
+      }
 
       // Private files need cipher/IV tags from the data transaction
       final dataTx =

@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
@@ -136,6 +137,7 @@ Future<void> showPublishDialog(
   );
   final dependencies = PublishDependencies(
     driveDao: driveDao,
+    fileKeys: context.read<FileKeys>(),
     profileCubit: profileCubit,
     syncSkipSource: SyncCubitDriveStateSkipSource(context.read<SyncCubit>()),
     repository: repository,

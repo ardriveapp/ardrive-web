@@ -21,24 +21,24 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final _privateFileLimit = const MiB(300).size;
   final _warningDownloadTimeLimit = const MiB(200).size;
 
-  final DriveDao _driveDao;
   final ArweaveService _arweave;
   final io.ArDriveMobileDownloader _downloader;
   final ArDriveDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
   final DownloadPolicy _downloadPolicy;
+  final FileKeys _fileKeys;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
-    required DriveDao driveDao,
     required ArweaveService arweave,
     required io.ArDriveMobileDownloader downloader,
     required ArDriveDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
+    required FileKeys fileKeys,
     DownloadPolicy downloadPolicy = const DownloadPolicy(),
   })  : _downloadPolicy = downloadPolicy,
-        _driveDao = driveDao,
+        _fileKeys = fileKeys,
         _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
         _file = file,
@@ -178,23 +178,16 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             'Failed to download: Data transaction not found for file');
       }
 
-      DriveKey? driveKey;
+      fileKey = await _fileKeys.keyFor(
+        driveId: drive.driveId,
+        fileId: _file.id,
+        cipherKey: cipherKey,
+      );
 
-      if (cipherKey != null) {
-        driveKey = await _driveDao.getDriveKey(
-          drive.driveId,
-          cipherKey,
-        );
-      } else {
-        driveKey = await _driveDao.getDriveKeyFromMemory(_file.driveId);
-      }
-
-      if (driveKey == null) {
+      if (fileKey == null) {
         throw StateError(
             'Drive Key not found for file ${_file.id} in drive ${_file.driveId}');
       }
-
-      fileKey = await _driveDao.getFileKey(_file.id, driveKey.key);
 
       cipher = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -46,6 +47,7 @@ const publicationOwnerNameMax = 40;
 class PublishDependencies {
   const PublishDependencies({
     required this.driveDao,
+    required this.fileKeys,
     required this.profileCubit,
     required this.syncSkipSource,
     required this.repository,
@@ -62,6 +64,7 @@ class PublishDependencies {
   });
 
   final DriveDao driveDao;
+  final FileKeys fileKeys;
   final ProfileCubit profileCubit;
   final DriveStateSyncSkipSource syncSkipSource;
   final PublicationRepository repository;
@@ -428,7 +431,7 @@ class PublishCubit extends Cubit<PublishState> {
     return withFileKey(
       page,
       await fileKeyForLink(
-        _deps.driveDao,
+        _deps.fileKeys,
         _deps.profileCubit.state,
         driveId: drive.id,
         fileId: file!.id,

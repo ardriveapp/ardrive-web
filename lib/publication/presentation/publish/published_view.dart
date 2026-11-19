@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
@@ -101,7 +102,7 @@ class _PublishedViewState extends State<PublishedView> {
     final driveDao = context.read<DriveDao>();
     final profile = context.read<ProfileCubit>().state;
     final key = _isPrivateFile
-        ? await fileKeyForLink(driveDao, profile,
+        ? await fileKeyForLink(context.read<FileKeys>(), profile,
             driveId: file.driveId, fileId: file.id)
         : null;
     // Out of date by the share page's own rule: the metadata it was made

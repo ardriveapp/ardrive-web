@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -202,6 +203,7 @@ void main() {
         releaseGuard: (_) => guard.add('release'),
         dependencies: PublishDependencies(
           driveDao: db.driveDao,
+          fileKeys: FileKeys(driveDao: db.driveDao),
           profileCubit: profile,
           syncSkipSource: skip,
           repository: repository,
