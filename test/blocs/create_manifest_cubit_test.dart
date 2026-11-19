@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:arweave/arweave.dart' show TransactionResult;
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -355,6 +356,7 @@ void main() {
       required UploadType type,
       bool metadataUploaded = false,
       Object? error,
+      bool built = false,
     }) =>
         FileUploadTask(
           file: ioFile,
@@ -372,6 +374,9 @@ void main() {
           metadataUploaded: metadataUploaded,
           error: error,
           uploadThumbnail: false,
+          uploadItem: built
+              ? TransactionUploadItem(size: 1, data: _FakeTransactionResult())
+              : null,
         );
 
     /// The cubit's state after one upload that failed with [failure].
@@ -474,13 +479,17 @@ void main() {
       expect(failure.maybeSent, isTrue);
     });
 
-    test('direct: the header posted and the chunks failed, no Try again',
-        () async {
+    // What the bundle strategy throws for a direct upload: a
+    // BundleUploadException, wrapping the header or chunk failure.
+    test(
+        'direct: the chunks failed after the transaction was built, no Try '
+        'again', () async {
       final failure = await failedWith(
         wrapping([
           task(
             type: UploadType.d2n,
-            error: MetadataTransactionUploadException(
+            built: true,
+            error: BundleUploadException(
               message: 'chunks',
               error: Exception('chunk stream broke'),
             ),
@@ -493,15 +502,53 @@ void main() {
       expect(failure.maybeSent, isTrue);
     });
 
-    test('direct: the header never posted, Try again is offered', () async {
+    // A failed header post does not show the header missed the network.
+    test('direct: a header post that failed is not proof nothing was sent',
+        () async {
       final failure = await failedWith(
         wrapping([
           task(
             type: UploadType.d2n,
-            error: MetadataTransactionUploadException(
+            built: true,
+            error: BundleUploadException(
               message: 'header',
               error: TransactionHeaderNotPostedException(),
             ),
+          ),
+        ]),
+        method: UploadMethod.ar,
+      );
+
+      expect(failure.canRetry, isFalse);
+      expect(failure.maybeSent, isTrue);
+    });
+
+    test('direct: a failure before the transaction was built offers Try again',
+        () async {
+      final failure = await failedWith(
+        wrapping([
+          task(
+            type: UploadType.d2n,
+            error: BundleUploadException(
+              message: 'bundle',
+              error: Exception('could not sign'),
+            ),
+          ),
+        ]),
+        method: UploadMethod.ar,
+      );
+
+      expect(failure.canRetry, isTrue);
+      expect(failure.maybeSent, isFalse);
+    });
+
+    test('direct: a cancel sent nothing more', () async {
+      final failure = await failedWith(
+        wrapping([
+          task(
+            type: UploadType.d2n,
+            built: true,
+            error: UploadCanceledException('Upload canceled'),
           ),
         ]),
         method: UploadMethod.ar,
@@ -639,6 +686,48 @@ void main() {
       await cubit.close();
       await gate.close();
     });
+  });
+
+  test('two quick folder clicks show the one asked for last', () async {
+    final docs = StreamController<FolderWithContents>();
+    final img = StreamController<FolderWithContents>();
+    when(() => folderRepository.watchFolderContents(
+        driveId: driveId, folderId: 'docs')).thenAnswer((_) => docs.stream);
+    when(() => folderRepository.watchFolderContents(
+        driveId: driveId, folderId: 'img')).thenAnswer((_) => img.stream);
+    final cubit = CreateManifestCubit(
+      drive: drive,
+      profileCubit: MockProfileCubit(),
+      manifestRepository: manifestRepository,
+      folderRepository: folderRepository,
+      auth: MockArDriveAuth(),
+    );
+    await cubit.stream
+        .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+
+    // Neither awaited: both pass the cancel of the folder before.
+    unawaited(cubit.loadFolder('docs'));
+    unawaited(cubit.loadFolder('img'));
+    await Future<void>.delayed(Duration.zero);
+    img.add(FolderWithContents(
+      folder: folder('img', parent: rootId),
+      subfolders: const [],
+      files: const [],
+    ));
+    await Future<void>.delayed(Duration.zero);
+    docs.add(FolderWithContents(
+      folder: folder('docs', parent: rootId),
+      subfolders: const [],
+      files: const [],
+    ));
+    await Future<void>.delayed(Duration.zero);
+
+    final shown = cubit.state as CreateManifestFolderLoadSuccess;
+    expect(shown.viewingFolder.folder.id, 'img');
+    expect(cubit.isLoadingFolder(shown), isFalse);
+    await cubit.close();
+    await docs.close();
+    await img.close();
   });
 
   group('a step that writes or pays', () {
@@ -844,3 +933,5 @@ void main() {
     });
   });
 }
+
+class _FakeTransactionResult extends Fake implements TransactionResult {}

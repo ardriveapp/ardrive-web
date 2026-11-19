@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -115,8 +116,16 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
           action: () async {
             if (_opening) return;
             _opening = true;
-            final createsDriveState =
-                await createsDriveStateSnapshot(context, widget.drive);
+            final bool createsDriveState;
+            try {
+              createsDriveState =
+                  await createsDriveStateSnapshot(context, widget.drive);
+            } catch (e) {
+              // The button works again; nothing was opened.
+              logger.w('Could not tell which snapshot to offer: $e');
+              _opening = false;
+              return;
+            }
             if (!context.mounted) return;
             Navigator.of(context).pop();
             unawaited(promptToCreateSnapshot(

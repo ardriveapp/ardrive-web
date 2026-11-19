@@ -191,15 +191,20 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     _selectedFolderSubscription = _folderRepository
         .watchFolderContents(driveId: _drive.id, folderId: folderId)
         .listen(
-          (f) => emit(
-            CreateManifestFolderLoadSuccess(
-              viewingRootFolder: f.folder.parentFolderId == null,
-              viewingFolder: f,
-              enableManifestCreationButton: _getEnableManifestCreationButton(),
-            ),
+      (f) {
+        // Two quick clicks can leave the first folder's stream running
+        // past the second: only the folder asked for last is shown.
+        if (folderId != _requestedFolderId) return;
+        emit(
+          CreateManifestFolderLoadSuccess(
+            viewingRootFolder: f.folder.parentFolderId == null,
+            viewingFolder: f,
+            enableManifestCreationButton: _getEnableManifestCreationButton(),
           ),
-          onError: (Object e, StackTrace s) => addError(e, s),
         );
+      },
+      onError: (Object e, StackTrace s) => addError(e, s),
+    );
   }
 
   /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
@@ -529,16 +534,15 @@ bool _failedBeforeSubmission(Object error) {
     // Turbo took the metadata item: the deployment is on its way, and what
     // is left is the data item, which a new upload would pay for again.
     if (task.metadataUploaded) return false;
-    // Direct to the network, only a transaction whose header was never
-    // posted is safe to send again: after it, the chunks may be on their way.
-    if (task.type == UploadType.d2n) {
-      final failure = task.error;
-      final cause = failure is ArDriveUploaderExceptions ? failure.error : null;
-      if ((failure is DataTransactionUploadException ||
-              failure is MetadataTransactionUploadException) &&
-          cause is! TransactionHeaderNotPostedException) {
-        return false;
-      }
+    // Direct to the network: once the transaction is built and signed, a
+    // failure may have reached the network. The uploader says as much of a
+    // failed header post, which a gateway can store and still answer with
+    // an error. Only a cancel, or a failure before there was a transaction,
+    // sent nothing.
+    if (task.type == UploadType.d2n &&
+        task.uploadItem != null &&
+        task.error is! UploadCanceledException) {
+      return false;
     }
   }
   return true;

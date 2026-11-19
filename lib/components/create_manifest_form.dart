@@ -344,14 +344,17 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           : l10n.deploymentFailedTitle,
       content: ArDriveNotice(
         type: ArDriveNoticeType.error,
+        // May have been sent comes before a payment refusal: Turbo can take
+        // the metadata item and then refuse the data item, and the person
+        // must know that before paying to try again.
         message: postedTxId != null
             ? l10n.deploymentPostedBody(postedTxId)
-            : isPaymentError
-                ? l10n.freeAllowanceUsedUpDescription
-                : isWalletMismatch
-                    ? l10n.deploymentWalletChanged
-                    : state is CreateManifestFailure && state.maybeSent
-                        ? l10n.deploymentMaybeSentBody
+            : state is CreateManifestFailure && state.maybeSent
+                ? l10n.deploymentMaybeSentBody
+                : isPaymentError
+                    ? l10n.freeAllowanceUsedUpDescription
+                    : isWalletMismatch
+                        ? l10n.deploymentWalletChanged
                         : l10n.deploymentFailedBody,
       ),
       actions: [

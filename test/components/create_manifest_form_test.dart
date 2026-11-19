@@ -302,6 +302,20 @@ void main() {
       expect(find.text('Try again'), findsNothing);
     });
 
+    testWidgets('a payment refusal after part was sent says it may be sent',
+        (tester) async {
+      await pumpForm(
+        tester,
+        CreateManifestFailure(
+            isPaymentError: true, canRetry: false, maybeSent: true),
+      );
+
+      expect(find.textContaining('may have been sent and paid for'),
+          findsOneWidget);
+      expect(find.text('Buy credits'), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+    });
+
     testWidgets('of a Turbo payment offers credits, and Try again after them',
         (tester) async {
       await pumpForm(tester, CreateManifestFailure(isPaymentError: true));
