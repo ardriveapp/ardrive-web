@@ -37,7 +37,7 @@ class _CcTypeFormState extends State<CcTypeForm> {
               children: [
                 Flexible(
                   child: LabeledInput(
-                    labelText: 'Type',
+                    labelText: appLocalizationsOf(context).licenseTypeLabel,
                     child: ReactiveArDriveSelectField<LicenseMeta>(
                       formControlName: 'ccTypeField',
                       hintText: appLocalizationsOf(context).chooseALicenseType,

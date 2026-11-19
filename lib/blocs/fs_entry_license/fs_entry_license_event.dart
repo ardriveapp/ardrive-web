@@ -11,20 +11,10 @@ class FsEntryLicenseInitial extends FsEntryLicenseEvent {
   const FsEntryLicenseInitial() : super();
 }
 
-class FsEntryLicenseSelect extends FsEntryLicenseEvent {
-  const FsEntryLicenseSelect() : super();
-}
-
-class FsEntryLicenseConfigurationBack extends FsEntryLicenseEvent {
-  const FsEntryLicenseConfigurationBack() : super();
-}
-
-class FsEntryLicenseConfigurationSubmit extends FsEntryLicenseEvent {
-  const FsEntryLicenseConfigurationSubmit() : super();
-}
-
-class FsEntryLicenseReviewBack extends FsEntryLicenseEvent {
-  const FsEntryLicenseReviewBack() : super();
+/// The license, or one of its settings, changed: the review reads what the
+/// write costs again, or waits while the settings are not complete.
+class FsEntryLicenseSettingsChanged extends FsEntryLicenseEvent {
+  const FsEntryLicenseSettingsChanged() : super();
 }
 
 class FsEntryLicenseReviewConfirm extends FsEntryLicenseEvent {
@@ -33,10 +23,6 @@ class FsEntryLicenseReviewConfirm extends FsEntryLicenseEvent {
 
 class FsEntryLicenseSuccessClose extends FsEntryLicenseEvent {
   const FsEntryLicenseSuccessClose() : super();
-}
-
-class FsEntryLicenseFailureTryAgain extends FsEntryLicenseEvent {
-  const FsEntryLicenseFailureTryAgain() : super();
 }
 
 /// Reads the cost again: Try again, or after credits were added.
