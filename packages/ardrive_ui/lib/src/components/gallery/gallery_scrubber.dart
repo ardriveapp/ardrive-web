@@ -39,7 +39,11 @@ class ArDriveGalleryScrubber extends StatefulWidget {
   final double minScreens;
 
   /// How wide the track is: the room a gallery keeps on its right.
-  static const double defaultWidth = 40;
+  /// Wide enough for the year labels, so the whole column reacts to a hover.
+  static const double defaultWidth = 64;
+
+  /// How far back the timeline sits at rest: clear, not loud.
+  static const double restOpacity = 0.7;
 
   /// On a phone the handle sits over the photos, so its hit area is narrower.
   static const double phoneWidth = 28;
@@ -148,7 +152,7 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
           final fraction = maxExtent <= 0
               ? 0.0
               : (position.pixels / maxExtent).clamp(0.0, 1.0);
-          const thumbHeight = 32.0;
+          const thumbHeight = 24.0;
           final thumbTop = fraction * (h - thumbHeight);
           final current = geometry.sectionAt(position.pixels);
           ArDriveGalleryScrubberEntry? entry;
@@ -179,12 +183,12 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
               final here = tick == currentYear;
               ticks.add(Positioned(
                 top: math.min(y, h - 16),
-                right: ArDriveSpacing.md,
+                right: 12,
                 child: Text(
                   tick,
                   key: ValueKey('gallery-scrubber-year-$tick'),
                   style: typography.caption(
-                    color: here ? tokens.textHigh : tokens.textLow,
+                    color: here ? tokens.textHigh : tokens.textMid,
                     fontWeight:
                         here ? ArFontWeight.semiBold : ArFontWeight.book,
                   ),
@@ -208,7 +212,7 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
               onTapDown: (d) => _dragTo(d.localPosition.dy, h),
               child: AnimatedOpacity(
                 key: const ValueKey('gallery-scrubber-fade'),
-                opacity: forward ? 1 : 0.4,
+                opacity: forward ? 1 : ArDriveGalleryScrubber.restOpacity,
                 duration: fade,
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -221,8 +225,9 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
                         right: 1,
                         child: Container(
                           key: const ValueKey('gallery-scrubber-track'),
-                          width: 2,
-                          color: tokens.strokeLow,
+                          // A little wider while it is in use.
+                          width: forward ? 3 : 2,
+                          color: tokens.strokeMid,
                         ),
                       ),
                     ...ticks,

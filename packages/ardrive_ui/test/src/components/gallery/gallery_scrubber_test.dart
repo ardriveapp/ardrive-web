@@ -94,10 +94,66 @@ void main() {
         await pump(tester);
         final track = tester.widget<Container>(
             find.byKey(const ValueKey('gallery-scrubber-track')));
-        expect(track.color, tokens(tester).strokeLow);
+        expect(track.color, tokens(tester).strokeMid);
         // Easy to grab: at least 24 px wide.
         expect(tester.getSize(find.byType(ArDriveGalleryScrubber)).width,
             greaterThanOrEqualTo(24));
+      });
+
+      testWidgets('the track widens a little while it is in use',
+          (tester) async {
+        await pump(tester);
+        double trackWidth() => tester
+            .getSize(find.byKey(const ValueKey('gallery-scrubber-track')))
+            .width;
+        expect(trackWidth(), 2);
+        controller.scroll.jumpTo(300);
+        await tester.pump();
+        expect(trackWidth(), 3);
+      });
+
+      testWidgets('the marker is a clear pill: 4 x 24, iconHigh',
+          (tester) async {
+        await pump(tester);
+        final thumb = find.byKey(const ValueKey('gallery-scrubber-thumb'));
+        final box = tester.widget<Container>(
+            find.descendant(of: thumb, matching: find.byType(Container)));
+        final deco = box.decoration! as BoxDecoration;
+        expect(deco.color, tokens(tester).iconHigh);
+        expect(deco.borderRadius, isNotNull);
+        expect(
+            tester.getSize(
+                find.descendant(of: thumb, matching: find.byType(Container))),
+            const Size(4, 24));
+      });
+
+      testWidgets('hovering over the year labels brings it forward',
+          (tester) async {
+        await pump(tester);
+        final label = find.byKey(const ValueKey('gallery-scrubber-year-2021'));
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await mouse.addPointer(location: Offset.zero);
+        addTearDown(mouse.removePointer);
+        // The label's far left edge: it must be inside the hover area.
+        await mouse.moveTo(tester.getTopLeft(label) + const Offset(1, 3));
+        await tester.pump();
+        expect(fadeOpacity(tester), 1);
+      });
+
+      testWidgets('non-current years read at 3:1 against the page at rest',
+          (tester) async {
+        await pump(tester);
+        final page = ArDriveTheme.of(tester.element(find.byType(Scaffold)))
+            .themeData
+            .backgroundColor;
+        final label = yearColor(tester, '2021');
+        // The label is drawn at rest opacity over the page.
+        final shown = Color.alphaBlend(
+            label.withOpacity(ArDriveGalleryScrubber.restOpacity), page);
+        double lum(Color c) => c.computeLuminance();
+        final hi = lum(shown) > lum(page) ? shown : page;
+        final lo = lum(shown) > lum(page) ? page : shown;
+        expect((lum(hi) + 0.05) / (lum(lo) + 0.05), greaterThanOrEqualTo(3));
       });
 
       testWidgets('the marker follows the scroll position', (tester) async {
@@ -112,23 +168,24 @@ void main() {
         expect(tester.widget<AnimatedOpacity>(thumb).opacity, 1);
       });
 
-      testWidgets('the current year is in textHigh, the others in textLow',
+      testWidgets('the current year is in textHigh, the others in textMid',
           (tester) async {
         await pump(tester);
         final t = tokens(tester);
         expect(yearColor(tester, '2020'), t.textHigh);
-        expect(yearColor(tester, '2021'), t.textLow);
+        expect(yearColor(tester, '2021'), t.textMid);
         controller.jumpToSection(2);
         await tester.pump();
         await tester.pump();
-        expect(yearColor(tester, '2020'), t.textLow);
+        expect(yearColor(tester, '2020'), t.textMid);
         expect(yearColor(tester, '2022'), t.textHigh);
       });
 
       testWidgets('at rest it sits back, and comes forward on hover',
           (tester) async {
         await pump(tester);
-        expect(fadeOpacity(tester), closeTo(0.4, 0.001));
+        expect(fadeOpacity(tester),
+            closeTo(ArDriveGalleryScrubber.restOpacity, 0.001));
 
         final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
         await mouse.addPointer(location: Offset.zero);
@@ -140,7 +197,8 @@ void main() {
 
         await mouse.moveTo(const Offset(5, 5));
         await tester.pump();
-        expect(fadeOpacity(tester), closeTo(0.4, 0.001));
+        expect(fadeOpacity(tester),
+            closeTo(ArDriveGalleryScrubber.restOpacity, 0.001));
       });
 
       testWidgets('it comes forward while scrolling, then sits back',
@@ -150,7 +208,8 @@ void main() {
         await tester.pump();
         expect(fadeOpacity(tester), 1);
         await tester.pump(const Duration(seconds: 2));
-        expect(fadeOpacity(tester), closeTo(0.4, 0.001));
+        expect(fadeOpacity(tester),
+            closeTo(ArDriveGalleryScrubber.restOpacity, 0.001));
       });
 
       testWidgets('with reduced motion it just stays forward', (tester) async {

@@ -706,4 +706,55 @@ void main() {
       expect(tester.getTopLeft(tileOf('Alfama.jpg')).dx, 16);
     });
   });
+
+  group('quiet type tiles', () {
+    for (final dark in [false, true]) {
+      testWidgets(
+          'portrait 3:4, a quiet fill and muted icon and name '
+          '(${dark ? 'dark' : 'light'})', (tester) async {
+        await pump(tester, app([doc], dark: dark));
+        final size = tester.getSize(tileOf('Itinerary.pdf'));
+        expect(size.width / size.height, closeTo(3 / 4, 0.02));
+
+        final tokens = ArDriveTheme.of(tester.element(find.byType(Scaffold)))
+            .themeData
+            .colorTokens;
+        final fill = tester.widget<ColoredBox>(
+            find.byKey(const ValueKey('gallery-type-tile')));
+        expect(fill.color, tokens.containerL1);
+        // Closer to the page than a photo's skeleton (containerL2).
+        expect(fill.color, isNot(tokens.containerL2));
+
+        final tile = find.byKey(const ValueKey('gallery-type-tile'));
+        final icon = tester.widget<Icon>(
+            find.descendant(of: tile, matching: find.byType(Icon)));
+        expect(icon.color, tokens.iconLow);
+        final name = tester.widget<Text>(
+            find.descendant(of: tile, matching: find.text('Itinerary.pdf')));
+        expect(name.style!.color, tokens.textMid);
+        expect(name.maxLines, 2);
+      });
+    }
+
+    testWidgets('stay in date order among the photos', (tester) async {
+      final newer = fileItem('n',
+          name: 'Notes.md',
+          contentType: 'text/markdown',
+          created: DateTime(2026, 10, 20));
+      await pump(
+          tester,
+          app([a, newer, b],
+              sortColumn: ColumnIndexes.dateCreated, sortOrder: TableSort.asc));
+      // Within October, in the list's date order: the notes sit between.
+      Offset x(String n) => tester.getTopLeft(tileOf(n));
+      final order = ['Alfama.jpg', 'Notes.md', 'Pier.jpg']..sort((p, q) {
+          final dy = x(p).dy.compareTo(x(q).dy);
+          return dy != 0 ? dy : x(p).dx.compareTo(x(q).dx);
+        });
+      final expected = sortExplorerRows(
+          [a, newer, b], ColumnIndexes.dateCreated, TableSort.asc,
+          typeLabel: (i) => i.contentType).map((e) => e.name).toList();
+      expect(order, expected);
+    });
+  });
 }

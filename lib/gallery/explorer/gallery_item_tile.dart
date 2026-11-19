@@ -18,6 +18,11 @@ const double galleryFolderAspectRatio = 3.4;
 /// The height of a folder tile's row.
 const double galleryFolderRowHeight = 56;
 
+/// The aspect ratio of a quiet type tile (a document, an archive, a video
+/// with no poster): a portrait page, narrower than a photo, so a mixed folder
+/// is not a wall of squares.
+const double galleryTypeTileAspectRatio = 3 / 4;
+
 /// What the gallery shows an item as.
 enum GalleryTileKind { folder, image, other }
 
@@ -50,6 +55,9 @@ List<GalleryVariant> galleryVariantsOf(FileDataTableItem file) => [
 /// there is none to size it from (the layout then uses a square).
 double? galleryAspectRatioOf(ArDriveDataTableItem item) {
   if (item is! FileDataTableItem) return null;
+  if (galleryTileKindOf(item) == GalleryTileKind.other) {
+    return galleryTypeTileAspectRatio;
+  }
   GalleryVariant? best;
   for (final v in galleryVariantsOf(item)) {
     if (v.width <= 0 || v.height <= 0) continue;
@@ -360,22 +368,24 @@ class _TypeContent extends StatelessWidget {
       final small = constraints.maxHeight < 110;
       return ColoredBox(
         key: const ValueKey('gallery-type-tile'),
-        color: tokens.containerL2,
+        // One step closer to the page than a photo's skeleton: a quiet tile.
+        color: tokens.containerL1,
         child: Padding(
-          padding: const EdgeInsets.all(ArDriveSpacing.sm),
+          padding: const EdgeInsets.all(ArDriveSpacing.xs),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // copyWith: getIconForContentType only honours a colour for
+              // some types.
               getIconForContentType(
                 item.contentType,
                 size: small ? 20 : 28,
-                color: tokens.iconMid,
-              ),
+              ).copyWith(color: tokens.iconLow),
               const SizedBox(height: ArDriveSpacing.xs),
               Text(
                 item.name,
                 textAlign: TextAlign.center,
-                maxLines: small ? 1 : 2,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: typography.caption(color: tokens.textMid),
               ),
