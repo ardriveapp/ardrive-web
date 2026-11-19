@@ -30,7 +30,9 @@ abstract class GalleryImageFetcher {
   /// [cancelWhen] completes if the loader no longer wants the bytes; a fetcher
   /// that can abort should. One that cannot may ignore it.
   ///
-  /// Throw [GalleryRateLimited] on HTTP 429/503 so the loader pauses.
+  /// Throw [GalleryRateLimited] on HTTP 429/503 so the loader pauses, and
+  /// [GalleryNotFound] when the gateway has no such transaction so the loader
+  /// does not retry.
   Future<Uint8List> fetch(
     GalleryFetchTarget target, {
     required Future<void> cancelWhen,
@@ -46,6 +48,17 @@ class GalleryRateLimited implements Exception {
 
   @override
   String toString() => 'GalleryRateLimited(retryAfter: $retryAfter)';
+}
+
+/// The gateway answered and has no such transaction (an indexing gap). Not
+/// retried by the loader: the tile fails once. The source of the answer
+/// remembers it for a cool-down, after which a tile scrolled back into view
+/// asks again.
+class GalleryNotFound implements Exception {
+  const GalleryNotFound();
+
+  @override
+  String toString() => 'GalleryNotFound()';
 }
 
 class GalleryLoaderConfig {
@@ -535,6 +548,10 @@ class GalleryImageLoader {
     } else if (error is GalleryRateLimited) {
       _backoff(error, entry);
       entry.queued = onScreen;
+    } else if (error is GalleryNotFound) {
+      // An answer, not a hiccup: fail once, no automatic retry.
+      entry.notifier.value =
+          const GalleryImageState.failed(GalleryFailureReason.fetchFailed);
     } else {
       entry.attempts++;
       if (entry.attempts > config.maxRetries) {

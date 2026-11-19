@@ -258,6 +258,19 @@ void main() {
     });
   });
 
+  test('a not-found answer fails the tile once and is not retried', () {
+    run((async) {
+      final h = show('a');
+      async.elapse(const Duration(seconds: 1));
+      fetcher.fail('a', const GalleryNotFound());
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 30));
+      expect(fetcher.calls.length, 1);
+      expect(h.value.status, GalleryImageStatus.failed);
+      expect(h.value.failure, GalleryFailureReason.fetchFailed);
+    });
+  });
+
   test('success yields a tile-sized provider; cached item is not refetched',
       () {
     run((async) {

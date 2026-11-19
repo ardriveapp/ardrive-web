@@ -6,6 +6,7 @@ import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
+import 'package:ardrive/services/arweave/transaction_tag_batcher.dart';
 
 /// The production [GalleryImageFetcher].
 ///
@@ -55,6 +56,7 @@ class ArweaveGalleryImageFetcher implements GalleryImageFetcher {
       );
       return response.bodyBytes;
     } catch (e) {
+      if (e is TransactionNotFoundException) throw const GalleryNotFound();
       final limited = rateLimitFromError(e);
       if (limited != null) throw limited;
       rethrow;

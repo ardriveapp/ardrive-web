@@ -9,6 +9,7 @@ import 'package:ardrive/drive_explorer/thumbnail/thumbnail.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/arweave/transaction_tag_batcher.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -33,12 +34,20 @@ class ThumbnailRepository {
     required ArDriveAuth arDriveAuth,
     required ArDriveUploader arDriveUploader,
     required TurboUploadService turboUploadService,
+    TransactionTagBatcher? tagBatcher,
   })  : _arDriveUploader = arDriveUploader,
         _driveDao = driveDao,
         _arDriveDownloader = arDriveDownloader,
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
-        _arDriveAuth = arDriveAuth;
+        _arDriveAuth = arDriveAuth,
+        _tagBatcher = tagBatcher ??
+            TransactionTagBatcher(
+              fetch: arweaveService.getTagsForTransactions,
+            );
+
+  /// Reads the cipher tags of many thumbnails with one query.
+  final TransactionTagBatcher _tagBatcher;
   final Map<String, ThumbnailData> _cachedThumbnails = {};
 
   Future<ThumbnailData> getThumbnail({
@@ -95,11 +104,9 @@ class ThumbnailRepository {
     required String fileName,
     required DateTime lastModifiedDate,
   }) async {
-    final dataTx = await _arweaveService.getTransactionDetails(txId);
-
-    if (dataTx == null) {
-      throw Exception('Data transaction not found');
-    }
+    // One batched query for every thumbnail asked for together. Throws
+    // TransactionNotFoundException when the gateway has no such transaction.
+    final tags = await _tagBatcher.tagsFor(txId);
 
     final driveKey = await _driveKeyFor(driveId);
 
@@ -110,8 +117,8 @@ class ThumbnailRepository {
       lastModifiedDate: lastModifiedDate,
       contentType: 'image/jpeg',
       isManifest: false,
-      cipher: dataTx.getTag(EntityTag.cipher),
-      cipherIvString: dataTx.getTag(EntityTag.cipherIv),
+      cipher: tags[EntityTag.cipher],
+      cipherIvString: tags[EntityTag.cipherIv],
       fileKey: await _driveDao.getFileKey(fileId, driveKey!.key),
     );
   }
