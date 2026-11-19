@@ -360,6 +360,16 @@ void main() {
 
       expect(find.text('Syncing this drive...'), findsOneWidget);
     });
+
+    testWidgets('centres the wait across the dialog', (tester) async {
+      await open(tester, const PublishState(stage: PublishStage.syncing));
+
+      final title = tester.getRect(find.text('Syncing this drive...'));
+      final spinner = tester.getCenter(find.byType(ArDriveSpinner));
+      final dialog = tester.getRect(find.byType(ArDriveStandardModalNew));
+      expect(spinner.dx, moreOrLessEquals(dialog.center.dx, epsilon: 1));
+      expect(title.center.dx, moreOrLessEquals(dialog.center.dx, epsilon: 1));
+    });
   });
 
   // It said "a few minutes" and named nothing, while the wait after an upload

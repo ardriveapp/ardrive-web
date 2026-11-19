@@ -493,15 +493,20 @@ class PublishDialog extends StatelessWidget {
     return _modal(
       context,
       title: title,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const ArDriveSpinner(size: ArDriveSpinnerSize.large),
-          const SizedBox(height: ArDriveSpacing.sm),
-          Text(text,
-              textAlign: TextAlign.center,
-              style: typography.paragraphNormal(color: colors.textMid)),
-        ],
+      // The dialog's content column starts its children; the wait is
+      // centred across the whole width.
+      content: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            const SizedBox(height: ArDriveSpacing.sm),
+            Text(text,
+                textAlign: TextAlign.center,
+                style: typography.paragraphNormal(color: colors.textMid)),
+          ],
+        ),
       ),
       actions: [
         ModalAction.close(
