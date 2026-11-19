@@ -161,7 +161,8 @@ class UploadCubit extends Cubit<UploadState> {
     final freeAllowance = await _arDriveUploadManager.getFreeAllowance();
     final maxFreeItemBytes = _arDriveUploadManager.getMaxFreeItemBytes();
 
-    final manifestModels = _selectedManifestModels
+    // The deployments ticked when Upload was pressed.
+    final manifestModels = _pressedManifests
         .map((e) => UploadManifestModel(
               entry: e.manifest,
               freeThanksToTurbo: false,
@@ -300,6 +301,15 @@ class UploadCubit extends Cubit<UploadState> {
   List<UploadFile> _files = [];
   Map<String, WebFolder> _foldersByPath = {};
   UploadMethod? _uploadMethod;
+
+  /// How the upload pressed is paid, who pays, and the deployments it
+  /// updates, as the
+  /// review showed them when Upload was pressed. The review stays on screen
+  /// while the wallet is checked, and a change made there in that time is
+  /// not what the person confirmed: everything after the press reads these.
+  UploadMethod? _pressedUploadMethod;
+  List<String> _pressedPaidBy = const [];
+  List<ManifestSelection> _pressedManifests = const [];
   bool _uploadThumbnail;
   bool? _containsLargeTurboUpload;
   List<String> _paidBy = [];
@@ -1022,6 +1032,9 @@ class UploadCubit extends Cubit<UploadState> {
     _uploadIsInProgress = true;
     // A new run is not a canceled one.
     _uploadCanceled = false;
+    _pressedUploadMethod = _uploadMethod;
+    _pressedPaidBy = List.unmodifiable(_paidBy);
+    _pressedManifests = List.unmodifiable(_selectedManifestModels);
 
     if (_uploadFileAsCustomManifest) {
       final IOFile fileWithCustomContentType;
@@ -1051,7 +1064,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     UploadPlan uploadPlan;
 
-    if (_uploadMethod == UploadMethod.ar || uploadPlanForTurbo == null) {
+    if (_pressedUploadMethod == UploadMethod.ar || uploadPlanForTurbo == null) {
       uploadPlan = uploadPlanForAr;
     } else {
       uploadPlan = uploadPlanForTurbo;
@@ -1085,8 +1098,9 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    final type =
-        _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo;
+    final type = _pressedUploadMethod == UploadMethod.ar
+        ? UploadType.d2n
+        : UploadType.turbo;
     final UploadContains contains = _isUploadFolders
         ? UploadContains.folder
         : _files.length == 1
@@ -1100,7 +1114,7 @@ class UploadCubit extends Cubit<UploadState> {
     logger.d(
         'Wallet verified. Starting bundle preparation.... Number of bundles: ${uploadPlanForAr.bundleUploadHandles.length}. Number of V2 files: ${uploadPlanForAr.fileV2UploadHandles.length}');
 
-    if (_uploadMethod == UploadMethod.turbo) {
+    if (_pressedUploadMethod == UploadMethod.turbo) {
       await _verifyIfUploadContainsLargeFilesUsingTurbo();
       if ((_containsLargeTurboUpload ?? false) && !_hasEmittedWarning) {
         emit(
@@ -1195,6 +1209,10 @@ class UploadCubit extends Cubit<UploadState> {
   @visibleForTesting
   UploadMethod? get uploadMethod => _uploadMethod;
 
+  /// The deployments the upload pressed will update.
+  @visibleForTesting
+  List<ManifestSelection> get pressedManifests => _pressedManifests;
+
   /// Set once the person cancels. A canceled upload is never reported
   /// complete, so it never says the files are saved.
   bool _uploadCanceled = false;
@@ -1239,12 +1257,12 @@ class UploadCubit extends Cubit<UploadState> {
       targetDrive: _targetDrive,
       conflictingFiles: _conflictingFiles,
       targetFolder: _targetFolder,
-      uploadMethod: _uploadMethod!,
+      uploadMethod: _pressedUploadMethod!,
       conflictingFolders: _conflictingFolders,
       foldersByPath: _foldersByPath,
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
-      paidBy: _paidBy,
+      paidBy: _pressedPaidBy,
       compressTextAndCode: compressTextAndCode,
     );
 
@@ -1270,7 +1288,7 @@ class UploadCubit extends Cubit<UploadState> {
             equatableBust: UniqueKey(),
             progress: progress,
             controller: uploadController,
-            uploadMethod: _uploadMethod!,
+            uploadMethod: _pressedUploadMethod!,
           ),
         );
       },
@@ -1279,7 +1297,7 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onDone(
       (tasks) async {
         if (_uploadCanceled) return;
-        if (_selectedManifestModels.isNotEmpty) {
+        if (_pressedManifests.isNotEmpty) {
           await prepareManifestUpload();
         }
 
@@ -1302,9 +1320,9 @@ class UploadCubit extends Cubit<UploadState> {
       conflictingFiles: _conflictingFiles,
       licenseStateConfigured: licenseStateConfigured,
       targetFolder: _targetFolder,
-      uploadMethod: _uploadMethod!,
+      uploadMethod: _pressedUploadMethod!,
       uploadThumbnail: _uploadThumbnail,
-      paidBy: _paidBy,
+      paidBy: _pressedPaidBy,
       compressTextAndCode: compressTextAndCode,
     );
 
@@ -1333,7 +1351,7 @@ class UploadCubit extends Cubit<UploadState> {
             totalProgress: progress.progressInPercentage,
             controller: uploadController,
             equatableBust: UniqueKey(),
-            uploadMethod: _uploadMethod!,
+            uploadMethod: _pressedUploadMethod!,
           ),
         );
       },
@@ -1349,7 +1367,7 @@ class UploadCubit extends Cubit<UploadState> {
           'Upload finished with success. Number of tasks: ${tasks.length}',
         );
 
-        if (_selectedManifestModels.isNotEmpty) {
+        if (_pressedManifests.isNotEmpty) {
           await prepareManifestUpload();
         }
 

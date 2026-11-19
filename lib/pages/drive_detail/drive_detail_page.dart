@@ -44,6 +44,7 @@ import 'package:ardrive/pages/drive_detail/components/document_preview_widget.da
 import 'package:ardrive/pages/drive_detail/components/email_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/pdf_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/pages/no_drives/first_drive_page.dart';
 import 'package:ardrive/pages/no_drives/no_drives_page.dart';
 import 'package:ardrive/services/services.dart';
@@ -52,7 +53,6 @@ import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/file_type_label.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/filesize.dart';

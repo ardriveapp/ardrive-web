@@ -1,5 +1,6 @@
 import 'package:ardrive/components/upload_options.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -7,12 +8,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The upload dialog's optional settings, behind one line saying what is set.
+/// The upload dialog's optional settings, behind one line that names only
+/// what Upload is waiting on.
 void main() {
   Future<void> pump(
     WidgetTester tester, {
     bool? thumbnails = true,
-    List<String> summary = const ['No license'],
+    List<String> summary = const [],
     void Function(bool)? onThumbnailsChanged,
     bool? compress,
     void Function(bool)? onCompressChanged,
@@ -44,29 +46,35 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('starts closed, saying what is set', (tester) async {
-    await pump(tester);
+  testWidgets('starts closed, with no summary of what is set', (tester) async {
+    await pump(tester, compress: true);
 
     expect(find.text('Options'), findsOneWidget);
-    expect(find.text('Thumbnails on'), findsOneWidget);
-    expect(find.text('No license'), findsOneWidget);
+    expect(find.textContaining('Thumbnails'), findsNothing);
+    expect(find.text('Compressed'), findsNothing);
     expect(find.text('license field'), findsNothing);
     expect(find.text('Upload with thumbnails'), findsNothing);
   });
 
+  testWidgets('names what Upload is waiting on', (tester) async {
+    await pump(tester, summary: const ['Choose a license type']);
+
+    expect(find.text('Choose a license type'), findsOneWidget);
+  });
+
   testWidgets('opens to the options, and the summary makes way',
       (tester) async {
-    await pump(tester);
+    await pump(tester, summary: const ['Choose a license type']);
 
     await tester.tap(find.text('Options'));
     await tester.pumpAndSettle();
 
     expect(find.text('Upload with thumbnails'), findsOneWidget);
     expect(find.text('license field'), findsOneWidget);
-    expect(find.text('Thumbnails on'), findsNothing);
+    expect(find.text('Choose a license type'), findsNothing);
   });
 
-  testWidgets('the summary follows the thumbnails box', (tester) async {
+  testWidgets('the thumbnails box reports the choice', (tester) async {
     bool? changed;
     await pump(tester, onThumbnailsChanged: (value) => changed = value);
 
@@ -74,11 +82,118 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Upload with thumbnails'));
     await tester.pump();
-    await tester.tap(find.text('Options'));
-    await tester.pumpAndSettle();
 
     expect(changed, isFalse);
-    expect(find.text('Thumbnails off'), findsOneWidget);
+  });
+
+  group('the thumbnails info mark', () {
+    const note = 'Uses your free upload allowance, then Turbo Credits.';
+
+    Future<void> openOptions(WidgetTester tester) async {
+      await pump(tester);
+      await tester.tap(find.text('Options'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows what thumbnails cost on a click', (tester) async {
+      await openOptions(tester);
+      expect(find.text(note), findsNothing);
+
+      await tester.tap(find.byType(ArDriveInfoTip));
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+
+      // A click elsewhere puts it away.
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('stays in the row on a narrow screen at large text',
+        (tester) async {
+      tester.view.physicalSize = const Size(260, 900);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await openOptions(tester);
+      expect(tester.takeException(), isNull);
+
+      final row = find.ancestor(
+          of: find.byType(ArDriveInfoTip), matching: find.byType(Row));
+      final rowRect = tester.getRect(row.first);
+      final mark = tester.getRect(find.byType(ArDriveInfoTip));
+      expect(mark.right, lessThanOrEqualTo(rowRect.right));
+
+      await tester.tap(find.byType(ArDriveInfoTip));
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+    });
+
+    testWidgets('shows it on a tap, and a second tap puts it away',
+        (tester) async {
+      await openOptions(tester);
+      final mark = tester.getCenter(find.byType(ArDriveInfoTip));
+
+      await tester.tapAt(mark, kind: PointerDeviceKind.touch);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+
+      await tester.tapAt(mark, kind: PointerDeviceKind.touch);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('shows it from the keyboard', (tester) async {
+      await openOptions(tester);
+
+      // Tab order: the Options row, the checkbox, then the mark.
+      for (var i = 0; i < 3; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      }
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+
+      // Escape puts it away.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+
+      // So does moving on with Tab.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('a press that slides off the mark does not show it',
+        (tester) async {
+      await openOptions(tester);
+      final mark = tester.getCenter(find.byType(ArDriveInfoTip));
+
+      final gesture =
+          await tester.startGesture(mark, kind: PointerDeviceKind.touch);
+      await gesture.moveBy(const Offset(0, 120));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text(note), findsNothing);
+    });
+
+    testWidgets('is a button named by the note to a screen reader',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openOptions(tester);
+
+      final node = tester.getSemantics(find.byType(ArDriveInfoTip));
+      expect(node.label, note);
+      expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      handle.dispose();
+    });
   });
 
   testWidgets('says nothing about thumbnails without images', (tester) async {
@@ -126,9 +241,6 @@ void main() {
         (tester) async {
       await pump(tester, thumbnails: null, compress: false);
 
-      // Closed: nothing about it in the summary while it is off.
-      expect(find.text('Compressed'), findsNothing);
-
       await open(tester);
 
       expect(find.text(label), findsOneWidget);
@@ -157,8 +269,7 @@ void main() {
           closeTo(tester.getTopLeft(find.text(label)).dx, 0.6));
     });
 
-    testWidgets('tapping it reports the choice, and the summary says so',
-        (tester) async {
+    testWidgets('tapping it reports the choice', (tester) async {
       bool? chosen;
       await pump(tester,
           thumbnails: null,
@@ -169,10 +280,6 @@ void main() {
       await tester.tap(find.text(label));
       await tester.pump();
       expect(chosen, isTrue);
-
-      await tester.tap(find.text('Options'));
-      await tester.pumpAndSettle();
-      expect(find.text('Compressed'), findsOneWidget);
     });
 
     testWidgets('is a labelled checkbox to a screen reader', (tester) async {

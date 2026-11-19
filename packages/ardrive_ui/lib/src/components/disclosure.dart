@@ -56,6 +56,11 @@ class _ArDriveDisclosureState extends State<ArDriveDisclosure> {
 
   bool get _folds => widget.child != null;
 
+  /// Too narrow for a trailing link beside the title: a phone with large
+  /// text.
+  bool narrow(double width) =>
+      width < 320 * MediaQuery.textScalerOf(context).scale(1);
+
   void _toggle() {
     setState(() => _open = !_open);
     widget.onOpenChanged?.call(_open);
@@ -82,63 +87,93 @@ class _ArDriveDisclosureState extends State<ArDriveDisclosure> {
           ),
         );
 
-    final row = SizedBox(
-      height: ArDriveDisclosure.rowHeight,
-      child: Row(
-        children: [
-          if (widget.icon != null) ...[
-            Icon(
-              widget.icon,
-              size: ArDriveDisclosure.iconSize,
-              color: colorTokens.iconMid,
-            ),
-            const SizedBox(width: ArDriveSpacing.xs),
-          ],
-          // A short label, kept whole; the summary gives way instead.
-          Text(
-            widget.title,
-            maxLines: 1,
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
-            ),
-          ),
-          const SizedBox(width: ArDriveSpacing.xs),
-          Expanded(
-            child: Row(
-              children: [
-                for (var i = 0; i < summary.length; i++) ...[
-                  if (i > 0) dot(),
-                  Flexible(
-                    child: Text(
-                      summary[i],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textLow,
-                      ),
-                    ),
-                  ),
-                ],
+    // The title gives way before it can push the trailing link off the
+    // row; on a narrow row the link goes under the title.
+    Widget rowAt(double width) => SizedBox(
+          height: ArDriveDisclosure.rowHeight,
+          child: Row(
+            children: [
+              if (widget.icon != null) ...[
+                Icon(
+                  widget.icon,
+                  size: ArDriveDisclosure.iconSize,
+                  color: colorTokens.iconMid,
+                ),
+                const SizedBox(width: ArDriveSpacing.xs),
               ],
-            ),
-          ),
-          if (widget.trailing != null) ...[
-            const SizedBox(width: ArDriveSpacing.xs),
-            widget.trailing!,
-          ] else if (_folds)
-            AnimatedRotation(
-              turns: _open ? 0.5 : 0,
-              duration: reduceMotion ? Duration.zero : motion,
-              child: Icon(
-                Icons.expand_more,
-                size: 20,
-                color: colorTokens.iconMid,
+              // Whole where it fits; the summary gives way first, and the title
+              // only past most of the row.
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: width * 0.75),
+                child: Text(
+                  widget.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textHigh,
+                  ),
+                ),
               ),
+              const SizedBox(width: ArDriveSpacing.xs),
+              Expanded(
+                child: Row(
+                  children: [
+                    for (var i = 0; i < summary.length; i++) ...[
+                      if (i > 0) dot(),
+                      Flexible(
+                        child: Text(
+                          summary[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textLow,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (widget.trailing != null && !narrow(width)) ...[
+                const SizedBox(width: ArDriveSpacing.xs),
+                widget.trailing!,
+              ] else if (_folds)
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: reduceMotion ? Duration.zero : motion,
+                  child: Icon(
+                    Icons.expand_more,
+                    size: 20,
+                    color: colorTokens.iconMid,
+                  ),
+                ),
+            ],
+          ),
+        );
+
+    final row = LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        if (widget.trailing == null || !narrow(width)) return rowAt(width);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            rowAt(width),
+            Padding(
+              padding: EdgeInsets.only(
+                left: ArDriveDisclosure.contentIndentFor(
+                  hasIcon: widget.icon != null,
+                ),
+                bottom: ArDriveSpacing.xs,
+              ),
+              child: widget.trailing!,
             ),
-        ],
-      ),
+          ],
+        );
+      },
     );
 
     if (!_folds) {
