@@ -14,10 +14,10 @@ import 'package:flutter_test/flutter_test.dart';
 class MockFileDownloadCubit extends MockCubit<FileDownloadState>
     implements FileDownloadCubit {}
 
-/// The warning triangle, which only the failures that really are alarming are
-/// allowed to wear.
+/// The error notice, which only the failures that really are alarming are
+/// allowed to carry.
 final Finder _alertIcon = find.byWidgetPredicate(
-  (widget) => widget is ArDriveIcon && widget.icon == ArDriveIconsData.triangle,
+  (widget) => widget is ArDriveNotice && widget.type == ArDriveNoticeType.error,
 );
 
 /// What the user is told when a download fails.
@@ -199,10 +199,10 @@ void main() {
       // check every time, so the retryable dialog would be an invitation to
       // download them for ever.
       expect(find.text('Try again'), findsNothing);
-      expect(find.text('OK'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
       expect(find.textContaining('nothing was saved'), findsOneWidget);
       // Corrupted bytes are not a routine transport hiccup, and the modal has
-      // to look like it: same alert treatment as the post-save verdict.
+      // to look like it: the same error notice as the post-save verdict.
       expect(_alertIcon, findsOneWidget);
     });
 
@@ -217,7 +217,7 @@ void main() {
       expect(find.text('Try again'), findsNothing);
       expect(find.textContaining('from the beginning'), findsOneWidget);
       // A dropped connection is an inconvenience, not an alarm. Spending the
-      // alert icon here would spend it everywhere.
+      // error notice here would spend it everywhere.
       expect(_alertIcon, findsNothing);
     });
   });

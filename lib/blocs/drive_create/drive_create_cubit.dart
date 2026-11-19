@@ -212,6 +212,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     // The button stays enabled while the drive password and the wallet are
     // checked, so a second click lands here before the first has left the
     // form: it would make a second drive.
+    // A drive without a name is on the chain for good: no caller, Try again
+    // included, gets past this with one.
+    if (driveName.trim().isEmpty) return;
     if (_submitting ||
         state is DriveCreateInProgress ||
         state is DriveCreateSuccess) {

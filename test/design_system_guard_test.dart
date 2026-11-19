@@ -83,6 +83,11 @@ void main() {
     expect(lines[4], 'g();');
   });
 
+  test('a block comment between two tokens keeps them apart', () {
+    expect(_withoutComments('show/**/ProgressDialog('),
+        isNot(contains('showProgressDialog(')));
+  });
+
   test('nested block comments are left out whole', () {
     const source = 'a(); /* outer /* inner */ showProgressDialog(x); */ b();';
     final out = _withoutComments(source);
@@ -117,18 +122,6 @@ final _progressOverForm = RegExp(r'\bshowProgressDialog\(');
 const _progressOverFormExceptions = {
   'lib/components/progress_dialog.dart':
       'Where it is defined; it goes once no dialog uses it',
-  'lib/components/drive_create_form.dart':
-      'Moves into the dialog in its area PR',
-  'lib/components/drive_rename_form.dart':
-      'Moves into the dialog in its area PR',
-  'lib/components/folder_create_form.dart':
-      'Moves into the dialog in its area PR',
-  'lib/components/fs_entry_move_form.dart':
-      'Moves into the dialog in its area PR',
-  'lib/components/fs_entry_rename_form.dart':
-      'Moves into the dialog in its area PR',
-  'lib/components/ghost_fixer_form.dart':
-      'Moves into the dialog in its area PR',
 };
 
 /// A Material spinner or bar, drawn directly.
@@ -249,7 +242,9 @@ String _withoutComments(String source) {
         i++;
       }
     } else if (c == '/' && next == '*') {
-      // Dart's block comments nest: /* a /* b */ c */ is one comment.
+      // Dart's block comments nest: /* a /* b */ c */ is one comment. It
+      // leaves a space, as the compiler reads it, so a/**/b stays two tokens.
+      out.write(' ');
       i += 2;
       var depth = 1;
       while (i < source.length && depth > 0) {
