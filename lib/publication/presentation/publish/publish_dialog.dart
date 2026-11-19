@@ -386,9 +386,8 @@ class PublishDialog extends StatelessWidget {
             // summary first, the names after, then the cost and how to pay.
             Widget review(BuildContext context) {
               final cost = state.cost!;
-              final size = cubit.isFile
-                  ? (cubit.file?.size ?? 0)
-                  : (state.summary?.totalSize ?? 0);
+              // What is uploaded and paid for: the page, not the files.
+              final size = cubit.uploadSize;
               return ChargedReviewDialog(
                 title: title,
                 destination: strings.publishStepOf(total, total),
@@ -411,9 +410,7 @@ class PublishDialog extends StatelessWidget {
                   (
                     name: cubit.scopeName,
                     size: size,
-                    contentType: cubit.isFile
-                        ? (cubit.file?.dataContentType ?? 'text/html')
-                        : 'text/html',
+                    contentType: 'text/html',
                   ),
                 ],
                 method: state.method,

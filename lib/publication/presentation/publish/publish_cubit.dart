@@ -954,6 +954,13 @@ class PublishCubit extends Cubit<PublishState> {
     );
   }
 
+  /// What publishing uploads, in bytes: the page and its snapshot, not the
+  /// files, which are on Arweave already. Zero before it is priced.
+  int get uploadSize {
+    final job = _job;
+    return job == null ? 0 : _deps.publisher.sizeOf(job);
+  }
+
   void setUploadMethod(UploadMethod method) {
     if (state.stage != PublishStage.review) return;
     // Publish was pressed: it pays the way the review showed then. The

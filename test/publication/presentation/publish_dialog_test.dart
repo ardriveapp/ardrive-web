@@ -69,6 +69,7 @@ void main() {
     when(() => cubit.scopeName).thenReturn('Archive');
     when(() => cubit.folder).thenReturn(null);
     when(() => cubit.isFile).thenReturn(false);
+    when(() => cubit.uploadSize).thenReturn(2048);
     when(() => cubit.isPrivateFile).thenReturn(false);
     when(() => cubit.canSyncDrive).thenReturn(false);
     when(() => cubit.names).thenReturn(null);
@@ -147,6 +148,8 @@ void main() {
         reason: 'the old payment block is gone');
     expect(find.text('Back'), findsOneWidget);
     expect(find.text('Publish'), findsWidgets);
+    expect(find.text('2 KiB'), findsOneWidget,
+        reason: 'what publishing uploads, not the files');
   });
 
   // Priced short on both, so the cubit's method is the wallet; then credits
