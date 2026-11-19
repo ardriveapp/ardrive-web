@@ -209,7 +209,7 @@ Widget _buildDataListContent(
       ),
       TableColumn(
         l10n.tableColumnStatus,
-        2,
+        3,
         index: ColumnIndexes.status,
         textStyle: typography.paragraphNormal(
           color: colorTokens.textMid,
