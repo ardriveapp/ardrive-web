@@ -136,9 +136,7 @@ void main() {
 
       expect(find.text('Free'), findsOneWidget);
       expect(
-          find.text(
-              'Covered by your free upload allowance. Saved for good, paid once.'),
-          findsOneWidget);
+          find.text('Covered by your free upload allowance'), findsOneWidget);
       expect(actions(tester).last, ('Confirm', ButtonVariant.primary));
 
       await tester.tap(find.text('Confirm'));
@@ -151,10 +149,7 @@ void main() {
           tester, FsEntryLicenseReviewing(summary: summary(isCovered: true)));
 
       expect(find.textContaining('< \$0.01'), findsOneWidget);
-      expect(
-          find.text(
-              'Paid once with Turbo Credits. Saved for good, no subscription.'),
-          findsOneWidget);
+      expect(find.text('Paid with Turbo Credits'), findsOneWidget);
       expect(actions(tester).last, ('Confirm', ButtonVariant.primary));
     });
 

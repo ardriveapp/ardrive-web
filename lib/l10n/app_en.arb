@@ -862,37 +862,19 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "Check the license settings",
+  "@licenseCheckSettings": {"description": "Upload options summary while a license setting, such as the UDL fee, is not valid"},
   "licenseHeading": "License",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "manifestsToUpdate": "{count, plural, =1{1 deployment to update} other{{count} deployments to update}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
-  "moreFiles": "+ {count} more",
+  "moreFiles": "Show {count} more",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "5"
-      }
-    }
-  },
-  "namedLicense": "{name} license",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
       }
     }
   },
@@ -904,25 +886,13 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "Thumbnails off",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "Thumbnails on",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "Compress text and code",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "Smaller storage for websites and code. Other apps may need to unpack these files.",
+  "compressTextAndCodeHint": "Smaller storage for websites and code.",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "Compressed",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "{size} total",
   "@totalUploadSize": {
@@ -937,10 +907,6 @@
   "updateManifests": "Update deployments",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "Upload as a deployment",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "uploadOptions": "Options",
   "@uploadOptions": {
@@ -1748,6 +1714,8 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "Hidden",
+  "@itemHiddenTag": {"description": "Tag after the name of a hidden item, such as a deployment in the upload options"},
   "hiddenDrives": "Hidden",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4335,15 +4303,15 @@
   "@uploadCostLabel": {"description": "Label over the upload review's cost"},
   "uploadCostFree": "Free",
   "@uploadCostFree": {"description": "The upload review's cost when the free upload allowance covers it"},
-  "uploadCostFreeNote": "Covered by your free upload allowance. Saved for good, paid once.",
+  "uploadCostFreeNote": "Covered by your free upload allowance",
   "@uploadCostFreeNote": {"description": "Beside the cost when an upload is free"},
   "uploadCostUsdUnit": "USD",
   "@uploadCostUsdUnit": {"description": "Unit after a cost in US dollars"},
-  "uploadCostCreditsNote": "Paid once with Turbo Credits. Saved for good, no subscription.",
+  "uploadCostCreditsNote": "Paid with Turbo Credits",
   "@uploadCostCreditsNote": {"description": "Beside the cost when Turbo Credits pay for an upload"},
   "uploadCostArUnit": "AR",
   "@uploadCostArUnit": {"description": "Unit after a cost in AR"},
-  "uploadCostWalletNote": "Paid once from your wallet. Saved for good, no subscription.",
+  "uploadCostWalletNote": "Paid from your wallet",
   "@uploadCostWalletNote": {"description": "Beside the cost when the wallet pays for an upload in AR"},
   "uploadOverFreeAllowance": "This upload is over your free upload allowance.",
   "@uploadOverFreeAllowance": {"description": "First sentence of the notice when an upload is not free and Turbo Credits do not cover it"},
@@ -4389,8 +4357,8 @@
   "@addCreditsNotEnoughChange": {"description": "Under the credits an amount buys, when they do not cover a change such as a license"},
   "creditsAddedLeftChange": "{added} credits added. You'll have {left} credits left after this change.",
   "@creditsAddedLeftChange": {"description": "After a card payment, on the review of a change such as a license", "placeholders": {"added": {"type": "String"}, "left": {"type": "String"}}},
-  "thumbnailsCostNote": "Thumbnails use your free upload allowance, or Turbo Credits once it's used up, and may make your upload take longer.\nYou can always attach a thumbnail later.",
-  "@thumbnailsCostNote": {"description": "Tooltip beside the upload option to make thumbnails: what they cost"},
+  "thumbnailsCostNote": "Uses your free upload allowance, then Turbo Credits.",
+  "@thumbnailsCostNote": {"description": "Caption under the upload option to make thumbnails: what they cost"},
   "changeWalletShort": "Your wallet doesn't have enough AR for this change.",
   "@changeWalletShort": {"description": "Notice on the review of a change such as a license, paid from the wallet, when the wallet can't cover it"},
   "priceUnavailableTryAgain": "Couldn't get a price. Try again.",
@@ -5247,14 +5215,18 @@
   "@arnsSwitchAccount": {"description": "The connected Solana wallet is on another account than the linked one.", "placeholders": {"address": {"type": "String"}}},
   "arnsNoWalletFound": "No Solana wallet found",
   "@arnsNoWalletFound": {"description": "No Solana wallet is installed in this browser."},
-  "arnsNoWalletFoundBody": "Open ArDrive in your wallet's app, or get a wallet.",
-  "@arnsNoWalletFoundBody": {"description": "What to do when no Solana wallet is installed."},
+  "arnsNoWalletFoundBody": "Open ArDrive in your wallet's app.",
+  "@arnsNoWalletFoundBody": {"description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."},
   "arnsOpenInPhantom": "Open in Phantom",
   "@arnsOpenInPhantom": {"description": "Link that opens ArDrive in the Phantom app's browser."},
   "arnsOpenInSolflare": "Open in Solflare",
   "@arnsOpenInSolflare": {"description": "Link that opens ArDrive in the Solflare app's browser."},
-  "arnsGetAWallet": "Get a wallet",
-  "@arnsGetAWallet": {"description": "Link to install a Solana wallet."},
+  "arnsNoWalletFoundBodyDesktop": "Install a Solana wallet, then reload.",
+  "arnsGetPhantom": "Get Phantom",
+  "arnsGetSolflare": "Get Solflare",
+  "@arnsNoWalletFoundBodyDesktop": {"description": "What to do on a computer when no Solana wallet is installed."},
+  "@arnsGetPhantom": {"description": "Link to install the Phantom wallet."},
+  "@arnsGetSolflare": {"description": "Link to install the Solflare wallet."},
   "arnsConnected": "Connected",
   "@arnsConnected": {"description": "The Solana wallet is connected."},
   "arnsOtherAccount": "Other account",

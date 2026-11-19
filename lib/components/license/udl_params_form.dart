@@ -151,8 +151,12 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
             ),
           ]
               .expand(
-                (element) => [element, const SizedBox(height: 16)],
+                (element) =>
+                    [const SizedBox(height: ArDriveSpacing.md), element],
               )
+              // Gaps between the fields only: one after the last doubled the
+              // gap to whatever follows the form.
+              .skip(1)
               .toList(),
         ));
   }

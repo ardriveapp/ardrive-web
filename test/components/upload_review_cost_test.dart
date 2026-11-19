@@ -62,10 +62,7 @@ void main() {
     await pump(tester, info());
 
     expect(find.text('\$1.00 USD', findRichText: true), findsOneWidget);
-    expect(
-        find.text(
-            'Paid once with Turbo Credits. Saved for good, no subscription.'),
-        findsOneWidget);
+    expect(find.text('Paid with Turbo Credits'), findsOneWidget);
   });
 
   testWidgets('a wallet upload shows its cost in AR', (tester) async {
@@ -78,9 +75,6 @@ void main() {
     await pump(tester, info(freeStatus: FreeUploadStatus.free));
 
     expect(find.text('Free', findRichText: true), findsOneWidget);
-    expect(
-        find.text(
-            'Covered by your free upload allowance. Saved for good, paid once.'),
-        findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
   });
 }
