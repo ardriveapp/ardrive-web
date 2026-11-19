@@ -8227,6 +8227,8 @@
   "deploymentPostedBody": "デプロイはArweaveに投稿されましたが（トランザクション {txId}）、ここに保存できませんでした。支払い済みですので、もう一度作成しないでください。ドライブを同期すると表示されます。",
   "deploymentNameNotSet": "デプロイは作成されましたが、名前を設定できませんでした。「名前」から設定できます。",
   "deploymentAddress": "アドレス",
+  "shareUploadTitle": "共有された{count, plural, =1{1 件のファイル} other{{count} 件のファイル}}をアップロード",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "ライセンスを追加しました",
   "licenseAddedMessage": "{license}を{count, plural, =1{1件のファイル} other{{count}件のファイル}}に設定しました。",
   "noFileToLicenseTitle": "ライセンスを付けるファイルがありません",

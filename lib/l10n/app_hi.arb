@@ -8227,6 +8227,8 @@
   "deploymentPostedBody": "डिप्लॉयमेंट Arweave पर पोस्ट हो गया (ट्रांज़ैक्शन {txId}) पर यहां सेव नहीं हो सका, इसलिए उसका भुगतान हो चुका है। इसे दोबारा न बनाएं; उसे देखने के लिए ड्राइव सिंक करें।",
   "deploymentNameNotSet": "डिप्लॉयमेंट बन गया, पर नाम सेट नहीं हो सका। आप इसे नाम (Names) से सेट कर सकते हैं।",
   "deploymentAddress": "पता",
+  "shareUploadTitle": "{count, plural, =1{1 साझा की गई फ़ाइल} other{{count} साझा की गई फ़ाइलें}} अपलोड करें",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "लाइसेंस जोड़ा गया",
   "licenseAddedMessage": "{license} अब {count, plural, =1{1 फ़ाइल} other{{count} फ़ाइलों}} पर है।",
   "noFileToLicenseTitle": "लाइसेंस के लिए कोई फ़ाइल नहीं",

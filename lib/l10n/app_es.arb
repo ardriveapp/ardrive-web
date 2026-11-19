@@ -8227,6 +8227,8 @@
   "deploymentPostedBody": "El despliegue se publicó en Arweave (transacción {txId}) pero no se pudo guardar aquí, así que está pagado. No lo vuelvas a crear; sincroniza la unidad para verlo.",
   "deploymentNameNotSet": "El despliegue se creó, pero no se pudo asignar el nombre. Puedes asignarlo desde Nombres.",
   "deploymentAddress": "Dirección",
+  "shareUploadTitle": "Subir {count, plural, =1{1 archivo compartido} other{{count} archivos compartidos}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "Licencia añadida",
   "licenseAddedMessage": "{license} ya está en {count, plural, =1{1 archivo} other{{count} archivos}}.",
   "noFileToLicenseTitle": "No hay archivos para licenciar",

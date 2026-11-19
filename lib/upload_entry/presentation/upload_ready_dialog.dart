@@ -48,8 +48,6 @@ class _UploadReadyDialogState extends State<UploadReadyDialog> {
   /// A dialog closes once, and more than one build can call for it.
   bool _closed = false;
 
-  static const _primaryActionWidth = 160.0;
-
   void _close() {
     if (_closed) {
       return;
@@ -108,7 +106,6 @@ class _UploadReadyDialogState extends State<UploadReadyDialog> {
             title: widget.isFolderUpload
                 ? l10n.uploadChooseFolder
                 : l10n.uploadChooseFiles,
-            customWidth: _primaryActionWidth,
           ),
       ],
     );
@@ -133,7 +130,7 @@ class _Privacy extends StatelessWidget {
         isPrivate
             ? ArDriveIcons.privateDrive(size: 16, color: colorTokens.textMid)
             : ArDriveIcons.publicDrive(size: 16, color: colorTokens.textMid),
-        const SizedBox(width: 6),
+        const SizedBox(width: ArDriveSpacing.xxs),
         Text(
           isPrivate
               ? appLocalizationsOf(context).private

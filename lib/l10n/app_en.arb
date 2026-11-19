@@ -6380,6 +6380,8 @@
   "@deploymentNameNotSet": {"description": "Warning on the deployment success screen when the chosen ArNS name could not be set"},
   "deploymentAddress": "Address",
   "@deploymentAddress": {"description": "Label of the deployment's address on the success screen"},
+  "shareUploadTitle": "Upload {count, plural, =1{1 shared file} other{{count} shared files}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
   "licenseAddedTitle": "License added",
   "@licenseAddedTitle": {"description": "Title when a license was saved on files"},
   "licenseAddedMessage": "{license} is now on {count, plural, =1{1 file} other{{count} files}}.",
