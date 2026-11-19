@@ -345,6 +345,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       padding: EdgeInsets.only(
                                         top: waiting == null ? 20 : 0,
                                         right: 16,
+                                        bottom: listPageSectionGap,
                                       ),
                                       child: Column(
                                         children: [
@@ -511,7 +512,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     Expanded(
                                       child: Padding(
                                         padding: const EdgeInsets.fromLTRB(
-                                            0, 0, 16, 0),
+                                            0, 0, 16, listPageSectionGap),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -1101,13 +1102,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         !hasSubfolders,
                                   ),
                                 ),
-                              // Room under the table, so a publication ends
-                              // where its card visibly does, not at the window's
-                              // edge.
-                              if (PublicationMode.isOn &&
-                                  !_collapsesPublicationHeader(driveDetailState,
-                                      hasFiles || hasSubfolders))
-                                const SizedBox(height: 16),
                             ],
                           ),
                         ),
