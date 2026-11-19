@@ -149,7 +149,11 @@ void main() {
   }
 
   Future<void> openMenu(WidgetTester tester) async {
-    await tester.tap(find.byType(HoverWidget));
+    // The menu's button, not the List and Gallery switch beside it.
+    await tester.tap(find.descendant(
+      of: find.byType(ArDriveDropdown),
+      matching: find.byType(HoverWidget),
+    ));
     await tester.pumpAndSettle();
   }
 
