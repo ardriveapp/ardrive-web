@@ -132,7 +132,7 @@ class DriveExplorerItemTile extends TableRowWidget {
                   : Row(
                       children: [
                         FileStatusDot(status: statusValue),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: ArDriveSpacing.xs),
                         Flexible(
                           child: Text(
                             status,
@@ -175,7 +175,7 @@ class _TransactionIdCell extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: ArDriveSpacing.xxs),
         CopyButton(text: id, size: 16),
       ],
     );
