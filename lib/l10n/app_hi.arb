@@ -576,23 +576,9 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "manifestsToUpdate": "{count, plural, =1{अपडेट करने के लिए 1 डिप्लॉयमेंट} other{अपडेट करने के लिए {count} डिप्लॉयमेंट}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
   "updateManifests": "डिप्लॉयमेंट अपडेट करें",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "डिप्लॉयमेंट के रूप में अपलोड करें",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncAllDrives": "सभी ड्राइव सिंक करें",
   "@syncAllDrives": {
@@ -2817,27 +2803,18 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "लाइसेंस की सेटिंग जाँचें",
   "licenseHeading": "लाइसेंस",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "+ {count} और",
+  "moreFiles": "{count} और दिखाएँ",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "5"
-      }
-    }
-  },
-  "namedLicense": "{name} लाइसेंस",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
       }
     }
   },
@@ -2849,25 +2826,13 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "थंबनेल बंद",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "थंबनेल चालू",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "टेक्स्ट और कोड कंप्रेस करें",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "वेबसाइट और कोड के लिए कम स्टोरेज। दूसरे ऐप्स को इन फ़ाइलों को अनपैक करना पड़ सकता है।",
+  "compressTextAndCodeHint": "वेबसाइट और कोड के लिए कम स्टोरेज।",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "कंप्रेस्ड",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "कुल {size}",
   "@totalUploadSize": {
@@ -3178,6 +3143,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "छिपी हुई",
   "hiddenDrives": "छिपी हुई",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4553,7 +4519,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "आपकी मुफ़्त अपलोड लिमिट से कवर है। हमेशा के लिए सेव, एक बार भुगतान।",
+  "uploadCostFreeNote": "आपकी मुफ़्त अपलोड लिमिट से कवर है",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4561,7 +4527,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "Turbo क्रेडिट्स से एक बार भुगतान। हमेशा के लिए सेव, कोई सब्सक्रिप्शन नहीं।",
+  "uploadCostCreditsNote": "Turbo क्रेडिट्स से भुगतान",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4569,7 +4535,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "आपके वॉलेट से एक बार भुगतान। हमेशा के लिए सेव, कोई सब्सक्रिप्शन नहीं।",
+  "uploadCostWalletNote": "आपके वॉलेट से भुगतान",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },
@@ -4713,9 +4679,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "थंबनेल आपकी मुफ़्त अपलोड लिमिट इस्तेमाल करते हैं, और उसके खत्म होने पर Turbo क्रेडिट्स, और इनसे आपका अपलोड ज़्यादा समय ले सकता है।\nआप थंबनेल बाद में कभी भी जोड़ सकते हैं।",
+  "thumbnailsCostNote": "पहले आपकी मुफ़्त अपलोड लिमिट, फिर Turbo क्रेडिट्स इस्तेमाल होते हैं।",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "इस बदलाव के लिए आपके वॉलेट में काफ़ी AR नहीं है।",
   "@changeWalletShort": {
@@ -6001,9 +5967,9 @@
   "@arnsNoWalletFound": {
     "description": "No Solana wallet is installed in this browser."
   },
-  "arnsNoWalletFoundBody": "अपने वॉलेट के ऐप में ArDrive खोलें, या कोई वॉलेट लें।",
+  "arnsNoWalletFoundBody": "अपने वॉलेट के ऐप में ArDrive खोलें।",
   "@arnsNoWalletFoundBody": {
-    "description": "What to do when no Solana wallet is installed."
+    "description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."
   },
   "arnsOpenInPhantom": "Phantom में खोलें",
   "@arnsOpenInPhantom": {
@@ -6013,9 +5979,17 @@
   "@arnsOpenInSolflare": {
     "description": "Link that opens ArDrive in the Solflare app's browser."
   },
-  "arnsGetAWallet": "वॉलेट लें",
-  "@arnsGetAWallet": {
-    "description": "Link to install a Solana wallet."
+  "arnsNoWalletFoundBodyDesktop": "कोई Solana वॉलेट इंस्टॉल करें, फिर पेज रीलोड करें।",
+  "@arnsNoWalletFoundBodyDesktop": {
+    "description": "What to do on a computer when no Solana wallet is installed."
+  },
+  "arnsGetPhantom": "Phantom लें",
+  "@arnsGetPhantom": {
+    "description": "Link to install the Phantom wallet."
+  },
+  "arnsGetSolflare": "Solflare लें",
+  "@arnsGetSolflare": {
+    "description": "Link to install the Solflare wallet."
   },
   "arnsConnected": "कनेक्टेड",
   "@arnsConnected": {
@@ -8367,6 +8341,48 @@
   "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
   "logsExportedWebNotice": "लॉग निर्यात हो गए। वे आपके डाउनलोड में सहेजे गए।",
   "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."},
+  "shareUploadTitle": "{count, plural, =1{1 साझा की गई फ़ाइल} other{{count} साझा की गई फ़ाइलें}} अपलोड करें",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
+  "licenseAddedTitle": "लाइसेंस जोड़ा गया",
+  "licenseAddedMessage": "{license} अब {count, plural, =1{1 फ़ाइल} other{{count} फ़ाइलों}} पर है।",
+  "noFileToLicenseTitle": "लाइसेंस के लिए कोई फ़ाइल नहीं",
+  "noFileToLicenseMessage": "कोई फ़ाइल, या फ़ाइलों वाला फ़ोल्डर चुनें।",
+  "licenseFixSettingsForCost": "लागत देखने के लिए लाइसेंस की सेटिंग जाँचें",
+  "licenseChooseTypeForCost": "लागत देखने के लिए लाइसेंस का प्रकार चुनें",
+  "licenseTypeLabel": "प्रकार",
+  "licenseFeeLabel": "लाइसेंस शुल्क",
+  "commercialUseLabel": "व्यावसायिक उपयोग",
+  "derivationsLabel": "व्युत्पन्न कार्य",
+  "tableColumnType": "प्रकार",
+  "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
+  "tableColumnTransactionId": "ट्रांज़ैक्शन ID",
+  "@tableColumnTransactionId": {"description": "Heading of the file table column that shows each file's data transaction ID"},
+  "tableColumnStatus": "स्थिति",
+  "@tableColumnStatus": {"description": "Heading of the file table column that shows whether each file is on Arweave yet"},
+  "typeFolder": "फ़ोल्डर",
+  "@typeFolder": {"description": "Type column: what a folder is called"},
+  "typeText": "टेक्स्ट",
+  "@typeText": {"description": "Type column: plain text files"},
+  "typeDeployment": "डिप्लॉयमेंट",
+  "@typeDeployment": {"description": "Type column: an Arweave manifest, which the app calls a deployment"},
+  "typeFile": "फ़ाइल",
+  "@typeFile": {"description": "Type column: a file of a kind with no name of its own and no extension"},
+  "typeFileWithExtension": "{extension} फ़ाइल",
+  "@typeFileWithExtension": {"description": "Type column: a file of an unknown kind, named by its extension, e.g. DOCX file", "placeholders": {"extension": {"type": "String"}}},
+  "typeImage": "{format} छवि",
+  "@typeImage": {"description": "Type column: an image with its format, e.g. PNG image", "placeholders": {"format": {"type": "String"}}},
+  "typeVideo": "{format} वीडियो",
+  "@typeVideo": {"description": "Type column: a video with its format, e.g. MP4 video", "placeholders": {"format": {"type": "String"}}},
+  "typeAudio": "{format} ऑडियो",
+  "@typeAudio": {"description": "Type column: an audio file with its format, e.g. MP3 audio", "placeholders": {"format": {"type": "String"}}},
+  "typeArchive": "{format} आर्काइव",
+  "@typeArchive": {"description": "Type column: an archive with its format, e.g. ZIP archive", "placeholders": {"format": {"type": "String"}}},
+  "fileStatusPending": "लंबित",
+  "@fileStatusPending": {"description": "Status column: the file's transaction is waiting to be mined on Arweave"},
+  "fileStatusPermanent": "स्थायी",
+  "@fileStatusPermanent": {"description": "Status column: the file's transaction is confirmed on Arweave and permanent"},
+  "fileStatusFailed": "विफल",
+  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"},
   "changeExtensionTitle": "फ़ाइल एक्सटेंशन बदलें?",
   "changeExtensionBody": "एक्सटेंशन {previous} से {next} में बदल जाएगा।",
   "couldNotRenameTitle": "नाम नहीं बदला जा सका",

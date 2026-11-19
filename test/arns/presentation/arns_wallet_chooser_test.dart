@@ -6,6 +6,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -124,4 +125,48 @@ void main() {
       expect(linkedCalls, 0);
     });
   });
+
+  group('no wallet found', () {
+    Future<void> pump(WidgetTester tester) => tester.pumpWidget(
+          ArDriveApp(
+            themeData: lightTheme(),
+            builder: (context) => const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ArNSNoWalletFound()),
+            ),
+          ),
+        );
+
+    testWidgets('on a computer, says to install one', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      await pump(tester);
+
+      expect(
+          find.text('Install a Solana wallet, then reload.'), findsOneWidget);
+      expect(_link('Get Phantom'), findsOneWidget);
+      expect(_link('Get Solflare'), findsOneWidget);
+      expect(_link('Open in Phantom'), findsNothing);
+      expect(_link('Open in Solflare'), findsNothing);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    for (final phone in [TargetPlatform.iOS, TargetPlatform.android]) {
+      testWidgets('on ${phone.name}, says to open ArDrive in the wallet',
+          (tester) async {
+        debugDefaultTargetPlatformOverride = phone;
+        await pump(tester);
+
+        expect(find.text("Open ArDrive in your wallet's app."), findsOneWidget);
+        expect(_link('Open in Phantom'), findsOneWidget);
+        expect(_link('Open in Solflare'), findsOneWidget);
+        expect(_link('Get Phantom'), findsNothing);
+        expect(_link('Get Solflare'), findsNothing);
+        debugDefaultTargetPlatformOverride = null;
+      });
+    }
+  });
 }
+
+Finder _link(String text) =>
+    find.byWidgetPredicate((w) => w is ArDriveLink && w.text == text);
