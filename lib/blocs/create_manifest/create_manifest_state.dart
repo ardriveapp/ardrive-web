@@ -6,22 +6,9 @@ abstract class CreateManifestState extends Equatable {
   List get props => [];
 }
 
-/// Initial state where user begins by selecting a folder for the manifest
+/// Initial state where user begins by selecting a folder and a name for the
+/// deployment
 class CreateManifestInitial extends CreateManifestState {}
-
-/// Folder has been selected, now user enters a name for the manifest
-class CreateManifestNameInput extends CreateManifestState {
-  final FolderEntry parentFolder;
-  final String? fallbackTxId;
-
-  CreateManifestNameInput({
-    required this.parentFolder,
-    this.fallbackTxId,
-  });
-
-  @override
-  List<Object?> get props => [parentFolder, fallbackTxId];
-}
 
 /// Name has been selected, user is now selecting which folder to create a manifest of
 class CreateManifestFolderLoadSuccess extends CreateManifestState {
@@ -210,10 +197,27 @@ class CreateManifestWalletMismatch extends CreateManifestState {}
 /// Manifest transaction upload has failed
 class CreateManifestFailure extends CreateManifestState {
   final bool isPaymentError;
-  CreateManifestFailure({this.isPaymentError = false});
+
+  /// The deployment's transaction, when it was posted before this failed: it
+  /// is paid for, so there is nothing to retry.
+  final String? postedTxId;
+
+  /// Whether sending the same deployment again is safe and possible.
+  final bool canRetry;
+
+  /// Whether some of it may have reached the network, and been paid for,
+  /// without a transaction to name.
+  final bool maybeSent;
+
+  CreateManifestFailure({
+    this.isPaymentError = false,
+    this.postedTxId,
+    this.canRetry = true,
+    this.maybeSent = false,
+  });
 
   @override
-  List<Object?> get props => [isPaymentError];
+  List<Object?> get props => [isPaymentError, postedTxId, canRetry, maybeSent];
 }
 
 /// Manifest transaction has been successfully uploaded
@@ -223,10 +227,17 @@ class CreateManifestSuccess extends CreateManifestState {
   /// The deployment's data transaction, for a name to point at.
   final String? dataTxId;
 
+  /// The deployment's name, for the success screen.
+  final String? name;
+
   CreateManifestSuccess({
     required this.parentFolder,
     this.dataTxId,
+    this.name,
   });
+
+  @override
+  List<Object?> get props => [parentFolder, dataTxId, name];
 }
 
 enum CreateManifestUploadProgress {

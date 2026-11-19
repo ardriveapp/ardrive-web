@@ -4,7 +4,6 @@ import 'package:ardrive/components/reactive_select_field.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -64,10 +63,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final fee = LabeledInput(
-                  labelText:
-                      // TODO: Localize
-                      // appLocalizationsOf(context).udlLicenseFee,
-                      'License fee',
+                  labelText: appLocalizationsOf(context).licenseFeeLabel,
                   child: ArDriveTextFieldNew(
                     controller: _feeController,
                     keyboardType: TextInputType.number,
@@ -101,27 +97,25 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                 if (constraints.maxWidth < _kStackBelowWidth) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [fee, const SizedBox(height: 16), currency],
+                    children: [
+                      fee,
+                      const SizedBox(height: ArDriveSpacing.md),
+                      currency,
+                    ],
                   );
                 }
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: fee),
-                    Container(
-                      width: kMediumDialogWidth * 0.5,
-                      padding: const EdgeInsets.only(left: 24),
-                      child: currency,
-                    ),
+                    const SizedBox(width: ArDriveSpacing.md),
+                    Expanded(child: currency),
                   ],
                 );
               },
             ),
             LabeledInput(
-              labelText:
-                  // TODO: Localize
-                  // appLocalizationsOf(context).udlCommercialUse,
-                  'Commercial use',
+              labelText: appLocalizationsOf(context).commercialUseLabel,
               child: ReactiveArDriveSelectField(
                 formControlName: 'commercialUse',
                 showErrors: (control) => control.dirty && control.invalid,
@@ -134,10 +128,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
               ),
             ),
             LabeledInput(
-              labelText:
-                  // TODO: Localize
-                  // appLocalizationsOf(context).udlDerivations,
-                  'Derivations',
+              labelText: appLocalizationsOf(context).derivationsLabel,
               child: ReactiveArDriveSelectField(
                 formControlName: 'derivations',
                 showErrors: (control) => control.dirty && control.invalid,
@@ -151,8 +142,12 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
             ),
           ]
               .expand(
-                (element) => [element, const SizedBox(height: 16)],
+                (element) =>
+                    [const SizedBox(height: ArDriveSpacing.md), element],
               )
+              // Gaps between the fields only: one after the last doubled the
+              // gap to whatever follows the form.
+              .skip(1)
               .toList(),
         ));
   }

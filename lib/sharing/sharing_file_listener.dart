@@ -1,24 +1,46 @@
 import 'dart:async';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_cubit.dart';
+import 'package:ardrive/components/drive_picker/drive_picker_dialog.dart';
+import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/upload_entry/domain/upload_destinations.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/models/models.dart' show Drive;
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
-import 'package:ardrive/sharing/folder_selector/folder_selector.dart';
-import 'package:ardrive/sharing/folder_selector/folder_selector_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ardrive/blocs/blocs.dart';
 
+/// [promptToUpload]'s shape, for the listener's tests.
+typedef SharedUploadPrompt = Future<void> Function(
+  BuildContext context, {
+  required String driveId,
+  required String parentFolderId,
+  required bool isFolderUpload,
+  Drive? drive,
+  List<IOFile>? files,
+});
+
 class SharingFileListener extends StatefulWidget {
-  const SharingFileListener(
-      {super.key, required this.child, required this.context});
+  const SharingFileListener({
+    super.key,
+    required this.child,
+    required this.context,
+    @visibleForTesting this.prompt,
+    @visibleForTesting this.read,
+  });
 
   final Widget child;
   final BuildContext context;
+
+  /// Stands in for [promptToUpload] in a test.
+  final SharedUploadPrompt? prompt;
+
+  /// Stands in for the local database's folder reads in a test.
+  final DrivePickerRead? read;
 
   @override
   State<SharingFileListener> createState() => _SharingFileListenerState();
@@ -28,6 +50,61 @@ class _SharingFileListenerState extends State<SharingFileListener> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  /// One picker for what used to be four screens: the drive and then the
+  /// folder it goes to are chosen in the same dialog, as an upload started
+  /// away from a drive chooses them. The review that follows is the upload's
+  /// own.
+  Future<void> _chooseWhereToUpload(List<IOFile> files) async {
+    final outer = widget.context;
+    final sharingFileBloc = context.read<SharingFileBloc>();
+    final syncCubit = context.read<SyncCubit>();
+    final driveDao = context.read<DriveDao>();
+    final drivesState = context.read<DrivesCubit>().state;
+    final profile = context.read<ProfileCubit>().state;
+    final wallet = profile is ProfileLoggedIn ? profile.user.walletAddress : '';
+    // Owned drives, the last one used first, as Upload anywhere offers them;
+    // before the drive list is known, the ones this device holds that the
+    // wallet owns, never drives only attached to read.
+    final drives = drivesState is DrivesLoadSuccess
+        ? uploadDestinations(
+            ownedDrives: drivesState.userDrives,
+            lastSelectedDriveId: drivesState.selectedDriveId,
+          )
+        : (await driveDao.allDrives().get())
+            .where((drive) => drive.ownerAddress == wallet)
+            .toList();
+    if (!outer.mounted) {
+      sharingFileBloc.add(SharingFileCleared());
+      return;
+    }
+    final strings = appLocalizationsOf(outer);
+    // The share is spent however the picker closes: a choice has already
+    // handed its files to the upload.
+    await showDrivePicker(
+      outer,
+      title: strings.shareUploadTitle(files.length),
+      purpose: DrivePickerPurpose.upload,
+      drives: drives,
+      showsPrivacy: true,
+      noDrivesMessage: strings.noDrives,
+      read: widget.read,
+      sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
+      syncRefusal: () => syncCubit.lastSingleSyncRefusal,
+      actionLabel: (_) => strings.uploadHere,
+      onChoose: (choice) {
+        if (!outer.mounted) return;
+        (widget.prompt ?? promptToUpload)(
+          outer,
+          drive: choice.drive,
+          driveId: choice.drive.id,
+          parentFolderId: choice.folder.id,
+          isFolderUpload: false,
+          files: files,
+        );
+      },
+    ).whenComplete(() => sharingFileBloc.add(SharingFileCleared()));
   }
 
   @override
@@ -64,75 +141,7 @@ class _SharingFileListenerState extends State<SharingFileListener> {
             return;
           }
 
-          showAnimatedDialogWithBuilder(
-            widget.context,
-            builder: (context) => ArDriveStandardModalNew(
-              title: appLocalizationsOf(context).shareFile,
-              actions: [
-                ModalAction.dismiss(
-                  action: () {
-                    Navigator.of(context).pop();
-                    sharingFileBloc.add(SharingFileCleared());
-                  },
-                  title: appLocalizationsOf(context).cancel,
-                ),
-                ModalAction(
-                  action: () {
-                    Navigator.of(context).pop();
-                    showArDriveDialog(
-                      context,
-                      content: BlocProvider(
-                        create: (context) => FolderSelectorBloc(
-                          context.read<DriveDao>(),
-                        ),
-                        child: FolderSelector(
-                          onSelect: (folderId, driveId) {
-                            promptToUpload(
-                              widget.context,
-                              driveId: driveId,
-                              parentFolderId: folderId,
-                              isFolderUpload: false,
-                              files: state.files,
-                            );
-                          },
-                          dispose: () {
-                            sharingFileBloc.add(SharingFileCleared());
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  // TODO: Localize
-                  title: 'Select drive',
-                ),
-              ],
-              content: SizedBox(
-                height: 400,
-                child: ListView.builder(
-                  itemCount: state.files.length,
-                  shrinkWrap: true,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: getIconForContentType(
-                        state.files[index].contentType,
-                        size: 24,
-                      ),
-                      title: Text(
-                        state.files[index].name,
-                        style: ArDriveTypographyNew.of(context).paragraphLarge(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .textHigh,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          );
+          _chooseWhereToUpload(state.files);
         }
       },
       child: widget.child,

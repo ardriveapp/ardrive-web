@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -299,6 +300,78 @@ void main() {
       );
 
       expect(loaded(cubit).revealSelectedItem, isTrue);
+      await cubit.close();
+    });
+  });
+
+  group('which columns the reader chose', () {
+    Future<void> clearColumns() async {
+      for (var i = 0; i < 8; i++) {
+        await (await store()).remove('drive_detail_column_$i');
+      }
+    }
+
+    test('nothing chosen: Type is on, License, Transaction ID, Status unset',
+        () async {
+      await clearColumns();
+      await insertDriveWithFolders(1);
+      final cubit = buildCubit();
+      await Future<void>.delayed(settle);
+
+      expect(await cubit.getTableColumnVisibility(), {
+        0: true,
+        1: true,
+        2: true,
+        3: true,
+        5: true,
+      });
+      await cubit.close();
+    });
+
+    test('what was saved before the new columns still means the same columns',
+        () async {
+      await clearColumns();
+      // The five columns' choices as an existing reader's store holds them.
+      for (final entry
+          in {0: true, 1: false, 2: true, 3: false, 4: true}.entries) {
+        await (await store())
+            .putBool('drive_detail_column_${entry.key}', entry.value);
+      }
+      await insertDriveWithFolders(1);
+      final cubit = buildCubit();
+      await Future<void>.delayed(settle);
+
+      expect(await cubit.getTableColumnVisibility(), {
+        0: true,
+        1: false,
+        2: true,
+        3: false,
+        4: true,
+        5: true,
+      });
+      await clearColumns();
+      await cubit.close();
+    });
+
+    test('a choice about Transaction ID or Status is kept', () async {
+      await clearColumns();
+      await insertDriveWithFolders(1);
+      final cubit = buildCubit();
+      await Future<void>.delayed(settle);
+
+      await cubit.updateTableColumnVisibility(
+        TableColumn('Transaction ID', 3,
+            index: ColumnIndexes.transactionId, isVisible: true),
+      );
+      await cubit.updateTableColumnVisibility(
+        TableColumn('Type', 2, index: ColumnIndexes.type, isVisible: false),
+      );
+
+      final saved = await cubit.getTableColumnVisibility();
+      expect(saved[ColumnIndexes.transactionId], isTrue);
+      expect(saved[ColumnIndexes.type], isFalse);
+      expect(saved.containsKey(ColumnIndexes.status), isFalse);
+      await clearColumns();
       await cubit.close();
     });
   });

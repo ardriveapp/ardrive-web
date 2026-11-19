@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/components/upload_review_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
@@ -8,6 +9,7 @@ import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_cubit/drive_state_creation_cubit.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -83,6 +85,7 @@ void main() {
     bool sufficientArBalance = true,
     bool sufficientTurboBalance = true,
     bool isTurboUploadPossible = true,
+    bool turboUnreachable = false,
     FreeUploadStatus freeStatus = FreeUploadStatus.notEligible,
   }) =>
       DriveStatePublishCost(
@@ -94,7 +97,9 @@ void main() {
         ),
         costEstimateTurbo: UploadCostEstimate(
           pstFee: BigInt.zero,
-          totalCost: turboCost ?? BigInt.from(3000000000),
+          // Zero when Turbo gave no price, as the estimator leaves it.
+          totalCost: turboCost ??
+              (isTurboUploadPossible ? BigInt.from(3000000000) : BigInt.zero),
           totalSize: 6979321,
           usdUploadCost: 0.31,
         ),
@@ -104,6 +109,9 @@ void main() {
         turboCredits: '2.5',
         sufficientArBalance: sufficientArBalance,
         sufficientTurboBalance: sufficientTurboBalance,
+        turboBalanceWinc:
+            sufficientTurboBalance ? BigInt.from(5000000000) : BigInt.zero,
+        turboUnreachable: turboUnreachable,
         freeStatus: freeStatus,
       );
 
@@ -120,7 +128,7 @@ void main() {
 
   ArDriveButtonNew publishButton(WidgetTester tester) =>
       tester.widget<ArDriveButtonNew>(
-        find.widgetWithText(ArDriveButtonNew, 'Create'),
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
       );
 
   testWidgets('the confirmation shows what would be published', (tester) async {
@@ -132,8 +140,7 @@ void main() {
     expect(find.text('6.66 MiB'), findsOneWidget);
     expect(find.text('0 to 1814228'), findsOneWidget);
     expect(find.textContaining('permanent'), findsOneWidget);
-    expect(
-        find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
+    expect(find.textContaining('uploaded yet'), findsNothing);
   });
 
   /// A public drive's confirmation is the private one minus one clause.
@@ -160,9 +167,8 @@ void main() {
     expect(find.text('6.66 MiB'), findsOneWidget);
     expect(find.text('0 to 1814228'), findsOneWidget);
     expect(find.textContaining('permanent'), findsOneWidget);
-    expect(
-        find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
-    expect(find.text('Create'), findsOneWidget);
+    expect(find.text('Create snapshot'), findsNWidgets(2),
+        reason: 'the title and the action');
 
     // And not the one thing that would be untrue.
     expect(find.textContaining('encrypted with your drive key'), findsNothing);
@@ -184,15 +190,28 @@ void main() {
     await tester.pumpWidget(wrap(ready()));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.0030 credits'), findsOneWidget);
+    // The upload review's own cost block: Turbo Credits, in dollars.
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Cost'), findsOneWidget);
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
     expect(find.text('2.5 credits available'), findsOneWidget);
   });
 
-  testWidgets('switching to AR shows the AR price instead', (tester) async {
-    await tester.pumpWidget(wrap(ready(method: UploadMethod.ar)));
+  testWidgets('without a Turbo price the wallet pays, and the cost says so',
+      (tester) async {
+    await tester.pumpWidget(wrap(ready(
+      withCost: cost(isTurboUploadPossible: false),
+      method: UploadMethod.ar,
+    )));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.0040 AR'), findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    // The cost and the wallet row both show the AR price.
+    expect(
+        find.textContaining('0.0040 AR', findRichText: true), findsNWidgets(2));
+    expect(find.textContaining(r'$0.31', findRichText: true), findsNothing,
+        reason: 'no Turbo price is on offer');
+    expect(publishButton(tester).isDisabled, isFalse);
   });
 
   testWidgets('a free artifact says so and offers no method to pay with',
@@ -202,8 +221,9 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Uploads this small are free with Turbo.'),
-        findsOneWidget);
+    expect(find.byType(UploadCostBlock), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
     expect(find.byType(PaymentMethodSelector), findsNothing);
     expect(publishButton(tester).isDisabled, isFalse);
   });
@@ -218,11 +238,11 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(publishButton(tester).isDisabled, isTrue);
+    // Nothing to pay with: no way to create it, only to add credits.
     expect(
-      find.textContaining('cannot be created yet'),
-      findsOneWidget,
-    );
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Add credits'), findsOneWidget);
   });
 
   testWidgets('a method the user cannot afford disables the confirm button',
@@ -233,10 +253,13 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(publishButton(tester).isDisabled, isTrue);
-    // AR would still work, so the modal must not claim the artifact is
-    // unpublishable — only that this method is.
-    expect(find.textContaining('cannot be created yet'), findsNothing);
+    // Credits are short, so Add credits is the way on, never the wallet
+    // unasked; the wallet is on offer as a choice.
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Add credits'), findsOneWidget);
+    expect(find.byType(PaymentMethodSelector), findsOneWidget);
   });
 
   testWidgets('nothing is published until the user asks for it',
@@ -257,6 +280,105 @@ void main() {
     verify(() => cubit.publish()).called(1);
   });
 
+  testWidgets('the wallet is used only when picked, then Create pays with it',
+      (tester) async {
+    when(() => cubit.publish()).thenAnswer((_) async {});
+    await tester.pumpWidget(wrap(ready(method: UploadMethod.ar)));
+    await tester.pump(const Duration(seconds: 1));
+
+    // Open on the wallet, shown as Turbo Credits.
+    expect(find.textContaining(r'$0.31', findRichText: true), findsOneWidget);
+    await tester.ensureVisible(find.text('Wallet (AR)'));
+    await tester.tap(find.text('Wallet (AR)'));
+    await tester.pump();
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+
+    publishButton(tester).onPressed!();
+    await tester.pump();
+
+    verify(() => cubit.setUploadMethod(UploadMethod.ar)).called(1);
+    verify(() => cubit.publish()).called(1);
+  });
+
+  testWidgets('a balance that could not be read: Try again, not a payment',
+      (tester) async {
+    when(() => cubit.refreshTurboBalance()).thenAnswer((_) async {});
+    await tester
+        .pumpWidget(wrap(ready(withCost: cost(turboUnreachable: true))));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(UploadCostBlock), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Add credits'), findsNothing);
+    await tester.ensureVisible(find.text('Try again'));
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    verify(() => cubit.refreshTurboBalance()).called(1);
+  });
+
+  testWidgets('while it publishes: Create spins, Cancel and the X are held',
+      (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationPublishing(artifact())));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      tester
+          .widget<ArDriveButtonNew>(
+              find.widgetWithText(ArDriveButtonNew, 'Cancel'))
+          .isDisabled,
+      isTrue,
+    );
+    final x = find.ancestor(
+      of: find.byWidgetPredicate(
+          (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x),
+      matching: find.byType(GestureDetector),
+    );
+    if (x.evaluate().isNotEmpty) {
+      expect(tester.widget<GestureDetector>(x.first).onTap, isNull);
+    }
+  });
+
+  testWidgets('a refusal a sync can clear offers the sync', (tester) async {
+    when(() => cubit.syncThenPrepare()).thenAnswer((_) async {});
+    await tester.pumpWidget(wrap(DriveStateCreationRefused(
+      refusal: DriveStateCreationRefusal.skipStateUnknown,
+      reason: 'No sync yet.',
+      canSync: true,
+    )));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Sync this drive first, so the snapshot includes '
+            'everything in it.'),
+        findsOneWidget);
+    await tester.tap(find.text('Sync drive'));
+    verify(() => cubit.syncThenPrepare()).called(1);
+    verifyNever(() => cubit.publish());
+  });
+
+  testWidgets('a sync that could not start says so', (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationRefused(
+      refusal: DriveStateCreationRefusal.skipStateUnknown,
+      reason: 'No sync yet.',
+      canSync: true,
+      syncDidNotStart: true,
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining("A sync couldn't start"), findsOneWidget);
+    expect(find.text('Sync drive'), findsOneWidget);
+  });
+
+  testWidgets('syncing says what it is doing', (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationSyncing()));
+    await tester.pump();
+
+    expect(find.text('Syncing this drive...'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
   testWidgets('a refusal explains itself and offers no way past it',
       (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationRefused(
@@ -265,16 +387,19 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('could not read 3 items'), findsOneWidget);
-    expect(find.textContaining('would record the gap forever'), findsOneWidget);
-    expect(find.text('Create'), findsNothing);
+    expect(find.textContaining("couldn't read some items"), findsOneWidget);
+    expect(find.text('Sync drive'), findsNothing,
+        reason: 'only a cubit that can sync offers it');
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
     verifyNever(() => cubit.publish());
   });
 
-  testWidgets('a failed publish shows the uploader\'s own sentence',
+  testWidgets('a failed publish is worded by the modal, in a notice',
       (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationFailure(
       'Turbo declined the payment for this snapshot.',
+      kind: DriveStateCreationFailureKind.paymentDeclined,
     )));
     await tester.pumpAndSettle();
 
@@ -282,18 +407,55 @@ void main() {
       find.textContaining('Turbo declined the payment'),
       findsOneWidget,
     );
-    expect(find.text('Create'), findsNothing);
+    // In a notice, with the way on, not plain text and a lone OK.
+    expect(find.byType(ArDriveNotice), findsOneWidget);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Close'), findsOneWidget);
+    // Not after an upload: a second attempt there could pay twice.
+    expect(find.widgetWithText(ArDriveButtonNew, 'Try again'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
+  });
+
+  testWidgets('an upload that was paid for says so and never offers Try again',
+      (tester) async {
+    await tester.pumpWidget(wrap(DriveStateCreationFailure(
+      'english',
+      kind: DriveStateCreationFailureKind.publishUncertain,
+      txId: 'tx-123',
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('(tx-123)'), findsOneWidget);
+    expect(find.textContaining('pays for it a second time'), findsOneWidget);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Try again'), findsNothing);
+  });
+
+  testWidgets('a failure before anything was posted offers Try again',
+      (tester) async {
+    when(() => cubit.prepare()).thenAnswer((_) async {});
+    await tester.pumpWidget(wrap(DriveStateCreationFailure(
+      'english',
+      kind: DriveStateCreationFailureKind.costUnknown,
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Try again'));
+    await tester.pump();
+
+    verify(() => cubit.prepare()).called(1);
   });
 
   testWidgets('a price that could not be established is not a confirm button',
       (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationFailure(
+      kind: DriveStateCreationFailureKind.costUnknown,
       'The cost of this snapshot could not be determined, so nothing is being '
       'offered for confirmation.',
     )));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create'), findsNothing);
+    expect(
+        find.widgetWithText(ArDriveButtonNew, 'Create snapshot'), findsNothing);
     verifyNever(() => cubit.publish());
   });
 
@@ -396,7 +558,8 @@ void main() {
     /// `Dialog` left — so on a phone an overridden cap overflows nothing and
     /// is invisible to the two checks above. It is visible here, on any
     /// screen with room to honour it.
-    void expectFitsOnScreen(WidgetTester tester, Size surface) {
+    void expectFitsOnScreen(WidgetTester tester, Size surface,
+        {bool review = false}) {
       expect(tester.takeException(), isNull);
 
       final rect = tester.getRect(find.byType(ArDriveStandardModalNew));
@@ -407,7 +570,11 @@ void main() {
       // Under the tablet breakpoint (834) a dialog fills the width less a
       // 16 px gutter (design system,
       // Dialogs); anywhere wider the cap holds.
-      if (surface.width < 834 && surface.height >= 600) {
+      if (review) {
+        // The review is the upload review's own dialog, wider than the rest.
+        expect(rect.width, lessThanOrEqualTo(surface.width - 32));
+        expect(rect.width, lessThanOrEqualTo(kLargeDialogWidth));
+      } else if (surface.width < 834 && surface.height >= 600) {
         expect(rect.width, surface.width - 32);
       } else {
         expect(rect.width, lessThanOrEqualTo(modalStandardMaxWidthSize));
@@ -423,23 +590,26 @@ void main() {
           (tester) async {
         await openModal(tester, ready(), surface: surface.value);
 
-        expectFitsOnScreen(tester, surface.value);
+        expectFitsOnScreen(tester, surface.value, review: true);
 
         // What it costs, and the selector that decides who pays, are both
         // readable — not merely present in the tree.
-        await tester.ensureVisible(find.text('0.0030 credits'));
+        await tester.ensureVisible(find.byType(UploadCostBlock));
         expect(find.byType(PaymentMethodSelector), findsOneWidget);
         await tester.ensureVisible(find.byType(PaymentMethodSelector));
 
         // Both actions exist...
         expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Create'), findsOneWidget);
+        expect(find.text('Create snapshot'), findsNWidgets(2),
+            reason: 'the title and the action');
 
         // ...and the one that spends money can actually be reached and hit.
         // `tap` hit-tests, so a button pushed under another widget or off
         // the bottom of a short viewport fails here.
-        await tester.ensureVisible(find.text('Create'));
-        await tester.tap(find.text('Create'));
+        await tester.ensureVisible(
+            find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
+        await tester
+            .tap(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
         await tester.pump();
 
         verify(() => cubit.publish()).called(1);
@@ -464,17 +634,19 @@ void main() {
             'Correspondence 2019-2026',
       );
 
-      expectFitsOnScreen(tester, smallPhone);
+      expectFitsOnScreen(tester, smallPhone, review: true);
 
       // The long values are shown in full rather than dropped, and the
       // confirm button survives them.
       expect(
-          find.textContaining('Quarterly Financial Reporting'), findsOneWidget);
+          find.textContaining('Quarterly Financial Reporting'), findsWidgets);
       expect(find.text('1234567890'), findsOneWidget);
       expect(find.text('0 to 1814228999'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
+      await tester.ensureVisible(
+          find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
+      await tester
+          .tap(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'));
       await tester.pump();
 
       verify(() => cubit.publish()).called(1);
@@ -503,8 +675,9 @@ void main() {
 
       expectFitsOnScreen(tester, smallPhone);
 
-      expect(find.textContaining('could not read 37 items'), findsOneWidget);
-      expect(find.text('Create'), findsNothing);
+      expect(find.textContaining("couldn't read some items"), findsOneWidget);
+      expect(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
+          findsNothing);
 
       await tester.ensureVisible(find.text('Close'));
       await tester.tap(find.text('Close'));
@@ -520,6 +693,7 @@ void main() {
       await openModal(
         tester,
         DriveStateCreationFailure(
+          kind: DriveStateCreationFailureKind.publishFailed,
           'The upload was rejected by every route it was offered to: Turbo '
           'returned an error for the bundled data item, and the direct '
           'gateway upload did not complete either. Nothing was published and '
@@ -530,7 +704,8 @@ void main() {
 
       expectFitsOnScreen(tester, smallPhone);
 
-      expect(find.textContaining('Nothing was published'), findsOneWidget);
+      expect(find.textContaining('If nothing was posted, nothing was spent'),
+          findsOneWidget);
 
       await tester.ensureVisible(find.text('Close'));
       await tester.tap(find.text('Close'));
@@ -568,15 +743,16 @@ void main() {
       // not repeat it as text nobody can copy.
       expect(find.textContaining(txId), findsNothing);
 
-      await tester.ensureVisible(find.text('OK'));
-      await tester.tap(find.text('OK'));
+      await tester
+          .ensureVisible(find.widgetWithText(ArDriveButtonNew, 'Close'));
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Close'));
       await tester.pumpAndSettle();
 
       expect(find.byType(DriveStateCreationModal), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('an unaffordable artifact still fits, with its own warning',
+    testWidgets('an unaffordable artifact still fits, with Add credits',
         (tester) async {
       await openModal(
         tester,
@@ -589,11 +765,13 @@ void main() {
         surface: smallPhone,
       );
 
-      expectFitsOnScreen(tester, smallPhone);
+      expectFitsOnScreen(tester, smallPhone, review: true);
 
-      await tester.ensureVisible(find.textContaining('cannot be created'));
-      await tester.ensureVisible(find.text('Create'));
-      expect(publishButton(tester).isDisabled, isTrue);
+      await tester.ensureVisible(find.byType(UploadCostBlock));
+      await tester
+          .ensureVisible(find.widgetWithText(ArDriveButtonNew, 'Add credits'));
+      expect(find.widgetWithText(ArDriveButtonNew, 'Create snapshot'),
+          findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

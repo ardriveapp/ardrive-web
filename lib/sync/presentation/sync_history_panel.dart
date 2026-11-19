@@ -54,11 +54,15 @@ class _SyncHistoryPanelState extends State<SyncHistoryPanel> {
       key: syncHistoryPanelKey,
       future: _history,
       builder: (context, snapshot) {
-        // A local key-value read, so this is a frame at most. Nothing is drawn
-        // in the meantime rather than a spinner or a premature "nothing yet",
-        // either of which would be a claim the panel cannot make yet.
+        // A local key-value read, so this is a frame at most. A spinner
+        // rather than a premature "nothing yet", which is a claim the panel
+        // cannot make yet, and rather than nothing, which left the dialog
+        // looking empty.
         if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox.shrink();
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: ArDriveSpacing.md),
+            child: Center(child: ArDriveSpinner()),
+          );
         }
 
         final runs = snapshot.data ?? const <SyncRun>[];
@@ -73,7 +77,7 @@ class _SyncHistoryPanelState extends State<SyncHistoryPanel> {
           children: [
             for (final run in runs)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
                 child: SyncRunTile(run: run, now: widget.now),
               ),
           ],
@@ -104,7 +108,7 @@ class _NothingYet extends StatelessWidget {
           appLocalizationsOf(context).syncHistoryEmpty,
           style: typography.paragraphNormal(color: colorTokens.textHigh),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: ArDriveSpacing.xxs),
         Text(
           appLocalizationsOf(context).syncHistoryEmptyDescription,
           style: typography.paragraphSmall(color: colorTokens.textMid),
@@ -190,7 +194,7 @@ class _SyncRunTileState extends State<SyncRunTile> {
           )
         else
           Text(title, style: titleStyle),
-        const SizedBox(height: 2),
+        const SizedBox(height: ArDriveSpacing.xxs),
         Text(
           localizations.syncHistoryRunSummary(
             formatSyncRunStartedAt(context, run, now: widget.now),
@@ -201,7 +205,7 @@ class _SyncRunTileState extends State<SyncRunTile> {
         ),
         for (final line in syncRunOutcomeLines(localizations, run))
           Padding(
-            padding: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.only(top: ArDriveSpacing.xxs),
             child: Text(
               line,
               style: typography.paragraphSmall(color: colorTokens.textMid),
@@ -212,7 +216,7 @@ class _SyncRunTileState extends State<SyncRunTile> {
         // panel paraphrased is a message support cannot search for.
         if (messages.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.only(top: ArDriveSpacing.xxs),
             child: ArDriveLink(
               text: _showDetails
                   ? localizations.syncHistoryHideDetails
@@ -227,7 +231,7 @@ class _SyncRunTileState extends State<SyncRunTile> {
           if (_showDetails)
             for (final message in messages)
               Padding(
-                padding: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.only(top: ArDriveSpacing.xxs),
                 child: SelectableText(
                   message,
                   style: typography.paragraphSmall(color: colorTokens.textMid),
@@ -341,28 +345,23 @@ Future<void> showSyncHistoryModal(BuildContext context) {
       // phone, and the record is the thing being read rather than a preamble
       // to a button.
       scrollableContent: true,
-      content: SizedBox(
-        width: 384,
-        child: Builder(
-          builder: (context) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // What the record covers, and what it does not: it is this
-              // device's, it is capped, and logging out takes it. Said here
-              // because this modal is the record's own surface now.
-              Text(
-                appLocalizationsOf(context)
-                    .syncHistoryDescription(syncHistoryLimit),
-                style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const SyncHistoryPanel(),
-            ],
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // What the record covers, and what it does not: it is this
+          // device's, it is capped, and logging out takes it. Said here
+          // because this modal is the record's own surface now.
+          Text(
+            appLocalizationsOf(context)
+                .syncHistoryDescription(syncHistoryLimit),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
           ),
-        ),
+          const SizedBox(height: ArDriveSpacing.sm),
+          const SyncHistoryPanel(),
+        ],
       ),
     ),
   );

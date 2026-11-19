@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "部署会将一个文件夹发布到同一个 Arweave 地址，每个文件都有易读的路径。它以 Arweave manifest 的形式保存。",
+  "aManifestIsASpecialKindOfFile": "部署会将一个文件夹发布到同一个 Arweave 地址，每个文件都有易读的路径。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "新建快照",
+  "createSnapshot": "创建快照",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "快照减少加载驱动器所需的时间。您要创建驱动器{driveName}的快照吗？",
+  "createSnapshotExplanation": "快照可让 {driveName} 加载得更快。",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -576,23 +576,9 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "manifestsToUpdate": "{count, plural, =1{1 个部署待更新} other{{count} 个部署待更新}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
   "updateManifests": "更新部署",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "作为部署上传",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncAllDrives": "同步所有网盘",
   "@syncAllDrives": {
@@ -885,7 +871,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "此文件夹中的部分文件仍在处理中。我们不建议使用处理中的文件创建部署。要继续吗？",
+  "filesPendingManifestExplanation": "此文件夹中的部分文件仍在等待确认。建议在它们确认后再创建部署。",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1116,7 +1102,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "AR余额不足, 无法上传.",
+  "insufficientARForUpload": "AR 余额不足",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1138,7 +1124,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "提供的{walletBalance} AR 钱包余额不足以支付此快照交易成本{totalCost} AR......",
+  "insufficientBalanceForSnapshot": "您的钱包有 {walletBalance} AR。此快照需要 {totalCost} AR。",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -2048,7 +2034,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "您已成功创建{driveName}的快照！",
+  "snapshotCreationSucceeded": "您的 {driveName} 快照正在发往 Arweave。",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2082,7 +2068,7 @@
       }
     }
   },
-  "snapshotSuceeded": "成功",
+  "snapshotSuceeded": "快照已创建",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2683,7 +2669,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "不再询问。",
+  "dontAskMeAgain": "不再询问",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -2821,27 +2807,18 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "请检查许可设置",
   "licenseHeading": "许可证",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "另外 {count} 个",
+  "moreFiles": "显示另外 {count} 个",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "5"
-      }
-    }
-  },
-  "namedLicense": "{name} 许可证",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
       }
     }
   },
@@ -2853,25 +2830,13 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "缩略图已关闭",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "缩略图已开启",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "压缩文本和代码",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "网站和代码占用的存储更少。其他应用可能需要解压这些文件。",
+  "compressTextAndCodeHint": "网站和代码占用的存储更少。",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "已压缩",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "共 {size}",
   "@totalUploadSize": {
@@ -3182,6 +3147,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "已隐藏",
   "hiddenDrives": "已隐藏",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4557,7 +4523,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "由你的免费上传额度承担。永久保存，一次付费。",
+  "uploadCostFreeNote": "由你的免费上传额度承担",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4565,7 +4531,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "用 Turbo 积分一次付费。永久保存，无需订阅。",
+  "uploadCostCreditsNote": "用 Turbo 积分付费",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4573,7 +4539,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "从你的钱包一次付费。永久保存，无需订阅。",
+  "uploadCostWalletNote": "从你的钱包付费",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },
@@ -4717,9 +4683,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "缩略图会使用你的免费上传额度，用完后使用 Turbo 积分，并可能让上传耗时更长。\n你随时可以之后再添加缩略图。",
+  "thumbnailsCostNote": "先使用你的免费上传额度，然后使用 Turbo 积分。",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "你的钱包没有足够的 AR 来完成此次更改。",
   "@changeWalletShort": {
@@ -5997,9 +5963,9 @@
   "@arnsNoWalletFound": {
     "description": "No Solana wallet is installed in this browser."
   },
-  "arnsNoWalletFoundBody": "请在钱包的应用中打开 ArDrive，或获取一个钱包。",
+  "arnsNoWalletFoundBody": "请在钱包的应用中打开 ArDrive。",
   "@arnsNoWalletFoundBody": {
-    "description": "What to do when no Solana wallet is installed."
+    "description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."
   },
   "arnsOpenInPhantom": "在 Phantom 中打开",
   "@arnsOpenInPhantom": {
@@ -6009,9 +5975,17 @@
   "@arnsOpenInSolflare": {
     "description": "Link that opens ArDrive in the Solflare app's browser."
   },
-  "arnsGetAWallet": "获取钱包",
-  "@arnsGetAWallet": {
-    "description": "Link to install a Solana wallet."
+  "arnsNoWalletFoundBodyDesktop": "请安装 Solana 钱包，然后重新加载。",
+  "@arnsNoWalletFoundBodyDesktop": {
+    "description": "What to do on a computer when no Solana wallet is installed."
+  },
+  "arnsGetPhantom": "获取 Phantom",
+  "@arnsGetPhantom": {
+    "description": "Link to install the Phantom wallet."
+  },
+  "arnsGetSolflare": "获取 Solflare",
+  "@arnsGetSolflare": {
+    "description": "Link to install the Solflare wallet."
   },
   "arnsConnected": "已连接",
   "@arnsConnected": {
@@ -8115,6 +8089,178 @@
   "@profileArioBalanceError": {"description": "Profile card message when the ARIO balance could not be fetched."},
   "syncUsingGateway": "正在使用网关：{url}",
   "@syncUsingGateway": {"description": "Debug footer shown while a sync runs: the gateway the data is read from.", "placeholders": {"url": {"type": "String"}}},
+  "deploymentFolder": "文件夹",
+  "deploymentFallbackLabel": "备用页面（可选）",
+  "deploymentFallbackHelp": "当部署中的路径不存在时显示的页面，例如 404 页面。请输入其文件的交易 ID。",
+  "deploymentInvalidTxId": "交易 ID 无效",
+  "deploymentHiddenNotice": "隐藏的文件和文件夹不会添加到部署中。",
+  "loadingFolders": "正在加载文件夹",
+  "deploymentPreparing": "正在准备部署",
+  "deploymentUploading": "正在上传部署",
+  "deploymentCreating": "正在创建部署",
+  "deploymentNameConflictTitle": "名称已被使用",
+  "deploymentNameConflictBody": "此文件夹中已有名为“{name}”的文件或文件夹。请选择其他名称。",
+  "deploymentUseName": "使用此名称",
+  "deploymentExistsTitle": "部署已存在",
+  "deploymentExistsBody": "“{name}”已是此文件夹中的部署。创建后将为其添加新版本。",
+  "deploymentCreateNewVersion": "创建新版本",
+  "deploymentCreatedTitle": "部署已创建",
+  "deploymentFailedTitle": "无法创建部署",
+  "deploymentFailedBody": "无法将部署上传到 Arweave。",
+  "deploymentMaybeSentBody": "上传可能已发送并已付费。再次创建前，请同步云盘进行确认。",
+  "deploymentWalletChanged": "创建部署时您的钱包发生了变化。未上传任何内容。",
+  "importFromDeployment": "从部署导入",
+  "importDeploymentIdLabel": "部署 ID",
+  "importEnterId": "输入要从中导入文件的部署 ID。",
+  "importIdRequired": "请输入部署 ID",
+  "importIdInvalid": "部署 ID 无效",
+  "importLoading": "正在加载部署",
+  "importResolving": "正在解析文件路径",
+  "importProgress": "{processed} / {total}",
+  "importCreatingFolder": "正在创建文件夹 {path}",
+  "importingFile": "正在导入 {name}",
+  "importFilesFailed": "{count, plural, other{{count} 个文件失败}}",
+  "importConflictsTitle": "文件已存在",
+  "importConflictsBody": "此文件夹中已有这些文件：",
+  "importConflictsQuestion": "要替换它们吗？",
+  "importReplace": "替换文件",
+  "importReviewTitle": "检查文件",
+  "importReviewSummary": "{count, plural, other{将导入 {count} 个文件}}",
+  "importAction": "导入",
+  "importCancelledTitle": "导入已取消",
+  "importCancelledBody": "{count, plural, other{停止前已导入 {count} 个文件。}}",
+  "importSuccessTitle": "导入完成",
+  "importSuccessBody": "{count, plural, other{已导入 {count} 个文件}}",
+  "snapshotPreparing": "正在准备快照",
+  "snapshotFinishing": "正在完成快照",
+  "snapshotMayTakeAWhile": "这可能需要一些时间",
+  "snapshotNotNow": "暂不",
+  "snapshotPromptDriveStateTitle": "让此云盘加载得更快",
+  "snapshotPromptDriveStateBody": "此云盘同步较慢，因为它的历史记录是逐条读取的。快照会将整个云盘保存为 Arweave 上的一个文件，因此无论在哪里登录，加载都会快得多。上传之前，您可以看到大小和费用。",
+  "snapshotPreparingBody": "正在准备 {driveName} 的快照。",
+  "snapshotWhatItDoesEncrypted": "这会将此云盘的快照用您的云盘密钥加密后保存到 Arweave，因此无论在哪里登录，加载都会快得多。快照是永久的，无法删除。",
+  "snapshotWhatItDoes": "这会将此云盘的快照保存到 Arweave，因此无论在哪里登录，加载都会快得多。快照是永久的，无法删除。",
+  "snapshotSummaryDrive": "云盘",
+  "snapshotSummaryItems": "项目",
+  "snapshotSummarySize": "大小",
+  "snapshotSummaryBlocks": "区块",
+  "snapshotBlocksRange": "{start} 至 {end}",
+  "snapshotUnaffordable": "您的 AR 余额和 Turbo 积分都不足以支付此快照，因此暂时无法创建。",
+  "snapshotCreating": "正在创建快照",
+  "snapshotPublishedBody": "您的 {driveName} 快照正在发往 Arweave。确认后，ArDrive 会开始用它更快地加载此云盘。您可以在云盘的“快照”标签页中查看进度。",
+  "permanenceTitle": "您的永久存储",
+  "permanenceShareTitle": "分享您的永久存储",
+  "permanenceCopyText": "复制文本",
+  "permanenceDownloadImage": "下载图片",
+  "permanenceTextCopied": "文本已复制",
+  "permanenceImageSaved": "图片已保存",
+  "permanencePreserved": "已保存",
+  "permanenceFiles": "{count, plural, other{{count} 个文件}}",
+  "permanenceDrives": "{count, plural, other{{count} 个云盘}}",
+  "permanenceSince": "自 {year} 年起",
+  "permanenceChartLabel": "按年份上传：{years}",
+  "permanenceCostToday": "当前费用",
+  "permanenceCostNote": "网络存储价格",
+  "permanenceNetworkUnreachable": "无法连接网络",
+  "permanenceSpent": "已花费",
+  "permanenceCountingAr": "正在统计直接支付的 AR...",
+  "permanencePaidDirectly": "+ 直接支付 {ar}",
+  "permanencePaidDirectlyAtLeast": "+ 直接支付至少 {ar}",
+  "permanencePaidInAr": "直接用 AR 支付",
+  "permanencePaidInArAtLeast": "直接用 AR 支付，至少",
+  "permanenceNoteAsOf": "{note}，截至 {when}",
+  "permanenceTooMany": "充值次数过多，无法在此统计",
+  "permanenceCreditsUnreadable": "无法读取您的积分",
+  "permanenceNoTopUps": "未找到充值记录",
+  "permanenceNoCreditsUsed": "尚未使用积分",
+  "permanenceCreditsUsed": "已使用的 Turbo 积分",
+  "permanenceRefreshCredits": "刷新已使用积分",
+  "permanenceShowCredits": "显示已使用积分",
+  "permanenceWalletSigns": "您的钱包需要签名才能读取积分",
+  "permanenceReadingCredits": "正在读取您的积分",
+  "permanenceHowTitle": "这些数字如何计算",
+  "permanenceSize": "大小",
+  "permanencePermanence": "永久存储",
+  "permanenceFineSize": "统计此设备上已同步的您自己云盘中每个文件的每个版本，上传确认后才计入。保存在多个位置的数据只计一次。隐藏的云盘和固定的文件不包括在内，因此可能与云盘列表的总和不同。",
+  "permanenceFineSpent": "是您已使用的 Turbo 积分：记入此钱包的全部积分减去您的余额。其中包括用于 ArNS 名称的积分，以及与您共享积分的钱包所使用的积分。下方是此钱包为直接上传支付的 AR（网络费用和 ArDrive 小费），从 Arweave 读取。两者都不以美元计价：积分和 AR 是在不同时间以不同价格购买的。",
+  "permanenceFineSpentChain": "从您的 {chain} 钱包共享的积分不计入。",
+  "permanenceFineCost": "是 Arweave 网络现在存储这么多数据的自身价格，以 AR 计，并按今天的 AR 价格换算。网络价格和 AR 的美元价值都会变化。这不是 ArDrive 或 Turbo 的收费，也不是账单或报价。",
+  "permanenceFinePermanence": "由 Arweave 网络提供，而不是 ArDrive。Arweave 表示其存储基金旨在支付 200 年或更长时间的存储费用。请参阅",
+  "permanenceTermsOfService": "服务条款",
+  "importErrorNotFound": "找不到该部署。",
+  "importErrorNetwork": "无法访问该部署。请检查网络连接后重试。",
+  "importErrorUnreadable": "无法读取该部署。",
+  "importErrorNoFilesToReplace": "没有可替换的文件。请重新开始导入。",
+  "importErrorReplaceFailed": "无法替换文件。请重试。",
+  "importErrorImportFailed": "无法导入文件。请重试。",
+  "importErrorNothingImported": "没有导入任何文件。请检查部署后重试。",
+  "importErrorUnexpected": "导入时出错。请重试。",
+  "snapshotRefusedSyncSkipped": "上次同步无法读取此云盘中的部分项目。请重新同步，让快照包含它们。",
+  "snapshotRefusedSyncUnknown": "请先同步此云盘，让快照包含其中的全部内容。",
+  "snapshotSyncCouldNotStart": "无法开始同步。请等待正在进行的上传完成，然后重试。",
+  "snapshotRefusedNotFound": "此云盘不在此设备上。",
+  "snapshotRefusedProtection": "目前无法保护此云盘的快照，因此无法创建。",
+  "snapshotRefusedNotOwner": "请使用云盘所有者的钱包登录后再创建快照。",
+  "snapshotRefusedNoWatermark": "此云盘尚未完成同步。请先同步。",
+  "snapshotRefusedTooLarge": "此云盘太大，无法创建单个快照。它将继续按现有方式加载。",
+  "snapshotRefusedUnconfirmed": "此云盘的部分更改尚未确认。请几分钟后再试。",
+  "snapshotRefusedSealFailed": "无法准备快照。请重试。",
+  "snapshotFailureCostTimeout": "计算费用耗时过长，因此无法进入确认。未上传任何内容，也未花费任何费用。请稍后重试。",
+  "snapshotFailureCostUnknown": "无法确定此快照的费用，因此无法进入确认。未上传任何内容，也未花费任何费用。",
+  "snapshotFailurePrepare": "无法准备快照。请重试。",
+  "snapshotFailureNotEnabled": "此版本未启用这种方式创建快照。未上传任何内容，也未花费任何费用。",
+  "snapshotFailureNotLoggedIn": "您已不再登录。未上传任何内容，也未花费任何费用。",
+  "snapshotFailureWalletChanged": "准备此快照时您的钱包发生了变化。未上传任何内容，也未花费任何费用。",
+  "snapshotFailureWalletUnavailable": "Wander 没有响应。未上传任何内容，也未花费任何费用。",
+  "snapshotFailurePaymentDeclined": "Turbo 拒绝了此快照的付款。请充值积分或使用 AR 支付，然后重试。",
+  "snapshotFailurePublish": "无法创建快照。如果没有发布任何内容，则未花费任何费用。重试之前请检查您的云盘。",
+  "snapshotFailureUncertain": "此快照的交易（{txId}）在上传失败前已到达网络，因此已付费，但其数据可能不完整。重试前请先在网关上查询。再次尝试会创建第二笔交易并再次付费。",
+  "snapshotFailureThrew": "无法创建快照。未花费任何费用。",
+  "deploymentPostedBody": "部署已发布到 Arweave（交易 {txId}），但无法在此保存，因此已付费。请不要重复创建；同步云盘即可看到它。",
+  "deploymentNameNotSet": "部署已创建，但无法设置名称。您可以在“名称”中设置。",
+  "deploymentAddress": "地址",
+  "shareUploadTitle": "上传{count, plural, =1{1 个共享文件} other{{count} 个共享文件}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
+  "licenseAddedTitle": "已添加许可",
+  "licenseAddedMessage": "{license} 已添加到 {count, plural, =1{1 个文件} other{{count} 个文件}}。",
+  "noFileToLicenseTitle": "没有可添加许可的文件",
+  "noFileToLicenseMessage": "请选择文件，或包含文件的文件夹。",
+  "licenseFixSettingsForCost": "请检查许可设置以查看费用",
+  "licenseChooseTypeForCost": "选择许可类型以查看费用",
+  "licenseTypeLabel": "类型",
+  "licenseFeeLabel": "许可费",
+  "commercialUseLabel": "商业用途",
+  "derivationsLabel": "衍生作品",
+  "tableColumnType": "类型",
+  "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
+  "tableColumnTransactionId": "交易 ID",
+  "@tableColumnTransactionId": {"description": "Heading of the file table column that shows each file's data transaction ID"},
+  "tableColumnStatus": "状态",
+  "@tableColumnStatus": {"description": "Heading of the file table column that shows whether each file is on Arweave yet"},
+  "typeFolder": "文件夹",
+  "@typeFolder": {"description": "Type column: what a folder is called"},
+  "typeText": "文本",
+  "@typeText": {"description": "Type column: plain text files"},
+  "typeDeployment": "部署",
+  "@typeDeployment": {"description": "Type column: an Arweave manifest, which the app calls a deployment"},
+  "typeFile": "文件",
+  "@typeFile": {"description": "Type column: a file of a kind with no name of its own and no extension"},
+  "typeFileWithExtension": "{extension} 文件",
+  "@typeFileWithExtension": {"description": "Type column: a file of an unknown kind, named by its extension, e.g. DOCX file", "placeholders": {"extension": {"type": "String"}}},
+  "typeImage": "{format} 图像",
+  "@typeImage": {"description": "Type column: an image with its format, e.g. PNG image", "placeholders": {"format": {"type": "String"}}},
+  "typeVideo": "{format} 视频",
+  "@typeVideo": {"description": "Type column: a video with its format, e.g. MP4 video", "placeholders": {"format": {"type": "String"}}},
+  "typeAudio": "{format} 音频",
+  "@typeAudio": {"description": "Type column: an audio file with its format, e.g. MP3 audio", "placeholders": {"format": {"type": "String"}}},
+  "typeArchive": "{format} 压缩包",
+  "@typeArchive": {"description": "Type column: an archive with its format, e.g. ZIP archive", "placeholders": {"format": {"type": "String"}}},
+  "fileStatusPending": "待处理",
+  "@fileStatusPending": {"description": "Status column: the file's transaction is waiting to be mined on Arweave"},
+  "fileStatusPermanent": "永久",
+  "@fileStatusPermanent": {"description": "Status column: the file's transaction is confirmed on Arweave and permanent"},
+  "fileStatusFailed": "失败",
+  "@fileStatusFailed": {"description": "Status column: the file's transaction did not make it onto Arweave"},
   "changeExtensionTitle": "要更改文件扩展名吗?",
   "changeExtensionBody": "扩展名将从 {previous} 变为 {next}。",
   "couldNotRenameTitle": "无法重命名",

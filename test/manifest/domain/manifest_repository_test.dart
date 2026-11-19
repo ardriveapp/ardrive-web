@@ -239,6 +239,24 @@ void main() async {
               any(), RevisionAction.uploadNewVersion)).called(1);
         });
 
+        test(
+            'a database save that throws after the post ends the upload with '
+            'the posted transaction, not a wait for ever', () async {
+          when(() => mockUploadParams.uploadType).thenReturn(UploadType.turbo);
+          when(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .thenThrow(Exception('disk full'));
+
+          await expectLater(
+            repository
+                .uploadManifest(params: mockUploadParams)
+                .timeout(const Duration(seconds: 5)),
+            throwsA(
+              isA<ManifestPostedException>()
+                  .having((e) => e.dataTxId, 'dataTxId', 'dataTx123'),
+            ),
+          );
+        });
+
         test('Handles upload failure', () async {
           when(() => mockUploader.upload(
                 file: any(named: 'file'),

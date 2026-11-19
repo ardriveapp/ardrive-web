@@ -1,15 +1,16 @@
 import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/validate_arweave_id.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// Modal for importing files from a manifest.
 class BulkImportModal extends StatelessWidget {
@@ -49,6 +50,10 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
   final _formKey = GlobalKey<FormState>();
   final _manifestTxIdController = TextEditingController();
 
+  /// Import was pressed and the bloc has not answered with a state yet: the
+  /// field is held and a second press does nothing.
+  bool _pressed = false;
+
   @override
   void dispose() {
     _manifestTxIdController.dispose();
@@ -56,12 +61,13 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
   }
 
   String? _validateManifestTxId(String? value) {
+    final l10n = appLocalizationsOf(context);
     if (value == null || value.isEmpty) {
-      return 'Please enter a manifest transaction ID';
+      return l10n.importIdRequired;
     }
     // Arweave transaction IDs are 43 characters long and base64url encoded
     if (!isArweaveTransactionID(value)) {
-      return 'Invalid manifest transaction ID';
+      return l10n.importIdInvalid;
     }
 
     return null;
@@ -70,164 +76,121 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
+    final l10n = appLocalizationsOf(context);
 
+    // Every outcome is a state of this one dialog, never a dialog over it:
+    // the conflicts, the failure and the cancelled import used to open on
+    // top, and the conflicts' Cancel closed both.
     return BlocConsumer<BulkImportBloc, BulkImportState>(
       listener: (context, state) {
-        if (state is BulkImportFileConflicts) {
-          showAnimatedDialogWithBuilder(
-            context,
-            builder: (context) => ArDriveStandardModalNew(
-              width: kLargeDialogWidth,
-              title: 'File conflicts detected',
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'The following files already exist in the target location:',
-                    style: typography.paragraphLarge(),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: state.conflicts.map((conflict) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              '• ${conflict.filePath}',
-                              style: typography.paragraphNormal(),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Would you like to replace these files?',
-                    style: typography.paragraphLarge(
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                ModalAction.close(
-                  action: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
-                  },
-                  title: 'Cancel',
-                ),
-                ModalAction(
-                  action: () {
-                    this.context.read<BulkImportBloc>().add(
-                          ReplaceConflictingFiles(
-                            manifestTxId: _manifestTxIdController.text,
-                            driveId: widget.driveId,
-                            parentFolderId: widget.parentFolderId,
-                          ),
-                        );
-
-                    Navigator.pop(context);
-                  },
-                  title: 'Replace',
-                ),
-              ],
-            ),
-          );
-        } else if (state is BulkImportError && state.isPaymentError) {
-          showTurboPaymentRequiredDialog(context);
-        } else if (state is BulkImportError) {
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModalNew(
-              width: kLargeDialogWidth,
-              title: 'Import failed',
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    state.message,
-                    style: typography.paragraphNormal(),
-                  ),
-                ],
-              ),
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: 'OK',
-                ),
-              ],
-            ),
-          );
-        } else if (state is BulkImportCancelled) {
-          final numberOfFilesImported = state.numberOfFilesImported;
-
-          showAnimatedDialogWithBuilder(
-            context,
-            builder: (context) => ArDriveStandardModalNew(
-              width: kMediumDialogWidth,
-              title: 'Import cancelled',
-              description:
-                  'The import process was cancelled.\n$numberOfFilesImported files were imported successfully.',
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: 'OK',
-                ),
-              ],
-            ),
-          );
-        }
+        if (_pressed) setState(() => _pressed = false);
       },
       builder: (context, state) {
         if (state is BulkImportSuccess) {
           return ArDriveStandardModalNew(
-            width: modalStandardMaxWidthSize,
-            title: 'Import successful',
+            width: kMediumDialogWidth,
+            title: l10n.importSuccessTitle,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Successfully imported ${state.successfulFiles} files.',
+                  l10n.importSuccessBody(state.successfulFiles),
                   style: typography.paragraphNormal(),
                 ),
                 if (state.failedFiles != 0)
                   Text(
-                    'Failed to import ${state.failedFiles} files.',
+                    l10n.importFilesFailed(state.failedFiles),
                     style: typography.paragraphNormal(),
                   ),
               ],
             ),
             actions: [
+              ModalAction.close(
+                action: () => Navigator.pop(context),
+                title: l10n.close,
+              ),
+            ],
+          );
+        } else if (state is BulkImportFileConflicts) {
+          return ArDriveStandardModalNew(
+            width: kLargeDialogWidth,
+            scrollableContent: true,
+            title: l10n.importConflictsTitle,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.importConflictsBody,
+                  style: typography.paragraphNormal(
+                    color:
+                        ArDriveTheme.of(context).themeData.colorTokens.textMid,
+                  ),
+                ),
+                const SizedBox(height: ArDriveSpacing.md),
+                for (final conflict in state.conflicts)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: ArDriveSpacing.xxs),
+                    child: Text(
+                      conflict.filePath,
+                      style: typography.paragraphNormal(),
+                    ),
+                  ),
+                const SizedBox(height: ArDriveSpacing.md),
+                Text(
+                  l10n.importConflictsQuestion,
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              ModalAction.close(
+                action: () => Navigator.pop(context),
+                title: l10n.cancelEmphasized,
+              ),
               ModalAction(
                 action: () {
-                  Navigator.pop(context);
+                  context.read<BulkImportBloc>().add(
+                        ReplaceConflictingFiles(
+                          manifestTxId: state.manifestTxId,
+                          driveId: widget.driveId,
+                          parentFolderId: widget.parentFolderId,
+                        ),
+                      );
                 },
-                title: 'OK',
+                title: l10n.importReplace,
+              ),
+            ],
+          );
+        } else if (state is BulkImportCancelled) {
+          return ArDriveStandardModalNew(
+            width: kMediumDialogWidth,
+            title: l10n.importCancelledTitle,
+            description: l10n.importCancelledBody(state.numberOfFilesImported),
+            actions: [
+              ModalAction.close(
+                action: () => Navigator.pop(context),
+                title: l10n.close,
               ),
             ],
           );
         } else if (state is BulkImportReviewingManifest) {
           return ArDriveStandardModalNew(
-            title: 'Review files',
+            title: l10n.importReviewTitle,
             width: kLargeDialogWidth,
+            scrollableContent: true,
             content: _BulkImportReviewingManifest(
               manifestTxId: state.manifestTxId,
               files: state.files,
             ),
             actions: [
               ModalAction.close(
-                action: () {
-                  Navigator.pop(context);
-                },
-                title: 'Cancel',
+                action: () => Navigator.pop(context),
+                title: l10n.cancelEmphasized,
               ),
               ModalAction(
                 action: () {
@@ -240,107 +203,103 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                         ),
                       );
                 },
-                title: 'Confirm',
+                title: l10n.importAction,
               ),
             ],
           );
         }
 
+        // The work runs here: the primary is busy, the fields are gone for
+        // the progress, and Cancel is held unless it can stop the work.
+        final isImporting = state is BulkImportInProgress;
+        final isBusy = _pressed ||
+            isImporting ||
+            state is BulkImportLoadingManifest ||
+            state is BulkImportResolvingPaths ||
+            state is BulkImportCreatingFolders;
+
         return ArDriveStandardModalNew(
           width: kLargeDialogWidth,
-          title: 'Import from manifest',
+          title: l10n.importFromDeployment,
           content: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (state is BulkImportError) ...[
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.error,
+                    message: _errorText(l10n, state),
+                    actionLabel: state.isPaymentError ? l10n.buyCredits : null,
+                    onAction: state.isPaymentError
+                        ? () {
+                            Navigator.pop(context);
+                            showTurboTopupModal(context);
+                          }
+                        : null,
+                  ),
+                  const SizedBox(height: ArDriveSpacing.md),
+                ],
                 if (state is BulkImportLoadingManifest)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Text(
-                        'Loading manifest data...',
-                        style: typography.paragraphLarge(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const ArDriveSpinner(size: ArDriveSpinnerSize.large),
-                    ],
+                  _ImportProgress(
+                    title: l10n.importLoading,
                   )
                 else if (state is BulkImportResolvingPaths)
-                  Column(
-                    children: [
-                      ArDriveLinearProgress(
-                        value: state.processedPaths / state.totalPaths,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Resolving file paths...',
-                        style: typography.paragraphNormal(),
-                      ),
-                      Text(
-                        'Progress: ${state.processedPaths}/${state.totalPaths}',
-                        style: typography.paragraphNormal(),
-                      ),
-                    ],
+                  _ImportProgress(
+                    title: l10n.importResolving,
+                    value: state.totalPaths == 0
+                        ? null
+                        : state.processedPaths / state.totalPaths,
+                    detail: l10n.importProgress(
+                      state.processedPaths,
+                      state.totalPaths,
+                    ),
                   )
                 else if (state is BulkImportCreatingFolders)
-                  Column(
-                    children: [
-                      ArDriveLinearProgress(
-                        value: state.processedFolders / state.totalFolders,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Creating folder: ${state.currentFolderPath}',
-                        style: typography.paragraphNormal(),
-                      ),
-                      Text(
-                        'Progress: ${state.processedFolders}/${state.totalFolders}',
-                        style: typography.paragraphNormal(),
-                      ),
-                    ],
+                  _ImportProgress(
+                    title: l10n.importCreatingFolder(state.currentFolderPath),
+                    value: state.totalFolders == 0
+                        ? null
+                        : state.processedFolders / state.totalFolders,
+                    detail: l10n.importProgress(
+                      state.processedFolders,
+                      state.totalFolders,
+                    ),
                   )
                 else if (state is BulkImportInProgress)
-                  Column(
-                    children: [
-                      ArDriveLinearProgress(
-                        value: state.processedFiles / state.fileIds.length,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Importing ${state.currentFileName}...',
-                        style: typography.paragraphNormal(),
-                      ),
-                      Text(
-                        'Progress: ${state.processedFiles}/${state.fileIds.length}',
-                        style: typography.paragraphNormal(),
-                      ),
-                      if (state.failedPaths.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          'Failed files: ${state.failedPaths.length}',
-                          style: typography.paragraphNormal(),
-                        ),
-                      ],
-                    ],
+                  _ImportProgress(
+                    title: l10n.importingFile(state.currentFileName),
+                    value: state.fileIds.isEmpty
+                        ? null
+                        : state.processedFiles / state.fileIds.length,
+                    detail: l10n.importProgress(
+                      state.processedFiles,
+                      state.fileIds.length,
+                    ),
+                    extra: state.failedPaths.isNotEmpty
+                        ? l10n.importFilesFailed(state.failedPaths.length)
+                        : null,
                   )
                 else
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Enter the manifest transaction ID to import files:',
-                        style: typography.paragraphNormal(),
+                        l10n.importEnterId,
+                        style: typography.paragraphNormal(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textMid,
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: ArDriveSpacing.md),
                       ArDriveTextFieldNew(
                         controller: _manifestTxIdController,
+                        isEnabled: !isBusy,
                         validator: _validateManifestTxId,
-                        label: 'Manifest Transaction ID',
+                        label: l10n.importDeploymentIdLabel,
                         textStyle: ArDriveTypographyNew.of(context).code(),
                       ),
                     ],
@@ -349,34 +308,109 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
             ),
           ),
           actions: [
-            ModalAction(
-              action: () {
-                if (state is BulkImportInProgress) {
-                  context.read<BulkImportBloc>().add(const CancelBulkImport());
-                }
-                Navigator.pop(context);
-              },
-              title: 'Cancel',
-            ),
-            if (state is! BulkImportLoadingManifest &&
-                state is! BulkImportInProgress)
-              ModalAction(
+            if (isImporting)
+              // Stops the import; the dialog then says how many files came
+              // in, with a Close.
+              ModalAction.dismiss(
                 action: () {
-                  if (_formKey.currentState!.validate()) {
-                    context.read<BulkImportBloc>().add(
-                          StartManifestBulkImport(
-                            manifestTxId: _manifestTxIdController.text,
-                            driveId: widget.driveId,
-                            parentFolderId: widget.parentFolderId,
-                          ),
-                        );
-                  }
+                  context.read<BulkImportBloc>().add(const CancelBulkImport());
                 },
-                title: 'Import',
+                title: l10n.cancelEmphasized,
+              )
+            else
+              ModalAction.close(
+                isEnable: !isBusy,
+                action: () => Navigator.pop(context),
+                title: l10n.cancelEmphasized,
               ),
+            ModalAction(
+              isLoading: isBusy,
+              action: () {
+                if (_pressed) return;
+                if (_formKey.currentState!.validate()) {
+                  setState(() => _pressed = true);
+                  context.read<BulkImportBloc>().add(
+                        StartManifestBulkImport(
+                          manifestTxId: _manifestTxIdController.text,
+                          driveId: widget.driveId,
+                          parentFolderId: widget.parentFolderId,
+                        ),
+                      );
+                }
+              },
+              title: l10n.importAction,
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+/// What an import failure says, in the user's language. The bloc's own
+/// sentence is English, for the log.
+String _errorText(AppLocalizations l10n, BulkImportError state) {
+  if (state.isPaymentError) return l10n.freeAllowanceUsedUpDescription;
+  return switch (state.reason) {
+    BulkImportErrorReason.notFound => l10n.importErrorNotFound,
+    BulkImportErrorReason.network => l10n.importErrorNetwork,
+    BulkImportErrorReason.unreadable => l10n.importErrorUnreadable,
+    BulkImportErrorReason.noFilesToReplace => l10n.importErrorNoFilesToReplace,
+    BulkImportErrorReason.replaceFailed => l10n.importErrorReplaceFailed,
+    BulkImportErrorReason.importFailed => l10n.importErrorImportFailed,
+    BulkImportErrorReason.nothingImported => l10n.importErrorNothingImported,
+    BulkImportErrorReason.unexpected => l10n.importErrorUnexpected,
+  };
+}
+
+/// What the import is doing: a spinner or a bar, what it is on, and how far.
+class _ImportProgress extends StatelessWidget {
+  const _ImportProgress({
+    required this.title,
+    this.value,
+    this.detail,
+    this.extra,
+  });
+
+  final String title;
+
+  /// Null spins; a value from 0 to 1 fills the bar.
+  final double? value;
+  final String? detail;
+  final String? extra;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (value != null)
+          ArDriveLinearProgress(value: value)
+        else
+          const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
+        const SizedBox(height: ArDriveSpacing.md),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: typography.paragraphNormal(),
+        ),
+        if (detail != null)
+          Text(
+            detail!,
+            textAlign: TextAlign.center,
+            style: typography.paragraphNormal(),
+          ),
+        if (extra != null) ...[
+          const SizedBox(height: ArDriveSpacing.md),
+          Text(
+            extra!,
+            textAlign: TextAlign.center,
+            style: typography.paragraphNormal(),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -394,43 +428,20 @@ class _BulkImportReviewingManifest extends StatelessWidget {
     final FolderNode rootFolder = _buildFolderTree(files);
 
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return SizedBox(
-      width: kLargeDialogWidth,
-      height: 400,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'The following files will be imported:',
-            style: typography.paragraphLarge(
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ListView(
-                    children: [
-                      _buildFolderTreeView(context, rootFolder, 0),
-                    ],
-                  ),
-                ),
-                const Divider(height: 8),
-                Text(
-                  '${files.length} file(s) will be imported',
-                  style: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    // No box of its own height: the dialog scrolls, with its actions held.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          appLocalizationsOf(context).importReviewSummary(files.length),
+          style: typography.paragraphNormal(color: colorTokens.textMid),
+        ),
+        const SizedBox(height: ArDriveSpacing.md),
+        _buildFolderTreeView(context, rootFolder, 0),
+      ],
     );
   }
 
@@ -499,36 +510,37 @@ class _BulkImportReviewingManifest extends StatelessWidget {
     return _buildFolderItem(context, folder, level);
   }
 
-  // Build a folder item with ExpansionTile
+  // Build a folder item: its name, then what is in it, indented.
   Widget _buildFolderItem(BuildContext context, FolderNode folder, int level) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Padding(
-      padding: EdgeInsets.only(left: 16.0 * level),
-      child: ExpansionTile(
-        title: Text(
-          folder.name,
-          style: typography.paragraphNormal(
-            fontWeight: ArFontWeight.semiBold,
-          ),
-        ),
-        textColor: colorTokens.textHigh,
-        leading: ArDriveIcons.folderOutline(),
-        initiallyExpanded: true,
-        maintainState: true,
+      padding: EdgeInsets.only(left: ArDriveSpacing.md * level),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Build subfolders
-          ...folder.subfolders.map((subfolder) => _buildFolderItem(
-                context,
-                subfolder,
-                1, // Add level 1 for consistent indentation of subfolders
-              )),
-
-          // Build files
-          ...folder.files.map((file) => _FileTile(
-                file: file,
-                level: 1, // Add level 1 for consistent indentation of files
-              )),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
+            child: Row(
+              children: [
+                ArDriveIcons.folderOutline(color: colorTokens.textHigh),
+                const SizedBox(width: ArDriveSpacing.xs),
+                Expanded(
+                  child: Text(
+                    folder.name,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ...folder.subfolders.map(
+            (subfolder) => _buildFolderItem(context, subfolder, 1),
+          ),
+          ...folder.files.map((file) => _FileTile(file: file, level: 1)),
         ],
       ),
     );
@@ -558,16 +570,15 @@ class _FileTile extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16.0 * level,
-        right: 8.0,
-        top: 8.0,
-        bottom: 8.0,
+        left: ArDriveSpacing.md * level,
+        right: ArDriveSpacing.xs,
+        top: ArDriveSpacing.xs,
+        bottom: ArDriveSpacing.xs,
       ),
       child: Row(
         children: [
-          const SizedBox(width: 24), // Align with folder content
           getIconForContentType(file.contentType),
-          const SizedBox(width: 8),
+          const SizedBox(width: ArDriveSpacing.xs),
           Expanded(
             child: Text(
               file.name,
