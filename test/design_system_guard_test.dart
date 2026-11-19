@@ -83,6 +83,11 @@ void main() {
     expect(lines[4], 'g();');
   });
 
+  test('a block comment between two tokens keeps them apart', () {
+    expect(_withoutComments('show/**/ProgressDialog('),
+        isNot(contains('showProgressDialog(')));
+  });
+
   test('nested block comments are left out whole', () {
     const source = 'a(); /* outer /* inner */ showProgressDialog(x); */ b();';
     final out = _withoutComments(source);
@@ -251,7 +256,9 @@ String _withoutComments(String source) {
         i++;
       }
     } else if (c == '/' && next == '*') {
-      // Dart's block comments nest: /* a /* b */ c */ is one comment.
+      // Dart's block comments nest: /* a /* b */ c */ is one comment. It
+      // leaves a space, as the compiler reads it, so a/**/b stays two tokens.
+      out.write(' ');
       i += 2;
       var depth = 1;
       while (i < source.length && depth > 0) {
