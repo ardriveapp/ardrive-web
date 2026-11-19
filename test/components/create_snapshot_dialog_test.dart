@@ -207,7 +207,7 @@ void main() {
       (tester) async {
     await pumpDialog(tester, SnapshotUploadFailure(isPaymentError: true));
 
-    expect(find.text('Free allowance used up'), findsOneWidget);
+    expect(find.text('Free upload allowance used up'), findsOneWidget);
     expect(buttons(tester), ['Close', 'Buy credits']);
     expect(find.byType(CreateSnapshotDialog), findsOneWidget);
   });

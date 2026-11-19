@@ -320,7 +320,7 @@ void main() {
         (tester) async {
       await pumpForm(tester, CreateManifestFailure(isPaymentError: true));
 
-      expect(find.text('Free allowance used up'), findsOneWidget);
+      expect(find.text('Free upload allowance used up'), findsOneWidget);
       expect(primary('Buy credits'), findsOneWidget);
       // The dialog stays through the top-up, so the person comes back to it.
       expect(primary('Try again'), findsOneWidget);
