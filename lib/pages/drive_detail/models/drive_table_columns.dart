@@ -291,6 +291,25 @@ void sortDriveTableItems(
   _sortItems(files, columnIndex, ascDescSort, typeLabel);
 }
 
+/// The explorer's rows in the order the column at [columnIndex] puts them:
+/// folders first, then files, each sorted on its own. The list's header sort
+/// and the gallery both use this, so a folder reads in the same order in
+/// either.
+List<ArDriveDataTableItem> sortExplorerRows(
+  List<ArDriveDataTableItem> rows,
+  int columnIndex,
+  TableSort order, {
+  required String Function(ArDriveDataTableItem) typeLabel,
+}) {
+  final folders = <ArDriveDataTableItem>[];
+  final files = <ArDriveDataTableItem>[];
+  for (final row in rows) {
+    (row is FolderDataTableItem ? folders : files).add(row);
+  }
+  sortDriveTableItems(folders, files, columnIndex, order, typeLabel: typeLabel);
+  return folders + files;
+}
+
 int _getResult(int result, TableSort ascDescSort) {
   if (ascDescSort == TableSort.asc) {
     result *= -1;

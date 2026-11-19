@@ -57,6 +57,9 @@ import 'package:ardrive/utils/file_type_label.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/gallery/explorer/explorer_view_mode.dart';
+import 'package:ardrive/gallery/explorer/explorer_view_switch.dart';
+import 'package:ardrive/gallery/explorer/explorer_gallery.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -974,6 +977,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           height: 24,
                                           child: VerticalDivider(),
                                         ),
+                                      // For everyone who can see the folder,
+                                      // owner or visitor.
+                                      ExplorerViewSwitch(
+                                        mode: driveDetailState.viewMode,
+                                        onChanged: (mode) => context
+                                            .read<DriveDetailCubit>()
+                                            .setViewMode(mode),
+                                      ),
+                                      const SizedBox(width: 16),
                                       Padding(
                                         padding:
                                             const EdgeInsets.only(right: 16.0),
@@ -1343,12 +1355,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: (hasSubfolders || hasFiles)
               ? filteredItems.isEmpty
                   ? _allItemsHidden(context)
-                  : ArDriveItemList(
-                      controller: _scrollController,
-                      drive: state.currentDrive,
-                      items: filteredItems,
-                      selectedItem: state.selectedItem,
-                    )
+                  : state.viewMode == ExplorerViewMode.gallery
+                      ? _buildGallery(
+                          context,
+                          items: filteredItems,
+                          folder: state.folderInView.folder,
+                          selectedItem: state.selectedItem,
+                          drive: state.currentDrive,
+                          lockMultiSelect: _multiSelectLocked(
+                              context, state.folderInView.folder.driveId),
+                          scrollController: _scrollController,
+                        )
+                      : ArDriveItemList(
+                          controller: _scrollController,
+                          drive: state.currentDrive,
+                          items: filteredItems,
+                          selectedItem: state.selectedItem,
+                        )
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
                   isPrivate: state.currentDrive.isPrivate,
@@ -1696,6 +1719,21 @@ class MobileFolderNavigation extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          BlocBuilder<DriveDetailCubit, DriveDetailState>(
+            buildWhen: (a, b) =>
+                b is! DriveDetailLoadSuccess ||
+                a is! DriveDetailLoadSuccess ||
+                a.viewMode != b.viewMode,
+            builder: (context, state) {
+              if (state is! DriveDetailLoadSuccess) return const SizedBox();
+              return ExplorerViewSwitch(
+                compact: true,
+                mode: state.viewMode,
+                onChanged: (mode) =>
+                    context.read<DriveDetailCubit>().setViewMode(mode),
+              );
+            },
           ),
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {

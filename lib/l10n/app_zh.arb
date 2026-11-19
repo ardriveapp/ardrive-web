@@ -8528,5 +8528,11 @@
   "saveNote": "保存笔记",
   "keepEditing": "继续编辑",
   "openingNote": "正在打开笔记",
-  "couldNotOpenNote": "无法打开笔记"
+  "couldNotOpenNote": "无法打开笔记",
+  "explorerViewList": "列表",
+  "explorerViewGallery": "相册",
+  "galleryItemCount": "{count, plural, other{{count} 项}}",
+  "galleryCouldNotLoad": "无法加载",
+  "galleryUploadPending": "等待上传",
+  "galleryTimeline": "时间轴"
 }
