@@ -273,8 +273,11 @@ class ArDriveSectionedGalleryController extends ChangeNotifier {
     if (geometry == null || !scroll.hasClients) return;
     if (section < 0 || section >= geometry.sectionOffsets.length) return;
     final position = scroll.position;
-    scroll.jumpTo(geometry.sectionOffsets[section]
-        .clamp(position.minScrollExtent, position.maxScrollExtent));
+    // Not clamped to the list's extent: until every row is built that is an
+    // estimate, and a short one would stop the jump before the month. The
+    // list corrects an offset past its real end when it lays out.
+    scroll.jumpTo(
+        math.max(position.minScrollExtent, geometry.sectionOffsets[section]));
   }
 
   @override

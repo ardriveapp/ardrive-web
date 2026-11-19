@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 
 /// The List and Gallery switch in a folder's bar.
 ///
-/// A two-way segmented control on a wide screen; on a phone, where the bar has
-/// no room for labels, one button that switches to the other view.
+/// Two joined icon buttons on a wide screen (list, photo grid), as Google
+/// Drive has them; on a phone, one icon button that switches to the other
+/// view. Both are named "List" and "Gallery" for tooltips and screen readers.
 class ExplorerViewSwitch extends StatelessWidget {
   const ExplorerViewSwitch({
     super.key,
@@ -30,24 +31,26 @@ class ExplorerViewSwitch extends StatelessWidget {
       return ArDriveIconButton(
         key: const ValueKey('explorer-view-switch-compact'),
         tooltip: list ? l10n.explorerViewGallery : l10n.explorerViewList,
-        icon: list ? ArDriveIcons.image() : ArDriveIcons.table(),
+        icon: list ? ArDriveIcons.galleryGrid() : ArDriveIcons.listView(),
         onPressed: () => onChanged(
           list ? ExplorerViewMode.gallery : ExplorerViewMode.list,
         ),
       );
     }
 
-    return ArDriveSegmentedControl<ExplorerViewMode>(
+    return ArDriveIconSegmentedControl<ExplorerViewMode>(
       key: const ValueKey('explorer-view-switch'),
       selected: mode,
       onSelected: onChanged,
       segments: [
-        ArDriveSegment(
+        ArDriveIconSegment(
           value: ExplorerViewMode.list,
+          icon: ArDriveIcons.listView().icon,
           label: l10n.explorerViewList,
         ),
-        ArDriveSegment(
+        ArDriveIconSegment(
           value: ExplorerViewMode.gallery,
+          icon: ArDriveIcons.galleryGrid().icon,
           label: l10n.explorerViewGallery,
         ),
       ],

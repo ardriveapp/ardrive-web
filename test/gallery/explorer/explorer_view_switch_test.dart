@@ -10,6 +10,8 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -43,20 +45,63 @@ void main() {
   setUpAll(() => registerFallbackValue(ExplorerViewMode.list));
 
   group('ExplorerViewSwitch', () {
-    testWidgets('names both views and marks the current one', (tester) async {
+    testWidgets('two icon buttons, named List and Gallery, the current filled',
+        (tester) async {
+      final handle = tester.ensureSemantics();
       ExplorerViewMode? picked;
       await tester.pumpWidget(_host(ExplorerViewSwitch(
         mode: ExplorerViewMode.list,
         onChanged: (m) => picked = m,
       )));
-      expect(find.text('List'), findsOneWidget);
-      expect(find.text('Gallery'), findsOneWidget);
+      // No text labels in the bar; the names are for tooltips and readers.
+      expect(find.text('List'), findsNothing);
+      expect(find.byIcon(ArDriveIcons.listView().icon), findsOneWidget);
+      expect(find.byIcon(ArDriveIcons.galleryGrid().icon), findsOneWidget);
 
-      await tester.tap(find.text('Gallery'));
+      final list = tester.getSemantics(find.bySemanticsLabel('List'));
+      final gallery = tester.getSemantics(find.bySemanticsLabel('Gallery'));
+      expect(list.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(gallery.hasFlag(SemanticsFlag.isSelected), isFalse);
+      expect(list.hasFlag(SemanticsFlag.isButton), isTrue);
+
+      await tester.tap(find.byIcon(ArDriveIcons.galleryGrid().icon));
       expect(picked, ExplorerViewMode.gallery);
       picked = null;
-      await tester.tap(find.text('List'));
+      await tester.tap(find.byIcon(ArDriveIcons.listView().icon));
       expect(picked, ExplorerViewMode.list);
+      handle.dispose();
+    });
+
+    testWidgets('Tab reaches it; Enter and Space switch; arrows move on',
+        (tester) async {
+      ExplorerViewMode? picked;
+      await tester.pumpWidget(_host(ExplorerViewSwitch(
+        mode: ExplorerViewMode.list,
+        onChanged: (m) => picked = m,
+      )));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab); // list
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab); // gallery
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(picked, ExplorerViewMode.gallery);
+      picked = null;
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      expect(picked, ExplorerViewMode.gallery);
+      picked = null;
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      expect(picked, ExplorerViewMode.list);
+    });
+
+    testWidgets('it is as tall as the bar\'s buttons', (tester) async {
+      await tester.pumpWidget(_host(ExplorerViewSwitch(
+        mode: ExplorerViewMode.list,
+        onChanged: (_) {},
+      )));
+      expect(
+          tester
+              .getSize(
+                  find.byType(ArDriveIconSegmentedControl<ExplorerViewMode>))
+              .height,
+          ArDriveButtonSize.regular.height);
     });
 
     testWidgets('on a phone one button switches to the other view',

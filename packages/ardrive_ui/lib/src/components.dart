@@ -26,6 +26,7 @@ export 'components/progress_bar.dart';
 export 'components/scroll_area.dart';
 export 'components/scroll_bar.dart';
 export 'components/segmented_control.dart';
+export 'components/icon_segmented_control.dart';
 export 'components/spinner.dart';
 export 'components/select.dart';
 export 'components/submenu.dart';

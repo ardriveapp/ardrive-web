@@ -134,6 +134,9 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
     final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final fade =
         reduceMotion ? Duration.zero : const Duration(milliseconds: 150);
+    // At rest the timeline sits back; it comes forward while it is used. With
+    // reduced motion it just stays forward.
+    final forward = reduceMotion || active;
 
     return Semantics(
       label: widget.semanticLabel,
@@ -153,6 +156,11 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
             if (e.section <= current) entry = e;
           }
           entry ??= widget.entries.isEmpty ? null : widget.entries.first;
+          // The year the view is in: the latest year tick at or above it.
+          String? currentYear;
+          for (final e in widget.entries) {
+            if (e.tick != null && e.section <= current) currentYear = e.tick;
+          }
 
           // Year ticks, thinned so two never touch.
           final ticks = <Widget>[];
@@ -168,12 +176,18 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
                   h;
               if (y - lastY < 18) continue;
               lastY = y;
+              final here = tick == currentYear;
               ticks.add(Positioned(
                 top: math.min(y, h - 16),
-                right: ArDriveSpacing.xs,
+                right: ArDriveSpacing.md,
                 child: Text(
                   tick,
-                  style: typography.caption(color: tokens.textLow),
+                  key: ValueKey('gallery-scrubber-year-$tick'),
+                  style: typography.caption(
+                    color: here ? tokens.textHigh : tokens.textLow,
+                    fontWeight:
+                        here ? ArFontWeight.semiBold : ArFontWeight.book,
+                  ),
                 ),
               ));
             }
@@ -192,60 +206,80 @@ class _ArDriveGalleryScrubberState extends State<ArDriveGalleryScrubber> {
               onVerticalDragEnd: (_) => setState(() => _dragging = false),
               onVerticalDragCancel: () => setState(() => _dragging = false),
               onTapDown: (d) => _dragTo(d.localPosition.dy, h),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  ...ticks,
-                  Positioned(
-                    top: thumbTop,
-                    right: 0,
-                    child: AnimatedOpacity(
-                      key: const ValueKey('gallery-scrubber-thumb'),
-                      opacity: active ? 1 : 0,
-                      duration: fade,
-                      child: Container(
-                        width: 4,
-                        height: thumbHeight,
-                        decoration: BoxDecoration(
-                          color: tokens.iconMid,
-                          borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+              child: AnimatedOpacity(
+                key: const ValueKey('gallery-scrubber-fade'),
+                opacity: forward ? 1 : 0.4,
+                duration: fade,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // The track the years sit along, so it reads as a control.
+                    if (!phone)
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        right: 1,
+                        child: Container(
+                          key: const ValueKey('gallery-scrubber-track'),
+                          width: 2,
+                          color: tokens.strokeLow,
+                        ),
+                      ),
+                    ...ticks,
+                    Positioned(
+                      top: thumbTop,
+                      right: 0,
+                      child: AnimatedOpacity(
+                        key: const ValueKey('gallery-scrubber-thumb'),
+                        // A phone's handle shows while it is used; on a wide
+                        // screen the marker is always on the track.
+                        opacity: phone && !active ? 0 : 1,
+                        duration: fade,
+                        child: Container(
+                          width: 4,
+                          height: thumbHeight,
+                          decoration: BoxDecoration(
+                            color: tokens.iconHigh,
+                            borderRadius:
+                                BorderRadius.circular(ArDriveRadius.sm),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  if (entry != null)
-                    Positioned(
-                      top: thumbTop + (thumbHeight - 28) / 2,
-                      right: ArDriveSpacing.md,
-                      child: AnimatedOpacity(
-                        key: const ValueKey('gallery-scrubber-bubble'),
-                        opacity: _dragging ? 1 : 0,
-                        duration: fade,
-                        child: IgnorePointer(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: ArDriveSpacing.sm,
-                              vertical: ArDriveSpacing.xxs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: tokens.containerL1,
-                              border: Border.all(color: tokens.strokeMid),
-                              borderRadius:
-                                  BorderRadius.circular(ArDriveRadius.sm),
-                            ),
-                            child: Text(
-                              entry.title,
-                              maxLines: 1,
-                              style: typography.paragraphNormal(
-                                color: tokens.textHigh,
-                                fontWeight: ArFontWeight.semiBold,
+                    if (entry != null)
+                      Positioned(
+                        top: thumbTop + (thumbHeight - 28) / 2,
+                        right: ArDriveSpacing.md,
+                        child: AnimatedOpacity(
+                          key: const ValueKey('gallery-scrubber-bubble'),
+                          opacity: _dragging ? 1 : 0,
+                          duration: fade,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: ArDriveSpacing.sm,
+                                vertical: ArDriveSpacing.xxs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: tokens.containerL1,
+                                border: Border.all(color: tokens.strokeMid),
+                                borderRadius:
+                                    BorderRadius.circular(ArDriveRadius.sm),
+                              ),
+                              child: Text(
+                                entry.title,
+                                maxLines: 1,
+                                style: typography.paragraphNormal(
+                                  color: tokens.textHigh,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
