@@ -3,11 +3,9 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-/// The optional settings of an upload, behind one line that says what they
-/// are set to. Most uploads leave them alone, and the line keeps them in view
-/// without taking the room of the choice every upload needs: how to pay.
-///
-/// It holds the thumbnails choice itself, so the summary follows the box.
+/// The optional settings of an upload, behind one line. Most uploads leave
+/// them alone, so the line names a setting only when Upload is waiting on it,
+/// and otherwise leaves the room to the choice every upload needs: how to pay.
 class UploadOptions extends StatefulWidget {
   const UploadOptions({
     super.key,
@@ -28,7 +26,8 @@ class UploadOptions extends StatefulWidget {
   final bool? compress;
   final void Function(bool)? onCompressChanged;
 
-  /// What the other options are set to, in a few words each.
+  /// What Upload is waiting on in the options, in a few words each; empty
+  /// when nothing is.
   final List<String> summary;
   final List<Widget> children;
 
@@ -83,12 +82,7 @@ class _UploadOptionsState extends State<UploadOptions> {
     return ArDriveDisclosure(
       icon: Icons.tune,
       title: l10n.uploadOptions,
-      summary: [
-        if (_thumbnails != null)
-          _thumbnails! ? l10n.thumbnailsOn : l10n.thumbnailsOff,
-        if (_compress ?? false) l10n.compressedSummary,
-        ...widget.summary,
-      ],
+      summary: widget.summary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

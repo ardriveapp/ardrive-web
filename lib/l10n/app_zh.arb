@@ -576,23 +576,9 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "manifestsToUpdate": "{count, plural, =1{1 个部署待更新} other{{count} 个部署待更新}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
   "updateManifests": "更新部署",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "作为部署上传",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncAllDrives": "同步所有网盘",
   "@syncAllDrives": {
@@ -2828,16 +2814,6 @@
       }
     }
   },
-  "namedLicense": "{name} 许可证",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
-      }
-    }
-  },
   "noLicense": "无许可证",
   "@noLicense": {
     "description": "Upload options: no license is attached to the upload"
@@ -2846,14 +2822,6 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "缩略图已关闭",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "缩略图已开启",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "压缩文本和代码",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
@@ -2861,10 +2829,6 @@
   "compressTextAndCodeHint": "网站和代码占用的存储更少。",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "已压缩",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "共 {size}",
   "@totalUploadSize": {

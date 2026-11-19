@@ -576,23 +576,9 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "manifestsToUpdate": "{count, plural, =1{अपडेट करने के लिए 1 डिप्लॉयमेंट} other{अपडेट करने के लिए {count} डिप्लॉयमेंट}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
   "updateManifests": "डिप्लॉयमेंट अपडेट करें",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "डिप्लॉयमेंट के रूप में अपलोड करें",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncAllDrives": "सभी ड्राइव सिंक करें",
   "@syncAllDrives": {
@@ -2828,16 +2814,6 @@
       }
     }
   },
-  "namedLicense": "{name} लाइसेंस",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
-      }
-    }
-  },
   "noLicense": "कोई लाइसेंस नहीं",
   "@noLicense": {
     "description": "Upload options: no license is attached to the upload"
@@ -2846,14 +2822,6 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "थंबनेल बंद",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "थंबनेल चालू",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "टेक्स्ट और कोड कंप्रेस करें",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
@@ -2861,10 +2829,6 @@
   "compressTextAndCodeHint": "वेबसाइट और कोड के लिए कम स्टोरेज।",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "कंप्रेस्ड",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "कुल {size}",
   "@totalUploadSize": {

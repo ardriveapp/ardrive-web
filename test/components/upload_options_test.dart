@@ -7,12 +7,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The upload dialog's optional settings, behind one line saying what is set.
+/// The upload dialog's optional settings, behind one line that names only
+/// what Upload is waiting on.
 void main() {
   Future<void> pump(
     WidgetTester tester, {
     bool? thumbnails = true,
-    List<String> summary = const ['No license'],
+    List<String> summary = const [],
     void Function(bool)? onThumbnailsChanged,
     bool? compress,
     void Function(bool)? onCompressChanged,
@@ -44,29 +45,35 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('starts closed, saying what is set', (tester) async {
-    await pump(tester);
+  testWidgets('starts closed, with no summary of what is set', (tester) async {
+    await pump(tester, compress: true);
 
     expect(find.text('Options'), findsOneWidget);
-    expect(find.text('Thumbnails on'), findsOneWidget);
-    expect(find.text('No license'), findsOneWidget);
+    expect(find.textContaining('Thumbnails'), findsNothing);
+    expect(find.text('Compressed'), findsNothing);
     expect(find.text('license field'), findsNothing);
     expect(find.text('Upload with thumbnails'), findsNothing);
   });
 
+  testWidgets('names what Upload is waiting on', (tester) async {
+    await pump(tester, summary: const ['Choose a license type']);
+
+    expect(find.text('Choose a license type'), findsOneWidget);
+  });
+
   testWidgets('opens to the options, and the summary makes way',
       (tester) async {
-    await pump(tester);
+    await pump(tester, summary: const ['Choose a license type']);
 
     await tester.tap(find.text('Options'));
     await tester.pumpAndSettle();
 
     expect(find.text('Upload with thumbnails'), findsOneWidget);
     expect(find.text('license field'), findsOneWidget);
-    expect(find.text('Thumbnails on'), findsNothing);
+    expect(find.text('Choose a license type'), findsNothing);
   });
 
-  testWidgets('the summary follows the thumbnails box', (tester) async {
+  testWidgets('the thumbnails box reports the choice', (tester) async {
     bool? changed;
     await pump(tester, onThumbnailsChanged: (value) => changed = value);
 
@@ -74,11 +81,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Upload with thumbnails'));
     await tester.pump();
-    await tester.tap(find.text('Options'));
-    await tester.pumpAndSettle();
 
     expect(changed, isFalse);
-    expect(find.text('Thumbnails off'), findsOneWidget);
   });
 
   testWidgets('says nothing about thumbnails without images', (tester) async {
@@ -126,9 +130,6 @@ void main() {
         (tester) async {
       await pump(tester, thumbnails: null, compress: false);
 
-      // Closed: nothing about it in the summary while it is off.
-      expect(find.text('Compressed'), findsNothing);
-
       await open(tester);
 
       expect(find.text(label), findsOneWidget);
@@ -157,8 +158,7 @@ void main() {
           closeTo(tester.getTopLeft(find.text(label)).dx, 0.6));
     });
 
-    testWidgets('tapping it reports the choice, and the summary says so',
-        (tester) async {
+    testWidgets('tapping it reports the choice', (tester) async {
       bool? chosen;
       await pump(tester,
           thumbnails: null,
@@ -169,10 +169,6 @@ void main() {
       await tester.tap(find.text(label));
       await tester.pump();
       expect(chosen, isTrue);
-
-      await tester.tap(find.text('Options'));
-      await tester.pumpAndSettle();
-      expect(find.text('Compressed'), findsOneWidget);
     });
 
     testWidgets('is a labelled checkbox to a screen reader', (tester) async {

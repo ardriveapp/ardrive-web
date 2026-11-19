@@ -1979,26 +1979,14 @@ class _UploadReadyWidget extends StatelessWidget {
     final hasDeployments =
         state.canShowSettings && state.manifestFiles.isNotEmpty;
 
+    // Only what Upload is waiting on; the rest is in the options themselves.
     final optionsSummary = [
-      if (licenseCategory == null)
-        l10n.noLicense
-      else if (!licenseComplete)
+      if (!licenseComplete)
         // Only Creative Commons has a type to choose; an invalid UDL fee is
         // a setting to check.
         licenseCategory == LicenseCategory.cc
             ? l10n.chooseALicenseType
-            : l10n.licenseCheckSettings
-      else
-        // The license as it is recorded: "CC-BY", not just "CC".
-        l10n.namedLicense(licenseCategory == LicenseCategory.cc
-            ? cubit.configuredLicense(licenseCategory)!.meta.shortName
-            : _licenseShortNames[licenseCategory] ??
-                licenseCategoryNames[licenseCategory]!),
-      if (state.shouldShowCustomManifestCheckbox &&
-          state.uploadFileAsCustomManifest)
-        l10n.uploadAsManifest,
-      if (state.selectedManifestSelections.isNotEmpty)
-        l10n.manifestsToUpdate(state.selectedManifestSelections.length),
+            : l10n.licenseCheckSettings,
     ];
 
     return UploadReviewDialog(
@@ -2171,12 +2159,6 @@ class _UploadReadyWidget extends StatelessWidget {
     );
   }
 }
-
-/// Short names for the Options summary; the dropdown keeps the full ones.
-const _licenseShortNames = {
-  LicenseCategory.udl: 'UDL',
-  LicenseCategory.cc: 'CC',
-};
 
 class _UploadConfiguringLicenseWidget extends StatelessWidget {
   const _UploadConfiguringLicenseWidget({required this.state});
