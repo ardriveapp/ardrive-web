@@ -8534,5 +8534,6 @@
   "galleryItemCount": "{count, plural, other{{count} 件}}",
   "galleryCouldNotLoad": "読み込めませんでした",
   "galleryUploadPending": "アップロード待ち",
-  "galleryTimeline": "タイムライン"
+  "galleryTimeline": "タイムライン",
+  "gallerySelectMonth": "{month}を選択"
 }

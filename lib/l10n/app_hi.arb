@@ -8534,5 +8534,6 @@
   "galleryItemCount": "{count, plural, one{1 आइटम} other{{count} आइटम}}",
   "galleryCouldNotLoad": "लोड नहीं हो सका",
   "galleryUploadPending": "अपलोड लंबित",
-  "galleryTimeline": "समयरेखा"
+  "galleryTimeline": "समयरेखा",
+  "gallerySelectMonth": "{month} चुनें"
 }

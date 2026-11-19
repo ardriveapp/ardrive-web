@@ -6750,5 +6750,15 @@
   "galleryTimeline": "Timeline",
   "@galleryTimeline": {
     "description": "Name of the gallery's timeline control, which jumps between months."
+  },
+  "gallerySelectMonth": "Select {month}",
+  "@gallerySelectMonth": {
+    "description": "Names the select control on a gallery month header, which selects every item in that month.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "October 2026"
+      }
+    }
   }
 }

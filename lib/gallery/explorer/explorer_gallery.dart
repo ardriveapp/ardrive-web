@@ -177,7 +177,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     final cubit = context.read<DriveDetailCubit>();
     // Once a finger has started selecting, a tap adds to the selection, as
     // in the photo apps; it opens again when nothing is chosen.
-    final phone = MediaQuery.sizeOf(context).width < galleryPhoneBreakpoint;
+    final phone = galleryScreenIsPhone(context);
     if (phone && widget.multiSelected.isNotEmpty && !widget.lockMultiSelect) {
       _click(item, GalleryClickKind.toggle);
       return;
@@ -189,6 +189,16 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     if (widget.lockMultiSelect) return;
     _anchor = item;
     context.read<DriveDetailCubit>().selectItems([item]);
+  }
+
+  /// A month's control: the whole month in, or out when it is all in.
+  void _toggleMonth(GalleryMonth month) {
+    if (widget.lockMultiSelect) return;
+    _anchor = null;
+    context.read<DriveDetailCubit>().selectItems(resolveMonthToggle(
+          month: month.items,
+          multiSelected: widget.multiSelected,
+        ));
   }
 
   void _selectForMenu(ArDriveDataTableItem item) {
@@ -262,7 +272,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   Widget build(BuildContext context) {
     final l10n = appLocalizationsOf(context);
     final model = _modelFor(l10n);
-    final phone = MediaQuery.sizeOf(context).width < galleryPhoneBreakpoint;
+    final phone = galleryScreenIsPhone(context);
 
     final sections = <ArDriveGallerySection>[];
     final entries = <ArDriveGalleryScrubberEntry>[];
@@ -288,6 +298,11 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
         header: _MonthHeader(
           title: title,
           count: l10n.galleryItemCount(month.items.length),
+          selectLabel: l10n.gallerySelectMonth(title),
+          chosen: month.items.where(_isSelected).length,
+          total: month.items.length,
+          alwaysShowControl: phone,
+          onToggle: widget.lockMultiSelect ? null : () => _toggleMonth(month),
         ),
       ));
     }
@@ -307,8 +322,10 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
             child: ArDriveSectionedGallery(
               controller: _controller,
               sections: sections,
+              isPhone: phone,
               padding: EdgeInsets.only(
-                right: phone ? 0 : trackWidth,
+                left: phone ? galleryPhoneGutter : 0,
+                right: phone ? galleryPhoneGutter : trackWidth,
                 bottom: ArDriveSpacing.md,
               ),
               layoutRevision: Object.hashAll(_flat.map((e) => e.id)),
@@ -350,36 +367,113 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   }
 }
 
-class _MonthHeader extends StatelessWidget {
-  const _MonthHeader({required this.title, required this.count});
+class _MonthHeader extends StatefulWidget {
+  const _MonthHeader({
+    required this.title,
+    required this.count,
+    required this.selectLabel,
+    required this.chosen,
+    required this.total,
+    required this.alwaysShowControl,
+    required this.onToggle,
+  });
 
   final String title;
   final String count;
+  final String selectLabel;
+  final int chosen;
+  final int total;
+  final bool alwaysShowControl;
+
+  /// Null when a sync holds multi-select shut: there is no control then.
+  final VoidCallback? onToggle;
+
+  @override
+  State<_MonthHeader> createState() => _MonthHeaderState();
+}
+
+class _MonthHeaderState extends State<_MonthHeader> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final all = widget.total > 0 && widget.chosen == widget.total;
+    final some = widget.chosen > 0;
+    final onToggle = widget.onToggle;
+    final showControl =
+        onToggle != null && (widget.alwaysShowControl || _hovered || some);
+
     return Semantics(
       header: true,
-      child: Align(
-        alignment: AlignmentDirectional.bottomStart,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                title,
-                style: typography.paragraphLarge(
-                  color: tokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Align(
+          alignment: AlignmentDirectional.bottomStart,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (onToggle != null)
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: showControl
+                        ? Semantics(
+                            key: const ValueKey('gallery-month-select'),
+                            button: true,
+                            checked: all,
+                            label: widget.selectLabel,
+                            excludeSemantics: true,
+                            onTap: onToggle,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: onToggle,
+                              child: Center(
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: all
+                                        ? tokens.buttonPrimaryDefault
+                                        : null,
+                                    border: all
+                                        ? null
+                                        : Border.all(
+                                            color: some
+                                                ? tokens.strokeHigh
+                                                : tokens.strokeMid,
+                                            width: 2,
+                                          ),
+                                  ),
+                                  child: all
+                                      ? ArDriveIcons.checkmark(
+                                          size: 12,
+                                          color: tokens.textOnPrimary,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                Text(
+                  widget.title,
+                  style: typography.paragraphLarge(
+                    color: tokens.textHigh,
+                    fontWeight: ArFontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(width: ArDriveSpacing.sm),
-              Text(count, style: typography.caption(color: tokens.textLow)),
-            ],
+                const SizedBox(width: ArDriveSpacing.sm),
+                Text(widget.count,
+                    style: typography.caption(color: tokens.textLow)),
+              ],
+            ),
           ),
         ),
       ),

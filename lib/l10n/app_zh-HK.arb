@@ -8534,5 +8534,6 @@
   "galleryItemCount": "{count, plural, other{{count} 項}}",
   "galleryCouldNotLoad": "無法載入",
   "galleryUploadPending": "等待上傳",
-  "galleryTimeline": "時間軸"
+  "galleryTimeline": "時間軸",
+  "gallerySelectMonth": "選取{month}"
 }

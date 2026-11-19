@@ -9,6 +9,14 @@ const double galleryPhoneBreakpoint = 834;
 const double galleryPhoneRowHeight = 86;
 const double galleryPhoneGap = 2;
 
+/// The side gutter of a phone's page, which a phone gallery keeps.
+const double galleryPhoneGutter = 16;
+
+/// Whether the screen is a phone's: the screen's width, never the room a
+/// gallery happens to be given (a details panel beside it narrows it).
+bool galleryScreenIsPhone(BuildContext context) =>
+    MediaQuery.sizeOf(context).width < galleryPhoneBreakpoint;
+
 /// Row height and gap everywhere else.
 const double galleryDesktopRowHeight = 180;
 const double galleryDesktopGap = ArDriveSpacing.xxs;
@@ -30,8 +38,8 @@ typedef GalleryTileBuilder = Widget Function(
 /// square is used). When ratios change without the count changing, change
 /// [layoutRevision] so rows are laid out again.
 ///
-/// The phone sizes are chosen by this widget's own width, not the screen's,
-/// so a gallery in a narrow panel gets them too.
+/// The phone sizes are chosen by the screen's width (or [isPhone]), not this
+/// widget's own, so a gallery beside a details panel keeps its desktop sizes.
 ///
 /// Row height defaults by width: [galleryPhoneRowHeight] under
 /// [galleryPhoneBreakpoint], [galleryDesktopRowHeight] above, unless
@@ -49,7 +57,12 @@ class ArDriveJustifiedGallery extends StatefulWidget {
     this.controller,
     this.layoutRevision = 0,
     this.itemKeyOf,
+    this.isPhone,
   });
+
+  /// Whether to use the phone sizes. Defaults to the screen's width (see
+  /// [galleryScreenIsPhone]), not this widget's own.
+  final bool? isPhone;
 
   final int itemCount;
   final GalleryAspectRatio aspectRatioOf;
@@ -102,7 +115,7 @@ class _ArDriveJustifiedGalleryState extends State<ArDriveJustifiedGallery> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final phone = constraints.maxWidth < galleryPhoneBreakpoint;
+      final phone = widget.isPhone ?? galleryScreenIsPhone(context);
       final target = widget.targetRowHeight ??
           (phone ? galleryPhoneRowHeight : galleryDesktopRowHeight);
       final width = constraints.maxWidth - widget.padding.horizontal;

@@ -70,3 +70,23 @@ GallerySelectionChange resolveGalleryClick({
       );
   }
 }
+
+/// What selecting a month's control does: the multi-selection afterwards.
+///
+/// When every item of the month is already chosen it takes them out and keeps
+/// the rest; otherwise it adds the whole month to what is chosen.
+List<ArDriveDataTableItem> resolveMonthToggle({
+  required List<ArDriveDataTableItem> month,
+  required List<ArDriveDataTableItem> multiSelected,
+}) {
+  final chosen = {for (final e in multiSelected) e.id};
+  final all = month.every((e) => chosen.contains(e.id));
+  if (all) {
+    final inMonth = {for (final e in month) e.id};
+    return multiSelected.where((e) => !inMonth.contains(e.id)).toList();
+  }
+  return [
+    ...multiSelected,
+    ...month.where((e) => !chosen.contains(e.id)),
+  ];
+}

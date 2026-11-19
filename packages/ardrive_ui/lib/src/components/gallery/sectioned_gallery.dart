@@ -305,7 +305,11 @@ class ArDriveSectionedGallery extends StatefulWidget {
     this.padding = EdgeInsets.zero,
     this.layoutRevision = 0,
     this.targetRowHeight,
+    this.isPhone,
   });
+
+  /// Defaults to the screen's width, see [galleryScreenIsPhone].
+  final bool? isPhone;
 
   final ArDriveSectionedGalleryController controller;
   final List<ArDriveGallerySection> sections;
@@ -365,7 +369,7 @@ class _ArDriveSectionedGalleryState extends State<ArDriveSectionedGallery> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final phone = constraints.maxWidth < galleryPhoneBreakpoint;
+      final phone = widget.isPhone ?? galleryScreenIsPhone(context);
       final target = widget.targetRowHeight ??
           (phone ? galleryPhoneRowHeight : galleryDesktopRowHeight);
       final width =

@@ -573,4 +573,104 @@ void main() {
           .compareTo(tester.getTopLeft(tileOf(y)).dx));
     expect(onScreen, expected);
   });
+
+  testWidgets('a details panel narrowing the gallery keeps desktop rows',
+      (tester) async {
+    final many = [
+      for (var i = 0; i < 6; i++)
+        fileItem('n$i', name: 'n$i.jpg', created: oct, variants: wide('n$i'))
+    ];
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(width: 600, child: app(many)),
+    ));
+    await tester.pump();
+    await tester.pump();
+    expect(tester.getSize(tileOf('n0.jpg')).height,
+        greaterThan(galleryPhoneRowHeight * 1.5));
+  });
+
+  group('on a phone', () {
+    testWidgets('folders, headers and tiles keep the 16 px side gutter',
+        (tester) async {
+      await pump(tester, app(all), size: const Size(390, 800));
+      for (final name in ['Trips', 'Alfama.jpg', 'Pier.jpg']) {
+        final rect = tester.getRect(tileOf(name));
+        expect(rect.left, greaterThanOrEqualTo(16), reason: name);
+        expect(rect.right, lessThanOrEqualTo(390 - 16), reason: name);
+      }
+      expect(
+          tester
+              .getTopLeft(
+                  find.byKey(const ValueKey('gallery-month-select')).first)
+              .dx,
+          greaterThanOrEqualTo(16));
+      // Rows fill the width between the gutters.
+      final row = tester.getRect(tileOf('Alfama.jpg'));
+      expect(row.left, 16);
+    });
+  });
+
+  group('month select', () {
+    Finder control() => find.byKey(const ValueKey('gallery-month-select'));
+
+    List<String> lastChosen() =>
+        (verify(() => detailCubit.selectItems(captureAny())).captured.last
+                as List<ArDriveDataTableItem>)
+            .map((e) => e.id)
+            .toList();
+
+    testWidgets('on a phone the control is always there, and selects the month',
+        (tester) async {
+      await pump(tester, app(all), size: const Size(390, 800));
+      expect(control(), findsNWidgets(2));
+      // October: a, b, c.
+      await tester.tap(control().first);
+      expect(lastChosen(), ['a', 'b', 'c']);
+    });
+
+    testWidgets('on a desktop it shows when the header is hovered',
+        (tester) async {
+      await pump(tester, app(all));
+      expect(control(), findsNothing);
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('October 2026')));
+      await tester.pump();
+      expect(control(), findsOneWidget);
+      await tester.tap(control());
+      expect(lastChosen(), ['a', 'b', 'c']);
+    });
+
+    testWidgets('a month already chosen is taken out again', (tester) async {
+      when(() => detailCubit.selectedItems).thenReturn([a, b, c, d]);
+      await pump(tester, app(all, multi: [a, b, c, d]));
+      // Shown without hover: something in it is chosen.
+      expect(control(), findsNWidgets(2));
+      await tester.tap(control().first);
+      expect(lastChosen(), ['d']);
+    });
+
+    testWidgets('a sync holding multi-select shut leaves no control',
+        (tester) async {
+      await pump(tester, app(all, lock: true), size: const Size(390, 800));
+      expect(control(), findsNothing);
+      verifyNever(() => detailCubit.selectItems(any()));
+    });
+
+    testWidgets('a screen reader hears the control and whether it is on',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, app(all, multi: [a, b, c]),
+          size: const Size(390, 800));
+      final node = tester.getSemantics(control().first);
+      expect(node.label, contains('Select October 2026'));
+      expect(node.hasFlag(SemanticsFlag.isChecked), isTrue);
+      handle.dispose();
+    });
+  });
 }

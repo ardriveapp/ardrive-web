@@ -81,4 +81,29 @@ void main() {
   test('Shift with nothing to start from chooses just the item', () {
     expect(ids(click(c, GalleryClickKind.range).selectMany), ['c']);
   });
+
+  group('a month\'s control', () {
+    final month = [a, b];
+
+    test('chooses the whole month, keeping what was chosen', () {
+      expect(
+        ids(resolveMonthToggle(month: month, multiSelected: [d])),
+        ['d', 'a', 'b'],
+      );
+    });
+
+    test('a month partly chosen is completed, not emptied', () {
+      expect(
+        ids(resolveMonthToggle(month: month, multiSelected: [b])),
+        ['b', 'a'],
+      );
+    });
+
+    test('a month wholly chosen is taken out, the rest stays', () {
+      expect(
+        ids(resolveMonthToggle(month: month, multiSelected: [a, d, b])),
+        ['d'],
+      );
+    });
+  });
 }

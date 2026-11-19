@@ -8534,5 +8534,6 @@
   "galleryItemCount": "{count, plural, one{1 elemento} other{{count} elementos}}",
   "galleryCouldNotLoad": "No se pudo cargar",
   "galleryUploadPending": "Subida pendiente",
-  "galleryTimeline": "Línea de tiempo"
+  "galleryTimeline": "Línea de tiempo",
+  "gallerySelectMonth": "Seleccionar {month}"
 }
