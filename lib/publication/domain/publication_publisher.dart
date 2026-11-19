@@ -410,6 +410,10 @@ class PublicationPublisher {
     onStep?.call(PublicationStep.files);
     try {
       job._signed ??= await _sign(job, wallet);
+    } on PublicationFailure {
+      // A page that would never open (too long, too many files): the
+      // wallet had nothing to do with it, and trying again won't help.
+      rethrow;
     } catch (e) {
       logger.e('[publication] signing failed', e);
       throw const PublicationFailure(

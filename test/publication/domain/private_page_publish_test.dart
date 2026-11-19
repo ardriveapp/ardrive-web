@@ -700,6 +700,13 @@ void main() {
         throwsA(isA<PublicationFailure>()
             .having((e) => e.canRetry, 'canRetry', false)));
     expect(publisher.sizeOf(job('a${'\u0301' * 10}')), greaterThan(0));
+    // Published without pricing first: the refusal is the same, not a
+    // wallet that didn't sign.
+    await expectLater(
+        publisher.publish(job(heavy), wallet),
+        throwsA(isA<PublicationFailure>()
+            .having((e) => e.canRetry, 'canRetry', false)
+            .having((e) => e.message, 'message', contains('too long'))));
   });
 }
 
