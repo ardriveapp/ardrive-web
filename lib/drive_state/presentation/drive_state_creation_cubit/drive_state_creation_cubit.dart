@@ -40,8 +40,11 @@ part 'drive_state_creation_state.dart';
 const kCostEstimateTimeout = Duration(seconds: 45);
 
 /// Syncs the drive, deeply when [deep], and says whether a sync started.
+/// [force] syncs even when the last sync looks complete: a drive with no
+/// watermark can have a clean skip record.
 typedef DriveStateSyncDrive = Future<bool> Function({
   required bool deep,
+  required bool force,
   required bool Function() isCancelled,
 });
 
@@ -106,6 +109,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
     try {
       started = await sync(
         deep: refused.refusal == DriveStateCreationRefusal.syncSkippedEntities,
+        force: refused.refusal == DriveStateCreationRefusal.noWatermark,
         isCancelled: () => isClosed,
       );
     } catch (e, stackTrace) {

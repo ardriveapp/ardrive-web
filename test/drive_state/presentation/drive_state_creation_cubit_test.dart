@@ -197,7 +197,9 @@ void main() {
     test('offers a sync only where one can clear the refusal', () async {
       final withSync = cubitWith(
         skipStatus: unknown,
-        syncDrive: ({required deep, required isCancelled}) async => true,
+        syncDrive: (
+                {required deep, required force, required isCancelled}) async =>
+            true,
       );
       await withSync.prepare();
       expect((withSync.state as DriveStateCreationRefused).canSync, isTrue);
@@ -214,7 +216,8 @@ void main() {
       bool? deepAsked;
       final cubit = cubitWith(
         skipSource: source,
-        syncDrive: ({required deep, required isCancelled}) async {
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
           deepAsked = deep;
           source.status = const DriveStateSyncSkipStatus.clean();
           return true;
@@ -238,7 +241,8 @@ void main() {
       bool? deepAsked;
       final cubit = cubitWith(
         skipStatus: skipped,
-        syncDrive: ({required deep, required isCancelled}) async {
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
           deepAsked = deep;
           return true;
         },
@@ -249,10 +253,32 @@ void main() {
       await cubit.close();
     });
 
+    test('syncs a drive with no watermark even when its skips are clean',
+        () async {
+      bool? forced;
+      final cubit = cubitWith(
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
+          forced = force;
+          return true;
+        },
+      );
+      cubit.emit(DriveStateCreationRefused(
+        refusal: DriveStateCreationRefusal.noWatermark,
+        reason: 'No watermark.',
+        canSync: true,
+      ));
+      await cubit.syncThenPrepare();
+      expect(forced, isTrue);
+      await cubit.close();
+    });
+
     test('says so when the sync could not start', () async {
       final cubit = cubitWith(
         skipStatus: unknown,
-        syncDrive: ({required deep, required isCancelled}) async => false,
+        syncDrive: (
+                {required deep, required force, required isCancelled}) async =>
+            false,
       );
       await cubit.prepare();
       await cubit.syncThenPrepare();

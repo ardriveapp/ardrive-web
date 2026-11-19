@@ -75,27 +75,35 @@ Future<void> promptToCreateDriveState(
         ),
         profileCubit: profileCubit,
         driveDao: driveDao,
-        // A published snapshot answers "Snapshot recommended", as the older
-        // snapshot dialog's DriveSnapshotted does. The count is reset here,
-        // synchronously, because the Snapshots tab re-reads it as soon as
-        // the new snapshot is announced, before the bloc handles an event.
         // As the publish dialog does: a running sync may cover the drive
         // already, so wait for it, and sync only if the drive still can't be
         // confirmed complete. Skipped items need the deep sync asked for.
-        syncDrive: ({required deep, required isCancelled}) async {
+        syncDrive: (
+            {required deep, required force, required isCancelled}) async {
           await syncCubit.waitCurrentSync();
           if (syncCubit.state is SyncLoadingDrives) {
             await syncCubit.waitForDriveListRefresh();
           }
           if (isCancelled()) return false;
           if (!deep &&
+              !force &&
               SyncCubitDriveStateSkipSource(syncCubit)
                   .statusFor(drive.id)
                   .isClean) {
             return true;
           }
-          return syncCubit.startSyncForDrive(driveId: drive.id, deepSync: deep);
+          // False also for a sync that ran and failed, which the check that
+          // follows describes. Only a refused start is "couldn't start".
+          final ran = await syncCubit.startSyncForDrive(
+            driveId: drive.id,
+            deepSync: deep,
+          );
+          return ran || syncCubit.lastSingleSyncRefusal == null;
         },
+        // A published snapshot answers "Snapshot recommended", as the older
+        // snapshot dialog's DriveSnapshotted does. The count is reset here,
+        // synchronously, because the Snapshots tab re-reads it as soon as
+        // the new snapshot is announced, before the bloc handles an event.
         onPublished: () {
           CountOfTxsSyncedWithGql.resetForDrive(drive.id);
           promptToSnapshotBloc.add(DriveSnapshotted(driveId: drive.id));
