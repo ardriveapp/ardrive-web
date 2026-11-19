@@ -10,6 +10,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -43,8 +44,22 @@ void main() {
 
   late _MockCreateManifestCubit cubit;
 
+  setUpAll(() {
+    registerFallbackValue(CreateManifestFolderLoadSuccess(
+      viewingRootFolder: true,
+      viewingFolder: FolderWithContents(
+        folder: folder('root'),
+        subfolders: const [],
+        files: const [],
+      ),
+      enableManifestCreationButton: true,
+    ));
+  });
+
   setUp(() {
     cubit = _MockCreateManifestCubit();
+    when(() => cubit.isLoadingFolder(any())).thenReturn(false);
+    when(() => cubit.loadParentFolder()).thenAnswer((_) async {});
     when(() => cubit.checkForConflicts(any())).thenAnswer((_) async {});
     when(() => cubit.reCheckConflicts(any())).thenAnswer((_) async {});
     when(() => cubit.confirmRevision(any())).thenAnswer((_) async {});
@@ -275,11 +290,35 @@ void main() {
       expect(find.text('Try again'), findsNothing);
     });
 
-    testWidgets('of a Turbo payment offers credits, in the dialog',
+    testWidgets('that may have sent something says so, and no Try again',
+        (tester) async {
+      await pumpForm(
+        tester,
+        CreateManifestFailure(canRetry: false, maybeSent: true),
+      );
+
+      expect(find.textContaining('may have been sent and paid for'),
+          findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+    });
+
+    testWidgets('of a Turbo payment offers credits, and Try again after them',
         (tester) async {
       await pumpForm(tester, CreateManifestFailure(isPaymentError: true));
 
       expect(find.text('Free allowance used up'), findsOneWidget);
+      expect(primary('Buy credits'), findsOneWidget);
+      // The dialog stays through the top-up, so the person comes back to it.
+      expect(primary('Try again'), findsOneWidget);
+    });
+
+    testWidgets('of a Turbo payment, after a post, has no Try again',
+        (tester) async {
+      await pumpForm(
+        tester,
+        CreateManifestFailure(isPaymentError: true, canRetry: false),
+      );
+
       expect(primary('Buy credits'), findsOneWidget);
       expect(find.text('Try again'), findsNothing);
     });
@@ -310,10 +349,118 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Your deployment is live'), findsOneWidget);
+    expect(find.text('Deployment created'), findsOneWidget);
     expect(find.byType(ArDriveNotice), findsOneWidget);
     expect(find.textContaining("name couldn't be set"), findsOneWidget);
     expect(find.textContaining('from Names'), findsOneWidget);
+  });
+
+  testWidgets('the success screen scrolls, so Close stays in reach',
+      (tester) async {
+    await pumpForm(
+      tester,
+      CreateManifestSuccess(parentFolder: folder('root'), dataTxId: 'tx-1'),
+    );
+
+    expect(
+      tester
+          .widget<ArDriveStandardModalNew>(find.byType(ArDriveStandardModalNew))
+          .scrollableContent,
+      isTrue,
+    );
+  });
+
+  group('Back from the platform', () {
+    bool canPop(WidgetTester tester) => tester
+        .widget<PopScope>(find
+            .descendant(
+              of: find.byType(CreateManifestForm),
+              matching: find.byType(PopScope),
+            )
+            .first)
+        .canPop;
+
+    testWidgets('closes a screen that is waiting on the person',
+        (tester) async {
+      await pumpForm(tester, picker());
+
+      expect(canPop(tester), isTrue);
+    });
+
+    testWidgets('is held while the upload runs', (tester) async {
+      await pumpForm(
+        tester,
+        CreateManifestUploadInProgress(
+          progress: CreateManifestUploadProgress.uploadingManifest,
+        ),
+      );
+
+      expect(canPop(tester), isFalse);
+    });
+
+    testWidgets('is held while a press is being answered', (tester) async {
+      final gate = Completer<void>();
+      when(() => cubit.checkForConflicts(any())).thenAnswer((_) => gate.future);
+      await pumpForm(tester, picker());
+      await tester.enterText(find.byType(TextField).first, 'my-site');
+      await tester.pump();
+
+      await tester.tap(primary('Review'));
+      await tester.pump();
+
+      expect(canPop(tester), isFalse);
+      gate.complete();
+      await tester.pump();
+    });
+  });
+
+  group('the folder list', () {
+    testWidgets('holds Review until the folder asked for is shown',
+        (tester) async {
+      when(() => cubit.isLoadingFolder(any())).thenReturn(true);
+      await pumpForm(tester, picker());
+      await tester.enterText(find.byType(TextField).first, 'my-site');
+      await tester.pump();
+
+      expect(
+        tester.widget<ArDriveButtonNew>(primary('Review')).isDisabled,
+        isTrue,
+      );
+
+      // Enter in the name field does not get past it either.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      verifyNever(() => cubit.checkForConflicts(any()));
+    });
+
+    testWidgets('Back can be pressed by assistive technology, not only tapped',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpForm(
+        tester,
+        CreateManifestFolderLoadSuccess(
+          viewingRootFolder: false,
+          viewingFolder: FolderWithContents(
+            folder: folder('docs', parent: 'root'),
+            subfolders: const [],
+            files: const [],
+          ),
+          enableManifestCreationButton: true,
+        ),
+      );
+
+      final back = tester.getSemantics(find.bySemanticsLabel('Back'));
+      expect(back.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      tester
+          .renderObject(find.byType(CreateManifestForm))
+          .owner!
+          .semanticsOwner!
+          .performAction(back.id, SemanticsAction.tap);
+      await tester.pump();
+
+      verify(() => cubit.loadParentFolder()).called(1);
+      semantics.dispose();
+    });
   });
 
   testWidgets('success shows the deployment, its address, and copies it',
@@ -338,7 +485,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Your deployment is live'), findsOneWidget);
+    expect(find.text('Deployment created'), findsOneWidget);
     expect(find.text('my-site'), findsOneWidget);
     expect(find.textContaining('/data-tx-1'), findsOneWidget,
         reason: 'the address of its data transaction');

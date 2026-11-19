@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -33,6 +34,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
@@ -104,6 +106,7 @@ class CreateManifestForm extends StatefulWidget {
     super.key,
     @visibleForTesting this.names,
     @visibleForTesting this.paymentBloc,
+    @visibleForTesting this.lookupFollowing,
   });
 
   /// A name step to use instead of the one built from the app's providers.
@@ -111,6 +114,11 @@ class CreateManifestForm extends StatefulWidget {
 
   /// A cost reader to use instead of the one built from the app's providers.
   final UploadPaymentMethodBloc? paymentBloc;
+
+  /// The names on the deployment a new version replaces, instead of the ones
+  /// read from the app's providers.
+  final Future<List<ArNSNameRecord>> Function(FileID existingFileId)?
+      lookupFollowing;
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -124,24 +132,49 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
   bool _namesStarted = false;
   Future<ArNSFlowOutcome>? _namesApplied;
 
+  bool _followingStarted = false;
+
+  /// False while the names on the deployment being replaced are read: until
+  /// they are, what Create would move is not known, so it is not offered.
+  bool _followingReady = true;
+
   /// Builds the name step once, with the names on the deployment it
   /// updates, which move to the new version.
   ArNSFlowNameCubit? _nameStep(CreateManifestUploadReview state) {
-    if (_namesStarted) return _names;
-    _namesStarted = true;
-    final names = _names = createArNSFlowNameCubit(context);
-    final existing = state.existingManifestFileId;
-    if (names != null && existing != null) {
-      context
-          .read<DriveDao>()
-          .fileById(fileId: existing)
-          .getSingleOrNull()
-          .then((file) {
-        if (!mounted || file == null) return;
-        names.setFollowing(arnsNamesOnVersion(context, file.dataTxId));
-      });
+    if (!_namesStarted) {
+      _namesStarted = true;
+      _names = createArNSFlowNameCubit(context);
     }
-    return names;
+    _startFollowing(state);
+    return _names;
+  }
+
+  void _startFollowing(CreateManifestUploadReview state) {
+    if (_followingStarted) return;
+    _followingStarted = true;
+    final names = _names;
+    final existing = state.existingManifestFileId;
+    if (names == null || existing == null) return;
+    _followingReady = false;
+    final driveDao =
+        widget.lookupFollowing == null ? context.read<DriveDao>() : null;
+    final lookup = widget.lookupFollowing ??
+        (fileId) async {
+          final file =
+              await driveDao!.fileById(fileId: fileId).getSingleOrNull();
+          // ignore: use_build_context_synchronously
+          return file == null || !mounted
+              ? <ArNSNameRecord>[]
+              : arnsNamesOnVersion(context, file.dataTxId);
+        };
+    lookup(existing).then((following) {
+      if (mounted) names.setFollowing(following);
+    }).catchError((Object e) {
+      // Nothing moves then, and the review says so by showing no names.
+      logger.w('Could not read the names on the deployment: $e');
+    }).whenComplete(() {
+      if (mounted) setState(() => _followingReady = true);
+    });
   }
 
   @override
@@ -211,6 +244,21 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         Navigator.pop(context);
       }
     }, builder: (context, state) {
+      // The barrier is not the only way out: the platform's Back would close
+      // the dialog on a step that writes or pays.
+      final busy = _submitting ||
+          state is CreateManifestPreparingManifest ||
+          state is CreateManifestCheckingForConflicts ||
+          state is CreateManifestUploadInProgress;
+      return PopScope(
+        canPop: !busy,
+        child: _content(context, state),
+      );
+    });
+  }
+
+  Widget _content(BuildContext context, CreateManifestState state) {
+    {
       final l10n = appLocalizationsOf(context);
       final typography = ArDriveTypographyNew.of(context);
       final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -234,8 +282,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     // told.
                     nameFailed: outcome.hasError,
                   )
-                : ProgressDialog(
-                    title: l10n.arnsSettingTheName,
+                : PopScope(
+                    canPop: false,
+                    child: ProgressDialog(
+                      title: l10n.arnsSettingTheName,
+                    ),
                   ),
           );
         }
@@ -272,7 +323,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       }
 
       return const SizedBox();
-    });
+    }
   }
 
   /// A failure stays in the dialog, in a notice, with the way on: Try again
@@ -299,7 +350,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 ? l10n.freeAllowanceUsedUpDescription
                 : isWalletMismatch
                     ? l10n.deploymentWalletChanged
-                    : l10n.deploymentFailedBody,
+                    : state is CreateManifestFailure && state.maybeSent
+                        ? l10n.deploymentMaybeSentBody
+                        : l10n.deploymentFailedBody,
       ),
       actions: [
         ModalAction.close(
@@ -307,17 +360,17 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           action: () => Navigator.pop(context),
           title: l10n.close,
         ),
+        // The dialog stays: after the top-up the person is back here, with
+        // Try again, instead of at the start.
         if (isPaymentError)
           ModalAction(
-            action: () {
-              Navigator.pop(context);
-              showTurboTopupModal(context);
-            },
+            action: () => showTurboTopupModal(context),
             title: l10n.buyCredits,
-          )
-        else if (!isWalletMismatch && canRetry)
+          ),
+        if (!isWalletMismatch && canRetry)
           ModalAction(
             isLoading: _submitting,
+            variant: isPaymentError ? ButtonVariant.secondary : null,
             action: () => _submit(
               () => context.read<CreateManifestCubit>().retryUpload(),
             ),
@@ -351,6 +404,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
       title: l10n.deploymentCreatedTitle,
+      scrollableContent: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -611,7 +665,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             ],
             summary: summary,
             primaryLabel: l10n.createManifestEmphasized,
-            primaryEnabled: names?.ready ?? true,
+            primaryEnabled: (names?.ready ?? true) && _followingReady,
             primaryBusy: _submitting,
             // The way the review showed is the way it is paid.
             onUpload: (method) =>
@@ -625,7 +679,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             paymentChoice: !(summary?.offersPaymentChoice == true ||
                     summary?.usesLegacySelector == true)
                 ? null
-                : UploadPaymentMethodView(
+                : _lockedWhileSubmitting(UploadPaymentMethodView(
                     // The review says what is short, above the choice; only the
                     // wallet-only case keeps the selector's own messages.
                     showBalanceMessages: summary?.usesLegacySelector ?? false,
@@ -634,7 +688,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     onError: () {},
                     onUploadMethodChanged: (method, methodInfo, canUpload) =>
                         cubit.selectUploadMethod(method, methodInfo, canUpload),
-                  ),
+                  )),
             canShareInApp: paymentBloc.canShareSourceWalletCredits,
             sourceWalletNotice: info?.sourceWalletCredits == null
                 ? null
@@ -645,7 +699,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                         : null,
                   ),
             extras: [
-              if (names != null) ArNSFlowNameSection(cubit: names),
+              if (names != null)
+                _lockedWhileSubmitting(ArNSFlowNameSection(cubit: names)),
               Text(
                 l10n.filesWillBePermanentlyPublicWarning,
                 style: ArDriveTypographyNew.of(context).paragraphNormal(
@@ -658,6 +713,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       ),
     );
   }
+
+  /// What Create was pressed on is what is sent: the wallet check after the
+  /// press can take a while, and the payment method and the names must not
+  /// change under it.
+  Widget _lockedWhileSubmitting(Widget child) => ExcludeFocus(
+        excluding: _submitting,
+        child: AbsorbPointer(absorbing: _submitting, child: child),
+      );
 
   /// The fallback page's transaction, whole, so monospace: it wraps like text.
   Widget _fallbackTxIdRow(BuildContext context, String txId) {
@@ -771,7 +834,13 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             showCursor: enabled,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: enabled ? () => cubit.loadFolder(f.id) : null,
+              onTap: enabled
+                  ? () {
+                      cubit.loadFolder(f.id);
+                      // Review waits for the folder, which is not here yet.
+                      setState(() {});
+                    }
+                  : null,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: ArDriveSpacing.sm,
@@ -820,7 +889,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           ),
     ];
 
-    final canContinue = state.enableManifestCreationButton && _isFormValid;
+    void goBack() {
+      cubit.loadParentFolder();
+      setState(() {});
+    }
+
+    final canContinue = state.enableManifestCreationButton &&
+        _isFormValid &&
+        !cubit.isLoadingFolder(state);
 
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
@@ -849,7 +925,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           const SizedBox(height: ArDriveSpacing.lg),
           manifestNameForm(
             onSubmit: (name) {
-              if (state.enableManifestCreationButton) {
+              if (state.enableManifestCreationButton &&
+                  !cubit.isLoadingFolder(state)) {
                 _submit(() => cubit.checkForConflicts(name));
               }
             },
@@ -885,10 +962,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                         Semantics(
                           button: true,
                           label: l10n.back,
+                          onTap: goBack,
                           excludeSemantics: true,
                           child: ArDriveClickArea(
                             child: GestureDetector(
-                              onTap: cubit.loadParentFolder,
+                              onTap: goBack,
                               child: Padding(
                                 padding: const EdgeInsets.only(
                                   right: ArDriveSpacing.xs,

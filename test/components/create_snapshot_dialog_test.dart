@@ -195,6 +195,14 @@ void main() {
     verify(() => cubit.confirmDriveAndHeighRange('drive-id')).called(1);
   });
 
+  testWidgets('an AR send that may have posted names it and offers no retry',
+      (tester) async {
+    await pumpDialog(tester, SnapshotUploadFailure(postedTxId: 'tx-maybe'));
+
+    expect(find.textContaining('tx-maybe'), findsOneWidget);
+    expect(buttons(tester), ['Close']);
+  });
+
   testWidgets('a payment the Turbo account cannot make stays in the dialog',
       (tester) async {
     await pumpDialog(tester, SnapshotUploadFailure(isPaymentError: true));

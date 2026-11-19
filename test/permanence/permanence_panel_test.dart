@@ -639,6 +639,14 @@ void main() {
     expect(find.text('Share your permanence'), findsOneWidget,
         reason: 'still open, for the image too');
 
+    // Done again before the first has faded: said for the full time again.
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.tap(find.text('Copy text'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(find.text('Text copied'), findsOneWidget,
+        reason: 'the latest action restarts the wait');
+
     await tester.pump(const Duration(seconds: 3));
     expect(find.text('Copy text'), findsOneWidget);
     expect(find.text('Text copied'), findsNothing);

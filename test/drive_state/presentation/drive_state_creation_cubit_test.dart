@@ -901,6 +901,24 @@ void main() {
       await cubit.close();
     });
 
+    test(
+        'a published snapshot lands on success and is listed even if '
+        'onPublished throws, never on "nothing was spent"', () async {
+      final cubit = cubitWith(onPublished: () => throw StateError('boom'));
+      await cubit.prepare();
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer(
+        (_) async => const DriveStateUploadResult.published('tx-throws'),
+      );
+      final announced = SnapshotEventBus.instance.stream.first;
+
+      await cubit.publish();
+
+      expect(cubit.state, isA<DriveStateCreationPublished>());
+      expect((await announced).snapshot.txId, 'tx-throws');
+      await cubit.close();
+    });
+
     test('onPublished is not called when the upload fails', () async {
       var called = false;
       final cubit = cubitWith(onPublished: () => called = true);

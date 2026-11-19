@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
@@ -53,6 +55,9 @@ class PromptToSnapshotDialog extends StatefulWidget {
 class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
   bool _dontAskAgain = false;
 
+  /// Create snapshot was pressed and is looking up which dialog to open.
+  bool _opening = false;
+
   /// Closes the suggestion. With "Don't ask again" ticked that is also said
   /// to the bloc, in the same step: it used to swap the dialog for a second
   /// screen to confirm a preference.
@@ -105,9 +110,20 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
           title: localizations.snapshotNotNow,
         ),
         ModalAction(
-          action: () {
+          // Which dialog opens is looked up before this one closes: after,
+          // its context is gone once the close animation ends.
+          action: () async {
+            if (_opening) return;
+            _opening = true;
+            final createsDriveState =
+                await createsDriveStateSnapshot(context, widget.drive);
+            if (!context.mounted) return;
             Navigator.of(context).pop();
-            promptToCreateSnapshot(context, widget.drive);
+            unawaited(promptToCreateSnapshot(
+              context,
+              widget.drive,
+              createsDriveState: createsDriveState,
+            ));
           },
           title: localizations.createSnapshot,
         ),

@@ -174,8 +174,18 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     );
   }
 
+  /// The folder last asked for. Its contents arrive later, and until they
+  /// do the screen still shows the one before.
+  FolderID? _requestedFolderId;
+
+  /// Whether the folder asked for is not the one [shown] holds yet.
+  bool isLoadingFolder(CreateManifestFolderLoadSuccess shown) =>
+      _requestedFolderId != null &&
+      _requestedFolderId != shown.viewingFolder.folder.id;
+
   Future<void> loadFolder(String folderId) async {
     logger.i('Loading folder contents for folder: $folderId');
+    _requestedFolderId = folderId;
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription = _folderRepository
@@ -219,6 +229,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     _reviewToRetry = null;
 
     /// Prevent multiple checks from being triggered
+    final shown = state;
+    // Not the folder on screen: the one asked for has not arrived.
+    if (shown is CreateManifestFolderLoadSuccess && isLoadingFolder(shown)) {
+      return;
+    }
     if (state is! CreateManifestFolderLoadSuccess) {
       logger.d('Skipping conflict check - invalid state: $state');
       return;
@@ -375,6 +390,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   Future<void> _uploadManifest({UploadMethod? method}) async {
     logger.i('Starting manifest upload process');
+    // What was approved is what is sent: the wallet check can take a while,
+    // and the review may change under it.
+    final approved = state;
     try {
       if (await _profileCubit.logoutIfWalletMismatch()) {
         logger.i('Wallet mismatch detected, canceling upload');
@@ -388,9 +406,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    if (state is CreateManifestUploadReview) {
+    if (approved is CreateManifestUploadReview) {
       try {
-        final createManifestUploadReview = state as CreateManifestUploadReview;
+        final createManifestUploadReview = approved;
         // With the method it is sent by, so Try again pays the same way.
         _reviewToRetry = createManifestUploadReview.copyWith(
           uploadMethod: method ?? createManifestUploadReview.uploadMethod,
@@ -488,11 +506,42 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestFailure(
         isPaymentError: isTurboPaymentError(wrapped),
         postedTxId: error is ManifestPostedException ? error.dataTxId : null,
-        canRetry: _reviewToRetry != null && error is! ManifestPostedException,
+        canRetry: _reviewToRetry != null &&
+            error is! ManifestPostedException &&
+            _failedBeforeSubmission(error),
+        maybeSent: error is! ManifestPostedException &&
+            !_failedBeforeSubmission(error),
       ));
     }
     super.onError(error, stackTrace);
   }
+}
+
+/// Whether a failed upload is known to have sent nothing, so that a fresh
+/// try cannot pay twice. Failures that are not about a task, such as a
+/// manifest that could not be built, sent nothing.
+bool _failedBeforeSubmission(Object error) {
+  Object? inner = error is ManifestCreationException ? error.error : error;
+  if (inner is UnderFundException) inner = inner.error;
+  if (inner is! List) return true;
+  for (final task in inner) {
+    if (task is! FileUploadTask) continue;
+    // Turbo took the metadata item: the deployment is on its way, and what
+    // is left is the data item, which a new upload would pay for again.
+    if (task.metadataUploaded) return false;
+    // Direct to the network, only a transaction whose header was never
+    // posted is safe to send again: after it, the chunks may be on their way.
+    if (task.type == UploadType.d2n) {
+      final failure = task.error;
+      final cause = failure is ArDriveUploaderExceptions ? failure.error : null;
+      if ((failure is DataTransactionUploadException ||
+              failure is MetadataTransactionUploadException) &&
+          cause is! TransactionHeaderNotPostedException) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 class UploadManifestParams {

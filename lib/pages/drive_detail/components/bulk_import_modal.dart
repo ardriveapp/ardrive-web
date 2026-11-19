@@ -309,11 +309,11 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
           ),
           actions: [
             if (isImporting)
-              // Stops the import, then closes: it does more than close.
+              // Stops the import; the dialog then says how many files came
+              // in, with a Close.
               ModalAction.dismiss(
                 action: () {
                   context.read<BulkImportBloc>().add(const CancelBulkImport());
-                  Navigator.pop(context);
                 },
                 title: l10n.cancelEmphasized,
               )

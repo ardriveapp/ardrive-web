@@ -323,7 +323,8 @@ Widget _confirmModal(
     method: state.method,
     totalSize: state.artifact.sizeInBytes,
     costEstimateAr: state.cost.costEstimateAr,
-    costEstimateTurbo: state.cost.costEstimateTurbo,
+    costEstimateTurbo:
+        state.cost.isTurboUploadPossible ? state.cost.costEstimateTurbo : null,
     turboBalance: state.cost.turboBalance,
     turboCredits: state.cost.turboCredits,
     arBalance: state.cost.arBalance,

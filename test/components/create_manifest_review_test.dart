@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart'
+    show ArNSFlowNameSection;
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -47,6 +50,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(UploadMethod.turbo);
+    registerFallbackValue(<ArNSNameRecord>[]);
     registerFallbackValue(PrepareUploadPaymentMethod(params: _FakeParams()));
   });
 
@@ -100,6 +104,8 @@ void main() {
     Stream<UploadPaymentMethodState>? paymentStream,
     bool pending = false,
     ArNSFlowNameCubit? names,
+    Future<List<ArNSNameRecord>> Function(String)? lookupFollowing,
+    String? existingManifestFileId,
     Size size = const Size(1200, 900),
   }) async {
     tester.view.physicalSize = size;
@@ -119,6 +125,7 @@ void main() {
         manifestName: 'e2e-names-site',
         folderHasPendingFiles: pending,
         manifestFile: file,
+        existingManifestFileId: existingManifestFileId,
         drive: Drive(
           id: 'drive-1',
           rootFolderId: 'root',
@@ -174,7 +181,11 @@ void main() {
               body: Center(
                 child: BlocProvider<CreateManifestCubit>.value(
                   value: cubit,
-                  child: CreateManifestForm(names: names, paymentBloc: payment),
+                  child: CreateManifestForm(
+                    names: names,
+                    paymentBloc: payment,
+                    lookupFollowing: lookupFollowing,
+                  ),
                 ),
               ),
             ),
@@ -410,6 +421,7 @@ void main() {
       when(() => names.ready).thenAnswer((_) => ready);
       when(() => names.hasWork).thenReturn(false);
       when(() => names.close()).thenAnswer((_) async {});
+      when(() => names.setFollowing(any())).thenReturn(null);
       whenListen(
         names,
         const Stream<ArNSNameDialogState>.empty(),
@@ -437,6 +449,93 @@ void main() {
     testWidgets('and offers it once the name is ready', (tester) async {
       ready = true;
       await pumpReview(tester, names: names);
+      tester.takeException();
+
+      expect(
+        tester
+            .widget<ArDriveButtonNew>(primary('Create deployment'))
+            .isDisabled,
+        isFalse,
+      );
+    });
+
+    testWidgets(
+        'the names and the payment choice are held while Create is '
+        'being answered', (tester) async {
+      ready = true;
+      final gate = Completer<void>();
+      when(() => cubit.uploadManifest(method: any(named: 'method')))
+          .thenAnswer((_) => gate.future);
+      await pumpReview(tester, names: names);
+      tester.takeException();
+
+      bool held() => find
+          .ancestor(
+            of: find.byType(ArNSFlowNameSection),
+            matching: find.byType(AbsorbPointer),
+          )
+          .evaluate()
+          .any((e) => (e.widget as AbsorbPointer).absorbing);
+
+      expect(held(), isFalse);
+      tester
+          .widget<ArDriveButtonNew>(primary('Create deployment'))
+          .onPressed!();
+      await tester.pump();
+      expect(held(), isTrue, reason: 'what was approved is what is applied');
+
+      gate.complete();
+      await tester.pump();
+      tester.takeException();
+      expect(held(), isFalse);
+    });
+
+    testWidgets(
+        'a new version waits for the names it moves, then offers Create',
+        (tester) async {
+      ready = true;
+      final lookup = Completer<List<ArNSNameRecord>>();
+      await pumpReview(
+        tester,
+        names: names,
+        existingManifestFileId: 'old-file',
+        lookupFollowing: (_) => lookup.future,
+      );
+      tester.takeException();
+
+      expect(
+        tester
+            .widget<ArDriveButtonNew>(primary('Create deployment'))
+            .isDisabled,
+        isTrue,
+        reason: 'which names move is not known yet',
+      );
+
+      lookup.complete(const []);
+      await tester.pump();
+      await tester.pump();
+      tester.takeException();
+
+      verify(() => names.setFollowing(any())).called(1);
+      expect(
+        tester
+            .widget<ArDriveButtonNew>(primary('Create deployment'))
+            .isDisabled,
+        isFalse,
+      );
+    });
+
+    testWidgets('a names lookup that fails does not leave Create off',
+        (tester) async {
+      ready = true;
+      await pumpReview(
+        tester,
+        names: names,
+        existingManifestFileId: 'old-file',
+        lookupFollowing: (_) async => throw Exception('db'),
+      );
+      await tester.pump();
+      await tester.pump();
       tester.takeException();
 
       expect(

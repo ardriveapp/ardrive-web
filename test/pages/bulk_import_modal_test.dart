@@ -167,6 +167,32 @@ void main() {
     expect(find.text('Buy credits'), findsOneWidget);
   });
 
+  testWidgets('Cancel during the import stops it and keeps the dialog open',
+      (tester) async {
+    await open(
+      tester,
+      const BulkImportInProgress(
+        manifestTxId: 'tx-id',
+        fileIds: ['a', 'b'],
+        processedFiles: 1,
+        failedFiles: [],
+        currentFileName: 'a',
+        failedPaths: [],
+        isCreatingFolderHierarchy: false,
+      ),
+      settle: false,
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Cancel'));
+    await tester.pump();
+    // Past any closing animation.
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => bloc.add(const CancelBulkImport())).called(1);
+    expect(find.byType(ArDriveStandardModalNew), findsOneWidget);
+  });
+
   testWidgets('a cancelled import says how many files came in, with a Close',
       (tester) async {
     await open(tester, const BulkImportCancelled(numberOfFilesImported: 3));

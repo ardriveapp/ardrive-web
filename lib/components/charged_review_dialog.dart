@@ -202,12 +202,16 @@ class _ChargedReviewDialogState extends State<ChargedReviewDialog> {
       logger.i('Sharing credits from the sign-in wallet did not go through: $e');
       return false;
     }
-    // The grant changes what Turbo reports: read the balance again.
+    if (!mounted) return true;
+    // The grant moves those credits into the balance Turbo reports, so they
+    // are no longer extra: read the balance again without them.
+    setState(() => _sourceCredits = null);
     _refresh();
     return true;
   }
 
   Future<void> _refresh() async {
+    if (!mounted) return;
     setState(() => _reading = true);
     try {
       await widget.refresh();

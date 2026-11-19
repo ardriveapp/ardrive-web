@@ -205,14 +205,19 @@ class CreateManifestFailure extends CreateManifestState {
   /// Whether sending the same deployment again is safe and possible.
   final bool canRetry;
 
+  /// Whether some of it may have reached the network, and been paid for,
+  /// without a transaction to name.
+  final bool maybeSent;
+
   CreateManifestFailure({
     this.isPaymentError = false,
     this.postedTxId,
     this.canRetry = true,
+    this.maybeSent = false,
   });
 
   @override
-  List<Object?> get props => [isPaymentError, postedTxId, canRetry];
+  List<Object?> get props => [isPaymentError, postedTxId, canRetry, maybeSent];
 }
 
 /// Manifest transaction has been successfully uploaded

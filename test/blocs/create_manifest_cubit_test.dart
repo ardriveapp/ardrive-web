@@ -1,10 +1,13 @@
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
-import 'package:ardrive_uploader/ardrive_uploader.dart' show UploadType;
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
+import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/manifest/domain/exceptions.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
@@ -341,6 +344,303 @@ void main() {
     });
   });
 
+  group('a failed upload that may have been submitted', () {
+    late IOFile ioFile;
+    setUp(() async {
+      ioFile = await IOFile.fromData(Uint8List(1),
+          name: 'site', lastModifiedDate: DateTime(2024));
+    });
+
+    FileUploadTask task({
+      required UploadType type,
+      bool metadataUploaded = false,
+      Object? error,
+    }) =>
+        FileUploadTask(
+          file: ioFile,
+          metadata: ARFSFileUploadMetadata(
+            size: 1,
+            lastModifiedDate: DateTime(2024),
+            dataContentType: 'application/x.arweave-manifest+json',
+            driveId: driveId,
+            parentFolderId: rootId,
+            name: 'site',
+            id: 'file-id',
+            isPrivate: false,
+          ),
+          type: type,
+          metadataUploaded: metadataUploaded,
+          error: error,
+          uploadThumbnail: false,
+        );
+
+    /// The cubit's state after one upload that failed with [failure].
+    Future<CreateManifestFailure> failedWith(
+      Object failure, {
+      UploadMethod method = UploadMethod.turbo,
+    }) async {
+      final profile = MockProfileCubit();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) async => false);
+      final auth = MockArDriveAuth();
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      final file = await IOFile.fromData(
+        Uint8List(10),
+        name: 'site',
+        lastModifiedDate: DateTime(2024),
+      );
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: driveId,
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async => (false, null));
+      when(
+        () => manifestRepository.getManifestFile(
+          parentFolder: any(named: 'parentFolder'),
+          manifestName: any(named: 'manifestName'),
+          rootFolderNode: any(named: 'rootFolderNode'),
+          driveId: driveId,
+          fallbackTxId: any(named: 'fallbackTxId'),
+        ),
+      ).thenAnswer((_) async => file);
+      when(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async => throw failure);
+
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth,
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      await cubit.checkForConflicts('site');
+      await cubit.uploadManifest(method: method);
+      final state = cubit.state as CreateManifestFailure;
+      await cubit.close();
+      return state;
+    }
+
+    ManifestCreationException wrapping(Object e) =>
+        ManifestCreationException('Failed to upload manifest.', error: e);
+
+    test(
+        'Turbo took the metadata item: no Try again, the data is not paid '
+        'for a second time', () async {
+      final failure = await failedWith(wrapping([
+        task(
+          type: UploadType.turbo,
+          metadataUploaded: true,
+          error: DataTransactionUploadException(message: 'data failed'),
+        ),
+      ]));
+
+      expect(failure.canRetry, isFalse);
+      expect(failure.maybeSent, isTrue);
+    });
+
+    test('Turbo took nothing: Try again is offered', () async {
+      final failure = await failedWith(wrapping([
+        task(
+          type: UploadType.turbo,
+          error: MetadataTransactionUploadException(message: 'refused'),
+        ),
+      ]));
+
+      expect(failure.canRetry, isTrue);
+      expect(failure.maybeSent, isFalse);
+    });
+
+    test('a payment refusal after the metadata item keeps it too', () async {
+      final failure = await failedWith(wrapping(UnderFundException(
+        message: 'pay',
+        error: [
+          task(
+            type: UploadType.turbo,
+            metadataUploaded: true,
+            error: DataTransactionUploadException(message: 'data failed'),
+          ),
+        ],
+      )));
+
+      expect(failure.canRetry, isFalse);
+      expect(failure.maybeSent, isTrue);
+    });
+
+    test('direct: the header posted and the chunks failed, no Try again',
+        () async {
+      final failure = await failedWith(
+        wrapping([
+          task(
+            type: UploadType.d2n,
+            error: MetadataTransactionUploadException(
+              message: 'chunks',
+              error: Exception('chunk stream broke'),
+            ),
+          ),
+        ]),
+        method: UploadMethod.ar,
+      );
+
+      expect(failure.canRetry, isFalse);
+      expect(failure.maybeSent, isTrue);
+    });
+
+    test('direct: the header never posted, Try again is offered', () async {
+      final failure = await failedWith(
+        wrapping([
+          task(
+            type: UploadType.d2n,
+            error: MetadataTransactionUploadException(
+              message: 'header',
+              error: TransactionHeaderNotPostedException(),
+            ),
+          ),
+        ]),
+        method: UploadMethod.ar,
+      );
+
+      expect(failure.canRetry, isTrue);
+    });
+  });
+
+  group('the review is what was approved', () {
+    test('a change under the wallet check does not change what is sent',
+        () async {
+      final profile = MockProfileCubit();
+      final check = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => check.future);
+      final auth = MockArDriveAuth();
+      when(() => auth.currentUser).thenReturn(fakeUserJson);
+      final file = await IOFile.fromData(
+        Uint8List(10),
+        name: 'site',
+        lastModifiedDate: DateTime(2024),
+      );
+      when(
+        () => manifestRepository.checkNameConflictAndReturnExistingFileId(
+          driveId: driveId,
+          parentFolderId: any(named: 'parentFolderId'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async => (false, null));
+      when(
+        () => manifestRepository.getManifestFile(
+          parentFolder: any(named: 'parentFolder'),
+          manifestName: any(named: 'manifestName'),
+          rootFolderNode: any(named: 'rootFolderNode'),
+          driveId: driveId,
+          fallbackTxId: any(named: 'fallbackTxId'),
+        ),
+      ).thenAnswer((_) async => file);
+      final types = <UploadType>[];
+      when(
+        () => manifestRepository.uploadManifest(
+          params: any(named: 'params'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        types.add((invocation.namedArguments[#params] as ManifestUploadParams)
+            .uploadType);
+        return 'data-tx';
+      });
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: profile,
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: auth,
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      await cubit.checkForConflicts('site');
+
+      // Create is pressed on the Turbo review, with no method of its own.
+      final sending = cubit.uploadManifest();
+      await Future<void>.delayed(Duration.zero);
+      // The wallet check is open; the payment method changes under it.
+      cubit.selectUploadMethod(
+        UploadMethod.ar,
+        UploadPaymentMethodInfo(
+          uploadMethod: UploadMethod.ar,
+          costEstimateAr: UploadCostEstimate(
+            pstFee: BigInt.zero,
+            totalCost: BigInt.one,
+            totalSize: 1,
+            usdUploadCost: null,
+          ),
+          costEstimateTurbo: null,
+          hasNoTurboBalance: false,
+          isTurboUploadPossible: true,
+          arBalance: '0',
+          sufficientArBalance: true,
+          turboCredits: '0',
+          sufficentCreditsBalance: true,
+          freeStatus: FreeUploadStatus.notEligible,
+          totalSize: 1,
+        ),
+        true,
+      );
+      check.complete(false);
+      await sending;
+
+      expect(types, [UploadType.turbo]);
+      await cubit.close();
+    });
+  });
+
+  group('a folder that has not arrived yet', () {
+    test('is not deployed to: the check waits for the folder shown', () async {
+      final gate = StreamController<FolderWithContents>();
+      when(
+        () => folderRepository.watchFolderContents(
+          driveId: driveId,
+          folderId: 'docs',
+        ),
+      ).thenAnswer((_) => gate.stream);
+      final cubit = CreateManifestCubit(
+        drive: drive,
+        profileCubit: MockProfileCubit(),
+        manifestRepository: manifestRepository,
+        folderRepository: folderRepository,
+        auth: MockArDriveAuth(),
+      );
+      await cubit.stream
+          .firstWhere((state) => state is CreateManifestFolderLoadSuccess);
+      clearInteractions(manifestRepository);
+      final shown = cubit.state as CreateManifestFolderLoadSuccess;
+      expect(cubit.isLoadingFolder(shown), isFalse);
+
+      await cubit.loadFolder('docs');
+      expect(cubit.isLoadingFolder(shown), isTrue);
+      await cubit.checkForConflicts('site');
+
+      expect(cubit.state, shown, reason: 'nothing was checked');
+      verifyZeroInteractions(manifestRepository);
+
+      gate.add(FolderWithContents(
+        folder: folder('docs', parent: rootId),
+        subfolders: const [],
+        files: const [],
+      ));
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        cubit.isLoadingFolder(cubit.state as CreateManifestFolderLoadSuccess),
+        isFalse,
+      );
+      await cubit.close();
+      await gate.close();
+    });
+  });
+
   group('a step that writes or pays', () {
     test('two fast presses of Create send one upload', () async {
       final profile = MockProfileCubit();
@@ -534,6 +834,7 @@ void main() {
       final failure = cubit.state as CreateManifestFailure;
       expect(failure.postedTxId, 'posted-tx');
       expect(failure.canRetry, isFalse);
+      expect(failure.maybeSent, isFalse, reason: 'it names the transaction');
 
       await cubit.retryUpload();
 

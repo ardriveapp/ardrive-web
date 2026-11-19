@@ -97,7 +97,9 @@ void main() {
         ),
         costEstimateTurbo: UploadCostEstimate(
           pstFee: BigInt.zero,
-          totalCost: turboCost ?? BigInt.from(3000000000),
+          // Zero when Turbo gave no price, as the estimator leaves it.
+          totalCost: turboCost ??
+              (isTurboUploadPossible ? BigInt.from(3000000000) : BigInt.zero),
           totalSize: 6979321,
           usdUploadCost: 0.31,
         ),
@@ -204,8 +206,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(UploadCostBlock), findsOneWidget);
-    expect(find.textContaining('0.004', findRichText: true), findsOneWidget);
-    expect(find.textContaining('AR', findRichText: true), findsWidgets);
+    // The cost and the wallet row both show the AR price.
+    expect(
+        find.textContaining('0.0040 AR', findRichText: true), findsNWidgets(2));
+    expect(find.textContaining(r'$0.31', findRichText: true), findsNothing,
+        reason: 'no Turbo price is on offer');
     expect(publishButton(tester).isDisabled, isFalse);
   });
 

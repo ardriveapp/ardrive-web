@@ -95,9 +95,12 @@ Future<bool> drivePublishesStateSnapshot({
 /// Opens whichever snapshot [drive] gets - see [createsDriveStateSnapshot].
 Future<void> promptToCreateSnapshot(
   BuildContext context,
-  Drive drive,
-) async {
-  final createsDriveState = await createsDriveStateSnapshot(context, drive);
+  Drive drive, {
+  /// Already looked up, by a caller that closes its own dialog first and so
+  /// can't wait on the lookup with that dialog's context.
+  bool? createsDriveState,
+}) async {
+  createsDriveState ??= await createsDriveStateSnapshot(context, drive);
   if (!context.mounted) {
     return;
   }
@@ -211,6 +214,8 @@ class _CreateSnapshotDialogState extends State<CreateSnapshotDialog> {
             run: _run,
             isPaymentError:
                 state is SnapshotUploadFailure && state.isPaymentError,
+            postedTxId:
+                state is SnapshotUploadFailure ? state.postedTxId : null,
           );
         } else if (state is ConfirmingSnapshotCreation) {
           return _confirmDialog(
@@ -329,6 +334,7 @@ Widget _failureDialog(
   required bool busy,
   required Future<void> Function(Future<void> Function()) run,
   bool isPaymentError = false,
+  String? postedTxId,
 }) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final l10n = appLocalizationsOf(context);
@@ -339,7 +345,9 @@ Widget _failureDialog(
       type: ArDriveNoticeType.error,
       message: isPaymentError
           ? l10n.freeAllowanceUsedUpDescription
-          : l10n.snapshotCreationFailed,
+          : postedTxId != null
+              ? l10n.snapshotFailureUncertain(postedTxId)
+              : l10n.snapshotCreationFailed,
     ),
     actions: [
       ModalAction.close(
@@ -357,7 +365,8 @@ Widget _failureDialog(
             showTurboTopupModal(context);
           },
         )
-      else
+      // Not after an AR send that may have posted: a retry pays again.
+      else if (postedTxId == null)
         ModalAction(
           isLoading: busy,
           action: () => run(

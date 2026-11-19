@@ -144,7 +144,8 @@ A dialog does its work in place, never with another dialog on top:
   input, the keyboard's included.
 - Holding the buttons does not stop the dialog being dismissed some other
   way: show a dialog that does work with `barrierDismissible: false`, so a
-  click outside it can't close it mid-way.
+  click outside it can't close it mid-way, and wrap its content in
+  `PopScope(canPop: !busy)`, so the system Back gesture can't either.
 - When it fails, the dialog says so in an `ArDriveNotice` (error) above its
   actions, with a way to fix or retry, and stays open.
 - When it succeeds, the dialog closes, or shows its result in place.

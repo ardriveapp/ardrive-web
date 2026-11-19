@@ -310,6 +310,10 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       lastImportError = e;
     }
 
+    // Cancelled: the import stopped by throwing, and the dialog already
+    // says how many files came in. Neither a failure nor a success.
+    if (state is BulkImportCancelled) return;
+
     final totalFiles = files.length;
     // The result names every file imported and every file that failed. When
     // the call threw instead, the files reported imported before it did are

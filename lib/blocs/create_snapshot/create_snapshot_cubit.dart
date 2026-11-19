@@ -603,6 +603,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   void setUploadMethod(UploadMethod method) {
+    // Create was pressed: it pays the way it showed then. The review stays
+    // on screen while the wallet is checked.
+    if (_confirming) return;
     // Never to Turbo while Turbo uploads are off.
     if (method == UploadMethod.turbo && !appConfig.useTurboUpload) return;
     logger.d('Upload method set to $method');
@@ -692,6 +695,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       return;
     }
 
+    // Set once an AR upload starts sending: from then on a failure may have
+    // posted, and paid for, the transaction.
+    String? sendingArTxId;
     try {
       // Inside the try: a signature Wander never gave, then Cancel, is a
       // failure the dialog can close, not a spinner that never ends.
@@ -706,6 +712,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           dataItem: _preparedDataItem!,
         );
       } else {
+        sendingArTxId = _preparedTx!.id;
         await _arweave.uploadTx(_preparedTx!, maxConcurrentUploadCount: 1);
       }
 
@@ -753,7 +760,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
-      emit(SnapshotUploadFailure(isPaymentError: isTurboPaymentError(err)));
+      emit(SnapshotUploadFailure(
+        isPaymentError: isTurboPaymentError(err),
+        postedTxId: sendingArTxId,
+      ));
     }
   }
 

@@ -152,6 +152,11 @@ void main() {
 
     expect(sharing.shared, [credit * BigInt.from(3)]);
     expect(refreshed, 1);
+
+    // Shared, they are in the balance now: not offered a second time.
+    await tester.pumpAndSettle();
+    expect(find.text('Share credits'), findsNothing);
+    expect(find.byType(SourceWalletCreditsNotice), findsNothing);
   });
 
   testWidgets('an Ethereum wallet is told where its credits are, no button',

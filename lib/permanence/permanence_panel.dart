@@ -1006,12 +1006,24 @@ class _PermanenceShareDialog extends StatefulWidget {
   State<_PermanenceShareDialog> createState() => _PermanenceShareDialogState();
 }
 
+enum _ShareDone { copied, saved }
+
 class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
   final _cardKey = GlobalKey();
 
-  bool _copied = false;
   bool _saving = false;
-  bool _saved = false;
+
+  /// The latest action that finished, said until [_doneFor] has passed
+  /// with nothing newer.
+  _ShareDone? _done;
+  var _doneCount = 0;
+
+  Future<void> _say(_ShareDone done) async {
+    final count = ++_doneCount;
+    setState(() => _done = done);
+    await Future.delayed(_doneFor);
+    if (mounted && count == _doneCount) setState(() => _done = null);
+  }
 
   /// How long a button says it is done before it reads as itself again.
   static const _doneFor = Duration(seconds: 2);
@@ -1022,9 +1034,7 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
     );
 
     if (!mounted) return;
-    setState(() => _copied = true);
-    await Future.delayed(_doneFor);
-    if (mounted) setState(() => _copied = false);
+    await _say(_ShareDone.copied);
   }
 
   Future<void> _save() async {
@@ -1061,9 +1071,7 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
     }
 
     if (!mounted) return;
-    setState(() => _saved = true);
-    await Future.delayed(_doneFor);
-    if (mounted) setState(() => _saved = false);
+    await _say(_ShareDone.saved);
   }
 
   @override
@@ -1103,11 +1111,11 @@ class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
             ),
           ),
           // Each says when it is done, here, so its button keeps its name.
-          if (_copied || _saved) ...[
+          if (_done != null) ...[
             const SizedBox(height: ArDriveSpacing.md),
             ArDriveNotice(
               type: ArDriveNoticeType.success,
-              message: _saved
+              message: _done == _ShareDone.saved
                   ? l10n.permanenceImageSaved
                   : l10n.permanenceTextCopied,
             ),

@@ -353,18 +353,33 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       // Before the closed check: the artifact is on its way whether or not
       // the modal is still open, and the Snapshots tab lists it as pending
       // straight away, as it does an older snapshot.
+      // Guarded on their own: the snapshot is posted and paid for, so
+      // nothing after this point may report it as a failure that spent
+      // nothing.
       if (result.isPublished) {
-        onPublished?.call();
-        SnapshotEventBus.instance.emitSnapshotCreated(
-          SnapshotDisplayItem(
-            txId: result.txId!,
-            driveId: ready.artifact.driveId,
-            blockStart: ready.artifact.blockStart,
-            blockEnd: ready.artifact.blockEnd,
-            createdAt: DateTime.now(),
-            status: TransactionStatus.pending,
-          ),
-        );
+        try {
+          onPublished?.call();
+        } catch (e, stackTrace) {
+          logger.e('[drive-state] onPublished failed', e, stackTrace);
+        }
+        try {
+          SnapshotEventBus.instance.emitSnapshotCreated(
+            SnapshotDisplayItem(
+              txId: result.txId!,
+              driveId: ready.artifact.driveId,
+              blockStart: ready.artifact.blockStart,
+              blockEnd: ready.artifact.blockEnd,
+              createdAt: DateTime.now(),
+              status: TransactionStatus.pending,
+            ),
+          );
+        } catch (e, stackTrace) {
+          logger.e(
+            '[drive-state] announcing a published artifact failed',
+            e,
+            stackTrace,
+          );
+        }
       }
 
       if (isClosed) {

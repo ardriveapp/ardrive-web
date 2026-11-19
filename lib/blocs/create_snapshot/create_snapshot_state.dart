@@ -154,10 +154,16 @@ class UploadingSnapshot extends CreateSnapshotState {}
 
 class SnapshotUploadFailure extends CreateSnapshotState {
   final bool isPaymentError;
-  SnapshotUploadFailure({this.isPaymentError = false});
+
+  /// The transaction an AR upload had started sending when it failed. It may
+  /// have reached the network and been paid for, so the dialog names it and
+  /// offers no retry, which would sign and pay for a second one.
+  final String? postedTxId;
+
+  SnapshotUploadFailure({this.isPaymentError = false, this.postedTxId});
 
   @override
-  List<Object> get props => [isPaymentError];
+  List<Object> get props => [isPaymentError, postedTxId ?? ''];
 }
 
 class SnapshotUploadSuccess extends CreateSnapshotState {}

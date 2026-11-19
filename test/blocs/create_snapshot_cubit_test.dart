@@ -589,6 +589,58 @@ void main() {
           ],
         );
 
+        // An AR upload can post its header and then fail on the chunks: the
+        // transaction may be paid for, so the failure names it.
+        test('an AR send that fails names the transaction it was sending',
+            () async {
+          when(() => appConfig.useTurboUpload).thenAnswer((_) => false);
+          when(() => arweave.uploadTx(any(),
+                  maxConcurrentUploadCount:
+                      any(named: 'maxConcurrentUploadCount')))
+              .thenThrow(Exception('chunks failed'));
+          final cubit = build();
+          addTearDown(cubit.close);
+
+          await confirm(cubit);
+
+          final failure = cubit.state as SnapshotUploadFailure;
+          expect(failure.postedTxId, isNotNull);
+          expect(failure.isPaymentError, isFalse);
+        });
+
+        test('a failure before any AR send names no transaction', () async {
+          final cubit = build(throwOnSign: true);
+          addTearDown(cubit.close);
+
+          await confirm(cubit);
+
+          expect((cubit.state as SnapshotUploadFailure).postedTxId, isNull);
+        });
+
+        test('the method shown at Create is the one that pays', () async {
+          final checked = Completer<bool>();
+          when(() => profileCubit.logoutIfWalletMismatch())
+              .thenAnswer((_) => checked.future);
+          final cubit = build();
+          addTearDown(cubit.close);
+          await cubit.confirmDriveAndHeighRange(
+            'driveId',
+            range: Range(start: 0, end: 1),
+          );
+          final before =
+              (cubit.state as ConfirmingSnapshotCreation).uploadMethod;
+          final other = before == UploadMethod.turbo
+              ? UploadMethod.ar
+              : UploadMethod.turbo;
+
+          final confirming = cubit.confirmSnapshotCreation();
+          cubit.setUploadMethod(other);
+          expect(
+              (cubit.state as ConfirmingSnapshotCreation).uploadMethod, before);
+          checked.complete(false);
+          await confirming;
+        });
+
         // The Upload button stays enabled while the wallet is checked, so a
         // second tap reaches the cubit before the first has signed anything.
         test('a second tap while the wallet is checked uploads once', () async {
