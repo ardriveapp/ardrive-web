@@ -8582,5 +8582,12 @@
   "saveNote": "儲存筆記",
   "keepEditing": "繼續編輯",
   "openingNote": "正在開啟筆記",
-  "couldNotOpenNote": "無法開啟筆記"
+  "couldNotOpenNote": "無法開啟筆記",
+  "explorerViewList": "列表",
+  "explorerViewGallery": "圖片庫",
+  "galleryItemCount": "{count, plural, other{{count} 項}}",
+  "galleryCouldNotLoad": "無法載入",
+  "galleryUploadPending": "上傳確認中",
+  "galleryTimeline": "時間軸",
+  "gallerySelectMonth": "選取{month}"
 }

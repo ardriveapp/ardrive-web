@@ -6773,5 +6773,46 @@
   "openingNote": "Opening note",
   "@openingNote": {"description": "Title of the wait while a note is fetched to be edited."},
   "couldNotOpenNote": "Could not open the note",
-  "@couldNotOpenNote": {"description": "Title of the failure when a note could not be fetched to be edited."}
+  "@couldNotOpenNote": {"description": "Title of the failure when a note could not be fetched to be edited."},
+  "explorerViewList": "List",
+  "@explorerViewList": {
+    "description": "Label of the folder view switch: the table of files."
+  },
+  "explorerViewGallery": "Gallery",
+  "@explorerViewGallery": {
+    "description": "Label of the folder view switch: the photo gallery."
+  },
+  "galleryItemCount": "{count, plural, one{1 item} other{{count} items}}",
+  "@galleryItemCount": {
+    "description": "How many items a month holds, under the gallery's month header.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "37"
+      }
+    }
+  },
+  "galleryCouldNotLoad": "Could not load",
+  "@galleryCouldNotLoad": {
+    "description": "Read by a screen reader on a gallery photo that failed to load."
+  },
+  "galleryUploadPending": "Upload pending",
+  "@galleryUploadPending": {
+    "description": "Read by a screen reader on a gallery photo whose upload is not permanent yet."
+  },
+  "galleryTimeline": "Timeline",
+  "@galleryTimeline": {
+    "description": "Name of the gallery's timeline control, which jumps between months."
+  },
+  "gallerySelectMonth": "Select {month}",
+  "@gallerySelectMonth": {
+    "description": "Names the select control on a gallery month header, which selects every item in that month.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "October 2026"
+      }
+    }
+  }
 }

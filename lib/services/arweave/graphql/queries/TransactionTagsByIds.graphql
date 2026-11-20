@@ -1,0 +1,16 @@
+# Tags of many transactions in one request. Used by the tag batcher so a grid
+# of private thumbnails reads each cipher and IV with one query rather than
+# one per tile. No fragment: fragments are slow on old ranges on some gateways.
+query TransactionTagsByIds($ids: [ID!], $first: Int) {
+  transactions(ids: $ids, first: $first) {
+    edges {
+      node {
+        id
+        tags {
+          name
+          value
+        }
+      }
+    }
+  }
+}

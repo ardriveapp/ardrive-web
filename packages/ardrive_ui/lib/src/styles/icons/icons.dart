@@ -470,6 +470,20 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// Rows of a list: the view that shows files as a table.
+  static ArDriveIcon listView({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.view_list_outlined,
+        size: size,
+        color: color,
+      );
+
+  /// A grid of photos: the gallery view.
+  static ArDriveIcon galleryGrid({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.grid_view_outlined,
+        size: size,
+        color: color,
+      );
+
   /// A table of rows: a drive's file list exported as a spreadsheet. Not the
   /// download arrow, because the export is a list of the files, not the
   /// files themselves.

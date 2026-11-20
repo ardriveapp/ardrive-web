@@ -8582,5 +8582,12 @@
   "saveNote": "नोट सहेजें",
   "keepEditing": "संपादन जारी रखें",
   "openingNote": "नोट खोला जा रहा है",
-  "couldNotOpenNote": "नोट खोला नहीं जा सका"
+  "couldNotOpenNote": "नोट खोला नहीं जा सका",
+  "explorerViewList": "सूची",
+  "explorerViewGallery": "गैलरी",
+  "galleryItemCount": "{count, plural, one{1 आइटम} other{{count} आइटम}}",
+  "galleryCouldNotLoad": "लोड नहीं हो सका",
+  "galleryUploadPending": "अपलोड लंबित",
+  "galleryTimeline": "समयरेखा",
+  "gallerySelectMonth": "{month} चुनें"
 }

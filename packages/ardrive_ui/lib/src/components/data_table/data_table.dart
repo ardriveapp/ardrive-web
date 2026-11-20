@@ -1014,15 +1014,40 @@ class _ArDriveDataTableState<T extends IndexedItem>
                   ),
                 ),
               ),
+              // The rows scroll and the pages don't: a line says where the
+              // rows end, so a row cut by the edge reads as more to come.
+              if (_hasPages)
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: _tablePadding),
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+                ),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: _tablePadding,
                 ),
-                child: _pageIndicator(),
+                // However little the indicator has to say, the card ends a
+                // corner's radius under the last row, so a row never meets
+                // the rounded corners.
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: cardDefaultBorderRadius,
+                  ),
+                  child: _pageIndicator(),
+                ),
               ),
             ],
           ),
         ));
+  }
+
+  /// Whether the rows are split into pages, with the pages' controls under
+  /// them.
+  bool get _hasPages {
+    final options =
+        {...widget.rowsPerPageOptions, _numberOfItemsPerPage}.toList()..sort();
+    return _cachedRows.length > options.first;
   }
 
   /// A row of the current page, as the list draws it.

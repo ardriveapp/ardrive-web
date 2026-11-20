@@ -88,55 +88,62 @@ class _UnsyncedDriveHeader extends StatelessWidget {
         horizontal: 16,
         vertical: 8,
       ),
-      content: Row(
-        children: [
-          // Drive name as breadcrumb (just the root since it's unsynced)
-          Expanded(
-            child: Row(
-              children: [
-                ArDriveClickArea(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ArDriveIcons.folderOutline(
-                        size: 18,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colorTokens
-                            .textHigh,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        drive.name,
-                        style: ArDriveTypographyNew.of(context).paragraphLarge(
+      // The loaded header's height, so the bar doesn't grow when the drive
+      // syncs.
+      content: ConstrainedBox(
+        constraints:
+            const BoxConstraints(minHeight: _explorerHeaderContentHeight),
+        child: Row(
+          children: [
+            // Drive name as breadcrumb (just the root since it's unsynced)
+            Expanded(
+              child: Row(
+                children: [
+                  ArDriveClickArea(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ArDriveIcons.folderOutline(
+                          size: 18,
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colorTokens
                               .textHigh,
-                          fontWeight: ArFontWeight.semiBold,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          drive.name,
+                          style:
+                              ArDriveTypographyNew.of(context).paragraphLarge(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textHigh,
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Kebab menu with limited options for unsynced drive
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: ArDriveClickArea(
-              tooltip: appLocalizationsOf(context).showMenu,
-              child: UnsyncedDriveMenu(
-                drive: drive,
-                isOwner: isOwner,
-                child: HoverWidget(
-                  child: ArDriveIcons.kebabMenu(),
+            // Kebab menu with limited options for unsynced drive
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: ArDriveClickArea(
+                tooltip: appLocalizationsOf(context).showMenu,
+                child: UnsyncedDriveMenu(
+                  drive: drive,
+                  isOwner: isOwner,
+                  child: HoverWidget(
+                    child: ArDriveIcons.kebabMenu(),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

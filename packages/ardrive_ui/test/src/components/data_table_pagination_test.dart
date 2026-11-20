@@ -195,6 +195,22 @@ void main() {
       expect(range(tester), '26-50 of 60');
     });
 
+    // The rows scroll and the pages don't: a line says where the rows end.
+    testWidgets('a line divides the rows from the pages, only when paged',
+        (tester) async {
+      final line = find.byWidgetPredicate((w) =>
+          w is Container &&
+          w.constraints == const BoxConstraints.tightFor(height: 1));
+
+      await pumpTable(tester, rows: 60);
+      expect(line, findsOneWidget);
+      expect(tester.getTopLeft(find.byType(PaginationFooter)).dy,
+          greaterThan(tester.getTopLeft(line).dy));
+
+      await pumpTable(tester, rows: 25, height: 1500);
+      expect(line, findsNothing);
+    });
+
     testWidgets('a new page starts at its top', (tester) async {
       await pumpTable(tester, rows: 60, height: 400);
 

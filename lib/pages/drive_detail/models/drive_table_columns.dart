@@ -28,13 +28,17 @@ class ColumnIndexes {
 
   /// Whether a column is shown when the reader never chose, other than
   /// License, whose default depends on the drive.
+  /// Type is not: the icon and the name's extension already say it.
   static bool shownByDefault(int index) =>
-      index != licenseType && index != transactionId && index != status;
+      index != licenseType &&
+      index != type &&
+      index != transactionId &&
+      index != status;
 }
 
 /// Whether the Type, Transaction ID or Status column is shown: the layout has
 /// to be wide enough, and then it is the reader's choice, or its default when
-/// there is none. Type is on by default; the other two are opt-in.
+/// there is none. All three are opt-in.
 bool showsAddedColumn({
   required int index,
   required double width,
@@ -289,6 +293,25 @@ void sortDriveTableItems(
 }) {
   _sortItems(folders, columnIndex, ascDescSort, typeLabel);
   _sortItems(files, columnIndex, ascDescSort, typeLabel);
+}
+
+/// The explorer's rows in the order the column at [columnIndex] puts them:
+/// folders first, then files, each sorted on its own. The list's header sort
+/// and the gallery both use this, so a folder reads in the same order in
+/// either.
+List<ArDriveDataTableItem> sortExplorerRows(
+  List<ArDriveDataTableItem> rows,
+  int columnIndex,
+  TableSort order, {
+  required String Function(ArDriveDataTableItem) typeLabel,
+}) {
+  final folders = <ArDriveDataTableItem>[];
+  final files = <ArDriveDataTableItem>[];
+  for (final row in rows) {
+    (row is FolderDataTableItem ? folders : files).add(row);
+  }
+  sortDriveTableItems(folders, files, columnIndex, order, typeLabel: typeLabel);
+  return folders + files;
 }
 
 int _getResult(int result, TableSort ascDescSort) {

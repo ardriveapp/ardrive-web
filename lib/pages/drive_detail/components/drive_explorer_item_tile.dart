@@ -569,33 +569,49 @@ class _DriveExplorerItemTileTrailingState
     ArDriveDataTableItem item,
     BuildContext context,
     double height,
-  ) {
-    void moreInfo() => context.read<DriveDetailCubit>().selectDataItem(item);
-
-    if (item is FolderDataTableItem) {
-      return folderMenuItems(
+  ) =>
+      explorerRowMenuItems(
         context,
-        folder: item,
+        item: item,
         drive: widget.drive,
-        zipName: () {
-          final driveDetail =
-              context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess;
-          return item.id == driveDetail.currentDrive.rootFolderId
-              ? driveDetail.currentDrive.name
-              : item.name;
-        },
-        onMoreInfo: moreInfo,
         height: height,
       );
-    }
-    return fileMenuItems(
+}
+
+/// The menu of a row of the explorer: a folder's or a file's, with More info
+/// selecting the item. The list's menu button and the gallery's tile menu
+/// both show exactly this, so the two cannot drift apart.
+List<ArDriveDropdownItem> explorerRowMenuItems(
+  BuildContext context, {
+  required ArDriveDataTableItem item,
+  required Drive drive,
+  required double height,
+}) {
+  void moreInfo() => context.read<DriveDetailCubit>().selectDataItem(item);
+
+  if (item is FolderDataTableItem) {
+    return folderMenuItems(
       context,
-      file: item as FileDataTableItem,
-      drive: widget.drive,
+      folder: item,
+      drive: drive,
+      zipName: () {
+        final driveDetail =
+            context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess;
+        return item.id == driveDetail.currentDrive.rootFolderId
+            ? driveDetail.currentDrive.name
+            : item.name;
+      },
       onMoreInfo: moreInfo,
       height: height,
     );
   }
+  return fileMenuItems(
+    context,
+    file: item as FileDataTableItem,
+    drive: drive,
+    onMoreInfo: moreInfo,
+    height: height,
+  );
 }
 
 // TODO: @thiagocarvalhodev remove this and use the AppPlatform class or change the name of the method

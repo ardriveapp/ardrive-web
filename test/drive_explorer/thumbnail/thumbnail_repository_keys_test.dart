@@ -6,7 +6,6 @@ import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -72,17 +71,12 @@ void main() {
     when(() => selectable.getSingle()).thenAnswer((_) async => drive);
     when(() => driveDao.driveById(driveId: 'drive')).thenReturn(selectable);
 
-    final thumbTx = MockTransactionCommonMixin();
-    when(() => thumbTx.tags).thenReturn([
-      TransactionCommonMixin$Tag()
-        ..name = EntityTag.cipher
-        ..value = 'AES256-GCM',
-      TransactionCommonMixin$Tag()
-        ..name = EntityTag.cipherIv
-        ..value = 'the-iv',
-    ]);
-    when(() => arweave.getTransactionDetails('thumb'))
-        .thenAnswer((_) async => thumbTx);
+    // The thumbnail's cipher tags come from the batched tag query.
+    when(() => arweave.getTagsForTransactions(['thumb'])).thenAnswer(
+      (_) async => {
+        'thumb': {EntityTag.cipher: 'AES256-GCM', EntityTag.cipherIv: 'the-iv'},
+      },
+    );
     when(() => driveDao.getFileKey('file', driveKey.key))
         .thenAnswer((_) async => fileKey);
     when(() => downloader.downloadToMemory(

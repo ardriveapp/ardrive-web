@@ -8582,5 +8582,12 @@
   "saveNote": "Guardar nota",
   "keepEditing": "Seguir editando",
   "openingNote": "Abriendo nota",
-  "couldNotOpenNote": "No se pudo abrir la nota"
+  "couldNotOpenNote": "No se pudo abrir la nota",
+  "explorerViewList": "Lista",
+  "explorerViewGallery": "Galería",
+  "galleryItemCount": "{count, plural, one{1 elemento} other{{count} elementos}}",
+  "galleryCouldNotLoad": "No se pudo cargar",
+  "galleryUploadPending": "Subida pendiente",
+  "galleryTimeline": "Línea de tiempo",
+  "gallerySelectMonth": "Seleccionar {month}"
 }

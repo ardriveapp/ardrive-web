@@ -70,6 +70,9 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   /// [DriveDetailCubit.contentsMayStillArrive].
   final bool contentsStillArriving;
 
+  /// How this drive's folders are shown, remembered per drive on this device.
+  final ExplorerViewMode viewMode;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -92,6 +95,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.revealSelectedItem = false,
     this.contentsStillArriving = false,
     this.driveHasLicensedFiles = false,
+    this.viewMode = ExplorerViewMode.list,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -116,8 +120,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Map<int, bool>? columnVisibility,
     bool? contentsStillArriving,
     bool? driveHasLicensedFiles,
+    ExplorerViewMode? viewMode,
   }) =>
       DriveDetailLoadSuccess(
+        viewMode: viewMode ?? this.viewMode,
         driveHasLicensedFiles:
             driveHasLicensedFiles ?? this.driveHasLicensedFiles,
         contentsStillArriving:
@@ -167,6 +173,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         revealSelectedItem,
         contentsStillArriving,
         driveHasLicensedFiles,
+        viewMode,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;
