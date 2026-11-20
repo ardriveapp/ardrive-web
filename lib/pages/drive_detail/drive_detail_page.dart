@@ -12,6 +12,7 @@ import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
+import 'package:ardrive/components/list_page/list_page_layout.dart';
 import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/components.dart';
@@ -84,8 +85,11 @@ part 'components/fs_entry_preview_widget.dart';
 /// The gap under a folder's heading on a wide screen, before whatever the
 /// folder shows: its table, or any empty, syncing or unsynced card. Set here
 /// once; the cards add none of their own above, so every state starts where
-/// the table does.
-const double explorerHeadingGap = ArDriveSpacing.xl;
+/// the table does. It lands the table where the list pages' tables start
+/// (Your drives, Web pages, Names): their title row stands 6 taller than
+/// this bar, then [listPageBlockGap] under it. Measured, both at 184 under
+/// a 110 top bar.
+const double explorerHeadingGap = listPageBlockGap + 6;
 
 /// The explorer's own header card for [drive]'s root, while the root is being
 /// waited for: the card, the crumb and the height the loaded root has, and no
@@ -341,6 +345,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       padding: EdgeInsets.only(
                                         top: waiting == null ? 20 : 0,
                                         right: 16,
+                                        bottom: listPageSectionGap,
                                       ),
                                       child: Column(
                                         children: [
@@ -507,7 +512,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     Expanded(
                                       child: Padding(
                                         padding: const EdgeInsets.fromLTRB(
-                                            0, 0, 16, 0),
+                                            0, 0, 16, listPageSectionGap),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -843,7 +848,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                     children: [
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
+                          // The list is a card: it stops short of the
+                          // window's bottom, as the list pages' tables do.
+                          padding: const EdgeInsets.fromLTRB(
+                              0, 0, 16, listPageSectionGap),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1094,13 +1102,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         !hasSubfolders,
                                   ),
                                 ),
-                              // Room under the table, so a publication ends
-                              // where its card visibly does, not at the window's
-                              // edge.
-                              if (PublicationMode.isOn &&
-                                  !_collapsesPublicationHeader(driveDetailState,
-                                      hasFiles || hasSubfolders))
-                                const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -1614,14 +1615,16 @@ class MobileFolderNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The list pages' title row height, so the title sits where Your
+    // drives' does on a phone.
     return SizedBox(
-      height: 45,
+      height: listPageTitleMinHeight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: SizedBox(
-              height: 45,
+              height: listPageTitleMinHeight,
               child: InkWell(
                 onTap: () {
                   if (path.length == 1) {
@@ -1671,8 +1674,8 @@ class MobileFolderNavigation extends StatelessWidget {
                                 _pathToName(
                                   path.isEmpty ? driveName : path.last.text,
                                 ),
-                                // One line: the row is 45 high, and a second
-                                // line was cut through the middle.
+                                // One line: the row is one title high, and a
+                                // second line was cut through the middle.
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 // The page title's style, as the drives

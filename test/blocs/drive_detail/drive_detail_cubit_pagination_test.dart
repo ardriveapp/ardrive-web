@@ -311,7 +311,7 @@ void main() {
       }
     }
 
-    test('nothing chosen: Type is on, License, Transaction ID, Status unset',
+    test('nothing chosen: License, Type, Transaction ID, Status unset',
         () async {
       await clearColumns();
       await insertDriveWithFolders(1);
@@ -323,7 +323,6 @@ void main() {
         1: true,
         2: true,
         3: true,
-        5: true,
       });
       await cubit.close();
     });
@@ -347,7 +346,6 @@ void main() {
         2: true,
         3: false,
         4: true,
-        5: true,
       });
       await clearColumns();
       await cubit.close();

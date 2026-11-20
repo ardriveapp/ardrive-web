@@ -28,13 +28,17 @@ class ColumnIndexes {
 
   /// Whether a column is shown when the reader never chose, other than
   /// License, whose default depends on the drive.
+  /// Type is not: the icon and the name's extension already say it.
   static bool shownByDefault(int index) =>
-      index != licenseType && index != transactionId && index != status;
+      index != licenseType &&
+      index != type &&
+      index != transactionId &&
+      index != status;
 }
 
 /// Whether the Type, Transaction ID or Status column is shown: the layout has
 /// to be wide enough, and then it is the reader's choice, or its default when
-/// there is none. Type is on by default; the other two are opt-in.
+/// there is none. All three are opt-in.
 bool showsAddedColumn({
   required int index,
   required double width,

@@ -161,7 +161,7 @@ void main() {
   }
 
   testWidgets(
-      'on a desktop it takes the room it is given, less its bottom gap once',
+      'on a desktop it takes the room it is given; the page sets the gaps',
       (tester) async {
     await tester.binding.setSurfaceSize(desktopSize);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -191,8 +191,8 @@ void main() {
           matching: find.byType(ArDriveCard),
         )
         .first;
-    // 400 to fill; the card's own 20 px gap comes off once.
-    expect(tester.getSize(card).height, 380);
+    // 400 to fill: the gap under it is the page's, not the card's.
+    expect(tester.getSize(card).height, 400);
 
     await tester.pumpWidget(const SizedBox());
   });
