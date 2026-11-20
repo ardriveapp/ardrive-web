@@ -39,6 +39,17 @@ void main() {
           isTrue);
     });
 
+    test('yes for a tall image, whose small one is already tall', () {
+      // Web: a 1500 x 4000 photo's small thumbnail is 100 x 266.
+      expect(
+          isWorthALargeThumbnail(
+              largeWidth: 192,
+              largeHeight: 512,
+              smallWidth: 100,
+              smallHeight: 266),
+          isTrue);
+    });
+
     test('no when the image was too small to grow much', () {
       // A 150 px source: the small thumbnail is 100, the large one 150.
       expect(

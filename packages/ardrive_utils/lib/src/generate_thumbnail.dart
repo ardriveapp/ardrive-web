@@ -87,14 +87,15 @@ Future<ThumbnailGenerationResult?> _generateLarge(
 }
 
 /// Whether a large thumbnail adds to the small one: not when the image was
-/// too small to make one much bigger.
+/// too small to make one much bigger. Measured on the longest side, as the
+/// small one of a tall image is already tall.
 bool isWorthALargeThumbnail({
   required int largeWidth,
   required int largeHeight,
   required int smallWidth,
   required int smallHeight,
 }) =>
-    math.max(largeWidth, largeHeight) >= 2 * math.max(smallWidth, smallHeight);
+    math.max(largeWidth, largeHeight) > 1.5 * math.max(smallWidth, smallHeight);
 
 /// The small thumbnail, about 100 px wide, that every client shows.
 Future<ThumbnailGenerationResult> generateThumbnail(
@@ -112,8 +113,10 @@ Future<ThumbnailGenerationResult> generateThumbnail(
 
   debugPrint('Thumbnail size: ${thumbnail.length}');
 
+  // Quality 85: at 100 px the default of 100 made thumbnails of 20 to 60 KB
+  // that look no better than ones of a few.
   return ThumbnailGenerationResult(
-    thumbnail: img.encodeJpg(thumbnail),
+    thumbnail: img.encodeJpg(thumbnail, quality: 85),
     size: thumbnail.length,
     height: thumbnail.height,
     width: thumbnail.width,
