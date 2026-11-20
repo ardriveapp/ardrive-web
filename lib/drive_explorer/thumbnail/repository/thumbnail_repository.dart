@@ -196,37 +196,91 @@ class ThumbnailRepository {
       cipherIvString: cipherIv,
     );
 
-    logger.d('Generating thumbnail');
+    logger.d('Generating thumbnails');
 
-    final data = await generateThumbnail(bytes, ThumbnailSize.small);
+    final generated = await generateThumbnails(bytes);
 
-    final thumbnailFile = await IOFileAdapter().fromData(
-      data.thumbnail,
-      name: 'thumbnail',
-      lastModifiedDate: DateTime.now(),
-    );
+    // Small first, as older clients read the first variant.
+    final uploaded = <ThumbnailUploadMetadata>[];
+    for (final data in generated) {
+      final thumbnailFile = await IOFileAdapter().fromData(
+        data.thumbnail,
+        name: 'thumbnail',
+        lastModifiedDate: DateTime.now(),
+      );
 
-    final thumbnailMetadata = ThumbnailUploadMetadata(
-      contentType: 'image/jpeg',
-      height: data.height,
-      width: data.width,
-      size: data.thumbnail.length,
-      relatesTo: fileEntry.dataTxId,
-      name: data.name,
-      originalFileId: fileEntry.id,
-    );
+      final thumbnailMetadata = ThumbnailUploadMetadata(
+        contentType: 'image/jpeg',
+        height: data.height,
+        width: data.width,
+        size: data.thumbnail.length,
+        relatesTo: fileEntry.dataTxId,
+        name: data.name,
+        originalFileId: fileEntry.id,
+      );
 
-    logger.d('Uploading thumbnail');
+      logger.d('Uploading thumbnail ${data.name}');
+      try {
+        uploaded.add(await _uploadOneThumbnail(
+          metadata: thumbnailMetadata,
+          file: thumbnailFile,
+          fileKey: fileKey,
+        ));
+      } catch (e) {
+        // Without the small one there is nothing to record; without the
+        // large one the small one still serves every client.
+        if (uploaded.isEmpty) rethrow;
+        logger.w('Large thumbnail upload failed; keeping the small one: $e');
+      }
+    }
 
+    await _driveDao.transaction(() async {
+      final thumbnailData = {
+        'variants': [for (final variant in uploaded) variant.toJson()]
+      };
+
+      fileEntry = fileEntry.copyWith(
+        lastUpdated: DateTime.now(),
+        thumbnail: drift.Value(jsonEncode(thumbnailData)),
+      );
+
+      final fileEntity = fileEntry.asEntity();
+
+      final fileDataItem = await _arweaveService.prepareEntityDataItem(
+        fileEntity,
+        _arDriveAuth.currentUser.wallet,
+        key: fileKey,
+      );
+
+      await _turboUploadService.postDataItem(
+        dataItem: fileDataItem,
+        wallet: _arDriveAuth.currentUser.wallet,
+      );
+      fileEntity.txId = fileDataItem.id;
+
+      await _driveDao.writeToFile(fileEntry);
+
+      await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
+          performedAction: RevisionAction.createThumbnail));
+    });
+  }
+
+  /// Uploads one thumbnail and answers its metadata, with its transaction id,
+  /// once it is up.
+  Future<ThumbnailUploadMetadata> _uploadOneThumbnail({
+    required ThumbnailUploadMetadata metadata,
+    required IOFile file,
+    required SecretKey? fileKey,
+  }) async {
     final controller = await _arDriveUploader.uploadThumbnail(
-      thumbnailMetadata: thumbnailMetadata,
-      file: thumbnailFile,
+      thumbnailMetadata: metadata,
+      file: file,
       type: UploadType.turbo,
       wallet: _arDriveAuth.currentUser.wallet,
       fileKey: fileKey,
     );
 
-    Completer<void> completer = Completer();
+    final completer = Completer<ThumbnailUploadMetadata>();
 
     controller.onError((tasks) {
       logger.e('Error uploading thumbnail on upload controller', tasks,
@@ -244,50 +298,11 @@ class ThumbnailRepository {
       }
     });
 
-    controller.onDone((tasks) async {
+    controller.onDone((tasks) {
       logger.i('Thumbnail uploaded');
-
-      await _driveDao.transaction(() async {
-        final thumbnailTask = tasks.first as ThumbnailUploadTask;
-
-        final thumbnailData = {
-          'variants': [thumbnailTask.metadata.toJson()]
-        };
-
-        fileEntry = fileEntry.copyWith(
-          lastUpdated: DateTime.now(),
-          thumbnail: drift.Value(jsonEncode(thumbnailData)),
-        );
-
-        final fileEntity = fileEntry.asEntity();
-
-        final fileDataItem = await _arweaveService.prepareEntityDataItem(
-          fileEntity,
-          _arDriveAuth.currentUser.wallet,
-          key: fileKey,
-        );
-
-        await _turboUploadService.postDataItem(
-          dataItem: fileDataItem,
-          wallet: _arDriveAuth.currentUser.wallet,
-        );
-        fileEntity.txId = fileDataItem.id;
-
-        await _driveDao.writeToFile(fileEntry);
-        fileEntity.txId = fileDataItem.id;
-
-        await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
-            performedAction: RevisionAction.createThumbnail));
-
-        completer.complete();
-      }).catchError((Object e) {
-        // A failure while posting the thumbnail metadata (e.g. a payment
-        // rejection) must error the completer, not hang the awaiting bloc.
-        logger.e('Error finalizing thumbnail upload', e);
-        if (!completer.isCompleted) {
-          completer.completeError(e);
-        }
-      });
+      if (!completer.isCompleted) {
+        completer.complete((tasks.first as ThumbnailUploadTask).metadata);
+      }
     });
 
     return completer.future;
