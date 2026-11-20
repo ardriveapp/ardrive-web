@@ -9,6 +9,7 @@ import 'package:ardrive/drive_explorer/thumbnail/thumbnail.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/arweave/transaction_tag_batcher.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -33,12 +34,20 @@ class ThumbnailRepository {
     required ArDriveAuth arDriveAuth,
     required ArDriveUploader arDriveUploader,
     required TurboUploadService turboUploadService,
+    TransactionTagBatcher? tagBatcher,
   })  : _arDriveUploader = arDriveUploader,
         _driveDao = driveDao,
         _arDriveDownloader = arDriveDownloader,
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
-        _arDriveAuth = arDriveAuth;
+        _arDriveAuth = arDriveAuth,
+        _tagBatcher = tagBatcher ??
+            TransactionTagBatcher(
+              fetch: arweaveService.getTagsForTransactions,
+            );
+
+  /// Reads the cipher tags of many thumbnails with one query.
+  final TransactionTagBatcher _tagBatcher;
   final Map<String, ThumbnailData> _cachedThumbnails = {};
 
   Future<ThumbnailData> getThumbnail({
@@ -72,27 +81,55 @@ class ThumbnailRepository {
 
   Future<Uint8List> _getThumbnailData({
     required FileDataTableItem fileDataTableItem,
-  }) async {
-    // Thumbnails are always for private files — need cipher/IV from data tx
-    final thumbnailTxId = fileDataTableItem.thumbnail!.variants.first.txId;
-    final dataTx = await _arweaveService.getTransactionDetails(thumbnailTxId);
-
-    if (dataTx == null) {
-      throw Exception('Data transaction not found');
-    }
-
-    final driveKey = await _driveKeyFor(fileDataTableItem.driveId);
-
-    return await _arDriveDownloader.downloadToMemory(
-      txId: thumbnailTxId,
-      fileSize: fileDataTableItem.thumbnail!.variants.first.size,
+  }) {
+    final variant = fileDataTableItem.thumbnail!.variants.first;
+    return fetchPrivateVariantBytes(
+      fileId: fileDataTableItem.id,
+      driveId: fileDataTableItem.driveId,
+      txId: variant.txId,
+      size: variant.size,
       fileName: fileDataTableItem.name,
       lastModifiedDate: fileDataTableItem.lastModifiedDate,
+    );
+  }
+
+  /// Starts reading the cipher tags of these private thumbnail variants in
+  /// one batched query, so the downloads that follow find them ready. Does not
+  /// wait and never throws: a failure here is met again, and reported, by the
+  /// download itself.
+  void prefetchPrivateVariantTags(Iterable<String> txIds) {
+    for (final txId in txIds) {
+      _tagBatcher.tagsFor(txId).ignore();
+    }
+  }
+
+  /// Downloads and decrypts one thumbnail variant of a private file. Thumbnails
+  /// are always for private files - need cipher/IV from the variant's tx. Used
+  /// by [getThumbnail] and by the gallery image loader.
+  Future<Uint8List> fetchPrivateVariantBytes({
+    required String fileId,
+    required String driveId,
+    required String txId,
+    required int size,
+    required String fileName,
+    required DateTime lastModifiedDate,
+  }) async {
+    // One batched query for every thumbnail asked for together. Throws
+    // TransactionNotFoundException when the gateway has no such transaction.
+    final tags = await _tagBatcher.tagsFor(txId);
+
+    final driveKey = await _driveKeyFor(driveId);
+
+    return await _arDriveDownloader.downloadToMemory(
+      txId: txId,
+      fileSize: size,
+      fileName: fileName,
+      lastModifiedDate: lastModifiedDate,
       contentType: 'image/jpeg',
       isManifest: false,
-      cipher: dataTx.getTag(EntityTag.cipher),
-      cipherIvString: dataTx.getTag(EntityTag.cipherIv),
-      fileKey: await _driveDao.getFileKey(fileDataTableItem.id, driveKey!.key),
+      cipher: tags[EntityTag.cipher],
+      cipherIvString: tags[EntityTag.cipherIv],
+      fileKey: await _driveDao.getFileKey(fileId, driveKey!.key),
     );
   }
 

@@ -987,4 +987,79 @@ void main() {
       );
     });
   });
+
+  group('fetchData rate limiting', () {
+    StreamedResponse status(int code, {Map<String, String>? headers}) =>
+        StreamedResponse(
+          Stream.value(utf8.encode('x')),
+          code,
+          headers: headers ?? const {},
+        );
+
+    DataGatewayFallback with_(StreamedResponse Function(int) respond) =>
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => _FakeHttpClient(respond),
+        );
+
+    test('every gateway 429 throws GatewayRateLimited with Retry-After',
+        () async {
+      final f = with_((n) =>
+          status(429, headers: n == 1 ? {'retry-after': '7'} : const {}));
+
+      await expectLater(
+        f.fetchData(txId, primaryClient),
+        throwsA(
+          isA<GatewayRateLimited>()
+              .having(
+                  (e) => e.retryAfter, 'retryAfter', const Duration(seconds: 7))
+              .having(
+                  (e) => e.toString(),
+                  'toString',
+                  allOf(startsWith('Exception: All gateways failed for tx'),
+                      contains('retry after 7s'))),
+        ),
+      );
+    });
+
+    test('503 counts too, and a 404 elsewhere does not hide it', () async {
+      final f = with_((n) => n == 1 ? status(503) : status(404));
+      await expectLater(
+        f.fetchData(txId, primaryClient),
+        throwsA(isA<GatewayRateLimited>()),
+      );
+    });
+
+    test('a timeout beside a 429 is neutral: still rate limited', () async {
+      final f = with_((n) {
+        if (n == 1) return status(429);
+        throw TimeoutException('slow');
+      });
+      await expectLater(
+        f.fetchData(txId, primaryClient),
+        throwsA(isA<GatewayRateLimited>()),
+      );
+    });
+
+    test('mixed 429 and 500 stays a generic failure', () async {
+      final f = with_((n) => n == 1 ? status(429) : status(500));
+      await expectLater(
+        f.fetchData(txId, primaryClient),
+        throwsA(
+          allOf(
+            isA<Exception>(),
+            isNot(isA<GatewayRateLimited>()),
+            predicate((e) => e.toString().contains('All gateways failed')),
+          ),
+        ),
+      );
+    });
+
+    test('parseRetryAfter reads seconds only', () {
+      expect(parseRetryAfter('12'), const Duration(seconds: 12));
+      expect(parseRetryAfter(null), isNull);
+      expect(parseRetryAfter('Wed, 21 Oct 2026 07:28:00 GMT'), isNull);
+      expect(parseRetryAfter('-3'), isNull);
+    });
+  });
 }

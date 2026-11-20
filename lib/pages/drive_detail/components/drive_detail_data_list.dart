@@ -16,6 +16,43 @@ void _openRow(BuildContext context, ArDriveDataTableItem item) {
   context.read<DriveDetailCubit>().openDataItem(item);
 }
 
+/// Whether a sync, or an upload under way, is holding multi-select shut. The
+/// list's and the gallery's multi-select are held by the same condition.
+bool _multiSelectLocked(BuildContext context, String driveId) =>
+    SyncingDriveNotice.locksMultiSelect(
+      context.watch<SyncCubit>().state,
+      syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
+      syncingDriveIds: context.watch<SyncCubit>().syncingDriveIds,
+      driveId: driveId,
+    ) ||
+    !context.watch<ActivityTracker>().isMultiSelectEnabled;
+
+/// The folder shown as a gallery, in the sort the reader gave it in the list.
+Widget _buildGallery(
+  BuildContext context, {
+  required List<ArDriveDataTableItem> items,
+  required FolderEntry folder,
+  required ArDriveDataTableItem? selectedItem,
+  required Drive drive,
+  required bool lockMultiSelect,
+  ScrollController? scrollController,
+}) {
+  final cubit = context.read<DriveDetailCubit>();
+  final sort = cubit.sortForFolder(folder.id);
+  return ExplorerGallery(
+    key: ValueKey('gallery-${folder.id}'),
+    items: items,
+    drive: drive,
+    folderId: folder.id,
+    selectedItem: selectedItem,
+    multiSelected: cubit.selectedItems,
+    sortColumn: sort?.column,
+    sortOrder: sort?.order,
+    lockMultiSelect: lockMultiSelect,
+    scrollController: scrollController,
+  );
+}
+
 /// A folder whose every item is hidden: said, with the way to show them.
 Widget _allItemsHidden(BuildContext context) => Center(
       child: SingleChildScrollView(
@@ -87,6 +124,7 @@ Widget _buildDataList(
     isMultiselecting: state.multiselect,
     columnVisibility: state.columnVisibility,
     driveHasLicensedFiles: state.driveHasLicensedFiles,
+    viewMode: state.viewMode,
     emptyState: emptyState,
     revealSelectedItem: state.revealSelectedItem,
     rowsPerPage: state.rowsPerPage,
@@ -103,6 +141,7 @@ Widget _buildDataListContent(
   required bool isMultiselecting,
   required Map<int, bool> columnVisibility,
   bool driveHasLicensedFiles = false,
+  ExplorerViewMode viewMode = ExplorerViewMode.list,
   required Widget emptyState,
   bool revealSelectedItem = false,
   required int rowsPerPage,
@@ -253,6 +292,27 @@ Widget _buildDataListContent(
           );
         }
 
+        // The gallery has no collapsing header to scroll with, which only a
+        // publication's root has: that stays a list.
+        if (viewMode == ExplorerViewMode.gallery && collapsingHeader == null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SyncingDriveNotice(driveId: folder.driveId),
+              Expanded(
+                child: _buildGallery(
+                  context,
+                  items: filteredItems,
+                  folder: folder,
+                  selectedItem: selectedItem,
+                  drive: drive,
+                  lockMultiSelect: _multiSelectLocked(context, folder.driveId),
+                ),
+              ),
+            ],
+          );
+        }
+
         final table = ArDriveDataTable<ArDriveDataTableItem>(
           leadingSlivers: collapsingHeader?.slivers,
           leadingExtent: collapsingHeader?.extent,
@@ -308,13 +368,7 @@ Widget _buildDataListContent(
           // The sync half of this lock is stated out loud rather than left as
           // a silent no-op - see [SyncingDriveNotice], which is given the
           // same condition so the two cannot drift apart.
-          lockMultiSelect: SyncingDriveNotice.locksMultiSelect(
-                context.watch<SyncCubit>().state,
-                syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
-                syncingDriveIds: context.watch<SyncCubit>().syncingDriveIds,
-                driveId: folder.driveId,
-              ) ||
-              !context.watch<ActivityTracker>().isMultiSelectEnabled,
+          lockMultiSelect: _multiSelectLocked(context, folder.driveId),
           rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
           onSelectedRows: (boxes) {
             final bloc = context.read<DriveDetailCubit>();
@@ -364,38 +418,18 @@ Widget _buildDataListContent(
           clickOpens: PublicationMode.isOn,
           onRowTap: (item) => _selectRow(context, item),
           onRowOpen: (item) => _openRow(context, item),
-          sortRows: (list, columnIndex, ascDescSort) {
-            // Separate folders and files
-            List<ArDriveDataTableItem> folders = [];
-            List<ArDriveDataTableItem> files = [];
-
-            final lenght = list.length;
-
-            for (int i = 0; i < lenght; i++) {
-              if (list[i] is FolderDataTableItem) {
-                folders.add(list[i]);
-              } else {
-                files.add(list[i]);
-              }
-            }
-
-            // Sort folders and files
-            sortDriveTableItems(
-              folders,
-              files,
-              columnIndex,
-              ascDescSort,
-              typeLabel: (item) => driveTableTypeLabel(
-                l10n,
-                driveTableType(
-                  contentType: item.contentType,
-                  name: item.name,
-                ),
+          sortRows: (list, columnIndex, ascDescSort) => sortExplorerRows(
+            list,
+            columnIndex,
+            ascDescSort,
+            typeLabel: (item) => driveTableTypeLabel(
+              l10n,
+              driveTableType(
+                contentType: item.contentType,
+                name: item.name,
               ),
-            );
-
-            return folders + files;
-          },
+            ),
+          ),
           buildRow: (row) {
             final typography = ArDriveTypographyNew.of(context);
             final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;

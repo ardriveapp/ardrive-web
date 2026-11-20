@@ -8528,5 +8528,12 @@
   "saveNote": "ノートを保存",
   "keepEditing": "編集を続ける",
   "openingNote": "ノートを開いています",
-  "couldNotOpenNote": "ノートを開けませんでした"
+  "couldNotOpenNote": "ノートを開けませんでした",
+  "explorerViewList": "リスト",
+  "explorerViewGallery": "ギャラリー",
+  "galleryItemCount": "{count, plural, other{{count} 件}}",
+  "galleryCouldNotLoad": "読み込めませんでした",
+  "galleryUploadPending": "アップロード確認待ち",
+  "galleryTimeline": "タイムライン",
+  "gallerySelectMonth": "{month}を選択"
 }

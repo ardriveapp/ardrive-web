@@ -403,6 +403,30 @@ class ArweaveService {
     });
   }
 
+  /// The tags of up to 100 transactions in ONE query, by transaction id then
+  /// tag name. Ids the gateway has no node for are absent from the result.
+  /// Goes through [graphQLRetry], so the gateway fallback applies.
+  Future<Map<String, Map<String, String>>> getTagsForTransactions(
+    List<String> txIds,
+  ) async {
+    if (txIds.isEmpty) return const {};
+    final query = await graphQLRetry.execute(
+      TransactionTagsByIdsQuery(
+        variables: TransactionTagsByIdsArguments(
+          ids: txIds,
+          first: txIds.length,
+        ),
+      ),
+    );
+    final edges = query.data?.transactions.edges ?? const [];
+    return {
+      for (final edge in edges)
+        edge.node.id: {
+          for (final tag in edge.node.tags) tag.name: tag.value,
+        },
+    };
+  }
+
   /// Everything [getTransactionDetails] returns, plus what it takes to
   /// recompute a data item's deep hash signature: `signature`, `ownerKey.key`
   /// (the owner's full public key), `anchor` and `recipient` (the data item's

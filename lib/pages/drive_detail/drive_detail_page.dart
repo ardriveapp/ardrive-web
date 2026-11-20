@@ -58,6 +58,9 @@ import 'package:ardrive/utils/file_type_label.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/gallery/explorer/explorer_view_mode.dart';
+import 'package:ardrive/gallery/explorer/explorer_view_switch.dart';
+import 'package:ardrive/gallery/explorer/explorer_gallery.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -758,6 +761,18 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   /// A publication root's header on its own, above an empty folder: there is
   /// no list to scroll it with.
+  /// The List/Gallery switch under a publication root's header on a phone,
+  /// where the folder bar that holds it elsewhere is not shown.
+  Widget _phoneViewSwitchRow(DriveDetailLoadSuccess state) => Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: ExplorerViewSwitch(
+          compact: true,
+          mode: state.viewMode,
+          onChanged: (mode) =>
+              context.read<DriveDetailCubit>().setViewMode(mode),
+        ),
+      );
+
   Widget _publicationHeader(
     DriveDetailLoadSuccess state, {
     required bool compact,
@@ -982,6 +997,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           height: 24,
                                           child: VerticalDivider(),
                                         ),
+                                      // For everyone who can see the folder,
+                                      // owner or visitor.
+                                      ExplorerViewSwitch(
+                                        mode: driveDetailState.viewMode,
+                                        onChanged: (mode) => context
+                                            .read<DriveDetailCubit>()
+                                            .setViewMode(mode),
+                                      ),
+                                      const SizedBox(width: 16),
                                       Padding(
                                         padding:
                                             const EdgeInsets.only(right: 16.0),
@@ -1281,8 +1305,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     }
 
     // A publication's root has its header in place of the folder bar, as
-    // the first thing in the list's scroll.
-    if (_collapsesPublicationHeader(state, hasSubfolders || hasFiles) &&
+    // the first thing in the list's scroll. That bar holds the List/Gallery
+    // switch, so the header carries one instead.
+    if (state.viewMode != ExplorerViewMode.gallery &&
+        _collapsesPublicationHeader(state, hasSubfolders || hasFiles) &&
         filteredItems.isNotEmpty) {
       return ArDriveItemList(
         controller: _scrollController,
@@ -1294,8 +1320,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             state,
             compact: true,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            // The same warning the wide table carries, as below.
-            below: SyncingDriveNotice(driveId: state.currentDrive.id),
+            below: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _phoneViewSwitchRow(state),
+                // The same warning the wide table carries, as below.
+                SyncingDriveNotice(driveId: state.currentDrive.id),
+              ],
+            ),
           ),
         ],
         leadingExtent: _publicationHeaderExtent,
@@ -1305,12 +1337,16 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
     return Column(
       children: [
-        if (_atPublicationRoot(state))
+        if (_atPublicationRoot(state)) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: _publicationHeader(state, compact: true),
-          )
-        else
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _phoneViewSwitchRow(state),
+          ),
+        ] else
           // The search field used to sit here, 16px of padding either side of it,
           // and did nothing until it was submitted - at which point it opened the
           // same sheet the bar's search icon now opens. Nothing was lost by
@@ -1344,12 +1380,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: (hasSubfolders || hasFiles)
               ? filteredItems.isEmpty
                   ? _allItemsHidden(context)
-                  : ArDriveItemList(
-                      controller: _scrollController,
-                      drive: state.currentDrive,
-                      items: filteredItems,
-                      selectedItem: state.selectedItem,
-                    )
+                  : state.viewMode == ExplorerViewMode.gallery
+                      ? _buildGallery(
+                          context,
+                          items: filteredItems,
+                          folder: state.folderInView.folder,
+                          selectedItem: state.selectedItem,
+                          drive: state.currentDrive,
+                          lockMultiSelect: _multiSelectLocked(
+                              context, state.folderInView.folder.driveId),
+                          scrollController: _scrollController,
+                        )
+                      : ArDriveItemList(
+                          controller: _scrollController,
+                          drive: state.currentDrive,
+                          items: filteredItems,
+                          selectedItem: state.selectedItem,
+                        )
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
                   isPrivate: state.currentDrive.isPrivate,
@@ -1699,6 +1746,21 @@ class MobileFolderNavigation extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          BlocBuilder<DriveDetailCubit, DriveDetailState>(
+            buildWhen: (a, b) =>
+                b is! DriveDetailLoadSuccess ||
+                a is! DriveDetailLoadSuccess ||
+                a.viewMode != b.viewMode,
+            builder: (context, state) {
+              if (state is! DriveDetailLoadSuccess) return const SizedBox();
+              return ExplorerViewSwitch(
+                compact: true,
+                mode: state.viewMode,
+                onChanged: (mode) =>
+                    context.read<DriveDetailCubit>().setViewMode(mode),
+              );
+            },
           ),
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {

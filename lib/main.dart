@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/gallery/data/arweave_gallery_image_fetcher.dart';
+import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/core/upload/metadata_write_cost.dart';
 import 'package:ardrive/components/drive_fingerprint.dart';
@@ -663,11 +665,35 @@ class AppState extends State<App> {
                   turboUploadService: context.read<TurboUploadService>(),
                 ),
                 child: RepositoryProvider(
-                  create: (context) =>
-                      createArDriveUploadPreparationManager(context),
+                  // One loader for the app, so its queue and its cache are
+                  // shared by every gallery.
+                  create: (context) => GalleryImageLoader(
+                    fetcher: ArweaveGalleryImageFetcher(
+                      arweave: context.read<ArweaveService>(),
+                      driveDao: context.read<DriveDao>(),
+                      thumbnailRepository: context.read<ThumbnailRepository>(),
+                    ),
+                    config: GalleryLoaderConfig.fromAppConfig(
+                        context.read<ConfigService>().config),
+                    // Decrypted images go with the session that decrypted
+                    // them.
+                    sessionEnds: context
+                        .read<ArDriveAuth>()
+                        .onAuthStateChanged()
+                        .where((user) => user == null),
+                    // Tiles decode through Flutter's image cache, which
+                    // keeps the decoded photos too.
+                    onForget: () => PaintingBinding.instance.imageCache
+                      ..clear()
+                      ..clearLiveImages(),
+                  ),
                   child: RepositoryProvider(
-                    create: (context) => createUploadRepository(context),
-                    child: child,
+                    create: (context) =>
+                        createArDriveUploadPreparationManager(context),
+                    child: RepositoryProvider(
+                      create: (context) => createUploadRepository(context),
+                      child: child,
+                    ),
                   ),
                 ),
               ),

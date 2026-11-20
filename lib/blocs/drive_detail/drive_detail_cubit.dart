@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/licensed_files_cache.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
+import 'package:ardrive/gallery/explorer/explorer_view_mode.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -1305,6 +1306,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           } else {
             final columnsVisibility = await getTableColumnVisibility();
             _rowsPerPage = await _storedRowsPerPage();
+            final viewMode =
+                await ExplorerViewModeStore(await _store()).read(driveId);
 
             if (isClosed ||
                 driveId != _driveId ||
@@ -1332,6 +1335,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 driveHasLicensedFiles: driveHasLicensedFiles,
                 showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
+                viewMode: viewMode,
               ),
             );
           }
@@ -1499,6 +1503,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void rememberScrollOffset(String folderId, double offset) {
     _scrollOffsetByFolder[folderId] = offset;
+  }
+
+  /// Switches the open drive between the list and the gallery, and keeps the
+  /// choice for that drive on this device.
+  Future<void> setViewMode(ExplorerViewMode mode) async {
+    final current = state;
+    if (current is! DriveDetailLoadSuccess || current.viewMode == mode) {
+      return;
+    }
+
+    final driveId = current.currentDrive.id;
+    emit(current.copyWith(viewMode: mode));
+
+    await ExplorerViewModeStore(await _store()).write(driveId, mode);
   }
 
   /// A page size chosen in the file table, kept on this device.
