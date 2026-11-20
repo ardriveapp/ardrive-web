@@ -22,6 +22,7 @@ import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive/gallery/thumbnails/make_thumbnails_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -206,6 +207,19 @@ List<ArDriveDropdownItem> driveMenuItems(
           ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           height: height,
           onClick: () => promptToCreateSnapshot(context, drive),
+        ),
+      // The drive's root folder: the images at the top of the drive.
+      if (isOwner && isSynced && !publication)
+        _item(
+          strings.makeThumbnails,
+          ArDriveIcons.image(size: defaultIconSize),
+          height: height,
+          onClick: () => showMakeThumbnailsDialog(
+            context,
+            drive: drive,
+            folderId: drive.rootFolderId,
+            folderName: drive.name,
+          ),
         ),
       if (isOwner)
         _item(
@@ -397,6 +411,20 @@ List<ArDriveDropdownItem> folderMenuItems(
             selectedItems: [folder],
           ),
         ),
+        // Not for a publication's visitors, nor a ghost folder, whose files
+        // were never found.
+        if (drive != null && !publication && !folder.isGhostFolder)
+          _item(
+            strings.makeThumbnails,
+            ArDriveIcons.image(size: defaultIconSize),
+            height: height,
+            onClick: () => showMakeThumbnailsDialog(
+              context,
+              drive: drive,
+              folderId: folder.id,
+              folderName: folder.name,
+            ),
+          ),
         hideFileDropdownItem(context, folder, height: height),
       ],
     ],

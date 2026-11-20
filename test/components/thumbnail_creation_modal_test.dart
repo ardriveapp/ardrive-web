@@ -70,7 +70,7 @@ void main() {
 
   testWidgets('while it works the primary is busy and Cancel is held',
       (tester) async {
-    final done = Completer<void>();
+    final done = Completer<bool>();
     when(() => repository.uploadThumbnail(fileId: any(named: 'fileId')))
         .thenAnswer((_) => done.future);
     await open(tester);
@@ -82,7 +82,7 @@ void main() {
     expect(find.byType(ArDriveSpinner), findsOneWidget);
     expect(button(tester, 'Cancel').isDisabled, isTrue);
     expect(button(tester, 'Create thumbnail').isDisabled, isTrue);
-    done.complete();
+    done.complete(true);
     await tester.pump();
   });
 

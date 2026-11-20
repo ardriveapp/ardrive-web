@@ -8535,5 +8535,16 @@
   "galleryCouldNotLoad": "無法載入",
   "galleryUploadPending": "上傳確認中",
   "galleryTimeline": "時間軸",
-  "gallerySelectMonth": "選取{month}"
+  "gallerySelectMonth": "選取{month}",
+  "makeThumbnails": "製作縮圖",
+  "makeThumbnailsIn": "{count, plural, other{{folder} 中的 {count} 張圖片}}",
+  "makeThumbnailsPublicNote": "公開檔案的縮圖也是公開的。",
+  "makeThumbnailsNothingToDo": "這裡的每張圖片都已有縮圖。",
+  "makeThumbnailsProgress": "{made} / {total}",
+  "makeThumbnailsProgressNote": "每張製作完成後就會出現在圖庫中。",
+  "makeThumbnailsMade": "{count, plural, =0{未製作縮圖。} other{已為 {count} 張圖片製作縮圖。}}",
+  "makeThumbnailsFailed": "{count, plural, other{有 {count} 張圖片無法讀取，請稍後再試。}}",
+  "makeThumbnailsNotice": "{count, plural, other{這裡有 {count} 張圖片需要縮圖。}}",
+  "makeThumbnailsStop": "停止",
+  "makeThumbnailsNotNow": "稍後再說"
 }
