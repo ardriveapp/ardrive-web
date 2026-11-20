@@ -1637,7 +1637,7 @@ void main() {
 
     test(
         'a catalog bigger than a batch gets every file its own key, and '
-        'pricing again derives none of them twice', () async {
+        'pricing again derives only the files that are new', () async {
       when(() => repository.readRelease(any()))
           .thenAnswer((_) async => release(3));
       final drive = await privateDrive();
@@ -1648,6 +1648,7 @@ void main() {
         for (var i = 0; i < 150; i++)
           'ffffffff-0000-4000-8000-${(1000 + i).toString().padLeft(12, '0')}'
       ];
+      var inCatalog = ids;
       when(() => creation.prepare(
                 driveId: any(named: 'driveId'),
                 driveKey: any(named: 'driveKey'),
@@ -1669,7 +1670,7 @@ void main() {
                 driveName: '',
                 entityCount: 2,
                 sizeInBytes: 900,
-                files: [for (final id in ids) (id: id, dataTxId: 'D')],
+                files: [for (final id in inCatalog) (id: id, dataTxId: 'D')],
               )));
       final priced = <PublicationJob>[];
       when(() => publisher.sizeOf(any())).thenAnswer((i) {
@@ -1694,6 +1695,21 @@ void main() {
       await c.review();
       expect(priced.last.privatePage!.fileKeys, carried);
       expect(keys.derived, 150, reason: 'the keys were known already');
+
+      // Files added since: only theirs are worked out.
+      final added = [
+        for (var i = 0; i < 10; i++)
+          'eeeeeeee-0000-4000-8000-${(2000 + i).toString().padLeft(12, '0')}'
+      ];
+      inCatalog = [...ids, ...added];
+      c.back();
+      await c.review();
+      final again = priced.last.privatePage!.fileKeys;
+      expect(again.keys, unorderedEquals(inCatalog));
+      final expected =
+          await ArDriveCrypto().deriveFileKey(driveKey.key, added.last);
+      expect(again[added.last], b64u(await expected.extractBytes()));
+      expect(keys.derived, 160);
       await c.close();
     });
 
@@ -1746,6 +1762,9 @@ void main() {
       c.setPassword('tigers');
       expect(c.state.weakPasswordAccepted, isFalse);
       expect(c.state.lookIsReady, isFalse);
+      c.next();
+      expect(c.state.stage, PublishStage.look,
+          reason: 'Next waits for the owner to confirm a weak password');
       await c.close();
     });
 
