@@ -354,6 +354,29 @@ void main() {
     });
   });
 
+  test(
+      'a not-found tile rebuilt after scrolling away fails at once, and is '
+      'asked again only after a while', () {
+    run((async) {
+      final h = show('a');
+      async.elapse(const Duration(seconds: 1));
+      fetcher.fail('a', const GalleryNotFound());
+      async.flushMicrotasks();
+      h.release();
+
+      final again = show('a');
+      async.elapse(const Duration(seconds: 1));
+      expect(fetcher.calls.length, 1);
+      expect(again.value.failure, GalleryFailureReason.notFound);
+      again.release();
+
+      async.elapse(const Duration(minutes: 5));
+      show('a');
+      async.elapse(const Duration(seconds: 1));
+      expect(fetcher.calls.length, 2);
+    });
+  });
+
   test('a not-found answer fails the tile once and is not retried', () {
     run((async) {
       final h = show('a');

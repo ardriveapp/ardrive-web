@@ -313,6 +313,13 @@ class GalleryImageLoader {
   final LinkedHashMap<String, Uint8List> _cache = LinkedHashMap();
   int _cacheSize = 0;
 
+  /// Images the gateways said are not there, with when they said so. A tile
+  /// rebuilt after scrolling away fails at once instead of asking again;
+  /// after [_notFoundFor] it is asked again, as uploads do land late.
+  final LinkedHashMap<String, DateTime> _notFound = LinkedHashMap();
+  static const _notFoundFor = Duration(minutes: 5);
+  static const _notFoundMax = 500;
+
   /// Bumped by [forgetAll]; a request started before then is not cached or
   /// shown when it finishes.
   int _epoch = 0;
@@ -370,6 +377,19 @@ class GalleryImageLoader {
     }
 
     final key = _key(request.fileId, choice.variant.txId);
+    final missingSince = _notFound[key];
+    if (missingSince != null) {
+      if (clock.now().difference(missingSince) < _notFoundFor) {
+        final entry = _Entry(key, null);
+        _live.add(entry);
+        entry.notifier.value =
+            const GalleryImageState.failed(GalleryFailureReason.notFound);
+        final handle = GalleryImageHandle._(this, entry, request);
+        entry.handles.add(handle);
+        return handle;
+      }
+      _notFound.remove(key);
+    }
     final cached = _cacheGet(key);
     if (cached != null) {
       // Standalone: already loaded, nothing to schedule or share.
@@ -438,6 +458,7 @@ class GalleryImageLoader {
     }
     _cache.clear();
     _cacheSize = 0;
+    _notFound.clear();
     _onForget?.call();
   }
 
@@ -691,6 +712,10 @@ class GalleryImageLoader {
       entry.queued = onScreen;
     } else if (error is GalleryNotFound) {
       // An answer, not a hiccup: fail once, no automatic retry.
+      _notFound[entry.key] = clock.now();
+      while (_notFound.length > _notFoundMax) {
+        _notFound.remove(_notFound.keys.first);
+      }
       entry.notifier.value =
           const GalleryImageState.failed(GalleryFailureReason.notFound);
     } else {
