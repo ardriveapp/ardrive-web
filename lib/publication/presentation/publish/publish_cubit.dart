@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -664,6 +665,11 @@ class PublishCubit extends Cubit<PublishState> {
   Uint8List? _catalogKey;
   Map<String, String>? _fileKeysOfCatalog;
 
+  /// Every file key worked out while this dialog is open, by File ID. A key
+  /// depends only on the drive key and the File ID, so pricing again needs
+  /// only the keys of files new to the catalog.
+  final _derivedFileKeys = <String, String>{};
+
   /// The slots for the password they were made with: a password slot runs
   /// Argon2id, which takes a second, so it is made once per password.
   (String, List<Map<String, Object?>>)? _slots;
@@ -754,13 +760,29 @@ class PublishCubit extends Cubit<PublishState> {
       final ring = await _deps.fileKeys
           .forDrive(drive.id, cipherKey: profile.user.cipherKey);
       if (ring == null) throw const _DriveLocked();
-      final keys = <String, String>{};
-      for (final file in catalog.files) {
-        final key = await ring.keyFor(file.id);
-        if (key == null) throw const _DriveLocked();
-        keys[file.id] = b64u(await key.extractBytes());
+      // Each key is a WebCrypto call. One after another, each waits for the
+      // page's next turn, which a busy tab makes slow: they are asked for side
+      // by side, a batch at a time.
+      final missing = [
+        for (final file in catalog.files)
+          if (!_derivedFileKeys.containsKey(file.id)) file.id
+      ];
+      for (var i = 0; i < missing.length; i += _fileKeyBatch) {
+        final batch =
+            missing.sublist(i, math.min(i + _fileKeyBatch, missing.length));
+        final derived = await Future.wait(batch.map((id) async {
+          final key = await ring.keyFor(id);
+          if (key == null) throw const _DriveLocked();
+          return b64u(await key.extractBytes());
+        }));
+        if (isClosed) return null;
+        for (var j = 0; j < batch.length; j++) {
+          _derivedFileKeys[batch[j]] = derived[j];
+        }
       }
-      _fileKeysOfCatalog = keys;
+      _fileKeysOfCatalog = {
+        for (final file in catalog.files) file.id: _derivedFileKeys[file.id]!,
+      };
       _catalog = catalog;
     }
     final password = state.hasPassword ? '' : state.password;
@@ -1475,3 +1497,6 @@ String _clip(String text, int max) =>
     text.characters.length <= max ? text : text.characters.take(max).toString();
 
 String? _nonEmpty(String text) => text.isEmpty ? null : text;
+
+/// How many file keys a private page asks WebCrypto for at once.
+const _fileKeyBatch = 64;

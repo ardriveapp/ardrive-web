@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
+import 'package:ardrive/core/crypto/crypto.dart' show ArDriveCrypto, DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -17,6 +17,7 @@ import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
@@ -193,6 +194,7 @@ void main() {
     Publication? previous,
     ArNSFlowNameCubit? names,
     void Function(String? link)? onSettledAfterClose,
+    FileKeys? fileKeys,
     Future<bool> Function(
       String driveId, {
       required bool deep,
@@ -210,7 +212,7 @@ void main() {
         releaseGuard: (_) => guard.add('release'),
         dependencies: PublishDependencies(
           driveDao: db.driveDao,
-          fileKeys: FileKeys(driveDao: db.driveDao),
+          fileKeys: fileKeys ?? FileKeys(driveDao: db.driveDao),
           profileCubit: profile,
           syncSkipSource: skip,
           repository: repository,
@@ -1633,6 +1635,68 @@ void main() {
       await c.close();
     });
 
+    test(
+        'a catalog bigger than a batch gets every file its own key, and '
+        'pricing again derives none of them twice', () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final drive = await privateDrive();
+      final driveKey = DriveKey(SecretKey(List.filled(32, 7)), true);
+      await db.driveDao
+          .keepDriveKeyForSession(driveId: drive.id, driveKey: driveKey);
+      final ids = [
+        for (var i = 0; i < 150; i++)
+          'ffffffff-0000-4000-8000-${(1000 + i).toString().padLeft(12, '0')}'
+      ];
+      when(() => creation.prepare(
+                driveId: any(named: 'driveId'),
+                driveKey: any(named: 'driveKey'),
+                wallet: any(named: 'wallet'),
+                isCancelled: any(named: 'isCancelled'),
+                pageScope: any(named: 'pageScope'),
+                catalogKey: any(named: 'catalogKey'),
+              ))
+          .thenAnswer((_) async =>
+              DriveStateCreationResult.prepared(PreparedDriveStateArtifact(
+                entity: DriveStateEntity(
+                    id: 'x',
+                    driveId: drive.id,
+                    blockEnd: 1,
+                    dataStart: 0,
+                    dataEnd: 1,
+                    entityCount: 2),
+                driveId: drive.id,
+                driveName: '',
+                entityCount: 2,
+                sizeInBytes: 900,
+                files: [for (final id in ids) (id: id, dataTxId: 'D')],
+              )));
+      final priced = <PublicationJob>[];
+      when(() => publisher.sizeOf(any())).thenAnswer((i) {
+        priced.add(i.positionalArguments.first as PublicationJob);
+        return 5000;
+      });
+      final keys = _CountingFileKeys(db.driveDao);
+      final c = cubit(onDrive: drive, fileKeys: keys);
+      await c.load();
+      await c.review();
+      expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+
+      final carried = priced.last.privatePage!.fileKeys;
+      expect(carried.keys, unorderedEquals(ids));
+      for (final id in [ids.first, ids[64], ids.last]) {
+        final expected = await ArDriveCrypto().deriveFileKey(driveKey.key, id);
+        expect(carried[id], b64u(await expected.extractBytes()));
+      }
+      expect(keys.derived, 150);
+
+      c.back();
+      await c.review();
+      expect(priced.last.privatePage!.fileKeys, carried);
+      expect(keys.derived, 150, reason: 'the keys were known already');
+      await c.close();
+    });
+
     test('a public drive is not a private page', () async {
       final c = cubit();
       await c.load();
@@ -1692,4 +1756,31 @@ void main() {
       expect(public.titleIsValid, isFalse);
     });
   });
+}
+
+/// Counts the file keys worked out through it.
+class _CountingFileKeys extends FileKeys {
+  _CountingFileKeys(DriveDao driveDao) : super(driveDao: driveDao);
+
+  var derived = 0;
+
+  @override
+  Future<FileKeyRing?> forDrive(String driveId,
+      {required SecretKey? cipherKey}) async {
+    final ring = await super.forDrive(driveId, cipherKey: cipherKey);
+    return ring == null ? null : _CountingRing(ring, this);
+  }
+}
+
+class _CountingRing implements FileKeyRing {
+  _CountingRing(this._ring, this._keys);
+
+  final FileKeyRing _ring;
+  final _CountingFileKeys _keys;
+
+  @override
+  Future<SecretKey?> keyFor(String fileId) {
+    _keys.derived++;
+    return _ring.keyFor(fileId);
+  }
 }
