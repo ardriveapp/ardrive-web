@@ -1,0 +1,30 @@
+<svg width="142" height="108" viewBox="0 0 142 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="paint0_linear_1563_7134" x1="15.75" y1="22.75" x2="5.25" y2="50.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F4BE8C"/>
+<stop offset="0.375247" stop-color="#D31721"/>
+<stop offset="0.605839" stop-color="#E78086"/>
+<stop offset="1" stop-color="#F8F6F7" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint1_linear_1563_7134" x1="140" y1="70" x2="131" y2="89" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F4BE8C"/>
+<stop offset="0.375247" stop-color="#D31721"/>
+<stop offset="0.605839" stop-color="#E78086"/>
+<stop offset="1" stop-color="#F8F6F7" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint2_linear_1563_7134" x1="78" y1="28" x2="78" y2="124.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F4BE8C"/>
+<stop offset="0.0989583" stop-color="#D31721"/>
+<stop offset="0.493189" stop-color="#E78086"/>
+<stop offset="1" stop-color="#F8F6F7" stop-opacity="0"/>
+</linearGradient>
+</defs>
+  <path opacity="0.7" d="M12 19C11.5926 25.4512 6.4512 30.5926 0 31C6.4512 31.4074 11.5926 36.5488 12 43C12.4074 36.5488 17.5488 31.4074 24 31C17.5488 30.5926 12.4074 25.4512 12 19Z" fill="url(#paint0_linear_1563_7134)"/>
+<path opacity="0.5" d="M136.5 70C136.313 72.9568 133.957 75.3133 131 75.5C133.957 75.6867 136.313 78.0432 136.5 81C136.687 78.0432 139.043 75.6867 142 75.5C139.043 75.3133 136.687 72.9568 136.5 70Z" fill="url(#paint1_linear_1563_7134)"/>
+<circle opacity="0.4" cx="23" cy="55" r="2" fill="#93161D"/>
+<circle opacity="0.3" cx="48" cy="75" r="3" fill="#93161D"/>
+<circle opacity="0.3" cx="113.5" cy="3.5" r="3.5" fill="#93161D"/>
+<circle opacity="0.2" cx="16" cy="87" r="2" fill="#93161D"/>
+<defs><linearGradient id="glyph" x1="0.5" y1="0" x2="0.5" y2="1.2" gradientUnits="objectBoundingBox"><stop stop-color="#F4BE8C"/><stop offset="0.12" stop-color="#D31721"/><stop offset="0.6" stop-color="#E78086"/><stop offset="1" stop-color="#F8F6F7" stop-opacity="0"/></linearGradient></defs>
+<g transform="translate(34 24) scale(0.34375)"><path fill="url(#glyph)" d="M247.93,124.52C246.11,77.54,207.07,40,160.06,40A88.1,88.1,0,0,0,81.29,88.67h0A87.48,87.48,0,0,0,72,127.73,8.18,8.18,0,0,1,64.57,136,8,8,0,0,1,56,128a103.66,103.66,0,0,1,5.34-32.92,4,4,0,0,0-4.75-5.18A64.09,64.09,0,0,0,8,152c0,35.19,29.75,64,65,64H160A88.09,88.09,0,0,0,247.93,124.52Zm-50.27,9.14a8,8,0,0,1-11.32,0L168,115.31V176a8,8,0,0,1-16,0V115.31l-18.34,18.35a8,8,0,0,1-11.32-11.32l32-32a8,8,0,0,1,11.32,0l32,32A8,8,0,0,1,197.66,133.66Z"/></g>
+</svg>
