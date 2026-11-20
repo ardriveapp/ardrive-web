@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
+import 'package:ardrive/drive_explorer/thumbnail/missing_thumbnails.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail.dart';
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -146,12 +148,29 @@ class ThumbnailRepository {
     }
   }
 
-  Future<void> uploadThumbnail({
+  /// Makes the thumbnails the file lacks and records them beside the ones it
+  /// has, small first. Answers whether anything was added: nothing is, and
+  /// nothing is downloaded, when the file lacks nothing.
+  Future<bool> uploadThumbnail({
     required String fileId,
   }) async {
     var fileEntry = await (_driveDao.select(_driveDao.fileEntries)
           ..where((tbl) => tbl.id.equals(fileId)))
         .getSingle();
+
+    final existing =
+        fileEntry.thumbnail == null || fileEntry.thumbnail == 'null'
+            ? const <Variant>[]
+            : Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!)).variants;
+    final missing = missingThumbnailsOf(
+      contentType: fileEntry.dataContentType,
+      size: fileEntry.size,
+      variants: existing,
+    );
+    // Asked for by name on a file thumbnails are not made for: as before,
+    // make them, which is what Create thumbnail on one file has always done.
+    final wantsAll = existing.isEmpty;
+    if (missing == MissingThumbnails.none && !wantsAll) return false;
 
     SecretKey? fileKey;
     String? cipher;
@@ -198,7 +217,12 @@ class ThumbnailRepository {
 
     logger.d('Generating thumbnails');
 
-    final generated = await generateThumbnails(bytes);
+    final generated = [
+      for (final result in await generateThumbnails(bytes))
+        // A file that has thumbnails keeps them; only a large one is added.
+        if (wantsAll || result.name == ThumbnailSize.large.name) result,
+    ];
+    if (generated.isEmpty) return false;
 
     // Small first, as older clients read the first variant.
     final uploaded = <ThumbnailUploadMetadata>[];
@@ -227,7 +251,7 @@ class ThumbnailRepository {
           fileKey: fileKey,
         ));
       } catch (e) {
-        // Without the small one there is nothing to record; without the
+        // Without the first one there is nothing to record; without the
         // large one the small one still serves every client.
         if (uploaded.isEmpty) rethrow;
         logger.w('Large thumbnail upload failed; keeping the small one: $e');
@@ -236,7 +260,10 @@ class ThumbnailRepository {
 
     await _driveDao.transaction(() async {
       final thumbnailData = {
-        'variants': [for (final variant in uploaded) variant.toJson()]
+        'variants': [
+          for (final variant in existing) variant.toJson(),
+          for (final variant in uploaded) variant.toJson(),
+        ]
       };
 
       fileEntry = fileEntry.copyWith(
@@ -263,6 +290,7 @@ class ThumbnailRepository {
       await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.createThumbnail));
     });
+    return true;
   }
 
   /// Uploads one thumbnail and answers its metadata, with its transaction id,

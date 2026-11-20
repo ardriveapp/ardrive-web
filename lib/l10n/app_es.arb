@@ -8535,5 +8535,16 @@
   "galleryCouldNotLoad": "No se pudo cargar",
   "galleryUploadPending": "Subida pendiente",
   "galleryTimeline": "Línea de tiempo",
-  "gallerySelectMonth": "Seleccionar {month}"
+  "gallerySelectMonth": "Seleccionar {month}",
+  "makeThumbnails": "Crear miniaturas",
+  "makeThumbnailsIn": "{count, plural, =1{1 imagen en {folder}} other{{count} imágenes en {folder}}}",
+  "makeThumbnailsPublicNote": "Las miniaturas de archivos públicos también son públicas.",
+  "makeThumbnailsNothingToDo": "Todas las imágenes de aquí tienen sus miniaturas.",
+  "makeThumbnailsProgress": "{made} de {total}",
+  "makeThumbnailsProgressNote": "Cada una aparece en la galería en cuanto llega.",
+  "makeThumbnailsMade": "{count, plural, =0{No se creó ninguna miniatura.} =1{Miniaturas creadas para 1 imagen.} other{Miniaturas creadas para {count} imágenes.}}",
+  "makeThumbnailsFailed": "{count, plural, =1{No se pudo leer 1 imagen. Inténtalo más tarde.} other{No se pudieron leer {count} imágenes. Inténtalo más tarde.}}",
+  "makeThumbnailsNotice": "{count, plural, =1{1 imagen de aquí necesita miniaturas.} other{{count} imágenes de aquí necesitan miniaturas.}}",
+  "makeThumbnailsStop": "Detener",
+  "makeThumbnailsNotNow": "Ahora no"
 }

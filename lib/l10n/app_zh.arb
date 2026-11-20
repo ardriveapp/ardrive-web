@@ -8535,5 +8535,16 @@
   "galleryCouldNotLoad": "无法加载",
   "galleryUploadPending": "上传确认中",
   "galleryTimeline": "时间轴",
-  "gallerySelectMonth": "选择{month}"
+  "gallerySelectMonth": "选择{month}",
+  "makeThumbnails": "生成缩略图",
+  "makeThumbnailsIn": "{count, plural, other{{folder} 中的 {count} 张图片}}",
+  "makeThumbnailsPublicNote": "公开文件的缩略图也是公开的。",
+  "makeThumbnailsNothingToDo": "这里的每张图片都已有缩略图。",
+  "makeThumbnailsProgress": "{made} / {total}",
+  "makeThumbnailsProgressNote": "每张生成后就会出现在图库中。",
+  "makeThumbnailsMade": "{count, plural, =0{未生成缩略图。} other{已为 {count} 张图片生成缩略图。}}",
+  "makeThumbnailsFailed": "{count, plural, other{有 {count} 张图片无法读取，请稍后再试。}}",
+  "makeThumbnailsNotice": "{count, plural, other{这里有 {count} 张图片需要缩略图。}}",
+  "makeThumbnailsStop": "停止",
+  "makeThumbnailsNotNow": "以后再说"
 }

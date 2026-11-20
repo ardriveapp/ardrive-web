@@ -39,7 +39,7 @@ Widget _buildGallery(
 }) {
   final cubit = context.read<DriveDetailCubit>();
   final sort = cubit.sortForFolder(folder.id);
-  return ExplorerGallery(
+  final gallery = ExplorerGallery(
     key: ValueKey('gallery-${folder.id}'),
     items: items,
     drive: drive,
@@ -50,6 +50,20 @@ Widget _buildGallery(
     sortOrder: sort?.order,
     lockMultiSelect: lockMultiSelect,
     scrollController: scrollController,
+  );
+  // A publication shows visitors the folder as published.
+  if (PublicationMode.isOn) return gallery;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      MakeThumbnailsNotice(
+        key: ValueKey('make-thumbnails-${folder.id}'),
+        items: items,
+        drive: drive,
+        folder: folder,
+      ),
+      Expanded(child: gallery),
+    ],
   );
 }
 

@@ -6760,5 +6760,27 @@
         "example": "October 2026"
       }
     }
-  }
+  },
+  "makeThumbnails": "Make thumbnails",
+  "@makeThumbnails": {"description": "The Make thumbnails action, dialog title and button"},
+  "makeThumbnailsIn": "{count, plural, =1{1 image in {folder}} other{{count} images in {folder}}}",
+  "@makeThumbnailsIn": {"description": "What Make thumbnails works on: the images lacking thumbnails in a folder", "placeholders": {"count": {"type": "int"}, "folder": {"type": "String"}}},
+  "makeThumbnailsPublicNote": "Thumbnails of public files are public too.",
+  "@makeThumbnailsPublicNote": {"description": "Under the Make thumbnails review, on a public drive"},
+  "makeThumbnailsNothingToDo": "Every image here has its thumbnails.",
+  "@makeThumbnailsNothingToDo": {"description": "Make thumbnails on a folder where nothing lacks them"},
+  "makeThumbnailsProgress": "{made} of {total}",
+  "@makeThumbnailsProgress": {"description": "Make thumbnails progress, such as 6 of 18", "placeholders": {"made": {"type": "int"}, "total": {"type": "int"}}},
+  "makeThumbnailsProgressNote": "Each one appears in the gallery as it lands.",
+  "@makeThumbnailsProgressNote": {"description": "Under the progress while thumbnails are made"},
+  "makeThumbnailsMade": "{count, plural, =0{No thumbnails were made.} =1{Made thumbnails for 1 image.} other{Made thumbnails for {count} images.}}",
+  "@makeThumbnailsMade": {"description": "When Make thumbnails ends", "placeholders": {"count": {"type": "int"}}},
+  "makeThumbnailsFailed": "{count, plural, =1{1 image could not be read. Try again later.} other{{count} images could not be read. Try again later.}}",
+  "@makeThumbnailsFailed": {"description": "When Make thumbnails ends with some images that failed", "placeholders": {"count": {"type": "int"}}},
+  "makeThumbnailsNotice": "{count, plural, =1{1 image here needs thumbnails.} other{{count} images here need thumbnails.}}",
+  "@makeThumbnailsNotice": {"description": "The notice above a gallery whose images lack thumbnails", "placeholders": {"count": {"type": "int"}}},
+  "makeThumbnailsStop": "Stop",
+  "@makeThumbnailsStop": {"description": "Stops Make thumbnails; what is made stays"},
+  "makeThumbnailsNotNow": "Not now",
+  "@makeThumbnailsNotNow": {"description": "Hides the Make thumbnails notice for this folder"}
 }
