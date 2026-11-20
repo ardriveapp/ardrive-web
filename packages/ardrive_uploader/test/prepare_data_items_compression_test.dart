@@ -308,6 +308,53 @@ void main() {
     });
   });
 
+  group('prepareDataItems with thumbnails', () {
+    test(
+        'when none can be made, the signed metadata names none, even ones '
+        'an earlier try listed', () async {
+      final file = await IOFile.fromData(
+        noise,
+        name: 'photo.jpg',
+        lastModifiedDate: DateTime(2026, 11, 16),
+        contentType: 'image/jpeg',
+      );
+      final metadata = await generator.generateMetadata(
+        file,
+        arguments: ARFSUploadMetadataArgs(
+          isPrivate: false,
+          type: UploadType.turbo,
+          driveId: 'drive-id',
+          parentFolderId: 'folder-id',
+        ),
+      ) as ARFSFileUploadMetadata;
+      // What an earlier preparation of the same file left behind.
+      metadata.updateThumbnailInfo([
+        ThumbnailUploadMetadata(
+          contentType: 'image/jpeg',
+          height: 66,
+          width: 100,
+          size: 5000,
+          relatesTo: 'old-data-tx',
+          name: 'small',
+          originalFileId: metadata.id,
+        )..setTxId = 'never-uploaded',
+      ]);
+
+      // Noise is no image, so no thumbnail can be made from it.
+      final preparation = await prepareDataItems(
+        file: file,
+        metadata: metadata,
+        wallet: wallet,
+        addThumbnail: true,
+      );
+
+      expect(preparation.thumbnails, isEmpty);
+      expect(metadata.thumbnailInfo, isNull);
+      expect((await signedMetadata(preparation)).containsKey('thumbnail'),
+          isFalse);
+    });
+  });
+
   group('prepareDataItems on a private drive', () {
     test('never compresses, flag or not', () async {
       final driveKey = SecretKey(List<int>.generate(32, (i) => i));

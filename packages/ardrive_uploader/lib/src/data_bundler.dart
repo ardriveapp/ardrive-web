@@ -819,13 +819,20 @@ Future<UploadFilePreparation> prepareDataItems({
   metadata.clearThumbnailInfo();
 
   /// Thumbnail generation: the small one first, then the large one the
-  /// gallery shows, in the order the metadata lists them.
+  /// gallery shows, in the order the metadata lists them. Each is made and
+  /// signed on its own, so one that fails costs only itself.
   if (addThumbnail) {
+    List<ThumbnailGenerationResult> generated;
     try {
-      final generated = await generateThumbnails(await file.readAsBytes());
-      final infos = <ThumbnailUploadMetadata>[];
+      generated = await generateThumbnails(await file.readAsBytes());
+    } catch (e) {
+      generated = const [];
+      logger.e(
+          'Error generating thumbnail. We will proceed with the upload.', e);
+    }
 
-      for (final result in generated) {
+    for (final result in generated) {
+      try {
         final thumbnailFile = await IOFile.fromData(
           result.thumbnail,
           name: 'thumbnail',
@@ -852,20 +859,22 @@ Future<UploadFilePreparation> prepareDataItems({
         );
 
         thumbnailMetadata.setTxId = thumbnailDataItem.id;
-        infos.add(thumbnailMetadata);
         thumbnails.add(PreparedThumbnail(
           file: thumbnailFile,
           dataItem: thumbnailDataItem,
           metadata: thumbnailMetadata,
         ));
+      } catch (e) {
+        logger.e(
+            'Error preparing the ${result.name} thumbnail. '
+            'We will proceed without it.',
+            e);
       }
+    }
 
-      metadata.updateThumbnailInfo(infos);
-    } catch (e) {
-      // The metadata is only given thumbnails once all of them are signed.
-      thumbnails.clear();
-      logger.e(
-          'Error generating thumbnail. We will proceed with the upload.', e);
+    // Only what was signed: the metadata names no thumbnail when none was.
+    if (thumbnails.isNotEmpty) {
+      metadata.updateThumbnailInfo([for (final t in thumbnails) t.metadata]);
     }
   }
 
