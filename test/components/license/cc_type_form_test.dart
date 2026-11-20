@@ -115,7 +115,9 @@ void main() {
         Color colorOf(String text) =>
             tester.widget<Text>(find.text(text)).style!.color!;
 
-        expect(colorOf('Type'), tokens.textMid);
+        // A field's label, as every field draws it: text-low, which meets
+        // AA, never the disabled colour it was drawn in.
+        expect(colorOf('Type'), tokens.textLow);
         expect(colorOf(ccByLicenseMetaV2.shortName), tokens.textMid);
       });
     }

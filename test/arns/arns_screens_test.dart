@@ -1628,7 +1628,7 @@ void main() {
     await flowShot(
       tester,
       '29-flow-result',
-      title: 'Deployment created',
+      title: 'Your deployment is live',
       result: const ArNSFlowOutcome(
         live: ['spring_acme'],
         failed: ['blog_acme'],

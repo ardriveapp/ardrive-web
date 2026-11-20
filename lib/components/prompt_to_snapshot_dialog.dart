@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -54,74 +56,86 @@ class PromptToSnapshotDialog extends StatefulWidget {
 class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
   bool _dontAskAgain = false;
 
+  /// Create snapshot was pressed and is looking up which dialog to open.
+  bool _opening = false;
+
+  /// Closes the suggestion. With "Don't ask again" ticked that is also said
+  /// to the bloc, in the same step: it used to swap the dialog for a second
+  /// screen to confirm a preference.
+  void _notNow() {
+    if (_dontAskAgain) {
+      widget.promptToSnapshotBloc
+          .add(const DismissDontAskAgain(dontAskAgain: true));
+    }
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Where publishing is on, the snapshot the nudge offers is a drive state
     // artifact (D14), with the same gate as every "Create snapshot" item -
-    // see [createsDriveStateSnapshot]. Hardcoded English, matching
-    // `drive_state_creation_modal.dart`, until the feature's strings move into
-    // the `.arb` files in one pass.
-    final offersDriveState = widget.offersDriveState;
+    // see [createsDriveStateSnapshot].
     final localizations = appLocalizationsOf(context);
 
-    final String title;
-    final String body;
-    if (offersDriveState) {
-      title = _dontAskAgain
-          ? 'You won\'t be asked again'
-          : 'Make this drive load faster';
-      body = _dontAskAgain
-          ? 'You can create a snapshot at any time from the drive\'s menu.'
-          : 'This drive takes a while to sync because its history is read '
-              'one change at a time. A snapshot saves the whole drive as one '
-              'file on Arweave, so it loads much faster wherever you sign in. '
-              'You see the size and the cost before anything is uploaded.';
-    } else {
-      title = _dontAskAgain
-          ? localizations.weWontRemindYou
-          : localizations.snapshotRecommended;
-      body = _dontAskAgain
-          ? localizations.snapshotRecommendedDontAskAgain
-          : localizations.snapshotRecommendedBody;
-    }
+    final String title = widget.offersDriveState
+        ? localizations.snapshotPromptDriveStateTitle
+        : localizations.snapshotRecommended;
+    final String body = widget.offersDriveState
+        ? localizations.snapshotPromptDriveStateBody
+        : localizations.snapshotRecommendedBody;
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveStandardModalNew(
-      hasCloseButton: true,
       title: title,
-      content: SizedBox(
-        width: kMediumDialogWidth,
-        child: Text(
-          body,
-          style: ArDriveTypographyNew.of(context).paragraphNormal(
-            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            body,
+            style: typography.paragraphNormal(color: colorTokens.textMid),
           ),
-        ),
+          const SizedBox(height: ArDriveSpacing.md),
+          ArDriveCheckBox(
+            checked: _dontAskAgain,
+            title: localizations.dontAskMeAgain,
+            titleStyle: typography.paragraphNormal(color: colorTokens.textMid),
+            onChange: (value) => setState(() => _dontAskAgain = value),
+          ),
+        ],
       ),
       actions: [
-        ModalAction(
-          action: () {
-            if (_dontAskAgain) {
-              Navigator.of(context).pop();
-            } else {
-              setState(() {
-                _dontAskAgain = true;
-                widget.promptToSnapshotBloc
-                    .add(const DismissDontAskAgain(dontAskAgain: true));
-              });
-            }
-          },
-          title: _dontAskAgain
-              ? localizations.okEmphasized
-              : localizations.dontAskMeAgain,
+        ModalAction.close(
+          action: _notNow,
+          title: localizations.snapshotNotNow,
         ),
-        if (!_dontAskAgain)
-          ModalAction(
-            action: () {
-              Navigator.of(context).pop();
-              promptToCreateSnapshot(context, widget.drive);
-            },
-            title: localizations.createSnapshot,
-          ),
+        ModalAction(
+          // Which dialog opens is looked up before this one closes: after,
+          // its context is gone once the close animation ends.
+          action: () async {
+            if (_opening) return;
+            _opening = true;
+            final bool createsDriveState;
+            try {
+              createsDriveState =
+                  await createsDriveStateSnapshot(context, widget.drive);
+            } catch (e) {
+              // The button works again; nothing was opened.
+              logger.w('Could not tell which snapshot to offer: $e');
+              _opening = false;
+              return;
+            }
+            if (!context.mounted) return;
+            Navigator.of(context).pop();
+            unawaited(promptToCreateSnapshot(
+              context,
+              widget.drive,
+              createsDriveState: createsDriveState,
+            ));
+          },
+          title: localizations.createSnapshot,
+        ),
       ],
     );
   }

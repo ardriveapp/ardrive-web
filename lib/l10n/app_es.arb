@@ -34,7 +34,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "Un despliegue publica una carpeta en una sola dirección de Arweave, con cada archivo en una ruta legible. Se guarda como un manifiesto de Arweave.",
+  "aManifestIsASpecialKindOfFile": "Un despliegue publica una carpeta en una sola dirección de Arweave, con cada archivo en una ruta legible.",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -351,11 +351,11 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshot": "Nueva instantánea",
+  "createSnapshot": "Crear instantánea",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "Las instantáneas reducen el tiempo que tarda en cargarse la unidad. ¿Deseas crear una instantánea de la unidad {driveName}?",
+  "createSnapshotExplanation": "Una instantánea hace que {driveName} cargue más rápido.",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -576,23 +576,9 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "manifestsToUpdate": "{count, plural, =1{1 despliegue por actualizar} other{{count} despliegues por actualizar}}",
-  "@manifestsToUpdate": {
-    "description": "Upload options summary: how many manifests the upload will update",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
   "updateManifests": "Actualizar despliegues",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
-  },
-  "uploadAsManifest": "Cargar como despliegue",
-  "@uploadAsManifest": {
-    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncAllDrives": "Sincronizar Todas las Unidades",
   "@syncAllDrives": {
@@ -885,7 +871,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPendingManifestExplanation": "Algunos archivos de esta carpeta siguen pendientes. No recomendamos crear un despliegue con archivos pendientes. ¿Quieres continuar?",
+  "filesPendingManifestExplanation": "Algunos archivos de esta carpeta siguen pendientes. No recomendamos crear un despliegue hasta que estén confirmados.",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1116,7 +1102,7 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
-  "insufficientARForUpload": "AR insufficiente para la carga.",
+  "insufficientARForUpload": "AR insuficiente",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
@@ -1138,7 +1124,7 @@
       }
     }
   },
-  "insufficientBalanceForSnapshot": "El saldo de la cartera proporcionada de {walletBalance} AR no es suficiente para esta transacción, cuyo coste es de {totalCost} AR.",
+  "insufficientBalanceForSnapshot": "Tu monedero tiene {walletBalance} AR. Esta instantánea cuesta {totalCost} AR.",
   "@insufficientBalanceForSnapshot": {
     "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
     "placeholders": {
@@ -1482,10 +1468,6 @@
   "passwordCannotBeEmpty": "La contraseña no puede estar vacía",
   "@passwordCannotBeEmpty": {
     "description": "Button title to create a password"
-  },
-  "passwordDoNotMatch": "Las contraseñas no coinciden",
-  "@passwordDoNotMatch": {
-    "description": "Modal description when passwords dont match"
   },
   "passwordMismatch": "Las contraseñas no coinciden.",
   "@passwordMismatch": {
@@ -2048,7 +2030,7 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "Se ha creado correctamente una instantánea de {driveName}.",
+  "snapshotCreationSucceeded": "Tu instantánea de {driveName} va de camino a Arweave.",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -2082,7 +2064,7 @@
       }
     }
   },
-  "snapshotSuceeded": "Operación realizada con éxito",
+  "snapshotSuceeded": "Instantánea creada",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
@@ -2683,7 +2665,7 @@
   "@discord": {
     "description": "Discord community platform name"
   },
-  "dontAskMeAgain": "No volver a preguntar.",
+  "dontAskMeAgain": "No volver a preguntar",
   "@dontAskMeAgain": {
     "description": "Don't ask me for it again"
   },
@@ -2821,27 +2803,18 @@
   "@chooseALicenseType": {
     "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
   },
+  "licenseCheckSettings": "Revisa los ajustes de la licencia",
   "licenseHeading": "Licencia",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "moreFiles": "+ {count} más",
+  "moreFiles": "Mostrar {count} más",
   "@moreFiles": {
     "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
     "placeholders": {
       "count": {
         "type": "int",
         "example": "5"
-      }
-    }
-  },
-  "namedLicense": "Licencia {name}",
-  "@namedLicense": {
-    "description": "Upload options summary: the license chosen, by its short name",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "UDL"
       }
     }
   },
@@ -2853,25 +2826,13 @@
   "@showFewerFiles": {
     "description": "Under the full list of files of an upload: collapses it back to the first few"
   },
-  "thumbnailsOff": "Miniaturas desactivadas",
-  "@thumbnailsOff": {
-    "description": "Upload options summary: thumbnails will not be made for the images"
-  },
-  "thumbnailsOn": "Miniaturas activadas",
-  "@thumbnailsOn": {
-    "description": "Upload options summary: thumbnails will be made for the images"
-  },
   "compressTextAndCode": "Comprimir texto y código",
   "@compressTextAndCode": {
     "description": "Upload options: switch that sends the text and code files gzipped (public drives only)"
   },
-  "compressTextAndCodeHint": "Menos almacenamiento para sitios web y código. Otras aplicaciones pueden necesitar descomprimir estos archivos.",
+  "compressTextAndCodeHint": "Menos almacenamiento para sitios web y código.",
   "@compressTextAndCodeHint": {
     "description": "Upload options: what compressing text and code means for the files"
-  },
-  "compressedSummary": "Comprimido",
-  "@compressedSummary": {
-    "description": "Upload options summary: text and code will be compressed"
   },
   "totalUploadSize": "{size} en total",
   "@totalUploadSize": {
@@ -3182,6 +3143,7 @@
   "@hide": {
     "description": "Hide"
   },
+  "itemHiddenTag": "Ocultas",
   "hiddenDrives": "Ocultas",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
@@ -4557,7 +4519,7 @@
   "@uploadCostFree": {
     "description": "The upload review's cost when the free upload allowance covers it"
   },
-  "uploadCostFreeNote": "Cubierto por tu cupo de carga gratuito. Guardado para siempre, pagado una sola vez.",
+  "uploadCostFreeNote": "Cubierto por tu cupo de carga gratuito",
   "@uploadCostFreeNote": {
     "description": "Beside the cost when an upload is free"
   },
@@ -4565,7 +4527,7 @@
   "@uploadCostUsdUnit": {
     "description": "Unit after a cost in US dollars"
   },
-  "uploadCostCreditsNote": "Pagado una sola vez con créditos de Turbo. Guardado para siempre, sin suscripción.",
+  "uploadCostCreditsNote": "Pagado con créditos de Turbo",
   "@uploadCostCreditsNote": {
     "description": "Beside the cost when Turbo Credits pay for an upload"
   },
@@ -4573,7 +4535,7 @@
   "@uploadCostArUnit": {
     "description": "Unit after a cost in AR"
   },
-  "uploadCostWalletNote": "Pagado una sola vez desde tu monedero. Guardado para siempre, sin suscripción.",
+  "uploadCostWalletNote": "Pagado desde tu monedero",
   "@uploadCostWalletNote": {
     "description": "Beside the cost when the wallet pays for an upload in AR"
   },
@@ -4717,9 +4679,9 @@
       }
     }
   },
-  "thumbnailsCostNote": "Las miniaturas usan tu cupo de carga gratuito, o créditos de Turbo cuando se agote, y pueden hacer que tu carga tarde más.\nSiempre puedes adjuntar una miniatura después.",
+  "thumbnailsCostNote": "Usa tu cupo de carga gratuito y luego créditos de Turbo.",
   "@thumbnailsCostNote": {
-    "description": "Tooltip beside the upload option to make thumbnails: what they cost"
+    "description": "Caption under the upload option to make thumbnails: what they cost"
   },
   "changeWalletShort": "Tu monedero no tiene suficientes AR para este cambio.",
   "@changeWalletShort": {
@@ -5019,10 +4981,6 @@
   "@publishBlockedEmpty": {
     "description": "Why a drive or folder can't be published."
   },
-  "publishWhatsIncluded": "Qué se incluye",
-  "@publishWhatsIncluded": {
-    "description": "First step of the publish dialog."
-  },
   "publishScopeDrive": "Toda la unidad",
   "@publishScopeDrive": {
     "description": "What a drive's web page shows."
@@ -5050,10 +5008,6 @@
   "publishIncludedNote": "Cualquiera puede encontrar esta página y los buscadores pueden indexar sus archivos.",
   "@publishIncludedNote": {
     "description": "Under the counts in the first step of the publish dialog."
-  },
-  "publishNextTitleNote": "Siguiente: un título. Las imágenes, una descripción y un nombre son opcionales y puedes añadirlos después.",
-  "@publishNextTitleNote": {
-    "description": "Muted line under the first step of the publish dialog: what the next step asks for."
   },
   "publishMoreOptions": "Más opciones",
   "@publishMoreOptions": {
@@ -6005,9 +5959,9 @@
   "@arnsNoWalletFound": {
     "description": "No Solana wallet is installed in this browser."
   },
-  "arnsNoWalletFoundBody": "Abre ArDrive en la app de tu monedero, o consigue un monedero.",
+  "arnsNoWalletFoundBody": "Abre ArDrive en la app de tu monedero.",
   "@arnsNoWalletFoundBody": {
-    "description": "What to do when no Solana wallet is installed."
+    "description": "What to do on a phone when no Solana wallet is found: wallets connect only inside their own app."
   },
   "arnsOpenInPhantom": "Abrir en Phantom",
   "@arnsOpenInPhantom": {
@@ -6017,9 +5971,17 @@
   "@arnsOpenInSolflare": {
     "description": "Link that opens ArDrive in the Solflare app's browser."
   },
-  "arnsGetAWallet": "Conseguir un monedero",
-  "@arnsGetAWallet": {
-    "description": "Link to install a Solana wallet."
+  "arnsNoWalletFoundBodyDesktop": "Instala un monedero de Solana y vuelve a cargar.",
+  "@arnsNoWalletFoundBodyDesktop": {
+    "description": "What to do on a computer when no Solana wallet is installed."
+  },
+  "arnsGetPhantom": "Conseguir Phantom",
+  "@arnsGetPhantom": {
+    "description": "Link to install the Phantom wallet."
+  },
+  "arnsGetSolflare": "Conseguir Solflare",
+  "@arnsGetSolflare": {
+    "description": "Link to install the Solflare wallet."
   },
   "arnsConnected": "Conectado",
   "@arnsConnected": {
@@ -7195,11 +7157,11 @@
   "@wanderReconnect": {
     "description": "Button that asks Wander for ArDrive's permissions again."
   },
-  "wanderAccountChangedTitle": "Sesión cerrada",
+  "wanderAccountChangedTitle": "Cambió la cuenta de Wander",
   "@wanderAccountChangedTitle": {
     "description": "Title of the notice on the sign-in screen after ArDrive signed out because the Wander account changed."
   },
-  "wanderAccountChangedDescription": "Tu cuenta de Wander cambió, así que se cerró tu sesión.",
+  "wanderAccountChangedDescription": "Se cerró tu sesión. Inicia sesión de nuevo.",
   "@wanderAccountChangedDescription": {
     "description": "Why the user is on the sign-in screen: the Wander account changed, so ArDrive signed out."
   },
@@ -8083,7 +8045,7 @@
   "@enterPasswordHint": {"description": "Placeholder of the password field on the sign-in password dialog."},
   "forgetWalletDialogTitle": "¿Usar otra cuenta?",
   "@forgetWalletDialogTitle": {"description": "Title of the dialog that confirms forgetting the wallet on this device."},
-  "forgetWalletDialogDescription": "¿Seguro que quieres olvidar este monedero?",
+  "forgetWalletDialogDescription": "Esto quita el monedero de este dispositivo.",
   "@forgetWalletDialogDescription": {"description": "Question in the dialog that confirms forgetting the wallet on this device."},
   "cryptoStartAgain": "Empezar de nuevo",
   "@cryptoStartAgain": {"description": "Button on a crypto top-up notice that restarts the top-up."},
@@ -8147,8 +8109,6 @@
   "@publicationLockTooltip": {"description": "Tooltip of the Lock button in a private page's header."},
   "publishPrivateIncludedNote": "Solo quien tenga el enlace o su contraseña puede abrir esta página. Se pide a los buscadores que no la incluyan.",
   "@publishPrivateIncludedNote": {"description": "On the first step of publishing a private drive or folder, in place of the public note about search engines."},
-  "publishPrivateNextNote": "Siguiente: su aspecto y una contraseña opcional. El título, la descripción y las imágenes son visibles para todos.",
-  "@publishPrivateNextNote": {"description": "On the first step of publishing a private drive or folder: what the next step asks for."},
   "publishPrivateTitleHint": "Visible para todos. Déjalo vacío para mostrar «Página privada».",
   "@publishPrivateTitleHint": {"description": "Under the title field when publishing a private drive or folder."},
   "publishPasswordLabel": "Contraseña (opcional)",
@@ -8179,6 +8139,396 @@
   "@publishPageKeyNotRead": {"description": "In a private page's published view when its key could not be read back from the gateway, in place of its link, above Try again."},
   "publicationPrivateMark": "Privada",
   "@publicationPrivateMark": {"description": "Tooltip of the lock beside a private page on Web pages."},
+  "loginWalletExtensionOutdated": "Actualiza la extensión de tu monedero e inténtalo de nuevo.",
+  "@loginWalletExtensionOutdated": {"description": "Sign-in error: the wallet extension is too old."},
+  "loginUnknownFailure": "Algo salió mal. Inténtalo de nuevo. Si sigue ocurriendo, copia los registros y envíanoslos.",
+  "@loginUnknownFailure": {"description": "Sign-in error: unknown failure, with the Copy logs button below it."},
+  "loginGatewayFailure": "No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+  "@loginGatewayFailure": {"description": "Sign-in error: the gateway could not be reached."},
+  "loginDriveStillConfirming": "Tu unidad aún se está confirmando. Inténtalo de nuevo en unos minutos.",
+  "@loginDriveStillConfirming": {"description": "Sign-in error: the private drive is not confirmed on the network yet."},
+  "loginLoadingWallet": "Cargando los datos del monedero",
+  "@loginLoadingWallet": {"description": "Title of the wait while the wallet details load at sign-in."},
+  "loginSettingUpAccount": "Configurando tu cuenta. Puede tardar un momento.",
+  "@loginSettingUpAccount": {"description": "The wait while a new account is set up at sign-in."},
+  "signInFoundDrivesBody": "Encontramos tus unidades. Introduce una contraseña para cifrar tus archivos privados. No se puede cambiar, restablecer ni recuperar.",
+  "@signInFoundDrivesBody": {"description": "Under the password title when the wallet already has drives."},
+  "signInLinkedWalletBody": "ArDrive crea un monedero de almacenamiento vinculado a tu monedero de {chain}. Introduce una contraseña para cifrar tus archivos privados. No se puede cambiar, restablecer ni recuperar.",
+  "@signInLinkedWalletBody": {"description": "Under the password title for an account linked to an Ethereum or Solana wallet.", "placeholders": {"chain": {"type": "String"}}},
+  "forgetWalletDialogAction": "Olvidar monedero",
+  "@forgetWalletDialogAction": {"description": "Primary of the dialog that forgets the wallet on this device."},
+  "downloadLogs": "Descargar registros",
+  "@downloadLogs": {"description": "Primary of the Help dialog: saves the app logs."},
+  "logsExportedNotice": "Registros exportados. Están en el directorio de la aplicación.",
+  "@logsExportedNotice": {"description": "Shown in the Help dialog once the logs were exported."},
+  "licensingInfoTitle": "Licencias para tus datos",
+  "@licensingInfoTitle": {"description": "Title of the licensing info dialog."},
+  "licensingInfoIntro": "Aplica licencias para controlar cómo otros pueden usar tu contenido.",
+  "@licensingInfoIntro": {"description": "Licensing info dialog: intro."},
+  "licensingInfoOptions": "Opciones disponibles",
+  "@licensingInfoOptions": {"description": "Licensing info dialog: heading of the list of licenses."},
+  "licensingInfoUdl": "Para almacenamiento en blockchain",
+  "@licensingInfoUdl": {"description": "Licensing info dialog: what the Universal Data License is for."},
+  "licensingInfoCreativeCommons": "Seis tipos de licencia, de permisivas a restrictivas",
+  "@licensingInfoCreativeCommons": {"description": "Licensing info dialog: what Creative Commons offers."},
+  "licensingInfoNotice": "Las licencias se ven en los detalles del archivo. Aplicar una puede cubrirse con tu cuota de subida gratuita; si no, cuesta un poco en créditos de Turbo. Selecciona un archivo tras subirlo para añadir una licencia.",
+  "@licensingInfoNotice": {"description": "Licensing info dialog: notice."},
+  "keyfileInfoTitle": "Archivos de clave y frases semilla",
+  "@keyfileInfoTitle": {"description": "Title of the keyfile and seed phrase info dialog."},
+  "keyfileInfoKeyfiles": "Archivos de clave",
+  "@keyfileInfoKeyfiles": {"description": "Keyfile info dialog: heading."},
+  "keyfileInfoKeyfilesBody": "El archivo de tu monedero de Arweave que acredita tu identidad. Necesitas tu archivo de clave y tu contraseña para iniciar sesión.",
+  "@keyfileInfoKeyfilesBody": {"description": "Keyfile info dialog: what a keyfile is."},
+  "keyfileInfoSeedPhrases": "Frases semilla",
+  "@keyfileInfoSeedPhrases": {"description": "Keyfile info dialog: heading."},
+  "keyfileInfoSeedPhrasesBody": "Una secuencia de palabras que puede generar tu monedero. Introduce tu frase semilla y tu contraseña para acceder a tu cuenta.",
+  "@keyfileInfoSeedPhrasesBody": {"description": "Keyfile info dialog: what a seed phrase is."},
+  "keyfileInfoWarning": "Guarda tu archivo de clave y tu frase semilla en un lugar seguro. Quien tenga acceso puede controlar tu cuenta. ArDrive no puede recuperar credenciales perdidas.",
+  "@keyfileInfoWarning": {"description": "Keyfile info dialog: warning."},
+  "urlRequired": "Introduce una URL.",
+  "@urlRequired": {"description": "Field error: a URL is needed."},
+  "urlInvalid": "Introduce una URL válida, que empiece por https://",
+  "@urlInvalid": {"description": "Field error: the URL is not valid."},
+  "turboServicesTitle": "Servicios de Turbo",
+  "@turboServicesTitle": {"description": "Title of the dialog that sets the Turbo service URLs."},
+  "turboUploadUrlLabel": "URL del servicio de subida",
+  "@turboUploadUrlLabel": {"description": "Label of the Turbo upload service URL field."},
+  "turboPaymentUrlLabel": "URL del servicio de pago",
+  "@turboPaymentUrlLabel": {"description": "Label of the Turbo payment service URL field."},
+  "graphqlServerTitle": "Cambiar servidor GraphQL",
+  "@graphqlServerTitle": {"description": "Title of the dialog that sets the GraphQL server."},
+  "graphqlServerUrlLabel": "URL del servidor GraphQL",
+  "@graphqlServerUrlLabel": {"description": "Label of the GraphQL server URL field."},
+  "graphqlServerUrlHint": "Nombre de host, como https://ardrive.net",
+  "@graphqlServerUrlHint": {"description": "Hint of the GraphQL server URL field."},
+  "graphqlServerChecking": "Comprobando el servidor",
+  "@graphqlServerChecking": {"description": "Shown while the GraphQL server is checked."},
+  "graphqlServerInvalid": "Eso no es un servidor GraphQL.",
+  "@graphqlServerInvalid": {"description": "Notice: the URL is not a GraphQL server."},
+  "gatewaySearch": "Buscar pasarelas",
+  "@gatewaySearch": {"description": "Search field of the ar.io gateway list."},
+  "gatewayLoading": "Cargando pasarelas",
+  "@gatewayLoading": {"description": "Title of the wait while the ar.io gateways load."},
+  "gatewayLoadFailedTitle": "No se pudieron cargar las pasarelas",
+  "@gatewayLoadFailedTitle": {"description": "Title when the ar.io gateways could not load."},
+  "gatewayLoadFailedBody": "Algo salió mal. Inténtalo de nuevo.",
+  "@gatewayLoadFailedBody": {"description": "Notice when the ar.io gateways could not load."},
+  "turboBuyCredits": "Comprar créditos de Turbo",
+  "@turboBuyCredits": {"description": "Title of the Turbo Credits top-up dialog."},
+  "turboCryptoInProgress": "Pago en curso",
+  "@turboCryptoInProgress": {"description": "Title while a crypto top-up payment is under way."},
+  "turboCryptoFailed": "El pago falló",
+  "@turboCryptoFailed": {"description": "Title when a crypto top-up payment failed."},
+  "turboKeepWindowOpen": "Mantén esta ventana abierta.",
+  "@turboKeepWindowOpen": {"description": "Notice while a crypto top-up payment is under way."},
+  "turboProcessingPayment": "Procesando tu pago",
+  "@turboProcessingPayment": {"description": "Turbo top-up: crypto payment wait, default line."},
+  "turboApproveInWallet": "Aprueba el pago en tu monedero",
+  "@turboApproveInWallet": {"description": "Turbo top-up: crypto payment wait, asks to approve in the wallet."},
+  "turboApproveInWalletHint": "Cuando lo apruebes, puede tardar un minuto en confirmarse. Para cancelar, rechaza la solicitud en tu monedero.",
+  "@turboApproveInWalletHint": {"description": "Turbo top-up: under the approve line."},
+  "turboConfirmingTransaction": "Confirmando la transacción",
+  "@turboConfirmingTransaction": {"description": "Turbo top-up: waiting for the network."},
+  "turboWaitingForNetwork": "Esperando la confirmación de la red",
+  "@turboWaitingForNetwork": {"description": "Turbo top-up: under Confirming transaction."},
+  "turboSubmittingTransaction": "Enviando la transacción",
+  "@turboSubmittingTransaction": {"description": "Turbo top-up: sending the transaction."},
+  "turboMayTakeAMoment": "Puede tardar un momento",
+  "@turboMayTakeAMoment": {"description": "Turbo top-up: patience line."},
+  "turboPaid": "Pagado",
+  "@turboPaid": {"description": "Turbo top-up success: row label for what was paid."},
+  "turboNewBalance": "Nuevo saldo",
+  "@turboNewBalance": {"description": "Turbo top-up: label for the balance after the purchase."},
+  "turboErrorProcessing": "Ocurrió un error al procesar tu pago.",
+  "@turboErrorProcessing": {"description": "Turbo top-up: fallback failure message."},
+  "turboCryptoErrNetwork": "Error de red. Revisa tu conexión.",
+  "@turboCryptoErrNetwork": {"description": "Turbo crypto failure: network."},
+  "turboCryptoErrRejected": "Rechazaste la transacción en tu monedero.",
+  "@turboCryptoErrRejected": {"description": "Turbo crypto failure: rejected in the wallet."},
+  "turboCryptoErrFunds": "Fondos insuficientes en tu monedero.",
+  "@turboCryptoErrFunds": {"description": "Turbo crypto failure: not enough funds."},
+  "turboCryptoErrGas": "Gas insuficiente para la transacción.",
+  "@turboCryptoErrGas": {"description": "Turbo crypto failure: not enough gas."},
+  "turboCryptoErrFailed": "La transacción falló en la red.",
+  "@turboCryptoErrFailed": {"description": "Turbo crypto failure: failed on the network."},
+  "turboCryptoErrQuoteExpired": "La cotización caducó. Inténtalo de nuevo.",
+  "@turboCryptoErrQuoteExpired": {"description": "Turbo crypto failure: quote expired."},
+  "turboCryptoErrPromo": "El código promocional no es válido.",
+  "@turboCryptoErrPromo": {"description": "Turbo crypto failure: promo code invalid."},
+  "turboCryptoErrSession": "Tu sesión caducó. Inténtalo de nuevo.",
+  "@turboCryptoErrSession": {"description": "Turbo crypto failure: session expired."},
+  "turboCryptoErrUnknown": "Ocurrió un error inesperado.",
+  "@turboCryptoErrUnknown": {"description": "Turbo crypto failure: unknown."},
+  "turboConfirmPayment": "Confirmar el pago",
+  "@turboConfirmPayment": {"description": "Title of the top-up confirmation step."},
+  "turboTermsPrefix": "Al continuar, aceptas los ",
+  "@turboTermsPrefix": {"description": "Before the Terms of Service link on the top-up confirmation."},
+  "turboTermsLink": "Términos del servicio",
+  "@turboTermsLink": {"description": "Terms of Service link text."},
+  "turboQuoteExpired": "Cotización caducada",
+  "@turboQuoteExpired": {"description": "Top-up primary when the quote has expired."},
+  "turboCheckingNetwork": "Comprobando la red",
+  "@turboCheckingNetwork": {"description": "Top-up: checking the wallet network."},
+  "turboSwitchingNetwork": "Cambiando de red",
+  "@turboSwitchingNetwork": {"description": "Top-up primary while the wallet switches network."},
+  "turboSwitchNetworkFirst": "Cambia de red primero",
+  "@turboSwitchNetworkFirst": {"description": "Top-up primary when the network must be switched first."},
+  "turboNotEnoughToken": "No hay suficiente {token}",
+  "@turboNotEnoughToken": {"description": "Top-up primary when the wallet lacks the token.", "placeholders": {"token": {"type": "String"}}},
+  "turboPayingWithLabel": "Pagando con",
+  "@turboPayingWithLabel": {"description": "Top-up confirmation: section label."},
+  "turboWalletBalance": "Saldo del monedero",
+  "@turboWalletBalance": {"description": "Top-up confirmation: wallet balance row."},
+  "turboYoullReceive": "Recibirás",
+  "@turboYoullReceive": {"description": "Top-up confirmation: section label."},
+  "turboSwitchingTo": "Cambiando a {network}",
+  "@turboSwitchingTo": {"description": "Top-up: the wallet is switching to a network.", "placeholders": {"network": {"type": "String"}}},
+  "turboSwitchToNetwork": "Cambiar a {network}",
+  "@turboSwitchToNetwork": {"description": "Top-up: ask to switch to a network.", "placeholders": {"network": {"type": "String"}}},
+  "turboSwitch": "Cambiar",
+  "@turboSwitch": {"description": "Top-up: short action to switch network."},
+  "turboEditCardDetails": "Editar los datos de la tarjeta",
+  "@turboEditCardDetails": {"description": "Top-up review: action after a card payment failed."},
+  "turboCreditCard": "Tarjeta de crédito",
+  "@turboCreditCard": {"description": "Top-up review: payment method name."},
+  "turboSecureViaStripe": "Pago seguro con Stripe",
+  "@turboSecureViaStripe": {"description": "Top-up review: under Credit card."},
+  "turboSelectCryptoHint": "Elige una criptomoneda en el menú de arriba para ver los importes.",
+  "@turboSelectCryptoHint": {"description": "Top-up: hint before a token is chosen."},
+  "turboPromoApplied": "Código promocional aplicado: {code}",
+  "@turboPromoApplied": {"description": "Top-up: promo code accepted.", "placeholders": {"code": {"type": "String"}}},
+  "turboPromoRemove": "Quitar el código promocional",
+  "@turboPromoRemove": {"description": "Top-up: remove the promo code."},
+  "turboPromoHave": "¿Tienes un código promocional?",
+  "@turboPromoHave": {"description": "Top-up: opens the promo code field."},
+  "turboPromoEnter": "Introduce el código promocional",
+  "@turboPromoEnter": {"description": "Top-up: promo code field hint."},
+  "turboPromoApply": "Aplicar",
+  "@turboPromoApply": {"description": "Top-up: apply the promo code."},
+  "turboSelectAmountHint": "Elige un importe para ver el resumen de la compra",
+  "@turboSelectAmountHint": {"description": "Top-up: hint before an amount is chosen."},
+  "turboConnectWalletTitle": "Conectar monedero",
+  "@turboConnectWalletTitle": {"description": "Top-up: title of the wallet connection step."},
+  "turboConnectWalletBody": "Conecta tu {wallet} para completar la compra.",
+  "@turboConnectWalletBody": {"description": "Top-up: wallet connection step description.", "placeholders": {"wallet": {"type": "String"}}},
+  "turboPayingWith": "Pagando con {token}",
+  "@turboPayingWith": {"description": "Top-up: which token is being paid with.", "placeholders": {"token": {"type": "String"}}},
+  "turboSignMessageWait": "Firma el mensaje en tu monedero de Ethereum para continuar.",
+  "@turboSignMessageWait": {"description": "Top-up: waiting for the signature."},
+  "turboSwitchNetworkNotice": "Cambia a {network} en tu monedero.",
+  "@turboSwitchNetworkNotice": {"description": "Top-up: ask to switch network in the wallet.", "placeholders": {"network": {"type": "String"}}},
+  "turboSwitchNetwork": "Cambiar de red",
+  "@turboSwitchNetwork": {"description": "Top-up: switch network button and title."},
+  "turboConnecting": "Conectando con {wallet}",
+  "@turboConnecting": {"description": "Top-up: connecting to a wallet.", "placeholders": {"wallet": {"type": "String"}}},
+  "turboSelectWallet": "Elige un monedero",
+  "@turboSelectWallet": {"description": "Top-up: heading above the wallet buttons."},
+  "turboConnectNamed": "Conectar {wallet}",
+  "@turboConnectNamed": {"description": "Top-up: button to connect a named wallet.", "placeholders": {"wallet": {"type": "String"}}},
+  "turboNoWalletsDetected": "No se detectó ningún monedero",
+  "@turboNoWalletsDetected": {"description": "Top-up: title when no wallet is installed."},
+  "turboInstallNamed": "Instalar {wallet}",
+  "@turboInstallNamed": {"description": "Top-up: button to install a named wallet.", "placeholders": {"wallet": {"type": "String"}}},
+  "turboInstallEthereum": "Instala una extensión de monedero, como MetaMask o Coinbase Wallet, para continuar.",
+  "@turboInstallEthereum": {"description": "Top-up: install a wallet extension."},
+  "turboInstallSolana": "Instala Phantom o Solflare para continuar.",
+  "@turboInstallSolana": {"description": "Top-up: install a Solana wallet."},
+  "turboInstallArweave": "Instala ArConnect para continuar.",
+  "@turboInstallArweave": {"description": "Top-up: install ArConnect."},
+  "turboPayWith": "Pagar con",
+  "@turboPayWith": {"description": "Top-up: label above the token picker."},
+  "turboSelectToken": "Elige un token",
+  "@turboSelectToken": {"description": "Top-up: token picker placeholder."},
+  "turboSelectTokenHint": "Elige un token arriba para ver el precio y conectar tu monedero.",
+  "@turboSelectTokenHint": {"description": "Top-up: hint before a token is chosen."},
+  "turboSwitchingInWallet": "Cambiando de red en tu monedero",
+  "@turboSwitchingInWallet": {"description": "Top-up: network switch in progress."},
+  "turboUsingArConnect": "Usando tu monedero ArConnect conectado",
+  "@turboUsingArConnect": {"description": "Top-up: ArConnect already connected."},
+  "turboContinueArConnect": "Continuar con ArConnect",
+  "@turboContinueArConnect": {"description": "Top-up: continue with ArConnect."},
+  "turboChooseEthereum": "Elige tu monedero de Ethereum",
+  "@turboChooseEthereum": {"description": "Top-up: subtitle for Ethereum wallets."},
+  "turboChooseSolana": "Elige tu monedero de Solana",
+  "@turboChooseSolana": {"description": "Top-up: subtitle for Solana wallets."},
+  "turboConnectArConnect": "Conectar con ArConnect",
+  "@turboConnectArConnect": {"description": "Top-up: subtitle for ArConnect."},
+  "turboWalletConnected": "Monedero conectado",
+  "@turboWalletConnected": {"description": "Top-up: a wallet is connected."},
+  "turboYouPay": "Pagas",
+  "@turboYouPay": {"description": "Top-up quote row."},
+  "turboYouReceive": "Recibes",
+  "@turboYouReceive": {"description": "Top-up quote row."},
+  "turboNetworkFee": "Comisión de red estimada",
+  "@turboNetworkFee": {"description": "Top-up quote row."},
+  "turboInsufficientBalance": "Saldo insuficiente. Tienes {balance}",
+  "@turboInsufficientBalance": {"description": "Top-up: wallet balance is too low.", "placeholders": {"balance": {"type": "String"}}},
+  "turboNotDetected": "{wallet} no detectado",
+  "@turboNotDetected": {"description": "Top-up: a wallet extension was not found.", "placeholders": {"wallet": {"type": "String"}}},
+  "turboInstallExtension": "Instala la extensión de navegador de {wallet} para continuar.",
+  "@turboInstallExtension": {"description": "Top-up: install the browser extension.", "placeholders": {"wallet": {"type": "String"}}},
+  "turboSignMessage": "Firmar mensaje",
+  "@turboSignMessage": {"description": "Top-up: sign a message."},
+  "turboSignMessageBody": "Para usar tokens ARIO desde tu monedero de Ethereum, firma un mensaje para verificar tu identidad.",
+  "@turboSignMessageBody": {"description": "Top-up: why a signature is asked for."},
+  "turboSigning": "Firmando",
+  "@turboSigning": {"description": "Top-up: signing in progress."},
+  "turboSignatureRejected": "Firma rechazada. Inténtalo de nuevo.",
+  "@turboSignatureRejected": {"description": "Top-up: the signature was rejected."},
+  "turboSwitchFromTo": "Cambia de {from} a {to} para continuar.",
+  "@turboSwitchFromTo": {"description": "Top-up: switch network.", "placeholders": {"from": {"type": "String"}, "to": {"type": "String"}}},
+  "turboSwitching": "Cambiando",
+  "@turboSwitching": {"description": "Top-up: switching."},
+  "turboDetected": "Detectado",
+  "@turboDetected": {"description": "Top-up: badge on an installed wallet."},
+  "settingsSaveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+  "@settingsSaveFailed": {"description": "Notice in a settings dialog when saving failed."},
+  "logsExportFailedNotice": "No se pudieron exportar los registros. Inténtalo de nuevo.",
+  "@logsExportFailedNotice": {"description": "Notice in Help when exporting the logs failed."},
+  "logsExportedWebNotice": "Registros exportados. Se guardaron en tus descargas.",
+  "@logsExportedWebNotice": {"description": "Notice in Help on the web once the logs were exported."},
+  "deploymentFolder": "Carpeta",
+  "deploymentFallbackLabel": "Página de respaldo (opcional)",
+  "deploymentFallbackHelp": "Se muestra cuando una ruta del despliegue no existe, como una página 404. Introduce el ID de transacción de su archivo.",
+  "deploymentInvalidTxId": "ID de transacción no válido",
+  "deploymentHiddenNotice": "Los archivos y carpetas ocultos no se añaden al despliegue.",
+  "loadingFolders": "Cargando carpetas",
+  "deploymentPreparing": "Preparando el despliegue",
+  "deploymentUploading": "Subiendo el despliegue",
+  "deploymentCreating": "Creando el despliegue",
+  "deploymentNameConflictTitle": "Nombre ya en uso",
+  "deploymentNameConflictBody": "Ya hay un archivo o una carpeta llamado «{name}» en esta carpeta. Elige otro nombre.",
+  "deploymentUseName": "Usar nombre",
+  "deploymentExistsTitle": "El despliegue ya existe",
+  "deploymentExistsBody": "«{name}» ya es un despliegue en esta carpeta. Crear este añade una nueva versión.",
+  "deploymentCreateNewVersion": "Crear nueva versión",
+  "deploymentCreatedTitle": "Despliegue creado",
+  "deploymentFailedTitle": "No se pudo crear el despliegue",
+  "deploymentFailedBody": "No se pudo subir el despliegue a Arweave.",
+  "deploymentMaybeSentBody": "Es posible que la subida se haya enviado y pagado. Sincroniza la unidad para comprobarlo antes de crearlo de nuevo.",
+  "deploymentWalletChanged": "Tu monedero cambió mientras se creaba el despliegue. No se subió nada.",
+  "importFromDeployment": "Importar desde un despliegue",
+  "importDeploymentIdLabel": "ID del despliegue",
+  "importEnterId": "Introduce el ID del despliegue del que importar archivos.",
+  "importIdRequired": "Introduce un ID de despliegue",
+  "importIdInvalid": "ID de despliegue no válido",
+  "importLoading": "Cargando el despliegue",
+  "importResolving": "Resolviendo las rutas de los archivos",
+  "importProgress": "{processed} de {total}",
+  "importCreatingFolder": "Creando la carpeta {path}",
+  "importingFile": "Importando {name}",
+  "importFilesFailed": "{count, plural, =1{Falló 1 archivo} other{Fallaron {count} archivos}}",
+  "importConflictsTitle": "Los archivos ya existen",
+  "importConflictsBody": "Estos archivos ya existen en esta carpeta:",
+  "importConflictsQuestion": "¿Reemplazarlos?",
+  "importReplace": "Reemplazar archivos",
+  "importReviewTitle": "Revisar archivos",
+  "importReviewSummary": "{count, plural, =1{Se importará 1 archivo} other{Se importarán {count} archivos}}",
+  "importAction": "Importar",
+  "importCancelledTitle": "Importación cancelada",
+  "importCancelledBody": "{count, plural, =1{Se importó 1 archivo antes de detenerse.} other{Se importaron {count} archivos antes de detenerse.}}",
+  "importSuccessTitle": "Importación completada",
+  "importSuccessBody": "{count, plural, =1{1 archivo importado} other{{count} archivos importados}}",
+  "snapshotPreparing": "Preparando la instantánea",
+  "snapshotFinishing": "Terminando la instantánea",
+  "snapshotMayTakeAWhile": "Esto puede tardar un poco",
+  "snapshotNotNow": "Ahora no",
+  "snapshotPromptDriveStateTitle": "Haz que esta unidad cargue más rápido",
+  "snapshotPromptDriveStateBody": "Esta unidad tarda en sincronizarse porque su historial se lee cambio a cambio. Una instantánea guarda toda la unidad como un solo archivo en Arweave, así que carga mucho más rápido desde donde inicies sesión. Ves el tamaño y el coste antes de subir nada.",
+  "snapshotPreparingBody": "Preparando una instantánea de {driveName}.",
+  "snapshotWhatItDoesEncrypted": "Esto guarda en Arweave una instantánea de esta unidad, cifrada con tu clave de unidad, para que cargue mucho más rápido desde donde inicies sesión. Es permanente y no se puede eliminar.",
+  "snapshotWhatItDoes": "Esto guarda en Arweave una instantánea de esta unidad para que cargue mucho más rápido desde donde inicies sesión. Es permanente y no se puede eliminar.",
+  "snapshotSummaryDrive": "Unidad",
+  "snapshotSummaryItems": "Elementos",
+  "snapshotSummarySize": "Tamaño",
+  "snapshotSummaryBlocks": "Bloques",
+  "snapshotBlocksRange": "{start} a {end}",
+  "snapshotUnaffordable": "Ni tu saldo de AR ni tus Turbo Credits cubren esta instantánea, así que aún no se puede crear.",
+  "snapshotCreating": "Creando la instantánea",
+  "snapshotPublishedBody": "Tu instantánea de {driveName} va de camino a Arweave. ArDrive empieza a usarla para cargar esta unidad más rápido cuando se confirma. Puedes seguirla en la pestaña Instantáneas de la unidad.",
+  "permanenceTitle": "Tu permanencia",
+  "permanenceShareTitle": "Comparte tu permanencia",
+  "permanenceCopyText": "Copiar texto",
+  "permanenceDownloadImage": "Descargar imagen",
+  "permanenceTextCopied": "Texto copiado",
+  "permanenceImageSaved": "Imagen guardada",
+  "permanencePreserved": "preservados",
+  "permanenceFiles": "{count, plural, =1{{count} archivo} other{{count} archivos}}",
+  "permanenceDrives": "{count, plural, =1{{count} unidad} other{{count} unidades}}",
+  "permanenceSince": "desde {year}",
+  "permanenceChartLabel": "Subido por año: {years}",
+  "permanenceCostToday": "Coste hoy",
+  "permanenceCostNote": "Precio de la red por almacenarlo",
+  "permanenceNetworkUnreachable": "no se pudo conectar con la red",
+  "permanenceSpent": "Gastado",
+  "permanenceCountingAr": "contando el AR pagado directamente...",
+  "permanencePaidDirectly": "+ {ar} pagados directamente",
+  "permanencePaidDirectlyAtLeast": "+ al menos {ar} pagados directamente",
+  "permanencePaidInAr": "pagado directamente en AR",
+  "permanencePaidInArAtLeast": "pagado directamente en AR, como mínimo",
+  "permanenceNoteAsOf": "{note}, a las {when}",
+  "permanenceTooMany": "más recargas de las que podemos contar aquí",
+  "permanenceCreditsUnreadable": "no se pudieron leer tus créditos",
+  "permanenceNoTopUps": "no se encontraron recargas",
+  "permanenceNoCreditsUsed": "aún no se han usado créditos",
+  "permanenceCreditsUsed": "Turbo Credits usados",
+  "permanenceRefreshCredits": "Actualizar créditos usados",
+  "permanenceShowCredits": "Mostrar créditos usados",
+  "permanenceWalletSigns": "tu monedero firma para leer tus créditos",
+  "permanenceReadingCredits": "leyendo tus créditos",
+  "permanenceHowTitle": "Cómo funcionan estas cifras",
+  "permanenceSize": "Tamaño",
+  "permanencePermanence": "Permanencia",
+  "permanenceFineSize": "cuenta cada versión de cada archivo de tus propias unidades sincronizadas en este dispositivo, una vez confirmada su subida. Los datos guardados en más de un lugar cuentan una vez. Las unidades ocultas y los archivos fijados no se incluyen, así que puede diferir de lo que suman tus unidades.",
+  "permanenceFineSpent": "son los Turbo Credits que has usado: todo lo abonado a este monedero, menos tu saldo. Incluye los créditos gastados en nombres ArNS y los usados por monederos con los que los compartiste. Debajo está el AR que este monedero pagó por subidas directas (tarifas de red y propinas de ArDrive), leído de Arweave. Ninguno está en dólares: los créditos y el AR se compraron a precios distintos con el tiempo.",
+  "permanenceFineSpentChain": "Los créditos compartidos desde tu monedero de {chain} no se cuentan.",
+  "permanenceFineCost": "es el precio de la propia red Arweave por almacenar ahora esta cantidad de datos, en AR, convertido al precio actual del AR. El precio de la red y el valor en dólares del AR cambian. No es lo que cobrarían ArDrive o Turbo, y no es una factura ni un presupuesto.",
+  "permanenceFinePermanence": "la proporciona la red Arweave, no ArDrive. Arweave afirma que su fondo de almacenamiento está diseñado para pagar el almacenamiento durante 200 años o más. Consulta los",
+  "permanenceTermsOfService": "Términos del servicio",
+  "importErrorNotFound": "No se pudo encontrar ese despliegue.",
+  "importErrorNetwork": "No se pudo acceder al despliegue. Comprueba tu conexión e inténtalo de nuevo.",
+  "importErrorUnreadable": "No se pudo leer ese despliegue.",
+  "importErrorNoFilesToReplace": "No hay archivos que reemplazar. Inicia la importación de nuevo.",
+  "importErrorReplaceFailed": "No se pudieron reemplazar los archivos. Inténtalo de nuevo.",
+  "importErrorImportFailed": "No se pudieron importar los archivos. Inténtalo de nuevo.",
+  "importErrorNothingImported": "No se importó ningún archivo. Comprueba el despliegue e inténtalo de nuevo.",
+  "importErrorUnexpected": "Algo salió mal durante la importación. Inténtalo de nuevo.",
+  "snapshotRefusedSyncSkipped": "La última sincronización no pudo leer algunos elementos de esta unidad. Sincronízala de nuevo, para que la instantánea los incluya.",
+  "snapshotRefusedSyncUnknown": "Sincroniza primero esta unidad, para que la instantánea incluya todo su contenido.",
+  "snapshotSyncCouldNotStart": "No se pudo iniciar la sincronización. Espera a que termine cualquier subida en curso y vuelve a intentarlo.",
+  "snapshotRefusedNotFound": "Esta unidad no está en este dispositivo.",
+  "snapshotRefusedProtection": "La instantánea de esta unidad no se puede proteger ahora, así que no se puede crear.",
+  "snapshotRefusedNotOwner": "Inicia sesión con el monedero del propietario de la unidad para crear una instantánea.",
+  "snapshotRefusedNoWatermark": "Esta unidad no ha terminado de sincronizarse. Sincronízala primero.",
+  "snapshotRefusedTooLarge": "Esta unidad es demasiado grande para una sola instantánea. Seguirá cargando como hasta ahora.",
+  "snapshotRefusedUnconfirmed": "Algunos cambios de esta unidad aún no están confirmados. Inténtalo de nuevo en unos minutos.",
+  "snapshotRefusedSealFailed": "No se pudo preparar la instantánea. Inténtalo de nuevo.",
+  "snapshotFailureCostTimeout": "Calcular el coste tardó demasiado, así que no se ofrece nada para confirmar. No se subió nada ni se gastó nada. Inténtalo de nuevo en un momento.",
+  "snapshotFailureCostUnknown": "No se pudo determinar el coste de esta instantánea, así que no se ofrece nada para confirmar. No se subió nada ni se gastó nada.",
+  "snapshotFailurePrepare": "No se pudo preparar la instantánea. Inténtalo de nuevo.",
+  "snapshotFailureNotEnabled": "Crear instantáneas de esta forma no está habilitado en esta versión. No se subió nada ni se gastó nada.",
+  "snapshotFailureNotLoggedIn": "Ya no has iniciado sesión. No se subió nada ni se gastó nada.",
+  "snapshotFailureWalletChanged": "Tu monedero cambió mientras se preparaba esta instantánea. No se subió nada ni se gastó nada.",
+  "snapshotFailureWalletUnavailable": "Wander no respondió. No se subió nada ni se gastó nada.",
+  "snapshotFailurePaymentDeclined": "Turbo rechazó el pago de esta instantánea. Añade créditos o paga con AR e inténtalo de nuevo.",
+  "snapshotFailurePublish": "No se pudo crear la instantánea. Si no se publicó nada, no se gastó nada. Revisa tu unidad antes de intentarlo de nuevo.",
+  "snapshotFailureUncertain": "La transacción de esta instantánea ({txId}) llegó a la red antes de que fallara la subida, así que está pagada, pero sus datos pueden estar incompletos. Búscala en una pasarela antes de intentarlo de nuevo. Un segundo intento crea otra transacción y la paga por segunda vez.",
+  "snapshotFailureThrew": "No se pudo crear la instantánea. No se gastó nada.",
+  "deploymentPostedBody": "El despliegue se publicó en Arweave (transacción {txId}) pero no se pudo guardar aquí, así que está pagado. No lo vuelvas a crear; sincroniza la unidad para verlo.",
+  "deploymentNameNotSet": "El despliegue se creó, pero no se pudo asignar el nombre. Puedes asignarlo desde Nombres.",
+  "deploymentAddress": "Dirección",
+  "shareUploadTitle": "Subir {count, plural, =1{1 archivo compartido} other{{count} archivos compartidos}}",
+  "@shareUploadTitle": {"description": "Title of the picker that chooses where files shared into the app go.", "placeholders": {"count": {"type": "int"}}},
+  "licenseAddedTitle": "Licencia añadida",
+  "licenseAddedMessage": "{license} ya está en {count, plural, =1{1 archivo} other{{count} archivos}}.",
+  "noFileToLicenseTitle": "No hay archivos para licenciar",
+  "noFileToLicenseMessage": "Elige un archivo o una carpeta que tenga archivos.",
+  "licenseFixSettingsForCost": "Revisa los ajustes de la licencia para ver el costo",
+  "licenseChooseTypeForCost": "Elige un tipo de licencia para ver el costo",
+  "licenseTypeLabel": "Tipo",
+  "licenseFeeLabel": "Tarifa de licencia",
+  "commercialUseLabel": "Uso comercial",
+  "derivationsLabel": "Obras derivadas",
   "tableColumnType": "Tipo",
   "@tableColumnType": {"description": "Heading of the file table column that shows each file's type"},
   "tableColumnTransactionId": "ID de la transacción",

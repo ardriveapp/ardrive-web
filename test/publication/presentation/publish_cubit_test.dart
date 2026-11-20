@@ -298,7 +298,7 @@ void main() {
 
       expect(synced, [(_drive, false)]);
       expect(stages.first, PublishStage.syncing);
-      expect(c.state.stage, PublishStage.included);
+      expect(c.state.stage, PublishStage.look);
     });
 
     test('stays blocked, and can sync again, when the sync fails', () async {
@@ -462,14 +462,45 @@ void main() {
     expect(c.state.pendingChanges, 0);
   });
 
-  test('the dialog opens on what is included, titled with the name', () async {
+  test('choosing an image from the drive swaps the look, and Back returns',
+      () async {
     final c = cubit();
     await c.load();
-    expect(c.state.stage, PublishStage.included);
+    c.openImageChooser(PublicationImageSlot.cover);
+    expect(c.state.choosingSlot, PublicationImageSlot.cover);
+    c.next();
+    expect(c.state.stage, PublishStage.look, reason: 'Next waits for Back');
+    expect(c.state.choosingSlot, PublicationImageSlot.cover);
+    c.back();
+    expect(c.state.choosingSlot, isNull);
+    expect(c.state.stage, PublishStage.look);
+  });
+
+  test(
+      'the look of a folder is its first step: Back goes nowhere (the dialog '
+      'shows Cancel there)', () async {
+    final c = cubit();
+    await c.load();
+    c.back();
+    expect(c.state.stage, PublishStage.look);
+  });
+
+  test('a second Next while pricing does not price again', () async {
+    final c = cubit();
+    await c.load();
+    c.next();
+    final stage = c.state.stage;
+    c.next();
+    expect(stage, PublishStage.pricing);
+    expect(c.state.stage, PublishStage.pricing);
+  });
+
+  test('the dialog opens on the look, titled with the name', () async {
+    final c = cubit();
+    await c.load();
+    expect(c.state.stage, PublishStage.look);
     expect(c.state.summary!.fileCount, 2);
     expect(c.state.title, 'My drive');
-    c.next();
-    expect(c.state.stage, PublishStage.look);
     c.setTitle('   ');
     c.next();
     expect(c.state.stage, PublishStage.look, reason: 'a title is required');
@@ -522,8 +553,10 @@ void main() {
     await sub.cancel();
 
     expect(c.state.stage, PublishStage.done);
-    expect(publishing.first.naming, ['news_acme']);
-    expect(publishing.first.namingStarted, isFalse);
+    final first =
+        publishing.firstWhere((s) => s.stage == PublishStage.publishing);
+    expect(first.naming, ['news_acme']);
+    expect(first.namingStarted, isFalse);
     expect(namingWhenApplied, hasLength(1));
     expect(namingWhenApplied.single.$1, ['news_acme']);
     expect(namingWhenApplied.single.$2, isTrue);
@@ -677,6 +710,65 @@ void main() {
       verify(() =>
               publisher.publish(any(), any(), onStep: any(named: 'onStep')))
           .called(1);
+    });
+
+    test('the method shown at Publish is the one that pays', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+      final before = c.state.method;
+      final other =
+          before == UploadMethod.turbo ? UploadMethod.ar : UploadMethod.turbo;
+
+      final publishing = c.publish();
+      c.setUploadMethod(other);
+      checked.complete(false);
+      await publishing;
+
+      final job = verify(() => publisher.publish(captureAny(), any(),
+          onStep: any(named: 'onStep'))).captured.single as PublicationJob;
+      expect(job.method, before);
+    });
+
+    test('the review knows while the wallet is checked', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+      final checked = Completer<bool>();
+      when(() => profile.logoutIfWalletMismatch())
+          .thenAnswer((_) => checked.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+      expect(c.state.checkingWallet, isFalse);
+
+      final publishing = c.publish();
+      expect(c.state.checkingWallet, isTrue);
+      checked.complete(false);
+      await publishing;
+
+      expect(c.state.checkingWallet, isFalse);
+    });
+
+    test('Next waits for a picked image still being cropped', () async {
+      final c = cubit();
+      await c.load();
+      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+      c.emit(c.state.copyWith(
+        stage: PublishStage.look,
+        title: 'Archive',
+        imageProcessing: true,
+      ));
+
+      c.next();
+
+      expect(c.state.stage, PublishStage.look);
     });
 
     test('Back while the wallet is checked publishes nothing', () async {

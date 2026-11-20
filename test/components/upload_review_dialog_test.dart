@@ -188,10 +188,7 @@ void main() {
     expect(find.text('To My files'), findsOneWidget);
     expect(find.text('grandma.jpg'), findsOneWidget);
     expect(find.text('Free', findRichText: true), findsOneWidget);
-    expect(
-        find.text(
-            'Covered by your free upload allowance. Saved for good, paid once.'),
-        findsOneWidget);
+    expect(find.text('Covered by your free upload allowance'), findsOneWidget);
     expect(enabled(tester, 'Upload'), isTrue);
     expect(find.text('Add credits'), findsNothing,
         reason: 'a free upload needs no credits');
@@ -226,10 +223,7 @@ void main() {
     await pump(tester, summary(freeStatus: FreeUploadStatus.allowanceUsedUp));
 
     expect(find.text('\$32.14 USD', findRichText: true), findsOneWidget);
-    expect(
-        find.text(
-            'Paid once with Turbo Credits. Saved for good, no subscription.'),
-        findsOneWidget);
+    expect(find.text('Paid with Turbo Credits'), findsOneWidget);
     expect(
       find.text('This upload is over your free upload allowance. You have '
           '0.0000 credits, and it needs 5.8750. Add Turbo Credits to upload '
@@ -247,8 +241,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add Turbo Credits'), findsOneWidget);
-    expect(find.text('This upload needs 5.8750 credits.'),
-        findsOneWidget);
+    expect(find.text('This upload needs 5.8750 credits.'), findsOneWidget);
     for (final amount in ['\$10', '\$25', '\$50', '\$100']) {
       expect(find.text(amount), findsOneWidget);
     }

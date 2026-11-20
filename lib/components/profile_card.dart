@@ -1457,7 +1457,7 @@ class ForgetAllOnThisDeviceDialog extends StatelessWidget {
       title: strings.forgetDrivesConfirmTitle(count),
       description: strings.forgetDrivesConfirmBody,
       actions: [
-        ModalAction.dismiss(
+        ModalAction.close(
           action: () => Navigator.of(context).pop(false),
           title: strings.cancelEmphasized,
         ),

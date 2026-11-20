@@ -4,6 +4,7 @@ import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gar/utils/gateway_validator.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -11,7 +12,7 @@ import 'package:flutter/material.dart';
 
 class GatewayInputModal extends StatefulWidget {
   final String initialGateway;
-  final Function(String) onSave;
+  final FutureOr<void> Function(String) onSave;
 
   /// Checks a gateway URL. Replaced in tests.
   final Future<GatewayValidationResult> Function(String url) validate;
@@ -31,6 +32,33 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _gatewayController;
   bool _isLoading = false;
+  bool _picking = false;
+
+  /// True from the press until the save has finished: a second press must not
+  /// save twice, and nothing here changes while it runs.
+  bool _saving = false;
+  bool _saveFailed = false;
+
+  Future<void> _save(FutureOr<void> Function() save) async {
+    if (_saving) return;
+    setState(() {
+      _saving = true;
+      _saveFailed = false;
+    });
+    try {
+      await save();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      logger.e('Failed to save the setting', e);
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveFailed = true;
+        });
+      }
+    }
+  }
+
   GatewayValidationResult? _validationResult;
   Timer? _debounce;
   String _lastValidatedText = '';
@@ -111,23 +139,24 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
     });
   }
 
-  Future<void> _selectFromArIOGateways() async {
-    final selectedGateway = await showArIOGatewaySelectorModal(context);
-    if (selectedGateway != null) {
-      final gatewayUrl = 'https://${selectedGateway.settings.fqdn}';
+  /// Shows the ar.io gateway list in this dialog, in place of the form.
+  void _selectFromArIOGateways() => setState(() => _picking = true);
 
-      // Update the controller using value to ensure the text field updates
-      _gatewayController.value = _gatewayController.value.copyWith(
-        text: gatewayUrl,
-        selection: TextSelection.collapsed(offset: gatewayUrl.length),
-      );
+  void _onGatewayPicked(Gateway selectedGateway) {
+    setState(() => _picking = false);
+    final gatewayUrl = 'https://${selectedGateway.settings.fqdn}';
 
-      // Reset the last validated text to ensure validation runs
-      _lastValidatedText = '';
+    // Update the controller using value to ensure the text field updates
+    _gatewayController.value = _gatewayController.value.copyWith(
+      text: gatewayUrl,
+      selection: TextSelection.collapsed(offset: gatewayUrl.length),
+    );
 
-      // Manually trigger the text change handler
-      _onTextChanged();
-    }
+    // Reset the last validated text to ensure validation runs
+    _lastValidatedText = '';
+
+    // Manually trigger the text change handler
+    _onTextChanged();
   }
 
   @override
@@ -137,80 +166,101 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
     final strings = appLocalizationsOf(context);
     final canSave = !_isLoading && _validationResult?.canBeUsed == true;
 
-    return ArDriveStandardModalNew(
-      width: 500,
-      title: strings.gatewaySwitchTitle,
-      content: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              strings.gatewaySwitchDescription,
-              style: typography.paragraphNormal(color: colorTokens.textMid),
-            ),
-            const SizedBox(height: ArDriveSpacing.md),
-            ArDriveTextFieldNew(
-              controller: _gatewayController,
-              label: strings.gatewayUrlLabel,
-              hintText: defaultGraphqlGateway,
-              suffixIcon: _isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(ArDriveSpacing.sm),
-                      child: ArDriveSpinner(),
-                    )
-                  : _validationResult != null
-                      ? _buildValidationIcon(colorTokens)
+    if (_picking) {
+      return ArDriveStandardModalNew(
+        width: 500,
+        title: strings.gatewayChooseArio,
+        content: ArIOGatewayPicker(onSelected: _onGatewayPicked),
+        actions: [
+          ModalAction.dismiss(
+            action: () => setState(() => _picking = false),
+            title: strings.back,
+          ),
+        ],
+      );
+    }
+
+    return PopScope(
+        canPop: !_saving,
+        child: ArDriveStandardModalNew(
+          width: 500,
+          title: strings.gatewaySwitchTitle,
+          content: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  strings.gatewaySwitchDescription,
+                  style: typography.paragraphNormal(color: colorTokens.textMid),
+                ),
+                const SizedBox(height: ArDriveSpacing.md),
+                ArDriveTextFieldNew(
+                  controller: _gatewayController,
+                  isEnabled: !_saving,
+                  label: strings.gatewayUrlLabel,
+                  hintText: defaultGraphqlGateway,
+                  suffixIcon: _isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(ArDriveSpacing.sm),
+                          child: ArDriveSpinner(),
+                        )
                       : null,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return strings.gatewayUrlRequired;
-                }
-                if (_validationResult != null && !_validationResult!.isValid) {
-                  return _validationResult!.message;
-                }
-                return null;
-              },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return strings.gatewayUrlRequired;
+                    }
+                    return null;
+                  },
+                ),
+                if (_validationResult != null) ...[
+                  const SizedBox(height: ArDriveSpacing.xs),
+                  ArDriveNotice(
+                    type: _noticeType(_validationResult!.warningLevel),
+                    message: _validationResult!.message,
+                  ),
+                ],
+                if (_saveFailed) ...[
+                  const SizedBox(height: ArDriveSpacing.xs),
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.error,
+                    message: strings.settingsSaveFailed,
+                  ),
+                ],
+                if (isArioSDKSupportedOnPlatform()) ...[
+                  const SizedBox(height: ArDriveSpacing.lg),
+                  ArDriveButtonNew(
+                    maxWidth: double.infinity,
+                    typography: typography,
+                    text: strings.gatewayChooseArio,
+                    variant: ButtonVariant.secondary,
+                    onPressed: _selectFromArIOGateways,
+                  ),
+                ],
+              ],
             ),
-            if (_validationResult != null) ...[
-              const SizedBox(height: ArDriveSpacing.xs),
-              ArDriveNotice(
-                type: _noticeType(_validationResult!.warningLevel),
-                message: _validationResult!.message,
-              ),
-            ],
-            if (isArioSDKSupportedOnPlatform()) ...[
-              const SizedBox(height: ArDriveSpacing.lg),
-              ArDriveButtonNew(
-                maxWidth: double.infinity,
-                typography: typography,
-                text: strings.gatewayChooseArio,
-                variant: ButtonVariant.secondary,
-                onPressed: _selectFromArIOGateways,
-              ),
-            ],
+          ),
+          actions: [
+            ModalAction.close(
+              action: () => Navigator.of(context).pop(),
+              isEnable: !_saving,
+              title: strings.cancel,
+            ),
+            // Only once the gateway has been checked and can be used. It looked
+            // ready before that and did nothing when pressed.
+            ModalAction(
+              isLoading: _saving,
+              isEnable: canSave && !_saving,
+              action: () {
+                if (!canSave || !_formKey.currentState!.validate()) return;
+                _save(() => widget.onSave(
+                    GatewayValidator.cleanUrl(_gatewayController.text)));
+              },
+              title: strings.save,
+            ),
           ],
-        ),
-      ),
-      actions: [
-        ModalAction.close(
-          action: () => Navigator.of(context).pop(),
-          title: strings.cancel,
-        ),
-        // Only once the gateway has been checked and can be used. It looked
-        // ready before that and did nothing when pressed.
-        ModalAction(
-          isEnable: canSave,
-          action: () {
-            if (!canSave || !_formKey.currentState!.validate()) return;
-            widget.onSave(GatewayValidator.cleanUrl(_gatewayController.text));
-            Navigator.of(context).pop();
-          },
-          title: strings.save,
-        ),
-      ],
-    );
+        ));
   }
 
   static ArDriveNoticeType _noticeType(GatewayWarningLevel level) =>
@@ -219,30 +269,16 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
         GatewayWarningLevel.warning => ArDriveNoticeType.warning,
         GatewayWarningLevel.error => ArDriveNoticeType.error,
       };
-
-  Widget _buildValidationIcon(ArDriveColorTokens colorTokens) {
-    final (icon, color) = switch (_validationResult!.warningLevel) {
-      GatewayWarningLevel.none => (
-          Icons.check_circle,
-          colorTokens.statusSuccessFg
-        ),
-      GatewayWarningLevel.warning => (
-          Icons.warning,
-          colorTokens.statusWarningFg
-        ),
-      GatewayWarningLevel.error => (Icons.error, colorTokens.statusErrorFg),
-    };
-    return Icon(icon, color: color, size: 20);
-  }
 }
 
 Future<void> showGatewayInputModal(
   BuildContext context, {
   required String initialGateway,
-  required Function(String) onSave,
+  required FutureOr<void> Function(String) onSave,
 }) {
   return showArDriveDialog(
     context,
+    barrierDismissible: false,
     content: GatewayInputModal(
       initialGateway: initialGateway,
       onSave: onSave,

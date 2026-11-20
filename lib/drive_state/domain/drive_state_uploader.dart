@@ -53,6 +53,10 @@ class DriveStateUploadResult {
   /// show the user. `null` only when [isPublished].
   final String? reason;
 
+  /// Why a [failed] upload failed, so the dialog can say it in the user's
+  /// language. [reason] stays English, for the log.
+  final DriveStateUploadFailure failure;
+
   /// Every tag of the published artifact, as signed: a publication copies
   /// them into its `publication.json` (docs/PUBLICATIONS.md), and GraphQL can
   /// take minutes to report them. Empty unless [isPublished].
@@ -69,6 +73,7 @@ class DriveStateUploadResult {
     this.reason, [
     this.tags = const {},
     this.resume,
+    this.failure = DriveStateUploadFailure.other,
   ]);
 
   const DriveStateUploadResult.published(
@@ -76,8 +81,17 @@ class DriveStateUploadResult {
     Map<String, String> tags = const {},
   }) : this._(DriveStateUploadOutcome.published, txId, null, tags);
 
-  const DriveStateUploadResult.failed(String reason)
-      : this._(DriveStateUploadOutcome.failed, null, reason);
+  const DriveStateUploadResult.failed(
+    String reason, {
+    DriveStateUploadFailure failure = DriveStateUploadFailure.other,
+  }) : this._(
+          DriveStateUploadOutcome.failed,
+          null,
+          reason,
+          const {},
+          null,
+          failure,
+        );
 
   /// The artifact's transaction was accepted by the network and then the
   /// upload of its data failed. Whether the data is complete is not knowable
@@ -96,6 +110,27 @@ class DriveStateUploadResult {
   bool get isFailed => outcome == DriveStateUploadOutcome.failed;
 
   bool get isUncertain => outcome == DriveStateUploadOutcome.uncertain;
+}
+
+/// Why nothing was posted, for the dialog to word.
+enum DriveStateUploadFailure {
+  /// Publishing is off in this build.
+  notEnabled,
+
+  /// Nobody is logged in any more.
+  notLoggedIn,
+
+  /// The wallet changed since the snapshot was prepared.
+  walletChanged,
+
+  /// Wander didn't answer.
+  walletUnavailable,
+
+  /// Turbo declined the payment.
+  paymentDeclined,
+
+  /// Anything else, where nothing may have been posted.
+  other,
 }
 
 /// The three ways [DriveStateUploader.publish] can end.
@@ -131,5 +166,6 @@ class UnwiredDriveStateUploader implements DriveStateUploader {
       const DriveStateUploadResult.failed(
         'Creating snapshots this way is not enabled in this build. '
         'Nothing was uploaded and nothing was spent.',
+        failure: DriveStateUploadFailure.notEnabled,
       );
 }

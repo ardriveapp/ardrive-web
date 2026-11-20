@@ -67,9 +67,9 @@ void main() {
     expect(notice, findsOneWidget);
     expect(find.byType(Dialog), findsNothing);
 
-    // Confirm & Pay waits for new card details.
+    // Pay waits for new card details.
     final pay = tester.widget<ArDriveButtonNew>(
-      find.widgetWithText(ArDriveButtonNew, 'Confirm & Pay'),
+      find.widgetWithText(ArDriveButtonNew, 'Pay'),
     );
     expect(pay.isDisabled || pay.onPressed == null, isTrue);
 

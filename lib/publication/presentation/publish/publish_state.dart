@@ -13,7 +13,6 @@ enum PublishStage {
   /// The file itself: its link, and a name for it.
   itself,
 
-  included,
   look,
 
   /// Working out the snapshot and the cost, on the way to [review].
@@ -127,6 +126,7 @@ class PublishState extends Equatable {
     this.link,
     this.isUpdate = false,
     this.imageError,
+    this.choosingSlot,
     this.names,
     this.naming = const [],
     this.namingStarted = false,
@@ -136,6 +136,8 @@ class PublishState extends Equatable {
     this.password = '',
     this.hasPassword = false,
     this.weakPasswordAccepted = false,
+    this.imageProcessing = false,
+    this.checkingWallet = false,
   });
 
   /// A private drive or folder page (publication.json version 3).
@@ -227,6 +229,18 @@ class PublishState extends Equatable {
     PublicationImageProblem problem
   })? imageError;
 
+  /// The image field choosing a picture from the drive, in place of the
+  /// look, until one is picked or Back.
+  final PublicationImageSlot? choosingSlot;
+
+  /// A picked image is still being cropped: Next waits for it, so what is
+  /// priced is what the look shows.
+  final bool imageProcessing;
+
+  /// Publish was pressed and the wallet is being checked: the review holds
+  /// its payment choice, and Publish is busy.
+  final bool checkingWallet;
+
   /// A private page may have no title: it shows "Private page".
   bool get titleIsValid => isPrivatePage || title.trim().isNotEmpty;
 
@@ -263,6 +277,7 @@ class PublishState extends Equatable {
     bool? isUpdate,
     ({PublicationImageSlot slot, PublicationImageProblem problem})? Function()?
         imageError,
+    PublicationImageSlot? Function()? choosingSlot,
     ArNSFlowOutcome? names,
     List<String>? naming,
     bool? namingStarted,
@@ -272,6 +287,8 @@ class PublishState extends Equatable {
     String? password,
     bool? hasPassword,
     bool? weakPasswordAccepted,
+    bool? imageProcessing,
+    bool? checkingWallet,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -298,6 +315,7 @@ class PublishState extends Equatable {
         link: link ?? this.link,
         isUpdate: isUpdate ?? this.isUpdate,
         imageError: imageError != null ? imageError() : this.imageError,
+        choosingSlot: choosingSlot != null ? choosingSlot() : this.choosingSlot,
         names: names ?? this.names,
         naming: naming ?? this.naming,
         namingStarted: namingStarted ?? this.namingStarted,
@@ -307,6 +325,8 @@ class PublishState extends Equatable {
         password: password ?? this.password,
         hasPassword: hasPassword ?? this.hasPassword,
         weakPasswordAccepted: weakPasswordAccepted ?? this.weakPasswordAccepted,
+        imageProcessing: imageProcessing ?? this.imageProcessing,
+        checkingWallet: checkingWallet ?? this.checkingWallet,
       );
 
   @override
@@ -335,6 +355,7 @@ class PublishState extends Equatable {
         link,
         isUpdate,
         imageError,
+        choosingSlot,
         names,
         naming,
         namingStarted,
@@ -344,6 +365,8 @@ class PublishState extends Equatable {
         password,
         hasPassword,
         weakPasswordAccepted,
+        imageProcessing,
+        checkingWallet,
       ];
 }
 

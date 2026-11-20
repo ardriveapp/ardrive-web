@@ -489,15 +489,8 @@ the same drive or folder):
 - the release a publication runs cannot be read, or a new snapshot is
   refused (its reason).
 
-**Step 1 · What's included.** "The whole drive • <name>" or "This folder and
-everything in it • <name>"; files and folders, but not their size, which
-read as uploading them again when only the page is uploaded; **Left out**, one line
-each: hidden items, files in hidden folders, files in folders whose details
-are missing (ghost folders), failed uploads; when hidden items are among them,
-once: "Hidden items in a public drive can still be found." Then: "Anyone can
-find this page, and search engines can list its files."
-
-**Step 2 · How it looks.** The form on the left, live previews on the right
+**Step 1 · How it looks.** A drive or folder opens on it, with Cancel (a
+file's first step is How to publish). The form on the left, live previews on the right
 (below on a phone): the page header as it will look (cover, icon, title, "By
 … • N files • license", description) and the link preview (the social card).
 On a wide screen the form scrolls on its own and the previews stay in view.
@@ -522,12 +515,22 @@ type was never recorded), newest first.
 The license comes last, after the pictures: the page first, then the terms
 it is shared under.
 
-**Step 3 · Review and publish.** What (name • N files), title, link ("A new link of its own." or, for an update,
+**Step 2 · Review and publish.** What (name • N files), folders, title, link ("A new link of its own." or, for an update,
 "A new link. The current one keeps working."), the Turbo free-tier message,
 the app's payment cards (each way to pay with its cost and balance), and with AR:
 "With AR, the page opens 15 to 30 minutes after it's published, once the
-network confirms it." Then, in the step: "Publishing is permanent. It can't be undone
-or deleted." The button is **Publish**.
+network confirms it." The button is **Publish**.
+
+Under it, for a drive or folder, **Left out**, one line each: hidden items,
+files in hidden folders, files in folders whose details are missing (ghost
+folders), failed uploads; when hidden items are among them, once: "Hidden
+items in a public drive can still be found." Then: "Anyone can find this
+page, and search engines can list its files." A private page shows, in
+place of both: "Only people with the link or its password can open this
+page. Search engines are asked not to list it." Its title row shows "Private
+page" when the title is empty, a Password row says Set or None, and a note
+says what is public and that people with access can open earlier versions of
+the files.
 
 The review does not mention the snapshot; its cost is in the total. The
 newest snapshot in a block is reused when nothing in the drive is newer, it

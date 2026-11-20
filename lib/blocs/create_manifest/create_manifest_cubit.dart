@@ -69,6 +69,15 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   /// Initialize folder selection on creation
   Future<void> _initFolderSelection() async {
+    try {
+      await _loadInitialFolder();
+    } catch (e) {
+      // Or the dialog waits on "Loading folders" with nothing to press.
+      addError(e);
+    }
+  }
+
+  Future<void> _loadInitialFolder() async {
     logger.i('Initializing folder selection for drive: ${_drive.id}');
     rootFolderNode =
         await _folderRepository.getFolderNode(_drive.id, _drive.rootFolderId);
@@ -97,28 +106,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       (subfolder) =>
           !subfolder.folder.isHidden && _isShownInPicker(subfolder, folderId),
     );
-  }
-
-  /// User has selected a folder and is ready to proceed to name input
-  void promptForManifestName() {
-    logger.i('Prompting for manifest name');
-    final state = this.state as CreateManifestFolderLoadSuccess;
-    emit(CreateManifestNameInput(
-      parentFolder: state.viewingFolder.folder,
-      fallbackTxId: state.fallbackTxId,
-    ));
-  }
-
-  /// Process manifest name and check for conflicts
-  Future<void> processManifestName(String name) async {
-    logger.i('Processing manifest name: $name');
-    if (state is CreateManifestNameInput) {
-      final nameInputState = state as CreateManifestNameInput;
-      final parentFolder = nameInputState.parentFolder;
-
-      emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
-      await checkNameConflicts(name);
-    }
   }
 
   void selectUploadMethod(
@@ -153,8 +140,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   /// User has confirmed that they would like to submit a manifest revision transaction
   Future<void> confirmRevision(
     String name,
-  ) async {
+  ) =>
+      _once(() => _confirmRevision(name));
+
+  Future<void> _confirmRevision(String name) async {
     logger.i('Confirming manifest revision for name: $name');
+    // A deployment is never named nothing.
+    if (name.trim().isEmpty || state is! CreateManifestRevisionConfirm) return;
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
     final parentFolder = revisionConfirmationState.parentFolder;
     final existingManifestFileId =
@@ -182,25 +174,45 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     );
   }
 
+  /// The folder last asked for. Its contents arrive later, and until they
+  /// do the screen still shows the one before.
+  FolderID? _requestedFolderId;
+
+  /// Whether the folder asked for is not the one [shown] holds yet.
+  bool isLoadingFolder(CreateManifestFolderLoadSuccess shown) =>
+      _requestedFolderId != null &&
+      _requestedFolderId != shown.viewingFolder.folder.id;
+
   Future<void> loadFolder(String folderId) async {
     logger.i('Loading folder contents for folder: $folderId');
+    _requestedFolderId = folderId;
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription = _folderRepository
         .watchFolderContents(driveId: _drive.id, folderId: folderId)
         .listen(
-          (f) => emit(
-            CreateManifestFolderLoadSuccess(
-              viewingRootFolder: f.folder.parentFolderId == null,
-              viewingFolder: f,
-              enableManifestCreationButton: _getEnableManifestCreationButton(),
-            ),
+      (f) {
+        // Two quick clicks can leave the first folder's stream running
+        // past the second: only the folder asked for last is shown.
+        if (folderId != _requestedFolderId) return;
+        emit(
+          CreateManifestFolderLoadSuccess(
+            viewingRootFolder: f.folder.parentFolderId == null,
+            viewingFolder: f,
+            enableManifestCreationButton: _getEnableManifestCreationButton(),
           ),
         );
+      },
+      onError: (Object e, StackTrace s) => addError(e, s),
+    );
   }
 
   /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
-  Future<void> reCheckConflicts(String name) async {
+  Future<void> reCheckConflicts(String name) =>
+      _once(() => _reCheckConflicts(name));
+
+  Future<void> _reCheckConflicts(String name) async {
+    if (name.trim().isEmpty || state is! CreateManifestNameConflict) return;
     final conflictState = (state as CreateManifestNameConflict);
     final parentFolder = conflictState.parentFolder;
     final conflictingName = conflictState.conflictingName;
@@ -213,10 +225,20 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     await checkNameConflicts(name);
   }
 
-  Future<void> checkForConflicts(String name) async {
+  Future<void> checkForConflicts(String name) =>
+      _once(() => _checkForConflicts(name));
+
+  Future<void> _checkForConflicts(String name) async {
     logger.i('Checking for manifest name conflicts: $name');
+    if (name.trim().isEmpty) return;
+    _reviewToRetry = null;
 
     /// Prevent multiple checks from being triggered
+    final shown = state;
+    // Not the folder on screen: the one asked for has not arrived.
+    if (shown is CreateManifestFolderLoadSuccess && isLoadingFolder(shown)) {
+      return;
+    }
     if (state is! CreateManifestFolderLoadSuccess) {
       logger.d('Skipping conflict check - invalid state: $state');
       return;
@@ -237,12 +259,20 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     await _selectedFolderSubscription?.cancel();
 
-    final conflictTuple =
-        await _manifestRepository.checkNameConflictAndReturnExistingFileId(
-      driveId: _drive.id,
-      parentFolderId: parentFolder.id,
-      name: name,
-    );
+    final (bool, String?) conflictTuple;
+    try {
+      conflictTuple =
+          await _manifestRepository.checkNameConflictAndReturnExistingFileId(
+        driveId: _drive.id,
+        parentFolderId: parentFolder.id,
+        name: name,
+      );
+    } catch (e) {
+      // The dialog shows "Preparing" with nothing to press until a state
+      // replaces it.
+      addError(e);
+      return;
+    }
 
     final hasConflictNames = conflictTuple.$1;
     final existingManifestFileId = conflictTuple.$2;
@@ -322,8 +352,52 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
-  Future<void> uploadManifest({UploadMethod? method}) async {
+  /// Whether a step that writes or pays is running. Set before the first
+  /// await: the dialog's button stays enabled until the cubit emits its busy
+  /// state, and a fast second press would otherwise start a second step.
+  bool _inFlight = false;
+
+  Future<void> _once(Future<void> Function() step) async {
+    if (_inFlight) return;
+    _inFlight = true;
+    try {
+      await step();
+    } finally {
+      _inFlight = false;
+    }
+  }
+
+  /// The review the last upload started from, for [retryUpload].
+  CreateManifestUploadReview? _reviewToRetry;
+
+  /// After a failed upload: the same deployment again, from the review it
+  /// was started from. Nothing else changes, so what was chosen there, the
+  /// payment method included, is what is sent.
+  Future<void> retryUpload() async {
+    await _once(() async {
+      final review = _reviewToRetry;
+      final failure = state;
+      // Only where nothing was posted: after a post, a second upload pays
+      // twice.
+      if (review == null ||
+          failure is! CreateManifestFailure ||
+          !failure.canRetry) {
+        return;
+      }
+
+      emit(review);
+      await _uploadManifest();
+    });
+  }
+
+  Future<void> uploadManifest({UploadMethod? method}) =>
+      _once(() => _uploadManifest(method: method));
+
+  Future<void> _uploadManifest({UploadMethod? method}) async {
     logger.i('Starting manifest upload process');
+    // What was approved is what is sent: the wallet check can take a while,
+    // and the review may change under it.
+    final approved = state;
     try {
       if (await _profileCubit.logoutIfWalletMismatch()) {
         logger.i('Wallet mismatch detected, canceling upload');
@@ -337,9 +411,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    if (state is CreateManifestUploadReview) {
+    if (approved is CreateManifestUploadReview) {
       try {
-        final createManifestUploadReview = state as CreateManifestUploadReview;
+        final createManifestUploadReview = approved;
+        // With the method it is sent by, so Try again pays the same way.
+        _reviewToRetry = createManifestUploadReview.copyWith(
+          uploadMethod: method ?? createManifestUploadReview.uploadMethod,
+        );
         final uploadType =
             (method ?? createManifestUploadReview.uploadMethod) ==
                     UploadMethod.ar
@@ -374,6 +452,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         emit(CreateManifestSuccess(
           parentFolder: createManifestUploadReview.parentFolder,
           dataTxId: dataTxId,
+          name: createManifestUploadReview.manifestName,
         ));
       } catch (e) {
         logger.e('An error occured uploading the manifest.', e);
@@ -429,10 +508,44 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     final wrapped = error is ManifestCreationException ? error.error : error;
     // Emitting after close throws, and that throw comes back here.
     if (!isClosed) {
-      emit(CreateManifestFailure(isPaymentError: isTurboPaymentError(wrapped)));
+      emit(CreateManifestFailure(
+        isPaymentError: isTurboPaymentError(wrapped),
+        postedTxId: error is ManifestPostedException ? error.dataTxId : null,
+        canRetry: _reviewToRetry != null &&
+            error is! ManifestPostedException &&
+            _failedBeforeSubmission(error),
+        maybeSent: error is! ManifestPostedException &&
+            !_failedBeforeSubmission(error),
+      ));
     }
     super.onError(error, stackTrace);
   }
+}
+
+/// Whether a failed upload is known to have sent nothing, so that a fresh
+/// try cannot pay twice. Failures that are not about a task, such as a
+/// manifest that could not be built, sent nothing.
+bool _failedBeforeSubmission(Object error) {
+  Object? inner = error is ManifestCreationException ? error.error : error;
+  if (inner is UnderFundException) inner = inner.error;
+  if (inner is! List) return true;
+  for (final task in inner) {
+    if (task is! FileUploadTask) continue;
+    // Turbo took the metadata item: the deployment is on its way, and what
+    // is left is the data item, which a new upload would pay for again.
+    if (task.metadataUploaded) return false;
+    // Direct to the network: once the transaction is built and signed, a
+    // failure may have reached the network. The uploader says as much of a
+    // failed header post, which a gateway can store and still answer with
+    // an error. Only a cancel, or a failure before there was a transaction,
+    // sent nothing.
+    if (task.type == UploadType.d2n &&
+        task.uploadItem != null &&
+        task.error is! UploadCanceledException) {
+      return false;
+    }
+  }
+  return true;
 }
 
 class UploadManifestParams {

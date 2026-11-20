@@ -275,6 +275,7 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
             _choosingWallet = true;
             _changingWallet = true;
           }),
+          onChooseWallet: () => setState(() => _choosingWallet = true),
           onLinked: () => setState(() {
             _choosingWallet = false;
             _changingWallet = false;
@@ -334,49 +335,20 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     );
   }
 
-  /// The commit button is the wallet's next step until the wallet is ready
-  /// (docs/NAMES.md, "Asked for at commit").
+  /// The commit button always names the change (Save, Remove). It waits for
+  /// the wallet: linking or reconnecting it is a notice's action in the
+  /// dialog (docs/NAMES.md, "Asked for at commit").
   ModalAction _commitAction(
     BuildContext context,
     ArNSNameDialogState state,
     ArNSWalletState wallet,
     ArNSNameDialogCubit cubit,
   ) {
-    final strings = appLocalizationsOf(context);
-    final ready = state.canCommit;
-    switch (wallet.status) {
-      case ArNSWalletStatus.unavailable:
-      case ArNSWalletStatus.notLinked:
-        return ModalAction(
-          title: strings.arnsLinkSolanaWallet,
-          isEnable: !_choosingWallet && !wallet.connecting,
-          action: () => setState(() => _choosingWallet = true),
-        );
-      case ArNSWalletStatus.disconnected:
-      case ArNSWalletStatus.wrongAccount:
-        return ModalAction(
-          title: strings.arnsReconnectSolanaWallet,
-          isEnable: !wallet.connecting,
-          action: () async {
-            final walletCubit = context.read<ArNSWalletCubit>();
-            if (wallet.linked?.walletName == null || wallet.noWalletInstalled) {
-              setState(() => _choosingWallet = true);
-              return;
-            }
-            try {
-              await walletCubit.reconnect();
-            } catch (_) {
-              // Rejected: the button stays.
-            }
-          },
-        );
-      case ArNSWalletStatus.connected:
-        return ModalAction(
-          title: _commitLabel(context, state),
-          isEnable: ready,
-          action: cubit.commit,
-        );
-    }
+    return ModalAction(
+      title: _commitLabel(context, state),
+      isEnable: wallet.status == ArNSWalletStatus.connected && state.canCommit,
+      action: cubit.commit,
+    );
   }
 
   String _commitLabel(BuildContext context, ArNSNameDialogState state) {
@@ -421,6 +393,7 @@ class _ChooseContent extends StatelessWidget {
     required this.choosingWallet,
     required this.changingWallet,
     required this.onChangeWallet,
+    required this.onChooseWallet,
     required this.onLinked,
   });
 
@@ -429,6 +402,7 @@ class _ChooseContent extends StatelessWidget {
   final bool choosingWallet;
   final bool changingWallet;
   final VoidCallback onChangeWallet;
+  final VoidCallback onChooseWallet;
   final VoidCallback onLinked;
 
   @override
@@ -501,6 +475,19 @@ class _ChooseContent extends StatelessWidget {
     );
   }
 
+  Future<void> _reconnect(BuildContext context) async {
+    final walletCubit = context.read<ArNSWalletCubit>();
+    if (wallet.linked?.walletName == null || wallet.noWalletInstalled) {
+      onChooseWallet();
+      return;
+    }
+    try {
+      await walletCubit.reconnect();
+    } catch (_) {
+      // Rejected: the notice's action stays.
+    }
+  }
+
   List<Widget> _walletStep(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final widgets = <Widget>[];
@@ -509,12 +496,23 @@ class _ChooseContent extends StatelessWidget {
       case ArNSWalletStatus.notLinked:
         widgets.addAll([
           const SizedBox(height: ArDriveSpacing.md),
-          ArNSCaption(strings.arnsLinkWalletExplainer),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
+            message: strings.arnsLinkWalletExplainer,
+            actionLabel: strings.arnsLinkSolanaWallet,
+            onAction:
+                choosingWallet || wallet.connecting ? null : onChooseWallet,
+          ),
         ]);
       case ArNSWalletStatus.disconnected:
         widgets.addAll([
           const SizedBox(height: ArDriveSpacing.md),
-          ArNSCaption(strings.arnsReconnectExplainer),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
+            message: strings.arnsReconnectExplainer,
+            actionLabel: strings.arnsReconnectSolanaWallet,
+            onAction: wallet.connecting ? null : () => _reconnect(context),
+          ),
         ]);
       case ArNSWalletStatus.wrongAccount:
         widgets.addAll([
@@ -524,6 +522,16 @@ class _ChooseContent extends StatelessWidget {
             content: ArNSSwitchAccountText(address: wallet.linked!.address),
             actionLabel: strings.arnsChangeArNSWallet,
             onAction: onChangeWallet,
+          ),
+          // After switching accounts in the wallet itself.
+          const SizedBox(height: ArDriveSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ArDriveLink(
+              text: strings.arnsReconnectSolanaWallet,
+              isAction: true,
+              onTap: wallet.connecting ? null : () => _reconnect(context),
+            ),
           ),
         ]);
       case ArNSWalletStatus.connected:
@@ -1347,7 +1355,7 @@ class _Failed extends StatelessWidget {
       final address = context.read<ArNSWalletCubit>().state.linked?.address;
       return ArNSSwitchAccountText(address: address ?? '');
     }
-    return ArNSBodyText(text);
+    return ArDriveNotice(type: ArDriveNoticeType.error, message: text);
   }
 }
 
@@ -1538,41 +1546,7 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       children.add(const SizedBox(height: ArDriveSpacing.sm));
     }
 
-    children.add(Semantics(
-      button: true,
-      expanded: _open,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
-        onTap: () => setState(() => _open = !_open),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
-          child: Row(
-            children: [
-              Icon(arnsNameIcon, size: 18, color: colors.iconMid),
-              const SizedBox(width: ArDriveSpacing.xs),
-              Text(
-                strings.arnsFlowNameRow,
-                style: typography.paragraphNormal(
-                  color: colors.textHigh,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-              const SizedBox(width: ArDriveSpacing.xs),
-              Expanded(
-                child: ArNSCaption(state.choice?.undername.isNotEmpty == true
-                    ? arnsHostFor(state.choice!.literalName)
-                    : strings.arnsOptional),
-              ),
-              Icon(
-                _open ? Icons.expand_less : Icons.expand_more,
-                size: 20,
-                color: colors.iconMid,
-              ),
-            ],
-          ),
-        ),
-      ),
-    ));
+    final headerAt = children.length;
 
     // Under the chosen name while the step is open, under the step's
     // heading while it is folded: the flow's button waits for the answer.
@@ -1592,47 +1566,69 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       ]);
     }
 
-    if (_open) {
-      children.add(const SizedBox(height: ArDriveSpacing.xs));
-      switch (state.stage) {
-        case ArNSDialogStage.loading:
-          children.add(ArNSWaitingLine(text: strings.arnsReadingNames));
-        case ArNSDialogStage.needsWallet:
-          children.addAll([
-            ArNSCaption(strings.arnsLinkWalletExplainer),
-            const SizedBox(height: ArDriveSpacing.sm),
-            const ArNSWalletChooser(),
-          ]);
-        case ArNSDialogStage.noNames:
-          children.add(Wrap(
-            spacing: ArDriveSpacing.xs,
-            children: [
-              ArNSCaption(strings.arnsNoNamesTitle),
-              ArDriveLink(
+    // What opens under the row. With no names to pick there is nothing to
+    // open: the row offers the console instead.
+    final noNames = state.stage == ArNSDialogStage.noNames;
+    final openContent = <Widget>[];
+    switch (state.stage) {
+      case ArNSDialogStage.noNames:
+        break;
+      case ArNSDialogStage.loading:
+        openContent.add(ArNSWaitingLine(text: strings.arnsReadingNames));
+      case ArNSDialogStage.needsWallet:
+        openContent.addAll([
+          ArNSCaption(strings.arnsLinkWalletExplainer),
+          const SizedBox(height: ArDriveSpacing.sm),
+          const ArNSWalletChooser(),
+        ]);
+      case ArNSDialogStage.loadFailed:
+        openContent.add(ArNSCaption(strings.arnsNamesCouldNotBeRead));
+      default:
+        openContent.addAll([
+          _NamePicker(state: state, belowChoice: repointQuestion),
+          if (state.choice != null) ...[
+            const SizedBox(height: ArDriveSpacing.xs),
+            ArDriveLink(
+              text: strings.arnsNoNameThisTime,
+              isAction: true,
+              onTap: cubit.clearChoice,
+            ),
+          ],
+          const SizedBox(height: ArDriveSpacing.sm),
+          _CacheTimeSection(state: state, folded: true),
+        ]);
+    }
+
+    children.insert(
+      headerAt,
+      ArDriveDisclosure(
+        // Keyed by whether it folds, so names arriving swap the row cleanly.
+        key: ValueKey(noNames),
+        icon: arnsNameIcon,
+        title: strings.arnsFlowNameRow,
+        summary: [
+          state.choice?.undername.isNotEmpty == true
+              ? arnsHostFor(state.choice!.literalName)
+              : strings.arnsOptional,
+        ],
+        initiallyOpen: _open,
+        onOpenChanged: (open) => setState(() => _open = open),
+        trailing: noNames
+            ? ArDriveLink(
                 text: strings.arnsGetANameInConsole,
                 external: true,
                 onTap: () => openUrl(url: arnsGetNameUrl),
+              )
+            : null,
+        child: noNames
+            ? null
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: openContent,
               ),
-            ],
-          ));
-        case ArNSDialogStage.loadFailed:
-          children.add(ArNSCaption(strings.arnsNamesCouldNotBeRead));
-        default:
-          children.addAll([
-            _NamePicker(state: state, belowChoice: repointQuestion),
-            if (state.choice != null) ...[
-              const SizedBox(height: ArDriveSpacing.xs),
-              ArDriveLink(
-                text: strings.arnsNoNameThisTime,
-                isAction: true,
-                onTap: cubit.clearChoice,
-              ),
-            ],
-            const SizedBox(height: ArDriveSpacing.sm),
-            _CacheTimeSection(state: state, folded: true),
-          ]);
-      }
-    }
+      ),
+    );
 
     if (cubit.hasWork) {
       children.addAll([
@@ -1681,17 +1677,10 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(ArDriveSpacing.sm),
-      decoration: BoxDecoration(
-        border: Border.all(color: colors.strokeLow),
-        borderRadius: BorderRadius.circular(ArDriveRadius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: children,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
     );
   }
 }

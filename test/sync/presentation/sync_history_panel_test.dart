@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/sync/domain/sync_run.dart';
@@ -10,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
@@ -110,6 +113,27 @@ void main() {
     // One frame for the local read to come back.
     await tester.pump();
   }
+
+  group('while the history is read', () {
+    testWidgets('a spinner stands in, not an empty dialog', (tester) async {
+      final read = Completer<List<SyncRun>>();
+      when(() => preferences.loadSyncHistory()).thenAnswer((_) => read.future);
+
+      await pumpPanel(tester);
+
+      expect(find.byType(ArDriveSpinner), findsOneWidget);
+      expect(find.text('Nothing has synced on this device yet.'), findsNothing);
+
+      read.complete(const []);
+      await tester.pump();
+
+      expect(find.byType(ArDriveSpinner), findsNothing);
+      expect(
+        find.text('Nothing has synced on this device yet.'),
+        findsOneWidget,
+      );
+    });
+  });
 
   group('a wallet that has never synced', () {
     testWidgets('reads as nothing yet, not as an error and not as a blank',
@@ -541,6 +565,39 @@ void main() {
   });
 
   group('and Help points at it rather than carrying it', () {
+    testWidgets('a log export that fails says so in Help', (tester) async {
+      historyIs(const []);
+      await tester.pumpWidget(host(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showSupportModal(context: context),
+            child: const Text('open'),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // No platform to export to in a test: the export throws.
+      PackageInfo.setMockInitialValues(
+        appName: 'app',
+        packageName: 'package',
+        version: '1.0.0',
+        buildNumber: '1',
+        buildSignature: '',
+      );
+      await tester.tap(find.text('Download logs'));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(
+          find.text('Couldn\'t export the logs. Try again.'), findsOneWidget);
+      expect(find.byType(PopScope), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('the Troubleshooting section offers it as a link',
         (tester) async {
       historyIs([run(itemsFound: 12)]);
@@ -563,7 +620,7 @@ void main() {
       expect(find.byType(SyncHistoryPanel), findsNothing);
       expect(find.text('12 items changed'), findsNothing);
       // The log export is still the modal's own action.
-      expect(find.text('Download'), findsOneWidget);
+      expect(find.text('Download logs'), findsOneWidget);
 
       // The modal scrolls, and the link sits below the fold on a default
       // test viewport - tapping it where it is not would hit the page behind.

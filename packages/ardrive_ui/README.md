@@ -114,7 +114,7 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | Need | Component | Notes |
 |---|---|---|
 | A button | `ArDriveButtonNew` | `variant`: primary for the main action, secondary, or outline. `size`: see below. Sized to its label unless given `maxWidth`; `double.infinity` fills |
-| A dialog | `ArDriveStandardModalNew` with `ModalAction`s | Opened with `showArDriveDialog` in the app. The last action is primary. Cancel and Close use `ModalAction.dismiss`, which is never red, even alone. Set `scrollableContent` for long content |
+| A dialog | `ArDriveStandardModalNew` with `ModalAction`s | Opened with `showArDriveDialog` in the app. The last action is primary. Cancel and Close use `ModalAction.dismiss`, which is never red, even alone. The primary keeps the action's name (Upload stays Upload): settings only some people change fold into `ArDriveDisclosure` rows in the dialog, not a step behind Next. Set `scrollableContent` for long content |
 | A dialog on a phone, or a menu from the bottom | `showArDriveBottomSheet` with `ArDriveBottomSheet` | Same title, spacing and action row as a dialog |
 | A text link | `ArDriveLink`, or `ArDriveLink.span` inside text | Keyboard reachable and announced as a link. `external` adds the new-window icon; `isAction` announces an action such as Copy as a button |
 | A message with a meaning | `ArDriveNotice` | `type`: info, warning, error or success. `layout`: inline box or full-width banner. Optional title, action and close button |
@@ -131,6 +131,7 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | A menu with menus inside it | `ArDriveSubmenu` with `ArDriveSubmenuItem`s | An item with `children` opens its menu beside it. The New menu |
 | A menu of your own widgets, opened from code | `ArDriveMenuAnchor` with an `ArDriveMenuController` | `MenuAnchor`'s shape: `open()`, `close()`, `menuChildren`. The video players' speed menus |
 | Anything else that floats over the page from a button | `ArDriveOverlay` | `anchor` places it; `closeOnBarrierTap` and `closeOnEscape` |
+| An optional part of a dialog, folded to one row | `ArDriveDisclosure` | Icon, title, a summary of what is set and a chevron; opens to its content, lined up with the title. Rows stack with no gap between them, such as an upload's name and options. With `trailing` (a link) in place of content it does not fold |
 | Pick one of a few | `ArDriveSegmentedControl` with `ArDriveSegment`s | 40 high; the chosen segment is filled. `expand` shares the width equally (a row of amounts); otherwise it hugs its labels (a two-way switch). `wrap` puts a segment in a menu that opens from it |
 | Content on a surface that is dark in both themes, such as a video | `ArDriveOnDark` | Its child takes the dark theme's tokens, so text, spinners and buttons need no literal colours |
 
@@ -144,7 +145,8 @@ A dialog does its work in place, never with another dialog on top:
   input, the keyboard's included.
 - Holding the buttons does not stop the dialog being dismissed some other
   way: show a dialog that does work with `barrierDismissible: false`, so a
-  click outside it can't close it mid-way.
+  click outside it can't close it mid-way, and wrap its content in
+  `PopScope(canPop: !busy)`, so the system Back gesture can't either.
 - When it fails, the dialog says so in an `ArDriveNotice` (error) above its
   actions, with a way to fix or retry, and stays open.
 - When it succeeds, the dialog closes, or shows its result in place.

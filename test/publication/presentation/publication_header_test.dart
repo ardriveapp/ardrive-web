@@ -80,8 +80,7 @@ void main() {
     await tester.pump();
   }
 
-  Widget header({bool compact = false}) =>
-      PublicationHeader(
+  Widget header({bool compact = false}) => PublicationHeader(
         coverHeight: compact ? 120 : 200,
         compact: compact,
         onDownload: () {},

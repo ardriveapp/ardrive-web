@@ -1,3 +1,5 @@
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/utils.dart';
 
@@ -27,7 +30,11 @@ void main() {
     lastUpdated: DateTime(2024),
   );
 
-  Widget host({required bool offersDriveState}) => ArDriveTheme(
+  Widget host({
+    required bool offersDriveState,
+    PromptToSnapshotBloc? bloc,
+  }) =>
+      ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
@@ -40,7 +47,7 @@ void main() {
           home: Scaffold(
             body: PromptToSnapshotDialog(
               drive: drive,
-              promptToSnapshotBloc: MockPromptToSnapshotBloc(),
+              promptToSnapshotBloc: bloc ?? MockPromptToSnapshotBloc(),
               offersDriveState: offersDriveState,
             ),
           ),
@@ -68,5 +75,49 @@ void main() {
     expect(find.text('Create snapshot'), findsOneWidget);
     expect(find.text('Snapshot recommended'), findsOneWidget);
     expect(find.text('Make this drive load faster'), findsNothing);
+  });
+
+  group('closing it', () {
+    setUpAll(() => registerFallbackValue(const SelectedDrive(driveId: null)));
+
+    List<String> buttons(WidgetTester tester) => tester
+        .widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+        .map((b) => b.text)
+        .toList();
+
+    testWidgets('is one step: Not now, or Create snapshot, no second screen',
+        (tester) async {
+      final bloc = MockPromptToSnapshotBloc();
+      await tester.pumpWidget(host(offersDriveState: false, bloc: bloc));
+      await tester.pumpAndSettle();
+
+      expect(buttons(tester), ['Not now', 'Create snapshot']);
+      expect(find.text("Don't ask again"), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Not now'));
+      await tester.pumpAndSettle();
+
+      // No "Ok cool" confirmation screen, and the bloc was not told to stop
+      // asking: the box was not ticked.
+      expect(find.textContaining('Ok cool'), findsNothing);
+      verifyNever(() => bloc.add(any()));
+    });
+
+    testWidgets('with Don\'t ask again ticked tells the bloc, in the same step',
+        (tester) async {
+      final bloc = MockPromptToSnapshotBloc();
+      await tester.pumpWidget(host(offersDriveState: true, bloc: bloc));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text("Don't ask again"));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ArDriveButtonNew, 'Not now'));
+      await tester.pumpAndSettle();
+
+      final event = verify(() => bloc.add(captureAny())).captured.single;
+      expect(event, isA<DismissDontAskAgain>());
+      expect((event as DismissDontAskAgain).dontAskAgain, isTrue);
+      expect(find.textContaining('won\'t be asked'), findsNothing);
+    });
   });
 }

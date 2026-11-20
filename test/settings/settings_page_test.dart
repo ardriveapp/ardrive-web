@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/account/presentation/account_page.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/list_page/list_page_layout.dart';
@@ -22,6 +23,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 
 import '../test_utils/utils.dart';
 
@@ -125,6 +127,9 @@ void main() {
               value: preferences,
             ),
             RepositoryProvider<ArweaveService>.value(value: arweave),
+            // The server dialogs count as open dialogs, as in the app.
+            ChangeNotifierProvider<ActivityTracker>(
+                create: (_) => ActivityTracker()),
           ],
           child: BlocProvider<ThemeSwitcherBloc>.value(
             value: theme,

@@ -39,6 +39,15 @@ part 'drive_state_creation_state.dart';
 /// alternative is what this replaced: no answer, no error, no log.
 const kCostEstimateTimeout = Duration(seconds: 45);
 
+/// Syncs the drive, deeply when [deep], and says whether a sync started.
+/// [force] syncs even when the last sync looks complete: a drive with no
+/// watermark can have a clean skip record.
+typedef DriveStateSyncDrive = Future<bool> Function({
+  required bool deep,
+  required bool force,
+  required bool Function() isCancelled,
+});
+
 class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   final String driveId;
 
@@ -60,6 +69,9 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   /// it, and whether or not the modal is still open.
   final void Function()? onPublished;
 
+  /// Syncs this drive, for a refusal a sync can clear. Null offers no sync.
+  final DriveStateSyncDrive? syncDrive;
+
   DriveStateCreationCubit({
     required this.driveId,
     required DriveStateCreationService service,
@@ -69,6 +81,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
     required DriveDao driveDao,
     this.turboBalanceRefreshDelay = const Duration(seconds: 2),
     this.onPublished,
+    this.syncDrive,
 
     /// Overridable so the deadline can be tested without waiting for it. The
     /// production value is [costEstimateTimeout]; nothing but a test passes
@@ -81,6 +94,44 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DriveStateCreationInitial());
+
+  /// Syncs the drive a refusal named, then prepares again. Deep when the last
+  /// sync skipped items: an ordinary sync starts after them and would not
+  /// read them again.
+  Future<void> syncThenPrepare() async {
+    final refused = state;
+    final sync = syncDrive;
+    if (sync == null || refused is! DriveStateCreationRefused) return;
+    if (!refused.canSync) return;
+
+    emit(DriveStateCreationSyncing());
+    var started = true;
+    try {
+      started = await sync(
+        deep: refused.refusal == DriveStateCreationRefusal.syncSkippedEntities,
+        force: refused.refusal == DriveStateCreationRefusal.noWatermark,
+        isCancelled: () => isClosed,
+      );
+    } catch (e, stackTrace) {
+      // The check that follows says what the sync left.
+      logger.e('[drive-state] syncing the drive failed', e, stackTrace);
+    }
+    if (isClosed) return;
+
+    await prepare();
+    final after = state;
+    if (!started &&
+        !isClosed &&
+        after is DriveStateCreationRefused &&
+        after.canSync) {
+      emit(DriveStateCreationRefused(
+        refusal: after.refusal,
+        reason: after.reason,
+        canSync: true,
+        syncDidNotStart: true,
+      ));
+    }
+  }
 
   /// Builds the artifact, prices it, and stops. Emits
   /// [DriveStateCreationReady] with something that has not been sent anywhere.
@@ -135,9 +186,14 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
           '${result.refusal!.name}',
         );
 
-        emit(DriveStateCreationRefused(
+        final refused = DriveStateCreationRefused(
           refusal: result.refusal!,
           reason: result.reason,
+        );
+        emit(DriveStateCreationRefused(
+          refusal: refused.refusal,
+          reason: refused.reason,
+          canSync: syncDrive != null && refused.isClearedBySync,
         ));
         return;
       }
@@ -181,6 +237,9 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
               : 'The cost of this snapshot could not be determined, so nothing '
                   'is being offered for confirmation. Nothing was uploaded and '
                   'nothing was spent.',
+          kind: e is TimeoutException
+              ? DriveStateCreationFailureKind.costTimeout
+              : DriveStateCreationFailureKind.costUnknown,
         ));
         return;
       }
@@ -199,6 +258,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       logger.e('[drive-state] preparing an artifact failed', e, stackTrace);
       emit(DriveStateCreationFailure(
         'The snapshot could not be prepared. Try again.',
+        kind: DriveStateCreationFailureKind.prepareFailed,
       ));
     }
   }
@@ -238,9 +298,15 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
       emit(current.copyWith(cost: cost));
     } catch (e) {
-      // The prices already on screen remain true; a failed refresh must not
-      // throw away a prepared artifact the user paid CPU time for.
+      // The artifact stays: a failed refresh must not throw away what the
+      // user paid CPU time for. But the balance on screen is no longer known
+      // to be true, so the review says so and offers Try again.
       logger.w('[drive-state] could not refresh the Turbo balance: $e');
+      if (isClosed) return;
+      final current = state;
+      if (current is DriveStateCreationReady) {
+        emit(current.copyWith(cost: current.cost.withTurboUnreachable()));
+      }
     }
   }
 
@@ -287,18 +353,33 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       // Before the closed check: the artifact is on its way whether or not
       // the modal is still open, and the Snapshots tab lists it as pending
       // straight away, as it does an older snapshot.
+      // Guarded on their own: the snapshot is posted and paid for, so
+      // nothing after this point may report it as a failure that spent
+      // nothing.
       if (result.isPublished) {
-        onPublished?.call();
-        SnapshotEventBus.instance.emitSnapshotCreated(
-          SnapshotDisplayItem(
-            txId: result.txId!,
-            driveId: ready.artifact.driveId,
-            blockStart: ready.artifact.blockStart,
-            blockEnd: ready.artifact.blockEnd,
-            createdAt: DateTime.now(),
-            status: TransactionStatus.pending,
-          ),
-        );
+        try {
+          onPublished?.call();
+        } catch (e, stackTrace) {
+          logger.e('[drive-state] onPublished failed', e, stackTrace);
+        }
+        try {
+          SnapshotEventBus.instance.emitSnapshotCreated(
+            SnapshotDisplayItem(
+              txId: result.txId!,
+              driveId: ready.artifact.driveId,
+              blockStart: ready.artifact.blockStart,
+              blockEnd: ready.artifact.blockEnd,
+              createdAt: DateTime.now(),
+              status: TransactionStatus.pending,
+            ),
+          );
+        } catch (e, stackTrace) {
+          logger.e(
+            '[drive-state] announcing a published artifact failed',
+            e,
+            stackTrace,
+          );
+        }
       }
 
       if (isClosed) {
@@ -315,7 +396,26 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
           txId: result.txId!,
         ));
       } else {
-        emit(DriveStateCreationFailure(result.reason!));
+        emit(DriveStateCreationFailure(
+          result.reason!,
+          kind: result.isUncertain
+              ? DriveStateCreationFailureKind.publishUncertain
+              : switch (result.failure) {
+                  DriveStateUploadFailure.notEnabled =>
+                    DriveStateCreationFailureKind.notEnabled,
+                  DriveStateUploadFailure.notLoggedIn =>
+                    DriveStateCreationFailureKind.notLoggedIn,
+                  DriveStateUploadFailure.walletChanged =>
+                    DriveStateCreationFailureKind.walletChanged,
+                  DriveStateUploadFailure.walletUnavailable =>
+                    DriveStateCreationFailureKind.walletUnavailable,
+                  DriveStateUploadFailure.paymentDeclined =>
+                    DriveStateCreationFailureKind.paymentDeclined,
+                  DriveStateUploadFailure.other =>
+                    DriveStateCreationFailureKind.publishFailed,
+                },
+          txId: result.txId,
+        ));
       }
     } catch (e, stackTrace) {
       logger.e('[drive-state] publishing an artifact failed', e, stackTrace);
@@ -323,6 +423,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
       emit(DriveStateCreationFailure(
         'The snapshot could not be created. Nothing was spent.',
+        kind: DriveStateCreationFailureKind.publishThrew,
       ));
     }
   }
