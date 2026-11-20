@@ -101,6 +101,8 @@ class MakeThumbnailsState extends Equatable {
     this.total = 0,
     this.made = 0,
     this.failed = 0,
+    this.nothingToAdd = 0,
+    this.loadFailed = false,
     this.summary,
     this.pricingFailed = false,
     this.paymentRequired = false,
@@ -113,6 +115,13 @@ class MakeThumbnailsState extends Equatable {
   final int total;
   final int made;
   final int failed;
+
+  /// Images that gave nothing more, such as ones too small for a large
+  /// thumbnail.
+  final int nothingToAdd;
+
+  /// The folder's images could not be read.
+  final bool loadFailed;
 
   /// The price, once read; null while it is read.
   final UploadReviewSummary? summary;
@@ -129,6 +138,8 @@ class MakeThumbnailsState extends Equatable {
     int? total,
     int? made,
     int? failed,
+    int? nothingToAdd,
+    bool? loadFailed,
     UploadReviewSummary? summary,
     bool? pricingFailed,
     bool? paymentRequired,
@@ -139,6 +150,8 @@ class MakeThumbnailsState extends Equatable {
         total: total ?? this.total,
         made: made ?? this.made,
         failed: failed ?? this.failed,
+        nothingToAdd: nothingToAdd ?? this.nothingToAdd,
+        loadFailed: loadFailed ?? this.loadFailed,
         summary: summary ?? this.summary,
         pricingFailed: pricingFailed ?? this.pricingFailed,
         paymentRequired: paymentRequired ?? this.paymentRequired,
@@ -151,6 +164,8 @@ class MakeThumbnailsState extends Equatable {
         total,
         made,
         failed,
+        nothingToAdd,
+        loadFailed,
         summary,
         pricingFailed,
         paymentRequired,
@@ -189,7 +204,21 @@ class MakeThumbnailsCubit extends Cubit<MakeThumbnailsState> {
 
   Future<void> load() async {
     emit(const MakeThumbnailsState(phase: MakeThumbnailsPhase.loading));
-    _todo = await _findImages();
+    try {
+      _todo = {
+        for (final e in (await _findImages()).entries)
+          if (!_thumbnails.hasNothingToAdd(e.key)) e.key: e.value,
+      };
+    } catch (error, trace) {
+      logger.e('Make thumbnails could not list the images', error, trace);
+      if (!isClosed) {
+        emit(const MakeThumbnailsState(
+          phase: MakeThumbnailsPhase.done,
+          loadFailed: true,
+        ));
+      }
+      return;
+    }
     if (isClosed) return;
     if (_todo.isEmpty) {
       emit(const MakeThumbnailsState(phase: MakeThumbnailsPhase.nothingToDo));
@@ -244,14 +273,21 @@ class MakeThumbnailsCubit extends Cubit<MakeThumbnailsState> {
     final queue = _todo.keys.toList();
     var made = 0;
     var failed = 0;
+    // Images that gave nothing more, such as ones too small for a large
+    // thumbnail: neither made nor failed.
+    var nothingToAdd = 0;
     var paymentRequired = false;
 
     Future<void> worker() async {
       while (queue.isNotEmpty && !_stop) {
         final fileId = queue.removeAt(0);
         try {
-          await _thumbnails.uploadThumbnail(fileId: fileId);
-          made++;
+          final added = await _thumbnails.uploadThumbnail(fileId: fileId);
+          if (added) {
+            made++;
+          } else {
+            nothingToAdd++;
+          }
           _todo = Map.of(_todo)..remove(fileId);
         } catch (error) {
           if (isTurboPaymentError(error)) {
@@ -263,7 +299,11 @@ class MakeThumbnailsCubit extends Cubit<MakeThumbnailsState> {
           }
         }
         if (!isClosed) {
-          emit(state.copyWith(made: made, failed: failed));
+          emit(state.copyWith(
+            made: made,
+            failed: failed,
+            nothingToAdd: nothingToAdd,
+          ));
         }
       }
     }
@@ -274,9 +314,18 @@ class MakeThumbnailsCubit extends Cubit<MakeThumbnailsState> {
       phase: MakeThumbnailsPhase.done,
       made: made,
       failed: failed,
+      nothingToAdd: nothingToAdd,
       paymentRequired: paymentRequired,
       stopped: _stop && !paymentRequired,
     ));
+  }
+
+  /// Closed while working (a system back, say): nothing new starts, so no
+  /// writes go on that no one sees.
+  @override
+  Future<void> close() {
+    _stop = true;
+    return super.close();
   }
 
   /// The ones under way finish; nothing new starts. What is made stays.

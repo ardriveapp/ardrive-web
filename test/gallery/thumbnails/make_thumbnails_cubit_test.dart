@@ -47,6 +47,7 @@ void main() {
         .thenReturn(ProfileLoggedIn(user: getTestUser(), useTurbo: true));
     registerFallbackValue(getTestUser().wallet);
     registerFallbackValue(BigInt.zero);
+    when(() => thumbnails.hasNothingToAdd(any())).thenReturn(false);
     when(() => costReader.read(
           itemSizes: any(named: 'itemSizes'),
           wallet: any(named: 'wallet'),
@@ -59,10 +60,11 @@ void main() {
   });
 
   MakeThumbnailsCubit cubit(Map<String, MissingThumbnails> images,
-          {bool isPrivate = false}) =>
+          {bool isPrivate = false,
+          Future<Map<String, MissingThumbnails>> Function()? find}) =>
       MakeThumbnailsCubit(
         isPrivate: isPrivate,
-        findImages: () async => images,
+        findImages: find ?? () async => images,
         thumbnails: thumbnails,
         costReader: costReader,
         profileCubit: profile,
@@ -194,5 +196,57 @@ void main() {
     expect(c.state.made, 2);
     expect(c.state.failed, 1);
     expect(c.state.paymentRequired, isFalse);
+  });
+
+  test('an image that gave nothing more is not counted as made', () async {
+    when(() => thumbnails.uploadThumbnail(fileId: any(named: 'fileId')))
+        .thenAnswer((i) async => i.namedArguments[#fileId] != 'tiny');
+    final c = cubit(const {
+      'a': MissingThumbnails.all,
+      'tiny': MissingThumbnails.large,
+    });
+    await c.load();
+    await c.start();
+    expect(c.state.made, 1);
+    expect(c.state.nothingToAdd, 1);
+    expect(c.state.failed, 0);
+  });
+
+  test('images already found to give nothing more are not offered again',
+      () async {
+    when(() => thumbnails.hasNothingToAdd('tiny')).thenReturn(true);
+    final c = cubit(const {
+      'a': MissingThumbnails.all,
+      'tiny': MissingThumbnails.large,
+    });
+    await c.load();
+    expect(c.state.total, 1);
+  });
+
+  test('a folder that cannot be read ends, saying so, not on a spinner',
+      () async {
+    final c = cubit(const {}, find: () => Future.error(Exception('db')));
+    await c.load();
+    expect(c.state.phase, MakeThumbnailsPhase.done);
+    expect(c.state.loadFailed, isTrue);
+  });
+
+  test('closed while working, it starts nothing new', () async {
+    final first = Completer<bool>();
+    when(() => thumbnails.uploadThumbnail(fileId: any(named: 'fileId')))
+        .thenAnswer((i) => i.namedArguments[#fileId] == 'a'
+            ? first.future
+            : Future.value(true));
+    final c = cubit(const {
+      'a': MissingThumbnails.all,
+      'b': MissingThumbnails.all,
+    }, isPrivate: true);
+    await c.load();
+    final run = c.start();
+    await Future<void>.delayed(Duration.zero);
+    await c.close();
+    first.complete(true);
+    await run;
+    verifyNever(() => thumbnails.uploadThumbnail(fileId: 'b'));
   });
 }

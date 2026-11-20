@@ -152,7 +152,9 @@ class MakeThumbnailsDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: ArDriveSpacing.sm),
                   ArDriveProgressBar(
-                    percentage: (state.made + state.failed) / total,
+                    percentage:
+                        (state.made + state.failed + state.nothingToAdd) /
+                            total,
                   ),
                   const SizedBox(height: ArDriveSpacing.sm),
                   say(l10n.makeThumbnailsProgressNote),
@@ -179,7 +181,9 @@ class MakeThumbnailsDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  say(l10n.makeThumbnailsMade(state.made)),
+                  say(state.loadFailed
+                      ? l10n.actionFailedTryAgain
+                      : l10n.makeThumbnailsMade(state.made)),
                   if (state.failed > 0) ...[
                     const SizedBox(height: ArDriveSpacing.sm),
                     say(l10n.makeThumbnailsFailed(state.failed)),

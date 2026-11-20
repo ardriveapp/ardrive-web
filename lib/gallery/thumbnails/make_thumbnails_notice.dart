@@ -14,6 +14,8 @@ int imagesNeedingThumbnails(Iterable<ArDriveDataTableItem> items) => items
     .whereType<FileDataTableItem>()
     .where((f) =>
         !f.isHidden &&
+        // As Make thumbnails itself: not an upload that failed.
+        f.dataTx?.status != 'failed' &&
         missingThumbnailsOf(
               contentType: f.contentType,
               size: f.size ?? 0,

@@ -48,6 +48,25 @@ class ThumbnailRepository {
               fetch: arweaveService.getTagsForTransactions,
             );
 
+  /// Files whose image gave no thumbnail beyond what they have, such as one
+  /// too small for a large thumbnail. For this session, so Make thumbnails
+  /// does not keep offering them.
+  final Set<String> _nothingToAdd = {};
+
+  /// Whether Make thumbnails found nothing more to make for [fileId].
+  bool hasNothingToAdd(String fileId) => _nothingToAdd.contains(fileId);
+
+  /// A file's thumbnail variants; none when its record is missing or does
+  /// not parse, as Make thumbnails reads it too.
+  static List<Variant> _variantsOf(String? json) {
+    if (json == null || json == 'null') return const [];
+    try {
+      return Thumbnail.fromJson(jsonDecode(json)).variants;
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Reads the cipher tags of many thumbnails with one query.
   final TransactionTagBatcher _tagBatcher;
   final Map<String, ThumbnailData> _cachedThumbnails = {};
@@ -158,10 +177,7 @@ class ThumbnailRepository {
           ..where((tbl) => tbl.id.equals(fileId)))
         .getSingle();
 
-    final existing =
-        fileEntry.thumbnail == null || fileEntry.thumbnail == 'null'
-            ? const <Variant>[]
-            : Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!)).variants;
+    final existing = _variantsOf(fileEntry.thumbnail);
     final missing = missingThumbnailsOf(
       contentType: fileEntry.dataContentType,
       size: fileEntry.size,
@@ -222,7 +238,11 @@ class ThumbnailRepository {
         // A file that has thumbnails keeps them; only a large one is added.
         if (wantsAll || result.name == ThumbnailSize.large.name) result,
     ];
-    if (generated.isEmpty) return false;
+    if (generated.isEmpty) {
+      // Too small an image for a large one: not offered again this session.
+      _nothingToAdd.add(fileId);
+      return false;
+    }
 
     // Small first, as older clients read the first variant.
     final uploaded = <ThumbnailUploadMetadata>[];
