@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/models/models.dart';
@@ -30,6 +31,7 @@ void main() {
   late _Downloader downloader;
   late _Dao dao;
   late _Auth auth;
+  late FileKeys fileKeys;
   late List<String> batched;
   late ThumbnailRepository repo;
   var known = <String>{};
@@ -44,6 +46,7 @@ void main() {
     downloader = _Downloader();
     dao = _Dao();
     auth = _Auth();
+    fileKeys = FileKeys(driveDao: dao);
     batched = [];
     known = {'t1', 't2'};
     when(() => auth.currentUser)
@@ -68,6 +71,7 @@ void main() {
       arweaveService: arweave,
       arDriveDownloader: downloader,
       driveDao: dao,
+      fileKeys: fileKeys,
       arDriveAuth: auth,
       arDriveUploader: _Uploader(),
       turboUploadService: _Turbo(),
@@ -109,6 +113,46 @@ void main() {
           cipher: 'AES256-GCM',
           cipherIvString: 'iv-t1',
         )).called(1);
+  });
+
+  test('a private page visitor decrypts a thumbnail with the page\'s key',
+      () async {
+    final pageKey = Uint8List.fromList(List.filled(32, 9));
+    fileKeys.usePageKeys('d', {'f-t1': pageKey});
+
+    await fetch('t1');
+
+    final used = verify(() => downloader.downloadToMemory(
+          txId: 't1',
+          fileSize: any(named: 'fileSize'),
+          fileName: any(named: 'fileName'),
+          lastModifiedDate: any(named: 'lastModifiedDate'),
+          contentType: any(named: 'contentType'),
+          isManifest: any(named: 'isManifest'),
+          fileKey: captureAny(named: 'fileKey'),
+          cipher: any(named: 'cipher'),
+          cipherIvString: any(named: 'cipherIvString'),
+        )).captured.single as SecretKey;
+    expect(await used.extractBytes(), pageKey);
+    verifyNever(() => dao.getDriveKeyFromMemory(any()));
+    verifyNever(() => dao.getFileKey(any(), any()));
+  });
+
+  test('a file the page has no key for is never downloaded', () async {
+    fileKeys.usePageKeys('d', {'f-t1': Uint8List(32)});
+
+    await expectLater(fetch('t2'), throwsStateError);
+    verifyNever(() => downloader.downloadToMemory(
+          txId: any(named: 'txId'),
+          fileSize: any(named: 'fileSize'),
+          fileName: any(named: 'fileName'),
+          lastModifiedDate: any(named: 'lastModifiedDate'),
+          contentType: any(named: 'contentType'),
+          isManifest: any(named: 'isManifest'),
+          fileKey: any(named: 'fileKey'),
+          cipher: any(named: 'cipher'),
+          cipherIvString: any(named: 'cipherIvString'),
+        ));
   });
 
   test('a transaction the gateway has no node for is not found', () async {

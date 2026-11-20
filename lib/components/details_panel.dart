@@ -16,6 +16,7 @@ import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -118,6 +119,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         BlocProvider<FsEntryPreviewCubit>(
           create: (context) => FsEntryPreviewCubit(
             crypto: ArDriveCrypto(),
+            fileKeys: context.read<FileKeys>(),
             driveId: widget.item.driveId,
             maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),

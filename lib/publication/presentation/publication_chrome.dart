@@ -13,11 +13,20 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/shared_file_link.dart' show SharedFileLinkParams;
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart' show triggerHTMLPageReload;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+/// What a page shows as its title: the owner's, or "Private page" for a private
+/// page whose owner left it empty (the only pages that may).
+String publicationTitle(BuildContext context, PublicationConfig config) =>
+    config.title.isEmpty
+        ? appLocalizationsOf(context).publicationPrivatePage
+        : config.title;
 
 /// The open publication's settings, or null before it is open and on every page
 /// that is not a publication.
@@ -35,14 +44,25 @@ PublicationConfig? publicationConfigOf(BuildContext context) {
 /// The publication's own link to a folder in it, and to a file in that folder:
 /// `<page link>#/folders/<id>?file=<id>`, or `<page link>#/` for its root.
 /// What "Copy link" copies on a publication, in place of Share.
+///
+/// A private page's link carries the key [page] came with, in the hash
+/// route as `k`, as the app's private file links do: after the `#`, so it
+/// never reaches a server. Only a key from the link: one typed into the
+/// page, or a password, stays in the page.
 String publicationLink({
   required Uri page,
   String? folderId,
   String? fileId,
 }) {
-  final route = folderId == null
-      ? '/'
-      : '/folders/$folderId${fileId == null ? '' : '?file=$fileId'}';
+  final key = publicationLinkKey(page);
+  final query = {
+    if (folderId != null && fileId != null) 'file': fileId,
+    if (key != null) SharedFileLinkParams.key: key,
+  };
+  final route = Uri(
+    path: folderId == null ? '/' : '/folders/$folderId',
+    queryParameters: query.isEmpty ? null : query,
+  ).toString();
   return page.removeFragment().replace(fragment: route).toString();
 }
 
@@ -67,16 +87,27 @@ Future<void> copyPublicationLink(
       fileId: fileId,
     ),
   ));
-  if (context.mounted) _sayCopied(context);
+  if (!context.mounted) return;
+  // A link with the key opens the page for whoever has it: said every
+  // time, as the app's private links are.
+  final strings = appLocalizationsOf(context);
+  final keyNote = publicationLinkKey(Uri.base) == null
+      ? null
+      : config?.scope is PublicationFileScope
+          ? strings.publishFileKeyInLink
+          : strings.publishPageKeyInLink;
+  _sayCopied(context, keyNote: keyNote);
 }
 
-/// The app's own "Copied!" snackbar, as a failed sync shows its message.
-void _sayCopied(BuildContext context) {
+/// The app's own "Copied!" snackbar, as a failed sync shows its message,
+/// with [keyNote] when the link holds a key.
+void _sayCopied(BuildContext context, {String? keyNote}) {
+  final copied = appLocalizationsOf(context).copied;
   showArDriveToast(
     ScaffoldMessenger.of(context),
-    text: appLocalizationsOf(context).copied,
+    text: keyNote == null ? copied : '$copied $keyNote',
     type: ArDriveStatusType.success,
-    duration: const Duration(seconds: 2),
+    duration: Duration(seconds: keyNote == null ? 2 : 6),
   );
 }
 
@@ -93,11 +124,50 @@ class PublicationTopBarActions extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const PublicationLockButton(),
           const IconThemeSwitcher(),
           SizedBox(width: compact ? 4 : 12),
           MadeWithArDrive(compact: compact),
         ],
       );
+}
+
+/// Lock, on a private page this tab remembers the key of: forgets the key
+/// and reloads, which locks the page. Nothing else is kept: the page's
+/// files and keys live in memory only. Absent everywhere else, and on a
+/// private page opened by its link, which a reload opens again.
+class PublicationLockButton extends StatelessWidget {
+  const PublicationLockButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final PublicationLoaderCubit cubit;
+    try {
+      cubit = context.read<PublicationLoaderCubit>();
+    } on ProviderNotFoundException {
+      return const SizedBox.shrink();
+    }
+    return BlocBuilder<PublicationLoaderCubit, PublicationLoaderState>(
+      bloc: cubit,
+      builder: (context, state) {
+        if (state is! PublicationReady || !state.keyRemembered) {
+          return const SizedBox.shrink();
+        }
+        final strings = appLocalizationsOf(context);
+        return Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: ArDriveIconButton(
+            tooltip: strings.publicationLockTooltip,
+            icon: ArDriveIcons.lock(),
+            onPressed: () async {
+              await cubit.forgetKey();
+              triggerHTMLPageReload();
+            },
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// The one place a publication names ArDrive: a quiet button in the top
@@ -239,7 +309,7 @@ class PublicationHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                config.title,
+                publicationTitle(context, config),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: typography.heading4(
@@ -351,7 +421,7 @@ class PublicationBar extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              config.title,
+              publicationTitle(context, config),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: typography.heading5(
@@ -406,7 +476,7 @@ class PublicationFileHead extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          config.title,
+          publicationTitle(context, config),
           style: typography.heading4(
               color: colors.textHigh, fontWeight: ArFontWeight.bold),
         ),

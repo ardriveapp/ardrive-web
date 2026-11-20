@@ -153,6 +153,35 @@ void main() {
     ]);
   });
 
+  test('a private page without a title never names the drive in its zip',
+      () async {
+    PublicationMode.debugSet('publication.json');
+    PublicationContents.open = await PublicationContents.load(
+      db.driveDao,
+      const PublicationConfig(
+        version: 3,
+        driveId: _drive,
+        rootFolderId: _root,
+        scope: PublicationDriveScope(),
+        privacy: 'private',
+        owner: 'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA',
+        title: '',
+        description: '',
+        images: PublicationImages(),
+        publishedAt: null,
+        viewer: null,
+      ),
+    );
+    final paths = [
+      for (final item in await convertSelectionToMultiDownloadFileList(
+          db.driveDao, MockARFSRepository(), [driveItem],
+          untitledRootName: 'Private page'))
+        if (item is MultiDownloadFolder) item.folderPath,
+    ];
+    expect(paths.first, 'Private page/');
+    expect(paths.where((p) => p.contains('The drive')), isEmpty);
+  });
+
   test('a folder outside the publication downloads nothing', () async {
     await open(const PublicationFolderScope(_a));
     expect(await download([folderItem(_c, 'Beside')]), isEmpty);

@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -45,6 +46,7 @@ promptToDownloadMultipleFiles(
         ),
         arweave: arweave,
         crypto: ArDriveCrypto(),
+        fileKeys: context.read<FileKeys>(),
         driveDao: driveDao,
         cipherKey: cipherKey,
       )..add(

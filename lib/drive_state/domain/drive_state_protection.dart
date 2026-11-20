@@ -97,13 +97,23 @@ sealed class DriveStateProtection {
         );
     }
   }
+
+  /// A private page's catalog (publication.json version 3): a Drive State of
+  /// the page's scope, encrypted under a random key of its own rather than
+  /// the drive key, which never leaves the owner's device. The catalog key
+  /// comes from the page's sealed block. Only ever encrypted: a private
+  /// drive's state is never read in the clear.
+  static DriveStateProtection forCatalog(SecretKey catalogKey) =>
+      DriveStateEncrypted._(catalogKey);
 }
 
-/// A private drive's artifact: encrypted under the drive key.
+/// A private drive's artifact, encrypted under the drive key, or a private
+/// page's catalog, under its catalog key.
 final class DriveStateEncrypted extends DriveStateProtection {
   const DriveStateEncrypted._(this.driveKey) : super._();
 
-  /// The drive key. Never leaves this object, and never travels in a payload.
+  /// The drive key, or a catalog's key. Never leaves this object, and never
+  /// travels in a payload.
   final SecretKey driveKey;
 
   @override

@@ -106,7 +106,7 @@ class PublicationsCubit extends Cubit<PublicationsState> {
   }
 
   /// Whether [drive] can be published by whoever is signed in.
-  bool canPublish(Drive drive) => drive.isPublic && _owns(drive);
+  bool canPublish(Drive drive) => _owns(drive);
 
   /// Whether a file in [drive] can have a page: the owner's, in a public or
   /// a private drive. A private file's page opens with the key in its link.

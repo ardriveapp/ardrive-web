@@ -241,6 +241,44 @@ void main() {
     );
   });
 
+  testWidgets(
+      'a private page\'s review says who can open it, never that anyone can '
+      'find it', (tester) async {
+    await open(
+      tester,
+      PublishState(
+        stage: PublishStage.review,
+        summary: const PublicationSummary(
+          fileCount: 3,
+          folderCount: 1,
+          totalSize: 1024,
+          hiddenItems: 2,
+          inHiddenFolders: 0,
+          inGhostFolders: 0,
+          pendingFiles: 0,
+          failedFiles: 0,
+        ),
+        isPrivatePage: true,
+        password: 'tide lantern orbit maple quiet harbor',
+        cost: _freeCost,
+      ),
+    );
+
+    expect(find.text('Left out'), findsOneWidget);
+    expect(
+        find.text('Only people with the link or its password can open this '
+            'page. Search engines are asked not to list it.'),
+        findsOneWidget);
+    expect(find.textContaining('Anyone can find this page'), findsNothing);
+    expect(find.text('Hidden items in a public drive can still be found.'),
+        findsNothing);
+    // An empty title shows what the page will show.
+    expect(find.text('Private page'), findsOneWidget);
+    expect(find.text('Set'), findsOneWidget);
+    expect(
+        find.textContaining('Your files’ names stay private.'), findsOneWidget);
+  });
+
   testWidgets('a failure and an unaffordable cost are error notices',
       (tester) async {
     await open(
@@ -739,6 +777,34 @@ void main() {
       );
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Back'), findsNothing);
+    });
+
+    testWidgets('a weak password holds Next until the owner confirms it',
+        (tester) async {
+      await stubLook(tester);
+      when(() => cubit.next()).thenReturn(null);
+      const weak = PublishState(
+          stage: PublishStage.look, isPrivatePage: true, password: 'tiger');
+      await open(tester, weak);
+      final next = tester.widget<ArDriveButtonNew>(
+          find.widgetWithText(ArDriveButtonNew, 'Next'));
+      expect(next.isDisabled, isTrue);
+      await tester.tap(find.text('Next'));
+      verifyNever(() => cubit.next());
+    });
+
+    testWidgets('a confirmed weak password lets Next go on', (tester) async {
+      await stubLook(tester);
+      when(() => cubit.next()).thenReturn(null);
+      await open(
+          tester,
+          const PublishState(
+              stage: PublishStage.look,
+              isPrivatePage: true,
+              password: 'tiger',
+              weakPasswordAccepted: true));
+      await tester.tap(find.text('Next'));
+      verify(() => cubit.next()).called(1);
     });
 
     testWidgets('a file keeps Back on its look', (tester) async {

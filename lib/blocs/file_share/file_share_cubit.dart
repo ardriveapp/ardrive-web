@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/link_generators.dart';
@@ -34,6 +34,7 @@ class FileShareCubit extends Cubit<FileShareState> {
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
+  final FileKeys _fileKeys;
   final ArweaveService _arweave;
 
   FileShareCubit({
@@ -41,9 +42,11 @@ class FileShareCubit extends Cubit<FileShareState> {
     required this.fileId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
+    required FileKeys fileKeys,
     required ArweaveService arweave,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
+        _fileKeys = fileKeys,
         _arweave = arweave,
         super(FileShareLoadInProgress()) {
     loadFileShareDetails();
@@ -115,22 +118,15 @@ class FileShareCubit extends Cubit<FileShareState> {
 
     if (drive.privacy == DrivePrivacyTag.private) {
       final profile = _profileCubit.state;
-      DriveKey? driveKey;
+      fileKey = await _fileKeys.keyFor(
+        driveId: drive.id,
+        fileId: fileId,
+        cipherKey: profile is ProfileLoggedIn ? profile.user.cipherKey : null,
+      );
 
-      if (profile is ProfileLoggedIn) {
-        driveKey = await _driveDao.getDriveKey(
-          drive.id,
-          profile.user.cipherKey,
-        );
-      } else {
-        driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
-      }
-
-      if (driveKey == null) {
+      if (fileKey == null) {
         throw StateError('Drive Key not found');
       }
-
-      fileKey = await _driveDao.getFileKey(fileId, driveKey.key);
     }
 
     _fileName = file.name;

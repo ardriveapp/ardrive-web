@@ -347,7 +347,7 @@ void main() {
     expect(find.byType(DrivePickerDialog), findsOneWidget);
     expect(find.text('Publish to web'), findsOneWidget);
     // No public drive of the reader's can be published here.
-    expect(find.text('No public drives yet'), findsOneWidget);
+    expect(find.text('Nothing here yet'), findsOneWidget);
     expect(delegate.showingDrivesList, isFalse,
         reason: 'it no longer leaves the page');
   });

@@ -181,6 +181,10 @@ dependencies:
   # build vendored in `web/js/pdfjs/` is the exact one this version expects
   # (2.12.313) - the two move together or not at all.
   pdfx: 2.6.0
+  # Unicode NFC for passwords of private pages off the web (tests, mobile);
+  # the web build uses the browser's String.normalize instead. See
+  # lib/publication/domain/sealed/sealing_platform_vm.dart.
+  unorm_dart: 0.3.3
 
 dependency_overrides:
   stripe_js:

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
@@ -208,6 +209,7 @@ void main() {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<DriveDao>.value(value: driveDao),
+        RepositoryProvider<FileKeys>.value(value: FileKeys(driveDao: driveDao)),
         RepositoryProvider<ArweaveService>.value(value: arweave),
         RepositoryProvider<ConfigService>.value(value: configService),
       ],

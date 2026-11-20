@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_uploader.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
+import 'package:ardrive/publication/domain/private_page.dart';
 import 'package:ardrive/publication/domain/publication_files.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart';
+import 'package:ardrive/publication/domain/sealed/sealing.dart';
 import 'package:ardrive/turbo/services/upload_service.dart'
     show isTurboPaymentError;
 import 'package:ardrive/utils/logger.dart';
@@ -80,6 +84,7 @@ class PublicationJob {
     required this.icon,
     required this.cover,
     required this.social,
+    this.privatePage,
     required this.snapshot,
     required this.release,
     required this.files,
@@ -110,8 +115,23 @@ class PublicationJob {
   final PublicationImage? icon;
   final PublicationImage? cover;
 
-  /// Always set: the owner's card or the generated one.
-  final PublicationImage social;
+  /// The owner's card or the generated one. Null on a private page whose
+  /// owner set none: a private page never gets a generated card.
+  final PublicationImage? social;
+
+  /// A private drive or folder page's catalog, keys and slots; null for
+  /// every other page.
+  final PrivatePagePlan? privatePage;
+
+  bool get isPrivatePage => privatePage != null;
+
+  /// Whether its parts are signed: from then on it is frozen, and a retry
+  /// posts what is left of it rather than signing anew.
+  bool get isSigned => _signed != null;
+
+  /// For tests that stand in for the publisher: marks the job as signed.
+  @visibleForTesting
+  void markSignedForTest() => _signed ??= [];
   final PublicationSnapshotPlan snapshot;
   final PublicationRelease release;
 
@@ -165,6 +185,7 @@ class PublicationJob {
       icon: icon,
       cover: cover,
       social: social,
+      privatePage: privatePage,
       snapshot: snapshot,
       release: release,
       files: files,
@@ -210,10 +231,14 @@ class PublicationLabels {
     required this.filesPage,
     required this.openPage,
     required this.moreFiles,
+    this.privatePage = 'Private page',
   });
 
   final String filesPage;
   final String openPage;
+
+  /// A private page's window title when its owner left the title empty.
+  final String privatePage;
 
   /// Holds `{count}`.
   final String moreFiles;
@@ -294,17 +319,19 @@ class PublicationPublisher {
   List<int> itemSizesOf(PublicationJob job) {
     const placeholderId = 'PLACEHOLDER_TRANSACTION_ID_0000000000000000';
     final hasSnapshot = job.snapshot is! NoSnapshot;
-    final items = _items(
-      job,
-      snapshotTxId: hasSnapshot ? placeholderId : null,
-      snapshotTags: job._snapshotTags ??
-          switch (job.snapshot) {
-            ReusedSnapshot(:final tags) => tags,
-            NewSnapshot() || NoSnapshot() => const {},
-          },
-      idOf: (_) => placeholderId,
-      publishedAt: publicationTimestamp(_now()),
-    );
+    final items = job.isPrivatePage
+        ? _privateItemsForSize(job, placeholderId)
+        : _items(
+            job,
+            snapshotTxId: hasSnapshot ? placeholderId : null,
+            snapshotTags: job._snapshotTags ??
+                switch (job.snapshot) {
+                  ReusedSnapshot(:final tags) => tags,
+                  NewSnapshot() || NoSnapshot() => const {},
+                },
+            idOf: (_) => placeholderId,
+            publishedAt: publicationTimestamp(_now()),
+          );
     // Each data item's header: its signature, owner and tags.
     const header = 1100;
     return [
@@ -383,6 +410,10 @@ class PublicationPublisher {
     onStep?.call(PublicationStep.files);
     try {
       job._signed ??= await _sign(job, wallet);
+    } on PublicationFailure {
+      // A page that would never open (too long, too many files): the
+      // wallet had nothing to do with it, and trying again won't help.
+      rethrow;
     } catch (e) {
       logger.e('[publication] signing failed', e);
       throw const PublicationFailure(
@@ -439,8 +470,11 @@ class PublicationPublisher {
     // wait for it to fetch everything. A failure here changes nothing.
     if (job.method == UploadMethod.turbo) {
       onStep?.call(PublicationStep.warmUp);
-      await _warmUp(version.txId,
-          hasSnapshot: job.scope is! PublicationFileScope);
+      await _warmUp(version.txId, parts: [
+        if (job.isPrivatePage) ...['sealed', 'catalog'],
+        if (!job.isPrivatePage && job.scope is! PublicationFileScope)
+          'snapshot',
+      ]);
     }
     return version;
   }
@@ -461,6 +495,7 @@ class PublicationPublisher {
   }
 
   Future<List<_Signed>> _sign(PublicationJob job, Wallet wallet) async {
+    if (job.isPrivatePage) return _signPrivate(job, wallet);
     job._publishedAt ??= publicationTimestamp(_now());
     final signed = <_Signed>[];
     final ids = <String, String>{
@@ -488,6 +523,212 @@ class PublicationPublisher {
     final manifest = _manifestItem(job, ids);
     signed.add(_Signed('manifest', await _uploader.sign(manifest, wallet)));
     return signed;
+  }
+
+  // A private drive or folder page (docs/ArweaveFS.md, "Manifest of a
+  // version 3 page"): the catalog, the sealed block naming it, then
+  // publication.json naming that, signed in turn since each needs the one
+  // before's ID. No snapshot, files.html, sitemap or generated card.
+
+  Future<List<_Signed>> _signPrivate(PublicationJob job, Wallet wallet) async {
+    job._publishedAt ??= publicationTimestamp(_now());
+    // A new IV every time the sealed block is encrypted, never kept on the
+    // job: signing that stops partway is signed again from the start, the
+    // catalog gets a new ID, and the block is then a new plaintext under the
+    // same publication key. Reusing the IV for it would break AES-GCM.
+    // Signing that finished is kept whole (`PublicationJob._signed`), so a
+    // retry after it encrypts nothing.
+    final sealedIv = secureRandomBytes(ivBytes);
+    final plan = job.privatePage!;
+    final signed = <_Signed>[];
+    final ids = <String, String>{
+      for (final image in [job.icon, job.cover, job.social])
+        if (image is ExistingPublicationImage) ...image.files,
+    };
+    Future<String> sign(PublicationItem item) async {
+      final dataItem = await _uploader.sign(item, wallet);
+      signed.add(_Signed(item.name, dataItem));
+      return ids[item.name] = dataItem.id;
+    }
+
+    for (final item in _imageItems(job)) {
+      await sign(item);
+    }
+    final catalogTxId = await sign(_catalogItem(job));
+    // The sealed block is bound to what publication.json says about the
+    // page, which doesn't include the sealed part's own ID.
+    final draft = jsonDecode(_privatePublicationJson(
+      job,
+      sealedTxId: catalogTxId,
+      sealedIv: sealedIv,
+      publishedAt: job._publishedAt!,
+    )) as Map;
+    final sealed = await Sealing().sealBlock(
+      plan.publicationKey,
+      sealedIv,
+      plan.sealedBlock(scope: _scopeJson(job), catalogTxId: catalogTxId),
+      draft,
+    );
+    _refuseOversizedSealed(sealed.length);
+    final sealedTxId = await sign(_part(job, 'sealed', sealed));
+    for (final item in _privatePageItems(
+      job,
+      sealedTxId: sealedTxId,
+      sealedIv: sealedIv,
+      socialId: ids['social.jpg'],
+      publishedAt: job._publishedAt!,
+    )) {
+      await sign(item);
+    }
+    signed.add(_Signed(
+        'manifest', await _uploader.sign(_manifestItem(job, ids), wallet)));
+    return signed;
+  }
+
+  /// A reader refuses a sealed part over [maxSealedBytes], so a page whose
+  /// file list is that long would be paid for and never open. Thrown when
+  /// pricing, before anything is uploaded.
+  void _refuseOversizedSealed(int bytes) {
+    if (bytes <= maxSealedBytes) return;
+    throw const PublicationFailure(
+      PublicationStep.publication,
+      'This page has too many files to publish as one page. Nothing was '
+      'uploaded. Publish a folder of it instead.',
+      canRetry: false,
+    );
+  }
+
+  /// [_signPrivate]'s items with placeholder IDs, for the cost. The sealed
+  /// block is measured, not encrypted: AES-GCM adds its 16-byte tag.
+  List<PublicationItem> _privateItemsForSize(
+      PublicationJob job, String placeholderId) {
+    final plan = job.privatePage!;
+    final block =
+        plan.sealedBlock(scope: _scopeJson(job), catalogTxId: placeholderId);
+    final sealedSize = utf8.encode(canonicalJson(block)).length + tagBytes;
+    _refuseOversizedSealed(sealedSize);
+    final ids = <String, String>{
+      for (final image in [job.icon, job.cover, job.social])
+        if (image is ExistingPublicationImage) ...image.files,
+      for (final item in _imageItems(job)) item.name: placeholderId,
+      'catalog': placeholderId,
+      'sealed': placeholderId,
+    };
+    final pages = _privatePageItems(
+      job,
+      sealedTxId: placeholderId,
+      sealedIv: Uint8List(ivBytes),
+      socialId: ids['social.jpg'],
+      publishedAt: publicationTimestamp(_now()),
+    );
+    for (final item in pages) {
+      ids[item.name] = placeholderId;
+    }
+    return [
+      ..._imageItems(job),
+      _catalogItem(job),
+      _part(job, 'sealed', Uint8List(sealedSize)),
+      ...pages,
+      _manifestItem(job, ids),
+    ];
+  }
+
+  PublicationItem _part(PublicationJob job, String name, Uint8List data) =>
+      PublicationItem(
+        name: name,
+        data: data,
+        contentType: 'application/octet-stream',
+        tags: publicationPartTags(job.publicationId),
+      );
+
+  PublicationItem _catalogItem(PublicationJob job) =>
+      _part(job, 'catalog', job.privatePage!.catalog.entity.data!);
+
+  Map<String, Object?> _scopeJson(PublicationJob job) =>
+      switch (job.scope.folderIdOrNull) {
+        final folderId? => {'type': 'folder', 'folderId': folderId},
+        null => {'type': 'drive'},
+      };
+
+  String _privatePublicationJson(
+    PublicationJob job, {
+    required String sealedTxId,
+    required Uint8List sealedIv,
+    required String publishedAt,
+  }) =>
+      buildPrivatePublicationJson(
+        publicationId: job.publicationId,
+        driveId: job.driveId,
+        folderId: job.scope.folderIdOrNull,
+        owner: job.owner,
+        sealedTxId: sealedTxId,
+        sealedIv: b64u(sealedIv),
+        slots: job.privatePage!.slots,
+        title: job.title,
+        description: job.description,
+        ownerName: job.ownerName,
+        keywords: job.keywords,
+        license: job.license,
+        images: {
+          if (job.icon != null) 'icon': 'icon-512.png',
+          if (job.social != null) 'social': 'social.jpg',
+          if (job.cover != null) 'cover': 'cover.jpg',
+        },
+        publishedAt: publishedAt,
+        names: job.names,
+        viewer: (
+          release: job.release.version ?? 'unknown',
+          manifest: job.release.manifestId,
+        ),
+      );
+
+  List<PublicationItem> _privatePageItems(
+    PublicationJob job, {
+    required String sealedTxId,
+    required Uint8List sealedIv,
+    required String? socialId,
+    required String publishedAt,
+  }) {
+    final part = publicationPartTags(job.publicationId);
+    PublicationItem text(String name, String content, String type) =>
+        PublicationItem(
+          name: name,
+          data: Uint8List.fromList(utf8.encode(content)),
+          contentType: type,
+          tags: part,
+        );
+    final settings = _privatePublicationJson(job,
+        sealedTxId: sealedTxId, sealedIv: sealedIv, publishedAt: publishedAt);
+    // A viewer refuses a longer one (docs/ArweaveFS.md), so a page with it
+    // would be paid for and never open. Only text the owner typed can make
+    // it this long: a title or description whose characters are each many
+    // bytes. Thrown when pricing, so nothing is uploaded.
+    if (utf8.encode(settings).length > maxPublicationJsonBytes) {
+      throw const PublicationFailure(
+        PublicationStep.publication,
+        "This page's title, description or keywords are too long. Nothing "
+        'was uploaded. Shorten them and try again.',
+        canRetry: false,
+      );
+    }
+    return [
+      text('publication.json', settings, 'application/json'),
+      text(
+        'index.html',
+        buildPublicationIndexHtml(
+          job.release.indexHtml,
+          title: job.title.isEmpty ? job.labels.privatePage : job.title,
+          description: job.description,
+          icons: job.icon != null
+              ? (small: 'icon-32.png', touch: 'icon-180.png')
+              : null,
+          socialImageUrl:
+              socialId == null ? null : '${_gatewayUrl()}/$socialId',
+          noindex: true,
+        ),
+        'text/html',
+      ),
+    ];
   }
 
   List<PublicationItem> _items(
@@ -627,17 +868,21 @@ class PublicationPublisher {
             publicationId: job.publicationId,
             folderId: job.scope.folderIdOrNull,
             fileId: job.scope.fileIdOrNull,
+            version:
+                job.isPrivatePage ? PublicationConfig.privatePageVersion : null,
           ),
           for (final keyword in job.keywords) (name: 'Keyword', value: keyword),
         ],
       );
 
-  Future<void> _warmUp(String manifestTxId, {bool hasSnapshot = true}) async {
+  Future<void> _warmUp(String manifestTxId,
+      {List<String> parts = const ['snapshot']}) async {
     final base = _gatewayUrl();
-    // The snapshot too: it is the largest file a first visitor waits for.
-    // Side by side, so a slow gateway costs the owner one wait, not three.
+    // The snapshot (or a private page's parts) too: the largest files a
+    // first visitor waits for. Side by side, so a slow gateway costs the
+    // owner one wait, not three.
     await Future.wait([
-      for (final path in ['', 'publication.json', if (hasSnapshot) 'snapshot'])
+      for (final path in ['', 'publication.json', ...parts])
         _client
             .get(Uri.parse('$base/$manifestTxId/$path'))
             .timeout(const Duration(seconds: 20))

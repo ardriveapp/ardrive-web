@@ -9,13 +9,17 @@ import 'package:flutter/material.dart';
 /// label as well as a tooltip, because an icon alone is silent to a screen
 /// reader.
 class PrivateDriveLock extends StatelessWidget {
-  const PrivateDriveLock({super.key, this.size = 18});
+  const PrivateDriveLock({super.key, this.size = 18, this.label});
 
   final double size;
 
+  /// What it says on hover; "Private drive" by default. A private web page
+  /// says "Private".
+  final String? label;
+
   @override
   Widget build(BuildContext context) {
-    final label = appLocalizationsOf(context).privateDriveLabel;
+    final label = this.label ?? appLocalizationsOf(context).privateDriveLabel;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Semantics(

@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:ardrive/publication/data/publication_repository.dart';
@@ -10,6 +10,7 @@ import 'package:ardrive/publication/presentation/publish/publish_look_step.dart'
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -46,7 +47,8 @@ void main() {
     when(() => cubit.isFile).thenReturn(false);
   });
 
-  Future<void> pump(WidgetTester tester, Size size) async {
+  Future<void> pump(WidgetTester tester, Size size,
+      {AssetBundle? bundle}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -62,9 +64,12 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SingleChildScrollView(
-              child: BlocProvider<PublishCubit>.value(
-                value: cubit,
-                child: const PublishLookStep(),
+              child: DefaultAssetBundle(
+                bundle: bundle ?? rootBundle,
+                child: BlocProvider<PublishCubit>.value(
+                  value: cubit,
+                  child: const PublishLookStep(),
+                ),
               ),
             ),
           ),
@@ -372,4 +377,74 @@ void main() {
       expect(find.byType(ArDriveSpinner), findsNothing);
     });
   });
+
+  group('the password of a private page', () {
+    setUp(() {
+      when(() => cubit.setPassword(any())).thenReturn(null);
+    });
+
+    testWidgets('leaving the look step of a page with a password is quiet',
+        (tester) async {
+      when(() => cubit.state).thenReturn(const PublishState(
+          stage: PublishStage.look, isPrivatePage: true, hasPassword: true));
+      await pump(tester, const Size(1200, 2400));
+      expect(
+          find.text(
+              'This page has a password. It can’t be changed or removed.'),
+          findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a weak password shows a box to confirm it', (tester) async {
+      when(() => cubit.acceptWeakPassword(any())).thenReturn(null);
+      when(() => cubit.state).thenReturn(const PublishState(
+          stage: PublishStage.look, isPrivatePage: true, password: 'tiger'));
+      await pump(tester, const Size(1200, 2400));
+      final box = find.text('I understand this password is easy to guess.');
+      expect(box, findsOneWidget);
+      await tester.tap(box);
+      verify(() => cubit.acceptWeakPassword(true)).called(1);
+    });
+
+    testWidgets('a strong password asks nothing', (tester) async {
+      when(() => cubit.state).thenReturn(const PublishState(
+          stage: PublishStage.look,
+          isPrivatePage: true,
+          password: 'tide lantern orbit maple quiet harbor'));
+      await pump(tester, const Size(1200, 2400));
+      expect(find.text('I understand this password is easy to guess.'),
+          findsNothing);
+    });
+
+    testWidgets('a suggestion that loads after the owner typed is dropped',
+        (tester) async {
+      when(() => cubit.state).thenReturn(
+          const PublishState(stage: PublishStage.look, isPrivatePage: true));
+      final bundle = _SlowBundle();
+      await pump(tester, const Size(1200, 2400), bundle: bundle);
+      await tester.tap(find.text('Suggest a strong password'));
+      await tester.pump();
+      await tester.enterText(
+          find.widgetWithText(ArDriveTextFieldNew, 'Password (optional)'),
+          'my own words');
+      bundle.words.complete(List.generate(64, (i) => 'word$i').join('\n'));
+      await tester.pumpAndSettle();
+      expect(find.text('my own words'), findsOneWidget);
+      verify(() => cubit.setPassword('my own words')).called(1);
+      verifyNever(() => cubit.setPassword(any(that: isNot('my own words'))));
+    });
+  });
+}
+
+/// A word list that loads when the test says so.
+class _SlowBundle extends CachingAssetBundle {
+  final words = Completer<String>();
+
+  @override
+  Future<String> loadString(String key, {bool cache = true}) =>
+      key.endsWith('.txt') ? words.future : rootBundle.loadString(key);
+
+  @override
+  Future<ByteData> load(String key) => rootBundle.load(key);
 }

@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/entities/constants.dart' as constants;
@@ -33,13 +34,14 @@ class MultipleDownloadBloc
   final DriveDao _driveDao;
   final ARFSRepository _arfsRepository;
   final ArDriveCrypto _crypto;
+  final FileKeys _fileKeys;
   final SecretKey? _cipherKey;
   final DeviceInfoPlugin? _deviceInfo;
 
   bool _canceled = false;
   int _currentFileIndex = 0;
   final List<MultiDownloadItem> _skippedFiles = [];
-  DriveKey? _driveKey;
+  FileKeyRing? _fileKeyRing;
 
   ARFSDriveEntity? _drive;
   late ZipEncoder _zipEncoder;
@@ -53,6 +55,7 @@ class MultipleDownloadBloc
       required ArweaveService arweave,
       required ARFSRepository arfsRepository,
       required ArDriveCrypto crypto,
+      required FileKeys fileKeys,
       DeviceInfoPlugin? deviceInfo,
       SecretKey? cipherKey})
       : _downloadService = downloadService,
@@ -60,6 +63,7 @@ class MultipleDownloadBloc
         _arweave = arweave,
         _arfsRepository = arfsRepository,
         _crypto = crypto,
+        _fileKeys = fileKeys,
         _cipherKey = cipherKey,
         _deviceInfo = deviceInfo,
         super(MultipleDownloadInitial()) {
@@ -90,7 +94,8 @@ class MultipleDownloadBloc
   Future<void> _startDownload(
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
     _files = await convertSelectionToMultiDownloadFileList(
-        _driveDao, _arfsRepository, event.selectedItems);
+        _driveDao, _arfsRepository, event.selectedItems,
+        untitledRootName: event.zipName);
 
     _skippedFiles.clear();
 
@@ -125,20 +130,14 @@ class MultipleDownloadBloc
     }
 
     if (_drive?.drivePrivacy == DrivePrivacy.private) {
-      if (_cipherKey != null) {
-        _driveKey = await _driveDao.getDriveKey(
-          _drive!.driveId,
-          _cipherKey,
-        );
-      } else {
-        _driveKey = await _driveDao.getDriveKeyFromMemory(_drive!.driveId);
-      }
+      _fileKeyRing =
+          await _fileKeys.forDrive(_drive!.driveId, cipherKey: _cipherKey);
 
-      if (_driveKey == null) {
+      if (_fileKeyRing == null) {
         throw StateError('Drive Key not found');
       }
     } else {
-      _driveKey = null;
+      _fileKeyRing = null;
     }
 
     _initializeEncoder();
@@ -212,13 +211,12 @@ class MultipleDownloadBloc
 
           Uint8List outputBytes;
 
-          if (file.pinnedDataOwnerAddress == null && _driveKey != null) {
-            final fileKey =
-                await _driveDao.getFileKey(file.fileId, _driveKey!.key);
+          if (file.pinnedDataOwnerAddress == null && _fileKeyRing != null) {
+            final fileKey = await _fileKeyRing!.keyFor(file.fileId);
             final dataTx = await (_arweave.getTransactionDetails(file.txId));
 
             try {
-              if (dataTx != null) {
+              if (dataTx != null && fileKey != null) {
                 final decryptedData = await _crypto.decryptDataFromTransaction(
                   dataTx,
                   dataBytes,
@@ -227,7 +225,8 @@ class MultipleDownloadBloc
 
                 outputBytes = decryptedData;
               } else {
-                logger.e('Error decrypting file: dataTx is null');
+                logger.e(
+                    'Error decrypting file: no data transaction or file key');
                 emit(const MultipleDownloadFailure(
                     FileDownloadFailureReason.unknownError));
                 return;

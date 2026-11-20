@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/details_panel.dart';
@@ -154,6 +155,8 @@ void main() {
         MultiRepositoryProvider(
           providers: [
             RepositoryProvider<DriveDao>.value(value: db.driveDao),
+            RepositoryProvider<FileKeys>.value(
+                value: FileKeys(driveDao: db.driveDao)),
             RepositoryProvider<ArweaveService>.value(value: arweave),
             RepositoryProvider<LicenseService>.value(
               value: MockLicenseService(),

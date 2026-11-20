@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -636,6 +637,7 @@ Future<void> handleMarkdownFileEdit(
     final arweaveService = context.read<ArweaveService>();
     final crypto = context.read<ArDriveCrypto>();
     final profileCubit = context.read<ProfileCubit>();
+    final fileKeys = context.read<FileKeys>();
 
     // Get drive to check if it's private
     final drive =
@@ -673,30 +675,18 @@ Future<void> handleMarkdownFileEdit(
     if (drive.isPrivate && !isPinFile) {
       logger.d('Decrypting private markdown file: ${fileItem.name}');
 
-      // Get profile key
+      // A visitor has no profile; their drive key is in memory.
       final profile = profileCubit.state;
-      DriveKey? driveKey;
+      final fileKey = await fileKeys.keyFor(
+        driveId: fileItem.driveId,
+        fileId: fileItem.fileId,
+        cipherKey: profile is ProfileLoggedIn ? profile.user.cipherKey : null,
+      );
 
-      if (profile is ProfileLoggedIn) {
-        driveKey = await driveDao.getDriveKey(
-          fileItem.driveId,
-          profile.user.cipherKey,
-        );
-      } else {
-        // For shared drives without profile
-        driveKey = await driveDao.getDriveKeyFromMemory(fileItem.driveId);
-      }
-
-      if (driveKey == null) {
+      if (fileKey == null) {
         throw Exception(
             'Unable to access drive key. Please ensure you have access to this private drive.');
       }
-
-      // Derive file-specific key
-      final fileKey = await driveDao.getFileKey(
-        fileItem.fileId,
-        driveKey.key,
-      );
 
       // Get transaction metadata for cipher tags
       final transaction = await arweaveService.getTransactionDetails(

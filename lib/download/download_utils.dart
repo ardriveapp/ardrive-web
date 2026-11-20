@@ -70,7 +70,8 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
     DriveDao driveDao,
     ARFSRepository arfsRepository,
     List<ArDriveDataTableItem> selectedItems,
-    {String path = ''}) async {
+    {String path = '',
+    String? untitledRootName}) async {
   final multiDownloadFileList = <MultiDownloadItem>[];
 
   // A publication downloads only what the publication shows: the drive behind
@@ -91,9 +92,13 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
         driveDao,
         tree,
         path: path,
-        // The publication's root is named by its title, as everywhere on the page.
+        // The publication's root is named by its title, as everywhere on the
+        // page. A private page may have none, and then shows
+        // [untitledRootName] ("Private page"), never the drive's own name.
         folderName: folderId == publication.config.scopeRootFolderId
-            ? publication.config.title
+            ? (publication.config.title.isNotEmpty
+                ? publication.config.title
+                : untitledRootName)
             : null,
       ));
     } else if (publication != null && item is FileDataTableItem) {

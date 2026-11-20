@@ -252,7 +252,7 @@ Entity-Type: publication
 Publication-Id: <uuid, kept by every version of this publication>
 Publication-Scope: <drive | folder uuid | file>
 Publication-File-Id?: <file uuid, on a file page only; never File-Id, which file lookups match alone>
-Publication-Version: <1 for a drive or folder, 2 for a file>
+Publication-Version: <1 for a public drive or folder, 2 for a file, 3 for a private drive or folder>
 Content-Type: application/x.arweave-manifest+json
 Unix-Time: <seconds since unix epoch>
 Keyword?: <a word the owner chose>   (repeated)
@@ -262,30 +262,30 @@ Keyword?: <a word the owner chose>   (repeated)
 
 `Publication-Version` is written to the same number as the `publication.json` `version`. No reader reads the tag and nothing checks it against the JSON. It exists for future compatibility. The `version` in `publication.json` is what a reader acts on. Neither is related to the ArFS version.
 
-A publication is never encrypted, so a client can read it without a drive key.
+The manifest and `publication.json` are never encrypted, so a client can read them without a drive key. A private drive or folder page keeps its contents in encrypted parts of its own, under Private publications.
 
 ### Manifest
 
-The manifest has the paths below. The rest of its paths are the files of the web app release it pins, each by transaction ID.
+The manifest has the paths below. The rest of its paths are the files of the web app release it pins, each by transaction ID. A private drive or folder page has other paths, under Private publications.
 
 | Path | Points at |
 |---|---|
 | `index.html` (also the manifest index and its fallback) | The release's `index.html` with the title, description, icons and social card written into its head |
 | `publication.json` | The publication's settings (below) |
-| `snapshot` | A Drive State entity of the drive, by the same owner. Drive and folder pages only |
+| `snapshot` | A Drive State entity of the drive, by the same owner. Public drive and folder pages only |
 | `icon-32.png`, `icon-180.png`, `icon-512.png`, `cover.jpg` | The publication's images, when the owner set them |
-| `social.jpg` | The social card. Always written: the owner's image, or a generated card |
-| `files.html`, `sitemap.xml` | The publication's files as gateway links, for clients that run no script. At most 5,000 files are listed. Drive and folder pages only |
+| `social.jpg` | The social card. Always written on a public page: the owner's image, or a generated card |
+| `files.html`, `sitemap.xml` | The publication's files as gateway links, for clients that run no script. At most 5,000 files are listed. Public drive and folder pages only |
 
-Every file the publish uploads, other than the Drive State, is a plain, public data item carrying `Publication-Id` and no `Entity-Type`. None is an ArFS entity, and none appears in the drive.
+Every file the publish uploads, other than the Drive State, is a plain data item carrying `Publication-Id` and no `Entity-Type`. None is an ArFS entity, and none appears in the drive.
 
 ### publication.json
 
-`publication.json` is a JSON object. A reader reads these keys. Types are JSON types.
+`publication.json` is a JSON object. A reader reads these keys. Types are JSON types. This table is versions 1 and 2; version 3 is under Private publications.
 
 | Key | Type | Required | Rule |
 |---|---|---|---|
-| `version` | integer | yes | At least 1. 1 for drive and folder pages, 2 for file pages. A reader that does not know the value must refuse the page as "needs a newer client" and read no other field |
+| `version` | integer | yes | At least 1. 1 for public drive and folder pages, 2 for file pages, 3 for private drive and folder pages. A reader that does not know the value must refuse the page as "needs a newer client" and read no other field |
 | `driveId` | string | yes | A UUID in lowercase |
 | `rootFolderId` | string | yes | A UUID in lowercase: the drive's root folder |
 | `scope` | object | yes | `{"type":"drive"}`, `{"type":"folder","folderId":"<uuid>"}` or `{"type":"file","fileId":"<uuid>"}`, with lowercase UUIDs |
@@ -309,7 +309,9 @@ Every file the publish uploads, other than the Drive State, is a plain, public d
 
 `file` has `dataTxId` and `metadataTxId` (43-character transaction IDs, the version of the file shown) and optional `name`, `size` (integer, at least 0), `contentType`, `cipher` and `cipherIv`. The JSON keys are camelCase, unlike the tags. On a public file page the block may carry `name`, `size` and `contentType` and must not carry `cipher` or `cipherIv`. On a private file page it must carry `cipher` and `cipherIv` (the values on the data transaction's tags, which are not secret) and must not carry `name`, `size` or `contentType`.
 
-A reader must refuse a `publication.json` that breaks a rule above, with these further checks: a file page must have `version` 2 or later, and `images` and `snapshot.path` must be plain relative paths (letters, digits, `.`, `_`, `-` and `/`; no leading `/`, no empty, `.` or `..` segment). A reader ignores keys it does not know.
+A reader must refuse a `publication.json` that breaks a rule above, with these further checks: a file page must have `version` 2 or later, and `images` and `snapshot.path` must be plain relative paths (letters, digits, `.`, `_`, `-` and `/`; no leading `/`, no empty, `.` or `..` segment).
+
+A reader ignores keys it does not know.
 
 Nothing in `publication.json` is secret. It must not contain a drive, folder or file name that is not already public. The `title` is typed by the owner.
 
@@ -339,15 +341,133 @@ A file page (`Publication-Scope: file`) shows one file. Its manifest has no `sna
 
 ### Private publications
 
-Only private file pages are defined in this version. They need the file key, which is not in the manifest or `publication.json`.
+A private publication is a page of a private drive. Two forms exist:
 
-Private drive and folder publications are reserved and not supported yet. The `privacy: private` form of `snapshot` above is reserved for them. A writer must not produce one, and a client may refuse to open one. A drive key opens the whole drive, so a private folder publication would need a key of its own. That is not specified.
+- **Private file pages** (`version` 2, above). They need the file key, which is not in the manifest or `publication.json`. It travels in the page link's fragment, as `#/?k=<file key>`, or the visitor pastes it.
+- **Private drive and folder pages** (`version` 3, below). They have a key of their own, the publication key. The drive key never leaves the owner's device, so a folder page cannot open anything outside its folder.
+
+The `privacy: private` form of `snapshot` above is reserved. A writer must not produce one, and a reader may refuse one. Version 3 replaces it.
+
+#### Keys
+
+| Key | What it is |
+|---|---|
+| Publication key | 32 random bytes, made when the publication is first published. Every version of the publication keeps it. It decrypts the sealed block |
+| Catalog key | 32 random bytes for one catalog. It is inside the sealed block, never in the clear |
+| File keys | The ArFS file keys of the files in scope, derived from the drive key as usual. They are inside the sealed block |
+
+The publication key reaches a visitor in one of three ways:
+
+1. In the link: `https://<gateway>/<publication tx id>/#/?k=<publication key>`. The key is in the hash route, so it never reaches a server.
+2. Pasted by the visitor, when the link has no key and the owner sent the key separately.
+3. Unwrapped from a password slot by a password the visitor types.
+
+The owner gets it from the owner slot, with the drive key.
+
+Anyone who has the publication key can open every version of the publication. A file keeps its key across revisions, so they can also decrypt any revision of a file that was ever in scope. A writer cannot take access back: every version stays on Arweave and keeps its slots. So a writer must not offer to change or remove a password. It may add a password slot to a later version. A later version carries its slots forward byte for byte; a writer never wraps the key again under a key that was already used.
+
+#### Encodings
+
+Keys, salts, IVs and ciphertexts are base64url without padding. A reader refuses one that is not the canonical encoding of its bytes. All AES-256-GCM ciphertexts are the ciphertext followed by the 16-byte tag. IVs are 12 random bytes and never reused under one key.
+
+#### Manifest of a version 3 page
+
+| Path | Points at |
+|---|---|
+| `index.html` | As for any publication. It also carries `<meta name="robots" content="noindex">` |
+| `publication.json` | The settings (below) |
+| `sealed` | The sealed block (below) |
+| `catalog` | The catalog (below) |
+| `icon-32.png`, `icon-180.png`, `icon-512.png`, `cover.jpg`, `social.jpg` | Only the images the owner set. No social card is generated |
+
+There is no `snapshot`, `files.html` or `sitemap.xml`. `sealed` and `catalog` are plain data items carrying `Publication-Id`, no `Entity-Type` and `Content-Type: application/octet-stream`. The catalog is never tagged as a Drive State, so sync never finds it.
+
+#### publication.json, version 3
+
+| Key | Type | Required | Rule |
+|---|---|---|---|
+| `version` | integer | yes | 3 |
+| `publicationId` | string | yes | The `Publication-Id` tag's value: a lowercase UUID. Slots and the sealed block are bound to it |
+| `driveId` | string | yes | A lowercase UUID |
+| `scope` | object | yes | `{"type":"drive"}` or `{"type":"folder","folderId":"<uuid>"}`. The folder ID is already public in `Publication-Scope` |
+| `privacy` | string | yes | `private`. A version 3 page is always private |
+| `owner` | string | yes | As in version 1 |
+| `sealed` | object | yes | `path` (a plain relative path), `txId` (the sealed block's transaction ID), `cipher` (`AES256-GCM`) and `iv` |
+| `slots` | array | yes | Objects, below. A writer writes exactly one owner slot and at most one password slot. A reader reads only the first slot of each `type` and ignores types it does not know |
+| `title` | string | yes | May be empty. A reader shows "Private page" for an empty title |
+| `description`, `ownerName`, `keywords`, `license`, `images`, `publishedAt`, `names`, `viewer` | | no | As in version 1 |
+
+A version 3 `publication.json` must not have `rootFolderId`, `snapshot`, `file` or `fileCount`. A reader refuses one that does, and one larger than 64 KiB. Nothing in it is secret: it holds no drive, folder or file name, no count of files and no key except wrapped ones. What stays visible: whether the page has a password, and the sizes of `sealed` and `catalog`. The sealed block is padded to a multiple of 4096 bytes, so `sealed` shows the file count only roughly. `catalog` isn't padded: its size still shows roughly how much the page holds.
+
+**Password slot:**
+
+```json
+{ "type": "password", "kdf": "argon2id", "salt": "…", "m": 65536, "t": 3, "p": 1,
+  "cipher": "AES256-GCM", "iv": "…", "wrapped": "…" }
+```
+
+1. Normalise the password to Unicode NFC and encode it as UTF-8. A password is at least one character after normalising; otherwise any password is allowed, and the writer warns about weak ones. A writer refuses an empty password and a reader never tries one.
+2. Run Argon2id (RFC 9106, version 0x13) over it with the slot's `salt` (at least 16 random bytes), memory `m` in KiB, `t` passes and `p` lanes, with no secret and no associated data, for 32 bytes.
+3. Those 32 bytes are the key that wraps: `wrapped` is the AES-256-GCM encryption of the publication key under it, with the slot's `iv` and the associated data `ArDrive publication slot v1|<publicationId>` in UTF-8.
+
+A reader never runs a password slot with `m` outside 8192 to 131072, `t` outside 1 to 6, `p` outside 1 to 4, a salt outside 16 to 64 bytes, or any field it cannot read. The page can still open by key. Writers use a 16-byte salt and `m` 65536, `t` 3, `p` 1 unless a release raises them. The slot's associated data does not cover these settings. It doesn't need to: changing one changes the key that wraps.
+
+**Owner slot:**
+
+```json
+{ "type": "owner", "kdf": "hkdf-sha256", "cipher": "AES256-GCM", "iv": "…", "wrapped": "…" }
+```
+
+The key that wraps is HKDF-SHA256 (RFC 5869) over the drive key (32 bytes; a reader refuses any other length), with an empty salt and the info `ArDrive publication owner v1|<publicationId>` in UTF-8, for 32 bytes. It is made for this one publication, and the drive key itself never wraps anything. `wrapped` is as in a password slot.
+
+#### The sealed block
+
+The `sealed` path holds AES-256-GCM, under the publication key, with `sealed.iv`, of a JSON object in UTF-8. Writers write it with sorted keys and no whitespace; readers accept any JSON. A reader refuses a sealed part larger than 32 MiB before decrypting it.
+
+Its associated data binds it to the page: `ArDrive publication sealed v1|` followed by this header as JSON with sorted keys and no whitespace, in UTF-8:
+
+```json
+{"description":"<description, or empty>","driveId":"…","owner":"…","publicationId":"…","scope":{…},"title":"…"}
+```
+
+`scope` holds only `type` and, for a folder, `folderId`. A sealed part copied under another drive, owner, scope, title or description does not open. Images and the manifest's other paths are not covered.
+
+A reader refuses a sealed block that breaks these rules:
+
+| Key | Type | Rule |
+|---|---|---|
+| `v` | integer | 1. A reader refuses other values |
+| `scope` | object | Equal to `publication.json`'s `scope` |
+| `rootFolderId` | string | The drive's root folder: a lowercase UUID |
+| `catalog` | object | `path` (a plain relative path), `txId`, `key` (the catalog key, 32 bytes) and `tags` (string values: the tags an importer reads, as `snapshot.tags` in version 1, with `Cipher: AES256-GCM` and a 12-byte `Cipher-IV` describing the catalog's encryption) |
+| `files` | object | Lowercase file ID to file key (32 bytes), for every file in the catalog. The number of entries is the page's file count |
+| `ciphers` | object | Transaction ID to `{"cipher", "iv"}`: the `Cipher` and `Cipher-IV` tags of each file's data and thumbnails. For `AES256-GCM` and `AES256-CTR` the `iv` must be canonical base64url. An entry with another cipher is ignored, and a transaction missing here is looked up as usual. A writer may leave it empty |
+| `pad` | string | Optional padding, so the sealed part's size shows the file count only roughly. A writer adds ASCII spaces, as many as bring the canonical JSON's UTF-8 length up to the next multiple of 4096 bytes (none when it already is one). A reader ignores `pad`, whatever it holds, and accepts a block without it, as older writers wrote |
+
+A reader ignores keys it does not know.
+
+#### The catalog
+
+The catalog is a Drive State artifact ([DRIVE_STATE_ARTIFACT.md](DRIVE_STATE_ARTIFACT.md)) holding only the publication's scope: the folder and everything under it, or the whole drive, each at its current version. Hidden items are left out completely, with everything under a hidden folder. The drive row is always there, since a reader imports into it; in a folder page's catalog it carries no name and no custom metadata, which describe the drive around the folder. It is serialised, gzipped and encrypted with AES-256-GCM under the catalog key, like a private Drive State under its drive key, and read by the same importer with the catalog key in place of the drive key.
+
+#### Opening a version 3 page
+
+A reader tries, in order: the link's `k`; what the visitor typed, as a publication key if it is the canonical spelling of 32 bytes, then as a password against the password slot; and, for the owner, the owner slot. A password of 43 base64url characters is therefore still tried as a password. A malformed `k` is passed over, not an error. A key opens the page when the sealed block decrypts and passes the checks above. A failed attempt is not an error the visitor sees, only "That didn't open this page."
+
+The test vectors in `test/publication/fixtures/sealed/vectors.json`, written by `tool/publication/vectors.mjs`, hold every step above, a page of each scope, and pages a reader must refuse. A client must pass them.
 
 ### Owner
 
 A publication counts only if the drive's owner published it. Anyone can write a manifest with any `owner` and any `Drive-Id`.
 
-What the ArDrive viewer checks today: it asks the serving gateway who signed the `snapshot` transaction (for a file page, the `file.metadataTxId` transaction), and refuses the page only if that signer is not `publication.json`'s `owner`. If the gateway cannot answer, the page opens as declared. For a file page, when the lookup also returns the transaction's tags, the viewer checks too that it is a `file` entity with the page's file ID and drive ID. The viewer does not check who signed the manifest, and does not check that `owner` owns the drive. The list of an owner's own publications is scoped to the signed-in owner's transactions.
+What the ArDrive viewer checks today:
+
+- **The settings.** An AR.IO gateway names the transaction it served for a manifest's path in the `x-ar-io-data-id` response header. The viewer asks the gateway who signed the transaction it served as `publication.json`, and refuses the page if that signer isn't the `owner` it names. Without this, anyone could wrap someone's real parts in a manifest of their own, with their own title.
+- **Each part.** It asks who signed the `snapshot` transaction (for a file page, the `file.metadataTxId` transaction), and on a version 3 page `sealed.txId` and, once the page opens, the catalog's `txId`. It refuses the page if a signer isn't `owner`. Each part is read through its manifest path, and the gateway's `x-ar-io-data-id` for that path should be the transaction ID `publication.json` names. When it's another transaction signed by someone else, the page is refused, since the owner check would be about other bytes. When it's another of the owner's transactions (the settings of one version and a part of the next, as a cache or a name that just moved can give), the page opens unverified.
+- **File pages.** When the lookup also returns the transaction's tags, the viewer checks that it is a `file` entity with the page's file ID and drive ID.
+- **Unanswered checks.** Only a confirmed mismatch refuses. If the gateway can't say who signed a transaction, or doesn't name what it served, the page opens as declared, marked unverified (`ownerVerified`).
+
+The viewer doesn't check who signed the manifest, or that `owner` owns the drive. The list of an owner's own publications is scoped to the signed-in owner's transactions.
 
 A full client should check all of these, and fail closed:
 

@@ -717,7 +717,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         selectedItems: selected,
         zipName: selected.length == 1 && selected.single is FolderDataTableItem
             ? selected.single.name
-            : publication.title,
+            : publicationTitle(context, publication),
       );
       return;
     }
@@ -727,7 +727,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         DriveDataTableItemMapper.fromDrive(
             state.currentDrive, (_) => null, 0, true),
       ],
-      zipName: publication.title,
+      zipName: publicationTitle(context, publication),
     );
   }
 
@@ -899,9 +899,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                 driveDetailState
                                                     .currentDrive.rootFolderId,
                                         path: driveDetailState.pathSegments,
-                                        driveName: publicationConfigOf(context)
-                                                ?.title ??
-                                            driveDetailState.currentDrive.name,
+                                        driveName: _publicationTitleOr(context,
+                                            driveDetailState.currentDrive.name),
                                         isPrivate: driveDetailState
                                             .currentDrive.isPrivate,
                                       ),
@@ -975,7 +974,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                       currentFolder.id ==
                                                           publication
                                                               .scopeRootFolderId
-                                                  ? publication.title
+                                                  ? publicationTitle(
+                                                      context, publication)
                                                   : currentFolder
                                                               .parentFolderId ==
                                                           null
@@ -1027,8 +1027,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                 isSynced: true,
                                                 isSyncing: isSyncing,
                                                 zipName:
-                                                    publicationConfigOf(context)
-                                                        ?.title,
+                                                    _publicationTitle(context),
                                                 onMoreInfo: () => context
                                                     .read<DriveDetailCubit>()
                                                     .selectDataItem(
@@ -1358,8 +1357,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               children: [
                 Flexible(
                   child: MobileFolderNavigation(
-                    driveName: publicationConfigOf(context)?.title ??
-                        state.currentDrive.name,
+                    driveName:
+                        _publicationTitleOr(context, state.currentDrive.name),
                     isPrivate: state.currentDrive.isPrivate,
                     path: state.pathSegments,
                     isShowingHiddenFiles: isShowingHiddenFiles,
@@ -1817,7 +1816,7 @@ class MobileFolderNavigation extends StatelessWidget {
                         isOwner: isOwner,
                         isSynced: true,
                         isSyncing: isSyncing,
-                        zipName: publicationConfigOf(context)?.title,
+                        zipName: _publicationTitle(context),
                         onMoreInfo: () =>
                             context.read<DriveDetailCubit>().selectDataItem(
                                   DriveDataTableItemMapper.fromDrive(
@@ -2006,4 +2005,15 @@ class WaitingDriveBuilder extends StatelessWidget {
     }
     return null;
   }
+}
+
+/// The open publication's title as the page shows it, or [fallback] outside
+/// a publication.
+String _publicationTitleOr(BuildContext context, String fallback) =>
+    _publicationTitle(context) ?? fallback;
+
+/// The open publication's title as the page shows it; null outside one.
+String? _publicationTitle(BuildContext context) {
+  final publication = publicationConfigOf(context);
+  return publication == null ? null : publicationTitle(context, publication);
 }

@@ -14,6 +14,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/account/presentation/account_page.dart';
 import 'package:ardrive/billing/presentation/billing_page.dart';
@@ -407,9 +408,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       sharedRawFileKey: sharedRawFileKey,
       sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
     );
+    // A private drive or folder page's key, from its link, stays in every
+    // route the page reports, so a reload anywhere in it still opens it. A
+    // key typed into the page is never here.
+    AppRoutePath at({String? folderId, String? fileId}) => AppRoutePath(
+          publicationFolderId: folderId,
+          publicationFileId: fileId,
+          sharedFileKey: sharedFileKey,
+          sharedRawFileKey: sharedRawFileKey,
+          sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+        );
     if (publication == null) {
-      if (sharedRawFileKey != null && _publicationFolderRequest == null) {
-        return keepKey;
+      if (sharedRawFileKey != null) {
+        return at(
+          folderId: _publicationFolderRequest,
+          fileId: _publicationFileRequest,
+        );
       }
       return AppRoutePath.publication(
         folderId: _publicationFolderRequest,
@@ -418,9 +432,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     }
     if (publication?.scope is PublicationFileScope) return keepKey;
     final folderId = driveFolderId;
-    if (folderId == null || folderId == publication?.scopeRootFolderId) {
-      return AppRoutePath.publication();
+    final atRoot =
+        folderId == null || folderId == publication?.scopeRootFolderId;
+    if (publication?.isSealed == true && sharedRawFileKey != null) {
+      return at(folderId: atRoot ? null : folderId);
     }
+    if (atRoot) return AppRoutePath.publication();
     return AppRoutePath.publication(folderId: folderId);
   }
 
@@ -482,6 +499,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           importer: DriveStateImporter(context.read<DriveDao>()),
           ownerOf: lookup.ownerOf,
           factsOf: lookup.factsOf,
+          fileKeys: context.read<FileKeys>(),
+          // Read from the address itself: the router may not have parsed
+          // it yet.
+          linkKey: publicationLinkKey(Uri.base),
         )..load();
       },
       child: BlocListener<PublicationLoaderCubit, PublicationLoaderState>(
@@ -1822,11 +1843,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// whatever is in memory when the visitor signs in is stored on the row
   /// ([DriveDao.persistInMemoryDriveKeys]), and a wrong key stored there
   /// would break the drive for that account until it is attached again.
+  ///
+  /// Never on a private page: it has no drive key and needs none, since it
+  /// gives its files' keys to `FileKeys` itself.
   Future<void> _ensureVisitorHasDriveKey(
     BuildContext context,
     Drive drive,
   ) async {
-    if (!drive.isPrivate ||
+    if (PublicationMode.isOn ||
+        !drive.isPrivate ||
         _keyPromptedForDriveId == drive.id ||
         context.read<ProfileCubit>().state is ProfileLoggedIn) {
       return;

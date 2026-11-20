@@ -1,4 +1,8 @@
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/publication/domain/file_page.dart';
+import 'package:ardrive/publication/domain/private_page.dart';
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
@@ -73,7 +77,9 @@ class PublishedView extends StatefulWidget {
 }
 
 class _PublishedViewState extends State<PublishedView> {
-  late final Future<PublishedContent?> _content = context
+  late Future<PublishedContent?> _content = _readContent();
+
+  Future<PublishedContent?> _readContent() => context
       .read<PublicationRepository>()
       .readContent(widget.publication.latest.txId)
       .then<PublishedContent?>((c) => c)
@@ -92,19 +98,76 @@ class _PublishedViewState extends State<PublishedView> {
 
   bool get _isPrivateFile => widget.file != null && widget.drive.isPrivate;
 
+  /// A private drive or folder page: its link carries the page's key, which
+  /// its owner slot gives back to the drive key.
+  bool get _isPrivatePage => widget.file == null && widget.drive.isPrivate;
+
+  /// A private page whose drive this session can't open: no key, no link.
+  bool _locked = false;
+
+  /// A private page whose key wasn't read back, though its drive is open:
+  /// the gateway didn't give its settings. Its link would have no key, so
+  /// none is shown until a retry reads it.
+  bool get _keyMissing => _isPrivatePage && !_locked && _fileKey == null;
+
+  /// Whether its links can be opened: a private one only with its key,
+  /// since without it the owner would land on its unlock screen.
+  bool get _canOpen => !(_isPrivateFile || _isPrivatePage) || _fileKey != null;
+
+  void _retryPage() {
+    setState(() {
+      _keyChecked = false;
+      _content = _readContent();
+    });
+    _checkPage();
+  }
+
   @override
   void initState() {
     super.initState();
+    if (_isPrivatePage) {
+      _checkPage();
+      return;
+    }
     final file = widget.file;
     if (file == null) return;
     _checkFile(file);
+  }
+
+  Future<void> _checkPage() async {
+    final driveDao = context.read<DriveDao>();
+    final profile = context.read<ProfileCubit>().state;
+    String? key;
+    var locked = true;
+    try {
+      final driveKey = profile is ProfileLoggedIn
+          ? await driveDao.getDriveKey(widget.drive.id, profile.user.cipherKey)
+          : null;
+      final settings = (await _content)?.config.sealed?.settings;
+      if (driveKey != null) {
+        locked = false;
+        final publicationKey = settings == null
+            ? null
+            : await ownerPublicationKey(
+                settings, await driveKey.key.extractBytes());
+        key = publicationKey == null ? null : b64u(publicationKey);
+      }
+    } catch (e) {
+      logger.w('[publication] the page key could not be read back: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      _fileKey = key;
+      _locked = locked;
+      _keyChecked = true;
+    });
   }
 
   Future<void> _checkFile(FileEntry file) async {
     final driveDao = context.read<DriveDao>();
     final profile = context.read<ProfileCubit>().state;
     final key = _isPrivateFile
-        ? await fileKeyForLink(driveDao, profile,
+        ? await fileKeyForLink(context.read<FileKeys>(), profile,
             driveId: file.driveId, fileId: file.id)
         : null;
     // Out of date by the share page's own rule: the metadata it was made
@@ -158,10 +221,15 @@ class _PublishedViewState extends State<PublishedView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    config?.title ??
-                        widget.file?.name ??
-                        widget.folder?.name ??
-                        widget.drive.name,
+                    config == null
+                        ? (_isPrivatePage
+                            ? strings.publicationPrivatePage
+                            : widget.file?.name ??
+                                widget.folder?.name ??
+                                widget.drive.name)
+                        : config.title.isEmpty
+                            ? strings.publicationPrivatePage
+                            : config.title,
                     style: typography.heading5(fontWeight: ArFontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -186,17 +254,39 @@ class _PublishedViewState extends State<PublishedView> {
             ),
             const SizedBox(height: ArDriveSpacing.sm),
           ],
-          if (_isPrivateFile && !_keyChecked)
+          if ((_isPrivateFile || _isPrivatePage) && !_keyChecked)
             const SizedBox(
               height: 48,
               child: Center(child: ArDriveSpinner()),
+            )
+          else if (_isPrivatePage && _locked)
+            Text(strings.publishUnlockToCopyLink,
+                style: typography.paragraphNormal(color: colors.textHigh))
+          else if (_keyMissing)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(strings.publishPageKeyNotRead,
+                      style:
+                          typography.paragraphNormal(color: colors.textHigh)),
+                ),
+                ArDriveButtonNew(
+                  text: strings.tryAgain,
+                  typography: typography,
+                  variant: ButtonVariant.secondary,
+                  onPressed: _retryPage,
+                ),
+              ],
             )
           else
             PublishedLink(
               link: _link(latest.txId),
               isSecret: _fileKey != null,
               note: [
-                if (_fileKey != null) strings.publishFileKeyInLink,
+                if (_fileKey != null)
+                  _isPrivatePage
+                      ? strings.publishPageKeyInLink
+                      : strings.publishFileKeyInLink,
                 strings.publishUpdateNote,
               ].join(' '),
             ),
@@ -238,11 +328,12 @@ class _PublishedViewState extends State<PublishedView> {
                               typography.paragraphNormal(color: colors.textMid),
                         ),
                       ),
-                      ArDriveLink(
-                        text: strings.publishOpen,
-                        external: true,
-                        onTap: () => openUrl(url: _link(version.txId)),
-                      ),
+                      if (_canOpen)
+                        ArDriveLink(
+                          text: strings.publishOpen,
+                          external: true,
+                          onTap: () => openUrl(url: _link(version.txId)),
+                        ),
                     ],
                   ),
                 ),
@@ -258,10 +349,11 @@ class _PublishedViewState extends State<PublishedView> {
           title: strings.doneEmphasized,
           action: () => Navigator.of(context).pop(),
         ),
-        ModalAction(
-          title: strings.publishOpenPage,
-          action: () => openUrl(url: _link(latest.txId)),
-        ),
+        if (_canOpen)
+          ModalAction(
+            title: strings.publishOpenPage,
+            action: () => openUrl(url: _link(latest.txId)),
+          ),
       ],
     );
   }

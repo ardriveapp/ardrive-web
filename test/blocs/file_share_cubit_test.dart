@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -208,6 +209,7 @@ void main() {
         fileId: fileId,
         profileCubit: profileCubit,
         driveDao: driveDao,
+        fileKeys: FileKeys(driveDao: driveDao),
         arweave: arweave,
       );
 

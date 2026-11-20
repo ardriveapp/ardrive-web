@@ -31,6 +31,29 @@ PublicationConfig _config(PublicationScope scope) => PublicationConfig(
       viewer: null,
     );
 
+extension on PublicationConfig {
+  /// The same page as a private one (version 3), already opened.
+  PublicationConfig copyAsSealed() => PublicationConfig(
+        version: 3,
+        driveId: driveId,
+        rootFolderId: rootFolderId,
+        scope: scope,
+        privacy: 'private',
+        owner: owner,
+        sealed: const PublicationSealed(
+          publicationId: '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d',
+          path: 'sealed',
+          txId: 'SEALEDtx0000000000000000000000000000000000A',
+          settings: {},
+        ),
+        title: '',
+        description: '',
+        images: const PublicationImages(),
+        publishedAt: null,
+        viewer: null,
+      );
+}
+
 Future<AppRoutePath> _parse(String location) =>
     AppRouteInformationParser().parseRouteInformation(
       RouteInformation(uri: Uri.parse(location)),
@@ -240,6 +263,64 @@ void main() {
         router.canAnonymouslyShowDriveDetail(ProfileCheckingAvailability()),
         isTrue,
       );
+    });
+  });
+
+  group('a private drive or folder page', () {
+    // Canonical base64url: the last character's spare bits are zero.
+    final key = '${'K' * 42}A';
+    late Database db;
+
+    setUp(() async {
+      db = getTestDb();
+      Future<void> folder(String id, String? parent) =>
+          db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
+                id: id,
+                driveId: _drive,
+                name: id,
+                parentFolderId: Value(parent),
+                path: '',
+              ));
+      await folder(_root, null);
+      await folder(_a, _root);
+    });
+
+    tearDown(() => db.close());
+
+    PublicationConfig privatePage() =>
+        _config(const PublicationDriveScope()).copyAsSealed();
+
+    test('keeps the link\'s key in every folder, so a reload opens it',
+        () async {
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/folders/$_a?k=$key'));
+
+      expect(_restore(router.currentConfiguration), '/folders/$_a?k=$key');
+
+      await router.openPublication(privatePage(), db.driveDao);
+
+      expect(router.driveFolderId, _a);
+      expect(_restore(router.currentConfiguration), '/folders/$_a?k=$key');
+      router.driveFolderId = _root;
+      expect(_restore(router.currentConfiguration), '/?k=$key');
+    });
+
+    test('without one, the address carries none', () async {
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/'));
+      await router.openPublication(privatePage(), db.driveDao);
+      router.driveFolderId = _a;
+
+      expect(_restore(router.currentConfiguration), '/folders/$_a');
+    });
+
+    test('a public page still drops a stray key once open', () async {
+      final router = AppRouterDelegate();
+      await router.setNewRoutePath(await _parse('/folders/$_a?k=$key'));
+      await router.openPublication(
+          _config(const PublicationDriveScope()), db.driveDao);
+
+      expect(_restore(router.currentConfiguration), '/folders/$_a');
     });
   });
 }

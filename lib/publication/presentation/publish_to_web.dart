@@ -18,7 +18,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Whether "Publish to web" is offered for [drive] (docs/PUBLICATIONS.md,
 /// "Entry points"): on the web, in the app rather than a publication, to the
-/// owner of a public drive, where snapshots can be published at all.
+/// drive's owner, where snapshots can be published at all. A private drive
+/// or folder gets a private page (publication.json version 3).
 bool offersPublishToWeb(BuildContext context, Drive? drive) =>
     drive != null &&
     kIsWeb &&
@@ -102,8 +103,8 @@ Future<void> openPublishToWeb(
 }
 
 /// The drives Publish on the Web pages page offers: of the user's own
-/// [drives], those not hidden that [canPublish] (public ones, where
-/// publishing is on).
+/// [drives], those not hidden that [canPublish] (their own, where publishing
+/// is on).
 List<Drive> publishPickerDrives(
   List<Drive> drives, {
   required bool Function(Drive drive) canPublish,
@@ -117,13 +118,10 @@ List<Drive> publishPickerDrives(
 /// whose data belongs to someone else.
 bool publishPickerCanChooseFile(DrivePickerEntry file) => !file.isPinned;
 
-/// Publish on the Web pages page: the drive picker, to choose a public
-/// drive, folder or file, then the same publishing its menu opens. Opens on
-/// the drive and folder last open, when that drive can be published.
-///
-/// Only public drives are offered, as a private drive's and folder's menus
-/// offer no publishing. A private file's page is still published from its
-/// own menu.
+/// Publish on the Web pages page: the drive picker, to choose a drive,
+/// folder or file, then the same publishing its menu opens. Opens on the
+/// drive and folder last open, when that drive can be published. A private
+/// drive or folder gets a private page.
 ///
 /// [canPublish] defaults to [offersPublishToWeb], which is only ever true on
 /// the web; a test hands in its own.
@@ -149,7 +147,7 @@ Future<void> pickAndPublishToWeb(
     drives: drives,
     driveId: router.driveId,
     folderId: router.driveFolderId,
-    noDrivesMessage: strings.noPublicDrives,
+    noDrivesMessage: strings.noDrivesInScope,
     canChooseFile: publishPickerCanChooseFile,
     sync: (drive) => syncCubit.startSyncForDrive(driveId: drive.id),
     syncRefusal: () => syncCubit.lastSingleSyncRefusal,

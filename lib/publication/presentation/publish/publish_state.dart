@@ -39,6 +39,12 @@ enum PublishBlock {
   failedUpload,
   empty,
 
+  /// The release new pages run can't open a private drive or folder page.
+  needsRelease,
+
+  /// A private drive this session can't open: its page needs the drive key.
+  locked,
+
   /// The release could not be read, or a new snapshot was refused: the
   /// sentence says which.
   other,
@@ -126,9 +132,36 @@ class PublishState extends Equatable {
     this.namingStarted = false,
     this.how = FilePublishHow.page,
     this.filePages = FilePageAvailability.checking,
+    this.isPrivatePage = false,
+    this.password = '',
+    this.hasPassword = false,
+    this.weakPasswordAccepted = false,
     this.imageProcessing = false,
     this.checkingWallet = false,
   });
+
+  /// A private drive or folder page (publication.json version 3).
+  final bool isPrivatePage;
+
+  /// The password a private page gets with this version, if any. Empty for
+  /// none.
+  final String password;
+
+  /// Whether the published private page has a password already, which can't
+  /// be changed or removed.
+  final bool hasPassword;
+
+  /// Whether the owner confirmed they want [password] although it is weak.
+  /// Typing again asks again.
+  final bool weakPasswordAccepted;
+
+  /// A new password that can be guessed: anyone can try passwords against a
+  /// page offline, for ever, and it can never be changed.
+  bool get passwordIsWeak =>
+      isPrivatePage &&
+      !hasPassword &&
+      password.isNotEmpty &&
+      assessNewPassword(password).index < PasswordStrength.fair.index;
 
   final PublishStage stage;
 
@@ -208,7 +241,13 @@ class PublishState extends Equatable {
   /// its payment choice, and Publish is busy.
   final bool checkingWallet;
 
-  bool get titleIsValid => title.trim().isNotEmpty;
+  /// A private page may have no title: it shows "Private page".
+  bool get titleIsValid => isPrivatePage || title.trim().isNotEmpty;
+
+  /// Whether Next on the look can go on: a valid title, and a weak password
+  /// only once the owner confirmed it.
+  bool get lookIsReady =>
+      titleIsValid && (!passwordIsWeak || weakPasswordAccepted);
 
   bool get canPublish => cost != null && cost!.canPayWith(method);
 
@@ -244,6 +283,10 @@ class PublishState extends Equatable {
     bool? namingStarted,
     FilePublishHow? how,
     FilePageAvailability? filePages,
+    bool? isPrivatePage,
+    String? password,
+    bool? hasPassword,
+    bool? weakPasswordAccepted,
     bool? imageProcessing,
     bool? checkingWallet,
   }) =>
@@ -278,6 +321,10 @@ class PublishState extends Equatable {
         namingStarted: namingStarted ?? this.namingStarted,
         how: how ?? this.how,
         filePages: filePages ?? this.filePages,
+        isPrivatePage: isPrivatePage ?? this.isPrivatePage,
+        password: password ?? this.password,
+        hasPassword: hasPassword ?? this.hasPassword,
+        weakPasswordAccepted: weakPasswordAccepted ?? this.weakPasswordAccepted,
         imageProcessing: imageProcessing ?? this.imageProcessing,
         checkingWallet: checkingWallet ?? this.checkingWallet,
       );
@@ -314,6 +361,10 @@ class PublishState extends Equatable {
         namingStarted,
         how,
         filePages,
+        isPrivatePage,
+        password,
+        hasPassword,
+        weakPasswordAccepted,
         imageProcessing,
         checkingWallet,
       ];

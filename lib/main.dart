@@ -28,6 +28,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/publication/data/download_helper.dart';
@@ -562,6 +563,8 @@ class AppState extends State<App> {
             create: (context) => context.read<Database>().profileDao),
         RepositoryProvider<DriveDao>(
             create: (context) => context.read<Database>().driveDao),
+        RepositoryProvider<FileKeys>(
+            create: (context) => FileKeys(driveDao: context.read<DriveDao>())),
         RepositoryProvider(create: (_) => ArNSWalletStore()),
         RepositoryProvider(create: (_) => ArNSPendingActionStore()),
         RepositoryProvider<UserRepository>(
@@ -659,6 +662,7 @@ class AppState extends State<App> {
                     ioFileAdapter: IOFileAdapter(),
                   ),
                   driveDao: context.read<DriveDao>(),
+                  fileKeys: context.read<FileKeys>(),
                   arweaveService: context.read<ArweaveService>(),
                   arDriveAuth: context.read<ArDriveAuth>(),
                   arDriveUploader: context.read<ArDriveUploader>(),
