@@ -174,6 +174,27 @@ void main() {
       expect(find.text('tile 30'), findsOneWidget);
     });
 
+    testWidgets(
+        'the list knows its whole height before it is scrolled, so the '
+        'last tile is one jump away', (tester) async {
+      final controller = ArDriveSectionedGalleryController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(app(controller, [3, 1, 2, 1, 600]));
+      await tester.pump();
+
+      final g = controller.geometry!;
+      final last = g.lines.last;
+      final position = controller.scroll.position;
+      expect(
+        position.maxScrollExtent,
+        closeTo(last.top + last.extent - position.viewportDimension, 1),
+      );
+
+      controller.ensureVisible(g.itemCount - 1);
+      await tester.pump();
+      expect(find.text('tile ${g.itemCount - 1}'), findsOneWidget);
+    });
+
     testWidgets('the timeline is for a long folder only', (tester) async {
       tester.view.physicalSize = const Size(1000, 600);
       tester.view.devicePixelRatio = 1;

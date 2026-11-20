@@ -239,110 +239,125 @@ class _ArDriveGalleryTileState extends State<ArDriveGalleryTile> {
       );
     }
 
+    final showTrailing = widget.trailing != null &&
+        (_hovered || _focusWithin || widget.selected || widget.keepTrailing);
+
+    // The tile reads as one named photo; its menu button is a child node of
+    // it rather than hidden inside it, so a screen reader can reach it.
     return Semantics(
+      container: true,
+      explicitChildNodes: true,
       label: labels,
       image: true,
       button: activates != null,
       selected: widget.selected,
-      excludeSemantics: true,
       onTap: activates,
       child: Focus(
         canRequestFocus: false,
         skipTraversal: true,
+        includeSemantics: false,
         onFocusChange: (value) => setState(() => _focusWithin = value),
-        child: ArDriveFocusable(
-          onActivate: activates == null
-              ? null
-              : () => (widget.onOpen ?? widget.onTap)!(),
-          focusNode: widget.focusNode,
-          radius: ArDriveRadius.sm,
-          // Inside the tile: a 2 px stroke centred 1 px in.
-          inflate: -1,
-          child: MouseRegion(
-            cursor: activates != null
-                ? SystemMouseCursors.click
-                : MouseCursor.defer,
-            onEnter: (_) => setState(() => _hovered = true),
-            onExit: (_) => setState(() => _hovered = false),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (d) => _tapKind = d.kind,
-              onTapCancel: () => _tapKind = null,
-              onTap: _onTap,
-              onSecondaryTap: widget.onSecondaryTap,
-              onLongPress: widget.onLongPress,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AnimatedPadding(
-                    duration: fade,
-                    padding: EdgeInsets.all(inset),
-                    child: ClipRRect(
-                      key: const ValueKey('gallery-tile-photo'),
-                      borderRadius: BorderRadius.circular(ArDriveRadius.sm),
-                      child: photo(),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ExcludeSemantics(
+                child: ArDriveFocusable(
+                  onActivate: activates == null
+                      ? null
+                      : () => (widget.onOpen ?? widget.onTap)!(),
+                  focusNode: widget.focusNode,
+                  radius: ArDriveRadius.sm,
+                  // Inside the tile: a 2 px stroke centred 1 px in.
+                  inflate: -1,
+                  child: MouseRegion(
+                    cursor: activates != null
+                        ? SystemMouseCursors.click
+                        : MouseCursor.defer,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: (d) => _tapKind = d.kind,
+                      onTapCancel: () => _tapKind = null,
+                      onTap: _onTap,
+                      onSecondaryTap: widget.onSecondaryTap,
+                      onLongPress: widget.onLongPress,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          AnimatedPadding(
+                            duration: fade,
+                            padding: EdgeInsets.all(inset),
+                            child: ClipRRect(
+                              key: const ValueKey('gallery-tile-photo'),
+                              borderRadius:
+                                  BorderRadius.circular(ArDriveRadius.sm),
+                              child: photo(),
+                            ),
+                          ),
+                          if (widget.pending)
+                            Positioned(
+                              left: inset + ArDriveSpacing.xxs,
+                              bottom: inset + ArDriveSpacing.xxs,
+                              child: DecoratedBox(
+                                key: const ValueKey('gallery-tile-pending'),
+                                // A light disc in light, a dark one in dark: legible
+                                // over any photo, unlike a scrim under a theme icon.
+                                decoration: BoxDecoration(
+                                  color: tokens.containerL1,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.all(ArDriveSpacing.xxs),
+                                  child: ArDriveIcons.cloudSync(
+                                    size: 14,
+                                    color: tokens.iconHigh,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (widget.selected)
+                            Positioned(
+                              left: ArDriveSpacing.xxs,
+                              top: ArDriveSpacing.xxs,
+                              child: DecoratedBox(
+                                key: const ValueKey('gallery-tile-selected'),
+                                decoration: BoxDecoration(
+                                  color: tokens.buttonPrimaryDefault,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.all(ArDriveSpacing.xxs),
+                                  child: ArDriveIcons.checkmark(
+                                    size: 14,
+                                    color: tokens.textOnPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                  if (widget.pending)
-                    Positioned(
-                      left: inset + ArDriveSpacing.xxs,
-                      bottom: inset + ArDriveSpacing.xxs,
-                      child: DecoratedBox(
-                        key: const ValueKey('gallery-tile-pending'),
-                        // A light disc in light, a dark one in dark: legible
-                        // over any photo, unlike a scrim under a theme icon.
-                        decoration: BoxDecoration(
-                          color: tokens.containerL1,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(ArDriveSpacing.xxs),
-                          child: ArDriveIcons.cloudSync(
-                            size: 14,
-                            color: tokens.iconHigh,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (widget.trailing != null &&
-                      (_hovered ||
-                          _focusWithin ||
-                          widget.selected ||
-                          widget.keepTrailing))
-                    Positioned(
-                      right: inset + ArDriveSpacing.xxs,
-                      top: inset + ArDriveSpacing.xxs,
-                      child: DecoratedBox(
-                        key: const ValueKey('gallery-tile-trailing'),
-                        decoration: BoxDecoration(
-                          color: tokens.containerL1,
-                          shape: BoxShape.circle,
-                        ),
-                        child: widget.trailing!,
-                      ),
-                    ),
-                  if (widget.selected)
-                    Positioned(
-                      left: ArDriveSpacing.xxs,
-                      top: ArDriveSpacing.xxs,
-                      child: DecoratedBox(
-                        key: const ValueKey('gallery-tile-selected'),
-                        decoration: BoxDecoration(
-                          color: tokens.buttonPrimaryDefault,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(ArDriveSpacing.xxs),
-                          child: ArDriveIcons.checkmark(
-                            size: 14,
-                            color: tokens.textOnPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
-            ),
+              if (showTrailing)
+                Positioned(
+                  right: inset + ArDriveSpacing.xxs,
+                  top: inset + ArDriveSpacing.xxs,
+                  child: DecoratedBox(
+                    key: const ValueKey('gallery-tile-trailing'),
+                    decoration: BoxDecoration(
+                      color: tokens.containerL1,
+                      shape: BoxShape.circle,
+                    ),
+                    child: widget.trailing!,
+                  ),
+                ),
+            ],
           ),
         ),
       ),

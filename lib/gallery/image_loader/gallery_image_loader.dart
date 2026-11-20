@@ -277,8 +277,15 @@ class GalleryImageLoader {
     required GalleryImageFetcher fetcher,
     this.config = const GalleryLoaderConfig(),
     math.Random? random,
+
+    /// Each event ends a session: [forgetAll] runs.
+    Stream<void>? sessionEnds,
   })  : _fetcher = fetcher,
-        _random = random ?? math.Random();
+        _random = random ?? math.Random() {
+    _sessionEnds = sessionEnds?.listen((_) => forgetAll());
+  }
+
+  StreamSubscription<void>? _sessionEnds;
 
   final GalleryImageFetcher _fetcher;
   final GalleryLoaderConfig config;
@@ -288,6 +295,10 @@ class GalleryImageLoader {
   // Insertion order == recency (re-inserted on hit).
   final LinkedHashMap<String, Uint8List> _cache = LinkedHashMap();
   int _cacheSize = 0;
+
+  /// Bumped by [forgetAll]; a request started before then is not cached or
+  /// shown when it finishes.
+  int _epoch = 0;
 
   int _inFlight = 0;
   int _counter = 0;
@@ -400,8 +411,21 @@ class GalleryImageLoader {
     });
   }
 
+  /// Forgets every image and hangs up on every request: on sign-out, so
+  /// nothing decrypted in a session outlives it. A request that finishes
+  /// anyway is dropped, not cached or shown.
+  void forgetAll() {
+    _epoch++;
+    for (final e in _live) {
+      if (e.inFlight) _abort(e);
+    }
+    _cache.clear();
+    _cacheSize = 0;
+  }
+
   void dispose() {
     _disposed = true;
+    _sessionEnds?.cancel();
     _idleTimer?.cancel();
     _wakeTimer?.cancel();
     _starveTimer?.cancel();
@@ -600,6 +624,7 @@ class GalleryImageLoader {
     entry.startedAt = clock.now();
     _inFlight++;
     final cancel = entry.cancel!;
+    final epoch = _epoch;
 
     Uint8List? bytes;
     Object? error;
@@ -611,12 +636,19 @@ class GalleryImageLoader {
 
     _inFlight--;
     entry.inFlight = false;
-    final aborted = cancel.isCompleted;
+    final aborted = cancel.isCompleted || epoch != _epoch;
     entry.cancel = null;
     if (_disposed) return;
     final onScreen = entry.handles.any((h) => h._onScreen);
 
-    if (error == null && bytes != null) {
+    if (epoch != _epoch) {
+      // Signed out while it was in flight.
+      if (entry.handles.isEmpty) {
+        _dispose(entry);
+      } else {
+        entry.queued = onScreen;
+      }
+    } else if (error == null && bytes != null) {
       _onSuccess(entry);
       _cachePut(entry.key, bytes);
       if (entry.handles.isEmpty) {

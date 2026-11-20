@@ -65,7 +65,11 @@ class ArweaveGalleryImageFetcher
       );
       return response.bodyBytes;
     } catch (e) {
-      if (e is TransactionNotFoundException) throw const GalleryNotFound();
+      // The tag lookup's not-found, and the gateway waterfall's when every
+      // gateway answers 404: two unrelated types.
+      if (e is TransactionNotFoundException || e is TransactionNotFound) {
+        throw const GalleryNotFound();
+      }
       final limited = rateLimitFromError(e);
       if (limited != null) throw limited;
       rethrow;

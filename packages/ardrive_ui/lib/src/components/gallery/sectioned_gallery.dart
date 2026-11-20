@@ -380,55 +380,93 @@ class _ArDriveSectionedGalleryState extends State<ArDriveSectionedGallery> {
       final gap = phone ? galleryPhoneGap : galleryDesktopGap;
       final geometry = _layout(width, target, gap);
 
-      return ListView.builder(
+      return ListView.custom(
         controller: widget.controller.scroll,
         padding: widget.padding,
         // A little past the screen, so the next row is already built; what
         // loads is decided by the tiles, not by this.
         cacheExtent: 400,
-        itemCount: geometry.lines.length,
-        itemBuilder: (context, i) {
-          final line = geometry.lines[i];
-          final row = line.row;
-          if (row == null) {
-            final header = widget.sections[line.section].header!;
-            return SizedBox(
-              key: ValueKey(
-                  'gallery-header-${widget.sections[line.section].key}'),
-              height: line.extent,
-              child: header,
-            );
-          }
-          final g = geometry.rows[row];
-          return Padding(
-            padding: EdgeInsets.only(bottom: line.extent - g.height),
-            child: SizedBox(
-              height: g.height,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var k = 0; k < g.items.length; k++) ...[
-                    if (k > 0) SizedBox(width: line.gap),
-                    SizedBox(
-                      width: g.items[k].width,
-                      height: g.items[k].height,
-                      child: KeyedSubtree(
-                        key: widget.itemKeyOf?.call(g.items[k].index) ??
-                            ValueKey(g.items[k].index),
-                        child: widget.tileBuilder(
-                          context,
-                          g.items[k].index,
-                          Size(g.items[k].width, g.items[k].height),
+        semanticChildCount: geometry.lines.length,
+        // Every line's height is known, so a long seek lays out only where
+        // it lands. Flutter 3.19 can ask past the last line while it finds
+        // the line at an offset beyond the end; any extent there ends its
+        // search.
+        itemExtentBuilder: (i, _) => i < geometry.lines.length
+            ? geometry.lines[i].extent
+            : double.infinity,
+        childrenDelegate: _GalleryLinesDelegate(
+          childCount: geometry.lines.length,
+          extent: geometry.lines.isEmpty
+              ? 0
+              : geometry.lines.last.top +
+                  geometry.lines.last.extent -
+                  geometry.lines.first.top,
+          builder: (context, i) {
+            final line = geometry.lines[i];
+            final row = line.row;
+            if (row == null) {
+              final header = widget.sections[line.section].header!;
+              return SizedBox(
+                key: ValueKey(
+                    'gallery-header-${widget.sections[line.section].key}'),
+                height: line.extent,
+                child: header,
+              );
+            }
+            final g = geometry.rows[row];
+            return Padding(
+              padding: EdgeInsets.only(bottom: line.extent - g.height),
+              child: SizedBox(
+                height: g.height,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var k = 0; k < g.items.length; k++) ...[
+                      if (k > 0) SizedBox(width: line.gap),
+                      SizedBox(
+                        width: g.items[k].width,
+                        height: g.items[k].height,
+                        child: KeyedSubtree(
+                          key: widget.itemKeyOf?.call(g.items[k].index) ??
+                              ValueKey(g.items[k].index),
+                          child: widget.tileBuilder(
+                            context,
+                            g.items[k].index,
+                            Size(g.items[k].width, g.items[k].height),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       );
     });
   }
+}
+
+/// The gallery's lines, with their total height: Flutter 3.19's list
+/// otherwise estimates it from the lines built so far, even when every
+/// line's height is given, and a jump far down stops short of where it was
+/// sent.
+class _GalleryLinesDelegate extends SliverChildBuilderDelegate {
+  _GalleryLinesDelegate({
+    required NullableIndexedWidgetBuilder builder,
+    required int childCount,
+    required this.extent,
+  }) : super(builder, childCount: childCount);
+
+  final double extent;
+
+  @override
+  double? estimateMaxScrollOffset(
+    int firstIndex,
+    int lastIndex,
+    double leadingScrollOffset,
+    double trailingScrollOffset,
+  ) =>
+      extent;
 }

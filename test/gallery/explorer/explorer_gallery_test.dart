@@ -665,6 +665,20 @@ void main() {
       expect(lastChosen(), ['d']);
     });
 
+    testWidgets(
+        'a single selected photo is not ticked into its month, so the '
+        'control does what it shows', (tester) async {
+      final handle = tester.ensureSemantics();
+      // September holds Snow.jpg alone.
+      await pump(tester, app([a, b, c, d], selected: d),
+          size: const Size(390, 800));
+      final node = tester.getSemantics(control().last);
+      expect(node.hasFlag(SemanticsFlag.isChecked), isFalse);
+      await tester.tap(control().last);
+      expect(lastChosen(), ['d']);
+      handle.dispose();
+    });
+
     testWidgets('a sync holding multi-select shut leaves no control',
         (tester) async {
       await pump(tester, app(all, lock: true), size: const Size(390, 800));

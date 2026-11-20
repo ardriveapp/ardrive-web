@@ -1,9 +1,57 @@
 import 'package:ardrive/download/download_exceptions.dart';
+import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/gallery/data/arweave_gallery_image_fetcher.dart';
+import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
+import 'package:ardrive/gallery/image_loader/gallery_variant_picker.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockArweaveService extends Mock implements ArweaveService {}
+
+class _MockFallback extends Mock implements DataGatewayFallback {}
+
+class _MockClient extends Mock implements Arweave {}
+
+class _MockDriveDao extends Mock implements DriveDao {}
+
+class _MockThumbnails extends Mock implements ThumbnailRepository {}
 
 void main() {
+  group('fetch', () {
+    test('a public file no gateway has fails as not found, not as a retry',
+        () async {
+      final arweave = _MockArweaveService();
+      final fallback = _MockFallback();
+      final client = _MockClient();
+      when(() => arweave.gatewayFallback).thenReturn(fallback);
+      when(() => arweave.client).thenReturn(client);
+      when(() => fallback.fetchData('tx', client,
+              cancelWhen: any(named: 'cancelWhen')))
+          .thenThrow(TransactionNotFound('tx'));
+      final fetcher = ArweaveGalleryImageFetcher(
+        arweave: arweave,
+        driveDao: _MockDriveDao(),
+        thumbnailRepository: _MockThumbnails(),
+      );
+      await expectLater(
+        fetcher.fetch(
+          const GalleryFetchTarget(
+            fileId: 'f',
+            variant: GalleryVariant(txId: 'tx', size: 10, width: 1, height: 1),
+            isPrivate: false,
+            isOriginal: false,
+          ),
+          cancelWhen: Future<void>.delayed(const Duration(days: 1)),
+        ),
+        throwsA(isA<GalleryNotFound>()),
+      );
+    });
+  });
+
   group('rateLimitFromError', () {
     test('GatewayRateLimited maps with its Retry-After', () {
       final e = rateLimitFromError(

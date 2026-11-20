@@ -105,10 +105,13 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
-    // The store keeps the first preferences it was given; empty them.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    await LocalKeyValueStore.getInstance(prefs: prefs);
+    // The store keeps the first preferences it was ever given, which may be
+    // another test's; empty that one, through the store.
+    final store = await LocalKeyValueStore.getInstance(
+        prefs: await SharedPreferences.getInstance());
+    for (final key in store.getKeys().toList()) {
+      await store.remove(key);
+    }
 
     db = getTestDb();
     driveDao = db.driveDao;

@@ -364,6 +364,61 @@ void main() {
     });
   });
 
+  group('when a session ends', () {
+    test('every cached image is forgotten', () {
+      run((async) {
+        final h = show('a', priv: true);
+        async.flushMicrotasks();
+        fetcher.succeed('a');
+        async.flushMicrotasks();
+        h.release();
+        expect(loader.isCached('a', 'tx-a'), isTrue);
+
+        loader.forgetAll();
+        expect(loader.isCached('a', 'tx-a'), isFalse);
+      });
+    });
+
+    test('a request that finishes after it is neither cached nor shown', () {
+      run((async) {
+        final h = show('a', priv: true);
+        async.flushMicrotasks();
+        expect(fetcher.calls.length, 1);
+
+        final first = fetcher.calls.single;
+        loader.forgetAll();
+        // The bytes arrive before the hang-up is noticed.
+        first.completer.complete(Uint8List(100));
+        async.flushMicrotasks();
+        expect(first.aborted, isTrue);
+        expect(loader.isCached('a', 'tx-a'), isFalse);
+        expect(h.value.status, isNot(GalleryImageStatus.loaded));
+      });
+    });
+
+    test('the session-ends stream forgets everything', () {
+      fakeAsync((async) {
+        final ends = StreamController<void>.broadcast();
+        final f = FakeFetcher();
+        final l = GalleryImageLoader(
+            fetcher: f, config: config, sessionEnds: ends.stream);
+        final h = l.acquire(req('a', isPrivate: true));
+        h.updatePosition(onScreen: true, priority: 0);
+        async.flushMicrotasks();
+        f.succeed('a');
+        async.flushMicrotasks();
+        h.release();
+        expect(l.isCached('a', 'tx-a'), isTrue);
+
+        ends.add(null);
+        async.flushMicrotasks();
+        expect(l.isCached('a', 'tx-a'), isFalse);
+        l.dispose();
+        ends.close();
+      });
+    });
+  });
+
   test('two tiles for one image share a single fetch', () {
     run((async) {
       show('a');

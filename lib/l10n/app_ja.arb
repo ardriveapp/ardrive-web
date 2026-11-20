@@ -8533,7 +8533,7 @@
   "explorerViewGallery": "ギャラリー",
   "galleryItemCount": "{count, plural, other{{count} 件}}",
   "galleryCouldNotLoad": "読み込めませんでした",
-  "galleryUploadPending": "アップロード待ち",
+  "galleryUploadPending": "アップロード確認待ち",
   "galleryTimeline": "タイムライン",
   "gallerySelectMonth": "{month}を選択"
 }

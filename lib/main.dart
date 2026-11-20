@@ -675,6 +675,12 @@ class AppState extends State<App> {
                     ),
                     config: GalleryLoaderConfig.fromAppConfig(
                         context.read<ConfigService>().config),
+                    // Decrypted images go with the session that decrypted
+                    // them.
+                    sessionEnds: context
+                        .read<ArDriveAuth>()
+                        .onAuthStateChanged()
+                        .where((user) => user == null),
                   ),
                   child: RepositoryProvider(
                     create: (context) =>

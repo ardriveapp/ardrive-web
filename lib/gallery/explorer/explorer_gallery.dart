@@ -201,6 +201,11 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
         ));
   }
 
+  int _chosenIn(GalleryMonth month) {
+    final chosen = {for (final e in widget.multiSelected) e.id};
+    return month.items.where((e) => chosen.contains(e.id)).length;
+  }
+
   void _selectForMenu(ArDriveDataTableItem item) {
     if (_isSelected(item)) return;
     _click(item, GalleryClickKind.plain);
@@ -299,7 +304,9 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
           title: title,
           count: l10n.galleryItemCount(month.items.length),
           selectLabel: l10n.gallerySelectMonth(title),
-          chosen: month.items.where(_isSelected).length,
+          // The multi-selection only, as the control acts on it: a single
+          // selected photo is not ticked into its month.
+          chosen: _chosenIn(month),
           total: month.items.length,
           alwaysShowControl: phone,
           onToggle: widget.lockMultiSelect ? null : () => _toggleMonth(month),
@@ -419,11 +426,15 @@ class _MonthHeaderState extends State<_MonthHeader> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  widget.title,
-                  style: typography.paragraphLarge(
-                    color: tokens.textHigh,
-                    fontWeight: ArFontWeight.bold,
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.paragraphLarge(
+                      color: tokens.textHigh,
+                      fontWeight: ArFontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: ArDriveSpacing.sm),

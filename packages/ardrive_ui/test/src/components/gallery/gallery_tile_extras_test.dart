@@ -30,6 +30,33 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets(
+        'a selected tile\'s menu is a node of its own, which a screen reader '
+        'can reach and press', (tester) async {
+      final handle = tester.ensureSemantics();
+      var menus = 0;
+      await tester.pumpWidget(wrap(ArDriveGalleryTile(
+        name: 'Pier.jpg',
+        typeLabel: 'JPEG image',
+        selected: true,
+        onTap: () {},
+        trailing: Semantics(
+          button: true,
+          label: 'More actions',
+          onTap: () => menus++,
+          child: const SizedBox(width: 24, height: 24),
+        ),
+      )));
+      final tile = tester.getSemantics(find.byType(ArDriveGalleryTile));
+      expect(tile.label, 'Pier.jpg, JPEG image');
+      final menu = tester.getSemantics(find.bySemanticsLabel('More actions'));
+      expect(identical(menu, tile), isFalse);
+      expect(menu.hasFlag(SemanticsFlag.isButton), isTrue);
+      tester.semantics.tap(find.semantics.byLabel('More actions'));
+      expect(menus, 1);
+      handle.dispose();
+    });
+
     testWidgets('content replaces the photo and keeps the tile\'s behaviour',
         (tester) async {
       var taps = 0;
