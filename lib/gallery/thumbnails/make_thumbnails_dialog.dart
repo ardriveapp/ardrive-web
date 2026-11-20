@@ -97,7 +97,8 @@ class MakeThumbnailsDialog extends StatelessWidget {
               title: l10n.makeThumbnails,
               content: const SizedBox(
                 height: 48,
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                    child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
               ),
               actions: [
                 ModalAction.close(action: close, title: l10n.cancel),
@@ -151,10 +152,9 @@ class MakeThumbnailsDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: ArDriveSpacing.sm),
-                  ArDriveProgressBar(
-                    percentage:
-                        (state.made + state.failed + state.nothingToAdd) /
-                            total,
+                  ArDriveLinearProgress(
+                    value: (state.made + state.failed + state.nothingToAdd) /
+                        total,
                   ),
                   const SizedBox(height: ArDriveSpacing.sm),
                   say(l10n.makeThumbnailsProgressNote),
