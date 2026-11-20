@@ -282,6 +282,28 @@ void main() {
     });
   });
 
+  test(
+      'a tile that keeps being limited does not take every recovery slot from '
+      'the next one', () {
+    run((async) {
+      show('a', priority: 0);
+      show('b', priority: 10);
+      async.elapse(const Duration(seconds: 1));
+      // Two slots: both start; only a is limited.
+      expect(fetcher.started, ['a', 'b']);
+      fetcher.succeed('b');
+      fetcher.fail(
+          'a', const GalleryRateLimited(retryAfter: Duration(seconds: 1)));
+      async.flushMicrotasks();
+      show('c', priority: 20);
+      async.elapse(const Duration(seconds: 2));
+      // After the pause the one slot goes to c, which has not been limited,
+      // though a is nearer.
+      expect(fetcher.started.length, 3);
+      expect(fetcher.started.last, 'c');
+    });
+  });
+
   test('without Retry-After the pause backs off exponentially and is capped',
       () {
     run((async) {
@@ -341,7 +363,8 @@ void main() {
       async.elapse(const Duration(seconds: 30));
       expect(fetcher.calls.length, 1);
       expect(h.value.status, GalleryImageStatus.failed);
-      expect(h.value.failure, GalleryFailureReason.fetchFailed);
+      // Not the reason a tile retries on when it scrolls back in.
+      expect(h.value.failure, GalleryFailureReason.notFound);
     });
   });
 
@@ -394,6 +417,15 @@ void main() {
         expect(loader.isCached('a', 'tx-a'), isFalse);
         expect(h.value.status, isNot(GalleryImageStatus.loaded));
       });
+    });
+
+    test('decoded copies held elsewhere are let go too', () {
+      var forgotten = 0;
+      final l = GalleryImageLoader(
+          fetcher: FakeFetcher(), config: config, onForget: () => forgotten++);
+      l.forgetAll();
+      expect(forgotten, 1);
+      l.dispose();
     });
 
     test('the session-ends stream forgets everything', () {

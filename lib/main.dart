@@ -681,6 +681,11 @@ class AppState extends State<App> {
                         .read<ArDriveAuth>()
                         .onAuthStateChanged()
                         .where((user) => user == null),
+                    // Tiles decode through Flutter's image cache, which
+                    // keeps the decoded photos too.
+                    onForget: () => PaintingBinding.instance.imageCache
+                      ..clear()
+                      ..clearLiveImages(),
                   ),
                   child: RepositoryProvider(
                     create: (context) =>

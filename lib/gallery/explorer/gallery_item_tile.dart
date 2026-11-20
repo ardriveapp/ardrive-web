@@ -122,6 +122,7 @@ class _GalleryItemTileState extends State<GalleryItemTile> {
   GalleryImageHandle? _handle;
   String? _handleKey;
   bool _onScreen = false;
+  bool _reportScheduled = false;
   ScrollPosition? _position;
   double _dpr = 1;
 
@@ -144,6 +145,15 @@ class _GalleryItemTileState extends State<GalleryItemTile> {
   void didUpdateWidget(GalleryItemTile old) {
     super.didUpdateWidget(old);
     _acquire();
+    // The list rebuilds its tiles when its size changes, which moves no
+    // scroll position: a taller window brings tiles into view all the same.
+    if (!_reportScheduled) {
+      _reportScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _reportScheduled = false;
+        _report();
+      });
+    }
   }
 
   @override

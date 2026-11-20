@@ -164,7 +164,14 @@ class GalleryImageRequest {
 
 enum GalleryImageStatus { loading, loaded, failed }
 
-enum GalleryFailureReason { noSource, fetchFailed }
+enum GalleryFailureReason {
+  noSource,
+  fetchFailed,
+
+  /// The gateways answered that the data is not there: not tried again when
+  /// the tile scrolls back in, unlike [fetchFailed].
+  notFound,
+}
 
 @immutable
 class GalleryImageState {
@@ -260,6 +267,10 @@ class _Entry {
   bool inFlight = false;
   bool queued = false;
   bool prepared = false;
+
+  /// Rate limits this entry has met. A tile that keeps meeting them goes
+  /// behind those that have not, so it cannot take every recovery attempt.
+  int limits = 0;
   Completer<void>? cancel;
   DateTime? startedAt;
 }
@@ -280,12 +291,18 @@ class GalleryImageLoader {
 
     /// Each event ends a session: [forgetAll] runs.
     Stream<void>? sessionEnds,
+
+    /// Run by [forgetAll], for what holds decoded copies of the images
+    /// outside the loader: in the app, Flutter's image cache.
+    void Function()? onForget,
   })  : _fetcher = fetcher,
+        _onForget = onForget,
         _random = random ?? math.Random() {
     _sessionEnds = sessionEnds?.listen((_) => forgetAll());
   }
 
   StreamSubscription<void>? _sessionEnds;
+  final void Function()? _onForget;
 
   final GalleryImageFetcher _fetcher;
   final GalleryLoaderConfig config;
@@ -421,6 +438,7 @@ class GalleryImageLoader {
     }
     _cache.clear();
     _cacheSize = 0;
+    _onForget?.call();
   }
 
   void dispose() {
@@ -606,6 +624,7 @@ class GalleryImageLoader {
   bool _before(_Entry a, _Entry b) {
     final pa = a.handles.where((h) => h._onScreen).map((h) => h._priority);
     final pb = b.handles.where((h) => h._onScreen).map((h) => h._priority);
+    if (a.limits != b.limits) return a.limits < b.limits;
     final va = pa.isEmpty ? double.infinity : pa.reduce(math.min);
     final vb = pb.isEmpty ? double.infinity : pb.reduce(math.min);
     if (va != vb) return va < vb;
@@ -668,11 +687,12 @@ class GalleryImageLoader {
       entry.queued = onScreen;
     } else if (error is GalleryRateLimited) {
       _backoff(error, entry);
+      entry.limits++;
       entry.queued = onScreen;
     } else if (error is GalleryNotFound) {
       // An answer, not a hiccup: fail once, no automatic retry.
       entry.notifier.value =
-          const GalleryImageState.failed(GalleryFailureReason.fetchFailed);
+          const GalleryImageState.failed(GalleryFailureReason.notFound);
     } else {
       entry.attempts++;
       if (entry.attempts > config.maxRetries) {

@@ -287,6 +287,50 @@ void main() {
     });
   });
 
+  group('the loader, when the gallery grows', () {
+    testWidgets(
+        'tiles that come into view without a scroll load too, as when a '
+        'notice above the gallery goes away', (tester) async {
+      final many = [
+        for (var i = 0; i < 150; i++)
+          fileItem('f$i', name: 'p$i.jpg', created: oct, variants: wide('f$i')),
+      ];
+      final height = ValueNotifier<double>(400);
+      addTearDown(height.dispose);
+      await pump(
+        tester,
+        Align(
+          alignment: Alignment.topLeft,
+          child: ValueListenableBuilder<double>(
+            valueListenable: height,
+            builder: (_, h, child) => SizedBox(height: h, child: child),
+            child: app(many),
+          ),
+        ),
+      );
+      Future<void> settle() async {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.pump();
+      }
+
+      await settle();
+      final before = fetcher.fetched.toSet();
+      expect(before, isNotEmpty);
+
+      height.value = 800;
+      await tester.pump();
+      await tester.pump();
+      await settle();
+      final later = fetcher.fetched.toSet().difference(before);
+      expect(later, isNotEmpty);
+      for (final txId in later) {
+        final name = 'p${txId.substring('thumb-f'.length)}.jpg';
+        expect(tester.getRect(tileOf(name)).top, lessThan(800));
+      }
+    });
+  });
+
   group('the row model', () {
     testWidgets('a click selects and does not open', (tester) async {
       await pump(tester, app(all));
