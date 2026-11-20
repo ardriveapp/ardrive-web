@@ -46,6 +46,7 @@ Future<ThumbnailGenerationResult?> _generateLarge(
     minHeight: target.height,
     quality: 85,
   );
+  // Decoded only for its size; the compressor's JPEG is used as it is.
   final large = img.decodeImage(result)!;
   if (!isWorthALargeThumbnail(
     largeWidth: large.width,
@@ -55,10 +56,11 @@ Future<ThumbnailGenerationResult?> _generateLarge(
   )) {
     return null;
   }
-  final encoded = img.encodeJpg(large, quality: 85);
+  // Not worth storing a thumbnail as big as the image it stands for.
+  if (result.length >= data.length) return null;
   return ThumbnailGenerationResult(
-    thumbnail: encoded,
-    size: encoded.length,
+    thumbnail: result,
+    size: result.length,
     height: large.height,
     width: large.width,
     name: ThumbnailSize.large.name,

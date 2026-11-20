@@ -816,6 +816,7 @@ Future<UploadFilePreparation> prepareDataItems({
   );
 
   final thumbnails = <PreparedThumbnail>[];
+  metadata.clearThumbnailInfo();
 
   /// Thumbnail generation: the small one first, then the large one the
   /// gallery shows, in the order the metadata lists them.
