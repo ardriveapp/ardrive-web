@@ -177,9 +177,9 @@ class _GalleryItemTileState extends State<GalleryItemTile> {
         fileId: item.fileId,
         isPrivate: isPrivate,
         variants: galleryVariantsOf(item),
-        // The original is only ever a stand-in for a missing thumbnail on a
-        // public file; its dimensions are not known here.
-        original: isPrivate || (item.size ?? 0) <= 0
+        // The original is only ever a stand-in for a missing (or, on a public
+        // file, too small) thumbnail; its dimensions are not known here.
+        original: (item.size ?? 0) <= 0
             ? null
             : GalleryVariant(
                 txId: item.dataTxId,

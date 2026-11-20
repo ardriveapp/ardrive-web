@@ -93,6 +93,16 @@ class ThumbnailRepository {
     );
   }
 
+  /// Starts reading the cipher tags of these private thumbnail variants in
+  /// one batched query, so the downloads that follow find them ready. Does not
+  /// wait and never throws: a failure here is met again, and reported, by the
+  /// download itself.
+  void prefetchPrivateVariantTags(Iterable<String> txIds) {
+    for (final txId in txIds) {
+      _tagBatcher.tagsFor(txId).ignore();
+    }
+  }
+
   /// Downloads and decrypts one thumbnail variant of a private file. Thumbnails
   /// are always for private files - need cipher/IV from the variant's tx. Used
   /// by [getThumbnail] and by the gallery image loader.

@@ -14,7 +14,8 @@ import 'package:ardrive/services/arweave/transaction_tag_batcher.dart';
 /// the same download-and-decrypt path the list view's thumbnails use. Public
 /// files are read through the data gateway waterfall, which supports aborting
 /// via `cancelWhen`.
-class ArweaveGalleryImageFetcher implements GalleryImageFetcher {
+class ArweaveGalleryImageFetcher
+    implements GalleryImageFetcher, GalleryFetchPreparer {
   ArweaveGalleryImageFetcher({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -27,6 +28,14 @@ class ArweaveGalleryImageFetcher implements GalleryImageFetcher {
   final DriveDao _driveDao;
   final ThumbnailRepository _thumbnails;
 
+  /// Reads the cipher tags of every private tile on screen in one query.
+  @override
+  void prepare(List<GalleryFetchTarget> targets) {
+    _thumbnails.prefetchPrivateVariantTags(
+      targets.where((t) => t.isPrivate).map((t) => t.variant.txId),
+    );
+  }
+
   @override
   Future<Uint8List> fetch(
     GalleryFetchTarget target, {
@@ -34,8 +43,8 @@ class ArweaveGalleryImageFetcher implements GalleryImageFetcher {
   }) async {
     try {
       if (target.isPrivate) {
-        // Private originals are never loaded in the grid, so this is always a
-        // thumbnail variant.
+        // A thumbnail variant, or the original standing in for a file with
+        // no thumbnails; both are decrypted with the file's key.
         final file = await (_driveDao.select(_driveDao.fileEntries)
               ..where((t) => t.id.equals(target.fileId)))
             .getSingle();

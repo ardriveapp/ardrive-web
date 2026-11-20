@@ -68,9 +68,21 @@ void main() {
       expect(pick(variants: [small], orig: original, onScreen: false), 'small');
     });
 
-    test('private drives never use the original', () {
+    test('a private file uses its original only when it has no thumbnail', () {
+      // A small thumbnail is good enough: the original would also need
+      // decrypting.
       expect(pick(variants: [small], orig: original, isPrivate: true), 'small');
-      expect(pick(variants: [], orig: original, isPrivate: true), isNull);
+      expect(pick(variants: [], orig: original, isPrivate: true), 'orig');
+    });
+
+    test('a private original keeps the size limit, screen and rest rules', () {
+      final big = v('big', 4000, 3000, 2 * 1024 * 1024 + 1);
+      expect(pick(variants: [], orig: big, isPrivate: true), isNull);
+      expect(pick(variants: [], orig: original, isPrivate: true, idle: false),
+          isNull);
+      expect(
+          pick(variants: [], orig: original, isPrivate: true, onScreen: false),
+          isNull);
     });
 
     test('an original of unknown (0) size is never eligible', () {

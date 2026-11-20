@@ -39,6 +39,15 @@ abstract class GalleryImageFetcher {
   });
 }
 
+/// A fetcher that can do cheap shared work for many tiles at once before any
+/// of them takes a download slot. The loader calls [prepare] once per screenful
+/// at rest, with every on-screen tile not yet prepared, so (for private files)
+/// their cipher tags are read with one query instead of one per slot.
+abstract class GalleryFetchPreparer {
+  /// Must not throw, and must not wait for the work it starts.
+  void prepare(List<GalleryFetchTarget> targets);
+}
+
 /// The gateway said slow down (429 or 503).
 class GalleryRateLimited implements Exception {
   const GalleryRateLimited({this.retryAfter});
@@ -250,6 +259,7 @@ class _Entry {
   DateTime? notBefore;
   bool inFlight = false;
   bool queued = false;
+  bool prepared = false;
   Completer<void>? cancel;
   DateTime? startedAt;
 }
@@ -297,6 +307,7 @@ class GalleryImageLoader {
   final Set<_Entry> _live = {};
   bool _disposed = false;
   late double _tokens = config.burst.toDouble();
+  bool _prepareScheduled = false;
   DateTime? _tokensAt;
 
   /// Requests currently being fetched. For tests and diagnostics.
@@ -490,6 +501,8 @@ class GalleryImageLoader {
     // that the screen would stay blank.
     if (!_idle && !_starving) return;
 
+    _schedulePrepare();
+
     Duration? wait;
     while (_inFlight < _effectiveCap) {
       _Entry? best;
@@ -513,6 +526,38 @@ class GalleryImageLoader {
       _start(best);
     }
     if (wait != null) _wakeAfter(wait);
+  }
+
+  /// Tiles report their positions one by one as a frame lays out; waiting a
+  /// microtask lets the whole screenful arrive before it is handed over.
+  void _schedulePrepare() {
+    if (_prepareScheduled || _fetcher is! GalleryFetchPreparer) return;
+    _prepareScheduled = true;
+    scheduleMicrotask(() {
+      _prepareScheduled = false;
+      if (_disposed || (!_idle && !_starving)) return;
+      _prepareOnScreen(clock.now());
+    });
+  }
+
+  /// Hands every on-screen tile that will start soon, and has not been
+  /// handed over yet, to the fetcher's [GalleryFetchPreparer.prepare] in one
+  /// call.
+  void _prepareOnScreen(DateTime now) {
+    final Object fetcher = _fetcher;
+    if (fetcher is! GalleryFetchPreparer) return;
+    final targets = <GalleryFetchTarget>[];
+    for (final e in _entries.values) {
+      final target = e.target;
+      // Started ones count too: their download is still waiting on the tags.
+      if (target == null || e.prepared || !(e.queued || e.inFlight)) continue;
+      if (!e.handles.any((h) => h._onScreen)) continue;
+      final nb = e.notBefore;
+      if (nb != null && now.isBefore(nb)) continue;
+      e.prepared = true;
+      targets.add(target);
+    }
+    if (targets.isNotEmpty) fetcher.prepare(targets);
   }
 
   /// Takes a token and returns null, or returns how long until one is there.

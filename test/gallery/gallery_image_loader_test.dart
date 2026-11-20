@@ -47,6 +47,14 @@ class FakeFetcher implements GalleryImageFetcher {
   void fail(String fileId, Object e) => call(fileId).completer.completeError(e);
 }
 
+class PreparingFetcher extends FakeFetcher implements GalleryFetchPreparer {
+  final List<List<String>> prepared = [];
+
+  @override
+  void prepare(List<GalleryFetchTarget> targets) =>
+      prepared.add(targets.map((t) => t.fileId).toList());
+}
+
 GalleryImageRequest req(
   String id, {
   bool isPrivate = false,
@@ -108,6 +116,72 @@ void main() {
       }
       expect(fetcher.calls.length, 6);
       expect(fetcher.maxInFlight, 2);
+    });
+  });
+
+  group('preparing a screenful', () {
+    late PreparingFetcher preparing;
+
+    void runPreparing(void Function(FakeAsync async) body) {
+      fakeAsync((async) {
+        preparing = PreparingFetcher();
+        fetcher = preparing;
+        loader = GalleryImageLoader(fetcher: preparing, config: config);
+        body(async);
+        loader.dispose();
+      });
+    }
+
+    test('every on-screen tile is handed over at once, beyond the slots', () {
+      runPreparing((async) {
+        for (var i = 0; i < 8; i++) {
+          show('p$i', priority: i.toDouble(), priv: true);
+        }
+        async.flushMicrotasks();
+        // Two download slots, but all eight are prepared in one call.
+        expect(preparing.inFlight, 2);
+        expect(preparing.prepared, [
+          ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'],
+        ]);
+
+        // Finishing downloads does not hand the same tiles over again.
+        for (var i = 0; i < 8; i++) {
+          preparing.calls
+              .firstWhere((c) => !c.completer.isCompleted)
+              .completer
+              .complete(Uint8List(10));
+          async.flushMicrotasks();
+        }
+        expect(preparing.prepared, hasLength(1));
+      });
+    });
+
+    test('nothing is prepared while scrolling; the next screen is one call',
+        () {
+      runPreparing((async) {
+        loader.notifyScrolling();
+        for (var i = 0; i < 4; i++) {
+          show('s$i', priority: i.toDouble(), priv: true);
+        }
+        async.elapse(const Duration(milliseconds: 50));
+        expect(preparing.prepared, isEmpty);
+        async.elapse(const Duration(milliseconds: 200));
+        expect(preparing.prepared, [
+          ['s0', 's1', 's2', 's3'],
+        ]);
+      });
+    });
+
+    test('off-screen tiles are not prepared', () {
+      runPreparing((async) {
+        final h = loader.acquire(req('off', isPrivate: true));
+        h.updatePosition(onScreen: false);
+        show('on', priv: true);
+        async.flushMicrotasks();
+        expect(preparing.prepared, [
+          ['on'],
+        ]);
+      });
     });
   });
 

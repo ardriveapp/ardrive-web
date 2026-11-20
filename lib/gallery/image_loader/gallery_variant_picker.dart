@@ -49,10 +49,11 @@ const int galleryMaxOriginalBytes = 2 * 1024 * 1024;
 ///
 /// - The smallest variant (by pixel area) that covers the tile in both
 ///   dimensions; if none does, the largest variant.
-/// - The original only when [isPrivate] is false, it is at most
-///   [maxOriginalBytes], the tile is [onScreen] and the loader is [idle], and
-///   no variant covers the tile (no thumbnails at all, or only small ones).
-///   Private drives never load originals in the grid.
+/// - The original only when it is at most [maxOriginalBytes], the tile is
+///   [onScreen] and the loader is [idle], and no variant covers the tile. For
+///   a public file that is no thumbnails at all, or only small ones; for a
+///   private file ([isPrivate]) only no thumbnails at all, since its original
+///   also has to be decrypted and a small thumbnail is good enough.
 /// - An original with a size of 0 or less (unknown) is never eligible, and
 ///   variants with unknown (0) dimensions never cover and rank last.
 /// - null when there is nothing eligible to load.
@@ -79,7 +80,7 @@ GalleryVariantChoice? chooseGalleryVariant({
     return GalleryVariantChoice(covering, isOriginal: false);
   }
 
-  final originalAllowed = !isPrivate &&
+  final originalAllowed = (!isPrivate || variants.isEmpty) &&
       original != null &&
       original.size > 0 &&
       original.size <= maxOriginalBytes &&
