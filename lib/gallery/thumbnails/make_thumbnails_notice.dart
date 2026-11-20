@@ -113,8 +113,10 @@ class _MakeThumbnailsNoticeState extends State<MakeThumbnailsNotice> {
     final count = imagesNeedingThumbnails(widget.items);
     if (!owner || count == 0) return const SizedBox.shrink();
     final l10n = appLocalizationsOf(context);
+    // In line with the tiles: the gallery's own gutter on a phone.
+    final side = galleryScreenIsPhone(context) ? galleryPhoneGutter : 0.0;
     return Padding(
-      padding: const EdgeInsets.only(bottom: ArDriveSpacing.sm),
+      padding: EdgeInsets.fromLTRB(side, 0, side, ArDriveSpacing.sm),
       child: ArDriveNotice(
         key: const ValueKey('make-thumbnails-notice'),
         type: ArDriveNoticeType.info,
@@ -124,7 +126,10 @@ class _MakeThumbnailsNoticeState extends State<MakeThumbnailsNotice> {
           context,
           drive: widget.drive,
           folderId: widget.folder.id,
-          folderName: widget.folder.name,
+          // A drive's root folder goes by the drive's name.
+          folderName: widget.folder.id == widget.drive.rootFolderId
+              ? widget.drive.name
+              : widget.folder.name,
         ),
         dismissLabel: l10n.makeThumbnailsNotNow,
         onDismiss: _dismiss,
