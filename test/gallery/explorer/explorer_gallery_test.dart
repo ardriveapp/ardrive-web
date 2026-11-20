@@ -235,6 +235,16 @@ void main() {
     expect(height, lessThan(galleryDesktopRowHeight));
   });
 
+  testWidgets('on a phone two folders share a row, each about 48 px tall',
+      (tester) async {
+    final more = folderItem('more', name: 'More trips');
+    await pump(tester, app([trips, more, a]), size: const Size(390, 800));
+    final one = tester.getRect(tileOf('Trips'));
+    final two = tester.getRect(tileOf('More trips'));
+    expect(one.top, two.top);
+    expect(one.height, closeTo(48, 3));
+  });
+
   group('the loader', () {
     testWidgets('fetches only what is on screen', (tester) async {
       final many = [

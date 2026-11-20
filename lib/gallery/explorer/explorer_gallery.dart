@@ -330,7 +330,9 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
               ),
               layoutRevision: Object.hashAll(_flat.map((e) => e.id)),
               aspectRatioOf: (i) => i < folderCount
-                  ? galleryFolderAspectRatio
+                  ? (phone
+                      ? galleryFolderAspectRatioPhone
+                      : galleryFolderAspectRatio)
                   : galleryAspectRatioOf(_flat[i]),
               itemKeyOf: (i) => ValueKey(_flat[i].id),
               tileBuilder: (context, i, size) {

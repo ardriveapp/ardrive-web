@@ -15,6 +15,11 @@ import 'package:flutter/services.dart';
 /// tile, so the photos below still lead.
 const double galleryFolderAspectRatio = 3.4;
 
+/// The folder tile's aspect ratio on a phone, where two folders share a row
+/// and the row is stretched to the screen's width: wider, so the tile lands
+/// near 48 px tall on common phones, like a folder chip in other drives.
+const double galleryFolderAspectRatioPhone = 3.8;
+
 /// The height of a folder tile's row.
 const double galleryFolderRowHeight = 56;
 
