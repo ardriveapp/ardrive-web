@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/authentication/password/new_password.dart'
+    show PasswordStrength, assessNewPassword;
+import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
@@ -22,7 +25,8 @@ import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
     show ArtifactScope;
 import 'package:ardrive/publication/domain/private_page.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
-import 'package:ardrive/publication/domain/sealed/seal_codec.dart' show b64u;
+import 'package:ardrive/publication/domain/sealed/seal_codec.dart'
+    show SealError, b64u;
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
@@ -653,17 +657,17 @@ class PublishCubit extends Cubit<PublishState> {
   Uint8List? _publicationKey;
 
   /// An update's slots, carried forward as they were.
-  List<Map<String, Object>>? _previousSlots;
+  List<Map<String, Object?>>? _previousSlots;
 
-  /// The catalog, its key and the files' keys, made once per dialog: the
-  /// look doesn't change them.
+  /// The catalog, its key and the files' keys, made again each time the page
+  /// is priced, so a publish carries what the drive holds then.
   PreparedDriveStateArtifact? _catalog;
   Uint8List? _catalogKey;
   Map<String, String>? _fileKeysOfCatalog;
 
   /// The slots for the password they were made with: a password slot runs
   /// Argon2id, which takes a second, so it is made once per password.
-  (String, List<Map<String, Object>>)? _slots;
+  (String, List<Map<String, Object?>>)? _slots;
 
   /// What stops a private drive or folder page: a release that can't open
   /// one, or a drive this session can't open.
@@ -671,8 +675,14 @@ class PublishCubit extends Cubit<PublishState> {
     if (!_release!.opensPrivatePages) return (PublishBlock.needsRelease, '');
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return (PublishBlock.locked, '');
-    final key =
-        await _deps.driveDao.getDriveKey(drive.id, profile.user.cipherKey);
+    final DriveKey? key;
+    try {
+      key = await _deps.driveDao.getDriveKey(drive.id, profile.user.cipherKey);
+    } catch (e) {
+      // A stored key this profile can't unwrap: the same as no key.
+      logger.w('[publication] the drive key could not be read: $e');
+      return (PublishBlock.locked, '');
+    }
     if (key == null) return (PublishBlock.locked, '');
     _driveKey = await key.key.extractBytes();
     return null;
@@ -692,14 +702,31 @@ class PublishCubit extends Cubit<PublishState> {
             "can't be updated here.",
       );
     }
+    try {
+      _previousSlots = slotsOf(sealed!.settings);
+    } on SealError catch (e) {
+      // A password slot a gateway made up: never carried into a new version.
+      logger.w('[publication] the previous slots were refused: $e');
+      return (
+        PublishBlock.other,
+        "This page's settings couldn't be read back, so it can't be updated "
+            'here.',
+      );
+    }
     _publicationKey = key;
-    _previousSlots = slotsOf(sealed!.settings);
     return null;
   }
 
   void setPassword(String value) {
     if (!isPrivatePage || state.hasPassword) return;
-    emit(state.copyWith(password: value));
+    if (value == state.password) return;
+    emit(state.copyWith(password: value, weakPasswordAccepted: false));
+  }
+
+  /// The owner's answer to "use this weak password anyway?".
+  void acceptWeakPassword(bool accepted) {
+    if (!state.passwordIsWeak) return;
+    emit(state.copyWith(weakPasswordAccepted: accepted));
   }
 
   Future<PrivatePagePlan?> _privatePlan(ProfileLoggedIn profile) async {
@@ -847,7 +874,7 @@ class PublishCubit extends Cubit<PublishState> {
       case PublishStage.included:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
-        if (state.titleIsValid) review();
+        if (state.lookIsReady) review();
       default:
     }
   }
@@ -961,16 +988,41 @@ class PublishCubit extends Cubit<PublishState> {
   // Review.
 
   Future<void> review() async {
-    if (!state.titleIsValid) {
+    if (!state.lookIsReady) {
       emit(state.copyWith(stage: PublishStage.look));
       return;
     }
     // Whatever was priced before may not match what the owner sees.
     _job = null;
+    // A job already signed (a publish that failed partway) is kept while the
+    // look is the same: its parts may be paid for, and a retry posts the
+    // rest of them.
+    final keepsSigned =
+        _lastJob != null && _lastJob!.isSigned && _jobKey(state) == _lastJobKey;
+    if (isPrivatePage && !keepsSigned) {
+      // The drive may have synced since it was last priced: a file moved
+      // out of the page, or hidden, must take its key out with it. The
+      // catalog is made again from what the drive holds now (under a fresh
+      // nonce: the catalog key stays).
+      _catalog = null;
+      _fileKeysOfCatalog = null;
+      _lastJob = null;
+    }
+    final refreshesContents = isPrivatePage && !keepsSigned;
     emit(state.copyWith(stage: PublishStage.pricing));
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return;
     try {
+      if (refreshesContents) {
+        // The summary the review shows comes from the same moment as the
+        // catalog it prices.
+        _contents = await PublicationContents.loadScope(
+          _deps.driveDao,
+          driveId: drive.id,
+          rootFolderId: drive.rootFolderId,
+          scopeRootFolderId: _scopeRootFolderId,
+        );
+      }
       _snapshotPlan ??= isFile || isPrivatePage
           ? const NoSnapshot()
           : await _planSnapshot(profile);
@@ -1001,6 +1053,7 @@ class PublishCubit extends Cubit<PublishState> {
         reusesSnapshot: plan is ReusedSnapshot,
         cost: cost,
         method: cost.defaultMethod,
+        summary: refreshesContents ? _contents?.summarize() : null,
       ));
     } catch (e, stackTrace) {
       logger.e('[publication] pricing failed', e, stackTrace);
@@ -1008,6 +1061,7 @@ class PublishCubit extends Cubit<PublishState> {
       emit(state.copyWith(
         stage: PublishStage.failed,
         failure: switch (e) {
+          PublicationFailure(:final message) => message,
           _CipherUnknown() =>
             "ArDrive couldn't read this file's encryption details from the "
                 'gateway. Nothing was uploaded. Try again in a moment.',
@@ -1017,6 +1071,8 @@ class PublishCubit extends Cubit<PublishState> {
           _ => 'The cost of publishing could not be worked out. Nothing '
               'was uploaded. Try again in a moment.',
         },
+        // Too long a page goes back to its look, not round again.
+        canRetry: e is! PublicationFailure || e.canRetry,
         paidTxId: () => null,
       ));
     }

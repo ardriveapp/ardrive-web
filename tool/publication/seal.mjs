@@ -25,8 +25,8 @@ export const ARGON2_DEFAULTS = Object.freeze({ m: 65536, t: 3, p: 1 });
  * otherwise ask a visitor's browser for gigabytes. m is in KiB.
  */
 export const ARGON2_BOUNDS = Object.freeze({
-  m: [8192, 262144],
-  t: [1, 10],
+  m: [8192, 131072],
+  t: [1, 6],
   p: [1, 4],
   saltBytes: [16, 64],
 });
@@ -261,6 +261,24 @@ export function sealedAad(config) {
   });
 }
 
+/**
+ * The sealed block's size is rounded up to a multiple of this, so the sealed
+ * part's length does not give the file count away.
+ */
+export const SEALED_PAD_UNIT = 4096;
+
+/**
+ * [block] with a `pad` field: a string of ASCII spaces that brings the
+ * canonical JSON's UTF-8 length up to the next multiple of SEALED_PAD_UNIT
+ * (none when it already is one). A reader ignores `pad`, and a block
+ * without one is valid.
+ */
+export function padSealedBlock(block) {
+  const base = Buffer.byteLength(canonicalJson({ ...block, pad: '' }), 'utf8');
+  const pad = ' '.repeat((SEALED_PAD_UNIT - (base % SEALED_PAD_UNIT)) % SEALED_PAD_UNIT);
+  return { ...block, pad };
+}
+
 /** The sealed part's bytes: the block's canonical JSON, bound to its page. */
 export const sealBlock = (publicationKey, iv, block, config) =>
   sealPlaintext(publicationKey, iv, Buffer.from(canonicalJson(block), 'utf8'), config);
@@ -352,12 +370,13 @@ export const KNOWN_DATA_CIPHERS = Object.freeze(['AES256-GCM', 'AES256-CTR']);
 /**
  * Whether two scopes name the same thing. Compared field by field, never by
  * serialising: a hostile block's folderId may be any JSON, nested deep
- * enough to overflow a recursive writer.
+ * enough to overflow a recursive writer. Each must say its type: a missing
+ * or unknown one is no scope at all.
  */
 const sameScope = (a, b) => {
-  const x = scopeOf(a);
-  const y = scopeOf(b);
-  return x.type === y.type && (x.type !== 'folder' || (isUuid(x.folderId) && x.folderId === y.folderId));
+  const type = a.type;
+  if ((type !== 'drive' && type !== 'folder') || type !== b.type) return false;
+  return type === 'drive' || (isUuid(a.folderId) && a.folderId === b.folderId);
 };
 
 /** The checks on the decrypted sealed block. It must describe the page it came with. */

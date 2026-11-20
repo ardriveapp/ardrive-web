@@ -4,7 +4,12 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { test } from 'node:test';
 import {
+  ARGON2_BOUNDS,
+  SEALED_PAD_UNIT,
   SealError,
+  checkArgon2Params,
+  padSealedBlock,
+  sealBlock,
   canonicalJson,
   fromB64u,
   MAX_PUBLICATION_JSON_BYTES,
@@ -13,6 +18,7 @@ import {
   openPage,
   parsePublicationText,
   ownerKek,
+  readSealedBlock,
   passwordBytes,
   passwordKek,
   sealPlaintext,
@@ -204,4 +210,73 @@ test('keys have one spelling', () => {
 
 test('canonical JSON sorts keys at every depth', () => {
   assert.equal(canonicalJson({ b: [{ d: 1, c: 2 }], a: 'x' }), '{"a":"x","b":[{"c":2,"d":1}]}');
+});
+
+test('a sealed scope with no type, or one unknown, is refused', () => {
+  const rule = "the sealed scope must be the page's scope";
+  const folderId = 'b0b0b0b0-0000-4000-8000-000000000002';
+  // The scope rule's message, or null once a block gets past it.
+  const scopeError = (scope, pageScope) => {
+    try {
+      readSealedBlock({ v: 1, scope }, { scope: pageScope });
+    } catch (e) {
+      if (e instanceof SealError && e.message === rule) return e.message;
+    }
+    return null;
+  };
+  const drive = { type: 'drive' };
+  const folder = { type: 'folder', folderId };
+  assert.equal(scopeError({}, drive), rule);
+  assert.equal(scopeError({ type: 'unknown' }, drive), rule);
+  assert.equal(scopeError(folder, drive), rule);
+  assert.equal(scopeError(drive, folder), rule);
+  assert.equal(scopeError({ type: 'folder', folderId: `c${folderId}` }, folder), rule);
+  assert.equal(scopeError({ type: 'drive' }, drive), null);
+  assert.equal(scopeError({ ...folder }, folder), null);
+});
+
+test('argon2id bounds: the new maximums are accepted, one past is refused', () => {
+  assert.deepEqual([ARGON2_BOUNDS.m, ARGON2_BOUNDS.t, ARGON2_BOUNDS.p], [[8192, 131072], [1, 6], [1, 4]]);
+  checkArgon2Params({ m: 131072, t: 6, p: 4 });
+  checkArgon2Params({ m: 8192, t: 1, p: 1 });
+  for (const bad of [{ m: 131073, t: 3, p: 1 }, { m: 65536, t: 7, p: 1 }, { m: 65536, t: 3, p: 5 }, { m: 8191, t: 3, p: 1 }]) {
+    assert.throws(() => checkArgon2Params(bad), (e) => e instanceof SealError && e.code === 'out-of-bounds', JSON.stringify(bad));
+  }
+});
+
+const blockWith = (fileCount) => {
+  const block = JSON.parse(vectors.pages[0].sealedPlaintext);
+  delete block.pad;
+  block.files = {};
+  for (let i = 0; i < fileCount; i++) {
+    block.files[`00000000-0000-4000-8000-${String(i).padStart(12, '0')}`] = 'A'.repeat(43);
+  }
+  return block;
+};
+
+test('a padded sealed block is a multiple of 4096 bytes, and one bucket gives one sealed length', () => {
+  const key = Buffer.alloc(32, 7);
+  const iv = Buffer.alloc(12, 9);
+  const header = JSON.parse(vectors.pages[0].publicationJson);
+  const sealedLength = (n) => sealBlock(key, iv, padSealedBlock(blockWith(n)), header).length;
+  const sizes = [2, 3, 10].map((n) => Buffer.byteLength(canonicalJson(padSealedBlock(blockWith(n))), 'utf8'));
+  for (const size of sizes) assert.equal(size % SEALED_PAD_UNIT, 0);
+  assert.equal(sealedLength(2), sealedLength(10));
+  assert.equal(sealedLength(2), sealedLength(3));
+  // Past the bucket it moves to the next one; the tag adds 16 bytes.
+  assert.ok(sealedLength(100) > sealedLength(2));
+  assert.equal(sealedLength(100) % SEALED_PAD_UNIT, 16);
+  const padded = padSealedBlock(blockWith(2));
+  assert.match(padded.pad, /^ *$/);
+});
+
+test('a reader ignores pad, whatever it is, and accepts a block without one', () => {
+  const plain = JSON.parse(vectors.pages[0].sealedPlaintext);
+  const config = JSON.parse(vectors.pages[0].publicationJson);
+  const noPad = { ...plain };
+  delete noPad.pad;
+  readSealedBlock(noPad, config);
+  readSealedBlock({ ...plain, pad: 'not spaces' }, config);
+  readSealedBlock({ ...plain, pad: 5 }, config);
+  readSealedBlock({ ...plain, pad: null }, config);
 });

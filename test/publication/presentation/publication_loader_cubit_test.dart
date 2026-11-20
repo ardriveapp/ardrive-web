@@ -45,6 +45,7 @@ class _Fixture {
       sidecar['transaction'] as Map<String, dynamic>;
 
   String get driveId => _reader['driveId'] as String;
+  String get txId => _transaction['id'] as String;
   String get owner => _reader['ownerAddress'] as String;
 
   Map<String, String> get tags => {
@@ -68,16 +69,34 @@ class _Fixture {
       };
 }
 
-/// A gateway serving a page's files from [files], by path; anything else 404s.
-MockClient _gateway(Map<String, Object> files, {List<Uri>? requests}) =>
+/// The transaction a page's publication.json is, as the gateway says.
+const _settingsTx = 'SETTINGS000000000000000000000000000000000000';
+
+/// A gateway serving a page's files from [files], by path; anything else
+/// 404s. Like an AR.IO gateway, it names the transaction it served for each
+/// path ([dataIds]; by default publication.json is [_settingsTx] and the
+/// snapshot [snapshotTx]). A null in [dataIds] sends no name.
+MockClient _gateway(
+  Map<String, Object> files, {
+  List<Uri>? requests,
+  String? snapshotTx,
+  Map<String, String?> dataIds = const {},
+}) =>
     MockClient((request) async {
       requests?.add(request.url);
       final path = request.url.path.replaceFirst('/PageManifest/', '');
       final file = files[path];
       if (file == null) return http.Response('not found', 404);
+      final ids = {
+        'publication.json': _settingsTx,
+        if (snapshotTx != null) 'snapshot': snapshotTx,
+        ...dataIds,
+      };
+      final id = ids[path];
+      final headers = {if (id != null) PublicationSource.dataIdHeader: id};
       return file is String
-          ? http.Response(file, 200)
-          : http.Response.bytes(file as List<int>, 200);
+          ? http.Response(file, 200, headers: headers)
+          : http.Response.bytes(file as List<int>, 200, headers: headers);
     });
 
 void main() {
@@ -108,11 +127,13 @@ void main() {
     DriveStateImporter? importer,
     List<Uri>? requests,
     Future<String?> Function(String txId)? ownerOf,
+    Map<String, String?> dataIds = const {},
   }) =>
       PublicationLoaderCubit(
         source: PublicationSource(
           pageUri: _pageUri,
-          client: _gateway(files, requests: requests),
+          client: _gateway(files,
+              requests: requests, snapshotTx: fixture.txId, dataIds: dataIds),
         ),
         settingsPath: 'publication.json',
         driveDao: db.driveDao,
@@ -160,7 +181,7 @@ void main() {
       expect(state, isA<PublicationReady>());
       expect((state as PublicationReady).ownerVerified, isTrue);
       expect(state.stats, isNull);
-      expect(asked, [metadataTx]);
+      expect(asked, [_settingsTx, metadataTx]);
       expect(
           requests.map((u) => u.path), isNot(contains(endsWith('/snapshot'))));
       verifyNever(() => importer.import(
@@ -464,11 +485,79 @@ void main() {
         const PublicationLoadingSettings(),
         const PublicationFailed(PublicationFailure.snapshotRejected),
       ]);
-      expect(asked, [fixture.sidecar['transaction']['id']],
-          reason: 'one lookup, of the snapshot');
+      expect(asked, [_settingsTx],
+          reason: 'one lookup, of the settings, which name the owner');
       expect(
           requests.map((u) => u.path), isNot(contains(endsWith('snapshot'))));
       await cubit.close();
+    });
+
+    test('settings of the owner around a stranger\'s snapshot are refused',
+        () async {
+      final requests = <Uri>[];
+      final asked = <String>[];
+      final cubit = loader(
+        page(fixture.publicationJson()),
+        requests: requests,
+        ownerOf: (txId) async {
+          asked.add(txId);
+          return txId == _settingsTx ? fixture.owner : stranger;
+        },
+      );
+      await cubit.load();
+      expect(cubit.state,
+          const PublicationFailed(PublicationFailure.snapshotRejected));
+      expect(asked, [_settingsTx, fixture.txId]);
+      expect(
+          requests.map((u) => u.path), isNot(contains(endsWith('snapshot'))));
+      await cubit.close();
+    });
+
+    test(
+        'a path serving another transaction than the settings name is '
+        'refused', () async {
+      // Someone else's page that names the owner's real snapshot, and serves
+      // its own under that path.
+      const forged = 'FORGED00000000000000000000000000000000000000';
+      final cubit = loader(
+        page(fixture.publicationJson()),
+        dataIds: {'snapshot': forged},
+        ownerOf: (txId) async => txId == forged ? stranger : fixture.owner,
+      );
+      await cubit.load();
+      expect(cubit.state,
+          const PublicationFailed(PublicationFailure.snapshotRejected));
+      await cubit.close();
+    });
+
+    test('a part from another version of the owner opens unverified', () async {
+      // A cache, or a name that just moved, gives the settings of one
+      // version and a part of the next: both the owner's.
+      const next = 'NEXTVERSION0000000000000000000000000000000000';
+      final cubit = loader(
+        page(fixture.publicationJson()),
+        dataIds: {'snapshot': next},
+      );
+      await cubit.load();
+      final ready = cubit.state as PublicationReady;
+      expect(ready.ownerVerified, isFalse);
+      await cubit.close();
+    });
+
+    test('a gateway that names nothing opens the page unverified', () async {
+      for (final unnamed in [
+        {'publication.json': null},
+        {'snapshot': null},
+      ]) {
+        final cubit = loader(page(fixture.publicationJson()), dataIds: unnamed);
+        await cubit.load();
+        final ready = cubit.state as PublicationReady;
+        expect(ready.ownerVerified, isFalse, reason: '$unnamed');
+        await cubit.close();
+        PublicationContents.open = null;
+        await db.close();
+        db = getTestDb();
+      }
     });
 
     test('a confirmed owner is named', () async {

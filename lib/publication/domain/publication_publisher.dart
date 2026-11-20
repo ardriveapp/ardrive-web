@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_uploader.dart';
@@ -123,6 +124,14 @@ class PublicationJob {
   final PrivatePagePlan? privatePage;
 
   bool get isPrivatePage => privatePage != null;
+
+  /// Whether its parts are signed: from then on it is frozen, and a retry
+  /// posts what is left of it rather than signing anew.
+  bool get isSigned => _signed != null;
+
+  /// For tests that stand in for the publisher: marks the job as signed.
+  @visibleForTesting
+  void markSignedForTest() => _signed ??= [];
   final PublicationSnapshotPlan snapshot;
   final PublicationRelease release;
 
@@ -401,6 +410,10 @@ class PublicationPublisher {
     onStep?.call(PublicationStep.files);
     try {
       job._signed ??= await _sign(job, wallet);
+    } on PublicationFailure {
+      // A page that would never open (too long, too many files): the
+      // wallet had nothing to do with it, and trying again won't help.
+      rethrow;
     } catch (e) {
       logger.e('[publication] signing failed', e);
       throw const PublicationFailure(
@@ -556,6 +569,7 @@ class PublicationPublisher {
       plan.sealedBlock(scope: _scopeJson(job), catalogTxId: catalogTxId),
       draft,
     );
+    _refuseOversizedSealed(sealed.length);
     final sealedTxId = await sign(_part(job, 'sealed', sealed));
     for (final item in _privatePageItems(
       job,
@@ -571,6 +585,19 @@ class PublicationPublisher {
     return signed;
   }
 
+  /// A reader refuses a sealed part over [maxSealedBytes], so a page whose
+  /// file list is that long would be paid for and never open. Thrown when
+  /// pricing, before anything is uploaded.
+  void _refuseOversizedSealed(int bytes) {
+    if (bytes <= maxSealedBytes) return;
+    throw const PublicationFailure(
+      PublicationStep.publication,
+      'This page has too many files to publish as one page. Nothing was '
+      'uploaded. Publish a folder of it instead.',
+      canRetry: false,
+    );
+  }
+
   /// [_signPrivate]'s items with placeholder IDs, for the cost. The sealed
   /// block is measured, not encrypted: AES-GCM adds its 16-byte tag.
   List<PublicationItem> _privateItemsForSize(
@@ -579,6 +606,7 @@ class PublicationPublisher {
     final block =
         plan.sealedBlock(scope: _scopeJson(job), catalogTxId: placeholderId);
     final sealedSize = utf8.encode(canonicalJson(block)).length + tagBytes;
+    _refuseOversizedSealed(sealedSize);
     final ids = <String, String>{
       for (final image in [job.icon, job.cover, job.social])
         if (image is ExistingPublicationImage) ...image.files,
@@ -669,15 +697,22 @@ class PublicationPublisher {
           contentType: type,
           tags: part,
         );
+    final settings = _privatePublicationJson(job,
+        sealedTxId: sealedTxId, sealedIv: sealedIv, publishedAt: publishedAt);
+    // A viewer refuses a longer one (docs/ArweaveFS.md), so a page with it
+    // would be paid for and never open. Only text the owner typed can make
+    // it this long: a title or description whose characters are each many
+    // bytes. Thrown when pricing, so nothing is uploaded.
+    if (utf8.encode(settings).length > maxPublicationJsonBytes) {
+      throw const PublicationFailure(
+        PublicationStep.publication,
+        "This page's title, description or keywords are too long. Nothing "
+        'was uploaded. Shorten them and try again.',
+        canRetry: false,
+      );
+    }
     return [
-      text(
-        'publication.json',
-        _privatePublicationJson(job,
-            sealedTxId: sealedTxId,
-            sealedIv: sealedIv,
-            publishedAt: publishedAt),
-        'application/json',
-      ),
+      text('publication.json', settings, 'application/json'),
       text(
         'index.html',
         buildPublicationIndexHtml(

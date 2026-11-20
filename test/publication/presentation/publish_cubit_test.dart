@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -10,6 +12,8 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    show ArtifactScope;
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
@@ -23,6 +27,7 @@ import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,6 +97,8 @@ void main() {
   setUpAll(() {
     registerFallbackValue(getTestWallet());
     registerFallbackValue(BigInt.zero);
+    registerFallbackValue(const ArtifactScope(''));
+    registerFallbackValue(SecretKey(const [0]));
     registerFallbackValue(PublicationJob(
       publicationId: 'p',
       driveId: _drive,
@@ -1384,26 +1391,34 @@ void main() {
   });
 
   group('a private drive or folder', () {
-    Future<Drive> privateDrive() async {
+    /// With [unopenableKey], the row holds a wrapped key this profile's
+    /// key doesn't unwrap.
+    Future<Drive> privateDrive({bool unopenableKey = false}) async {
       const id = 'dddddddd-0000-4000-8000-00000000000a';
       await db.into(db.drives).insert(DrivesCompanion.insert(
             id: id,
-            rootFolderId: 'private-root-2',
+            rootFolderId: 'eeeeeeee-0000-4000-8000-00000000000b',
             ownerAddress: fakeUserJson.walletAddress,
             name: 'Private',
             privacy: DrivePrivacyTag.private,
+            encryptedKey:
+                unopenableKey ? Value(Uint8List(48)) : const Value.absent(),
+            keyEncryptionIv:
+                unopenableKey ? Value(Uint8List(12)) : const Value.absent(),
+            driveKeyGenerated:
+                unopenableKey ? const Value(true) : const Value.absent(),
           ));
       await db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
-            id: 'private-root-2',
+            id: 'eeeeeeee-0000-4000-8000-00000000000b',
             driveId: id,
             name: 'Private',
             path: '',
           ));
       await insertPublicationFile(db,
           driveId: id,
-          id: 'p1',
+          id: 'ffffffff-0000-4000-8000-00000000000c',
           name: 'p.txt',
-          parentFolderId: 'private-root-2');
+          parentFolderId: 'eeeeeeee-0000-4000-8000-00000000000b');
       return db.driveDao.driveById(driveId: id).getSingle();
     }
 
@@ -1438,12 +1453,143 @@ void main() {
       await c.close();
     });
 
+    test('a drive key that does not unwrap blocks, as a locked drive does',
+        () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final c = cubit(onDrive: await privateDrive(unopenableKey: true));
+      await c.load();
+
+      expect(c.state.stage, PublishStage.blocked);
+      expect(c.state.blocked, PublishBlock.locked);
+      await c.close();
+    });
+
+    test('each pricing makes the catalog again from the drive as it is',
+        () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final drive = await privateDrive();
+      await db.driveDao.keepDriveKeyForSession(
+        driveId: drive.id,
+        driveKey: DriveKey(SecretKey(List.filled(32, 7)), true),
+      );
+      var prepared = 0;
+      when(() => creation.prepare(
+            driveId: any(named: 'driveId'),
+            driveKey: any(named: 'driveKey'),
+            wallet: any(named: 'wallet'),
+            isCancelled: any(named: 'isCancelled'),
+            pageScope: any(named: 'pageScope'),
+            catalogKey: any(named: 'catalogKey'),
+          )).thenAnswer((_) async {
+        prepared++;
+        return DriveStateCreationResult.prepared(PreparedDriveStateArtifact(
+          entity: DriveStateEntity(
+              id: 'x',
+              driveId: drive.id,
+              blockEnd: 1,
+              dataStart: 0,
+              dataEnd: 1,
+              entityCount: 2),
+          driveId: drive.id,
+          driveName: '',
+          entityCount: 2,
+          sizeInBytes: 900,
+          files: prepared == 1
+              ? const [
+                  (id: 'ffffffff-0000-4000-8000-00000000000c', dataTxId: 'D')
+                ]
+              : const [],
+        ));
+      });
+      final priced = <PublicationJob>[];
+      when(() => publisher.sizeOf(any())).thenAnswer((i) {
+        priced.add(i.positionalArguments.first as PublicationJob);
+        return 5000;
+      });
+      final c = cubit(onDrive: drive);
+      await c.load();
+      expect(c.state.stage, isNot(PublishStage.blocked),
+          reason: c.state.blockedReason);
+
+      await c.review();
+      expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+      final before = c.state.summary!.fileCount;
+      // A sync adds a file while the dialog is open.
+      await insertPublicationFile(db,
+          driveId: drive.id,
+          id: 'ffffffff-0000-4000-8000-00000000000d',
+          name: 'q.txt',
+          parentFolderId: 'eeeeeeee-0000-4000-8000-00000000000b');
+      c.back();
+      await c.review();
+      expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+      expect(prepared, 2);
+      expect(c.state.summary!.fileCount, before + 1,
+          reason: 'the review counts what the new catalog holds');
+
+      // A publish that failed after signing: its parts may be paid for, so
+      // an unchanged look keeps that job rather than signing a new one.
+      final signed = priced.last..markSignedForTest();
+      c.back();
+      await c.review();
+      expect(prepared, 2, reason: 'no new catalog for a signed job');
+      expect(priced.last, same(signed));
+      // The file the drive no longer shows took its key out with it.
+      expect(priced.last.privatePage!.fileKeys, isEmpty);
+      await c.close();
+    });
+
     test('a public drive is not a private page', () async {
       final c = cubit();
       await c.load();
       expect(c.isPrivatePage, isFalse);
       expect(c.state.isPrivatePage, isFalse);
       expect(c.state.title, 'My drive');
+      await c.close();
+    });
+
+    test('a weak new password needs a confirmation before Next', () {
+      const weak = PublishState(
+          stage: PublishStage.look, isPrivatePage: true, password: 'tiger');
+      expect(weak.passwordIsWeak, isTrue);
+      expect(weak.lookIsReady, isFalse);
+      expect(weak.copyWith(weakPasswordAccepted: true).lookIsReady, isTrue);
+      const strong = PublishState(
+          stage: PublishStage.look,
+          isPrivatePage: true,
+          password: 'tide lantern orbit maple quiet harbor');
+      expect(strong.passwordIsWeak, isFalse);
+      expect(strong.lookIsReady, isTrue);
+      // No password, or the one a page already has, asks nothing.
+      const none = PublishState(stage: PublishStage.look, isPrivatePage: true);
+      expect(none.lookIsReady, isTrue);
+      const kept = PublishState(
+          stage: PublishStage.look,
+          isPrivatePage: true,
+          hasPassword: true,
+          password: 'tiger');
+      expect(kept.passwordIsWeak, isFalse);
+    });
+
+    test('typing another password asks again', () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final drive = await privateDrive();
+      await db.driveDao.keepDriveKeyForSession(
+        driveId: drive.id,
+        driveKey: DriveKey(SecretKey(List.filled(32, 7)), true),
+      );
+      final c = cubit(onDrive: drive);
+      await c.load();
+      expect(c.state.isPrivatePage, isTrue);
+      c.setPassword('tiger');
+      c.acceptWeakPassword(true);
+      expect(c.state.weakPasswordAccepted, isTrue);
+      c.setPassword('tigers');
+      expect(c.state.weakPasswordAccepted, isFalse);
+      expect(c.state.lookIsReady, isFalse);
       await c.close();
     });
 

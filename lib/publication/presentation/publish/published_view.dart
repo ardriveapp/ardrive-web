@@ -74,7 +74,9 @@ class PublishedView extends StatefulWidget {
 }
 
 class _PublishedViewState extends State<PublishedView> {
-  late final Future<PublishedContent?> _content = context
+  late Future<PublishedContent?> _content = _readContent();
+
+  Future<PublishedContent?> _readContent() => context
       .read<PublicationRepository>()
       .readContent(widget.publication.latest.txId)
       .then<PublishedContent?>((c) => c)
@@ -99,6 +101,23 @@ class _PublishedViewState extends State<PublishedView> {
 
   /// A private page whose drive this session can't open: no key, no link.
   bool _locked = false;
+
+  /// A private page whose key wasn't read back, though its drive is open:
+  /// the gateway didn't give its settings. Its link would have no key, so
+  /// none is shown until a retry reads it.
+  bool get _keyMissing => _isPrivatePage && !_locked && _fileKey == null;
+
+  /// Whether its links can be opened: a private one only with its key,
+  /// since without it the owner would land on its unlock screen.
+  bool get _canOpen => !(_isPrivateFile || _isPrivatePage) || _fileKey != null;
+
+  void _retryPage() {
+    setState(() {
+      _keyChecked = false;
+      _content = _readContent();
+    });
+    _checkPage();
+  }
 
   @override
   void initState() {
@@ -236,6 +255,22 @@ class _PublishedViewState extends State<PublishedView> {
           else if (_isPrivatePage && _locked)
             Text(strings.publishUnlockToCopyLink,
                 style: typography.paragraphNormal(color: colors.textHigh))
+          else if (_keyMissing)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(strings.publishPageKeyNotRead,
+                      style:
+                          typography.paragraphNormal(color: colors.textHigh)),
+                ),
+                ArDriveButtonNew(
+                  text: strings.tryAgain,
+                  typography: typography,
+                  variant: ButtonVariant.secondary,
+                  onPressed: _retryPage,
+                ),
+              ],
+            )
           else
             PublishedLink(
               link: _link(latest.txId),
@@ -285,20 +320,22 @@ class _PublishedViewState extends State<PublishedView> {
                               typography.paragraphNormal(color: colors.textMid),
                         ),
                       ),
-                      ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () => openUrl(url: _link(version.txId)),
-                          child: Text(
-                            strings.publishOpen,
-                            style: typography
-                                .paragraphNormal(
-                                  fontWeight: ArFontWeight.semiBold,
-                                  color: colors.textMid,
-                                )
-                                .copyWith(decoration: TextDecoration.underline),
+                      if (_canOpen)
+                        ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () => openUrl(url: _link(version.txId)),
+                            child: Text(
+                              strings.publishOpen,
+                              style: typography
+                                  .paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                    color: colors.textMid,
+                                  )
+                                  .copyWith(
+                                      decoration: TextDecoration.underline),
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -307,10 +344,11 @@ class _PublishedViewState extends State<PublishedView> {
       ),
       actions: [
         ModalAction(title: strings.publishUpdate, action: update),
-        ModalAction(
-          title: strings.publishOpenPage,
-          action: () => openUrl(url: _link(latest.txId)),
-        ),
+        if (_canOpen)
+          ModalAction(
+            title: strings.publishOpenPage,
+            action: () => openUrl(url: _link(latest.txId)),
+          ),
         ModalAction(
           title: strings.doneEmphasized,
           action: () => Navigator.of(context).pop(),

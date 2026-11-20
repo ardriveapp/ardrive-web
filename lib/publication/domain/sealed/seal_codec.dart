@@ -31,10 +31,14 @@ const argon2Defaults = Argon2Settings(m: 65536, t: 3, p: 1);
 
 /// A reader never runs a password slot outside these bounds: a page could
 /// otherwise ask a visitor's browser for gigabytes. Inclusive.
-const argon2MemoryBounds = (8192, 262144);
-const argon2PassesBounds = (1, 10);
+const argon2MemoryBounds = (8192, 131072);
+const argon2PassesBounds = (1, 6);
 const argon2LanesBounds = (1, 4);
 const argon2SaltBytesBounds = (16, 64);
+
+/// The sealed block is padded to a multiple of this many bytes, so the
+/// sealed part's size does not give the file count away.
+const sealedPadUnit = 4096;
 
 /// A reader refuses a version 3 publication.json larger than this.
 const maxPublicationJsonBytes = 65536;
@@ -175,7 +179,7 @@ String buildPrivatePublicationJson({
   required String owner,
   required String sealedTxId,
   required String sealedIv,
-  required List<Map<String, Object>> slots,
+  required List<Map<String, Object?>> slots,
   String title = '',
   String? description,
   String? ownerName,
@@ -437,13 +441,25 @@ class SealedBlock {
 
 /// Whether two scopes name the same thing. Compared field by field, never
 /// by serialising: a hostile block's folderId may be any JSON, a fraction
-/// [canonicalJson] refuses or nesting deep enough to overflow it.
+/// [canonicalJson] refuses or nesting deep enough to overflow it. Each must
+/// say its type: a missing or unknown one is no scope at all.
 bool _sameScope(Map a, Map b) {
-  final x = _scopeOf(a);
-  final y = _scopeOf(b);
-  return x['type'] == y['type'] &&
-      (x['type'] != 'folder' ||
-          (_isUuid(x['folderId']) && x['folderId'] == y['folderId']));
+  final type = a['type'];
+  if ((type != 'drive' && type != 'folder') || type != b['type']) {
+    return false;
+  }
+  return type == 'drive' ||
+      (_isUuid(a['folderId']) && a['folderId'] == b['folderId']);
+}
+
+/// [block] with a `pad` field: ASCII spaces, as many as bring its canonical
+/// JSON's UTF-8 length up to the next multiple of [sealedPadUnit] (none when
+/// it already is one). A reader ignores `pad`, and a block without one is
+/// valid, as older writers wrote.
+Map<String, Object?> padSealedBlock(Map<String, Object?> block) {
+  final base = utf8.encode(canonicalJson({...block, 'pad': ''})).length;
+  final pad = ' ' * ((sealedPadUnit - base % sealedPadUnit) % sealedPadUnit);
+  return {...block, 'pad': pad};
 }
 
 /// The checks on the decrypted sealed block. It must describe the page it
