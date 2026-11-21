@@ -27,13 +27,13 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
     // gets the streamed request
     final streamedRequest = service
         .post(
-            wallet: wallet,
-            dataItem: uploadItem.data,
-            onSendProgress: (progress) {
-              onProgress?.call(progress);
-            },
-            headers:  uploadItem.headers,
-            )
+      wallet: wallet,
+      dataItem: uploadItem.data,
+      onSendProgress: (progress) {
+        onProgress?.call(progress);
+      },
+      headers: uploadItem.headers,
+    )
         .then((value) async {
       _result = StreamedUploadResult(success: true);
     }).onError((e, s) {

@@ -99,32 +99,34 @@ class UploadDispatcher {
 
             final fileMetadata = updatedTask.metadata;
 
-            final thumbnailMetadata = fileMetadata.thumbnailInfo?.first;
-
             final headersMap = <String, String>{
               'x-paid-by': fileMetadata.paidBy.join(', '),
             };
 
-            final thumbnailTask = ThumbnailUploadTask(
-              file: uploadPreparation.thumbnailFile!,
-              metadata: thumbnailMetadata!,
-              type: UploadType.turbo,
-              uploadItem: DataItemUploadItem(
-                  size: uploadPreparation.thumbnailDataItem!.dataSize,
-                  data: uploadPreparation.thumbnailDataItem!,
-                  headers: headersMap),
-              id: Uuid().v4(),
+            // Small first, as the metadata lists them: if the large one
+            // fails, the one every client reads is already up.
+            for (final thumbnail in uploadPreparation.thumbnails) {
+              final thumbnailTask = ThumbnailUploadTask(
+                file: thumbnail.file,
+                metadata: thumbnail.metadata,
+                type: UploadType.turbo,
+                uploadItem: DataItemUploadItem(
+                    size: thumbnail.dataItem.dataSize,
+                    data: thumbnail.dataItem,
+                    headers: headersMap),
+                id: Uuid().v4(),
 
-              /// same encryption key as the file
-              encryptionKey: task.encryptionKey,
-            );
+                /// same encryption key as the file
+                encryptionKey: task.encryptionKey,
+              );
 
-            await _uploadThumbnailStrategy.upload(
-              task: thumbnailTask,
-              wallet: wallet,
-              controller: UploadController(StreamController(), this),
-              verifyCancel: verifyCancel,
-            );
+              await _uploadThumbnailStrategy.upload(
+                task: thumbnailTask,
+                wallet: wallet,
+                controller: UploadController(StreamController(), this),
+                verifyCancel: verifyCancel,
+              );
+            }
           } catch (e) {
             logger.e(
               'Error uploading thumbnail. The file upload wont be affected.',

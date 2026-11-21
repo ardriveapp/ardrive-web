@@ -159,7 +159,7 @@ class _GalleryItemTileState extends State<GalleryItemTile> {
   @override
   void dispose() {
     _position?.removeListener(_report);
-    _handle?.release();
+    _release();
     super.dispose();
   }
 
@@ -203,11 +203,30 @@ class _GalleryItemTileState extends State<GalleryItemTile> {
       ),
     );
     _handle = handle;
+    handle.addListener(_onImageChanged);
     _onScreen = false;
     WidgetsBinding.instance.addPostFrameCallback((_) => _report());
   }
 
+  /// A variant that is not there is passed over: asking again gets the next
+  /// best, which the loader now chooses without it.
+  void _onImageChanged() {
+    final value = _handle?.value;
+    if (value?.failure != GalleryFailureReason.notFound) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _handle?.value.failure != GalleryFailureReason.notFound) {
+        return;
+      }
+      // Rebuilt so the tile listens to the new handle.
+      setState(() {
+        _release();
+        _acquire();
+      });
+    });
+  }
+
   void _release() {
+    _handle?.removeListener(_onImageChanged);
     _handle?.release();
     _handle = null;
     _handleKey = null;

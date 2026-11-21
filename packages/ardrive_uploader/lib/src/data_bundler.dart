@@ -815,48 +815,66 @@ Future<UploadFilePreparation> prepareDataItems({
     driveKey: driveKey,
   );
 
-  DataItemResult? thumbnailDataItem;
-  IOFile? thumbnailFile;
+  final thumbnails = <PreparedThumbnail>[];
+  metadata.clearThumbnailInfo();
 
-  /// Thumbnail generation
+  /// Thumbnail generation: the small one first, then the large one the
+  /// gallery shows, in the order the metadata lists them. Each is made and
+  /// signed on its own, so one that fails costs only itself.
   if (addThumbnail) {
+    List<ThumbnailGenerationResult> generated;
     try {
-      final thumbnailGenerationResult = await generateThumbnail(
-        await file.readAsBytes(),
-        ThumbnailSize.small,
-      );
-
-      thumbnailFile = await IOFile.fromData(
-        thumbnailGenerationResult.thumbnail,
-        name: 'thumbnail',
-        lastModifiedDate: DateTime.now(),
-        contentType: 'image/jpeg',
-      );
-
-      final thumbnailMetadata = ThumbnailUploadMetadata(
-        height: thumbnailGenerationResult.height,
-        width: thumbnailGenerationResult.width,
-        size: thumbnailGenerationResult.thumbnail.length,
-        name: thumbnailGenerationResult.name,
-        relatesTo: metadata.dataTxId!,
-        contentType: 'image/jpeg',
-        originalFileId: metadata.id,
-      );
-
-      thumbnailDataItem = await createDataItemForThumbnail(
-        file: thumbnailFile,
-        metadata: thumbnailMetadata,
-        wallet: wallet,
-        encryptionKey: key,
-        fileId: metadata.id,
-      );
-
-      thumbnailMetadata.setTxId = thumbnailDataItem.id;
-
-      metadata.updateThumbnailInfo([thumbnailMetadata]);
+      generated = await generateThumbnails(await file.readAsBytes());
     } catch (e) {
+      generated = const [];
       logger.e(
           'Error generating thumbnail. We will proceed with the upload.', e);
+    }
+
+    for (final result in generated) {
+      try {
+        final thumbnailFile = await IOFile.fromData(
+          result.thumbnail,
+          name: 'thumbnail',
+          lastModifiedDate: DateTime.now(),
+          contentType: 'image/jpeg',
+        );
+
+        final thumbnailMetadata = ThumbnailUploadMetadata(
+          height: result.height,
+          width: result.width,
+          size: result.thumbnail.length,
+          name: result.name,
+          relatesTo: metadata.dataTxId!,
+          contentType: 'image/jpeg',
+          originalFileId: metadata.id,
+        );
+
+        final thumbnailDataItem = await createDataItemForThumbnail(
+          file: thumbnailFile,
+          metadata: thumbnailMetadata,
+          wallet: wallet,
+          encryptionKey: key,
+          fileId: metadata.id,
+        );
+
+        thumbnailMetadata.setTxId = thumbnailDataItem.id;
+        thumbnails.add(PreparedThumbnail(
+          file: thumbnailFile,
+          dataItem: thumbnailDataItem,
+          metadata: thumbnailMetadata,
+        ));
+      } catch (e) {
+        logger.e(
+            'Error preparing the ${result.name} thumbnail. '
+            'We will proceed without it.',
+            e);
+      }
+    }
+
+    // Only what was signed: the metadata names no thumbnail when none was.
+    if (thumbnails.isNotEmpty) {
+      metadata.updateThumbnailInfo([for (final t in thumbnails) t.metadata]);
     }
   }
 
@@ -879,17 +897,31 @@ Future<UploadFilePreparation> prepareDataItems({
 
   return UploadFilePreparation(
     dataItemFiles: [metadataResult.dataItemFile, dataDataItem],
-    thumbnailFile: thumbnailFile,
-    thumbnailDataItem: thumbnailDataItem,
+    thumbnails: thumbnails,
     metadataSignedDataItemResult: metadataResult.signedDataItemResult,
     dataSignedDataItemResult: dataDataItemResult,
   );
 }
 
+/// One of a file's thumbnails, made and signed with the file, uploaded after
+/// it.
+class PreparedThumbnail {
+  PreparedThumbnail({
+    required this.file,
+    required this.dataItem,
+    required this.metadata,
+  });
+
+  final IOFile file;
+  final DataItemResult dataItem;
+  final ThumbnailUploadMetadata metadata;
+}
+
 class UploadFilePreparation {
   final List<DataItemFile> dataItemFiles;
-  final IOFile? thumbnailFile;
-  final DataItemResult? thumbnailDataItem;
+
+  /// The file's thumbnails, signed, in the order its metadata lists them.
+  final List<PreparedThumbnail> thumbnails;
 
   /// Pre-signed metadata data item result to avoid re-signing
   final DataItemResult? metadataSignedDataItemResult;
@@ -899,8 +931,7 @@ class UploadFilePreparation {
 
   UploadFilePreparation({
     required this.dataItemFiles,
-    this.thumbnailFile,
-    this.thumbnailDataItem,
+    this.thumbnails = const [],
     this.metadataSignedDataItemResult,
     this.dataSignedDataItemResult,
   });

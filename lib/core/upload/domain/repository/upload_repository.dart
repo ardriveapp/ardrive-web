@@ -297,13 +297,7 @@ class _UploadRepositoryImpl implements UploadRepository {
               ? RevisionAction.uploadNewVersion
               : RevisionAction.create;
 
-          Thumbnail? thumbnail;
-
-          if (fileMetadata.thumbnailInfo != null) {
-            thumbnail = Thumbnail(variants: [
-              Variant.fromJson(fileMetadata.thumbnailInfo!.first.toJson())
-            ]);
-          }
+          final thumbnail = thumbnailOfUpload(fileMetadata.thumbnailInfo);
 
           final entity = FileEntity(
             dataContentType: fileMetadata.dataContentType,
@@ -451,4 +445,13 @@ class _UploadRepositoryImpl implements UploadRepository {
         .toList();
     return uploadFiles;
   }
+}
+
+/// The thumbnail a file's row records for what its upload made: every
+/// variant, in the order the uploaded metadata lists them (small first).
+Thumbnail? thumbnailOfUpload(List<ThumbnailUploadMetadata>? uploaded) {
+  if (uploaded == null || uploaded.isEmpty) return null;
+  return Thumbnail(variants: [
+    for (final variant in uploaded) Variant.fromJson(variant.toJson())
+  ]);
 }
