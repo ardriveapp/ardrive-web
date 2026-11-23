@@ -250,6 +250,12 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
     _thumbnailInfo = thumbnailInfo;
   }
 
+  /// Forgets the thumbnails a previous preparation listed, so a retry that
+  /// makes none does not sign metadata pointing at ones never uploaded.
+  void clearThumbnailInfo() {
+    _thumbnailInfo = null;
+  }
+
   @override
   Map<String, dynamic> toJson() {
     if (dataTxId == null) {

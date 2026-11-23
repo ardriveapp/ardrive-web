@@ -351,15 +351,32 @@ class GalleryImageLoader {
   /// Bytes held by the memory cache.
   int get cacheSizeBytes => _cacheSize;
 
+  bool _isMissing(String key) {
+    final since = _notFound[key];
+    if (since == null) return false;
+    if (clock.now().difference(since) < _notFoundFor) return true;
+    _notFound.remove(key);
+    return false;
+  }
+
   bool isCached(String fileId, String txId) =>
       _cache.containsKey(_key(fileId, txId));
 
   /// Ask for an image. Starts nothing until [GalleryImageHandle.updatePosition]
   /// reports the tile on screen (unless the bytes are already cached).
+  ///
+  /// A variant the gateways recently said is not there is passed over for
+  /// the next best: a file's metadata can list a thumbnail whose upload never
+  /// landed.
   GalleryImageHandle acquire(GalleryImageRequest request) {
+    bool missing(GalleryVariant v) => _isMissing(_key(request.fileId, v.txId));
+    final original = request.original;
     final choice = chooseGalleryVariant(
-      variants: request.variants,
-      original: request.original,
+      variants: [
+        for (final v in request.variants)
+          if (!missing(v)) v
+      ],
+      original: original == null || missing(original) ? null : original,
       tileWidthPx: request.tileWidthPx,
       tileHeightPx: request.tileHeightPx,
       isPrivate: request.isPrivate,
@@ -377,19 +394,6 @@ class GalleryImageLoader {
     }
 
     final key = _key(request.fileId, choice.variant.txId);
-    final missingSince = _notFound[key];
-    if (missingSince != null) {
-      if (clock.now().difference(missingSince) < _notFoundFor) {
-        final entry = _Entry(key, null);
-        _live.add(entry);
-        entry.notifier.value =
-            const GalleryImageState.failed(GalleryFailureReason.notFound);
-        final handle = GalleryImageHandle._(this, entry, request);
-        entry.handles.add(handle);
-        return handle;
-      }
-      _notFound.remove(key);
-    }
     final cached = _cacheGet(key);
     if (cached != null) {
       // Standalone: already loaded, nothing to schedule or share.

@@ -155,6 +155,28 @@ void main() {
         expect(metadata.isPrivate, isPrivate);
       });
 
+      test(
+          'clearing forgets the thumbnails an earlier preparation listed, so '
+          'they are not signed into the metadata again', () {
+        metadata.updateDataTxId('data-tx');
+        metadata.updateThumbnailInfo([
+          ThumbnailUploadMetadata(
+            contentType: 'image/jpeg',
+            height: 66,
+            width: 100,
+            size: 5000,
+            relatesTo: 'data-tx',
+            name: 'small',
+            originalFileId: id,
+          )..setTxId = 'thumb-tx',
+        ]);
+        expect(metadata.toJson().containsKey('thumbnail'), isTrue);
+
+        metadata.clearThumbnailInfo();
+        expect(metadata.thumbnailInfo, isNull);
+        expect(metadata.toJson().containsKey('thumbnail'), isFalse);
+      });
+
       group('Data tags and cipher tags methods', () {
         test('getDataTags returns correct tags', () {
           final mockTag1 = MockTag();

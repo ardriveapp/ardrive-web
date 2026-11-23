@@ -39,12 +39,16 @@ class _MockGlobalHideBloc extends MockBloc<GlobalHideEvent, GlobalHideState>
 class _FakeFetcher implements GalleryImageFetcher {
   final fetched = <String>[];
 
+  /// Transactions the gateways answer are not there.
+  final missing = <String>{};
+
   @override
   Future<Uint8List> fetch(
     GalleryFetchTarget target, {
     required Future<void> cancelWhen,
   }) async {
     fetched.add(target.variant.txId);
+    if (missing.contains(target.variant.txId)) throw const GalleryNotFound();
     return Uint8List.fromList(const [0]);
   }
 }
@@ -284,6 +288,28 @@ void main() {
       for (final i in below) {
         expect(fetcher.fetched, isNot(contains('thumb-f$i')));
       }
+    });
+  });
+
+  group('the loader, when a thumbnail never landed', () {
+    testWidgets('the tile falls back to the small one', (tester) async {
+      // Too big for the original to stand in.
+      final photo = fileItem('p',
+          name: 'p.jpg',
+          created: oct,
+          size: 8 * 1024 * 1024,
+          variants: [
+            variant('thumb-small', 100, 50),
+            variant('thumb-large', 512, 256),
+          ]);
+      fetcher.missing.add('thumb-large');
+      await pump(tester, app([photo]));
+      for (var i = 0; i < 3; i++) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.pump();
+      }
+      expect(fetcher.fetched, ['thumb-large', 'thumb-small']);
     });
   });
 

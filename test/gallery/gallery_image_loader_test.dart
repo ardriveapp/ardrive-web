@@ -367,13 +367,47 @@ void main() {
       final again = show('a');
       async.elapse(const Duration(seconds: 1));
       expect(fetcher.calls.length, 1);
-      expect(again.value.failure, GalleryFailureReason.notFound);
+      // Its only variant is passed over, which leaves nothing to show.
+      expect(again.value.status, GalleryImageStatus.failed);
       again.release();
 
       async.elapse(const Duration(minutes: 5));
       show('a');
       async.elapse(const Duration(seconds: 1));
       expect(fetcher.calls.length, 2);
+    });
+  });
+
+  test(
+      'a thumbnail that never landed is passed over for the next one, '
+      'without asking for it again', () {
+    run((async) {
+      final variants = [
+        const GalleryVariant(
+            txId: 'small', size: 3000, width: 100, height: 100),
+        const GalleryVariant(
+            txId: 'large', size: 40000, width: 512, height: 512),
+      ];
+      GalleryImageHandle ask() {
+        final h = loader
+            .acquire(req('a', variants: variants, tileW: 300, tileH: 300));
+        h.updatePosition(onScreen: true);
+        return h;
+      }
+
+      final first = ask();
+      async.elapse(const Duration(seconds: 1));
+      expect(fetcher.calls.single.target.variant.txId, 'large');
+      fetcher.fail('a', const GalleryNotFound());
+      async.flushMicrotasks();
+      expect(first.value.failure, GalleryFailureReason.notFound);
+      first.release();
+
+      // What the tile does on notFound: ask again.
+      ask();
+      async.elapse(const Duration(seconds: 1));
+      expect(
+          fetcher.calls.map((c) => c.target.variant.txId), ['large', 'small']);
     });
   });
 
