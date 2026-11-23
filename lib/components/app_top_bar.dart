@@ -69,12 +69,17 @@ class AppTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // A publication has no sidebar, so its icon leads the bar.
-                PublicationIcon(
-                  config: publicationConfigOf(context),
-                  size: 40,
-                ),
-                const SizedBox(width: 16),
+                // A publication has no sidebar, so its icon leads the bar;
+                // without one the search does, and ArDrive signs the page
+                // once, at the right.
+                if (PublicationIcon.hasOwn(publicationConfigOf(context))) ...[
+                  PublicationIcon(
+                    config: publicationConfigOf(context),
+                    size: 40,
+                    orArDrive: false,
+                  ),
+                  const SizedBox(width: 16),
+                ],
                 Expanded(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 400),

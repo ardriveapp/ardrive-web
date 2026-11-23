@@ -282,20 +282,35 @@ class _Failure extends StatelessWidget {
 
 /// The publication's icon from its own manifest, or ArDrive's mark when it has
 /// none or it does not load. A plain square holds its place while it loads.
+///
+/// With [orArDrive] false it is the icon or nothing: in a page's top bar
+/// ArDrive already signs the page once, as "Made with ArDrive", and its mark
+/// in the page's own place read as a second logo.
 class PublicationIcon extends StatelessWidget {
-  const PublicationIcon({super.key, required this.config, required this.size});
+  const PublicationIcon({
+    super.key,
+    required this.config,
+    required this.size,
+    this.orArDrive = true,
+  });
 
   final PublicationConfig? config;
   final double size;
+  final bool orArDrive;
+
+  /// Whether [config] has an icon of its own to show.
+  static bool hasOwn(PublicationConfig? config) => config?.images.icon != null;
 
   @override
   Widget build(BuildContext context) {
-    final fallback = Image.asset(
-      Resources.images.brand.logo1,
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-    );
+    final fallback = orArDrive
+        ? Image.asset(
+            Resources.images.brand.logo1,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+          )
+        : const SizedBox.shrink();
     final icon = config?.images.icon;
     if (icon == null) return fallback;
     return ClipRRect(

@@ -479,17 +479,22 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// A publication's app bar on a phone: the publication's icon where the ArDrive
-/// logo would be. Its title is in the header beneath, over the files.
+/// logo would be, or nothing when it has none - ArDrive's mark is already at
+/// the right, as "Made with ArDrive". Its title is in the header beneath, over
+/// the files.
 class _MobilePublicationTitle extends StatelessWidget {
   const _MobilePublicationTitle();
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 12),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child:
-              PublicationIcon(config: publicationConfigOf(context), size: 32),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final config = publicationConfigOf(context);
+    if (!PublicationIcon.hasOwn(config)) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: PublicationIcon(config: config, size: 32, orArDrive: false),
+      ),
+    );
+  }
 }
