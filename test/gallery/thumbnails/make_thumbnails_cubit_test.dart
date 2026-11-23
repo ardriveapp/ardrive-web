@@ -249,4 +249,22 @@ void main() {
     await run;
     verifyNever(() => thumbnails.uploadThumbnail(fileId: 'b'));
   });
+
+  test(
+      'a large thumbnail refused for payment after the small one landed: '
+      'counted as made, and the run stops and says so', () async {
+    when(() => thumbnails.uploadThumbnail(fileId: any(named: 'fileId')))
+        .thenAnswer((i) => i.namedArguments[#fileId] == 'a'
+            ? Future.error(ThumbnailsPartlyRefused())
+            : Future.value(true));
+    final c = cubit(const {
+      'a': MissingThumbnails.all,
+      'b': MissingThumbnails.all,
+    }, isPrivate: true);
+    await c.load();
+    await c.start();
+    expect(c.state.made, 1);
+    expect(c.state.paymentRequired, isTrue);
+    verifyNever(() => thumbnails.uploadThumbnail(fileId: 'b'));
+  });
 }

@@ -69,6 +69,13 @@ void main() {
     });
   });
 
+  test('leaves out files already found to give nothing more', () {
+    expect(
+        imagesNeedingThumbnails([fileItem('a'), fileItem('tiny')],
+            settled: (id) => id == 'tiny'),
+        1);
+  });
+
   testWidgets('says how many need thumbnails, with Make thumbnails and Not now',
       (tester) async {
     await pump(tester, [fileItem('a'), fileItem('b')], MemoryKeyValueStore());

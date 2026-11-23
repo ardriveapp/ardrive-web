@@ -1,4 +1,5 @@
 import 'package:ardrive/drive_explorer/thumbnail/missing_thumbnails.dart';
+import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/gallery/thumbnails/make_thumbnails_dialog.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -7,22 +8,31 @@ import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// How many of [items] lack thumbnails: images with none, or only a small
 /// one when the gallery needs a larger one.
-int imagesNeedingThumbnails(Iterable<ArDriveDataTableItem> items) => items
-    .whereType<FileDataTableItem>()
-    .where((f) =>
-        !f.isHidden &&
-        // As Make thumbnails itself: not an upload that failed.
-        f.dataTx?.status != 'failed' &&
-        missingThumbnailsOf(
-              contentType: f.contentType,
-              size: f.size ?? 0,
-              variants: f.thumbnail?.variants,
-            ) !=
-            MissingThumbnails.none)
-    .length;
+///
+/// [settled] leaves out files Make thumbnails already found nothing more to
+/// make for, as the dialog does.
+int imagesNeedingThumbnails(
+  Iterable<ArDriveDataTableItem> items, {
+  bool Function(String fileId)? settled,
+}) =>
+    items
+        .whereType<FileDataTableItem>()
+        .where((f) =>
+            !f.isHidden &&
+            !(settled?.call(f.id) ?? false) &&
+            // As Make thumbnails itself: not an upload that failed.
+            f.dataTx?.status != 'failed' &&
+            missingThumbnailsOf(
+                  contentType: f.contentType,
+                  size: f.size ?? 0,
+                  variants: f.thumbnail?.variants,
+                ) !=
+                MissingThumbnails.none)
+        .length;
 
 /// Remembers "Not now" per folder, on this device.
 class MakeThumbnailsNoticeStore {
@@ -60,6 +70,7 @@ class MakeThumbnailsNotice extends StatefulWidget {
     required this.drive,
     required this.folder,
     this.store,
+    this.settled,
   });
 
   final List<ArDriveDataTableItem> items;
@@ -69,8 +80,20 @@ class MakeThumbnailsNotice extends StatefulWidget {
   /// Where Not now is remembered; the app's own store when null.
   final KeyValueStore? store;
 
+  /// Files Make thumbnails found nothing more to make for; the thumbnail
+  /// repository's record when null.
+  final bool Function(String fileId)? settled;
+
   @override
   State<MakeThumbnailsNotice> createState() => _MakeThumbnailsNoticeState();
+}
+
+bool Function(String fileId)? _repositorySettled(BuildContext context) {
+  try {
+    return context.read<ThumbnailRepository>().hasNothingToAdd;
+  } catch (_) {
+    return null;
+  }
 }
 
 class _MakeThumbnailsNoticeState extends State<MakeThumbnailsNotice> {
@@ -112,7 +135,10 @@ class _MakeThumbnailsNoticeState extends State<MakeThumbnailsNotice> {
   Widget build(BuildContext context) {
     if (_dismissed) return const SizedBox.shrink();
     final owner = widget.items.any((i) => i.isOwner);
-    final count = imagesNeedingThumbnails(widget.items);
+    final count = imagesNeedingThumbnails(
+      widget.items,
+      settled: widget.settled ?? _repositorySettled(context),
+    );
     if (!owner || count == 0) return const SizedBox.shrink();
     final l10n = appLocalizationsOf(context);
     // In line with the tiles: the gallery's own gutter on a phone.

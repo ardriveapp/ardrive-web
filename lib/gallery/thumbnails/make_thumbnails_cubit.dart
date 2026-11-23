@@ -290,7 +290,13 @@ class MakeThumbnailsCubit extends Cubit<MakeThumbnailsState> {
           }
           _todo = Map.of(_todo)..remove(fileId);
         } catch (error) {
-          if (isTurboPaymentError(error)) {
+          if (error is ThumbnailsPartlyRefused) {
+            // Its first thumbnail is in; the rest was refused.
+            made++;
+            _todo = Map.of(_todo)..remove(fileId);
+            paymentRequired = true;
+            _stop = true;
+          } else if (isTurboPaymentError(error)) {
             paymentRequired = true;
             _stop = true;
           } else {

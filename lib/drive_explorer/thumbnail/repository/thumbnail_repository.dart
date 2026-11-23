@@ -246,6 +246,9 @@ class ThumbnailRepository {
 
     // Small first, as older clients read the first variant.
     final uploaded = <ThumbnailUploadMetadata>[];
+    // A payment refusal after the first landed: what landed is recorded,
+    // then the refusal is reported, so a batch stops and says why.
+    var refusedAfterFirst = false;
     for (final data in generated) {
       final thumbnailFile = await IOFileAdapter().fromData(
         data.thumbnail,
@@ -275,6 +278,7 @@ class ThumbnailRepository {
         // large one the small one still serves every client.
         if (uploaded.isEmpty) rethrow;
         logger.w('Large thumbnail upload failed; keeping the small one: $e');
+        if (isTurboPaymentError(e)) refusedAfterFirst = true;
       }
     }
 
@@ -310,6 +314,7 @@ class ThumbnailRepository {
       await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.createThumbnail));
     });
+    if (refusedAfterFirst) throw ThumbnailsPartlyRefused();
     return true;
   }
 
@@ -355,4 +360,11 @@ class ThumbnailRepository {
 
     return completer.future;
   }
+}
+
+/// Some of a file's thumbnails were added and recorded, then Turbo refused
+/// the rest for payment. A payment error, so callers that stop on one do;
+/// one that counts what was made counts this file too.
+class ThumbnailsPartlyRefused extends TurboPaymentRequiredException {
+  ThumbnailsPartlyRefused();
 }
