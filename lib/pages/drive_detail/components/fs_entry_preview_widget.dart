@@ -1840,6 +1840,7 @@ class ImagePreviewWidget extends StatefulWidget {
 }
 
 class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
+  (String, Uint8List)? _placeholder;
   bool _controlsVisible = true;
   bool _controlsDisabled = false;
   Timer? _hideControlsTimer;
@@ -2016,49 +2017,80 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
         final isLoading = imagePreview.isLoading;
 
+        // The thumbnail this photo showed while it loaded, kept so the
+        // original fades in over it instead of over nothing.
+        final placeholder = imagePreview.placeholderBytes;
+        if (placeholder != null) {
+          _placeholder = (imagePreview.filename, placeholder);
+        } else if (_placeholder?.$1 != imagePreview.filename) {
+          _placeholder = null;
+        }
+        final under = _placeholder?.$2;
+
         final askSize = imagePreview.onRequestSize;
         final ask = imagePreview.loadOnRequest;
         if (widget.isFullScreen && askSize != null && ask != null) {
-          return Center(
-            child: FsEntryPreviewOnRequestPrompt(
-              state: FsEntryPreviewOnRequest(size: askSize),
-              onPreview: ask,
-            ),
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              if (under != null) _photo(under),
+              Center(
+                child: FsEntryPreviewOnRequestPrompt(
+                  state: FsEntryPreviewOnRequest(size: askSize),
+                  onPreview: ask,
+                ),
+              ),
+            ],
           );
         }
 
-        if (!widget.isFullScreen) {
-          return _buildImageFromBytes(
-            imagePreview.dataBytes,
-            withTapRegion: false,
-            isLoading: isLoading,
-          );
-        } else {
-          return _buildImageFromBytes(
-            imagePreview.dataBytes,
-            withTapRegion: true,
-            isLoading: isLoading,
-          );
-        }
+        return _buildImageFromBytes(
+          imagePreview.dataBytes,
+          withTapRegion: widget.isFullScreen,
+          isLoading: isLoading,
+          under: under,
+        );
       },
     );
   }
+
+  Widget _photo(Uint8List bytes) => ArDriveImage(
+        fit: BoxFit.contain,
+        height: double.maxFinite,
+        width: double.maxFinite,
+        image: MemoryImage(bytes),
+      );
 
   Widget _buildImageFromBytes(
     Uint8List? imageBytes, {
     required bool withTapRegion,
     required bool isLoading,
+    Uint8List? under,
   }) {
     final Widget content;
 
     if (isLoading) {
-      content = const Center(child: _PreviewSpinner());
+      // The thumbnail at once, soft, with the spinner small over it; only a
+      // spinner when there is no thumbnail to show.
+      content = under == null
+          ? const Center(child: _PreviewSpinner())
+          : Stack(
+              fit: StackFit.expand,
+              children: [
+                _photo(under),
+                const Align(
+                  alignment: Alignment(0, 0.85),
+                  child: _PreviewSpinner(),
+                ),
+              ],
+            );
     } else {
       if (imageBytes == null) {
         content = const UnpreviewableContent();
       } else {
-        // Fades in rather than popping in over the spinner it replaces.
-        content = TweenAnimationBuilder<double>(
+        // Fades in rather than popping in over the spinner, or the
+        // thumbnail, it replaces.
+        final original = TweenAnimationBuilder<double>(
           key: ValueKey(imageBytes),
           tween: Tween(begin: 0, end: 1),
           duration: MediaQuery.disableAnimationsOf(context)
@@ -2067,14 +2099,24 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           curve: Curves.easeOut,
           builder: (context, opacity, child) =>
               Opacity(opacity: opacity, child: child),
-          child: ArDriveImage(
-            fit: BoxFit.contain,
-            height: double.maxFinite,
-            width: double.maxFinite,
-            image: MemoryImage(
-              imageBytes,
-            ),
-          ),
+          // Then the thumbnail goes: a photo with transparency must not show
+          // it through.
+          onEnd: () {
+            if (mounted && _placeholder != null) {
+              setState(() => _placeholder = null);
+            }
+          },
+          child: _photo(imageBytes),
+        );
+        // One shape either way, so dropping the thumbnail does not rebuild
+        // the original and fade it in a second time.
+        content = Stack(
+          fit: StackFit.expand,
+          children: [
+            if (under != null)
+              KeyedSubtree(key: const ValueKey('under'), child: _photo(under)),
+            original,
+          ],
         );
       }
     }

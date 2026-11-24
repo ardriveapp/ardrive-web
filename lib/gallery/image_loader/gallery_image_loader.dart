@@ -362,6 +362,11 @@ class GalleryImageLoader {
   bool isCached(String fileId, String txId) =>
       _cache.containsKey(_key(fileId, txId));
 
+  /// The bytes held for this variant of a file, if any: what the full-screen
+  /// preview shows at once while the original loads.
+  Uint8List? cachedBytes(String fileId, String txId) =>
+      _cacheGet(_key(fileId, txId));
+
   /// Ask for an image. Starts nothing until [GalleryImageHandle.updatePosition]
   /// reports the tile on screen (unless the bytes are already cached).
   ///

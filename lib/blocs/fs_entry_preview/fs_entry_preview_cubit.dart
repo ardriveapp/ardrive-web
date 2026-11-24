@@ -380,7 +380,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String? cipher,
     String? cipherIv,
     bool publicIsUnconfirmed = false,
+    Future<Uint8List?> Function()? placeholder,
   })  : _driveDao = driveDao,
+        _placeholder = placeholder,
         _configService = configService,
         _profileCubit = profileCubit,
         _arweave = arweave,
@@ -402,6 +404,33 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       _preview();
     }
+  }
+
+  /// The photo's thumbnail, shown while its original loads or waits for
+  /// Preview. See `previewPlaceholderFor`.
+  final Future<Uint8List?> Function()? _placeholder;
+
+  /// Puts the thumbnail under [file]'s preview once it arrives, if the
+  /// preview is still waiting for that file: loading, or [onRequest].
+  void _showPlaceholder(FileEntry file, {bool onRequest = false}) {
+    final source = _placeholder;
+    if (source == null) return;
+    source().then((bytes) {
+      if (bytes == null || isClosed) return;
+      final shown = imagePreviewNotifier.value;
+      if (shown == null || shown.filename != file.name) return;
+      final stillWaiting =
+          onRequest ? shown.loadOnRequest != null : shown.isLoading;
+      if (!stillWaiting) return;
+      imagePreviewNotifier.value = ImagePreviewNotification(
+        isLoading: shown.isLoading,
+        filename: shown.filename,
+        contentType: shown.contentType,
+        onRequestSize: shown.onRequestSize,
+        loadOnRequest: shown.loadOnRequest,
+        placeholderBytes: bytes,
+      );
+    }).catchError((Object _) {});
   }
 
   /// Nothing outlives a refusal except the refusal.
@@ -956,6 +985,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         onRequestSize: file.size,
         loadOnRequest: loadOnRequest,
       );
+      // Seen soft before deciding on the download.
+      _showPlaceholder(file, onRequest: true);
       return;
     }
 
@@ -977,6 +1008,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     );
 
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
+
+    // The thumbnail meanwhile, unless the original is already here.
+    if (await _driveDao.getPreviewDataFromMemory(txId) == null) {
+      _showPlaceholder(file);
+    }
 
     final Uint8List? dataBytes = await _getBytesFromCache(
       dataTxId: txId,

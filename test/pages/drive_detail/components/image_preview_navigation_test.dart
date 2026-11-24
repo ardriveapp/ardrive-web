@@ -196,6 +196,72 @@ void main() {
     expect(FullScreenPreviewRequest.take('a'), isNull);
   });
 
+  group('the thumbnail first', () {
+    int images(WidgetTester tester) =>
+        find.byType(ArDriveImage).evaluate().length;
+
+    testWidgets(
+        'while the original loads the thumbnail shows, with a spinner over '
+        'it; then the original, and the thumbnail goes', (tester) async {
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        isLoading: true,
+        filename: 'Pier.png',
+        contentType: 'image/png',
+        placeholderBytes: pixel,
+      );
+      await pump(tester, preview(fullScreen: true));
+      expect(images(tester), 1);
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        dataBytes: Uint8List.fromList([...pixel]),
+        filename: 'Pier.png',
+        contentType: 'image/png',
+      );
+      await tester.pump();
+      // Fading in over the thumbnail.
+      expect(images(tester), 2);
+      await tester.pumpAndSettle();
+      expect(images(tester), 1);
+      await tester.pump(const Duration(seconds: 4));
+    });
+
+    testWidgets('another photo\'s thumbnail never stays under this one',
+        (tester) async {
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        isLoading: true,
+        filename: 'Pier.png',
+        contentType: 'image/png',
+        placeholderBytes: pixel,
+      );
+      await pump(tester, preview(fullScreen: true));
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        dataBytes: Uint8List.fromList([...pixel]),
+        filename: 'Dunes.png',
+        contentType: 'image/png',
+      );
+      await tester.pump();
+      expect(images(tester), 1);
+      await tester.pump(const Duration(seconds: 4));
+    });
+
+    testWidgets(
+        'a photo waiting for Preview shows its thumbnail behind the prompt',
+        (tester) async {
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        filename: 'Huge.jpg',
+        contentType: 'image/jpeg',
+        onRequestSize: 30 * 1024 * 1024,
+        loadOnRequest: () {},
+        placeholderBytes: pixel,
+      );
+      await pump(tester, preview(fullScreen: true));
+      expect(images(tester), 1);
+      expect(find.text('Preview'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+    });
+  });
+
   testWidgets('without a request the preview stays inline', (tester) async {
     await pump(tester, preview(fullScreen: false));
     await tester.pumpAndSettle();

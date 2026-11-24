@@ -1205,6 +1205,7 @@ void main() {
     FsEntryPreviewCubit explorerCubit(
       FileDataTableItem item, {
       bool lookUpKey = false,
+      Future<Uint8List?> Function()? placeholder,
     }) {
       final drive = MockDrive();
       final driveSelectable = MockSelectable<Drive>();
@@ -1231,8 +1232,60 @@ void main() {
         crypto: mockCrypto,
         fileKey: lookUpKey ? null : SecretKey([1, 2, 3]),
         objectUrls: objectUrls,
+        placeholder: placeholder,
       );
     }
+
+    group('the thumbnail first', () {
+      test('while the original is on its way the photo\'s thumbnail is shown',
+          () async {
+        final original = Completer<http.Response>();
+        when(() => mockGatewayFallback.fetchData(any(), any(),
+                onProgress: any(named: 'onProgress'),
+                cancelWhen: any(named: 'cancelWhen')))
+            .thenAnswer((_) => original.future);
+        when(() => mockArweaveService.getTransactionDetails(any()))
+            .thenAnswer((_) async => MockTransactionCommonMixin());
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+            .thenAnswer((_) async => Uint8List.fromList([5, 6, 7, 8]));
+
+        final cubit = explorerCubit(
+          createImageItem(size: underLimitFileSize),
+          placeholder: () async => Uint8List.fromList([7]),
+        );
+        addTearDown(cubit.close);
+        rows.add(row(name: 'photo.png', contentType: 'image/png'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        final loading = FsEntryPreviewCubit.imagePreviewNotifier.value!;
+        expect(loading.isLoading, isTrue);
+        expect(loading.placeholderBytes, [7]);
+
+        original.complete(http.Response.bytes([1, 2, 3, 4], 200));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        final shown = FsEntryPreviewCubit.imagePreviewNotifier.value!;
+        expect(shown.dataBytes, [5, 6, 7, 8]);
+      });
+
+      test('a thumbnail that arrives after the original does not replace it',
+          () async {
+        stubPrivateFetchAndDecrypt();
+        final late = Completer<Uint8List?>();
+        final cubit = explorerCubit(
+          createImageItem(size: underLimitFileSize),
+          placeholder: () => late.future,
+        );
+        addTearDown(cubit.close);
+        rows.add(row(name: 'photo.png', contentType: 'image/png'));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        late.complete(Uint8List.fromList([7]));
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        final shown = FsEntryPreviewCubit.imagePreviewNotifier.value!;
+        expect(shown.isLoading, isFalse);
+        expect(shown.placeholderBytes, isNull);
+        expect(shown.dataBytes, [5, 6, 7, 8]);
+      });
+    });
 
     /// A key lookup that throws the first time it is asked, and finds the key
     /// after that - a database that was busy, then was not.
