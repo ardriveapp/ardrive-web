@@ -87,6 +87,38 @@ void main() {
     );
   });
 
+  testWidgets(
+      'in the top bar a publication with no icon shows nothing in its place: '
+      'ArDrive signs the page once, at the right', (tester) async {
+    await pump(
+      tester,
+      const PublicationIcon(config: _config, size: 40, orArDrive: false),
+    );
+
+    expect(find.byType(Image), findsNothing);
+    expect(PublicationIcon.hasOwn(_config), isFalse);
+    expect(PublicationIcon.hasOwn(null), isFalse);
+  });
+
+  test('a publication with an icon has its own', () {
+    final withIcon = PublicationConfig(
+      version: _config.version,
+      driveId: _config.driveId,
+      rootFolderId: _config.rootFolderId,
+      scope: _config.scope,
+      privacy: _config.privacy,
+      owner: _config.owner,
+      snapshot: _config.snapshot,
+      title: _config.title,
+      description: _config.description,
+      images: const PublicationImages(icon: 'icon.png'),
+      publishedAt: null,
+      viewer: null,
+    );
+
+    expect(PublicationIcon.hasOwn(withIcon), isTrue);
+  });
+
   group('the loading screen', () {
     Future<void> showing(WidgetTester tester, PublicationLoaderState state) {
       final loader = _MockLoader();
