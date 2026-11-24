@@ -392,6 +392,22 @@ void main() {
       expect(FullScreenPreviewRequest.take(), isNull);
     });
 
+    testWidgets(
+        'closing the photo goes back to the folder, even after the gallery '
+        'made way for it, as on a phone', (tester) async {
+      addTearDown(FullScreenPreviewRequest.cancel);
+      when(() => detailCubit.isClosed).thenReturn(false);
+      await pump(tester, app(all));
+      await mouseTap(tester, tileOf('Pier.jpg'));
+      await mouseTap(tester, tileOf('Pier.jpg'));
+      await tester.pump(const Duration(seconds: 1));
+      final request = FullScreenPreviewRequest.take()!;
+
+      await tester.pumpWidget(const SizedBox());
+      request.onClosed!();
+      verify(() => detailCubit.closeDetails()).called(1);
+    });
+
     testWidgets('a touch tap opens, as it does in the list', (tester) async {
       await pump(tester, app(all));
       await tester.tap(tileOf('Pier.jpg')); // touch by default

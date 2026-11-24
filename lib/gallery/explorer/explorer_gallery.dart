@@ -188,10 +188,10 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     // back to the grid. Anything else opens in the details panel as before.
     if (item is FileDataTableItem &&
         supportedImageTypesInFilePreview.contains(item.contentType)) {
+      // Not tied to this widget: on a phone the details page takes the
+      // gallery's place while the photo is open.
       FullScreenPreviewRequest.request(onClosed: () {
-        if (mounted && cubit.state is DriveDetailLoadSuccess) {
-          cubit.closeDetails();
-        }
+        if (!cubit.isClosed) cubit.closeDetails();
       });
     }
     cubit.openDataItem(item);
