@@ -36,4 +36,10 @@ class FullScreenPreviewRequest {
 
   /// Drops a request nobody took.
   static void cancel() => _pending = null;
+
+  /// Drops the request for [fileId], whose preview turned out not to be an
+  /// image the full screen can show (too large, unavailable, failed).
+  static void cancelFor(String? fileId) {
+    if (_pending?.fileId == fileId) _pending = null;
+  }
 }

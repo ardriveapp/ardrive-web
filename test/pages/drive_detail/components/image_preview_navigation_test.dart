@@ -187,7 +187,16 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-    testWidgets('without a request the preview stays inline', (tester) async {
+  test('a request is dropped for its own photo only', () {
+    FullScreenPreviewRequest.request(fileId: 'a');
+    FullScreenPreviewRequest.cancelFor('b');
+    expect(FullScreenPreviewRequest.take('a'), isNotNull);
+    FullScreenPreviewRequest.request(fileId: 'a');
+    FullScreenPreviewRequest.cancelFor('a');
+    expect(FullScreenPreviewRequest.take('a'), isNull);
+  });
+
+  testWidgets('without a request the preview stays inline', (tester) async {
     await pump(tester, preview(fullScreen: false));
     await tester.pumpAndSettle();
     expect(

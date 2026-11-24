@@ -1726,31 +1726,36 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return numberOfImages > 1;
   }
 
-  Future<void> selectNextImage(bool showHiddenImages) =>
-      _selectImageRelativeToCurrent(1, showHiddenImages);
-  Future<void> selectPreviousImage(bool showHiddenImages) =>
-      _selectImageRelativeToCurrent(-1, showHiddenImages);
+  /// [listSorted] false where the list is drawn in the folder's own order
+  /// whatever sort was chosen on a wider screen: the phone's list.
+  Future<void> selectNextImage(bool showHiddenImages,
+          {bool listSorted = true}) =>
+      _selectImageRelativeToCurrent(1, showHiddenImages, listSorted);
+  Future<void> selectPreviousImage(bool showHiddenImages,
+          {bool listSorted = true}) =>
+      _selectImageRelativeToCurrent(-1, showHiddenImages, listSorted);
 
   /// Whether there is a photo after the one open, in the order on screen.
   /// The folder's ends are ends: next does not wrap to the first.
-  bool hasNextImage(bool showHiddenImages) =>
-      _relativeImage(1, showHiddenImages) != null;
-  bool hasPreviousImage(bool showHiddenImages) =>
-      _relativeImage(-1, showHiddenImages) != null;
+  bool hasNextImage(bool showHiddenImages, {bool listSorted = true}) =>
+      _relativeImage(1, showHiddenImages, listSorted) != null;
+  bool hasPreviousImage(bool showHiddenImages, {bool listSorted = true}) =>
+      _relativeImage(-1, showHiddenImages, listSorted) != null;
 
-  FileDataTableItem? _relativeImage(int offset, bool showHiddenImages) {
+  FileDataTableItem? _relativeImage(
+      int offset, bool showHiddenImages, bool listSorted) {
     final selected = _selectedItem;
     if (selected is! FileDataTableItem) return null;
     return imageBeside(
-      getAllImagesOfCurrentFolder(showHiddenImages),
+      getAllImagesOfCurrentFolder(showHiddenImages, listSorted: listSorted),
       selected.id,
       offset,
     );
   }
 
   Future<void> _selectImageRelativeToCurrent(
-      int offset, bool showHiddenImages) async {
-    final image = _relativeImage(offset, showHiddenImages);
+      int offset, bool showHiddenImages, bool listSorted) async {
+    final image = _relativeImage(offset, showHiddenImages, listSorted);
     if (image != null) await selectDataItem(image);
   }
 
@@ -1761,12 +1766,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// The folder's photos in the order on screen: the list's column sort, or
   /// the gallery's months, so next and previous go where the eye expects.
   /// Hidden ones only when hidden items are shown.
-  List<FileDataTableItem> getAllImagesOfCurrentFolder(bool showHiddenImages) {
+  List<FileDataTableItem> getAllImagesOfCurrentFolder(bool showHiddenImages,
+      {bool listSorted = true}) {
     final state = this.state;
     if (state is! DriveDetailLoadSuccess) return const [];
 
-    final sort = sortForFolder(state.folderInView.folder.id);
     final gallery = state.viewMode == ExplorerViewMode.gallery;
+    final sort = gallery || listSorted
+        ? sortForFolder(state.folderInView.folder.id)
+        : null;
     // Asked on every redraw of the preview, so worked out once per folder,
     // sort, view and hidden choice: a folder of thousands is a real sort.
     final key = (

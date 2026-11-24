@@ -327,6 +327,15 @@ class FsEntryPreviewFailedMessage extends StatelessWidget {
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
+    // A photo the gallery asked to open full screen that will not show as an
+    // image: the request goes, rather than waiting for another preview.
+    final state = widget.state;
+    if (state is! FsEntryPreviewImage &&
+        state is! FsEntryPreviewInitial &&
+        state is! FsEntryPreviewLoading) {
+      FullScreenPreviewRequest.cancelFor(
+          widget.previewCubit.maybeSelectedItem?.id);
+    }
     final stateType = widget.state.runtimeType;
     switch (stateType) {
       case const (FsEntryPreviewUnavailable):

@@ -88,8 +88,8 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
       : const Duration(milliseconds: 200);
 
   /// Keeps the zoomed photo covering the screen: no gap opens at an edge.
-  Offset _clamp(Offset offset, double scale) {
-    final size = _size;
+  Offset _clamp(Offset offset, double scale, [Size? within]) {
+    final size = within ?? _size;
     final minX = size.width * (1 - scale);
     final minY = size.height * (1 - scale);
     return Offset(
@@ -158,6 +158,13 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
   }
 
   void _onScaleEnd(ScaleEndDetails details) {
+    if (_swiping && details.pointerCount > 0) {
+      // A second finger came down mid-swipe: the start of a pinch, not the
+      // end of a swipe. Nothing moves on or closes.
+      _swiping = false;
+      _animateTo(scale: _scale, offset: _offset);
+      return;
+    }
     if (!_swiping) {
       if (_scale <= 1.01) {
         _animateTo(scale: 1, offset: Offset.zero);
@@ -222,8 +229,22 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
     });
   }
 
+  Size? _laidOut;
+
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final size = constraints.biggest;
+      if (_laidOut != null && _laidOut != size && isZoomed) {
+        // Turned or resized while zoomed: back inside the new bounds.
+        _offset = _clamp(_offset, _scale, size);
+      }
+      _laidOut = size;
+      return _build(context);
+    });
+  }
+
+  Widget _build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     // A swipe down fades the photo as it goes, as a hint it will close.
     final down = math.max(0.0, _swipe.dy);

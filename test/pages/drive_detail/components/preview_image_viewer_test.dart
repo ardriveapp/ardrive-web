@@ -146,4 +146,23 @@ void main() {
     expect(taps, 1);
     expect(next, 1);
   });
+
+  testWidgets(
+      'a second finger landing mid-swipe is a pinch starting, not a swipe '
+      'ending', (tester) async {
+    await pump(tester);
+    final center = tester.getCenter(viewer());
+    final a = await tester.startGesture(center);
+    for (var i = 0; i < 5; i++) {
+      await a.moveBy(const Offset(-30, 0));
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    final b =
+        await tester.startGesture(center + const Offset(40, 40), pointer: 2);
+    await tester.pump();
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+    expect(next + previous + closed, 0);
+  });
 }

@@ -1858,6 +1858,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// Full screen says this photo cannot be shown, rather than keeping the
   /// last one up.
   void _showNoImage(FileEntry file) {
+    // A load this cubit started for an earlier revision must not land on top.
+    _claimedLoad = null;
     imagePreviewNotifier.value = ImagePreviewNotification(
       filename: file.name,
       contentType: file.dataContentType ?? '',

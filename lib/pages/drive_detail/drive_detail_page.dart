@@ -1211,12 +1211,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     BuildContext context,
     GlobalHideState hideState, {
     required bool next,
+    bool listSorted = true,
   }) {
     final cubit = context.read<DriveDetailCubit>();
     final showHidden = hideState is ShowingHiddenItems;
     return next
-        ? () => cubit.hasNextImage(showHidden)
-        : () => cubit.hasPreviousImage(showHidden);
+        ? () => cubit.hasNextImage(showHidden, listSorted: listSorted)
+        : () => cubit.hasPreviousImage(showHidden, listSorted: listSorted);
   }
 
   double _getMaxWidthForDetailsPanel(state, BuildContext context) {
@@ -1257,21 +1258,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: DetailsPanel(
             currentDrive: driveDetailLoadSuccessState.currentDrive,
             item: driveDetailLoadSuccessState.selectedItem!,
+            // The phone's list is drawn in the folder's own order.
             onNextImageNavigation: () {
-              context
-                  .read<DriveDetailCubit>()
-                  .selectNextImage(hideState is ShowingHiddenItems);
+              context.read<DriveDetailCubit>().selectNextImage(
+                  hideState is ShowingHiddenItems,
+                  listSorted: false);
             },
             onPreviousImageNavigation: () {
-              context
-                  .read<DriveDetailCubit>()
-                  .selectPreviousImage(hideState is ShowingHiddenItems);
+              context.read<DriveDetailCubit>().selectPreviousImage(
+                  hideState is ShowingHiddenItems,
+                  listSorted: false);
             },
             canNavigateThroughImages: context
                 .read<DriveDetailCubit>()
                 .canNavigateThroughImages(hideState is ShowingHiddenItems),
-            hasPreviousImage: _hasImage(context, hideState, next: false),
-            hasNextImage: _hasImage(context, hideState, next: true),
+            hasPreviousImage:
+                _hasImage(context, hideState, next: false, listSorted: false),
+            hasNextImage:
+                _hasImage(context, hideState, next: true, listSorted: false),
           ),
         ),
       );

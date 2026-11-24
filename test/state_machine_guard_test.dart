@@ -177,7 +177,7 @@ const _legacyCasts = <String, int>{
   'lib/blocs/create_manifest/create_manifest_cubit.dart': 8,
   'lib/blocs/create_snapshot/create_snapshot_cubit.dart': 10,
   'lib/blocs/drive_create/drive_create_cubit.dart': 2,
-  'lib/blocs/drive_detail/drive_detail_cubit.dart': 10,
+  'lib/blocs/drive_detail/drive_detail_cubit.dart': 9,
   'lib/blocs/drive_rename/drive_rename_cubit.dart': 1,
   'lib/blocs/drives/drives_cubit.dart': 2,
   'lib/blocs/folder_create/folder_create_cubit.dart': 1,
