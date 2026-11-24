@@ -1298,6 +1298,9 @@ class _PermanenceLineState extends State<PermanenceLine> {
       _stream = PermanenceLine.watch(context, txId);
     }
     return StreamBuilder<({String? status, DateTime? firstStored})>(
+      // A fresh snapshot for new data: a new version keeps the file's ID and
+      // name, and the builder held the old data's date under the new link.
+      key: ValueKey(txId),
       stream: _stream,
       builder: (context, snapshot) {
         final data = snapshot.data;

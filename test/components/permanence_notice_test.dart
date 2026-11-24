@@ -1,10 +1,12 @@
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// The line at the top of a file's details that says whether its data is on
 /// the permaweb for good yet.
@@ -93,5 +95,55 @@ void main() {
     expect(find.text('Usually within an hour'), findsOneWidget);
     expect(find.byType(ArDriveSpinner), findsOneWidget);
     expect(find.textContaining('since'), findsNothing);
+  });
+
+  testWidgets('a new version starts with nothing, not the old data\'s date',
+      (tester) async {
+    final feeds = {
+      'old-tx': BehaviorSubject<({String? status, DateTime? firstStored})>(),
+      'new-tx': BehaviorSubject<({String? status, DateTime? firstStored})>(),
+    };
+    PermanenceLine.watch = (_, txId) => feeds[txId]!.stream;
+    addTearDown(() {
+      PermanenceLine.watch = defaultPermanenceWatch;
+      for (final f in feeds.values) {
+        f.close();
+      }
+    });
+
+    FileDataTableItem version(String txId) => FileDataTableItem(
+          driveId: 'drive',
+          fileId: 'file',
+          parentFolderId: 'folder',
+          name: 'lisbon.jpg',
+          size: 1,
+          lastUpdated: now,
+          dateCreated: now,
+          lastModifiedDate: now,
+          contentType: 'image/jpeg',
+          dataTxId: txId,
+          metadataTx: null,
+          dataTx: NetworkTransaction(
+            id: txId,
+            status: TransactionStatus.pending,
+            dateCreated: now,
+          ),
+          pinnedDataOwnerAddress: null,
+          index: 0,
+          isOwner: true,
+        );
+
+    feeds['old-tx']!.add((
+      status: TransactionStatus.confirmed,
+      firstStored: DateTime(2024, 3, 12),
+    ));
+    await pump(tester, PermanenceLine(item: version('old-tx')));
+    await tester.pump();
+    expect(find.byKey(const Key('permanenceStored')), findsOneWidget);
+
+    // Same widget, same place: only the data changed.
+    await pump(tester, PermanenceLine(item: version('new-tx')));
+    await tester.pump();
+    expect(find.byKey(const Key('permanenceStored')), findsNothing);
   });
 }
