@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
+import 'package:ardrive/drive_explorer/thumbnail/missing_thumbnails.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail.dart';
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -48,6 +50,25 @@ class ThumbnailRepository {
             TransactionTagBatcher(
               fetch: arweaveService.getTagsForTransactions,
             );
+
+  /// Files whose image gave no thumbnail beyond what they have, such as one
+  /// too small for a large thumbnail. For this session, so Make thumbnails
+  /// does not keep offering them.
+  final Set<String> _nothingToAdd = {};
+
+  /// Whether Make thumbnails found nothing more to make for [fileId].
+  bool hasNothingToAdd(String fileId) => _nothingToAdd.contains(fileId);
+
+  /// A file's thumbnail variants; none when its record is missing or does
+  /// not parse, as Make thumbnails reads it too.
+  static List<Variant> _variantsOf(String? json) {
+    if (json == null || json == 'null') return const [];
+    try {
+      return Thumbnail.fromJson(jsonDecode(json)).variants;
+    } catch (_) {
+      return const [];
+    }
+  }
 
   /// Reads the cipher tags of many thumbnails with one query.
   final TransactionTagBatcher _tagBatcher;
@@ -155,12 +176,26 @@ class ThumbnailRepository {
     }
   }
 
-  Future<void> uploadThumbnail({
+  /// Makes the thumbnails the file lacks and records them beside the ones it
+  /// has, small first. Answers whether anything was added: nothing is, and
+  /// nothing is downloaded, when the file lacks nothing.
+  Future<bool> uploadThumbnail({
     required String fileId,
   }) async {
     var fileEntry = await (_driveDao.select(_driveDao.fileEntries)
           ..where((tbl) => tbl.id.equals(fileId)))
         .getSingle();
+
+    final existing = _variantsOf(fileEntry.thumbnail);
+    final missing = missingThumbnailsOf(
+      contentType: fileEntry.dataContentType,
+      size: fileEntry.size,
+      variants: existing,
+    );
+    // Asked for by name on a file thumbnails are not made for: as before,
+    // make them, which is what Create thumbnail on one file has always done.
+    final wantsAll = existing.isEmpty;
+    if (missing == MissingThumbnails.none && !wantsAll) return false;
 
     SecretKey? fileKey;
     String? cipher;
@@ -206,10 +241,22 @@ class ThumbnailRepository {
 
     logger.d('Generating thumbnails');
 
-    final generated = await generateThumbnails(bytes);
+    final generated = [
+      for (final result in await generateThumbnails(bytes))
+        // A file that has thumbnails keeps them; only a large one is added.
+        if (wantsAll || result.name == ThumbnailSize.large.name) result,
+    ];
+    if (generated.isEmpty) {
+      // Too small an image for a large one: not offered again this session.
+      _nothingToAdd.add(fileId);
+      return false;
+    }
 
     // Small first, as older clients read the first variant.
     final uploaded = <ThumbnailUploadMetadata>[];
+    // A payment refusal after the first landed: what landed is recorded,
+    // then the refusal is reported, so a batch stops and says why.
+    var refusedAfterFirst = false;
     for (final data in generated) {
       final thumbnailFile = await IOFileAdapter().fromData(
         data.thumbnail,
@@ -235,16 +282,20 @@ class ThumbnailRepository {
           fileKey: fileKey,
         ));
       } catch (e) {
-        // Without the small one there is nothing to record; without the
+        // Without the first one there is nothing to record; without the
         // large one the small one still serves every client.
         if (uploaded.isEmpty) rethrow;
         logger.w('Large thumbnail upload failed; keeping the small one: $e');
+        if (isTurboPaymentError(e)) refusedAfterFirst = true;
       }
     }
 
     await _driveDao.transaction(() async {
       final thumbnailData = {
-        'variants': [for (final variant in uploaded) variant.toJson()]
+        'variants': [
+          for (final variant in existing) variant.toJson(),
+          for (final variant in uploaded) variant.toJson(),
+        ]
       };
 
       fileEntry = fileEntry.copyWith(
@@ -271,6 +322,8 @@ class ThumbnailRepository {
       await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.createThumbnail));
     });
+    if (refusedAfterFirst) throw ThumbnailsPartlyRefused();
+    return true;
   }
 
   /// Uploads one thumbnail and answers its metadata, with its transaction id,
@@ -315,4 +368,11 @@ class ThumbnailRepository {
 
     return completer.future;
   }
+}
+
+/// Some of a file's thumbnails were added and recorded, then Turbo refused
+/// the rest for payment. A payment error, so callers that stop on one do;
+/// one that counts what was made counts this file too.
+class ThumbnailsPartlyRefused extends TurboPaymentRequiredException {
+  ThumbnailsPartlyRefused();
 }

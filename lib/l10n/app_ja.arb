@@ -8589,5 +8589,16 @@
   "galleryCouldNotLoad": "読み込めませんでした",
   "galleryUploadPending": "アップロード確認待ち",
   "galleryTimeline": "タイムライン",
-  "gallerySelectMonth": "{month}を選択"
+  "gallerySelectMonth": "{month}を選択",
+  "makeThumbnails": "サムネイルを作成",
+  "makeThumbnailsIn": "{count, plural, other{{folder} の画像 {count} 件}}",
+  "makeThumbnailsPublicNote": "公開ファイルのサムネイルも公開されます。",
+  "makeThumbnailsNothingToDo": "ここのすべての画像にサムネイルがあります。",
+  "makeThumbnailsProgress": "{made} / {total}",
+  "makeThumbnailsProgressNote": "作成されたものから順にギャラリーに表示されます。",
+  "makeThumbnailsMade": "{count, plural, =0{サムネイルは作成されませんでした。} other{{count} 件の画像のサムネイルを作成しました。}}",
+  "makeThumbnailsFailed": "{count, plural, other{{count} 件の画像を読み込めませんでした。後でもう一度お試しください。}}",
+  "makeThumbnailsNotice": "{count, plural, other{ここにサムネイルが必要な画像が {count} 件あります。}}",
+  "makeThumbnailsStop": "停止",
+  "makeThumbnailsNotNow": "後で"
 }

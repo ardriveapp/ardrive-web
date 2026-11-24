@@ -8589,5 +8589,16 @@
   "galleryCouldNotLoad": "लोड नहीं हो सका",
   "galleryUploadPending": "अपलोड लंबित",
   "galleryTimeline": "समयरेखा",
-  "gallerySelectMonth": "{month} चुनें"
+  "gallerySelectMonth": "{month} चुनें",
+  "makeThumbnails": "थंबनेल बनाएं",
+  "makeThumbnailsIn": "{count, plural, =1{{folder} में 1 छवि} other{{folder} में {count} छवियां}}",
+  "makeThumbnailsPublicNote": "सार्वजनिक फ़ाइलों के थंबनेल भी सार्वजनिक होते हैं।",
+  "makeThumbnailsNothingToDo": "यहां हर छवि के थंबनेल हैं।",
+  "makeThumbnailsProgress": "{total} में से {made}",
+  "makeThumbnailsProgressNote": "हर थंबनेल बनते ही गैलरी में दिखता है।",
+  "makeThumbnailsMade": "{count, plural, =0{कोई थंबनेल नहीं बना।} =1{1 छवि के थंबनेल बने।} other{{count} छवियों के थंबनेल बने।}}",
+  "makeThumbnailsFailed": "{count, plural, =1{1 छवि पढ़ी नहीं जा सकी। बाद में फिर कोशिश करें।} other{{count} छवियां पढ़ी नहीं जा सकीं। बाद में फिर कोशिश करें।}}",
+  "makeThumbnailsNotice": "{count, plural, =1{यहां 1 छवि को थंबनेल चाहिए।} other{यहां {count} छवियों को थंबनेल चाहिए।}}",
+  "makeThumbnailsStop": "रोकें",
+  "makeThumbnailsNotNow": "अभी नहीं"
 }

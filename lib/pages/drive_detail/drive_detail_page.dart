@@ -60,6 +60,7 @@ import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/gallery/explorer/explorer_view_mode.dart';
 import 'package:ardrive/gallery/explorer/explorer_view_switch.dart';
+import 'package:ardrive/gallery/thumbnails/make_thumbnails_notice.dart';
 import 'package:ardrive/gallery/explorer/explorer_gallery.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
