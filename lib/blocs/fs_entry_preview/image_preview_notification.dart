@@ -12,6 +12,10 @@ class ImagePreviewNotification {
   int? onRequestSize;
   void Function()? loadOnRequest;
 
+  /// The photo's thumbnail, shown while the original is on its way (or
+  /// waits for Preview): soft for a moment rather than a spinner.
+  Uint8List? placeholderBytes;
+
   bool get isPreviewable => dataBytes != null;
 
   ImagePreviewNotification({
@@ -21,5 +25,6 @@ class ImagePreviewNotification {
     this.isLoading = false,
     this.onRequestSize,
     this.loadOnRequest,
+    this.placeholderBytes,
   });
 }

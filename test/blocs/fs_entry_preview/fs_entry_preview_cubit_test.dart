@@ -1190,6 +1190,7 @@ void main() {
       required String name,
       required String contentType,
       String txId = dataTxId,
+      int size = underLimitFileSize,
     }) =>
         createMockFileEntry(
           id: fileId,
@@ -1197,7 +1198,7 @@ void main() {
           name: name,
           dataTxId: txId,
           dataContentType: contentType,
-          size: underLimitFileSize,
+          size: size,
         );
 
     /// An explorer cubit on a private drive whose file row is [rows]. With
@@ -1205,6 +1206,7 @@ void main() {
     FsEntryPreviewCubit explorerCubit(
       FileDataTableItem item, {
       bool lookUpKey = false,
+      Future<Uint8List?> Function({required bool allowFetch})? placeholder,
     }) {
       final drive = MockDrive();
       final driveSelectable = MockSelectable<Drive>();
@@ -1231,8 +1233,164 @@ void main() {
         crypto: mockCrypto,
         fileKey: lookUpKey ? null : SecretKey([1, 2, 3]),
         objectUrls: objectUrls,
+        placeholder: placeholder,
       );
     }
+
+    group('the thumbnail first', () {
+      Future<void> wait([int ms = 30]) =>
+          Future<void>.delayed(Duration(milliseconds: ms));
+
+      /// A thumbnail source that counts what it is asked for.
+      ({
+        Future<Uint8List?> Function({required bool allowFetch}) source,
+        List<bool> asked,
+      }) thumbnailSource({Uint8List? inMemory, Uint8List? fetched}) {
+        final asked = <bool>[];
+        return (
+          source: ({required bool allowFetch}) async {
+            asked.add(allowFetch);
+            return allowFetch ? fetched : inMemory;
+          },
+          asked: asked,
+        );
+      }
+
+      void stubSlowOriginal(Completer<http.Response> original) {
+        when(() => mockGatewayFallback.fetchData(any(), any(),
+                onProgress: any(named: 'onProgress'),
+                cancelWhen: any(named: 'cancelWhen')))
+            .thenAnswer((_) => original.future);
+        when(() => mockArweaveService.getTransactionDetails(any()))
+            .thenAnswer((_) async => MockTransactionCommonMixin());
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+            .thenAnswer((_) async => Uint8List.fromList([5, 6, 7, 8]));
+      }
+
+      test('one held in memory shows at once, with no fetch', () async {
+        final original = Completer<http.Response>();
+        stubSlowOriginal(original);
+        final t = thumbnailSource(inMemory: Uint8List.fromList([7]));
+        final cubit = explorerCubit(createImageItem(size: underLimitFileSize),
+            placeholder: t.source);
+        addTearDown(cubit.close);
+        rows.add(row(name: 'photo.png', contentType: 'image/png'));
+        await wait();
+
+        expect(FsEntryPreviewCubit.imagePreviewNotifier.value!.placeholderBytes,
+            [7]);
+        expect(t.asked, [false]);
+
+        original.complete(http.Response.bytes([1, 2, 3, 4], 200));
+        await wait();
+        expect(FsEntryPreviewCubit.imagePreviewNotifier.value!.dataBytes,
+            [5, 6, 7, 8]);
+      });
+
+      test(
+          'otherwise one is fetched only once the original has taken a '
+          'moment', () async {
+        final original = Completer<http.Response>();
+        stubSlowOriginal(original);
+        final t = thumbnailSource(fetched: Uint8List.fromList([8]));
+        final cubit = explorerCubit(createImageItem(size: underLimitFileSize),
+            placeholder: t.source);
+        addTearDown(cubit.close);
+        rows.add(row(name: 'photo.png', contentType: 'image/png'));
+        await wait();
+        expect(t.asked, [false]);
+
+        await wait(
+            FsEntryPreviewCubit.placeholderFetchDelay.inMilliseconds + 50);
+        expect(t.asked, [false, true]);
+        expect(FsEntryPreviewCubit.imagePreviewNotifier.value!.placeholderBytes,
+            [8]);
+        original.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      });
+
+      test('moving on before the moment is up fetches nothing', () async {
+        final original = Completer<http.Response>();
+        stubSlowOriginal(original);
+        final t = thumbnailSource(fetched: Uint8List.fromList([8]));
+        final cubit = explorerCubit(createImageItem(size: underLimitFileSize),
+            placeholder: t.source);
+        rows.add(row(name: 'photo.png', contentType: 'image/png'));
+        await wait();
+        await cubit.close();
+        await wait(
+            FsEntryPreviewCubit.placeholderFetchDelay.inMilliseconds + 50);
+        expect(t.asked, [false]);
+      });
+
+      test('asked once, however often the row is written', () async {
+        final original = Completer<http.Response>();
+        stubSlowOriginal(original);
+        final t = thumbnailSource();
+        final cubit = explorerCubit(createImageItem(size: underLimitFileSize),
+            placeholder: t.source);
+        addTearDown(cubit.close);
+        for (var i = 0; i < 3; i++) {
+          rows.add(row(name: 'photo.png', contentType: 'image/png'));
+          await wait();
+        }
+        await wait(
+            FsEntryPreviewCubit.placeholderFetchDelay.inMilliseconds + 50);
+        expect(t.asked, [false, true]);
+        original.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      });
+
+      test(
+          'a photo waiting for Preview never fetches one; one in memory '
+          'still shows', () async {
+        const big = FsEntryPreviewCubit.previewOnRequestSize + 1;
+        final t = thumbnailSource(
+            inMemory: Uint8List.fromList([7]),
+            fetched: Uint8List.fromList([8]));
+        final cubit =
+            explorerCubit(createImageItem(size: big), placeholder: t.source);
+        addTearDown(cubit.close);
+        rows.add(row(name: 'photo.png', contentType: 'image/png', size: big));
+        await wait(
+            FsEntryPreviewCubit.placeholderFetchDelay.inMilliseconds + 50);
+        expect(t.asked, [false]);
+        expect(FsEntryPreviewCubit.imagePreviewNotifier.value!.placeholderBytes,
+            [7]);
+      });
+
+      test(
+          'a photo waiting for Preview asks once, however often its row is '
+          'written', () async {
+        const big = FsEntryPreviewCubit.previewOnRequestSize + 1;
+        final t = thumbnailSource();
+        final cubit =
+            explorerCubit(createImageItem(size: big), placeholder: t.source);
+        addTearDown(cubit.close);
+        for (var i = 0; i < 3; i++) {
+          rows.add(row(name: 'photo.png', contentType: 'image/png', size: big));
+          await wait();
+        }
+        expect(t.asked, [false]);
+      });
+
+      test('a thumbnail that arrives after the original does not replace it',
+          () async {
+        stubPrivateFetchAndDecrypt();
+        final late = Completer<Uint8List?>();
+        final cubit = explorerCubit(
+          createImageItem(size: underLimitFileSize),
+          placeholder: ({required bool allowFetch}) => late.future,
+        );
+        addTearDown(cubit.close);
+        rows.add(row(name: 'photo.png', contentType: 'image/png'));
+        await wait();
+        late.complete(Uint8List.fromList([7]));
+        await wait();
+        final shown = FsEntryPreviewCubit.imagePreviewNotifier.value!;
+        expect(shown.isLoading, isFalse);
+        expect(shown.placeholderBytes, isNull);
+        expect(shown.dataBytes, [5, 6, 7, 8]);
+      });
+    });
 
     /// A key lookup that throws the first time it is asked, and finds the key
     /// after that - a database that was busy, then was not.

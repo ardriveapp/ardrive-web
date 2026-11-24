@@ -1,3 +1,8 @@
+import 'dart:typed_data';
+
+import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
+import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
+import 'package:ardrive/gallery/preview/preview_placeholder.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
@@ -104,6 +109,37 @@ class DetailsPanel extends StatefulWidget {
   State<DetailsPanel> createState() => _DetailsPanelState();
 }
 
+/// The thumbnail the preview shows while a photo's original loads.
+Future<Uint8List?> Function({required bool allowFetch})? _placeholderSource(
+  BuildContext context,
+  ArDriveDataTableItem item,
+  Drive drive,
+) {
+  if (item is! FileDataTableItem) return null;
+  GalleryImageLoader? loader;
+  try {
+    loader = context.read<GalleryImageLoader>();
+  } catch (_) {}
+  // Not every surface that shows a details panel has these; without them
+  // the preview simply has no thumbnail to show first.
+  final ThumbnailRepository thumbnails;
+  final ArweaveService arweave;
+  try {
+    thumbnails = context.read<ThumbnailRepository>();
+    arweave = context.read<ArweaveService>();
+  } catch (_) {
+    return null;
+  }
+  return ({required bool allowFetch}) => previewPlaceholderFor(
+        item,
+        allowFetch: allowFetch,
+        isPrivate: drive.isPrivate && item.pinnedDataOwnerAddress == null,
+        loader: loader,
+        thumbnails: thumbnails,
+        arweave: arweave,
+      );
+}
+
 class _DetailsPanelState extends State<DetailsPanel> {
   @override
   Widget build(BuildContext context) {
@@ -133,6 +169,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
             profileCubit: context.read<ProfileCubit>(),
             arweave: context.read<ArweaveService>(),
             configService: context.read<ConfigService>(),
+            placeholder: widget.currentDrive == null
+                ? null
+                : _placeholderSource(
+                    context, widget.item, widget.currentDrive!),
           ),
         )
       ],
