@@ -310,6 +310,14 @@ void main() {
       );
       expect(find.byType(InkWell), findsNothing);
       expect(find.byType(ArDriveClickArea), findsNothing);
+      // Still one named item, its cells read inside it.
+      expect(find.bySemanticsLabel(RegExp(r'^one(\n|$)')), findsOneWidget);
+      // Focus on something inside it, such as a copy button, does not paint
+      // the row as chosen.
+      for (final highlight in tester
+          .widgetList<ListRowHighlight>(find.byType(ListRowHighlight))) {
+        expect(highlight.chosen, isFalse);
+      }
       semantics.dispose();
     });
 

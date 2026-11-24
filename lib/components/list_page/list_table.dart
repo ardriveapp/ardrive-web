@@ -451,7 +451,9 @@ class ListTableRow extends StatelessWidget {
       selectedColour:
           ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
       selected: selectable && (selection?.ticked ?? false),
-      chosen: chosen,
+      // A plain row is never drawn chosen: focus on a button inside it, such
+      // as a purchase's copy button, painted the whole row as selected.
+      chosen: _acts ? chosen : false,
       onFocusGained: onChoose,
       child: Container(
         // No hairlines between table rows: the explorer separates its rows
@@ -476,13 +478,19 @@ class ListTableRow extends StatelessWidget {
                     horizontal: listRowHorizontalPadding,
                     vertical: listRowVerticalPadding,
                   ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: listRowContentMinHeight,
-                    ),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: child,
+                  // One item for a screen reader, named like an interactive
+                  // row, with its cells still read inside it.
+                  child: Semantics(
+                    container: true,
+                    label: semanticLabel,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: listRowContentMinHeight,
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: child,
+                      ),
                     ),
                   ),
                 ),
