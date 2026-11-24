@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/account/presentation/account_page.dart';
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/billing/presentation/billing_sections.dart';
@@ -1169,20 +1170,23 @@ void main() {
           ]),
         ]);
 
+    // The table runs the page's full width, as every list page's does; it
+    // stopped at 880 px with the space beside it empty. The balance card
+    // stays at the reading width.
     testWidgets(
-        'the balance card and the purchases table stop at the same 880 px',
+        'the balance card stops at 880 px and the table runs the full width',
         (tester) async {
       twoPurchases();
       await pumpPage(tester, user: _user(), size: const Size(1400, 1600));
 
-      final sections = find.byType(PageSection);
-      final balance = sections.at(0);
-      final purchases = sections.at(1);
+      final balance = find.byType(PageSection).first;
       // The page body pads 16 a side.
       expect(tester.getSize(balance).width, 880);
       expect(tester.getTopLeft(balance).dx, 16);
-      expect(tester.getSize(purchases).width, 880);
-      expect(tester.getTopLeft(purchases).dx, 16);
+      final table = find.byType(ListTableCard);
+      expect(table, findsOneWidget);
+      expect(tester.getSize(table).width, 1400 - 32);
+      expect(tester.getTopLeft(table).dx, 16);
 
       final header = find.byKey(const Key('billingPurchasesHeader'));
       expect(header, findsOneWidget);
@@ -1197,6 +1201,65 @@ void main() {
       expect(find.text('\$5.00'), findsOneWidget);
       expect(find.text('Card'), findsOneWidget);
       expect(find.text('Crypto'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Credits runs to the card\'s padding: no gutter for a menu it never has',
+        (tester) async {
+      twoPurchases();
+      await pumpPage(tester, user: _user(), size: const Size(1400, 1600));
+
+      final card = tester.getRect(find.byType(ListTableCard));
+      final header = find.byKey(const Key('billingPurchasesHeader'));
+      final heading = tester
+          .getRect(find.descendant(of: header, matching: find.text('Credits')));
+      // The row's own 16 px padding, and nothing more.
+      expect(heading.right, card.right - listRowHorizontalPadding);
+      final figure = tester.getRect(find.textContaining('+').first);
+      expect(figure.right, heading.right);
+    });
+
+    Finder receiptCopy() => find.byWidgetPredicate(
+        (w) => w is AddressCopyButton && w.label == 'Copy receipt ID');
+
+    testWidgets(
+        'a receipt is its ID alone, with its copy button on the same line',
+        (tester) async {
+      for (final size in [const Size(390, 1600), const Size(1400, 1600)]) {
+        twoPurchases();
+        await pumpPage(tester, user: _user(), size: size);
+
+        expect(find.textContaining('Receipt'),
+            findsNWidgets(size.width > 1000 ? 1 : 0),
+            reason: 'only the table heading says Receipt, at $size');
+        final copy = receiptCopy();
+        expect(copy, findsOneWidget);
+        // The receipt is the copy button's left neighbour, on its line.
+        final receipt =
+            find.ancestor(of: copy, matching: find.byType(Row)).first;
+        final id =
+            find.descendant(of: receipt, matching: find.byType(Text)).first;
+        // One unit, so a narrow line wraps them together.
+        expect(tester.widget<Text>(id).data, contains('...'), reason: '$size');
+        expect(tester.getCenter(copy).dy,
+            moreOrLessEquals(tester.getCenter(id).dy, epsilon: 1),
+            reason: '$size');
+      }
+    });
+
+    testWidgets('a phone with large text keeps the receipt inside its row',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      twoPurchases();
+      await pumpPage(tester, user: _user());
+
+      // No row overflows: the card's receipt and the crypto rows'
+      // transaction links both wrap. The copy button stays on screen.
+      expect(tester.takeException(), isNull);
+      final copy = receiptCopy();
+      expect(copy, findsOneWidget);
+      expect(tester.getTopRight(copy).dx, lessThanOrEqualTo(390));
     });
 
     testWidgets('the columns line up across rows', (tester) async {

@@ -127,6 +127,7 @@ class AddressCopyButton extends StatelessWidget {
     super.key,
     required this.address,
     required this.label,
+    this.iconSize = defaultIconSize,
   });
 
   final String address;
@@ -137,8 +138,12 @@ class AddressCopyButton extends StatelessWidget {
   /// The tap target's side, whatever the icon's size.
   static const double targetSize = 40;
 
-  /// The icon's own size.
-  static const double iconSize = 20;
+  /// The icon's usual size.
+  static const double defaultIconSize = 20;
+
+  /// The icon's own size: smaller beside small text, such as a table cell's
+  /// ID, so it matches the icons around it. The tap target stays [targetSize].
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -562,6 +567,35 @@ class _RememberedDrivesRow extends StatelessWidget {
   }
 }
 
+/// A section's heading, over its card: [PageSection]'s, and a table's that
+/// is laid out on its own, such as Billing's purchases.
+class PageSectionTitle extends StatelessWidget {
+  const PageSectionTitle(this.title, {super.key});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: ArDriveSpacing.xxs,
+        bottom: ArDriveSpacing.xs,
+      ),
+      child: Semantics(
+        header: true,
+        child: Text(
+          title,
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: colors.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A heading and its rows on one card, divided.
 class PageSection extends StatelessWidget {
   const PageSection({
@@ -581,29 +615,13 @@ class PageSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ArDriveTheme.of(context).themeData;
     final colors = theme.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(top: ArDriveSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(
-              left: ArDriveSpacing.xxs,
-              bottom: ArDriveSpacing.xs,
-            ),
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                style: typography.paragraphNormal(
-                  color: colors.textLow,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-            ),
-          ),
+          PageSectionTitle(title),
           DecoratedBox(
             decoration: BoxDecoration(
               color: theme.tableTheme.backgroundColor,
@@ -742,7 +760,7 @@ class _AddressRow extends StatelessWidget {
       // icon, plus the 2 px the glyph keeps inside its own box, instead of
       // the icon sitting 12 px inside it.
       trailingBleed: action == null
-          ? (AddressCopyButton.targetSize - AddressCopyButton.iconSize) / 2 + 2
+          ? (AddressCopyButton.targetSize - AddressCopyButton.defaultIconSize) / 2 + 2
           : 0,
       subtitle: ArDriveIdText(
         shortenId(address),

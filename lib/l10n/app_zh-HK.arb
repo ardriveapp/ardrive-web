@@ -7810,15 +7810,6 @@
   "@billingCreditGrant": {
     "description": "Billing page: a purchase row with nothing charged."
   },
-  "billingReceipt": "收據 {id}",
-  "@billingReceipt": {
-    "description": "Billing page: the receipt ID of a card purchase. {id} is shortened.",
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
   "billingCopyReceipt": "複製收據識別碼",
   "@billingCopyReceipt": {
     "description": "Billing page: screen reader label of the receipt copy button."

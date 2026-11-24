@@ -108,11 +108,15 @@ const double listPanelPadding = 8;
 /// One column of a table: its heading, its share of the width, and the key
 /// it sorts by, if it sorts.
 class ListColumn<T> {
-  const ListColumn(this.label, this.flex, {this.sortKey});
+  const ListColumn(this.label, this.flex, {this.sortKey, this.end = false});
 
   final String label;
   final int flex;
   final T? sortKey;
+
+  /// Whether the heading sits at the column's end, over figures that line up
+  /// on the right, such as amounts.
+  final bool end;
 }
 
 /// Cells laid out at their columns' shares, with the table's gap between.
@@ -152,7 +156,13 @@ class ListTableHeader<T> extends StatelessWidget {
     this.sortAscending = true,
     this.onSort,
     this.selection,
+    this.menuGutter = true,
   });
+
+  /// False for a table whose rows never have a menu, so its columns run to
+  /// the card's edge instead of stopping short of an empty gutter. Must match
+  /// the rows' [ListTableRow.menuGutter].
+  final bool menuGutter;
 
   final List<ListColumn<T>> columns;
 
@@ -196,11 +206,19 @@ class ListTableHeader<T> extends StatelessWidget {
           Expanded(
             child: ListColumnsRow(
               flexes: [for (final c in columns) c.flex],
-              cells: [for (final c in columns) _heading(context, c)],
+              cells: [
+                for (final c in columns)
+                  c.end
+                      ? Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: _heading(context, c),
+                        )
+                      : _heading(context, c),
+              ],
             ),
           ),
           // The rows' menu gutter, so the headings sit over their own columns.
-          const SizedBox(width: listMenuGutter),
+          if (menuGutter) const SizedBox(width: listMenuGutter),
         ],
       ),
     );
@@ -248,7 +266,9 @@ class ListTableHeader<T> extends StatelessWidget {
     );
 
     if (key == null || onSort == null) {
-      return content;
+      // A heading that never sorts never draws the arrow, and at a column's
+      // end its empty slot pushed the heading off the figures' edge.
+      return column.end ? label : content;
     }
 
     return ArDriveClickArea(
@@ -380,7 +400,12 @@ class ListTableRow extends StatelessWidget {
     this.chosen,
     this.onChoose,
     this.selectable = true,
-  });
+    this.menuGutter = true,
+  }) : assert(menuGutter || menu == null);
+
+  /// False for a row in a table that never has menus: no gutter is kept, so
+  /// the last column reaches the row's padding. Must match the header's.
+  final bool menuGutter;
 
   /// False for a row that can't be ticked while the others can: its box's
   /// column stays, empty, so its columns line up with theirs, and it takes no
@@ -415,6 +440,12 @@ class ListTableRow extends StatelessWidget {
   /// A click on the row, or focus reaching it: show its details.
   final VoidCallback? onChoose;
 
+  /// Whether a click, a key or a screen reader can do anything with the row.
+  /// A row with nothing to open, choose or tick, such as a purchase, is not a
+  /// button: no Tab stop, no pointer and no "button" read out.
+  bool get _acts =>
+      onOpen != null || onChoose != null || (showsColumns && selection != null);
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -431,7 +462,9 @@ class ListTableRow extends StatelessWidget {
       selectedColour:
           ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
       selected: selectable && (selection?.ticked ?? false),
-      chosen: chosen,
+      // A plain row is never drawn chosen: focus on a button inside it, such
+      // as a purchase's copy button, painted the whole row as selected.
+      chosen: _acts ? chosen : false,
       onFocusGained: onChoose,
       child: Container(
         // No hairlines between table rows: the explorer separates its rows
@@ -449,78 +482,105 @@ class ListTableRow extends StatelessWidget {
         // targets rather than one on top of the other.
         child: Row(
           children: [
-            Expanded(
-              child: ArDriveClickArea(
-                child: Semantics(
-                  button: true,
-                  label: semanticLabel,
-                  child: ListSelectOrOpen(
-                    onOpen: onOpen,
-                    onChoose: onChoose,
-                    onLongPress: selectable ? selection?.onLongPress : null,
-                    onSpace: selectable ? selection?.onTickChanged : null,
-                    child: _yieldLongPress(
-                      selectable && selection?.onLongPress != null,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: listRowHorizontalPadding,
-                        ),
-                        // The box inside the row's tap target: shown, it
-                        // takes its own tap and ticks; hidden, a tap passes
-                        // through to the row, so its spot is not dead. The
-                        // vertical padding is inside the row's height, so the
-                        // box's column reaches the row's top and bottom.
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minHeight: listRowContentMinHeight +
-                                2 * listRowVerticalPadding,
+            if (!_acts)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: listRowHorizontalPadding,
+                    vertical: listRowVerticalPadding,
+                  ),
+                  // One item for a screen reader, named like an interactive
+                  // row, with its cells still read inside it.
+                  child: Semantics(
+                    container: true,
+                    label: semanticLabel,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: listRowContentMinHeight,
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ArDriveClickArea(
+                  child: Semantics(
+                    button: true,
+                    label: semanticLabel,
+                    child: ListSelectOrOpen(
+                      onOpen: onOpen,
+                      onChoose: onChoose,
+                      onLongPress: selectable ? selection?.onLongPress : null,
+                      onSpace: selectable ? selection?.onTickChanged : null,
+                      child: _yieldLongPress(
+                        selectable && selection?.onLongPress != null,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: listRowHorizontalPadding,
                           ),
-                          child: hasCheckbox
-                              ? Row(
-                                  children: [
-                                    if (selectable)
-                                      _RowCheckbox(
-                                        selection: selection,
-                                        semanticLabel: semanticLabel,
-                                      )
-                                    else
-                                      const SizedBox(width: listCheckboxColumn),
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: listRowVerticalPadding,
+                          // The box inside the row's tap target: shown, it
+                          // takes its own tap and ticks; hidden, a tap passes
+                          // through to the row, so its spot is not dead. The
+                          // vertical padding is inside the row's height, so the
+                          // box's column reaches the row's top and bottom.
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minHeight: listRowContentMinHeight +
+                                  2 * listRowVerticalPadding,
+                            ),
+                            child: hasCheckbox
+                                ? Row(
+                                    children: [
+                                      if (selectable)
+                                        _RowCheckbox(
+                                          selection: selection,
+                                          semanticLabel: semanticLabel,
+                                        )
+                                      else
+                                        const SizedBox(
+                                            width: listCheckboxColumn),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: listRowVerticalPadding,
+                                          ),
+                                          child: child,
                                         ),
-                                        child: child,
                                       ),
+                                    ],
+                                  )
+                                : Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: listRowVerticalPadding,
                                     ),
-                                  ],
-                                )
-                              : Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: listRowVerticalPadding,
+                                    child: child,
                                   ),
-                                  child: child,
-                                ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(
-              width: listMenuGutter,
-              // `heightFactor: 1` so the gutter is as tall as the menu and no
-              // taller: a plain Center fills a bounded height and set the
-              // row's height instead of fitting inside it.
-              child: menu == null
-                  ? null
-                  : Align(
-                      alignment: Alignment.center,
-                      heightFactor: 1,
-                      child: menu,
-                    ),
-            ),
+            if (menuGutter)
+              SizedBox(
+                width: listMenuGutter,
+                // `heightFactor: 1` so the gutter is as tall as the menu and no
+                // taller: a plain Center fills a bounded height and set the
+                // row's height instead of fitting inside it.
+                child: menu == null
+                    ? null
+                    : Align(
+                        alignment: Alignment.center,
+                        heightFactor: 1,
+                        child: menu,
+                      ),
+              ),
           ],
         ),
       ),
@@ -782,12 +842,8 @@ class ListTablePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context).themeData;
     return DecoratedSliver(
-      decoration: BoxDecoration(
-        color: theme.tableTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
-      ),
+      decoration: listTableDecoration(context),
       sliver: SliverMainAxisGroup(
         slivers: [
           const SliverToBoxAdapter(child: SizedBox(height: listPanelPadding)),
@@ -795,6 +851,37 @@ class ListTablePanel extends StatelessWidget {
           rows,
           const SliverToBoxAdapter(child: SizedBox(height: listPanelPadding)),
         ],
+      ),
+    );
+  }
+}
+
+/// The card behind every table: [ListTablePanel]'s and [ListTableCard]'s.
+BoxDecoration listTableDecoration(BuildContext context) => BoxDecoration(
+      color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+      borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
+    );
+
+/// [ListTablePanel] for a page that is not a scroll view of slivers: the same
+/// card, padding and header, with its rows built at once. For a table that
+/// shows a page of rows at a time, such as Billing's purchases; a list that
+/// can run to thousands keeps [ListTablePanel], whose rows build lazily.
+class ListTableCard extends StatelessWidget {
+  const ListTableCard({super.key, required this.header, required this.rows});
+
+  final Widget header;
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: listTableDecoration(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: listPanelPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [header, ...rows],
+        ),
       ),
     );
   }
