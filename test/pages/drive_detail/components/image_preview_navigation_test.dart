@@ -170,7 +170,24 @@ void main() {
     expect(asked, 1);
   });
 
-  testWidgets('without a request the preview stays inline', (tester) async {
+  testWidgets('full screen: a tap brings the hidden controls back',
+      (tester) async {
+    await pump(tester, preview(fullScreen: true));
+    // They hide on their own after a few seconds.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    double opacity() =>
+        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity;
+    expect(opacity(), 0);
+    await tester.tapAt(const Offset(640, 300));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(opacity(), 1);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+    testWidgets('without a request the preview stays inline', (tester) async {
     await pump(tester, preview(fullScreen: false));
     await tester.pumpAndSettle();
     expect(
