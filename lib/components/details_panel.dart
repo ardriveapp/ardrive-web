@@ -110,7 +110,7 @@ class DetailsPanel extends StatefulWidget {
 }
 
 /// The thumbnail the preview shows while a photo's original loads.
-Future<Uint8List?> Function()? _placeholderSource(
+Future<Uint8List?> Function({required bool allowFetch})? _placeholderSource(
   BuildContext context,
   ArDriveDataTableItem item,
   Drive drive,
@@ -130,8 +130,9 @@ Future<Uint8List?> Function()? _placeholderSource(
   } catch (_) {
     return null;
   }
-  return () => previewPlaceholderFor(
+  return ({required bool allowFetch}) => previewPlaceholderFor(
         item,
+        allowFetch: allowFetch,
         isPrivate: drive.isPrivate && item.pinnedDataOwnerAddress == null,
         loader: loader,
         thumbnails: thumbnails,

@@ -226,6 +226,32 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
     });
 
+    testWidgets('with animations off the thumbnail still goes, cleanly',
+        (tester) async {
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        isLoading: true,
+        filename: 'Pier.png',
+        contentType: 'image/png',
+        placeholderBytes: pixel,
+      );
+      await pump(
+          tester,
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: preview(fullScreen: true),
+          ));
+      FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+        dataBytes: Uint8List.fromList([...pixel]),
+        filename: 'Pier.png',
+        contentType: 'image/png',
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(images(tester), 1);
+      await tester.pump(const Duration(seconds: 4));
+    });
+
     testWidgets('another photo\'s thumbnail never stays under this one',
         (tester) async {
       FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(

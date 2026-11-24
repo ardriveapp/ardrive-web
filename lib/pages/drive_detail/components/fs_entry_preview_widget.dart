@@ -2101,11 +2101,12 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               Opacity(opacity: opacity, child: child),
           // Then the thumbnail goes: a photo with transparency must not show
           // it through.
-          onEnd: () {
+          // After the frame: with animations off this ends during build.
+          onEnd: () => WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && _placeholder != null) {
               setState(() => _placeholder = null);
             }
-          },
+          }),
           child: _photo(imageBytes),
         );
         // One shape either way, so dropping the thumbnail does not rebuild

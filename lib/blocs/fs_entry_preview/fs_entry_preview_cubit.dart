@@ -380,7 +380,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String? cipher,
     String? cipherIv,
     bool publicIsUnconfirmed = false,
-    Future<Uint8List?> Function()? placeholder,
+    Future<Uint8List?> Function({required bool allowFetch})? placeholder,
   })  : _driveDao = driveDao,
         _placeholder = placeholder,
         _configService = configService,
@@ -408,20 +408,47 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   /// The photo's thumbnail, shown while its original loads or waits for
   /// Preview. See `previewPlaceholderFor`.
-  final Future<Uint8List?> Function()? _placeholder;
+  final Future<Uint8List?> Function({required bool allowFetch})? _placeholder;
 
-  /// Puts the thumbnail under [file]'s preview once it arrives, if the
-  /// preview is still waiting for that file: loading, or [onRequest].
-  void _showPlaceholder(FileEntry file, {bool onRequest = false}) {
+  /// How long the original may take before a thumbnail is fetched to stand
+  /// in. Moving quickly through photos, each closes before this and costs no
+  /// thumbnail at all; one held in memory is shown at once regardless.
+  static const placeholderFetchDelay = Duration(milliseconds: 200);
+
+  /// Files this preview already asked a thumbnail for: the explorer path runs
+  /// again on every write to the row, and asks once.
+  final Set<String> _placeholderAsked = {};
+
+  /// Puts the thumbnail under [file]'s preview, if the preview is still
+  /// waiting for that file: loading, or [onRequest].
+  ///
+  /// One held in memory at once. Otherwise, only while loading and only once
+  /// the original has taken [placeholderFetchDelay], one small fetch. A photo
+  /// waiting for Preview never fetches one: the panel does not show it, and
+  /// full screen shows one only if it was already in memory.
+  Future<void> _showPlaceholder(FileEntry file,
+      {bool onRequest = false}) async {
     final source = _placeholder;
-    if (source == null) return;
-    source().then((bytes) {
-      if (bytes == null || isClosed) return;
+    if (source == null || isClosed) return;
+    if (!_placeholderAsked.add(file.dataTxId)) return;
+
+    bool stillWaiting() {
       final shown = imagePreviewNotifier.value;
-      if (shown == null || shown.filename != file.name) return;
-      final stillWaiting =
-          onRequest ? shown.loadOnRequest != null : shown.isLoading;
-      if (!stillWaiting) return;
+      if (isClosed || shown == null || shown.filename != file.name) {
+        return false;
+      }
+      return onRequest ? shown.loadOnRequest != null : shown.isLoading;
+    }
+
+    try {
+      var bytes = await source(allowFetch: false);
+      if (bytes == null && !onRequest) {
+        await Future<void>.delayed(placeholderFetchDelay);
+        if (!stillWaiting()) return;
+        bytes = await source(allowFetch: true);
+      }
+      if (bytes == null || !stillWaiting()) return;
+      final shown = imagePreviewNotifier.value!;
       imagePreviewNotifier.value = ImagePreviewNotification(
         isLoading: shown.isLoading,
         filename: shown.filename,
@@ -430,7 +457,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         loadOnRequest: shown.loadOnRequest,
         placeholderBytes: bytes,
       );
-    }).catchError((Object _) {});
+    } catch (_) {
+      // No thumbnail; the original still comes.
+    }
   }
 
   /// Nothing outlives a refusal except the refusal.
@@ -986,7 +1015,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         loadOnRequest: loadOnRequest,
       );
       // Seen soft before deciding on the download.
-      _showPlaceholder(file, onRequest: true);
+      unawaited(_showPlaceholder(file, onRequest: true));
       return;
     }
 
@@ -1011,7 +1040,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     // The thumbnail meanwhile, unless the original is already here.
     if (await _driveDao.getPreviewDataFromMemory(txId) == null) {
-      _showPlaceholder(file);
+      unawaited(_showPlaceholder(file));
     }
 
     final Uint8List? dataBytes = await _getBytesFromCache(

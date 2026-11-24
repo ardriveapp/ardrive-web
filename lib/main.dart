@@ -16,6 +16,7 @@ import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
+import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_presence_hint.dart';
@@ -687,9 +688,14 @@ class AppState extends State<App> {
                         .where((user) => user == null),
                     // Tiles decode through Flutter's image cache, which
                     // keeps the decoded photos too.
-                    onForget: () => PaintingBinding.instance.imageCache
-                      ..clear()
-                      ..clearLiveImages(),
+                    onForget: () {
+                      PaintingBinding.instance.imageCache
+                        ..clear()
+                        ..clearLiveImages();
+                      // The preview's photo, and its thumbnail: decrypted
+                      // for a private file.
+                      FsEntryPreviewCubit.imagePreviewNotifier.value = null;
+                    },
                   ),
                   child: RepositoryProvider(
                     create: (context) =>

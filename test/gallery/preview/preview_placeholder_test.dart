@@ -101,4 +101,19 @@ void main() {
         maxBytes: any(named: 'maxBytes'))).thenThrow(Exception('down'));
     expect(await source([v('large', 512)]), isNull);
   });
+
+  test('told not to fetch, only the gallery\'s copy counts', () async {
+    expect(
+        await previewPlaceholderFor(
+          fileItem('p', variants: [v('large', 512)]),
+          allowFetch: false,
+          isPrivate: false,
+          loader: loader,
+          thumbnails: thumbnails,
+          arweave: arweave,
+        ),
+        isNull);
+    verifyNever(() => fallback.fetchDataAtMost(any(), any(),
+        maxBytes: any(named: 'maxBytes')));
+  });
 }

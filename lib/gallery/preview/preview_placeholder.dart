@@ -10,12 +10,13 @@ import 'package:ardrive/utils/logger.dart';
 /// meant to be the cheap, quick part.
 const int previewPlaceholderMaxBytes = 512 * 1024;
 
-/// The photo's thumbnail, for the preview to show at once while the original
-/// loads: the largest one the gallery already holds, which costs nothing, or
-/// else one small fetch of the largest thumbnail the file has. Null when
-/// there is none, or it could not be had.
+/// The photo's thumbnail, for the preview to show while the original loads:
+/// the largest one the gallery already holds, which costs nothing, or, with
+/// [allowFetch], one small fetch of the largest thumbnail the file has. Null
+/// when there is none, or it could not be had.
 Future<Uint8List?> previewPlaceholderFor(
   FileDataTableItem item, {
+  bool allowFetch = true,
   required bool isPrivate,
   required GalleryImageLoader? loader,
   required ThumbnailRepository thumbnails,
@@ -32,6 +33,7 @@ Future<Uint8List?> previewPlaceholderFor(
     }
   }
 
+  if (!allowFetch) return null;
   final best = variants.first;
   if (best.size > previewPlaceholderMaxBytes) return null;
   try {
