@@ -1694,14 +1694,31 @@ class _SyncRepository implements SyncRepository {
           syncProgress = syncProgressController.add(syncProgress);
         }
 
-        // Get file revisions for this specific drive to scope transaction updates
-        final driveFileRevisions =
-            await _driveDao.db.fileRevisions.select().get();
+        // The drive's own transactions, to scope the status pass: its files'
+        // data and the metadata of every change to the drive, its folders and
+        // its files. Publish waits while that metadata is pending; with the
+        // data alone, the drive menu's "Sync this drive" left it waiting until
+        // the next full sync.
+        final db = _driveDao.db;
+        final driveFileRevisions = await (db.fileRevisions.select()
+              ..where((r) => r.driveId.equals(driveId)))
+            .get();
+        final folderMetadataTxIds = await (db.selectOnly(db.folderRevisions)
+              ..addColumns([db.folderRevisions.metadataTxId])
+              ..where(db.folderRevisions.driveId.equals(driveId)))
+            .map((row) => row.read(db.folderRevisions.metadataTxId)!)
+            .get();
+        final driveMetadataTxIds = await (db.selectOnly(db.driveRevisions)
+              ..addColumns([db.driveRevisions.metadataTxId])
+              ..where(db.driveRevisions.driveId.equals(driveId)))
+            .map((row) => row.read(db.driveRevisions.metadataTxId)!)
+            .get();
         reportLocalRead();
-        final driveDataTxIds = driveFileRevisions
-            .where((r) => r.driveId == driveId)
-            .map((r) => r.dataTxId)
-            .toSet();
+        final driveTxIds = {
+          for (final r in driveFileRevisions) ...[r.dataTxId, r.metadataTxId],
+          ...folderMetadataTxIds,
+          ...driveMetadataTxIds,
+        };
 
         final metadataTxsFromSnapshots =
             await SnapshotItemOnChain.getAllCachedTransactionIds();
@@ -1727,7 +1744,7 @@ class _SyncRepository implements SyncRepository {
           await _updateTransactionStatusesForDrive(
             driveDao: _driveDao,
             arweave: _arweave,
-            driveDataTxIds: driveDataTxIds,
+            driveTxIds: driveTxIds,
             // Scope the gateway query to this drive's owner for selectivity.
             ownerAddress: drive.ownerAddress,
             txsIdsToSkip: confirmedFileTxIds,
@@ -1893,7 +1910,7 @@ class _SyncRepository implements SyncRepository {
   Future<void> _updateTransactionStatusesForDrive({
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required Set<String> driveDataTxIds,
+    required Set<String> driveTxIds,
     String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
@@ -1933,7 +1950,7 @@ class _SyncRepository implements SyncRepository {
     final allPendingTxs = await driveDao.pendingTransactions().get();
     reportLocalRead();
     final drivePendingTxs =
-        allPendingTxs.where((tx) => driveDataTxIds.contains(tx.id)).toList();
+        allPendingTxs.where((tx) => driveTxIds.contains(tx.id)).toList();
 
     logger.i(
         'Loaded ${drivePendingTxs.length} pending transactions for drive (from ${allPendingTxs.length} total)');
