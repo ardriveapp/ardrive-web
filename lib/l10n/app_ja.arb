@@ -8600,5 +8600,9 @@
   "makeThumbnailsFailed": "{count, plural, other{{count} 件の画像を読み込めませんでした。後でもう一度お試しください。}}",
   "makeThumbnailsNotice": "{count, plural, other{ここにサムネイルが必要な画像が {count} 件あります。}}",
   "makeThumbnailsStop": "停止",
-  "makeThumbnailsNotNow": "後で"
+  "makeThumbnailsNotNow": "後で",
+  "storedPermanentlySince": "{date} から永久に保存されています",
+  "beingStoredPermanently": "永久保存中",
+  "usuallyWithinAnHour": "通常は1時間以内",
+  "viewTransaction": "トランザクションを表示"
 }

@@ -8600,5 +8600,9 @@
   "makeThumbnailsFailed": "{count, plural, =1{1 छवि पढ़ी नहीं जा सकी। बाद में फिर कोशिश करें।} other{{count} छवियां पढ़ी नहीं जा सकीं। बाद में फिर कोशिश करें।}}",
   "makeThumbnailsNotice": "{count, plural, =1{यहां 1 छवि को थंबनेल चाहिए।} other{यहां {count} छवियों को थंबनेल चाहिए।}}",
   "makeThumbnailsStop": "रोकें",
-  "makeThumbnailsNotNow": "अभी नहीं"
+  "makeThumbnailsNotNow": "अभी नहीं",
+  "storedPermanentlySince": "{date} से स्थायी रूप से संग्रहीत",
+  "beingStoredPermanently": "स्थायी रूप से संग्रहीत हो रहा है",
+  "usuallyWithinAnHour": "आमतौर पर एक घंटे के भीतर",
+  "viewTransaction": "लेन-देन देखें"
 }

@@ -8600,5 +8600,9 @@
   "makeThumbnailsFailed": "{count, plural, =1{No se pudo leer 1 imagen. Inténtalo más tarde.} other{No se pudieron leer {count} imágenes. Inténtalo más tarde.}}",
   "makeThumbnailsNotice": "{count, plural, =1{1 imagen de aquí necesita miniaturas.} other{{count} imágenes de aquí necesitan miniaturas.}}",
   "makeThumbnailsStop": "Detener",
-  "makeThumbnailsNotNow": "Ahora no"
+  "makeThumbnailsNotNow": "Ahora no",
+  "storedPermanentlySince": "Almacenado de forma permanente desde el {date}",
+  "beingStoredPermanently": "Almacenándose de forma permanente",
+  "usuallyWithinAnHour": "Normalmente en menos de una hora",
+  "viewTransaction": "Ver transacción"
 }

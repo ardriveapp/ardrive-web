@@ -708,7 +708,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
           )
         : null;
 
+    final permanence = PermanenceNotice.forFile(item);
+
     return [
+      if (permanence != null) ...[
+        permanence,
+        sizedBoxHeight16px,
+      ],
       if (nameable != null) ...[
         ArNSNameSection(item: nameable),
         sizedBoxHeight16px,
@@ -1209,6 +1215,74 @@ class _TxIdTextLink extends StatelessWidget {
               color: ArDriveTheme.of(context).themeData.colorTokens.textLink,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Whether a file's data is on the permaweb for good yet, at the top of its
+/// details: "Stored permanently since" once its data transaction confirmed,
+/// with a link to the transaction, or "Being stored permanently" while it is
+/// pending. Nothing when the status is unknown or the upload failed; the list
+/// already marks a failed one.
+@visibleForTesting
+class PermanenceNotice extends StatelessWidget {
+  const PermanenceNotice._({required this.txId, required this.storedSince});
+
+  /// The notice for [item], or null when there is nothing to say.
+  static PermanenceNotice? forFile(FileDataTableItem item) {
+    final tx = item.dataTx;
+    if (tx == null) return null;
+    return switch (tx.status) {
+      TransactionStatus.confirmed => PermanenceNotice._(
+          txId: item.dataTxId,
+          // The date its revision was made, which sync stores with the
+          // transaction; an upload from this device has only the row's own.
+          // No confirmation time is kept, and this is the closest to it.
+          storedSince: tx.transactionDateCreated ?? tx.dateCreated,
+        ),
+      TransactionStatus.pending =>
+        PermanenceNotice._(txId: item.dataTxId, storedSince: null),
+      _ => null,
+    };
+  }
+
+  final String txId;
+
+  /// When it was stored, or null while it is still pending.
+  final DateTime? storedSince;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final since = storedSince;
+    if (since == null) {
+      return ArDriveNotice(
+        key: const Key('permanencePending'),
+        type: ArDriveNoticeType.info,
+        leading: const SizedBox.square(
+          dimension: 20,
+          child: Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.small)),
+        ),
+        title: strings.beingStoredPermanently,
+        message: strings.usuallyWithinAnHour,
+      );
+    }
+    return ArDriveNotice(
+      key: const Key('permanenceStored'),
+      type: ArDriveNoticeType.success,
+      // The date kept on one line: a narrow panel broke it after the comma.
+      title: strings.storedPermanentlySince(
+        formatDate(since).replaceAll(' ', '\u00A0'),
+      ),
+      content: Align(
+        alignment: Alignment.centerLeft,
+        child: ArDriveLink(
+          key: const Key('permanenceViewTransaction'),
+          text: strings.viewTransaction,
+          external: true,
+          onTap: () => openUrl(url: 'https://viewblock.io/arweave/tx/$txId'),
         ),
       ),
     );

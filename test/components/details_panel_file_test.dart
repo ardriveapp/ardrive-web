@@ -114,6 +114,7 @@ void main() {
     bool isOwner = true,
     bool enableArNS = false,
     List<String>? assignedNames,
+    NetworkTransaction? dataTx,
   }) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
@@ -185,7 +186,7 @@ void main() {
                           contentType: 'application/octet-stream',
                           dataTxId: file.dataTxId,
                           metadataTx: null,
-                          dataTx: null,
+                          dataTx: dataTx,
                           pinnedDataOwnerAddress: null,
                           index: 0,
                           isOwner: isOwner,
@@ -231,6 +232,33 @@ void main() {
     expect(find.text('3f2a9c...7d1e'), findsOneWidget);
     expect(find.text('datajF...w7Lp'), findsOneWidget);
     expect(find.text('jF3uAb...w7Lp'), findsOneWidget);
+
+    await takeDown(tester);
+  });
+
+  testWidgets('says when the file was stored permanently, at the top',
+      (tester) async {
+    await pumpPanel(
+      tester,
+      dataTx: NetworkTransaction(
+        id: file.dataTxId,
+        status: TransactionStatus.confirmed,
+        dateCreated: DateTime(2026, 11, 1),
+        transactionDateCreated: DateTime(2026, 10, 20, 12),
+      ),
+    );
+    await openTab(tester, 'Details');
+
+    expect(find.byKey(const Key('permanenceStored')), findsOneWidget);
+    expect(
+      find.text('Stored permanently since Oct\u00A020,\u00A02026'),
+      findsOneWidget,
+    );
+    // Above the IDs.
+    expect(
+      tester.getTopLeft(find.byKey(const Key('permanenceStored'))).dy,
+      lessThan(tester.getTopLeft(find.text('3f2a9c...7d1e')).dy),
+    );
 
     await takeDown(tester);
   });

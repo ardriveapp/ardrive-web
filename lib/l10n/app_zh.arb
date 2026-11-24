@@ -8600,5 +8600,9 @@
   "makeThumbnailsFailed": "{count, plural, other{有 {count} 张图片无法读取，请稍后再试。}}",
   "makeThumbnailsNotice": "{count, plural, other{这里有 {count} 张图片需要缩略图。}}",
   "makeThumbnailsStop": "停止",
-  "makeThumbnailsNotNow": "以后再说"
+  "makeThumbnailsNotNow": "以后再说",
+  "storedPermanentlySince": "自 {date} 起永久存储",
+  "beingStoredPermanently": "正在永久存储",
+  "usuallyWithinAnHour": "通常在一小时内完成",
+  "viewTransaction": "查看交易"
 }
