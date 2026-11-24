@@ -1247,6 +1247,21 @@ void main() {
       }
     });
 
+    testWidgets('a phone with large text keeps the receipt inside its row',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      twoPurchases();
+      await pumpPage(tester, user: _user());
+
+      // No row overflows: the card's receipt and the crypto rows'
+      // transaction links both wrap. The copy button stays on screen.
+      expect(tester.takeException(), isNull);
+      final copy = receiptCopy();
+      expect(copy, findsOneWidget);
+      expect(tester.getTopRight(copy).dx, lessThanOrEqualTo(390));
+    });
+
     testWidgets('the columns line up across rows', (tester) async {
       twoPurchases();
       await pumpPage(tester, user: _user(), size: const Size(1400, 1600));

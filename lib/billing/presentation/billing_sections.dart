@@ -786,11 +786,15 @@ class _PurchaseRow extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      text,
-                      key: const Key('billingReferenceLink'),
-                      style:
-                          typography.code(fontSize: 13, color: colors.textMid),
+                    // Flexible, so with large text the ID wraps rather than
+                    // running out of its cell.
+                    Flexible(
+                      child: Text(
+                        text,
+                        key: const Key('billingReferenceLink'),
+                        style: typography.code(
+                            fontSize: 13, color: colors.textMid),
+                      ),
                     ),
                     const SizedBox(width: ArDriveSpacing.xxs),
                     ArDriveIcons.newWindow(size: 14, color: colors.iconMid),
@@ -923,7 +927,10 @@ class _PurchaseRow extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (referenceWidget != null) referenceWidget,
+                          // Flexible, so with large text the ID wraps inside
+                          // the column instead of running over the credits.
+                          if (referenceWidget != null)
+                            Flexible(child: referenceWidget),
                           if (copyWidget != null) copyWidget,
                         ],
                       ),
