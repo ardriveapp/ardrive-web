@@ -1039,7 +1039,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
 
     // The thumbnail meanwhile, unless the original is already here.
-    if (await _driveDao.getPreviewDataFromMemory(txId) == null) {
+    final originalHeld = await _driveDao.getPreviewDataFromMemory(txId) != null;
+    // Taken over while it looked: the newer load owns the preview, and this
+    // one must not start a download it would only throw away.
+    if (!_isCurrent(kind, txId)) {
+      return;
+    }
+    if (!originalHeld) {
       unawaited(_showPlaceholder(file));
     }
 
