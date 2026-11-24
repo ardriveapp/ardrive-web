@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:ardrive/core/crypto/crypto.dart' show ArDriveCrypto, DriveKey;
 import 'package:ardrive/core/crypto/file_keys.dart';
+import 'package:ardrive/arns/domain/arns_nameable_item.dart' show arnsUrlFor;
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -1710,6 +1711,83 @@ void main() {
           await ArDriveCrypto().deriveFileKey(driveKey.key, added.last);
       expect(again[added.last], b64u(await expected.extractBytes()));
       expect(keys.derived, 160);
+      await c.close();
+    });
+
+    // A name points at the page, as a public page's does; the key stays in
+    // the link's fragment, never in what the name step is given.
+    test('a named private page links to its name with the key after it',
+        () async {
+      when(() => repository.readRelease(any()))
+          .thenAnswer((_) async => release(3));
+      final drive = await privateDrive();
+      await db.driveDao.keepDriveKeyForSession(
+        driveId: drive.id,
+        driveKey: DriveKey(SecretKey(List.filled(32, 7)), true),
+      );
+      when(() => creation.prepare(
+                driveId: any(named: 'driveId'),
+                driveKey: any(named: 'driveKey'),
+                wallet: any(named: 'wallet'),
+                isCancelled: any(named: 'isCancelled'),
+                pageScope: any(named: 'pageScope'),
+                catalogKey: any(named: 'catalogKey'),
+              ))
+          .thenAnswer((_) async =>
+              DriveStateCreationResult.prepared(PreparedDriveStateArtifact(
+                entity: DriveStateEntity(
+                    id: 'x',
+                    driveId: drive.id,
+                    blockEnd: 1,
+                    dataStart: 0,
+                    dataEnd: 1,
+                    entityCount: 2),
+                driveId: drive.id,
+                driveName: '',
+                entityCount: 2,
+                sizeInBytes: 900,
+                files: const [
+                  (id: 'ffffffff-0000-4000-8000-00000000000c', dataTxId: 'D')
+                ],
+              )));
+      final priced = <PublicationJob>[];
+      when(() => publisher.sizeOf(any())).thenAnswer((i) {
+        priced.add(i.positionalArguments.first as PublicationJob);
+        return 5000;
+      });
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => PublishedVersion(
+                txId: 'MANIFEST',
+                publicationId: 'p',
+                driveId: drive.id,
+                scope: const PublicationDriveScope(),
+                publishedAt: DateTime.utc(2026),
+              ));
+      final names = _Names();
+      when(() => names.plannedNames).thenReturn(['vault_acme']);
+      when(() => names.hasWork).thenReturn(true);
+      when(() => names.applyTo(any(), publication: any(named: 'publication')))
+          .thenAnswer((_) async => const ArNSFlowOutcome(live: ['vault_acme']));
+      when(() => names.close()).thenAnswer((_) async {});
+
+      final c = cubit(onDrive: drive, names: names);
+      await c.load();
+      await c.review();
+      expect(c.state.stage, PublishStage.review, reason: c.state.failure);
+      await c.publish();
+
+      expect(c.state.stage, PublishStage.done, reason: c.state.failure);
+      final key = priced.last.privatePage!.linkKey;
+      expect(c.state.link, '${arnsUrlFor('vault_acme')}/#/?k=$key');
+      verify(() => names.applyTo(
+            'MANIFEST',
+            publication: ArNSPublicationItem(
+              publicationId: 'p',
+              driveId: drive.id,
+              scope: const PublicationDriveScope(),
+              isLatestVersion: true,
+            ),
+          )).called(1);
       await c.close();
     });
 
