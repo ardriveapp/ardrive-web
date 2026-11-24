@@ -45,6 +45,8 @@ import 'package:ardrive/pages/drive_detail/components/document_preview_widget.da
 import 'package:ardrive/pages/drive_detail/components/email_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/pdf_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/pages/drive_detail/components/full_screen_preview_request.dart';
+import 'package:ardrive/pages/drive_detail/components/preview_image_viewer.dart';
 import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/pages/no_drives/first_drive_page.dart';
 import 'package:ardrive/pages/no_drives/no_drives_page.dart';
@@ -230,6 +232,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    // So the preview's next and previous follow the type column's sort as the
+    // table shows it, by its translated label.
+    final l10n = appLocalizationsOf(context);
+    // Once: a new closure each build would undo the cubit's cached order.
+    context.read<DriveDetailCubit>().explorerTypeLabel ??=
+        (item) => driveTableTypeLabel(
+              l10n,
+              driveTableType(contentType: item.contentType, name: item.name),
+            );
     return SharingFileListener(
       context: widget.context,
       child: SizedBox.expand(
@@ -1167,6 +1178,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           .canNavigateThroughImages(
                                             hideState is ShowingHiddenItems,
                                           ),
+                                      hasPreviousImage: _hasImage(
+                                          context, hideState,
+                                          next: false),
+                                      hasNextImage: _hasImage(
+                                          context, hideState,
+                                          next: true),
                                     )
                                   : const SizedBox(),
                             ),
@@ -1185,6 +1202,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
       ],
     );
+  }
+
+  /// Whether the preview has a photo to go to, asked as it draws. Reads the
+  /// cubit now, so the full-screen route, which outlives this build, still
+  /// asks the right one.
+  bool Function() _hasImage(
+    BuildContext context,
+    GlobalHideState hideState, {
+    required bool next,
+    bool listSorted = true,
+  }) {
+    final cubit = context.read<DriveDetailCubit>();
+    final showHidden = hideState is ShowingHiddenItems;
+    return next
+        ? () => cubit.hasNextImage(showHidden, listSorted: listSorted)
+        : () => cubit.hasPreviousImage(showHidden, listSorted: listSorted);
   }
 
   double _getMaxWidthForDetailsPanel(state, BuildContext context) {
@@ -1225,19 +1258,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: DetailsPanel(
             currentDrive: driveDetailLoadSuccessState.currentDrive,
             item: driveDetailLoadSuccessState.selectedItem!,
+            // The phone's list is drawn in the folder's own order.
             onNextImageNavigation: () {
-              context
-                  .read<DriveDetailCubit>()
-                  .selectNextImage(hideState is ShowingHiddenItems);
+              context.read<DriveDetailCubit>().selectNextImage(
+                  hideState is ShowingHiddenItems,
+                  listSorted: false);
             },
             onPreviousImageNavigation: () {
-              context
-                  .read<DriveDetailCubit>()
-                  .selectPreviousImage(hideState is ShowingHiddenItems);
+              context.read<DriveDetailCubit>().selectPreviousImage(
+                  hideState is ShowingHiddenItems,
+                  listSorted: false);
             },
             canNavigateThroughImages: context
                 .read<DriveDetailCubit>()
                 .canNavigateThroughImages(hideState is ShowingHiddenItems),
+            hasPreviousImage:
+                _hasImage(context, hideState, next: false, listSorted: false),
+            hasNextImage:
+                _hasImage(context, hideState, next: true, listSorted: false),
           ),
         ),
       );

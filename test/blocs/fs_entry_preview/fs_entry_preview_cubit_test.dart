@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/file_keys.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -377,10 +378,22 @@ void main() {
           crypto: mockCrypto,
         );
       },
+      // Full screen was showing another photo: it must not stay up under
+      // this one.
+      setUp: () => FsEntryPreviewCubit.imagePreviewNotifier.value =
+          ImagePreviewNotification(
+        dataBytes: Uint8List.fromList([9, 9, 9]),
+        filename: 'the photo before.jpg',
+        contentType: 'image/jpeg',
+      ),
+      tearDown: () => FsEntryPreviewCubit.imagePreviewNotifier.value = null,
       wait: const Duration(milliseconds: 100),
       verify: (cubit) {
         expect(cubit.state, isA<FsEntryPreviewOversized>());
         expectNoBytesFetched();
+        final shown = FsEntryPreviewCubit.imagePreviewNotifier.value;
+        expect(shown?.filename, isNot('the photo before.jpg'));
+        expect(shown?.dataBytes, isNull);
       },
     );
 
