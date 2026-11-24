@@ -7810,15 +7810,6 @@
   "@billingCreditGrant": {
     "description": "Billing page: a purchase row with nothing charged."
   },
-  "billingReceipt": "रसीद {id}",
-  "@billingReceipt": {
-    "description": "Billing page: the receipt ID of a card purchase. {id} is shortened.",
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
   "billingCopyReceipt": "रसीद ID कॉपी करें",
   "@billingCopyReceipt": {
     "description": "Billing page: screen reader label of the receipt copy button."

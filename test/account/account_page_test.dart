@@ -360,7 +360,7 @@ void main() {
       final link = tester.getRect(find.byKey(const Key('accountNamesLink')));
       expect(copy.size, const Size.square(AddressCopyButton.targetSize));
       // The glyph's drawn right edge: half the icon, less its 2 px inset.
-      expect(copy.center.dx + AddressCopyButton.iconSize / 2 - 2, link.right);
+      expect(copy.center.dx + AddressCopyButton.defaultIconSize / 2 - 2, link.right);
 
       await tester.tapAt(copy.centerRight - const Offset(1, 0));
       await tester.pump();

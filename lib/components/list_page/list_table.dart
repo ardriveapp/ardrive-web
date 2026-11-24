@@ -156,7 +156,13 @@ class ListTableHeader<T> extends StatelessWidget {
     this.sortAscending = true,
     this.onSort,
     this.selection,
+    this.menuGutter = true,
   });
+
+  /// False for a table whose rows never have a menu, so its columns run to
+  /// the card's edge instead of stopping short of an empty gutter. Must match
+  /// the rows' [ListTableRow.menuGutter].
+  final bool menuGutter;
 
   final List<ListColumn<T>> columns;
 
@@ -212,7 +218,7 @@ class ListTableHeader<T> extends StatelessWidget {
             ),
           ),
           // The rows' menu gutter, so the headings sit over their own columns.
-          const SizedBox(width: listMenuGutter),
+          if (menuGutter) const SizedBox(width: listMenuGutter),
         ],
       ),
     );
@@ -394,7 +400,12 @@ class ListTableRow extends StatelessWidget {
     this.chosen,
     this.onChoose,
     this.selectable = true,
-  });
+    this.menuGutter = true,
+  }) : assert(menuGutter || menu == null);
+
+  /// False for a row in a table that never has menus: no gutter is kept, so
+  /// the last column reaches the row's padding. Must match the header's.
+  final bool menuGutter;
 
   /// False for a row that can't be ticked while the others can: its box's
   /// column stays, empty, so its columns line up with theirs, and it takes no
@@ -556,19 +567,20 @@ class ListTableRow extends StatelessWidget {
                   ),
                 ),
               ),
-            SizedBox(
-              width: listMenuGutter,
-              // `heightFactor: 1` so the gutter is as tall as the menu and no
-              // taller: a plain Center fills a bounded height and set the
-              // row's height instead of fitting inside it.
-              child: menu == null
-                  ? null
-                  : Align(
-                      alignment: Alignment.center,
-                      heightFactor: 1,
-                      child: menu,
-                    ),
-            ),
+            if (menuGutter)
+              SizedBox(
+                width: listMenuGutter,
+                // `heightFactor: 1` so the gutter is as tall as the menu and no
+                // taller: a plain Center fills a bounded height and set the
+                // row's height instead of fitting inside it.
+                child: menu == null
+                    ? null
+                    : Align(
+                        alignment: Alignment.center,
+                        heightFactor: 1,
+                        child: menu,
+                      ),
+              ),
           ],
         ),
       ),

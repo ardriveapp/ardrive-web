@@ -5974,8 +5974,6 @@
   "@billingOther": {"description": "Billing page: tag on a row of a kind this version doesn't know."},
   "billingCreditGrant": "Credit grant",
   "@billingCreditGrant": {"description": "Billing page: a purchase row with nothing charged."},
-  "billingReceipt": "Receipt {id}",
-  "@billingReceipt": {"description": "Billing page: the receipt ID of a card purchase. {id} is shortened.", "placeholders": {"id": {"type": "String"}}},
   "billingCopyReceipt": "Copy receipt ID",
   "@billingCopyReceipt": {"description": "Billing page: screen reader label of the receipt copy button."},
   "billingOpenTransaction": "Open transaction {id}",

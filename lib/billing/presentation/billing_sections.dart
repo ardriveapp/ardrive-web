@@ -714,6 +714,7 @@ class _PurchasesHeader extends StatelessWidget {
     final strings = appLocalizationsOf(context);
     return ListTableHeader<Never>(
       key: const Key('billingPurchasesHeader'),
+      menuGutter: false,
       columns: [
         ListColumn(strings.billingColumnType, _typeFlex),
         ListColumn(strings.billingColumnAmount, _amountFlex),
@@ -765,9 +766,10 @@ class _PurchaseRow extends StatelessWidget {
 
     Widget? referenceWidget;
     if (reference != null) {
-      final text = reference.isTransaction
-          ? _short(reference.value)
-          : strings.billingReceipt(_short(reference.value));
+      // The ID alone, as a transaction's is: the table's heading names it,
+      // and on a phone the copy button's label does. "Receipt" before it
+      // pushed it onto a line of its own there.
+      final text = _short(reference.value);
       if (explorer != null) {
         referenceWidget = Semantics(
           link: true,
@@ -820,11 +822,14 @@ class _PurchaseRow extends StatelessWidget {
         ? AddressCopyButton(
             address: reference.value,
             label: strings.billingCopyReceipt,
+            // The size of the link icons beside the other IDs.
+            iconSize: 16,
           )
         : null;
 
     if (wide) {
       return ListTableRow(
+        menuGutter: false,
         // Nothing to open yet; "Download receipt" will be its action.
         onOpen: null,
         semanticLabel:
@@ -912,7 +917,16 @@ class _PurchaseRow extends StatelessWidget {
                   spacing: ArDriveSpacing.xs,
                   children: [
                     Text(p.dateLabel, style: small),
-                    if (referenceWidget != null) referenceWidget,
+                    // The receipt and its copy button wrap as one, so the
+                    // button never lands on a line of its own.
+                    if (referenceWidget != null || copyWidget != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (referenceWidget != null) referenceWidget,
+                          if (copyWidget != null) copyWidget,
+                        ],
+                      ),
                   ],
                 ),
               ],
@@ -923,7 +937,6 @@ class _PurchaseRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (creditsWidget != null) creditsWidget,
-              if (copyWidget != null) copyWidget,
             ],
           ),
         ],
