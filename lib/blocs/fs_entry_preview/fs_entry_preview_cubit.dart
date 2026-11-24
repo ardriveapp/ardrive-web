@@ -392,6 +392,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         _publicIsUnconfirmed = publicIsUnconfirmed,
         _objectUrls = objectUrls ?? PreviewObjectUrls(),
         super(FsEntryPreviewInitial()) {
+    // One cubit per file. Full screen draws whatever the notifier holds and
+    // outlives the file it opened on, so a file that turns out not to be
+    // shown (too large, no type, failed) must not leave the last photo up
+    // under its name.
+    imagePreviewNotifier.value = null;
     if (isSharedFile) {
       _sharedFilePreview(maybeSelectedItem!, fileKey);
     } else {
@@ -923,7 +928,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     FileEntry file,
     String dataUrl,
   ) async {
+    // Full screen draws whatever this holds, and outlives the photo it opened
+    // on: moving to a photo that cannot be shown must not leave the last one
+    // up under the new one's name.
     if (file.dataContentType == null) {
+      _showNoImage(file);
       emit(FsEntryPreviewUnavailable());
       return;
     }
@@ -931,6 +940,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     // Public images used to be fetched with no cap at all — they are buffered
     // in memory just like private ones, so cap both before fetching.
     if (_emitOversizedIfOverLimit(file.size)) {
+      _showNoImage(file);
       return;
     }
 
@@ -1836,6 +1846,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ) async {
     final dataTx = await _arweave.getTransactionDetails(fileDataTxId);
     return dataTx;
+  }
+
+  /// Full screen says this photo cannot be shown, rather than keeping the
+  /// last one up.
+  void _showNoImage(FileEntry file) {
+    imagePreviewNotifier.value = ImagePreviewNotification(
+      filename: file.name,
+      contentType: file.dataContentType ?? '',
+    );
   }
 
   void _emitImagePreview(
