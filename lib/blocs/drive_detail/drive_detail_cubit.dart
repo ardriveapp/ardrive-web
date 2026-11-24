@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/licensed_files_cache.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/gallery/explorer/explorer_view_mode.dart';
+import 'package:ardrive/gallery/explorer/gallery_model.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -141,8 +142,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   List<ArDriveDataTableItem> _selectedItems = [];
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
-
-  List<FileDataTableItem>? _allImagesOfCurrentFolder;
 
   bool _forceDisableMultiselect = false;
 
@@ -934,8 +933,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     try {
-      _allImagesOfCurrentFolder = null;
-
       String driveId = otherDriveId ?? _driveId;
 
       await _folderSubscription?.cancel();
@@ -1657,6 +1654,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
+  /// Closes the details panel if it is open: back to the folder.
+  void closeDetails() {
+    final state = this.state;
+    if (state is DriveDetailLoadSuccess && state.showSelectedItemDetails) {
+      toggleSelectedItemDetails();
+    }
+  }
+
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
     if (state.showSelectedItemDetails) {
@@ -1726,59 +1731,49 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> selectPreviousImage(bool showHiddenImages) =>
       _selectImageRelativeToCurrent(-1, showHiddenImages);
 
+  /// Whether there is a photo after the one open, in the order on screen.
+  /// The folder's ends are ends: next does not wrap to the first.
+  bool hasNextImage(bool showHiddenImages) =>
+      _relativeImage(1, showHiddenImages) != null;
+  bool hasPreviousImage(bool showHiddenImages) =>
+      _relativeImage(-1, showHiddenImages) != null;
+
+  FileDataTableItem? _relativeImage(int offset, bool showHiddenImages) {
+    final selected = _selectedItem;
+    if (selected is! FileDataTableItem) return null;
+    return imageBeside(
+      getAllImagesOfCurrentFolder(showHiddenImages),
+      selected.id,
+      offset,
+    );
+  }
+
   Future<void> _selectImageRelativeToCurrent(
       int offset, bool showHiddenImages) async {
-    final currentIndex = getIndexForImage(
-      _selectedItem as FileDataTableItem,
-      showHiddenImages,
-    );
-    final nextIndex = currentIndex + offset;
-    final nextImage = getImageForIndex(nextIndex, showHiddenImages);
-
-    await selectDataItem(nextImage);
+    final image = _relativeImage(offset, showHiddenImages);
+    if (image != null) await selectDataItem(image);
   }
 
-  FileDataTableItem getImageForIndex(int index, bool showHiddenImages) {
-    final allImagesOfCurrentFolder =
-        getAllImagesOfCurrentFolder(showHiddenImages);
-    final cyclicIndex = index % allImagesOfCurrentFolder.length;
-    final image = allImagesOfCurrentFolder[cyclicIndex];
+  /// The explorer's type column sorts by a translated label, which only the
+  /// view has; it gives it here so the order below is the one on screen.
+  String Function(ArDriveDataTableItem item)? explorerTypeLabel;
 
-    return image;
-  }
-
-  int getIndexForImage(FileDataTableItem image, bool showHiddenImages) {
-    final allImagesOfCurrentFolder =
-        getAllImagesOfCurrentFolder(showHiddenImages);
-    final index = allImagesOfCurrentFolder.indexWhere(
-      (element) => element.id == image.id,
-    );
-
-    return index;
-  }
-
+  /// The folder's photos in the order on screen: the list's column sort, or
+  /// the gallery's months, so next and previous go where the eye expects.
+  /// Hidden ones only when hidden items are shown.
   List<FileDataTableItem> getAllImagesOfCurrentFolder(bool showHiddenImages) {
-    if (_allImagesOfCurrentFolder != null) {
-      return _allImagesOfCurrentFolder!;
-    }
+    final state = this.state;
+    if (state is! DriveDetailLoadSuccess) return const [];
 
-    final state = this.state as DriveDetailLoadSuccess;
-
-    final List<FileDataTableItem> allImagesForFolder =
-        state.currentFolderContents.whereType<FileDataTableItem>().where(
-      (element) {
-        final supportedImageType = supportedImageTypesInFilePreview.contains(
-          element.contentType,
-        );
-
-        return supportedImageType &&
-            (showHiddenImages ? true : !element.isHidden);
-      },
-    ).toList();
-
-    _allImagesOfCurrentFolder = allImagesForFolder;
-
-    return allImagesForFolder;
+    final sort = sortForFolder(state.folderInView.folder.id);
+    return imagesInViewOrder(
+      state.currentFolderContents,
+      gallery: state.viewMode == ExplorerViewMode.gallery,
+      sortColumn: sort?.column,
+      sortOrder: sort?.order,
+      typeLabel: explorerTypeLabel ?? (item) => item.contentType,
+      showHidden: showHiddenImages,
+    );
   }
 
   Future<void> updateTableColumnVisibility(TableColumn column) async {
@@ -2106,7 +2101,60 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _forgetLinkedFolder();
     _syncSubscription?.cancel();
     _trailingRedraw?.cancel();
-    _allImagesOfCurrentFolder = null;
     return super.close();
   }
+}
+
+/// A folder's photos in the order on screen: the list's column sort (or the
+/// folder's own order when none was chosen), or the gallery's months. Hidden
+/// ones only when [showHidden].
+List<FileDataTableItem> imagesInViewOrder(
+  List<ArDriveDataTableItem> contents, {
+  required bool gallery,
+  required int? sortColumn,
+  required TableSort? sortOrder,
+  required String Function(ArDriveDataTableItem item) typeLabel,
+  required bool showHidden,
+}) {
+  final visible = [
+    for (final item in contents)
+      if (showHidden || !item.isHidden) item,
+  ];
+  final List<ArDriveDataTableItem> ordered;
+  if (gallery) {
+    ordered = buildGalleryModel(
+      visible,
+      sortColumn: sortColumn,
+      sortOrder: sortOrder,
+      typeLabel: typeLabel,
+    ).flat;
+  } else if (sortColumn != null && sortOrder != null) {
+    ordered = sortExplorerRows(
+      visible,
+      sortColumn,
+      sortOrder,
+      typeLabel: typeLabel,
+    );
+  } else {
+    ordered = visible;
+  }
+  return [
+    for (final item in ordered)
+      if (item is FileDataTableItem &&
+          supportedImageTypesInFilePreview.contains(item.contentType))
+        item,
+  ];
+}
+
+/// The photo [offset] places from the one with [id] in [images]; null at
+/// the ends, which do not wrap, or when [id] is not among them.
+FileDataTableItem? imageBeside(
+  List<FileDataTableItem> images,
+  String id,
+  int offset,
+) {
+  final index = images.indexWhere((image) => image.id == id);
+  if (index < 0) return null;
+  final to = index + offset;
+  return to < 0 || to >= images.length ? null : images[to];
 }

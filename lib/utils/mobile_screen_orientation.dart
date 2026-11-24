@@ -20,6 +20,16 @@ abstract class MobileScreenOrientation {
     throw UnimplementedError();
   }
 
+  /// Lets the device turn either way: a full-screen photo, which should
+  /// fill a portrait screen as well as a landscape one.
+  static void followDevice() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+  }
+
   static void lockInLandscape() {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,

@@ -64,6 +64,8 @@ class DetailsPanel extends StatefulWidget {
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
     required this.canNavigateThroughImages,
+    this.hasPreviousImage,
+    this.hasNextImage,
     this.onClose,
     this.onSync,
     this.driveIsSynced,
@@ -77,6 +79,11 @@ class DetailsPanel extends StatefulWidget {
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
   final bool canNavigateThroughImages;
+
+  /// Asked each time the preview redraws: whether there is a photo before
+  /// or after this one. Null for always.
+  final bool Function()? hasPreviousImage;
+  final bool Function()? hasNextImage;
 
   /// Closes the panel, for a panel that is not the explorer's.
   ///
@@ -407,6 +414,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
         onNextImageNavigation: widget.onNextImageNavigation,
         onPreviousImageNavigation: widget.onPreviousImageNavigation,
         canNavigateThroughImages: widget.canNavigateThroughImages,
+        hasPreviousImage: widget.hasPreviousImage,
+        hasNextImage: widget.hasNextImage,
         previewCubit: context.read<FsEntryPreviewCubit>(),
       ),
     );

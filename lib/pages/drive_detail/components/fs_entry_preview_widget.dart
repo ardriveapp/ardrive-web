@@ -7,6 +7,8 @@ class FsEntryPreviewWidget extends StatefulWidget {
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
   final bool canNavigateThroughImages;
+  final bool Function()? hasPreviousImage;
+  final bool Function()? hasNextImage;
   final FsEntryPreviewState state;
   final FsEntryPreviewCubit previewCubit;
 
@@ -17,6 +19,8 @@ class FsEntryPreviewWidget extends StatefulWidget {
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
     required this.canNavigateThroughImages,
+    this.hasPreviousImage,
+    this.hasNextImage,
     required this.previewCubit,
   });
 
@@ -397,6 +401,8 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           onNextImageNavigate: widget.onNextImageNavigation,
           onPreviousImageNavigate: widget.onPreviousImageNavigation,
           canNavigateThroughImages: widget.canNavigateThroughImages,
+          hasPreviousImage: widget.hasPreviousImage,
+          hasNextImage: widget.hasNextImage,
           previewCubit: widget.previewCubit,
         );
 
@@ -1798,6 +1804,12 @@ class ImagePreviewWidget extends StatefulWidget {
   final Function? onPreviousImageNavigate;
   final Function? onNextImageNavigate;
   final bool canNavigateThroughImages;
+
+  /// Whether there is a photo before or after this one, asked as it draws:
+  /// full screen is its own route and outlives the selection it opened on.
+  /// Null for always.
+  final bool Function()? hasPreviousImage;
+  final bool Function()? hasNextImage;
   final FsEntryPreviewCubit previewCubit;
 
   const ImagePreviewWidget({
@@ -1807,6 +1819,8 @@ class ImagePreviewWidget extends StatefulWidget {
     this.onPreviousImageNavigate,
     this.onNextImageNavigate,
     required this.canNavigateThroughImages,
+    this.hasPreviousImage,
+    this.hasNextImage,
     required this.previewCubit,
   });
 
@@ -1821,20 +1835,80 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   bool _controlsDisabled = false;
   Timer? _hideControlsTimer;
 
+  final _keyboard = FocusNode(debugLabel: 'image preview');
+
   @override
   void initState() {
     super.initState();
     _resetHideControlsTimer();
+    _takeFullScreenRequest();
+  }
+
+  @override
+  void didUpdateWidget(ImagePreviewWidget old) {
+    super.didUpdateWidget(old);
+    _takeFullScreenRequest();
+  }
+
+  /// The gallery opens a photo straight to full screen: the inline preview
+  /// that appears for it goes there at once.
+  void _takeFullScreenRequest() {
+    if (widget.isFullScreen || widget.isSharePage) return;
+    final request = FullScreenPreviewRequest.take();
+    if (request == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _toggleFullScreen(onClosed: request.onClosed);
+    });
   }
 
   @override
   void dispose() {
     _cancelHideControlsTimer();
+    _keyboard.dispose();
     if (widget.isFullScreen) {
       MobileStatusBar.show();
       MobileScreenOrientation.lockInPortraitUp();
     }
     super.dispose();
+  }
+
+  bool get _hasPrevious =>
+      widget.canNavigateThroughImages &&
+      widget.onPreviousImageNavigate != null &&
+      (widget.hasPreviousImage?.call() ?? true);
+
+  bool get _hasNext =>
+      widget.canNavigateThroughImages &&
+      widget.onNextImageNavigate != null &&
+      (widget.hasNextImage?.call() ?? true);
+
+  void _previous() {
+    if (_hasPrevious) widget.onPreviousImageNavigate!.call();
+  }
+
+  void _next() {
+    if (_hasNext) widget.onNextImageNavigate!.call();
+  }
+
+  /// Full screen: the arrows move, Escape closes.
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      _previous();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowRight) {
+      _next();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.escape && event is KeyDownEvent) {
+      Navigator.of(context).maybePop();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   void _resetHideControlsTimer() {
@@ -1879,18 +1953,23 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   @override
   Widget build(BuildContext context) {
     if (widget.isFullScreen) {
-      return Center(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildImage(),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildActionBar(),
-            ),
-          ],
+      return Focus(
+        focusNode: _keyboard,
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: Center(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildImage(),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildActionBar(),
+              ),
+            ],
+          ),
         ),
       );
     } else {
@@ -1972,6 +2051,15 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     if (!withTapRegion) {
       return content;
     }
+    // Full screen: swipe, zoom and swipe-down-to-close. Keyed by the photo,
+    // so each one opens unzoomed.
+    final viewer = PreviewImageViewer(
+      key: ValueKey(imageBytes),
+      onPrevious: _hasPrevious ? _previous : null,
+      onNext: _hasNext ? _next : null,
+      onClose: () => Navigator.of(context).maybePop(),
+      child: content,
+    );
     return MouseRegion(
       onHover: (event) {
         if (!AppPlatform.isMobile) {
@@ -2003,7 +2091,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             }
           });
         },
-        child: content,
+        child: viewer,
       ),
     );
   }
@@ -2217,26 +2305,44 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   Widget _buildNavigationButtons({
     required bool isFullScreen,
   }) {
-    return Row(
-      mainAxisAlignment: isFullScreen
-          ? MainAxisAlignment.spaceEvenly
-          : MainAxisAlignment.spaceBetween,
-      children: [
-        _PreviewIconButton(
-          tooltip: appLocalizationsOf(context).previewPreviousImage,
-          onPressed: widget.canNavigateThroughImages
-              ? () => widget.onPreviousImageNavigate?.call()
-              : null,
-          icon: Icons.arrow_back_ios_outlined,
-        ),
-        _PreviewIconButton(
-          tooltip: appLocalizationsOf(context).previewNextImage,
-          onPressed: widget.canNavigateThroughImages
-              ? () => widget.onNextImageNavigate?.call()
-              : null,
-          icon: Icons.arrow_forward_ios_outlined,
-        ),
-      ],
+    // Redrawn with each photo: whether there is one before or after changes
+    // as you move, and full screen does not rebuild otherwise.
+    return ValueListenableBuilder(
+      valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
+      builder: (context, _, __) {
+        // At an end the arrow goes, holding its place so the other does
+        // not move.
+        Widget side(bool has, Widget button) => Visibility(
+              visible: has,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: button,
+            );
+        return Row(
+          mainAxisAlignment: isFullScreen
+              ? MainAxisAlignment.spaceEvenly
+              : MainAxisAlignment.spaceBetween,
+          children: [
+            side(
+              _hasPrevious,
+              _PreviewIconButton(
+                tooltip: appLocalizationsOf(context).previewPreviousImage,
+                onPressed: _hasPrevious ? _previous : null,
+                icon: Icons.arrow_back_ios_outlined,
+              ),
+            ),
+            side(
+              _hasNext,
+              _PreviewIconButton(
+                tooltip: appLocalizationsOf(context).previewNextImage,
+                onPressed: _hasNext ? _next : null,
+                icon: Icons.arrow_forward_ios_outlined,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -2266,11 +2372,13 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     );
   }
 
-  Future<void> _toggleFullScreen() async {
+  Future<void> _toggleFullScreen({VoidCallback? onClosed}) async {
     if (widget.isFullScreen) {
       Navigator.of(context).pop();
     } else {
-      MobileScreenOrientation.lockInLandscape();
+      // A photo fills the screen the way the phone is held; it is no longer
+      // turned to landscape, which left portrait photos small.
+      MobileScreenOrientation.followDevice();
       await Navigator.of(context).push(
         PageRouteBuilder(
           barrierDismissible: true,
@@ -2282,11 +2390,14 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               onPreviousImageNavigate: widget.onPreviousImageNavigate,
               onNextImageNavigate: widget.onNextImageNavigate,
               canNavigateThroughImages: widget.canNavigateThroughImages,
+              hasPreviousImage: widget.hasPreviousImage,
+              hasNextImage: widget.hasNextImage,
               previewCubit: widget.previewCubit,
             ),
           ),
         ),
       );
+      onClosed?.call();
     }
   }
 }

@@ -4,9 +4,11 @@ import 'package:ardrive/gallery/explorer/gallery_model.dart';
 import 'package:ardrive/gallery/explorer/gallery_selection.dart';
 import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/full_screen_preview_request.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -181,6 +183,16 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     if (phone && widget.multiSelected.isNotEmpty && !widget.lockMultiSelect) {
       _click(item, GalleryClickKind.toggle);
       return;
+    }
+    // A photo opens to full screen, as in a photo app; closing it comes
+    // back to the grid. Anything else opens in the details panel as before.
+    if (item is FileDataTableItem &&
+        supportedImageTypesInFilePreview.contains(item.contentType)) {
+      FullScreenPreviewRequest.request(onClosed: () {
+        if (mounted && cubit.state is DriveDetailLoadSuccess) {
+          cubit.closeDetails();
+        }
+      });
     }
     cubit.openDataItem(item);
   }

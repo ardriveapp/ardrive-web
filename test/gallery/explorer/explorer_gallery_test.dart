@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/entities/file_entity.dart' show Variant;
 import 'package:ardrive/gallery/explorer/explorer_gallery.dart';
 import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
+import 'package:ardrive/pages/drive_detail/components/full_screen_preview_request.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart'
     show DriveExplorerItemTileTrailing;
@@ -374,6 +375,21 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       verify(() => detailCubit.openDataItem(b)).called(1);
+    });
+
+    testWidgets('a photo opens to full screen; a document does not',
+        (tester) async {
+      addTearDown(FullScreenPreviewRequest.cancel);
+      await pump(tester, app(all));
+      await mouseTap(tester, tileOf('Pier.jpg'));
+      await mouseTap(tester, tileOf('Pier.jpg'));
+      await tester.pump(const Duration(seconds: 1));
+      expect(FullScreenPreviewRequest.take(), isNotNull);
+
+      await mouseTap(tester, tileOf('Itinerary.pdf'));
+      await mouseTap(tester, tileOf('Itinerary.pdf'));
+      await tester.pump(const Duration(seconds: 1));
+      expect(FullScreenPreviewRequest.take(), isNull);
     });
 
     testWidgets('a touch tap opens, as it does in the list', (tester) async {
