@@ -384,12 +384,12 @@ void main() {
       await mouseTap(tester, tileOf('Pier.jpg'));
       await mouseTap(tester, tileOf('Pier.jpg'));
       await tester.pump(const Duration(seconds: 1));
-      expect(FullScreenPreviewRequest.take(), isNotNull);
+      expect(FullScreenPreviewRequest.take('b'), isNotNull);
 
       await mouseTap(tester, tileOf('Itinerary.pdf'));
       await mouseTap(tester, tileOf('Itinerary.pdf'));
       await tester.pump(const Duration(seconds: 1));
-      expect(FullScreenPreviewRequest.take(), isNull);
+      expect(FullScreenPreviewRequest.take('doc'), isNull);
     });
 
     testWidgets(
@@ -401,7 +401,7 @@ void main() {
       await mouseTap(tester, tileOf('Pier.jpg'));
       await mouseTap(tester, tileOf('Pier.jpg'));
       await tester.pump(const Duration(seconds: 1));
-      final request = FullScreenPreviewRequest.take()!;
+      final request = FullScreenPreviewRequest.take('b')!;
 
       await tester.pumpWidget(const SizedBox());
       request.onClosed!();

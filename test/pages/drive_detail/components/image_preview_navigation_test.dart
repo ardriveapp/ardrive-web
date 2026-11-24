@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/pages/drive_detail/components/full_screen_preview_request.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../gallery/explorer/gallery_test_items.dart';
 
 class MockFsEntryPreviewCubit extends Mock implements FsEntryPreviewCubit {}
 
@@ -40,14 +43,23 @@ void main() {
     FullScreenPreviewRequest.cancel();
   });
 
-  ImagePreviewWidget preview({required bool fullScreen}) => ImagePreviewWidget(
+  final photo = fileItem('pier');
+  MockFsEntryPreviewCubit cubitFor(FileDataTableItem item) {
+    final cubit = MockFsEntryPreviewCubit();
+    when(() => cubit.maybeSelectedItem).thenReturn(item);
+    return cubit;
+  }
+
+  ImagePreviewWidget preview(
+          {required bool fullScreen, FileDataTableItem? item}) =>
+      ImagePreviewWidget(
         isFullScreen: fullScreen,
         canNavigateThroughImages: true,
         onNextImageNavigate: () => next++,
         onPreviousImageNavigate: () => previous++,
         hasNextImage: () => hasNext,
         hasPreviousImage: () => hasPrevious,
-        previewCubit: MockFsEntryPreviewCubit(),
+        previewCubit: cubitFor(item ?? photo),
       );
 
   Future<void> pump(WidgetTester tester, Widget child) async {
@@ -121,7 +133,7 @@ void main() {
       'a view that asks for full screen gets it, and hears when it closes',
       (tester) async {
     var closed = 0;
-    FullScreenPreviewRequest.request(onClosed: () => closed++);
+    FullScreenPreviewRequest.request(fileId: 'pier', onClosed: () => closed++);
     await pump(tester, preview(fullScreen: false));
     await tester.pumpAndSettle();
     expect(
@@ -131,6 +143,31 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(closed, 1);
+  });
+
+  testWidgets('a request for another photo is not taken by this one',
+      (tester) async {
+    FullScreenPreviewRequest.request(fileId: 'someone else');
+    await pump(tester, preview(fullScreen: false));
+    await tester.pumpAndSettle();
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is ImagePreviewWidget && w.isFullScreen),
+        findsNothing);
+  });
+
+  testWidgets('full screen on a photo too large to load unasked offers Preview',
+      (tester) async {
+    var asked = 0;
+    FsEntryPreviewCubit.imagePreviewNotifier.value = ImagePreviewNotification(
+      filename: 'Huge.jpg',
+      contentType: 'image/jpeg',
+      onRequestSize: 30 * 1024 * 1024,
+      loadOnRequest: () => asked++,
+    );
+    await pump(tester, preview(fullScreen: true));
+    await tester.tap(find.text('Preview'));
+    expect(asked, 1);
   });
 
   testWidgets('without a request the preview stays inline', (tester) async {

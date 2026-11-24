@@ -27,9 +27,13 @@ class PreviewImageViewer extends StatefulWidget {
     this.onNext,
     this.onPrevious,
     this.onClose,
+    this.onTap,
   });
 
   final Widget child;
+
+  /// A single tap, once it is clearly not the first of a double tap.
+  final VoidCallback? onTap;
 
   /// Null where there is no next photo: the swipe springs back.
   final VoidCallback? onNext;
@@ -52,6 +56,10 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
   Offset _swipe = Offset.zero;
   bool _swiping = false;
   Offset? _doubleTapAt;
+
+  /// Swiping is for fingers. A mouse drag only looks around a zoomed photo:
+  /// on a desktop a drag should not close or move on.
+  PointerDeviceKind? _kind;
 
   late final AnimationController _settle;
   double _fromScale = 1, _toScale = 1;
@@ -120,7 +128,9 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
     _startScale = _scale;
     _startOffset = _offset;
     _startFocal = details.localFocalPoint;
-    _swiping = details.pointerCount < 2 && !isZoomed;
+    _swiping = details.pointerCount < 2 &&
+        !isZoomed &&
+        _kind != PointerDeviceKind.mouse;
     _swipe = Offset.zero;
   }
 
@@ -160,7 +170,9 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
     final dx = _swipe.dx, dy = _swipe.dy;
     final horizontal = dx.abs() > dy.abs();
     if (horizontal) {
-      final far = dx.abs() > size.width * 0.2 || velocity.dx.abs() > 600;
+      // A flick counts when it moved at all; a twitch does not.
+      final far = dx.abs() > size.width * 0.2 ||
+          (velocity.dx.abs() > 600 && dx.abs() > 24);
       if (far && dx < 0 && widget.onNext != null) {
         _swipe = Offset.zero;
         widget.onNext!();
@@ -222,6 +234,7 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
 
     return Listener(
       onPointerSignal: _onPointerSignal,
+      onPointerDown: (event) => _kind = event.kind,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onScaleStart: _onScaleStart,
@@ -229,6 +242,7 @@ class PreviewImageViewerState extends State<PreviewImageViewer>
         onScaleEnd: _onScaleEnd,
         onDoubleTapDown: (d) => _doubleTapAt = d.localPosition,
         onDoubleTap: _onDoubleTap,
+        onTap: widget.onTap,
         child: ClipRect(
           child: Opacity(
             opacity: fade.toDouble(),

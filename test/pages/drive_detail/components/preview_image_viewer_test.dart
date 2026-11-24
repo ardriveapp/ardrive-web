@@ -1,4 +1,5 @@
 import 'package:ardrive/pages/drive_detail/components/preview_image_viewer.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -108,5 +109,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(state(tester).isZoomed, isTrue);
     expect(next + previous + closed, 0);
+  });
+
+  testWidgets('a mouse drag does not move on or close; a touch swipe does',
+      (tester) async {
+    await pump(tester);
+    final mouse = await tester.startGesture(tester.getCenter(viewer()),
+        kind: PointerDeviceKind.mouse);
+    for (var i = 0; i < 10; i++) {
+      await mouse.moveBy(const Offset(-30, 0));
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await mouse.up();
+    await tester.pumpAndSettle();
+    expect(next, 0);
+  });
+
+  testWidgets('a single tap is reported; a swipe is not a tap', (tester) async {
+    var taps = 0;
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      home: PreviewImageViewer(
+        onNext: () => next++,
+        onTap: () => taps++,
+        child: const SizedBox.expand(),
+      ),
+    ));
+    await tester.tap(viewer());
+    // A single tap waits out the double tap's window.
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(taps, 1);
+    await tester.fling(viewer(), const Offset(-200, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+    expect(next, 1);
   });
 }

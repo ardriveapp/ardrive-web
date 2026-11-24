@@ -190,9 +190,11 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
         supportedImageTypesInFilePreview.contains(item.contentType)) {
       // Not tied to this widget: on a phone the details page takes the
       // gallery's place while the photo is open.
-      FullScreenPreviewRequest.request(onClosed: () {
-        if (!cubit.isClosed) cubit.closeDetails();
-      });
+      FullScreenPreviewRequest.request(
+          fileId: item.id,
+          onClosed: () {
+            if (!cubit.isClosed) cubit.closeDetails();
+          });
     }
     cubit.openDataItem(item);
   }

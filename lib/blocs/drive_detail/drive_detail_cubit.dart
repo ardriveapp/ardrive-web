@@ -1766,15 +1766,32 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     if (state is! DriveDetailLoadSuccess) return const [];
 
     final sort = sortForFolder(state.folderInView.folder.id);
-    return imagesInViewOrder(
+    final gallery = state.viewMode == ExplorerViewMode.gallery;
+    // Asked on every redraw of the preview, so worked out once per folder,
+    // sort, view and hidden choice: a folder of thousands is a real sort.
+    final key = (
       state.currentFolderContents,
-      gallery: state.viewMode == ExplorerViewMode.gallery,
+      sort?.column,
+      sort?.order,
+      gallery,
+      showHiddenImages,
+      explorerTypeLabel,
+    );
+    final cached = _imagesInViewOrder;
+    if (cached != null && cached.$1 == key) return cached.$2;
+    final images = imagesInViewOrder(
+      state.currentFolderContents,
+      gallery: gallery,
       sortColumn: sort?.column,
       sortOrder: sort?.order,
       typeLabel: explorerTypeLabel ?? (item) => item.contentType,
       showHidden: showHiddenImages,
     );
+    _imagesInViewOrder = (key, images);
+    return images;
   }
+
+  (Object, List<FileDataTableItem>)? _imagesInViewOrder;
 
   Future<void> updateTableColumnVisibility(TableColumn column) async {
     // Into the state as well as the store: the table is built from the state,

@@ -235,7 +235,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     // So the preview's next and previous follow the type column's sort as the
     // table shows it, by its translated label.
     final l10n = appLocalizationsOf(context);
-    context.read<DriveDetailCubit>().explorerTypeLabel =
+    // Once: a new closure each build would undo the cubit's cached order.
+    context.read<DriveDetailCubit>().explorerTypeLabel ??=
         (item) => driveTableTypeLabel(
               l10n,
               driveTableType(contentType: item.contentType, name: item.name),

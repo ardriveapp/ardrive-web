@@ -1854,7 +1854,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   /// that appears for it goes there at once.
   void _takeFullScreenRequest() {
     if (widget.isFullScreen || widget.isSharePage) return;
-    final request = FullScreenPreviewRequest.take();
+    final request = FullScreenPreviewRequest.take(
+        widget.previewCubit.maybeSelectedItem?.id);
     if (request == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _toggleFullScreen(onClosed: request.onClosed);
@@ -1942,6 +1943,16 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     });
   }
 
+  void _onTap() {
+    setState(() {
+      _cancelHideControlsTimer();
+      _toggleControls();
+      if (_controlsVisible && !AppPlatform.isMobile) {
+        _resetHideControlsTimer();
+      }
+    });
+  }
+
   void _toggleControls() {
     if (_controlsVisible) {
       _hideControls();
@@ -1995,6 +2006,17 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         }
 
         final isLoading = imagePreview.isLoading;
+
+        final askSize = imagePreview.onRequestSize;
+        final ask = imagePreview.loadOnRequest;
+        if (widget.isFullScreen && askSize != null && ask != null) {
+          return Center(
+            child: FsEntryPreviewOnRequestPrompt(
+              state: FsEntryPreviewOnRequest(size: askSize),
+              onPreview: ask,
+            ),
+          );
+        }
 
         if (!widget.isFullScreen) {
           return _buildImageFromBytes(
@@ -2058,6 +2080,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       onPrevious: _hasPrevious ? _previous : null,
       onNext: _hasNext ? _next : null,
       onClose: () => Navigator.of(context).maybePop(),
+      // A tap, not every touch: a swipe or pinch leaves the controls be.
+      onTap: _onTap,
       child: content,
     );
     return MouseRegion(
@@ -2079,20 +2103,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
       cursor:
           _controlsVisible ? SystemMouseCursors.click : SystemMouseCursors.none,
       hitTestBehavior: HitTestBehavior.opaque,
-      child: TapRegion(
-        behavior: HitTestBehavior.opaque,
-        onTapInside: (event) {
-          setState(() {
-            _cancelHideControlsTimer();
-            _toggleControls();
-
-            if (_controlsVisible && !AppPlatform.isMobile) {
-              _resetHideControlsTimer();
-            }
-          });
-        },
-        child: viewer,
-      ),
+      child: viewer,
     );
   }
 

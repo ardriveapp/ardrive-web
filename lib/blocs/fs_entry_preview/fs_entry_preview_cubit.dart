@@ -949,6 +949,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       file.size,
       () => _previewImageDriveExplorer(file, dataUrl),
     )) {
+      // Full screen asks too: it is the only thing on screen there.
+      imagePreviewNotifier.value = ImagePreviewNotification(
+        filename: file.name,
+        contentType: file.dataContentType!,
+        onRequestSize: file.size,
+        loadOnRequest: loadOnRequest,
+      );
       return;
     }
 
