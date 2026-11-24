@@ -708,13 +708,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
           )
         : null;
 
-    final permanence = PermanenceNotice.forFile(item);
-
     return [
-      if (permanence != null) ...[
-        permanence,
-        sizedBoxHeight16px,
-      ],
+      PermanenceLine(item: item),
       if (nameable != null) ...[
         ArNSNameSection(item: nameable),
         sizedBoxHeight16px,
@@ -1223,34 +1218,118 @@ class _TxIdTextLink extends StatelessWidget {
 
 /// Whether a file's data is on the permaweb for good yet, at the top of its
 /// details: "Stored permanently since" once its data transaction confirmed,
-/// with a link to the transaction, or "Being stored permanently" while it is
-/// pending. Nothing when the status is unknown or the upload failed; the list
-/// already marks a failed one.
-@visibleForTesting
-class PermanenceNotice extends StatelessWidget {
-  const PermanenceNotice._({required this.txId, required this.storedSince});
+/// with a link to the transaction, or "Being stored permanently" while a
+/// recent upload is pending. Nothing when the status is unknown, the upload
+/// failed (the list already marks it), or an old file is waiting on a status
+/// check.
+///
+/// Read live from the database, not from the row it was opened with: the
+/// panel's copy of the row is not rebuilt when only its transaction's status
+/// changes, and "Being stored permanently" stayed after the data confirmed.
+class PermanenceLine extends StatefulWidget {
+  const PermanenceLine({super.key, required this.item});
 
-  /// The notice for [item], or null when there is nothing to say.
-  static PermanenceNotice? forFile(FileDataTableItem item) {
-    final tx = item.dataTx;
-    if (tx == null) return null;
-    return switch (tx.status) {
-      TransactionStatus.confirmed => PermanenceNotice._(
-          txId: item.dataTxId,
-          // The date its revision was made, which sync stores with the
-          // transaction; an upload from this device has only the row's own.
-          // No confirmation time is kept, and this is the closest to it.
-          storedSince: tx.transactionDateCreated ?? tx.dateCreated,
-        ),
-      TransactionStatus.pending =>
-        PermanenceNotice._(txId: item.dataTxId, storedSince: null),
+  final FileDataTableItem item;
+
+  /// What [item] shows, or null for nothing.
+  ///
+  /// [firstStored] is the file's earliest revision with this data. The
+  /// transaction's own date is the latest such revision's, since sync writes
+  /// the row again for each rename or move, so it said a renamed file had
+  /// been stored only since the rename.
+  static PermanenceNotice? noticeFor({
+    required String txId,
+    required String? status,
+    required DateTime? firstStored,
+    required DateTime now,
+  }) {
+    return switch (status) {
+      TransactionStatus.confirmed when firstStored != null =>
+        PermanenceNotice(txId: txId, storedSince: firstStored),
+      // A first sync marks every file's data pending until the gateway
+      // answers, and "Usually within an hour" was wrong for a file uploaded
+      // years ago. Only a recent upload says it is on its way.
+      TransactionStatus.pending
+          when firstStored != null &&
+              now.difference(firstStored) < recentUpload =>
+        PermanenceNotice(txId: txId, storedSince: null),
       _ => null,
     };
   }
 
-  final String txId;
+  /// How long after its upload a pending file still says it is on its way.
+  static const recentUpload = Duration(days: 1);
 
-  /// When it was stored, or null while it is still pending.
+  /// Where the line reads its status from: [DriveDao.watchDataPermanence],
+  /// or nothing where there is no database. Replaced in widget tests, where
+  /// drift's live queries never settle on the fake clock.
+  @visibleForTesting
+  static Stream<({String? status, DateTime? firstStored})>? Function(
+      BuildContext context, String txId) watch = defaultPermanenceWatch;
+
+  @override
+  State<PermanenceLine> createState() => _PermanenceLineState();
+}
+
+/// [PermanenceLine.watch] as the app has it: the database's live answer.
+Stream<({String? status, DateTime? firstStored})>? defaultPermanenceWatch(
+  BuildContext context,
+  String txId,
+) {
+  try {
+    return context.read<DriveDao>().watchDataPermanence(txId);
+  } on ProviderNotFoundException {
+    return null;
+  }
+}
+
+class _PermanenceLineState extends State<PermanenceLine> {
+  Stream<({String? status, DateTime? firstStored})>? _stream;
+  String? _forTx;
+
+  @override
+  Widget build(BuildContext context) {
+    final txId = widget.item.dataTxId;
+    // Only a file shown with its transaction gets the line: search results,
+    // shared files and visitors have none.
+    if (widget.item.dataTx == null) return const SizedBox.shrink();
+    if (_forTx != txId) {
+      _forTx = txId;
+      _stream = PermanenceLine.watch(context, txId);
+    }
+    return StreamBuilder<({String? status, DateTime? firstStored})>(
+      stream: _stream,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final notice = data == null
+            ? null
+            : PermanenceLine.noticeFor(
+                txId: txId,
+                status: data.status,
+                firstStored: data.firstStored,
+                now: DateTime.now(),
+              );
+        if (notice == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: notice,
+        );
+      },
+    );
+  }
+}
+
+/// The notice [PermanenceLine] shows: stored since a date, or on its way when
+/// [storedSince] is null.
+@visibleForTesting
+class PermanenceNotice extends StatelessWidget {
+  const PermanenceNotice({
+    super.key,
+    required this.txId,
+    required this.storedSince,
+  });
+
+  final String txId;
   final DateTime? storedSince;
 
   @override

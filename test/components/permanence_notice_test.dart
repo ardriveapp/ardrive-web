@@ -1,6 +1,5 @@
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -10,36 +9,15 @@ import 'package:flutter_test/flutter_test.dart';
 /// The line at the top of a file's details that says whether its data is on
 /// the permaweb for good yet.
 void main() {
-  const dataTxId = 'jF3uAbCdEfGhIjKlMnOpQrStUvWxYz0123456789w7Lp';
+  const txId = 'jF3uAbCdEfGhIjKlMnOpQrStUvWxYz0123456789w7Lp';
+  final now = DateTime(2026, 11, 24, 12);
 
-  FileDataTableItem item(NetworkTransaction? dataTx) => FileDataTableItem(
-        driveId: 'drive',
-        fileId: 'file',
-        parentFolderId: 'folder',
-        name: 'lisbon.jpg',
-        size: 1024,
-        lastUpdated: DateTime.utc(2026, 6, 1),
-        dateCreated: DateTime.utc(2020, 1, 1),
-        lastModifiedDate: DateTime.utc(2026, 6, 1),
-        contentType: 'image/jpeg',
-        dataTxId: dataTxId,
-        metadataTx: null,
-        dataTx: dataTx,
-        pinnedDataOwnerAddress: null,
-        index: 0,
-        isOwner: true,
-      );
-
-  NetworkTransaction tx(
-    String status, {
-    DateTime? transactionDateCreated,
-    DateTime? dateCreated,
-  }) =>
-      NetworkTransaction(
-        id: dataTxId,
+  PermanenceNotice? noticeFor(String? status, DateTime? firstStored) =>
+      PermanenceLine.noticeFor(
+        txId: txId,
         status: status,
-        dateCreated: dateCreated ?? DateTime(2025, 1, 1, 12),
-        transactionDateCreated: transactionDateCreated,
+        firstStored: firstStored,
+        now: now,
       );
 
   Future<void> pump(WidgetTester tester, Widget child) {
@@ -61,50 +39,55 @@ void main() {
   }
 
   test('says nothing when the status is unknown or the upload failed', () {
-    expect(PermanenceNotice.forFile(item(null)), isNull);
-    expect(
-      PermanenceNotice.forFile(item(tx(TransactionStatus.failed))),
-      isNull,
-    );
+    expect(noticeFor(null, DateTime(2024)), isNull);
+    expect(noticeFor(TransactionStatus.failed, DateTime(2024)), isNull);
+    expect(noticeFor(TransactionStatus.confirmed, null), isNull);
   });
 
-  test('dates a confirmed file by its revision, not the file', () {
-    final synced = PermanenceNotice.forFile(item(tx(
-      TransactionStatus.confirmed,
-      transactionDateCreated: DateTime(2024, 3, 12, 12),
-    )))!;
-    expect(synced.storedSince, DateTime(2024, 3, 12, 12));
+  test('a confirmed file is dated by its first revision with the data', () {
+    final notice =
+        noticeFor(TransactionStatus.confirmed, DateTime(2024, 3, 12, 12))!;
+    expect(notice.storedSince, DateTime(2024, 3, 12, 12));
+  });
 
-    // Uploaded from this device: only the row's own date is kept.
-    final uploaded =
-        PermanenceNotice.forFile(item(tx(TransactionStatus.confirmed)))!;
-    expect(uploaded.storedSince, DateTime(2025, 1, 1, 12));
+  test('only a recent upload says it is on its way', () {
+    final recent = noticeFor(
+      TransactionStatus.pending,
+      now.subtract(const Duration(minutes: 20)),
+    );
+    expect(recent, isNotNull);
+    expect(recent!.storedSince, isNull);
+
+    // A first sync marks old files pending until the gateway answers.
+    expect(
+      noticeFor(
+          TransactionStatus.pending, now.subtract(const Duration(days: 3))),
+      isNull,
+    );
   });
 
   testWidgets('a confirmed file says since when, with its transaction',
       (tester) async {
     await pump(
       tester,
-      PermanenceNotice.forFile(item(tx(
-        TransactionStatus.confirmed,
-        transactionDateCreated: DateTime(2024, 3, 12, 12),
-      )))!,
+      PermanenceNotice(txId: txId, storedSince: DateTime(2024, 3, 12, 12)),
     );
 
-    expect(find.text('Stored permanently since Mar\u00A012,\u00A02024'),
-        findsOneWidget);
+    expect(
+      find.text('Stored permanently since Mar 12, 2024'),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('permanenceViewTransaction')), findsOneWidget);
-    expect(find.textContaining('View transaction', findRichText: true),
-        findsOneWidget);
+    expect(
+      find.textContaining('View transaction', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.byType(ArDriveSpinner), findsNothing);
   });
 
   testWidgets('a pending file says what is happening, not a spinner alone',
       (tester) async {
-    await pump(
-      tester,
-      PermanenceNotice.forFile(item(tx(TransactionStatus.pending)))!,
-    );
+    await pump(tester, const PermanenceNotice(txId: txId, storedSince: null));
 
     expect(find.text('Being stored permanently'), findsOneWidget);
     expect(find.text('Usually within an hour'), findsOneWidget);
