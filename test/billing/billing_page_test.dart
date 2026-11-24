@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/account/presentation/account_page.dart';
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/billing/presentation/billing_sections.dart';
@@ -1169,20 +1170,23 @@ void main() {
           ]),
         ]);
 
+    // The table runs the page's full width, as every list page's does; it
+    // stopped at 880 px with the space beside it empty. The balance card
+    // stays at the reading width.
     testWidgets(
-        'the balance card and the purchases table stop at the same 880 px',
+        'the balance card stops at 880 px and the table runs the full width',
         (tester) async {
       twoPurchases();
       await pumpPage(tester, user: _user(), size: const Size(1400, 1600));
 
-      final sections = find.byType(PageSection);
-      final balance = sections.at(0);
-      final purchases = sections.at(1);
+      final balance = find.byType(PageSection).first;
       // The page body pads 16 a side.
       expect(tester.getSize(balance).width, 880);
       expect(tester.getTopLeft(balance).dx, 16);
-      expect(tester.getSize(purchases).width, 880);
-      expect(tester.getTopLeft(purchases).dx, 16);
+      final table = find.byType(ListTableCard);
+      expect(table, findsOneWidget);
+      expect(tester.getSize(table).width, 1400 - 32);
+      expect(tester.getTopLeft(table).dx, 16);
 
       final header = find.byKey(const Key('billingPurchasesHeader'));
       expect(header, findsOneWidget);

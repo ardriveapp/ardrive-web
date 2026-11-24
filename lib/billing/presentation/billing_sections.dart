@@ -6,6 +6,7 @@ import 'package:ardrive/billing/data/billing_session_cache.dart';
 import 'package:ardrive/billing/data/purchase.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/list_page/list_page_layout.dart';
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/account/data/ethereum_wallet_detection.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -129,14 +130,12 @@ class _BillingBody extends StatelessWidget {
                 state: state,
               ),
             ),
-            // The same width as the sections around it: it was the one card
-            // on the page that ran to the edge.
-            PageContentColumn(
-              child: _PurchasesSection(
-                kind: kind,
-                walletName: walletName,
-                state: state,
-              ),
+            // Its own width: the table runs the page's full width, as every
+            // list page's does; its messages stop with the sections around it.
+            _PurchasesSection(
+              kind: kind,
+              walletName: walletName,
+              state: state,
             ),
             if (hasShares)
               PageContentColumn(
@@ -518,6 +517,23 @@ class _PurchasesSection extends StatelessWidget {
     final other =
         kind == AccountSignInKind.solana || kind == AccountSignInKind.ethereum;
 
+    final footer = other && walletName != null
+        ? Padding(
+            padding: const EdgeInsets.only(
+              left: ArDriveSpacing.xxs,
+              top: ArDriveSpacing.xs,
+            ),
+            child: Text(
+              strings.billingOtherWalletPurchases(walletName!),
+              key: const Key('billingOtherWalletPurchases'),
+              style: typography.paragraphSmall(
+                color: colors.textLow,
+                fontWeight: ArFontWeight.book,
+              ),
+            ),
+          )
+        : null;
+
     final rows = <Widget>[];
     if (!view.started) {
       rows.add(PageRow(
@@ -569,41 +585,53 @@ class _PurchasesSection extends StatelessWidget {
           ),
         ),
       ));
+    } else if (wide) {
+      // The app's table, as on Your drives, Web pages and Names, at the
+      // page's full width: it stopped at 880 px with the space beside it
+      // empty.
+      return Padding(
+        padding: const EdgeInsets.only(top: ArDriveSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PageSectionTitle(strings.billingPurchasesSection),
+            ListTableCard(
+              header: const _PurchasesHeader(),
+              rows: [
+                for (final purchase in view.rows)
+                  _PurchaseRow(purchase: purchase, wide: true),
+              ],
+            ),
+            _PurchaseActions(state: state, inset: false),
+            if (footer != null) footer,
+          ],
+        ),
+      );
     } else {
-      if (wide) rows.add(const _PurchasesHeader());
       for (final purchase in view.rows) {
-        rows.add(_PurchaseRow(purchase: purchase, wide: wide));
+        rows.add(_PurchaseRow(purchase: purchase));
       }
       rows.add(_PurchaseActions(state: state));
     }
 
-    return PageSection(
-      title: strings.billingPurchasesSection,
-      rows: rows,
-      footer: other && walletName != null
-          ? Padding(
-              padding: const EdgeInsets.only(
-                left: ArDriveSpacing.xxs,
-                top: ArDriveSpacing.xs,
-              ),
-              child: Text(
-                strings.billingOtherWalletPurchases(walletName!),
-                key: const Key('billingOtherWalletPurchases'),
-                style: typography.paragraphSmall(
-                  color: colors.textLow,
-                  fontWeight: ArFontWeight.book,
-                ),
-              ),
-            )
-          : null,
+    return PageContentColumn(
+      child: PageSection(
+        title: strings.billingPurchasesSection,
+        rows: rows,
+        footer: footer,
+      ),
     );
   }
 }
 
 class _PurchaseActions extends StatelessWidget {
-  const _PurchaseActions({required this.state});
+  const _PurchaseActions({required this.state, this.inset = true});
 
   final BillingState state;
+
+  /// Padded inside a card, as the stacked list's last row; under a table,
+  /// level with its edge.
+  final bool inset;
 
   @override
   Widget build(BuildContext context) {
@@ -614,7 +642,9 @@ class _PurchaseActions extends StatelessWidget {
     final view = state.purchases;
 
     return Padding(
-      padding: const EdgeInsets.all(ArDriveSpacing.md),
+      padding: inset
+          ? const EdgeInsets.all(ArDriveSpacing.md)
+          : const EdgeInsets.only(top: ArDriveSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -667,14 +697,14 @@ class _PurchaseActions extends StatelessWidget {
   }
 }
 
-/// The table's column widths, shared by the header and every row.
-const double _typeColumn = 96;
-const double _dateColumn = 140;
-const double _amountColumn = 200;
-
-// The receipt or transaction takes the rest: an ID with its copy button
-// beside it reads as one thing, and a fixed column wrapped it in two.
-const double _creditsColumn = 120;
+/// The table's columns' shares of its width, for the header and every row.
+const _typeFlex = 2;
+const _amountFlex = 4;
+const _dateFlex = 3;
+// The receipt or transaction: an ID with its copy button beside it reads as
+// one thing, so it gets the most room.
+const _referenceFlex = 5;
+const _creditsFlex = 2;
 
 class _PurchasesHeader extends StatelessWidget {
   const _PurchasesHeader();
@@ -682,38 +712,15 @@ class _PurchasesHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final style = ArDriveTypographyNew.of(context).paragraphSmall(
-      color: colors.textLow,
-      fontWeight: ArFontWeight.semiBold,
-    );
-
-    Widget cell(String text, {double? width, TextAlign? align}) {
-      final label = Text(text, style: style, textAlign: align);
-      return width == null
-          ? Expanded(child: label)
-          : SizedBox(width: width, child: label);
-    }
-
-    return Padding(
+    return ListTableHeader<Never>(
       key: const Key('billingPurchasesHeader'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: ArDriveSpacing.md,
-        vertical: ArDriveSpacing.xs,
-      ),
-      child: Row(
-        children: [
-          cell(strings.billingColumnType, width: _typeColumn),
-          cell(strings.billingColumnAmount, width: _amountColumn),
-          cell(strings.billingColumnDate, width: _dateColumn),
-          cell(strings.billingColumnReceipt),
-          cell(
-            strings.billingColumnCredits,
-            width: _creditsColumn,
-            align: TextAlign.end,
-          ),
-        ],
-      ),
+      columns: [
+        ListColumn(strings.billingColumnType, _typeFlex),
+        ListColumn(strings.billingColumnAmount, _amountFlex),
+        ListColumn(strings.billingColumnDate, _dateFlex),
+        ListColumn(strings.billingColumnReceipt, _referenceFlex),
+        ListColumn(strings.billingColumnCredits, _creditsFlex, end: true),
+      ],
     );
   }
 }
@@ -817,55 +824,49 @@ class _PurchaseRow extends StatelessWidget {
         : null;
 
     if (wide) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: ArDriveSpacing.md,
-          vertical: ArDriveSpacing.sm,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: _typeColumn,
-              child: Align(alignment: Alignment.centerLeft, child: _Tag(tag)),
-            ),
-            SizedBox(
-              width: _amountColumn,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (amount != null)
-                    Text(
-                      amount,
-                      style: typography.paragraphNormal(
-                        color: colors.textHigh,
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
+      return ListTableRow(
+        // Nothing to open yet; "Download receipt" will be its action.
+        onOpen: null,
+        semanticLabel:
+            [tag, if (amount != null) amount, p.dateLabel].join(', '),
+        showsColumns: true,
+        child: ListColumnsRow(
+          flexes: const [
+            _typeFlex,
+            _amountFlex,
+            _dateFlex,
+            _referenceFlex,
+            _creditsFlex,
+          ],
+          cells: [
+            ListTextCell(tag),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (amount != null)
+                  Text(
+                    amount,
+                    style: typography.paragraphNormal(
+                      color: colors.textHigh,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
-                  if (usd != null) Text(usd, style: small),
-                  if (p.giftMessage != null)
-                    Text('"${p.giftMessage}"', style: small),
-                ],
-              ),
+                  ),
+                if (usd != null) Text(usd, style: small),
+                if (p.giftMessage != null)
+                  Text('"${p.giftMessage}"', style: small),
+              ],
             ),
-            SizedBox(
-              width: _dateColumn,
-              child: Text(p.dateLabel, style: small),
+            ListTextCell(p.dateLabel),
+            Row(
+              children: [
+                if (referenceWidget != null) Flexible(child: referenceWidget),
+                if (copyWidget != null) copyWidget,
+              ],
             ),
-            Expanded(
-              child: Row(
-                children: [
-                  if (referenceWidget != null) Flexible(child: referenceWidget),
-                  if (copyWidget != null) copyWidget,
-                ],
-              ),
-            ),
-            SizedBox(
-              width: _creditsColumn,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: creditsWidget,
-              ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: creditsWidget,
             ),
           ],
         ),

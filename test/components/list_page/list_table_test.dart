@@ -256,4 +256,89 @@ void main() {
       );
     });
   });
+
+  // Billing's purchases: rows with nothing to open, and amounts on the right.
+  group('a read-only table', () {
+    Future<void> pumpReadOnly(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            home: Scaffold(
+              body: ListTableCard(
+                header: const ListTableHeader<Never>(
+                  columns: [
+                    ListColumn('Date', 3),
+                    ListColumn('Credits', 2, end: true),
+                  ],
+                ),
+                rows: [
+                  for (final row in ['one', 'two'])
+                    ListTableRow(
+                      semanticLabel: row,
+                      showsColumns: true,
+                      onOpen: null,
+                      child: ListColumnsRow(
+                        flexes: const [3, 2],
+                        cells: [
+                          ListTextCell('$row date'),
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Text('+1.0$row'),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('a row with nothing to do is not a button or a Tab stop',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpReadOnly(tester);
+
+      expect(
+        tester.getSemantics(find.text('one date')),
+        isNot(matchesSemantics(isButton: true)),
+      );
+      expect(find.byType(InkWell), findsNothing);
+      expect(find.byType(ArDriveClickArea), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('an end column heading lines up with its figures',
+        (tester) async {
+      await pumpReadOnly(tester);
+
+      expect(
+        tester.getTopRight(find.text('Credits')).dx,
+        moreOrLessEquals(tester.getTopRight(find.text('+1.0one')).dx,
+            epsilon: 1),
+      );
+    });
+
+    testWidgets('the card is the panel\'s: same ground and corners',
+        (tester) async {
+      await pumpReadOnly(tester);
+
+      final box = tester.widget<DecoratedBox>(find
+          .descendant(
+              of: find.byType(ListTableCard),
+              matching: find.byType(DecoratedBox))
+          .first);
+      final decoration = box.decoration as BoxDecoration;
+      expect(decoration.color, lightTheme().tableTheme.backgroundColor);
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(cardDefaultBorderRadius),
+      );
+    });
+  });
 }
