@@ -1243,6 +1243,42 @@ void main() {
       verify(() => detailCubit.openDataItem(any())).called(1);
     });
 
+    testWidgets('the folder changing mid-drag ends the drag, without errors',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P5.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      // A sync takes most of the photos away.
+      await tester.pumpWidget(app(many.sublist(0, 3)));
+      await tester.pump();
+      clearInteractions(detailCubit);
+      await finger.moveTo(tester.getCenter(tileOf('P2.jpg')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.takeException(), isNull);
+      verifyNever(() => detailCubit.selectItems(any()));
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('on a wide touch screen a long press keeps the desktop\'s',
+        (tester) async {
+      await pump(tester, app(many), size: const Size(1000, 800));
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await finger.moveTo(tester.getCenter(tileOf('P4.jpg')));
+      await tester.pump();
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p1']);
+      await finger.up();
+      await tester.pump();
+    });
+
     testWidgets('while selecting, a long press adds rather than starting over',
         (tester) async {
       when(() => detailCubit.selectedItems).thenReturn(many.sublist(0, 1));

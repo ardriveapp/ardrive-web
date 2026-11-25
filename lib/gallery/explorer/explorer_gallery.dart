@@ -150,6 +150,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     }
     _modelKey = key;
     _modelItems = widget.items;
+    // A drag's range is positions in the old order: it ends with it.
+    _endDrag();
     final model = buildGalleryModel(
       widget.items,
       sortColumn: widget.sortColumn,
@@ -243,10 +245,12 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     _anchor = item;
     // Fingers only: a mouse held down keeps the long press it always had.
     final pressing = _pointers.length == 1 ? _pointers.entries.single : null;
-    final finger = pressing?.value.kind == PointerDeviceKind.touch;
+    // A phone's layout only: a touch screen laptop keeps the desktop's.
+    final finger = pressing?.value.kind == PointerDeviceKind.touch &&
+        galleryScreenIsPhone(context);
     // While selecting on a phone, a long press adds, as a tap does; it
     // starts a new selection otherwise.
-    final base = finger && galleryScreenIsPhone(context)
+    final base = finger
         ? [
             for (final e in widget.multiSelected)
               if (e.id != item.id) e
