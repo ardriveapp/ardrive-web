@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/gallery/explorer/gallery_tile_size.dart';
 import 'package:ardrive/gallery/data/arweave_gallery_image_fetcher.dart';
 import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/billing/data/billing_session_cache.dart';
@@ -176,6 +177,7 @@ Future<void> _initializeServices() async {
           logger.e('Could not read the app version', e, s)));
 
   localKeyValueStore = await LocalKeyValueStore.getInstance();
+  GalleryPhoneTileSize.store = localKeyValueStore;
 
   // Before the config below writes to the store: an empty store is a
   // browser that has never run the app.

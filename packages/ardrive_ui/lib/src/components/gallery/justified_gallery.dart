@@ -9,6 +9,15 @@ const double galleryPhoneBreakpoint = 834;
 
 /// Row height and gap on a phone: 3 to 4 photos a row on a 390 px screen.
 const double galleryPhoneRowHeight = 86;
+
+/// A phone's tile sizes, smallest first, which a pinch moves between: about
+/// 4 to 5 photos a row, 3 to 4 ([galleryPhoneRowHeight], the default), and
+/// about 2. Steps rather than a free scale, as the phone photo apps do, so
+/// each size is a whole layout and is the same the next time.
+const List<double> galleryPhoneRowHeights = [64, galleryPhoneRowHeight, 160];
+
+/// Which of [galleryPhoneRowHeights] a phone starts at.
+const int galleryPhoneDefaultSize = 1;
 const double galleryPhoneGap = 2;
 
 /// The side gutter of a phone's page, which a phone gallery keeps.

@@ -166,6 +166,70 @@ class ArDriveGalleryGeometry {
     return null;
   }
 
+  /// Where the tile at [index] is, in the gallery's content: x from the
+  /// left of its rows, y from the top of the scroll. Null for no such tile.
+  Rect? rectOf(int index) {
+    final r = rowOf(index);
+    if (r == null) return null;
+    final row = rows[r];
+    final position = index - row.first;
+    final item = row.items[position];
+    return Rect.fromLTWH(row.lefts[position], row.top, item.width, item.height);
+  }
+
+  /// The tile at [point], in the same coordinates as [rectOf]; null over a
+  /// header, a gap or past the last tile.
+  int? itemAt(Offset point) {
+    var lo = 0, hi = rows.length - 1, found = -1;
+    while (lo <= hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (rows[mid].top <= point.dy) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    if (found < 0) return null;
+    final row = rows[found];
+    if (point.dy >= row.top + row.height) return null;
+    for (var i = 0; i < row.items.length; i++) {
+      final left = row.lefts[i];
+      if (point.dx >= left && point.dx < left + row.items[i].width) {
+        return row.items[i].index;
+      }
+    }
+    return null;
+  }
+
+  /// The tile at [point], or the nearest one in the row at that height when
+  /// [point] is in a gap or over a header: what a pinch holds in place.
+  int? itemNear(Offset point) {
+    final hit = itemAt(point);
+    if (hit != null || rows.isEmpty) return hit;
+    var lo = 0, hi = rows.length - 1, found = 0;
+    while (lo <= hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (rows[mid].top <= point.dy) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    final row = rows[found];
+    var best = 0;
+    var bestDistance = double.infinity;
+    for (var i = 0; i < row.items.length; i++) {
+      final d = (row.centerOf(i) - point.dx).abs();
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = i;
+      }
+    }
+    return row.items[best].index;
+  }
+
   /// The section whose top is at or above [offset].
   int sectionAt(double offset) {
     var found = 0;

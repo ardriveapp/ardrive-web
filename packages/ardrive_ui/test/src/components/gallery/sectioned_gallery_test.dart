@@ -26,6 +26,31 @@ ArDriveGalleryGeometry geometry(
 
 void main() {
   group('ArDriveGalleryGeometry', () {
+    test('a tile\'s rect and the tile at a point agree, gaps hit nothing', () {
+      final g = geometry([5, 3]);
+      for (var i = 0; i < g.itemCount; i++) {
+        final rect = g.rectOf(i)!;
+        expect(g.itemAt(rect.center), i, reason: 'tile $i');
+        expect(g.itemAt(rect.topLeft), i, reason: 'tile $i top left');
+        // The gap after a tile, and the one under its row.
+        expect(g.itemAt(Offset(rect.right + 1, rect.center.dy)), isNull);
+        expect(g.itemAt(Offset(rect.center.dx, rect.bottom + 1)), isNull);
+      }
+      // A header and past the end.
+      expect(g.itemAt(const Offset(10, 10)), isNull);
+      expect(g.itemAt(Offset(10, g.contentHeight + 10)), isNull);
+      expect(g.rectOf(g.itemCount), isNull);
+    });
+
+    test('the tile near a gap or a header is the nearest in that row', () {
+      final g = geometry([5, 3]);
+      final rect = g.rectOf(1)!;
+      expect(g.itemNear(Offset(rect.right + 1, rect.center.dy)), 1);
+      expect(g.itemNear(rect.center), 1);
+      // Over the first header: the first row's nearest tile.
+      expect(g.itemNear(const Offset(1, 1)), 0);
+    });
+
     test('numbers items across sections and records each section\'s top', () {
       final g = geometry([5, 3]);
       expect(g.itemCount, 8);
