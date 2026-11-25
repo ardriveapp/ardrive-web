@@ -96,11 +96,13 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   /// press can be reported after them.
   bool _pinched = false;
 
-  /// The tile a size change keeps under the fingers, and where on it.
-  ({int index, double fy, double y})? _hold;
-
   /// The finger a long press started selecting with, while it drags.
   int? _dragPointer;
+  Offset? _dragStart;
+
+  /// The finger has moved since the long press: only then does holding it
+  /// near an edge scroll, so a still thumb near the bottom selects one.
+  bool _dragMoved = false;
   int _dragFrom = 0;
   int? _dragLast;
   List<ArDriveDataTableItem> _dragBase = const [];
@@ -112,7 +114,6 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     _controller =
         ArDriveSectionedGalleryController(scroll: widget.scrollController);
     _controller.scroll.addListener(_scrolled);
-    _controller.addListener(_laidOut);
     HardwareKeyboard.instance.addHandler(_onEscape);
   }
 
@@ -120,7 +121,6 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   void dispose() {
     _autoScroll?.cancel();
     HardwareKeyboard.instance.removeHandler(_onEscape);
-    _controller.removeListener(_laidOut);
     _controller.scroll.removeListener(_scrolled);
     // The scroll controller belongs to the caller when it gave one.
     _controller.dispose();
@@ -191,6 +191,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
       : widget.selectedItem?.id == item.id;
 
   void _click(ArDriveDataTableItem item, GalleryClickKind kind) {
+    // A two-finger tap is a pinch that did not move, not a click.
+    if (_pinched) return;
     _nodeFor(item).requestFocus();
     // A sync that holds multi-select shut holds it here too: a modifier then
     // is just a click.
@@ -212,6 +214,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   }
 
   void _open(ArDriveDataTableItem item) {
+    if (_pinched) return;
     final cubit = context.read<DriveDetailCubit>();
     // Once a finger has started selecting, a tap adds to the selection, as
     // in the photo apps; it opens again when nothing is chosen.
@@ -236,11 +239,14 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   }
 
   void _longPress(ArDriveDataTableItem item) {
-    if (widget.lockMultiSelect || _pinched || _pointers.length > 1) return;
+    if (widget.lockMultiSelect || _pinched || _touches().length > 1) return;
     _anchor = item;
+    // Fingers only: a mouse held down keeps the long press it always had.
+    final pressing = _pointers.length == 1 ? _pointers.entries.single : null;
+    final finger = pressing?.value.kind == PointerDeviceKind.touch;
     // While selecting on a phone, a long press adds, as a tap does; it
     // starts a new selection otherwise.
-    final base = galleryScreenIsPhone(context)
+    final base = finger && galleryScreenIsPhone(context)
         ? [
             for (final e in widget.multiSelected)
               if (e.id != item.id) e
@@ -249,8 +255,10 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     context.read<DriveDetailCubit>().selectItems([...base, item]);
     // The finger that pressed can now drag across tiles to add them.
     final index = _indexOf[item.id];
-    if (_pointers.length == 1 && index != null) {
-      _dragPointer = _pointers.keys.single;
+    if (finger && pressing != null && index != null) {
+      _dragPointer = pressing.key;
+      _dragStart = pressing.value.at;
+      _dragMoved = false;
       _dragFrom = index;
       _dragLast = index;
       _dragBase = base;
@@ -286,7 +294,13 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     final down = _pointers[event.pointer];
     if (down == null) return;
     _pointers[event.pointer] = (at: event.localPosition, kind: down.kind);
-    if (event.pointer == _dragPointer) _dragTo(event.localPosition);
+    if (event.pointer == _dragPointer) {
+      final start = _dragStart;
+      if (start != null && (event.localPosition - start).distance > 8) {
+        _dragMoved = true;
+      }
+      _dragTo(event.localPosition);
+    }
     final from = _pinchFrom;
     final touches = _touches();
     if (from == null || touches.length != 2) return;
@@ -311,7 +325,21 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   void _pointerUp(PointerEvent event) {
     _pointers.remove(event.pointer);
     if (event.pointer == _dragPointer) _endDrag();
-    if (_touches().length < 2) _pinchFrom = null;
+    final touches = _touches();
+    // Two left of three: the pinch carries on from where they are now.
+    _pinchFrom = touches.length == 2 && _pinchFrom != null
+        ? _spread(touches)
+        : touches.length < 2
+            ? null
+            : _pinchFrom;
+    // A tap is reported after this, in the same event: a two-finger tap
+    // must still find the gesture marked as a pinch. Cleared once it is
+    // over, so a key press later opens as usual.
+    if (_pointers.isEmpty) {
+      scheduleMicrotask(() {
+        if (_pointers.isEmpty) _pinched = false;
+      });
+    }
   }
 
   List<Offset> _touches() => [
@@ -332,8 +360,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     if (position.isScrollingNotifier.value) position.jumpTo(position.pixels);
   }
 
-  /// Notes the tile under [local] and how far down it the point is, so the
-  /// new layout can put that spot back under the fingers.
+  /// Asks the gallery to keep the tile under [local], and the spot on it,
+  /// where it is through the new layout.
   void _holdUnder(Offset local) {
     final geometry = _controller.geometry;
     if (geometry == null) return;
@@ -341,31 +369,21 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     final index = geometry.itemNear(point);
     final rect = index == null ? null : geometry.rectOf(index);
     if (index == null || rect == null) return;
-    _hold = (
-      index: index,
-      fy: ((point.dy - rect.top) / rect.height).clamp(0.0, 1.0),
-      y: local.dy,
+    _controller.holdItem(
+      index,
+      fraction: ((point.dy - rect.top) / rect.height).clamp(0.0, 1.0),
+      viewportY: local.dy,
     );
-  }
-
-  /// The new layout is in: scrolls so the held tile is where it was.
-  void _laidOut() {
-    final hold = _hold;
-    final geometry = _controller.geometry;
-    if (hold == null || geometry == null || !_controller.scroll.hasClients) {
-      return;
-    }
-    _hold = null;
-    final rect = geometry.rectOf(hold.index);
-    if (rect == null) return;
-    final position = _controller.scroll.position;
-    position.jumpTo((rect.top + hold.fy * rect.height - hold.y)
-        .clamp(position.minScrollExtent, position.maxScrollExtent));
   }
 
   /// Every tile from the long-pressed one to the one under the finger, on
   /// top of what was chosen before; going back takes tiles out again.
   void _dragTo(Offset local) {
+    // A sync that shuts multi-select mid-drag ends the drag too.
+    if (widget.lockMultiSelect) {
+      _endDrag();
+      return;
+    }
     final geometry = _controller.geometry;
     if (geometry == null) return;
     // The nearest tile, so a finger over a gap or a month's header keeps
@@ -385,7 +403,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   void _autoScrollTick() {
     final pointer = _dragPointer;
     final at = pointer == null ? null : _pointers[pointer]?.at;
-    if (at == null || !_controller.scroll.hasClients) return;
+    if (at == null || !_dragMoved || !_controller.scroll.hasClients) return;
     final position = _controller.scroll.position;
     const edge = 56.0;
     const fastest = 14.0;
@@ -397,6 +415,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
       speed = fastest * (at.dy - (height - edge)) / edge;
     }
     if (speed == 0) return;
+    // A finger dragged past the gallery's edge goes no faster.
+    speed = speed.clamp(-fastest, fastest);
     final target = (position.pixels + speed)
         .clamp(position.minScrollExtent, position.maxScrollExtent);
     if (target == position.pixels) return;
@@ -406,6 +426,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
 
   void _endDrag() {
     _dragPointer = null;
+    _dragStart = null;
+    _dragMoved = false;
     _dragLast = null;
     _autoScroll?.cancel();
     _autoScroll = null;

@@ -300,6 +300,31 @@ class ArDriveSectionedGalleryController extends ChangeNotifier {
 
   ArDriveGalleryGeometry? get geometry => _geometry;
 
+  ({int index, double fraction, double viewportY})? _hold;
+
+  /// Keeps the tile at [index] where it is on screen through the next new
+  /// layout (a change of tile size): the point [fraction] of the way down
+  /// it stays [viewportY] from the top of the gallery. Applied while the
+  /// new layout is made, so no frame shows the old offset with new tiles.
+  void holdItem(
+    int index, {
+    required double fraction,
+    required double viewportY,
+  }) {
+    _hold = (index: index, fraction: fraction, viewportY: viewportY);
+  }
+
+  /// The offset that keeps the held tile in place in [geometry], if a hold
+  /// is waiting; clears it either way.
+  double? _takeHold(ArDriveGalleryGeometry geometry) {
+    final hold = _hold;
+    _hold = null;
+    if (hold == null) return null;
+    final rect = geometry.rectOf(hold.index);
+    if (rect == null) return null;
+    return rect.top + hold.fraction * rect.height - hold.viewportY;
+  }
+
   void setGeometry(ArDriveGalleryGeometry geometry) {
     if (identical(_geometry, geometry)) return;
     _geometry = geometry;
@@ -424,6 +449,18 @@ class _ArDriveSectionedGalleryState extends State<ArDriveSectionedGallery> {
         paddingTop: widget.padding.top,
       );
       final geometry = _geometry!;
+      final held = widget.controller._takeHold(geometry);
+      final scroll = widget.controller.scroll;
+      if (held != null && scroll.hasClients) {
+        // During layout, before the list is laid out at the new size:
+        // corrected, not jumped, so nothing is told mid-layout. Kept inside
+        // the new content; the list settles any remainder as it lays out.
+        final position = scroll.position;
+        final end = geometry.contentHeight +
+            widget.padding.bottom -
+            position.viewportDimension;
+        position.correctPixels(held.clamp(0.0, math.max(0.0, end)));
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && identical(_geometry, geometry)) {
           widget.controller.setGeometry(geometry);

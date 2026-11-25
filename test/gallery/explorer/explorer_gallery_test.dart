@@ -1131,6 +1131,118 @@ void main() {
       expect(scroll.pixels, stopped);
     });
 
+    testWidgets('a sync shutting multi-select mid-drag ends the drag',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      clearInteractions(detailCubit);
+      await tester.pumpWidget(app(many, lock: true));
+      await tester.pump();
+      await finger.moveTo(tester.getCenter(tileOf('P6.jpg')));
+      await tester.pump();
+      verifyNever(() => detailCubit.selectItems(any()));
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('a size step shows no frame at the old offset', (tester) async {
+      await pump(tester, app(many), size: phone);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      final name = [for (var i = 0; i < 60; i++) 'P$i.jpg'].firstWhere((n) {
+        final f = tileOf(n);
+        if (f.evaluate().isEmpty) return false;
+        final y = tester.getCenter(f).dy;
+        return y > 350 && y < 450;
+      });
+      final before = tester.getRect(tileOf(name));
+      final focal = before.center;
+      final one = await tester.startGesture(focal - const Offset(50, 0),
+          pointer: 1, kind: PointerDeviceKind.touch);
+      final two = await tester.startGesture(focal + const Offset(50, 0),
+          pointer: 2, kind: PointerDeviceKind.touch);
+      await tester.pump();
+      await one.moveTo(focal - const Offset(70, 0));
+      await two.moveTo(focal + const Offset(70, 0));
+      // The very frame the size changes in.
+      await tester.pump();
+      final after = tester.getRect(tileOf(name));
+      expect(after.height, greaterThan(before.height * 1.4));
+      expect(after.center.dy, closeTo(focal.dy, 2));
+      await one.up();
+      await two.up();
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('a long press held still near the bottom selects only one',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final scroll =
+          tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+      final gallery = tester.getRect(find.byType(ArDriveSectionedGallery));
+      // A tile in the bottom 56 px, where a moving finger would scroll.
+      final name = [for (var i = 0; i < 60; i++) 'P$i.jpg'].lastWhere((n) {
+        final f = tileOf(n);
+        if (f.evaluate().isEmpty) return false;
+        final r = tester.getRect(f);
+        return r.bottom <= gallery.bottom && r.bottom > gallery.bottom - 56;
+      });
+      final at = Offset(tester.getCenter(tileOf(name)).dx,
+          tester.getRect(tileOf(name)).bottom - 10);
+      final finger =
+          await tester.startGesture(at, kind: PointerDeviceKind.touch);
+      for (var k = 0; k < 60; k++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(scroll.pixels, 0);
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.length, 1);
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('a mouse held down then moved selects one, as before',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final mouse = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.mouse);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await mouse.moveTo(tester.getCenter(tileOf('P6.jpg')));
+      await tester.pump();
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p1']);
+      await mouse.up();
+      await tester.pump();
+    });
+
+    testWidgets('a quick two-finger tap opens nothing', (tester) async {
+      await pump(tester, app([a, b, c, d]), size: phone);
+      final centre = tester.getCenter(tileOf('Alfama.jpg'));
+      final one = await tester.startGesture(centre - const Offset(10, 0),
+          pointer: 1, kind: PointerDeviceKind.touch);
+      final two = await tester.startGesture(centre + const Offset(10, 0),
+          pointer: 2, kind: PointerDeviceKind.touch);
+      await tester.pump(const Duration(milliseconds: 50));
+      await one.up();
+      await two.up();
+      await tester.pump(const Duration(seconds: 1));
+      verifyNever(() => detailCubit.openDataItem(any()));
+      verifyNever(() => detailCubit.selectItems(any()));
+
+      // A tap after it opens as usual.
+      await tester.tap(tileOf('Pier.jpg'));
+      await tester.pump(const Duration(seconds: 1));
+      verify(() => detailCubit.openDataItem(any())).called(1);
+    });
+
     testWidgets('while selecting, a long press adds rather than starting over',
         (tester) async {
       when(() => detailCubit.selectedItems).thenReturn(many.sublist(0, 1));
