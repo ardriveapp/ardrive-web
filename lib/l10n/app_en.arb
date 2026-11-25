@@ -6834,5 +6834,13 @@
   "makeThumbnailsStop": "Stop",
   "@makeThumbnailsStop": {"description": "Stops Make thumbnails; what is made stays"},
   "makeThumbnailsNotNow": "Not now",
-  "@makeThumbnailsNotNow": {"description": "Hides the Make thumbnails notice for this folder"}
+  "@makeThumbnailsNotNow": {"description": "Hides the Make thumbnails notice for this folder"},
+  "storedPermanentlySince": "Stored permanently since {date}",
+  "@storedPermanentlySince": {"description": "In a file's details once its data transaction confirmed", "placeholders": {"date": {"type": "String"}}},
+  "beingStoredPermanently": "Being stored permanently",
+  "@beingStoredPermanently": {"description": "In a file's details while its data transaction is pending"},
+  "usuallyWithinAnHour": "Usually within an hour",
+  "@usuallyWithinAnHour": {"description": "Under the pending permanence notice"},
+  "viewTransaction": "View transaction",
+  "@viewTransaction": {"description": "Opens the file's data transaction in a block explorer"}
 }

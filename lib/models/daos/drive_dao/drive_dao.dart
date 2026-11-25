@@ -1555,6 +1555,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<String> watchPermanentDataVersion() =>
       _permanentDataVersionQuery().watchSingle();
 
+  /// [dataTxId]'s status, and when its data was first stored here: the
+  /// earliest file revision that carries it. Null for either while unknown.
+  ///
+  /// Not the transaction row's own date: sync writes that row again for every
+  /// revision, so after a rename or a move it held the rename's date.
+  Stream<({String? status, DateTime? firstStored})> watchDataPermanence(
+    String dataTxId,
+  ) =>
+      customSelect(
+        '''
+      SELECT (SELECT status FROM network_transactions WHERE id = ?1) AS status,
+             (SELECT MIN(dateCreated) FROM file_revisions
+               WHERE dataTxId = ?1) AS firstStored
+      ''',
+        variables: [Variable.withString(dataTxId)],
+        readsFrom: {fileRevisions, networkTransactions},
+      ).watchSingle().map((row) => (
+            status: row.read<String?>('status'),
+            firstStored: row.read<DateTime?>('firstStored'),
+          ));
+
   Selectable<String> _permanentDataVersionQuery() => customSelect(
         '''
       SELECT (SELECT MAX(rowid) FROM file_revisions) AS revisions,

@@ -8591,5 +8591,9 @@
   "makeThumbnailsFailed": "{count, plural, other{有 {count} 張圖片無法讀取，請稍後再試。}}",
   "makeThumbnailsNotice": "{count, plural, other{這裡有 {count} 張圖片需要縮圖。}}",
   "makeThumbnailsStop": "停止",
-  "makeThumbnailsNotNow": "稍後再說"
+  "makeThumbnailsNotNow": "稍後再說",
+  "storedPermanentlySince": "自 {date} 起永久儲存",
+  "beingStoredPermanently": "正在永久儲存",
+  "usuallyWithinAnHour": "通常在一小時內完成",
+  "viewTransaction": "查看交易"
 }

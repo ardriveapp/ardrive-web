@@ -709,6 +709,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         : null;
 
     return [
+      PermanenceLine(item: item),
       if (nameable != null) ...[
         ArNSNameSection(item: nameable),
         sizedBoxHeight16px,
@@ -1209,6 +1210,161 @@ class _TxIdTextLink extends StatelessWidget {
               color: ArDriveTheme.of(context).themeData.colorTokens.textLink,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Whether a file's data is on the permaweb for good yet, at the top of its
+/// details: "Stored permanently since" once its data transaction confirmed,
+/// with a link to the transaction, or "Being stored permanently" while a
+/// recent upload is pending. Nothing when the status is unknown, the upload
+/// failed (the list already marks it), or an old file is waiting on a status
+/// check.
+///
+/// Read live from the database, not from the row it was opened with: the
+/// panel's copy of the row is not rebuilt when only its transaction's status
+/// changes, and "Being stored permanently" stayed after the data confirmed.
+class PermanenceLine extends StatefulWidget {
+  const PermanenceLine({super.key, required this.item});
+
+  final FileDataTableItem item;
+
+  /// What [item] shows, or null for nothing.
+  ///
+  /// [firstStored] is the file's earliest revision with this data. The
+  /// transaction's own date is the latest such revision's, since sync writes
+  /// the row again for each rename or move, so it said a renamed file had
+  /// been stored only since the rename.
+  static PermanenceNotice? noticeFor({
+    required String txId,
+    required String? status,
+    required DateTime? firstStored,
+    required DateTime now,
+  }) {
+    return switch (status) {
+      TransactionStatus.confirmed when firstStored != null =>
+        PermanenceNotice(txId: txId, storedSince: firstStored),
+      // A first sync marks every file's data pending until the gateway
+      // answers, and "Usually within an hour" was wrong for a file uploaded
+      // years ago. Only a recent upload says it is on its way.
+      TransactionStatus.pending
+          when firstStored != null &&
+              now.difference(firstStored) < recentUpload =>
+        PermanenceNotice(txId: txId, storedSince: null),
+      _ => null,
+    };
+  }
+
+  /// How long after its upload a pending file still says it is on its way.
+  static const recentUpload = Duration(days: 1);
+
+  /// Where the line reads its status from: [DriveDao.watchDataPermanence],
+  /// or nothing where there is no database. Replaced in widget tests, where
+  /// drift's live queries never settle on the fake clock.
+  @visibleForTesting
+  static Stream<({String? status, DateTime? firstStored})>? Function(
+      BuildContext context, String txId) watch = defaultPermanenceWatch;
+
+  @override
+  State<PermanenceLine> createState() => _PermanenceLineState();
+}
+
+/// [PermanenceLine.watch] as the app has it: the database's live answer.
+Stream<({String? status, DateTime? firstStored})>? defaultPermanenceWatch(
+  BuildContext context,
+  String txId,
+) {
+  try {
+    return context.read<DriveDao>().watchDataPermanence(txId);
+  } on ProviderNotFoundException {
+    return null;
+  }
+}
+
+class _PermanenceLineState extends State<PermanenceLine> {
+  Stream<({String? status, DateTime? firstStored})>? _stream;
+  String? _forTx;
+
+  @override
+  Widget build(BuildContext context) {
+    final txId = widget.item.dataTxId;
+    // Only a file shown with its transaction gets the line: search results,
+    // shared files and visitors have none.
+    if (widget.item.dataTx == null) return const SizedBox.shrink();
+    if (_forTx != txId) {
+      _forTx = txId;
+      _stream = PermanenceLine.watch(context, txId);
+    }
+    return StreamBuilder<({String? status, DateTime? firstStored})>(
+      // A fresh snapshot for new data: a new version keeps the file's ID and
+      // name, and the builder held the old data's date under the new link.
+      key: ValueKey(txId),
+      stream: _stream,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final notice = data == null
+            ? null
+            : PermanenceLine.noticeFor(
+                txId: txId,
+                status: data.status,
+                firstStored: data.firstStored,
+                now: DateTime.now(),
+              );
+        if (notice == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: notice,
+        );
+      },
+    );
+  }
+}
+
+/// The notice [PermanenceLine] shows: stored since a date, or on its way when
+/// [storedSince] is null.
+@visibleForTesting
+class PermanenceNotice extends StatelessWidget {
+  const PermanenceNotice({
+    super.key,
+    required this.txId,
+    required this.storedSince,
+  });
+
+  final String txId;
+  final DateTime? storedSince;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final since = storedSince;
+    if (since == null) {
+      return ArDriveNotice(
+        key: const Key('permanencePending'),
+        type: ArDriveNoticeType.info,
+        leading: const SizedBox.square(
+          dimension: 20,
+          child: Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.small)),
+        ),
+        title: strings.beingStoredPermanently,
+        message: strings.usuallyWithinAnHour,
+      );
+    }
+    return ArDriveNotice(
+      key: const Key('permanenceStored'),
+      type: ArDriveNoticeType.success,
+      // The date kept on one line: a narrow panel broke it after the comma.
+      title: strings.storedPermanentlySince(
+        formatDate(since).replaceAll(' ', '\u00A0'),
+      ),
+      content: Align(
+        alignment: Alignment.centerLeft,
+        child: ArDriveLink(
+          key: const Key('permanenceViewTransaction'),
+          text: strings.viewTransaction,
+          external: true,
+          onTap: () => openUrl(url: 'https://viewblock.io/arweave/tx/$txId'),
         ),
       ),
     );

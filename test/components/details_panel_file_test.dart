@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../test_utils/fake_user.dart';
 import '../test_utils/utils.dart';
@@ -114,6 +115,7 @@ void main() {
     bool isOwner = true,
     bool enableArNS = false,
     List<String>? assignedNames,
+    NetworkTransaction? dataTx,
   }) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
@@ -185,7 +187,7 @@ void main() {
                           contentType: 'application/octet-stream',
                           dataTxId: file.dataTxId,
                           metadataTx: null,
-                          dataTx: null,
+                          dataTx: dataTx,
                           pinnedDataOwnerAddress: null,
                           index: 0,
                           isOwner: isOwner,
@@ -231,6 +233,88 @@ void main() {
     expect(find.text('3f2a9c...7d1e'), findsOneWidget);
     expect(find.text('datajF...w7Lp'), findsOneWidget);
     expect(find.text('jF3uAb...w7Lp'), findsOneWidget);
+
+    await takeDown(tester);
+  });
+
+  // The line's status, fed by the test: drift's live queries never settle on
+  // the fake clock. DriveDao.watchDataPermanence has its own tests. A
+  // subject, not a plain controller: the tab rebuilds the line, each build
+  // may listen again, and every listener gets the latest status.
+  BehaviorSubject<({String? status, DateTime? firstStored})> feedPermanence() {
+    final feed = BehaviorSubject<({String? status, DateTime? firstStored})>();
+    PermanenceLine.watch = (_, __) => feed.stream;
+    addTearDown(() {
+      PermanenceLine.watch = defaultPermanenceWatch;
+      feed.close();
+    });
+    return feed;
+  }
+
+  // The tab's content fades in, and the line's status arrives after it.
+  Future<void> settle(WidgetTester tester) async {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump(const Duration(seconds: 1));
+  }
+
+  testWidgets('says since when the data is stored, at the top', (tester) async {
+    final feed = feedPermanence();
+    await pumpPanel(
+      tester,
+      dataTx: NetworkTransaction(
+        id: file.dataTxId,
+        status: TransactionStatus.confirmed,
+        dateCreated: DateTime(2026, 11, 10),
+      ),
+    );
+    feed.add((
+      status: TransactionStatus.confirmed,
+      firstStored: DateTime(2026, 10, 20, 12),
+    ));
+    await openTab(tester, 'Details');
+    await settle(tester);
+
+    expect(find.byKey(const Key('permanenceStored')), findsOneWidget);
+    expect(
+      find.text('Stored permanently since Oct 20, 2026'),
+      findsOneWidget,
+    );
+    // Above the IDs.
+    expect(
+      tester.getTopLeft(find.byKey(const Key('permanenceStored'))).dy,
+      lessThan(tester.getTopLeft(find.text('3f2a9c...7d1e')).dy),
+    );
+
+    await takeDown(tester);
+  });
+
+  // The panel's copy of the row is not rebuilt when only its transaction's
+  // status changes, and "Being stored permanently" stayed after the data
+  // confirmed.
+  testWidgets('shows the line once the data confirms, without reopening',
+      (tester) async {
+    final feed = feedPermanence();
+    await pumpPanel(
+      tester,
+      dataTx: NetworkTransaction(
+        id: file.dataTxId,
+        status: TransactionStatus.pending,
+        dateCreated: DateTime.now(),
+      ),
+    );
+    final uploaded = DateTime.now().subtract(const Duration(minutes: 5));
+    feed.add((status: TransactionStatus.pending, firstStored: uploaded));
+    await openTab(tester, 'Details');
+    await settle(tester);
+    expect(find.byKey(const Key('permanencePending')), findsOneWidget);
+
+    feed.add((status: TransactionStatus.confirmed, firstStored: uploaded));
+    await settle(tester);
+
+    expect(find.byKey(const Key('permanencePending')), findsNothing);
+    expect(find.byKey(const Key('permanenceStored')), findsOneWidget);
 
     await takeDown(tester);
   });
