@@ -166,6 +166,70 @@ class ArDriveGalleryGeometry {
     return null;
   }
 
+  /// Where the tile at [index] is, in the gallery's content: x from the
+  /// left of its rows, y from the top of the scroll. Null for no such tile.
+  Rect? rectOf(int index) {
+    final r = rowOf(index);
+    if (r == null) return null;
+    final row = rows[r];
+    final position = index - row.first;
+    final item = row.items[position];
+    return Rect.fromLTWH(row.lefts[position], row.top, item.width, item.height);
+  }
+
+  /// The tile at [point], in the same coordinates as [rectOf]; null over a
+  /// header, a gap or past the last tile.
+  int? itemAt(Offset point) {
+    var lo = 0, hi = rows.length - 1, found = -1;
+    while (lo <= hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (rows[mid].top <= point.dy) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    if (found < 0) return null;
+    final row = rows[found];
+    if (point.dy >= row.top + row.height) return null;
+    for (var i = 0; i < row.items.length; i++) {
+      final left = row.lefts[i];
+      if (point.dx >= left && point.dx < left + row.items[i].width) {
+        return row.items[i].index;
+      }
+    }
+    return null;
+  }
+
+  /// The tile at [point], or the nearest one in the row at that height when
+  /// [point] is in a gap or over a header: what a pinch holds in place.
+  int? itemNear(Offset point) {
+    final hit = itemAt(point);
+    if (hit != null || rows.isEmpty) return hit;
+    var lo = 0, hi = rows.length - 1, found = 0;
+    while (lo <= hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (rows[mid].top <= point.dy) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    final row = rows[found];
+    var best = 0;
+    var bestDistance = double.infinity;
+    for (var i = 0; i < row.items.length; i++) {
+      final d = (row.centerOf(i) - point.dx).abs();
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = i;
+      }
+    }
+    return row.items[best].index;
+  }
+
   /// The section whose top is at or above [offset].
   int sectionAt(double offset) {
     var found = 0;
@@ -235,6 +299,31 @@ class ArDriveSectionedGalleryController extends ChangeNotifier {
   ArDriveGalleryGeometry? _geometry;
 
   ArDriveGalleryGeometry? get geometry => _geometry;
+
+  ({int index, double fraction, double viewportY})? _hold;
+
+  /// Keeps the tile at [index] where it is on screen through the next new
+  /// layout (a change of tile size): the point [fraction] of the way down
+  /// it stays [viewportY] from the top of the gallery. Applied while the
+  /// new layout is made, so no frame shows the old offset with new tiles.
+  void holdItem(
+    int index, {
+    required double fraction,
+    required double viewportY,
+  }) {
+    _hold = (index: index, fraction: fraction, viewportY: viewportY);
+  }
+
+  /// The offset that keeps the held tile in place in [geometry], if a hold
+  /// is waiting; clears it either way.
+  double? _takeHold(ArDriveGalleryGeometry geometry) {
+    final hold = _hold;
+    _hold = null;
+    if (hold == null) return null;
+    final rect = geometry.rectOf(hold.index);
+    if (rect == null) return null;
+    return rect.top + hold.fraction * rect.height - hold.viewportY;
+  }
 
   void setGeometry(ArDriveGalleryGeometry geometry) {
     if (identical(_geometry, geometry)) return;
@@ -360,6 +449,18 @@ class _ArDriveSectionedGalleryState extends State<ArDriveSectionedGallery> {
         paddingTop: widget.padding.top,
       );
       final geometry = _geometry!;
+      final held = widget.controller._takeHold(geometry);
+      final scroll = widget.controller.scroll;
+      if (held != null && scroll.hasClients) {
+        // During layout, before the list is laid out at the new size:
+        // corrected, not jumped, so nothing is told mid-layout. Kept inside
+        // the new content; the list settles any remainder as it lays out.
+        final position = scroll.position;
+        final end = geometry.contentHeight +
+            widget.padding.bottom -
+            position.viewportDimension;
+        position.correctPixels(held.clamp(0.0, math.max(0.0, end)));
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && identical(_geometry, geometry)) {
           widget.controller.setGeometry(geometry);

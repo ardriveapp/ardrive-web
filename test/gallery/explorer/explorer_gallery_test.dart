@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/entities/file_entity.dart' show Variant;
 import 'package:ardrive/gallery/explorer/explorer_gallery.dart';
+import 'package:ardrive/gallery/explorer/gallery_tile_size.dart';
 import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/pages/drive_detail/components/full_screen_preview_request.dart';
 import 'package:ardrive/models/models.dart';
@@ -14,6 +15,7 @@ import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/gestures.dart';
@@ -52,6 +54,34 @@ class _FakeFetcher implements GalleryImageFetcher {
     if (missing.contains(target.variant.txId)) throw const GalleryNotFound();
     return Uint8List.fromList(const [0]);
   }
+}
+
+class _MemoryStore implements KeyValueStore {
+  final values = <String, Object>{};
+
+  @override
+  Future<bool> putBool(String key, bool value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  bool? getBool(String key) => values[key] as bool?;
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => values[key] as String?;
+
+  @override
+  Future<bool> remove(String key) async => values.remove(key) != null;
+
+  @override
+  Set<String> getKeys() => values.keys.toSet();
 }
 
 void main() {
@@ -881,6 +911,383 @@ void main() {
           [a, newer, b], ColumnIndexes.dateCreated, TableSort.asc,
           typeLabel: (i) => i.contentType).map((e) => e.name).toList();
       expect(order, expected);
+    });
+  });
+
+  group('tile sizes and dragging on a phone', () {
+    late _MemoryStore store;
+    const phone = Size(390, 800);
+
+    setUp(() {
+      store = _MemoryStore();
+      GalleryPhoneTileSize.store = store;
+    });
+    tearDown(() => GalleryPhoneTileSize.store = null);
+
+    // Enough photos of one month to scroll.
+    final many = [
+      for (var i = 0; i < 60; i++)
+        fileItem('p$i', name: 'P$i.jpg', created: oct, variants: wide('p$i')),
+    ];
+
+    double rowHeight(WidgetTester tester, String name) =>
+        tester.getSize(tileOf(name)).height;
+
+    /// Two fingers from [focal], [from] apart, moved to [to] apart.
+    Future<void> pinch(WidgetTester tester, Offset focal,
+        {required double from, required double to}) async {
+      final one = await tester.startGesture(focal - Offset(from / 2, 0),
+          pointer: 1, kind: PointerDeviceKind.touch);
+      final two = await tester.startGesture(focal + Offset(from / 2, 0),
+          pointer: 2, kind: PointerDeviceKind.touch);
+      await tester.pump();
+      const steps = 8;
+      for (var k = 1; k <= steps; k++) {
+        final half = (from + (to - from) * k / steps) / 2;
+        await one.moveTo(focal - Offset(half, 0));
+        await two.moveTo(focal + Offset(half, 0));
+        await tester.pump();
+      }
+      await one.up();
+      await two.up();
+      await tester.pump();
+      await tester.pump();
+      // The loader's rest after the scroll a size change makes.
+      await tester.pump(const Duration(seconds: 2));
+    }
+
+    testWidgets('pinching out makes the tiles bigger, one size at a time',
+        (tester) async {
+      await pump(tester, app([a, b, c, d]), size: phone);
+      expect(rowHeight(tester, 'Alfama.jpg'),
+          closeTo(galleryPhoneRowHeights[1], 15));
+
+      final centre = tester.getCenter(tileOf('Alfama.jpg'));
+      // Wider by a half: past one step's quarter, short of two.
+      await pinch(tester, centre, from: 100, to: 150);
+      expect(rowHeight(tester, 'Alfama.jpg'),
+          closeTo(galleryPhoneRowHeights[2], 30));
+      expect(store.values[GalleryPhoneTileSize.key], '2');
+
+      // Already the largest: wider again changes nothing.
+      await pinch(tester, tester.getCenter(tileOf('Alfama.jpg')),
+          from: 100, to: 200);
+      expect(rowHeight(tester, 'Alfama.jpg'),
+          closeTo(galleryPhoneRowHeights[2], 30));
+    });
+
+    testWidgets('pinching in makes them smaller, and the default is forgotten',
+        (tester) async {
+      store.values[GalleryPhoneTileSize.key] = '2';
+      await pump(tester, app([a, b, c, d]), size: phone);
+      // Opens at the size it was left at.
+      expect(rowHeight(tester, 'Alfama.jpg'),
+          closeTo(galleryPhoneRowHeights[2], 30));
+
+      await pinch(tester, tester.getCenter(tileOf('Alfama.jpg')),
+          from: 200, to: 140);
+      expect(rowHeight(tester, 'Alfama.jpg'),
+          closeTo(galleryPhoneRowHeights[1], 15));
+      expect(store.values.containsKey(GalleryPhoneTileSize.key), isFalse);
+
+      await pinch(tester, tester.getCenter(tileOf('Alfama.jpg')),
+          from: 200, to: 140);
+      expect(rowHeight(tester, 'Alfama.jpg'),
+          closeTo(galleryPhoneRowHeights[0], 15));
+      expect(store.values[GalleryPhoneTileSize.key], '0');
+    });
+
+    testWidgets('the photo under the fingers stays under them', (tester) async {
+      await pump(tester, app(many), size: phone);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -600));
+      await tester.pumpAndSettle();
+
+      // A tile in the middle of the screen, and a point a third down it.
+      final names = [for (var i = 0; i < 60; i++) 'P$i.jpg'];
+      final name = names.firstWhere((n) {
+        final f = tileOf(n);
+        if (f.evaluate().isEmpty) return false;
+        final y = tester.getCenter(f).dy;
+        return y > 350 && y < 450;
+      });
+      final before = tester.getRect(tileOf(name));
+      final focal = Offset(before.center.dx, before.top + before.height / 3);
+
+      await pinch(tester, focal, from: 100, to: 150);
+      final after = tester.getRect(tileOf(name));
+      expect(after.height, greaterThan(before.height * 1.4));
+      // The same third of the same photo, at the same height on screen.
+      expect(after.top + after.height / 3, closeTo(focal.dy, 2));
+    });
+
+    testWidgets('two fingers held still on a photo select nothing',
+        (tester) async {
+      await pump(tester, app([a, b, c, d]), size: phone);
+      final centre = tester.getCenter(tileOf('Alfama.jpg'));
+      final one = await tester.startGesture(centre - const Offset(10, 0),
+          pointer: 1, kind: PointerDeviceKind.touch);
+      final two = await tester.startGesture(centre + const Offset(10, 0),
+          pointer: 2, kind: PointerDeviceKind.touch);
+      // Long enough for a long press, which a pinch is not.
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      await one.up();
+      await two.up();
+      await tester.pump(const Duration(seconds: 1));
+      verifyNever(() => detailCubit.selectItems(any()));
+      verifyNever(() => detailCubit.openDataItem(any()));
+
+      // The next gesture, one finger, long-presses as usual.
+      await tester.longPress(tileOf('Pier.jpg'));
+      verify(() => detailCubit.selectItems(any())).called(1);
+    });
+
+    testWidgets('one finger still scrolls; a pinch on a desktop does nothing',
+        (tester) async {
+      await pump(tester, app([a, b, c, d]));
+      final before = rowHeight(tester, 'Alfama.jpg');
+      await pinch(tester, tester.getCenter(tileOf('Alfama.jpg')),
+          from: 100, to: 200);
+      expect(rowHeight(tester, 'Alfama.jpg'), before);
+      expect(store.values, isEmpty);
+    });
+
+    testWidgets('after a long press, dragging takes in every tile it passes',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final from = tester.getCenter(tileOf('P1.jpg'));
+      final finger =
+          await tester.startGesture(from, kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      final first = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(first.map((e) => e.id), ['p1']);
+
+      await finger.moveTo(tester.getCenter(tileOf('P6.jpg')));
+      await tester.pump();
+      var chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']);
+
+      // Back over P3: the tiles past it go out again.
+      await finger.moveTo(tester.getCenter(tileOf('P3.jpg')));
+      await tester.pump();
+      chosen = verify(() => detailCubit.selectItems(captureAny())).captured.last
+          as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p1', 'p2', 'p3']);
+
+      await finger.up();
+      await tester.pump();
+      verifyNever(() => detailCubit.openDataItem(any()));
+    });
+
+    testWidgets('dragging before the long-pressed tile takes in that way too',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P5.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await finger.moveTo(tester.getCenter(tileOf('P2.jpg')));
+      await tester.pump();
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p2', 'p3', 'p4', 'p5']);
+      await finger.up();
+    });
+
+    testWidgets('held at the bottom edge, the list scrolls and takes tiles in',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final scroll =
+          tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      final gallery = tester.getRect(find.byType(ArDriveSectionedGallery));
+      // The middle of the screen, which is the gap between two tiles here:
+      // the nearest tile still counts.
+      await finger.moveTo(Offset(gallery.center.dx, gallery.bottom - 8));
+      for (var k = 0; k < 40; k++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(scroll.pixels, greaterThan(100));
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.length, greaterThan(10));
+      expect(chosen.first.id, 'p1');
+
+      await finger.up();
+      await tester.pump();
+      // Let go, it stops.
+      final stopped = scroll.pixels;
+      for (var k = 0; k < 10; k++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(scroll.pixels, stopped);
+    });
+
+    testWidgets('a sync shutting multi-select mid-drag ends the drag',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      clearInteractions(detailCubit);
+      await tester.pumpWidget(app(many, lock: true));
+      await tester.pump();
+      await finger.moveTo(tester.getCenter(tileOf('P6.jpg')));
+      await tester.pump();
+      verifyNever(() => detailCubit.selectItems(any()));
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('a size step shows no frame at the old offset', (tester) async {
+      await pump(tester, app(many), size: phone);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      final name = [for (var i = 0; i < 60; i++) 'P$i.jpg'].firstWhere((n) {
+        final f = tileOf(n);
+        if (f.evaluate().isEmpty) return false;
+        final y = tester.getCenter(f).dy;
+        return y > 350 && y < 450;
+      });
+      final before = tester.getRect(tileOf(name));
+      final focal = before.center;
+      final one = await tester.startGesture(focal - const Offset(50, 0),
+          pointer: 1, kind: PointerDeviceKind.touch);
+      final two = await tester.startGesture(focal + const Offset(50, 0),
+          pointer: 2, kind: PointerDeviceKind.touch);
+      await tester.pump();
+      await one.moveTo(focal - const Offset(70, 0));
+      await two.moveTo(focal + const Offset(70, 0));
+      // The very frame the size changes in.
+      await tester.pump();
+      final after = tester.getRect(tileOf(name));
+      expect(after.height, greaterThan(before.height * 1.4));
+      expect(after.center.dy, closeTo(focal.dy, 2));
+      await one.up();
+      await two.up();
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('a long press held still near the bottom selects only one',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final scroll =
+          tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+      final gallery = tester.getRect(find.byType(ArDriveSectionedGallery));
+      // A tile in the bottom 56 px, where a moving finger would scroll.
+      final name = [for (var i = 0; i < 60; i++) 'P$i.jpg'].lastWhere((n) {
+        final f = tileOf(n);
+        if (f.evaluate().isEmpty) return false;
+        final r = tester.getRect(f);
+        return r.bottom <= gallery.bottom && r.bottom > gallery.bottom - 56;
+      });
+      final at = Offset(tester.getCenter(tileOf(name)).dx,
+          tester.getRect(tileOf(name)).bottom - 10);
+      final finger =
+          await tester.startGesture(at, kind: PointerDeviceKind.touch);
+      for (var k = 0; k < 60; k++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(scroll.pixels, 0);
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.length, 1);
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('a mouse held down then moved selects one, as before',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final mouse = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.mouse);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await mouse.moveTo(tester.getCenter(tileOf('P6.jpg')));
+      await tester.pump();
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p1']);
+      await mouse.up();
+      await tester.pump();
+    });
+
+    testWidgets('a quick two-finger tap opens nothing', (tester) async {
+      await pump(tester, app([a, b, c, d]), size: phone);
+      final centre = tester.getCenter(tileOf('Alfama.jpg'));
+      final one = await tester.startGesture(centre - const Offset(10, 0),
+          pointer: 1, kind: PointerDeviceKind.touch);
+      final two = await tester.startGesture(centre + const Offset(10, 0),
+          pointer: 2, kind: PointerDeviceKind.touch);
+      await tester.pump(const Duration(milliseconds: 50));
+      await one.up();
+      await two.up();
+      await tester.pump(const Duration(seconds: 1));
+      verifyNever(() => detailCubit.openDataItem(any()));
+      verifyNever(() => detailCubit.selectItems(any()));
+
+      // A tap after it opens as usual.
+      await tester.tap(tileOf('Pier.jpg'));
+      await tester.pump(const Duration(seconds: 1));
+      verify(() => detailCubit.openDataItem(any())).called(1);
+    });
+
+    testWidgets('the folder changing mid-drag ends the drag, without errors',
+        (tester) async {
+      await pump(tester, app(many), size: phone);
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P5.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      // A sync takes most of the photos away.
+      await tester.pumpWidget(app(many.sublist(0, 3)));
+      await tester.pump();
+      clearInteractions(detailCubit);
+      await finger.moveTo(tester.getCenter(tileOf('P2.jpg')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.takeException(), isNull);
+      verifyNever(() => detailCubit.selectItems(any()));
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('on a wide touch screen a long press keeps the desktop\'s',
+        (tester) async {
+      await pump(tester, app(many), size: const Size(1000, 800));
+      final finger = await tester.startGesture(
+          tester.getCenter(tileOf('P1.jpg')),
+          kind: PointerDeviceKind.touch);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await finger.moveTo(tester.getCenter(tileOf('P4.jpg')));
+      await tester.pump();
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p1']);
+      await finger.up();
+      await tester.pump();
+    });
+
+    testWidgets('while selecting, a long press adds rather than starting over',
+        (tester) async {
+      when(() => detailCubit.selectedItems).thenReturn(many.sublist(0, 1));
+      await pump(tester, app(many, multi: many.sublist(0, 1)), size: phone);
+      await tester.longPress(tileOf('P4.jpg'));
+      final chosen = verify(() => detailCubit.selectItems(captureAny()))
+          .captured
+          .last as List<ArDriveDataTableItem>;
+      expect(chosen.map((e) => e.id), ['p0', 'p4']);
     });
   });
 }

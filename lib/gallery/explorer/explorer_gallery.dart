@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/gallery/explorer/gallery_item_tile.dart';
 import 'package:ardrive/gallery/explorer/gallery_model.dart';
 import 'package:ardrive/gallery/explorer/gallery_selection.dart';
+import 'package:ardrive/gallery/explorer/gallery_tile_size.dart';
 import 'package:ardrive/gallery/image_loader/gallery_image_loader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/full_screen_preview_request.dart';
@@ -10,6 +14,7 @@ import 'package:ardrive/pages/drive_detail/models/drive_table_columns.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -73,6 +78,36 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   List<ArDriveDataTableItem> _flat = const [];
   Map<String, int> _indexOf = const {};
 
+  /// The phone's tile size, an index into [galleryPhoneRowHeights].
+  int _phoneSize = GalleryPhoneTileSize.read();
+
+  /// The gallery's left padding, so a point on screen finds its tile.
+  double _paddingLeft = 0;
+
+  /// Every pointer down on the gallery, where it is now; touches pinch.
+  final _pointers = <int, ({Offset at, PointerDeviceKind kind})>{};
+
+  /// The fingers' spread when the pinch began or last changed size.
+  double? _pinchFrom;
+
+  /// A second finger came down in this gesture: a pinch, so a long press
+  /// that fires anyway (fingers held still) selects nothing. Cleared when
+  /// the next gesture starts, not when the fingers lift, since the long
+  /// press can be reported after them.
+  bool _pinched = false;
+
+  /// The finger a long press started selecting with, while it drags.
+  int? _dragPointer;
+  Offset? _dragStart;
+
+  /// The finger has moved since the long press: only then does holding it
+  /// near an edge scroll, so a still thumb near the bottom selects one.
+  bool _dragMoved = false;
+  int _dragFrom = 0;
+  int? _dragLast;
+  List<ArDriveDataTableItem> _dragBase = const [];
+  Timer? _autoScroll;
+
   @override
   void initState() {
     super.initState();
@@ -84,6 +119,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
 
   @override
   void dispose() {
+    _autoScroll?.cancel();
     HardwareKeyboard.instance.removeHandler(_onEscape);
     _controller.scroll.removeListener(_scrolled);
     // The scroll controller belongs to the caller when it gave one.
@@ -114,6 +150,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     }
     _modelKey = key;
     _modelItems = widget.items;
+    // A drag's range is positions in the old order: it ends with it.
+    _endDrag();
     final model = buildGalleryModel(
       widget.items,
       sortColumn: widget.sortColumn,
@@ -155,6 +193,8 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
       : widget.selectedItem?.id == item.id;
 
   void _click(ArDriveDataTableItem item, GalleryClickKind kind) {
+    // A two-finger tap is a pinch that did not move, not a click.
+    if (_pinched) return;
     _nodeFor(item).requestFocus();
     // A sync that holds multi-select shut holds it here too: a modifier then
     // is just a click.
@@ -176,6 +216,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   }
 
   void _open(ArDriveDataTableItem item) {
+    if (_pinched) return;
     final cubit = context.read<DriveDetailCubit>();
     // Once a finger has started selecting, a tap adds to the selection, as
     // in the photo apps; it opens again when nothing is chosen.
@@ -200,9 +241,200 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
   }
 
   void _longPress(ArDriveDataTableItem item) {
-    if (widget.lockMultiSelect) return;
+    if (widget.lockMultiSelect || _pinched || _touches().length > 1) return;
     _anchor = item;
-    context.read<DriveDetailCubit>().selectItems([item]);
+    // Fingers only: a mouse held down keeps the long press it always had.
+    final pressing = _pointers.length == 1 ? _pointers.entries.single : null;
+    // A phone's layout only: a touch screen laptop keeps the desktop's.
+    final finger = pressing?.value.kind == PointerDeviceKind.touch &&
+        galleryScreenIsPhone(context);
+    // While selecting on a phone, a long press adds, as a tap does; it
+    // starts a new selection otherwise.
+    final base = finger
+        ? [
+            for (final e in widget.multiSelected)
+              if (e.id != item.id) e
+          ]
+        : const <ArDriveDataTableItem>[];
+    context.read<DriveDetailCubit>().selectItems([...base, item]);
+    // The finger that pressed can now drag across tiles to add them.
+    final index = _indexOf[item.id];
+    if (finger && pressing != null && index != null) {
+      _dragPointer = pressing.key;
+      _dragStart = pressing.value.at;
+      _dragMoved = false;
+      _dragFrom = index;
+      _dragLast = index;
+      _dragBase = base;
+      _autoScroll?.cancel();
+      _autoScroll = Timer.periodic(
+          const Duration(milliseconds: 16), (_) => _autoScrollTick());
+    }
+  }
+
+  /// A point on the gallery, in its layout's coordinates.
+  Offset _contentPoint(Offset local) => Offset(
+        local.dx - _paddingLeft,
+        local.dy +
+            (_controller.scroll.hasClients
+                ? _controller.scroll.position.pixels
+                : 0),
+      );
+
+  void _pointerDown(PointerDownEvent event) {
+    if (_pointers.isEmpty) _pinched = false;
+    _pointers[event.pointer] = (at: event.localPosition, kind: event.kind);
+    final touches = _touches();
+    if (touches.length >= 2) _pinched = true;
+    if (touches.length == 2 && galleryScreenIsPhone(context)) {
+      // A second finger: a pinch, not a scroll or a drag across tiles.
+      _endDrag();
+      _stopScrolling();
+      _pinchFrom = _spread(touches);
+    }
+  }
+
+  void _pointerMove(PointerMoveEvent event) {
+    final down = _pointers[event.pointer];
+    if (down == null) return;
+    _pointers[event.pointer] = (at: event.localPosition, kind: down.kind);
+    if (event.pointer == _dragPointer) {
+      final start = _dragStart;
+      if (start != null && (event.localPosition - start).distance > 8) {
+        _dragMoved = true;
+      }
+      _dragTo(event.localPosition);
+    }
+    final from = _pinchFrom;
+    final touches = _touches();
+    if (from == null || touches.length != 2) return;
+    _stopScrolling();
+    final spread = _spread(touches);
+    // A quarter wider or narrower moves one size, as far as there is one.
+    final step = spread > from * 1.25
+        ? 1
+        : spread < from * 0.8
+            ? -1
+            : 0;
+    if (step == 0) return;
+    _pinchFrom = spread;
+    final next =
+        (_phoneSize + step).clamp(0, galleryPhoneRowHeights.length - 1);
+    if (next == _phoneSize) return;
+    _holdUnder((touches[0] + touches[1]) / 2);
+    setState(() => _phoneSize = next);
+    GalleryPhoneTileSize.write(next);
+  }
+
+  void _pointerUp(PointerEvent event) {
+    _pointers.remove(event.pointer);
+    if (event.pointer == _dragPointer) _endDrag();
+    final touches = _touches();
+    // Two left of three: the pinch carries on from where they are now.
+    _pinchFrom = touches.length == 2 && _pinchFrom != null
+        ? _spread(touches)
+        : touches.length < 2
+            ? null
+            : _pinchFrom;
+    // A tap is reported after this, in the same event: a two-finger tap
+    // must still find the gesture marked as a pinch. Cleared once it is
+    // over, so a key press later opens as usual.
+    if (_pointers.isEmpty) {
+      scheduleMicrotask(() {
+        if (_pointers.isEmpty) _pinched = false;
+      });
+    }
+  }
+
+  List<Offset> _touches() => [
+        for (final p in _pointers.values)
+          if (p.kind == PointerDeviceKind.touch) p.at,
+      ];
+
+  /// Fingers that start almost together count as a little apart, so the
+  /// first movement is not read as a huge pinch.
+  static double _spread(List<Offset> touches) =>
+      math.max(32, (touches[0] - touches[1]).distance);
+
+  /// A pinch holds the list still: the second finger can have started a
+  /// scroll with the first.
+  void _stopScrolling() {
+    if (!_controller.scroll.hasClients) return;
+    final position = _controller.scroll.position;
+    if (position.isScrollingNotifier.value) position.jumpTo(position.pixels);
+  }
+
+  /// Asks the gallery to keep the tile under [local], and the spot on it,
+  /// where it is through the new layout.
+  void _holdUnder(Offset local) {
+    final geometry = _controller.geometry;
+    if (geometry == null) return;
+    final point = _contentPoint(local);
+    final index = geometry.itemNear(point);
+    final rect = index == null ? null : geometry.rectOf(index);
+    if (index == null || rect == null) return;
+    _controller.holdItem(
+      index,
+      fraction: ((point.dy - rect.top) / rect.height).clamp(0.0, 1.0),
+      viewportY: local.dy,
+    );
+  }
+
+  /// Every tile from the long-pressed one to the one under the finger, on
+  /// top of what was chosen before; going back takes tiles out again.
+  void _dragTo(Offset local) {
+    // A sync that shuts multi-select mid-drag ends the drag too.
+    if (widget.lockMultiSelect) {
+      _endDrag();
+      return;
+    }
+    final geometry = _controller.geometry;
+    if (geometry == null) return;
+    // The nearest tile, so a finger over a gap or a month's header keeps
+    // the selection where it is rather than dropping out of it.
+    final index = geometry.itemNear(_contentPoint(local));
+    if (index == null || index == _dragLast || index >= _flat.length) return;
+    _dragLast = index;
+    final ids = {for (final e in _dragBase) e.id};
+    final range = _flat.sublist(
+        math.min(_dragFrom, index), math.max(_dragFrom, index) + 1);
+    context.read<DriveDetailCubit>().selectItems(
+        [..._dragBase, ...range.where((e) => !ids.contains(e.id))]);
+  }
+
+  /// Near the top or bottom edge, the list scrolls under a dragging finger,
+  /// faster the nearer it is, and the tiles it passes are taken in.
+  void _autoScrollTick() {
+    final pointer = _dragPointer;
+    final at = pointer == null ? null : _pointers[pointer]?.at;
+    if (at == null || !_dragMoved || !_controller.scroll.hasClients) return;
+    final position = _controller.scroll.position;
+    const edge = 56.0;
+    const fastest = 14.0;
+    final height = position.viewportDimension;
+    double speed = 0;
+    if (at.dy < edge) {
+      speed = -fastest * (edge - at.dy) / edge;
+    } else if (at.dy > height - edge) {
+      speed = fastest * (at.dy - (height - edge)) / edge;
+    }
+    if (speed == 0) return;
+    // A finger dragged past the gallery's edge goes no faster.
+    speed = speed.clamp(-fastest, fastest);
+    final target = (position.pixels + speed)
+        .clamp(position.minScrollExtent, position.maxScrollExtent);
+    if (target == position.pixels) return;
+    position.jumpTo(target);
+    _dragTo(at);
+  }
+
+  void _endDrag() {
+    _dragPointer = null;
+    _dragStart = null;
+    _dragMoved = false;
+    _dragLast = null;
+    _autoScroll?.cancel();
+    _autoScroll = null;
   }
 
   /// A month's control: the whole month in, or out when it is all in.
@@ -332,6 +564,7 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
     final trackWidth = phone
         ? ArDriveGalleryScrubber.phoneWidth
         : ArDriveGalleryScrubber.defaultWidth;
+    _paddingLeft = phone ? galleryPhoneGutter : 0;
 
     return Focus(
       canRequestFocus: false,
@@ -340,37 +573,48 @@ class _ExplorerGalleryState extends State<ExplorerGallery> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: ArDriveSectionedGallery(
-              controller: _controller,
-              sections: sections,
-              isPhone: phone,
-              padding: EdgeInsets.only(
-                left: phone ? galleryPhoneGutter : 0,
-                right: phone ? galleryPhoneGutter : trackWidth,
-                bottom: ArDriveSpacing.md,
+            // Raw pointers, beside the tiles' own gestures: a pinch changes
+            // the phone's tile size, and a finger that long-pressed drags
+            // across tiles to choose them.
+            child: Listener(
+              onPointerDown: _pointerDown,
+              onPointerMove: _pointerMove,
+              onPointerUp: _pointerUp,
+              onPointerCancel: _pointerUp,
+              child: ArDriveSectionedGallery(
+                controller: _controller,
+                sections: sections,
+                isPhone: phone,
+                targetRowHeight:
+                    phone ? galleryPhoneRowHeights[_phoneSize] : null,
+                padding: EdgeInsets.only(
+                  left: _paddingLeft,
+                  right: phone ? galleryPhoneGutter : trackWidth,
+                  bottom: ArDriveSpacing.md,
+                ),
+                layoutRevision: Object.hashAll(_flat.map((e) => e.id)),
+                aspectRatioOf: (i) => i < folderCount
+                    ? (phone
+                        ? galleryFolderAspectRatioPhone
+                        : galleryFolderAspectRatio)
+                    : galleryAspectRatioOf(_flat[i]),
+                itemKeyOf: (i) => ValueKey(_flat[i].id),
+                tileBuilder: (context, i, size) {
+                  final item = _flat[i];
+                  return GalleryItemTile(
+                    item: item,
+                    drive: widget.drive,
+                    size: size,
+                    selected: _isSelected(item),
+                    focusNode: _nodeFor(item),
+                    loader: _loader,
+                    onClick: (kind) => _click(item, kind),
+                    onOpen: () => _open(item),
+                    onSelectForMenu: () => _selectForMenu(item),
+                    onLongPress: () => _longPress(item),
+                  );
+                },
               ),
-              layoutRevision: Object.hashAll(_flat.map((e) => e.id)),
-              aspectRatioOf: (i) => i < folderCount
-                  ? (phone
-                      ? galleryFolderAspectRatioPhone
-                      : galleryFolderAspectRatio)
-                  : galleryAspectRatioOf(_flat[i]),
-              itemKeyOf: (i) => ValueKey(_flat[i].id),
-              tileBuilder: (context, i, size) {
-                final item = _flat[i];
-                return GalleryItemTile(
-                  item: item,
-                  drive: widget.drive,
-                  size: size,
-                  selected: _isSelected(item),
-                  focusNode: _nodeFor(item),
-                  loader: _loader,
-                  onClick: (kind) => _click(item, kind),
-                  onOpen: () => _open(item),
-                  onSelectForMenu: () => _selectForMenu(item),
-                  onLongPress: () => _longPress(item),
-                );
-              },
             ),
           ),
           Positioned(
